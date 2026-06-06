@@ -1,6 +1,6 @@
+/* eslint-disable @next/next/no-html-link-for-pages */
 "use client"
 import { useState, useEffect } from "react"
-import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { LogIn, Menu, X } from "lucide-react"
 import { Logo } from "./Logo"
@@ -41,10 +41,9 @@ export function Nav() {
         {/* Desktop links */}
         <div className="hidden md:flex items-center gap-8 ml-auto">
           {links.map((lk) => (
-            <Link
+            <a
               key={lk.href}
               href={lk.href}
-              prefetch={false}
               aria-current={pathname === lk.href ? "page" : undefined}
               className={cn(
                 "text-sm font-medium transition-colors",
@@ -52,19 +51,18 @@ export function Nav() {
               )}
             >
               {lk.label}
-            </Link>
+            </a>
           ))}
-          <Link
+          <a
             href="/portal/login"
-            prefetch={false}
             className="inline-flex items-center gap-1.5 rounded-lg border border-b2 px-4 py-2 font-dm text-sm font-medium text-t2 transition-colors hover:border-b3 hover:bg-s2 hover:text-t1"
           >
             <LogIn size={14} aria-hidden="true" />
             Your Portal
-          </Link>
-          <Link href="/quote" prefetch={false} className="btn-sm">
+          </a>
+          <a href="/quote" className="btn-sm">
             Start a Project
-          </Link>
+          </a>
         </div>
 
         {/* Mobile menu toggle */}
@@ -82,28 +80,26 @@ export function Nav() {
       {open && (
         <div className="md:hidden bg-s1 border-b border-b1 px-6 py-4 flex flex-col gap-4">
           {links.map((lk) => (
-            <Link
+            <a
               key={lk.href}
               href={lk.href}
-              prefetch={false}
               onClick={() => setOpen(false)}
               className="text-sm font-medium text-t2 py-2"
             >
               {lk.label}
-            </Link>
+            </a>
           ))}
-          <Link
+          <a
             href="/portal/login"
-            prefetch={false}
             className="flex items-center justify-center gap-2 rounded-lg border border-b2 px-4 py-2.5 font-dm text-sm font-medium text-t2"
             onClick={() => setOpen(false)}
           >
             <LogIn size={15} aria-hidden="true" />
             Your Portal
-          </Link>
-          <Link href="/quote" prefetch={false} className="btn-sm text-center" onClick={() => setOpen(false)}>
+          </a>
+          <a href="/quote" className="btn-sm text-center" onClick={() => setOpen(false)}>
             Start a Project
-          </Link>
+          </a>
         </div>
       )}
     </header>

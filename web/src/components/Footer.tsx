@@ -1,4 +1,3 @@
-import Link from "next/link"
 import { Logo } from "./Logo"
 
 const links = [
@@ -18,9 +17,9 @@ export function Footer() {
         </div>
         <nav aria-label="Footer navigation" className="flex gap-6">
           {links.map((lk) => (
-            <Link key={lk.href} href={lk.href} prefetch={false} className="text-sm text-t2 transition-colors hover:text-t1">
+            <a key={lk.href} href={lk.href} className="text-sm text-t2 transition-colors hover:text-t1">
               {lk.label}
-            </Link>
+            </a>
           ))}
         </nav>
         <address className="not-italic">

@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-html-link-for-pages */
 import type { Metadata } from "next"
 import { notFound }  from "next/navigation"
 import Image         from "next/image"
@@ -195,9 +196,9 @@ function BuildLogPage({ log }: { log: BuildLog }) {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
       <div className="mx-auto max-w-[1080px] px-6 pt-10 md:px-12">
-        <Link href="/work" prefetch={false} className="mb-12 inline-flex items-center gap-2 font-dm text-sm text-t2 transition-colors hover:text-t1">
+        <a href="/work" className="mb-12 inline-flex items-center gap-2 font-dm text-sm text-t2 transition-colors hover:text-t1">
           <ArrowLeft size={14} aria-hidden="true" /> Back to Work
-        </Link>
+        </a>
         <AnimateIn>
           <span className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">Build log</span>
           <h1 className="mt-3 font-syne text-[clamp(38px,7vw,76px)] font-extrabold leading-none tracking-[-0.03em]">
@@ -254,9 +255,9 @@ export default async function ProjectPage({ params }: Props) {
     <>
       {/* Back link */}
       <div className="px-6 md:px-12 pt-10 max-w-[1240px] mx-auto">
-        <Link href="/work" prefetch={false} className="inline-flex items-center gap-2 font-dm text-sm text-t2 hover:text-t1 transition-colors mb-12">
+        <a href="/work" className="inline-flex items-center gap-2 font-dm text-sm text-t2 hover:text-t1 transition-colors mb-12">
           <ArrowLeft size={14} aria-hidden="true" /> Back to Work
-        </Link>
+        </a>
 
         {/* Hero */}
         <AnimateIn>

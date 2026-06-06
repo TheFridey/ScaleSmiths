@@ -215,7 +215,7 @@ export default function QuotePage() {
           ["/pricing", "Pricing guidance"],
           ["/work", "Work / build logs"],
         ].map(([href, label]) => (
-          <Link key={href} href={href} className="rounded-lg border border-b1 bg-s1 px-3 py-2 font-dm text-xs text-t2 transition-colors hover:text-t1">
+          <Link key={href} href={href} prefetch={false} className="rounded-lg border border-b1 bg-s1 px-3 py-2 font-dm text-xs text-t2 transition-colors hover:text-t1">
             {label}
           </Link>
         ))}

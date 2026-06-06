@@ -49,6 +49,7 @@ export function PortalNav({ clientId, clientName, tier, price }: PortalNavProps)
             <Link
               key={id}
               href={`/portal/${clientId}?tab=${id}`}
+              prefetch={false}
               className={cn(
                 "flex shrink-0 items-center gap-2.5 rounded-lg border px-3 py-2.5 font-dm text-[13px] transition-colors",
                 selected

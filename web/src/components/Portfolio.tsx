@@ -25,6 +25,7 @@ export function Portfolio({ limit, showHeading = true }: PortfolioProps) {
             {limit && (
               <Link
                 href="/work"
+                prefetch={false}
                 className="hidden md:flex items-center gap-1.5 border border-b2 text-t2 hover:text-t1 transition-colors px-5 py-2.5 rounded-lg font-dm text-sm font-medium"
               >
                 View all <ArrowRight size={14} aria-hidden="true" />
@@ -38,6 +39,7 @@ export function Portfolio({ limit, showHeading = true }: PortfolioProps) {
             <Link
               key={p.id}
               href={`/work/${p.slug}`}
+              prefetch={false}
               className="card-lift group bg-s1 border border-b1 rounded-2xl p-8 block"
               aria-label={`View ${p.name} case study`}
             >

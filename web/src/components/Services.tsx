@@ -57,6 +57,7 @@ export function Services() {
                 </ul>
                 <Link
                   href="/quote"
+                  prefetch={false}
                   className={cn(
                     "w-full flex items-center justify-center gap-1.5 py-[11px] rounded-lg font-dm text-sm font-medium transition-all",
                     s.featured

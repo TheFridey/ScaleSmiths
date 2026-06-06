@@ -8,7 +8,7 @@ export default function NotFound() {
       <p className="font-dm text-t2 mb-8 max-w-sm">
         The page you&apos;re looking for doesn&apos;t exist or has moved.
       </p>
-      <Link href="/" className="btn-primary font-dm text-sm">Back to home</Link>
+      <Link href="/" prefetch={false} className="btn-primary font-dm text-sm">Back to home</Link>
     </div>
   )
 }

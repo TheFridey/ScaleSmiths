@@ -27,8 +27,8 @@ export default function ServicesPage() {
             ScaleSmiths builds the public site, sales funnel, technical system, and care plan around the business outcome.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="/quote" className="btn-primary font-dm">Request a Quote <ArrowRight size={16} aria-hidden="true" /></Link>
-            <Link href="/pricing" className="btn-ghost font-dm">View Pricing Guidance</Link>
+            <Link href="/quote" prefetch={false} className="btn-primary font-dm">Request a Quote <ArrowRight size={16} aria-hidden="true" /></Link>
+            <Link href="/pricing" prefetch={false} className="btn-ghost font-dm">View Pricing Guidance</Link>
           </div>
         </AnimateIn>
       </section>
@@ -54,9 +54,9 @@ export default function ServicesPage() {
                 ))}
               </div>
               <div className="mt-6 flex flex-wrap gap-2">
-                <Link href="/quote" className="btn-primary font-dm text-sm">Request a Quote</Link>
+                <Link href="/quote" prefetch={false} className="btn-primary font-dm text-sm">Request a Quote</Link>
                 {service.links.map((href) => (
-                  <Link key={href} href={href} className="btn-ghost font-dm text-sm">{href.replace("/", "").replaceAll("-", " ")}</Link>
+                  <Link key={href} href={href} prefetch={false} className="btn-ghost font-dm text-sm">{href.replace("/", "").replaceAll("-", " ")}</Link>
                 ))}
               </div>
             </article>

@@ -17,7 +17,7 @@ export function CTA() {
           Tell us about your business and we&apos;ll tell you exactly what you need to grow.
           No pitch. No pressure. Just honest advice.
         </p>
-        <Link href="/quote" className="btn-primary font-dm inline-flex">
+        <Link href="/quote" prefetch={false} className="btn-primary font-dm inline-flex">
           Get a Free Strategy Call <ArrowRight size={16} aria-hidden="true" />
         </Link>
       </AnimateIn>

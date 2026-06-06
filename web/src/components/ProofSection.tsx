@@ -25,7 +25,7 @@ export function ProofSection() {
           {proofProjects.map((project, index) => (
             <article key={project.slug} className="rounded-2xl border border-b1 bg-s1 p-5">
               {project.thumbImage && (
-                <Link href={`/work/${project.slug}`} className="group relative mb-5 block aspect-[16/10] overflow-hidden rounded-xl border border-b1 bg-s2">
+                <Link href={`/work/${project.slug}`} prefetch={false} className="group relative mb-5 block aspect-[16/10] overflow-hidden rounded-xl border border-b1 bg-s2">
                   <Image
                     src={project.thumbImage}
                     alt={`${project.name} project screenshot`}
@@ -81,7 +81,7 @@ export function ProofSection() {
         </GSAPReveal>
 
         <AnimateIn className="mt-10">
-          <Link href="/work" className="inline-flex items-center gap-2 font-dm text-sm font-medium text-t2 transition-colors hover:text-t1">
+          <Link href="/work" prefetch={false} className="inline-flex items-center gap-2 font-dm text-sm font-medium text-t2 transition-colors hover:text-t1">
             See the full proof library <ArrowRight size={15} aria-hidden="true" />
           </Link>
         </AnimateIn>

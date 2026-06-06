@@ -37,10 +37,10 @@ export function ClientPortalSection() {
             Every active client gets a private workspace for progress, decisions, files, questions, and launch information. No mystery status updates. No digging through old threads.
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
-            <Link href="/portal/login" className="btn-primary font-dm text-sm">
+            <Link href="/portal/login" prefetch={false} className="btn-primary font-dm text-sm">
               Sign In <ArrowRight size={15} aria-hidden="true" />
             </Link>
-            <Link href="/quote" className="btn-ghost font-dm text-sm">
+            <Link href="/quote" prefetch={false} className="btn-ghost font-dm text-sm">
               Start a Project
             </Link>
           </div>

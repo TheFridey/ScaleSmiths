@@ -194,13 +194,13 @@ export function Hero() {
       </div>
 
       <div className="hero-ctas flex flex-wrap gap-3 justify-center">
-        <Link href="/quote" className="btn-primary font-dm" data-magnetic>
+        <Link href="/quote" prefetch={false} className="btn-primary font-dm" data-magnetic>
           Request a Quote <ArrowRight size={16} aria-hidden="true" />
         </Link>
-        <Link href="/quote" className="btn-ghost font-dm" data-magnetic>
+        <Link href="/quote" prefetch={false} className="btn-ghost font-dm" data-magnetic>
           Book a Discovery Call <ArrowUpRight size={16} aria-hidden="true" />
         </Link>
-        <Link href="/services" className="btn-ghost font-dm" data-magnetic>
+        <Link href="/services" prefetch={false} className="btn-ghost font-dm" data-magnetic>
           View Services <ArrowUpRight size={16} aria-hidden="true" />
         </Link>
       </div>

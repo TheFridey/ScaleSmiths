@@ -44,6 +44,7 @@ export function Nav() {
             <Link
               key={lk.href}
               href={lk.href}
+              prefetch={false}
               aria-current={pathname === lk.href ? "page" : undefined}
               className={cn(
                 "text-sm font-medium transition-colors",
@@ -55,12 +56,13 @@ export function Nav() {
           ))}
           <Link
             href="/portal/login"
+            prefetch={false}
             className="inline-flex items-center gap-1.5 rounded-lg border border-b2 px-4 py-2 font-dm text-sm font-medium text-t2 transition-colors hover:border-b3 hover:bg-s2 hover:text-t1"
           >
             <LogIn size={14} aria-hidden="true" />
             Your Portal
           </Link>
-          <Link href="/quote" className="btn-sm">
+          <Link href="/quote" prefetch={false} className="btn-sm">
             Start a Project
           </Link>
         </div>
@@ -83,6 +85,7 @@ export function Nav() {
             <Link
               key={lk.href}
               href={lk.href}
+              prefetch={false}
               onClick={() => setOpen(false)}
               className="text-sm font-medium text-t2 py-2"
             >
@@ -91,13 +94,14 @@ export function Nav() {
           ))}
           <Link
             href="/portal/login"
+            prefetch={false}
             className="flex items-center justify-center gap-2 rounded-lg border border-b2 px-4 py-2.5 font-dm text-sm font-medium text-t2"
             onClick={() => setOpen(false)}
           >
             <LogIn size={15} aria-hidden="true" />
             Your Portal
           </Link>
-          <Link href="/quote" className="btn-sm text-center" onClick={() => setOpen(false)}>
+          <Link href="/quote" prefetch={false} className="btn-sm text-center" onClick={() => setOpen(false)}>
             Start a Project
           </Link>
         </div>

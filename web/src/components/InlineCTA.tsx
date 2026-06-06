@@ -17,13 +17,13 @@ export function InlineCTA({ label, title, body }: InlineCTAProps) {
           <p className="mt-2 max-w-[620px] font-dm text-sm leading-relaxed text-t2">{body}</p>
         </div>
         <div className="flex flex-wrap gap-2 md:justify-end">
-          <Link href="/quote" className="btn-primary font-dm text-sm">
+          <Link href="/quote" prefetch={false} className="btn-primary font-dm text-sm">
             Request a Quote <ArrowRight size={15} aria-hidden="true" />
           </Link>
-          <Link href="/quote" className="btn-ghost font-dm text-sm">
+          <Link href="/quote" prefetch={false} className="btn-ghost font-dm text-sm">
             Book a Discovery Call
           </Link>
-          <Link href="/services" className="btn-ghost font-dm text-sm">
+          <Link href="/services" prefetch={false} className="btn-ghost font-dm text-sm">
             View Services
           </Link>
         </div>

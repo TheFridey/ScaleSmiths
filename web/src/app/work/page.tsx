@@ -30,7 +30,7 @@ export default function WorkPage() {
       <section className="px-6 py-16 md:px-12">
         <div className="mx-auto grid max-w-[1240px] gap-3 md:grid-cols-2">
           {buildLogs.map((log) => (
-            <Link key={log.slug} href={`/work/${log.slug}`} className="rounded-2xl border border-b1 bg-s1 p-6 transition-colors hover:border-b2">
+            <Link key={log.slug} href={`/work/${log.slug}`} prefetch={false} className="rounded-2xl border border-b1 bg-s1 p-6 transition-colors hover:border-b2">
               <div className="mb-4 flex flex-wrap gap-1.5">
                 {log.tags.slice(0, 4).map((tag) => (
                   <span key={tag} className="rounded border border-b1 bg-s2 px-2 py-1 font-dm text-[11px] text-t2">{tag}</span>

@@ -34,10 +34,10 @@ export default function QuoteThanksPage() {
         </div>
 
         <div className="mt-10 flex flex-wrap justify-center gap-3">
-          <Link href="/services" className="btn-primary font-dm">
+          <Link href="/services" prefetch={false} className="btn-primary font-dm">
             View Services <ArrowRight size={16} aria-hidden="true" />
           </Link>
-          <Link href="/work" className="btn-ghost font-dm">
+          <Link href="/work" prefetch={false} className="btn-ghost font-dm">
             View Work / Build Logs
           </Link>
         </div>

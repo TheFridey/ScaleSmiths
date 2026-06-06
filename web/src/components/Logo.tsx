@@ -30,6 +30,6 @@ export function Logo({ size = 32, showName = true, className, href = "/", label 
   )
 
   return href ? (
-    <Link href={href} aria-label={`${label} home`}>{inner}</Link>
+    <Link href={href} prefetch={false} aria-label={`${label} home`}>{inner}</Link>
   ) : inner
 }

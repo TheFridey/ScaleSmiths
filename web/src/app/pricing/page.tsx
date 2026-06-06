@@ -33,8 +33,8 @@ export default function PricingPage() {
           ))}
         </div>
         <div className="mt-10 flex flex-wrap gap-3">
-          <Link href="/quote" className="btn-primary font-dm">Request a Quote <ArrowRight size={16} aria-hidden="true" /></Link>
-          <Link href="/services" className="btn-ghost font-dm">View Services</Link>
+          <Link href="/quote" prefetch={false} className="btn-primary font-dm">Request a Quote <ArrowRight size={16} aria-hidden="true" /></Link>
+          <Link href="/services" prefetch={false} className="btn-ghost font-dm">View Services</Link>
         </div>
       </section>
     </>

@@ -195,7 +195,7 @@ function BuildLogPage({ log }: { log: BuildLog }) {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
       <div className="mx-auto max-w-[1080px] px-6 pt-10 md:px-12">
-        <Link href="/work" className="mb-12 inline-flex items-center gap-2 font-dm text-sm text-t2 transition-colors hover:text-t1">
+        <Link href="/work" prefetch={false} className="mb-12 inline-flex items-center gap-2 font-dm text-sm text-t2 transition-colors hover:text-t1">
           <ArrowLeft size={14} aria-hidden="true" /> Back to Work
         </Link>
         <AnimateIn>
@@ -254,7 +254,7 @@ export default async function ProjectPage({ params }: Props) {
     <>
       {/* Back link */}
       <div className="px-6 md:px-12 pt-10 max-w-[1240px] mx-auto">
-        <Link href="/work" className="inline-flex items-center gap-2 font-dm text-sm text-t2 hover:text-t1 transition-colors mb-12">
+        <Link href="/work" prefetch={false} className="inline-flex items-center gap-2 font-dm text-sm text-t2 hover:text-t1 transition-colors mb-12">
           <ArrowLeft size={14} aria-hidden="true" /> Back to Work
         </Link>
 
@@ -351,6 +351,7 @@ export default async function ProjectPage({ params }: Props) {
               </div>
               <Link
                 href="/quote"
+                prefetch={false}
                 className="btn-primary mt-7 w-full justify-center font-dm text-sm"
               >
                 Start a Similar Project

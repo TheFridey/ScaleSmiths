@@ -24,13 +24,13 @@ export function LandingPage({ page }: { page: LandingPageData }) {
             <p className="mt-6 max-w-[700px] font-dm text-lg leading-relaxed text-t2">{page.intro}</p>
             <p className="mt-4 max-w-[720px] border-l border-acc pl-4 font-dm text-sm leading-relaxed text-t3">{page.searchIntent}</p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link href="/quote" className="btn-primary font-dm">
+              <Link href="/quote" prefetch={false} className="btn-primary font-dm">
                 Discuss this service <ArrowRight size={16} aria-hidden="true" />
               </Link>
-              <Link href="/work" className="btn-ghost font-dm">
+              <Link href="/work" prefetch={false} className="btn-ghost font-dm">
                 View proof
               </Link>
-              <Link href="/services" className="btn-ghost font-dm">
+              <Link href="/services" prefetch={false} className="btn-ghost font-dm">
                 View services
               </Link>
             </div>
@@ -77,13 +77,13 @@ export function LandingPage({ page }: { page: LandingPageData }) {
                 Related ScaleSmiths work.
               </h2>
             </div>
-            <Link href="/work" className="font-dm text-sm font-medium text-t2 transition-colors hover:text-t1">
+            <Link href="/work" prefetch={false} className="font-dm text-sm font-medium text-t2 transition-colors hover:text-t1">
               All case studies
             </Link>
           </div>
           <div className="grid gap-3 md:grid-cols-3">
             {proofProjects.map((project) => (
-              <Link key={project.slug} href={`/work/${project.slug}`} className="rounded-2xl border border-b1 bg-s1 p-6 transition-colors hover:border-b2">
+              <Link key={project.slug} href={`/work/${project.slug}`} prefetch={false} className="rounded-2xl border border-b1 bg-s1 p-6 transition-colors hover:border-b2">
                 <h3 className="font-syne text-xl font-bold">{project.name}</h3>
                 <p className="mt-2 font-dm text-sm leading-relaxed text-t2">{project.headline}</p>
                 <div className="mt-5 flex flex-wrap gap-1.5">
@@ -177,23 +177,23 @@ export function LandingPage({ page }: { page: LandingPageData }) {
         <div className="mx-auto max-w-[1240px]">
           <div className="mb-6 font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">Related pages</div>
           <div className="flex flex-wrap gap-3">
-            <Link href="/" className="rounded-lg border border-b1 bg-s1 px-4 py-2.5 font-dm text-sm text-t2 transition-colors hover:text-t1">
+            <Link href="/" prefetch={false} className="rounded-lg border border-b1 bg-s1 px-4 py-2.5 font-dm text-sm text-t2 transition-colors hover:text-t1">
               Homepage
             </Link>
-            <Link href="/services" className="rounded-lg border border-b1 bg-s1 px-4 py-2.5 font-dm text-sm text-t2 transition-colors hover:text-t1">
+            <Link href="/services" prefetch={false} className="rounded-lg border border-b1 bg-s1 px-4 py-2.5 font-dm text-sm text-t2 transition-colors hover:text-t1">
               Services
             </Link>
-            <Link href="/pricing" className="rounded-lg border border-b1 bg-s1 px-4 py-2.5 font-dm text-sm text-t2 transition-colors hover:text-t1">
+            <Link href="/pricing" prefetch={false} className="rounded-lg border border-b1 bg-s1 px-4 py-2.5 font-dm text-sm text-t2 transition-colors hover:text-t1">
               Pricing
             </Link>
-            <Link href="/work" className="rounded-lg border border-b1 bg-s1 px-4 py-2.5 font-dm text-sm text-t2 transition-colors hover:text-t1">
+            <Link href="/work" prefetch={false} className="rounded-lg border border-b1 bg-s1 px-4 py-2.5 font-dm text-sm text-t2 transition-colors hover:text-t1">
               Work
             </Link>
-            <Link href="/quote" className="rounded-lg border border-b1 bg-s1 px-4 py-2.5 font-dm text-sm text-t2 transition-colors hover:text-t1">
+            <Link href="/quote" prefetch={false} className="rounded-lg border border-b1 bg-s1 px-4 py-2.5 font-dm text-sm text-t2 transition-colors hover:text-t1">
               Request a quote
             </Link>
             {relatedPages.map((related) => (
-              <Link key={related.slug} href={`/${related.slug}`} className="rounded-lg border border-b1 bg-s1 px-4 py-2.5 font-dm text-sm text-t2 transition-colors hover:text-t1">
+              <Link key={related.slug} href={`/${related.slug}`} prefetch={false} className="rounded-lg border border-b1 bg-s1 px-4 py-2.5 font-dm text-sm text-t2 transition-colors hover:text-t1">
                 {related.title}
               </Link>
             ))}
@@ -209,7 +209,7 @@ export function LandingPage({ page }: { page: LandingPageData }) {
           <p className="mx-auto mt-4 max-w-[560px] font-dm text-base leading-relaxed text-t2">
             Tell us where you are, what needs to change, and what the site or app has to prove commercially.
           </p>
-          <Link href="/quote" className="btn-primary mt-8 inline-flex font-dm">
+          <Link href="/quote" prefetch={false} className="btn-primary mt-8 inline-flex font-dm">
             Start with a brief <ArrowRight size={16} aria-hidden="true" />
           </Link>
         </div>

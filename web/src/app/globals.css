@@ -1,0 +1,270 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Design Tokens ─────────────────────────────────────────── */
+:root {
+  --bg:     #080808;
+  --s1:     #0f0f0f;
+  --s2:     #141414;
+  --s3:     #1c1c1c;
+  --b1:     #1e1e1e;
+  --b2:     #272727;
+  --b3:     #333333;
+  --t1:     #f0f0f0;
+  --t2:     #949494;
+  --t3:     #404040;
+  --acc:    #2563EB;
+  --acc-dim:rgba(37,99,235,0.10);
+  --acc-b:  rgba(37,99,235,0.22);
+  --silver: #a8a8a8;
+  --grn:    #10b981;
+  --amb:    #f59e0b;
+  --red:    #ef4444;
+  --font-syne: "Arial Black", "Arial", "Helvetica Neue", sans-serif;
+  --font-dm:   "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+}
+
+/* ── Base ───────────────────────────────────────────────────── */
+html { scroll-behavior: auto; }
+
+html.custom-cursor-enabled,
+html.custom-cursor-enabled * {
+  cursor: none !important;
+}
+
+body {
+  background: var(--bg);
+  color: var(--t1);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* ── Hero animations — CSS only, fire before JS loads ───────── */
+@keyframes slide-up {
+  from { transform: translateY(105%); }
+  to   { transform: translateY(0); }
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes pulse-dot {
+  0%,100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.35); }
+  50%     { box-shadow: 0 0 0 6px rgba(16,185,129,0); }
+}
+
+@keyframes float {
+  0%,100% { transform: translateY(0); }
+  50%     { transform: translateY(-6px); }
+}
+
+@keyframes ticker {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes particle-drift {
+  0%   { opacity: 0; transform: translate(0, 0) scale(1); }
+  10%  { opacity: var(--p-o, 0.07); }
+  90%  { opacity: var(--p-o, 0.07); }
+  100% { opacity: 0; transform: translate(var(--p-x, 0px), var(--p-y, -120px)) scale(0.8); }
+}
+
+/* ── Hero element styles ─────────────────────────────────────── */
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--s2);
+  border: 1px solid var(--b2);
+  border-radius: 100px;
+  padding: 6px 16px;
+  margin-bottom: 40px;
+  font-size: 13px;
+  color: var(--t2);
+  letter-spacing: 0.04em;
+  animation: fade-up 0.5s cubic-bezier(0.22,1,0.36,1) both;
+  animation-delay: 0.06s;
+}
+
+.hero-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--grn);
+  animation: pulse-dot 2.2s ease infinite;
+  flex-shrink: 0;
+}
+
+.hero-line-overflow { overflow: hidden; line-height: 1; }
+
+.hero-h {
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  display: block;
+  font-size: clamp(52px, 10.5vw, 118px);
+}
+
+.hero-outline {
+  -webkit-text-stroke: 1.5px rgba(255,255,255,0.18);
+  color: transparent;
+}
+
+.hero-line-1 {
+  animation: slide-up 0.72s cubic-bezier(0.22,1,0.36,1) both;
+  animation-delay: 0.16s;
+  margin-bottom: 6px;
+}
+
+.hero-line-2 {
+  animation: slide-up 0.72s cubic-bezier(0.22,1,0.36,1) both;
+  animation-delay: 0.34s;
+}
+
+.hero-sub {
+  animation: fade-up 0.55s cubic-bezier(0.22,1,0.36,1) both;
+  animation-delay: 0.6s;
+}
+
+.hero-location {
+  animation: fade-up 0.45s cubic-bezier(0.22,1,0.36,1) both;
+  animation-delay: 0.72s;
+}
+
+.hero-ctas {
+  animation: fade-up 0.5s cubic-bezier(0.22,1,0.36,1) both;
+  animation-delay: 0.84s;
+}
+
+.hero-stats {
+  animation: fade-up 0.5s cubic-bezier(0.22,1,0.36,1) both;
+  animation-delay: 1.0s;
+}
+
+/* ── Hero background ─────────────────────────────────────────── */
+.hero-grid-bg {
+  background-image:
+    radial-gradient(ellipse at 50% 40%, rgba(37,99,235,0.07) 0%, transparent 55%),
+    linear-gradient(rgba(255,255,255,0.014) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.014) 1px, transparent 1px);
+  background-size: 100% 100%, 64px 64px, 64px 64px;
+}
+
+/* ── Ambient particles ───────────────────────────────────────── */
+.particle {
+  position: absolute;
+  border-radius: 50%;
+  background: var(--acc);
+  pointer-events: none;
+  animation: particle-drift var(--p-dur, 8s) ease-in-out infinite;
+  animation-delay: var(--p-del, 0s);
+  width: var(--p-size, 8px);
+  height: var(--p-size, 8px);
+  left: var(--p-l, 50%);
+  top: var(--p-t, 80%);
+  opacity: 0;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────── */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--acc);
+  color: #fff;
+  font-weight: 500;
+  padding: 14px 30px;
+  border-radius: 10px;
+  font-size: 15px;
+  transition: opacity 0.2s, transform 0.15s;
+  box-shadow: 0 0 48px rgba(37,99,235,0.28);
+  text-decoration: none;
+}
+.btn-primary:hover { opacity: 0.9; transform: translateY(-2px); }
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  color: var(--t1);
+  border: 1px solid var(--b2);
+  font-weight: 500;
+  padding: 14px 30px;
+  border-radius: 10px;
+  font-size: 15px;
+  transition: all 0.2s;
+  text-decoration: none;
+}
+.btn-ghost:hover { border-color: var(--b3); background: rgba(255,255,255,0.03); }
+
+.btn-sm {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--acc);
+  color: #fff;
+  font-weight: 500;
+  padding: 9px 20px;
+  border-radius: 9px;
+  font-size: 14px;
+  transition: opacity 0.2s;
+  text-decoration: none;
+}
+.btn-sm:hover { opacity: 0.9; }
+
+/* ── Card lift ───────────────────────────────────────────────── */
+.card-lift {
+  transition: transform 0.25s cubic-bezier(0.4,0,0.2,1), border-color 0.25s, box-shadow 0.25s;
+}
+.card-lift:hover {
+  transform: translateY(-4px);
+  border-color: var(--b3) !important;
+}
+
+/* ── Ticker ──────────────────────────────────────────────────── */
+.ticker-inner {
+  display: flex;
+  width: fit-content;
+  animation: ticker 32s linear infinite;
+}
+
+/* ── Section reveal (via Framer Motion useInView) ─────────────── */
+.section-reveal {
+  /* Initial state set via Framer Motion — just the transition config */
+  transition: opacity 0.65s cubic-bezier(0.22,1,0.36,1),
+              transform 0.65s cubic-bezier(0.22,1,0.36,1);
+}
+
+/* ── FAQ ─────────────────────────────────────────────────────── */
+.faq-btn:hover { background: rgba(37,99,235,0.04); }
+
+/* ── Focus visible ───────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid rgba(37,99,235,0.7);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ── Scrollbar ───────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: var(--s1); }
+::-webkit-scrollbar-thumb { background: var(--b2); border-radius: 2px; }
+
+/* ── Reduced motion ──────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

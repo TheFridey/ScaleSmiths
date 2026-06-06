@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1780259835243,
+      "tag": "0000_hot_ultron",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1780483200000,
+      "tag": "0001_prospect_pipeline",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1780562886566,
+      "tag": "0002_admin_login_rate_limits",
+      "breakpoints": true
+    }
+  ]
+}

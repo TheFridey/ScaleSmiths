@@ -1,0 +1,25 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg:  #080808; --s1: #0f0f0f; --s2: #141414; --s3: #1c1c1c;
+  --b1:  #1e1e1e; --b2: #272727; --b3: #333;
+  --t1:  #f0f0f0; --t2: #949494; --t3: #404040;
+  --acc: #2563EB; --acc-dim: rgba(37,99,235,0.10); --acc-b: rgba(37,99,235,0.22);
+  --grn: #10b981; --amb: #f59e0b; --red: #ef4444;
+  --font-syne: "Arial Black", "Arial", "Helvetica Neue", sans-serif;
+  --font-dm:   "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+}
+body { background: var(--bg); color: var(--t1); -webkit-font-smoothing: antialiased; }
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--s1); }
+::-webkit-scrollbar-thumb { background: var(--b2); border-radius: 2px; }
+:focus-visible { outline: 2px solid rgba(37,99,235,0.7); outline-offset: 2px; border-radius: 6px; }
+input, textarea, select {
+  background: var(--s2); border: 1px solid var(--b2); border-radius: 8px;
+  padding: 10px 14px; font-size: 14px; color: var(--t1);
+  outline: none; transition: border-color .2s; width: 100%;
+}
+input:focus, textarea:focus, select:focus { border-color: rgba(37,99,235,.5); }
+.drag-over { border-color: rgba(37,99,235,.45) !important; background: rgba(37,99,235,.04) !important; }

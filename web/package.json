@@ -1,0 +1,47 @@
+{
+  "name": "scalesmiths-web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "node --env-file-if-exists=../.env ./node_modules/next/dist/bin/next dev -p 3000",
+    "build": "node --env-file-if-exists=../.env ./node_modules/next/dist/bin/next build",
+    "start": "node --env-file-if-exists=../.env ./node_modules/next/dist/bin/next start -p 3000",
+    "test": "vitest run",
+    "lint": "eslint .",
+    "db:generate": "node --env-file-if-exists=../.env ./node_modules/drizzle-kit/bin.cjs generate",
+    "db:migrate": "node --env-file-if-exists=../.env ./node_modules/drizzle-kit/bin.cjs migrate",
+    "db:studio": "node --env-file-if-exists=../.env ./node_modules/drizzle-kit/bin.cjs studio",
+    "portal:seed": "node --env-file-if-exists=../.env ./scripts/seed-portal-account.mjs"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "clsx": "^2.1.1",
+    "drizzle-orm": "^0.45.2",
+    "framer-motion": "^11.2.0",
+    "gsap": "^3.15.0",
+    "jose": "^5.2.0",
+    "lenis": "~1.1.14",
+    "lucide-react": "^0.383.0",
+    "next": "^15.5.13",
+    "pg": "^8.21.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "resend": "^6.12.4",
+    "tailwind-merge": "^2.3.0"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.5",
+    "@types/node": "^22",
+    "@types/pg": "^8.20.0",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "autoprefixer": "^10.4.19",
+    "drizzle-kit": "^0.31.10",
+    "eslint": "^9.39.4",
+    "eslint-config-next": "^15.5.19",
+    "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.4",
+    "typescript": "^5.5.2",
+    "vitest": "^4.1.8"
+  }
+}

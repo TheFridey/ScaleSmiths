@@ -1,0 +1,711 @@
+- generic [active] [ref=e1]:
+  - link "Skip to content" [ref=e2]:
+    - /url: "#main"
+  - banner [ref=e3]:
+    - navigation "Main navigation" [ref=e4]:
+      - link "ScaleSmiths home" [ref=e5]:
+        - /url: /
+        - img "ScaleSmiths" [ref=e7]
+      - generic [ref=e8]:
+        - link "Our Work" [ref=e9]:
+          - /url: /work
+        - link "Services" [ref=e10]:
+          - /url: /services
+        - link "Get a Quote" [ref=e11]:
+          - /url: /quote
+        - link "Start a Project" [ref=e12]:
+          - /url: /quote
+  - main [ref=e14]:
+    - region "ScaleSmiths - forge your digital edge" [ref=e15]:
+      - generic:
+        - img
+      - status [ref=e16]: Available for new projects
+      - heading "FORGE YOUR DIGITAL EDGE" [level=1] [ref=e18]:
+        - generic "FORGE YOUR" [ref=e20]:
+          - generic [ref=e21]:
+            - generic [ref=e22]: F
+            - generic [ref=e23]: O
+            - generic [ref=e24]: R
+            - generic [ref=e25]: G
+            - generic [ref=e26]: E
+          - generic [ref=e27]:
+            - generic [ref=e28]: "Y"
+            - generic [ref=e29]: O
+            - generic [ref=e30]: U
+            - generic [ref=e31]: R
+        - generic "DIGITAL EDGE" [ref=e33]:
+          - generic [ref=e34]:
+            - generic [ref=e35]: D
+            - generic [ref=e36]: I
+            - generic [ref=e37]: G
+            - generic [ref=e38]: I
+            - generic [ref=e39]: T
+            - generic [ref=e40]: A
+            - generic [ref=e41]: L
+          - generic [ref=e42]:
+            - generic [ref=e43]: E
+            - generic [ref=e44]: D
+            - generic [ref=e45]: G
+            - generic [ref=e46]: E
+      - paragraph [ref=e47]: Conversion-focused websites, SEO-ready builds, custom web apps, and ongoing care plans for local businesses and founder-led teams that need digital to create measurable growth.
+      - generic "ScaleSmiths core offers" [ref=e48]:
+        - generic [ref=e49]: Websites that convert
+        - generic [ref=e50]: Custom web apps
+        - generic [ref=e51]: Local SEO foundations
+        - generic [ref=e52]: Care plans
+      - generic [ref=e53]:
+        - img [ref=e54]
+        - generic [ref=e57]: Hucknall, Nottinghamshire, UK · Working nationally
+      - generic [ref=e58]:
+        - link "Request a Quote" [ref=e59]:
+          - /url: /quote
+          - text: Request a Quote
+          - img [ref=e60]
+        - link "Book a Discovery Call" [ref=e62]:
+          - /url: /quote
+          - text: Book a Discovery Call
+          - img [ref=e63]
+        - link "View Services" [ref=e66]:
+          - /url: /services
+          - text: View Services
+          - img [ref=e67]
+      - generic [ref=e70]:
+        - generic [ref=e71]:
+          - generic [ref=e72]: 12+
+          - generic [ref=e73]: Projects Delivered
+        - generic [ref=e74]:
+          - generic [ref=e75]: £300k+
+          - generic [ref=e76]: Revenue Generated
+        - generic [ref=e77]:
+          - generic [ref=e78]: 100%
+          - generic [ref=e79]: Retainer Retention Rate
+    - region "Start smart" [ref=e80]:
+      - generic [ref=e81]:
+        - generic [ref=e82]:
+          - generic [ref=e83]: Start smart
+          - heading "Know what to build before you spend." [level=2] [ref=e84]
+          - paragraph [ref=e85]: "Send the brief and we will map the highest-leverage route: site, store, portal, app, or infrastructure."
+        - generic [ref=e86]:
+          - link "Request a Quote" [ref=e87]:
+            - /url: /quote
+            - text: Request a Quote
+            - img [ref=e88]
+          - link "Book a Discovery Call" [ref=e90]:
+            - /url: /quote
+          - link "View Services" [ref=e91]:
+            - /url: /services
+    - generic [ref=e93]:
+      - generic [ref=e94]:
+        - generic [ref=e95]: STRATEGY
+        - generic [ref=e96]: ◆
+      - generic [ref=e97]:
+        - generic [ref=e98]: SYSTEMS
+        - generic [ref=e99]: ◆
+      - generic [ref=e100]:
+        - generic [ref=e101]: SCALE
+        - generic [ref=e102]: ◆
+      - generic [ref=e103]:
+        - generic [ref=e104]: GROWTH
+        - generic [ref=e105]: ◆
+      - generic [ref=e106]:
+        - generic [ref=e107]: RESULTS
+        - generic [ref=e108]: ◆
+      - generic [ref=e109]:
+        - generic [ref=e110]: TRUST
+        - generic [ref=e111]: ◆
+      - generic [ref=e112]:
+        - generic [ref=e113]: PRECISION
+        - generic [ref=e114]: ◆
+      - generic [ref=e115]:
+        - generic [ref=e116]: CRAFT
+        - generic [ref=e117]: ◆
+      - generic [ref=e118]:
+        - generic [ref=e119]: EXCELLENCE
+        - generic [ref=e120]: ◆
+      - generic [ref=e121]:
+        - generic [ref=e122]: VELOCITY
+        - generic [ref=e123]: ◆
+      - generic [ref=e124]:
+        - generic [ref=e125]: STRATEGY
+        - generic [ref=e126]: ◆
+      - generic [ref=e127]:
+        - generic [ref=e128]: SYSTEMS
+        - generic [ref=e129]: ◆
+      - generic [ref=e130]:
+        - generic [ref=e131]: SCALE
+        - generic [ref=e132]: ◆
+      - generic [ref=e133]:
+        - generic [ref=e134]: GROWTH
+        - generic [ref=e135]: ◆
+      - generic [ref=e136]:
+        - generic [ref=e137]: RESULTS
+        - generic [ref=e138]: ◆
+      - generic [ref=e139]:
+        - generic [ref=e140]: TRUST
+        - generic [ref=e141]: ◆
+      - generic [ref=e142]:
+        - generic [ref=e143]: PRECISION
+        - generic [ref=e144]: ◆
+      - generic [ref=e145]:
+        - generic [ref=e146]: CRAFT
+        - generic [ref=e147]: ◆
+      - generic [ref=e148]:
+        - generic [ref=e149]: EXCELLENCE
+        - generic [ref=e150]: ◆
+      - generic [ref=e151]:
+        - generic [ref=e152]: VELOCITY
+        - generic [ref=e153]: ◆
+      - generic [ref=e154]:
+        - generic [ref=e155]: STRATEGY
+        - generic [ref=e156]: ◆
+      - generic [ref=e157]:
+        - generic [ref=e158]: SYSTEMS
+        - generic [ref=e159]: ◆
+      - generic [ref=e160]:
+        - generic [ref=e161]: SCALE
+        - generic [ref=e162]: ◆
+      - generic [ref=e163]:
+        - generic [ref=e164]: GROWTH
+        - generic [ref=e165]: ◆
+      - generic [ref=e166]:
+        - generic [ref=e167]: RESULTS
+        - generic [ref=e168]: ◆
+      - generic [ref=e169]:
+        - generic [ref=e170]: TRUST
+        - generic [ref=e171]: ◆
+      - generic [ref=e172]:
+        - generic [ref=e173]: PRECISION
+        - generic [ref=e174]: ◆
+      - generic [ref=e175]:
+        - generic [ref=e176]: CRAFT
+        - generic [ref=e177]: ◆
+      - generic [ref=e178]:
+        - generic [ref=e179]: EXCELLENCE
+        - generic [ref=e180]: ◆
+      - generic [ref=e181]:
+        - generic [ref=e182]: VELOCITY
+        - generic [ref=e183]: ◆
+      - generic [ref=e184]:
+        - generic [ref=e185]: STRATEGY
+        - generic [ref=e186]: ◆
+      - generic [ref=e187]:
+        - generic [ref=e188]: SYSTEMS
+        - generic [ref=e189]: ◆
+      - generic [ref=e190]:
+        - generic [ref=e191]: SCALE
+        - generic [ref=e192]: ◆
+      - generic [ref=e193]:
+        - generic [ref=e194]: GROWTH
+        - generic [ref=e195]: ◆
+      - generic [ref=e196]:
+        - generic [ref=e197]: RESULTS
+        - generic [ref=e198]: ◆
+      - generic [ref=e199]:
+        - generic [ref=e200]: TRUST
+        - generic [ref=e201]: ◆
+      - generic [ref=e202]:
+        - generic [ref=e203]: PRECISION
+        - generic [ref=e204]: ◆
+      - generic [ref=e205]:
+        - generic [ref=e206]: CRAFT
+        - generic [ref=e207]: ◆
+      - generic [ref=e208]:
+        - generic [ref=e209]: EXCELLENCE
+        - generic [ref=e210]: ◆
+      - generic [ref=e211]:
+        - generic [ref=e212]: VELOCITY
+        - generic [ref=e213]: ◆
+    - region "Build proof" [ref=e214]:
+      - generic [ref=e216]:
+        - article [ref=e217]:
+          - img [ref=e218]
+          - heading "Fast builds" [level=2] [ref=e221]
+          - paragraph [ref=e222]: Lean scopes, direct founder communication, and production-ready defaults keep momentum high without cutting corners.
+        - article [ref=e223]:
+          - img [ref=e224]
+          - heading "Secure foundations" [level=2] [ref=e228]
+          - paragraph [ref=e229]: Auth, cookies, headers, validation, rate limits, deployment, and data handling are treated as part of the product, not an afterthought.
+        - article [ref=e230]:
+          - img [ref=e231]
+          - heading "Business outcomes" [level=2] [ref=e234]
+          - paragraph [ref=e235]: "Every build is tied to a commercial reason: more qualified leads, better conversion, lower admin drag, or stronger retention."
+        - article [ref=e236]:
+          - img [ref=e237]
+          - heading "Custom code" [level=2] [ref=e239]
+          - paragraph [ref=e240]: No generic template churn. We build the interface, workflows, and infrastructure around the way the business actually operates.
+    - region "Services and pricing" [ref=e241]:
+      - generic [ref=e242]:
+        - generic [ref=e243]:
+          - text: What We Build
+          - heading "Built for the way you actually work." [level=2] [ref=e244]:
+            - text: Built for the way
+            - text: you actually work.
+          - paragraph [ref=e245]: We've delivered projects for local businesses, e-commerce brands and SaaS founders across the UK. Every engagement starts with strategy — not a template.
+        - generic [ref=e246]:
+          - article [ref=e247]:
+            - img [ref=e249]
+            - heading "Foundation" [level=3] [ref=e252]
+            - generic [ref=e253]: £4,500 – £6,500
+            - paragraph [ref=e254]: A purposeful website built to perform. Fast, clean and engineered to turn visitors into enquiries from day one.
+            - list "Foundation tier includes" [ref=e255]:
+              - listitem [ref=e256]:
+                - img [ref=e257]
+                - text: Up to 8 pages
+              - listitem [ref=e260]:
+                - img [ref=e261]
+                - text: Custom design
+              - listitem [ref=e264]:
+                - img [ref=e265]
+                - text: On-page SEO
+              - listitem [ref=e268]:
+                - img [ref=e269]
+                - text: Core Web Vitals optimised
+              - listitem [ref=e272]:
+                - img [ref=e273]
+                - text: Mobile-first build
+            - link "Get started with the Foundation tier" [ref=e276]:
+              - /url: /quote
+              - text: Get Started
+              - img [ref=e277]
+          - article [ref=e279]:
+            - generic [ref=e280]: POPULAR
+            - img [ref=e282]
+            - heading "Growth" [level=3] [ref=e285]
+            - generic [ref=e286]: £8,000 – £15,000
+            - paragraph [ref=e287]: E-commerce, bookings, integrations. For businesses ready to make digital a real revenue channel — not just a brochure.
+            - list "Growth tier includes" [ref=e288]:
+              - listitem [ref=e289]:
+                - img [ref=e290]
+                - text: E-commerce / bookings
+              - listitem [ref=e293]:
+                - img [ref=e294]
+                - text: Custom integrations
+              - listitem [ref=e297]:
+                - img [ref=e298]
+                - text: CMS setup
+              - listitem [ref=e301]:
+                - img [ref=e302]
+                - text: Analytics + conversion
+              - listitem [ref=e305]:
+                - img [ref=e306]
+                - text: Priority support
+            - link "Get started with the Growth tier" [ref=e309]:
+              - /url: /quote
+              - text: Get Started
+              - img [ref=e310]
+          - article [ref=e312]:
+            - img [ref=e314]
+            - heading "Forge" [level=3] [ref=e318]
+            - generic [ref=e319]: £18,000 – £35,000+
+            - paragraph [ref=e320]: Full-stack infrastructure. SaaS platforms, multi-system architecture, genuinely complex builds.
+            - list "Forge tier includes" [ref=e321]:
+              - listitem [ref=e322]:
+                - img [ref=e323]
+                - text: Complex architecture
+              - listitem [ref=e326]:
+                - img [ref=e327]
+                - text: Multi-system builds
+              - listitem [ref=e330]:
+                - img [ref=e331]
+                - text: AI integrations
+              - listitem [ref=e334]:
+                - img [ref=e335]
+                - text: Real-time features
+              - listitem [ref=e338]:
+                - img [ref=e339]
+                - text: Full partnership
+            - link "Get started with the Forge tier" [ref=e342]:
+              - /url: /quote
+              - text: Get Started
+              - img [ref=e343]
+        - generic [ref=e345]:
+          - heading "Monthly Retainers" [level=3] [ref=e346]
+          - paragraph [ref=e347]: Every project is built to convert into a long-term partnership. Most clients retain within 30 days of launch.
+          - generic [ref=e348]:
+            - generic [ref=e349]:
+              - generic [ref=e350]: Maintenance
+              - generic [ref=e351]: £450–£650/mo
+              - generic [ref=e352]: Hosting, updates, uptime monitoring and minor fixes.
+            - generic [ref=e353]:
+              - generic [ref=e354]: Growth Partner
+              - generic [ref=e355]: £950–£1,500/mo
+              - generic [ref=e356]: Maintenance plus monthly performance reviews and improvements.
+            - generic [ref=e357]:
+              - generic [ref=e358]: Ecosystem
+              - generic [ref=e359]: £2,000–£3,500/mo
+              - generic [ref=e360]: Full ongoing partnership — dev, strategy, advisory and Business Circle access.
+    - region "Scope" [ref=e361]:
+      - generic [ref=e362]:
+        - generic [ref=e363]:
+          - generic [ref=e364]: Scope
+          - heading "Not sure which tier fits?" [level=2] [ref=e365]
+          - paragraph [ref=e366]: We will recommend the smallest build that can still move the business outcome you care about.
+        - generic [ref=e367]:
+          - link "Request a Quote" [ref=e368]:
+            - /url: /quote
+            - text: Request a Quote
+            - img [ref=e369]
+          - link "Book a Discovery Call" [ref=e371]:
+            - /url: /quote
+          - link "View Services" [ref=e372]:
+            - /url: /services
+    - region "Our process" [ref=e373]:
+      - generic [ref=e374]:
+        - generic [ref=e375]:
+          - text: How It Works
+          - heading "Three steps to launch." [level=2] [ref=e376]
+        - generic [ref=e377]:
+          - generic [ref=e379]:
+            - generic [ref=e380]: STEP 01
+            - img [ref=e382]
+            - heading "Strategy Call" [level=3] [ref=e386]
+            - paragraph [ref=e387]: We understand your business first — your goals, constraints, and market. Not just your brief.
+          - generic [ref=e389]:
+            - generic [ref=e390]: STEP 02
+            - img [ref=e392]
+            - heading "Build & Forge" [level=3] [ref=e396]
+            - paragraph [ref=e397]: Your site, system or platform built to spec, on time. Full transparency via your client portal throughout.
+          - generic [ref=e399]:
+            - generic [ref=e400]: STEP 03
+            - img [ref=e402]
+            - heading "Launch & Scale" [level=3] [ref=e405]
+            - paragraph [ref=e406]: Deploy. Monitor. Iterate. Most clients convert to a retainer here — because the real work is just beginning.
+    - region "Portfolio" [ref=e407]:
+      - generic [ref=e408]:
+        - generic [ref=e409]:
+          - generic [ref=e410]:
+            - text: Our Work
+            - heading "Selected projects." [level=2] [ref=e411]
+          - link "View all" [ref=e412]:
+            - /url: /work
+            - text: View all
+            - img [ref=e413]
+        - generic [ref=e415]:
+          - link "View Glow Tanning case study" [ref=e416]:
+            - /url: /work/glow-tanning
+            - img "Glow Tanning project preview" [ref=e418]
+            - generic [ref=e420]:
+              - generic [ref=e421]:
+                - heading "Glow Tanning" [level=3] [ref=e422]
+                - generic [ref=e423]: Local Business
+              - img [ref=e424]
+            - paragraph [ref=e427]: A complete digital presence for a premium tanning salon — animated, integrated, and self-managed.
+            - list "Technologies" [ref=e428]:
+              - listitem [ref=e429]: Node.js
+              - listitem [ref=e430]: Express
+              - listitem [ref=e431]: Canvas API
+              - listitem [ref=e432]: Sharp
+              - listitem [ref=e433]: Nginx
+              - listitem [ref=e434]: JWT
+          - link "View Pinkys Prints case study" [ref=e435]:
+            - /url: /work/pinkys-prints
+            - img "Pinkys Prints project preview" [ref=e437]
+            - generic [ref=e439]:
+              - generic [ref=e440]:
+                - heading "Pinkys Prints" [level=3] [ref=e441]
+                - generic [ref=e442]: E-Commerce
+              - img [ref=e443]
+            - paragraph [ref=e446]: Full custom e-commerce with 120+ products, migrated off Shopify and into a self-hosted powerhouse.
+            - list "Technologies" [ref=e447]:
+              - listitem [ref=e448]: React
+              - listitem [ref=e449]: Vite
+              - listitem [ref=e450]: PostgreSQL
+              - listitem [ref=e451]: Express
+              - listitem [ref=e452]: Docker Compose
+    - region "Proof to plan" [ref=e453]:
+      - generic [ref=e454]:
+        - generic [ref=e455]:
+          - generic [ref=e456]: Proof to plan
+          - heading "Want your version of this?" [level=2] [ref=e457]
+          - paragraph [ref=e458]: Bring the business problem. We will turn the relevant proof into a practical project shape.
+        - generic [ref=e459]:
+          - link "Request a Quote" [ref=e460]:
+            - /url: /quote
+            - text: Request a Quote
+            - img [ref=e461]
+          - link "Book a Discovery Call" [ref=e463]:
+            - /url: /quote
+          - link "View Services" [ref=e464]:
+            - /url: /services
+    - region "Project proof" [ref=e465]:
+      - generic [ref=e466]:
+        - generic [ref=e467]:
+          - text: Proof
+          - heading "Work that ties craft to commercial movement." [level=2] [ref=e468]
+          - paragraph [ref=e469]: Pretty pages are only useful when they change the way a business sells, operates, or scales. These builds pair interface polish with measurable workflow and revenue impact.
+        - generic [ref=e470]:
+          - article [ref=e471]:
+            - link "Glow Tanning project screenshot" [ref=e472]:
+              - /url: /work/glow-tanning
+              - img "Glow Tanning project screenshot" [ref=e473]
+            - generic [ref=e474]:
+              - generic [ref=e475]:
+                - heading "Glow Tanning" [level=3] [ref=e476]
+                - paragraph [ref=e477]: Local Business
+              - generic [ref=e478]: Hucknall, Nottinghamshire
+            - generic [ref=e479]:
+              - generic [ref=e480]:
+                - generic [ref=e481]: Before
+                - paragraph [ref=e482]: Glow Tanning had no meaningful web presence, no way to capture bookings digitally, and reviews scattered across Google and Facebook with no unified display. Their competitors in the area were already ahead online.
+              - generic [ref=e483]:
+                - generic [ref=e484]: After
+                - paragraph [ref=e485]: Built a full Node.js/Express site with a custom Canvas API animation system for the hero section (animated sun rays), Salon Tracker booking iframe integration, and an automated review aggregation pipeline that pulls from both Google Places API and Facebook in real time. A Sharp-based WebP image pipeline handles all imagery, with a JWT-secured admin panel for the client to manage content independently.
+            - list "Glow Tanning business outcomes" [ref=e486]:
+              - listitem [ref=e487]:
+                - img [ref=e488]
+                - text: Bookings started coming through the website within the first week of launch
+              - listitem [ref=e491]:
+                - img [ref=e492]
+                - text: Google + Facebook reviews combined into a single credibility display
+            - generic "Glow Tanning stack" [ref=e495]:
+              - generic [ref=e496]: Node.js
+              - generic [ref=e497]: Express
+              - generic [ref=e498]: Canvas API
+              - generic [ref=e499]: Sharp
+              - generic [ref=e500]: Nginx
+          - article [ref=e501]:
+            - link "Pinkys Prints project screenshot" [ref=e502]:
+              - /url: /work/pinkys-prints
+              - img "Pinkys Prints project screenshot" [ref=e503]
+            - generic [ref=e504]:
+              - generic [ref=e505]:
+                - heading "Pinkys Prints" [level=3] [ref=e506]
+                - paragraph [ref=e507]: E-Commerce
+              - generic [ref=e508]: UK
+            - generic [ref=e509]:
+              - generic [ref=e510]:
+                - generic [ref=e511]: Before
+                - paragraph [ref=e512]: Pinkys Prints had outgrown Shopify. The templated design couldn't showcase their personalised product range effectively, the admin tools were too generic for their workflow, and hosting costs were climbing with Vercel + Supabase.
+              - generic [ref=e513]:
+                - generic [ref=e514]: After
+                - paragraph [ref=e515]: A fully custom React/Vite e-commerce platform with a mega menu, 120+ product catalogue with variant support, and a bespoke admin panel tailored to their exact product management workflow. The entire stack was then migrated from Supabase/Vercel to a self-hosted Docker Compose setup on a VPS — with zero downtime, switching over at 2am.
+            - list "Pinkys Prints business outcomes" [ref=e516]:
+              - listitem [ref=e517]:
+                - img [ref=e518]
+                - text: Zero-downtime migration from cloud to self-hosted — no customer impact
+              - listitem [ref=e521]:
+                - img [ref=e522]
+                - text: Admin panel designed around their actual workflow, not a generic CMS
+            - generic "Pinkys Prints stack" [ref=e525]:
+              - generic [ref=e526]: React
+              - generic [ref=e527]: Vite
+              - generic [ref=e528]: PostgreSQL
+              - generic [ref=e529]: Express
+              - generic [ref=e530]: Docker Compose
+          - article [ref=e531]:
+            - link "CSDS project screenshot" [ref=e532]:
+              - /url: /work/csds
+              - img "CSDS project screenshot" [ref=e533]
+            - generic [ref=e534]:
+              - generic [ref=e535]:
+                - heading "CSDS" [level=3] [ref=e536]
+                - paragraph [ref=e537]: Service Business
+              - generic [ref=e538]: Pennsylvania, USA
+            - generic [ref=e539]:
+              - generic [ref=e540]:
+                - generic [ref=e541]: Before
+                - paragraph [ref=e542]: CSDS needed a professional digital presence that reflected the precision and expertise behind their work. The market is saturated with generic 'we fix computers' templates.
+              - generic [ref=e543]:
+                - generic [ref=e544]: After
+                - paragraph [ref=e545]: Built a Next.js site with a deliberately editorial, industrial aesthetic — electric red accents on near-black surfaces, bold typography, and a refined UI system. A custom multi-step quote request form captures enquiries and feeds a dedicated admin panel where the owner can manage, respond to, and track all incoming jobs.
+            - list "CSDS business outcomes" [ref=e546]:
+              - listitem [ref=e547]:
+                - img [ref=e548]
+                - text: Immediately distinctive in a commodity market
+              - listitem [ref=e551]:
+                - img [ref=e552]
+                - text: Quote system eliminates back-and-forth phone/email friction
+            - generic "CSDS stack" [ref=e555]:
+              - generic [ref=e556]: Next.js
+              - generic [ref=e557]: TypeScript
+              - generic [ref=e558]: Tailwind CSS
+              - generic [ref=e559]: PostgreSQL
+        - link "See the full proof library" [ref=e561]:
+          - /url: /work
+          - text: See the full proof library
+          - img [ref=e562]
+    - region "Who ScaleSmiths is for" [ref=e564]:
+      - generic [ref=e565]:
+        - generic [ref=e566]:
+          - text: Fit
+          - heading "Who this is for, and who it is not for." [level=2] [ref=e567]
+          - paragraph [ref=e568]: The best work happens when the ambition, budget, and operating style match. This is how we qualify projects before either side wastes time.
+        - generic [ref=e569]:
+          - generic [ref=e570]:
+            - heading "Who this is for" [level=3] [ref=e571]
+            - list [ref=e572]:
+              - listitem [ref=e573]:
+                - img [ref=e574]
+                - text: Founder-led businesses that need digital to drive enquiries, sales, or operational leverage.
+              - listitem [ref=e577]:
+                - img [ref=e578]
+                - text: Teams with enough traction to invest properly in custom design, engineering, and long-term upkeep.
+              - listitem [ref=e581]:
+                - img [ref=e582]
+                - text: Clients who want direct technical partnership, clear communication, and honest trade-offs.
+          - generic [ref=e585]:
+            - heading "Who this is not for" [level=3] [ref=e586]
+            - list [ref=e587]:
+              - listitem [ref=e588]:
+                - img [ref=e589]
+                - text: One-page brochure sites where the lowest upfront price is the main decision.
+              - listitem [ref=e593]:
+                - img [ref=e594]
+                - text: Projects that need to be copied from a competitor without a strategy or differentiation.
+              - listitem [ref=e598]:
+                - img [ref=e599]
+                - text: Builds with no owner, no decision-maker, or no appetite for post-launch improvement.
+    - region "Client testimonials" [ref=e603]:
+      - generic [ref=e604]:
+        - generic [ref=e605]:
+          - text: Results
+          - heading "What clients say." [level=2] [ref=e606]
+        - generic [ref=e607]:
+          - blockquote [ref=e609]:
+            - generic "5 stars" [ref=e610]:
+              - img [ref=e611]
+              - img [ref=e613]
+              - img [ref=e615]
+              - img [ref=e617]
+              - img [ref=e619]
+            - paragraph [ref=e621]: “Completely transformed how we look online. The booking integration alone has paid for itself twice over.”
+            - generic [ref=e622]:
+              - generic [ref=e623]: Tom H.
+              - generic [ref=e624]: Glow Tanning
+          - blockquote [ref=e626]:
+            - generic "5 stars" [ref=e627]:
+              - img [ref=e628]
+              - img [ref=e630]
+              - img [ref=e632]
+              - img [ref=e634]
+              - img [ref=e636]
+            - paragraph [ref=e638]: “Went from a basic Shopify store to a fully custom site that actually feels like our brand. Outstanding work.”
+            - generic [ref=e639]:
+              - generic [ref=e640]: Sarah K.
+              - generic [ref=e641]: Pinkys Prints
+          - blockquote [ref=e643]:
+            - generic "5 stars" [ref=e644]:
+              - img [ref=e645]
+              - img [ref=e647]
+              - img [ref=e649]
+              - img [ref=e651]
+              - img [ref=e653]
+            - paragraph [ref=e655]: “Professional, fast, and the admin panel makes everything easy to manage ourselves. Exactly what we needed.”
+            - generic [ref=e656]:
+              - generic [ref=e657]: Chris M.
+              - generic [ref=e658]: CSDS
+    - region "Technology stack" [ref=e660]:
+      - generic [ref=e661]:
+        - article [ref=e662]:
+          - generic [ref=e664]: 01 / 07
+          - generic [ref=e665]:
+            - text: ScaleSmiths stack
+            - heading "Next.js" [level=2] [ref=e666]
+            - paragraph [ref=e667]: Production app routing, fast static pages, server components, and SEO-ready public sites.
+          - generic: Next.js
+        - article [ref=e668]:
+          - generic [ref=e670]: 02 / 07
+          - generic [ref=e671]:
+            - text: ScaleSmiths stack
+            - heading "React" [level=2] [ref=e672]
+            - paragraph [ref=e673]: Interactive interfaces, portals, dashboards, configurators, and client-side product experiences.
+          - generic: React
+        - article [ref=e674]:
+          - generic [ref=e676]: 03 / 07
+          - generic [ref=e677]:
+            - text: ScaleSmiths stack
+            - heading "Node.js" [level=2] [ref=e678]
+            - paragraph [ref=e679]: APIs, automation workers, integrations, and custom business logic behind the product surface.
+          - generic: Node.js
+        - article [ref=e680]:
+          - generic [ref=e682]: 04 / 07
+          - generic [ref=e683]:
+            - text: ScaleSmiths stack
+            - heading "PostgreSQL" [level=2] [ref=e684]
+            - paragraph [ref=e685]: Reliable data models for quotes, orders, memberships, admin workflows, and reporting.
+          - generic: PostgreSQL
+        - article [ref=e686]:
+          - generic [ref=e688]: 05 / 07
+          - generic [ref=e689]:
+            - text: ScaleSmiths stack
+            - heading "Docker" [level=2] [ref=e690]
+            - paragraph [ref=e691]: Portable deployments, repeatable environments, and VPS infrastructure that can be moved or scaled.
+          - generic: Docker
+        - article [ref=e692]:
+          - generic [ref=e694]: 06 / 07
+          - generic [ref=e695]:
+            - text: ScaleSmiths stack
+            - heading "Stripe" [level=2] [ref=e696]
+            - paragraph [ref=e697]: Payments, subscriptions, customer portals, billing flows, and revenue logic wired into products.
+          - generic: Stripe
+        - article [ref=e698]:
+          - generic [ref=e700]: 07 / 07
+          - generic [ref=e701]:
+            - text: ScaleSmiths stack
+            - heading "Cloudflare" [level=2] [ref=e702]
+            - paragraph [ref=e703]: DNS, edge caching, security, image delivery, R2 storage, and practical performance hardening.
+          - generic: Cloudflare
+    - region "Frequently asked questions" [ref=e704]:
+      - generic [ref=e705]:
+        - generic [ref=e706]:
+          - text: FAQ
+          - heading "Common questions." [level=2] [ref=e707]
+        - generic [ref=e708]:
+          - button "What does ScaleSmiths do?" [ref=e710]:
+            - generic [ref=e711]: What does ScaleSmiths do?
+            - img [ref=e712]
+          - button "How much does a website cost?" [ref=e715]:
+            - generic [ref=e716]: How much does a website cost?
+            - img [ref=e717]
+          - button "Where is ScaleSmiths based?" [ref=e720]:
+            - generic [ref=e721]: Where is ScaleSmiths based?
+            - img [ref=e722]
+          - button "How long does a project take?" [ref=e725]:
+            - generic [ref=e726]: How long does a project take?
+            - img [ref=e727]
+          - button "What happens after launch?" [ref=e730]:
+            - generic [ref=e731]: What happens after launch?
+            - img [ref=e732]
+    - region "Questions answered" [ref=e734]:
+      - generic [ref=e735]:
+        - generic [ref=e736]:
+          - generic [ref=e737]: Questions answered
+          - heading "Ready for the honest version?" [level=2] [ref=e738]
+          - paragraph [ref=e739]: A strategy call will tell you what to build, what to avoid, and what budget makes sense.
+        - generic [ref=e740]:
+          - link "Request a Quote" [ref=e741]:
+            - /url: /quote
+            - text: Request a Quote
+            - img [ref=e742]
+          - link "Book a Discovery Call" [ref=e744]:
+            - /url: /quote
+          - link "View Services" [ref=e745]:
+            - /url: /services
+    - region "Call to action" [ref=e746]:
+      - generic [ref=e747]:
+        - heading "Ready to build something that actually scales?" [level=2] [ref=e748]:
+          - text: Ready to build something
+          - text: that actually scales?
+        - paragraph [ref=e749]: Tell us about your business and we'll tell you exactly what you need to grow. No pitch. No pressure. Just honest advice.
+        - link "Get a Free Strategy Call" [ref=e750]:
+          - /url: /quote
+          - text: Get a Free Strategy Call
+          - img [ref=e751]
+  - contentinfo [ref=e753]:
+    - generic [ref=e754]:
+      - generic [ref=e755]:
+        - link "ScaleSmiths home" [ref=e756]:
+          - /url: /
+          - img "ScaleSmiths" [ref=e758]
+        - generic [ref=e759]: Strategy. Systems. Scale.
+      - navigation "Footer navigation" [ref=e760]:
+        - link "Home" [ref=e761]:
+          - /url: /
+        - link "Our Work" [ref=e762]:
+          - /url: /work
+        - link "Services" [ref=e763]:
+          - /url: /services
+        - link "Get a Quote" [ref=e764]:
+          - /url: /quote
+      - generic [ref=e766]: © 2026 ScaleSmiths · Hucknall, Nottinghamshire, UK
+  - alert [ref=e767]

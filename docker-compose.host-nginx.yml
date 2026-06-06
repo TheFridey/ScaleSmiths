@@ -1,0 +1,84 @@
+services:
+  web:
+    image: ss-web-prod
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: production
+    ports:
+      - "127.0.0.1:3100:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [ss-net]
+
+  admin:
+    image: ss-admin-prod
+    build:
+      context: ./admin
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: production
+    ports:
+      - "127.0.0.1:3101:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [ss-net]
+
+  web-migrate:
+    image: ss-web-migrate
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+      target: builder
+    profiles: ["tools"]
+    env_file: .env
+    environment:
+      NODE_ENV: production
+    command: npm run db:migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [ss-net]
+
+  admin-migrate:
+    image: ss-admin-migrate
+    build:
+      context: ./admin
+      dockerfile: Dockerfile
+      target: builder
+    profiles: ["tools"]
+    env_file: .env
+    environment:
+      NODE_ENV: production
+    command: npm run db:migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [ss-net]
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [ss-net]
+
+volumes:
+  postgres-data:
+
+networks:
+  ss-net:
+    driver: bridge

@@ -1,0 +1,112 @@
+- generic [active] [ref=e1]:
+  - link "Skip to content" [ref=e2]:
+    - /url: "#main"
+  - banner [ref=e3]:
+    - navigation "Main navigation" [ref=e4]:
+      - link "ScaleSmiths home" [ref=e5]:
+        - /url: /
+        - img "ScaleSmiths" [ref=e7]
+      - generic [ref=e8]:
+        - link "Our Work" [ref=e9]:
+          - /url: /work
+        - link "Services" [ref=e10]:
+          - /url: /services
+        - link "Get a Quote" [ref=e11]:
+          - /url: /quote
+        - link "Start a Project" [ref=e12]:
+          - /url: /quote
+  - main [ref=e14]:
+    - generic [ref=e15]:
+      - link "Back to Work" [ref=e16]:
+        - /url: /work
+        - img [ref=e17]
+        - text: Back to Work
+      - generic [ref=e19]:
+        - generic [ref=e21]: Made by Rhys · ScaleSmiths co-founder
+        - generic [ref=e23]:
+          - heading "Prymal" [level=1] [ref=e24]
+          - generic [ref=e25]: AI SaaS Platform · UK · 2026
+        - paragraph [ref=e26]: A multi-agent AI operating system for business execution, with specialist agents, memory, workflows, billing, and operator controls.
+      - generic [ref=e27]:
+        - generic [ref=e28]: React
+        - generic [ref=e29]: Vite
+        - generic [ref=e30]: Hono
+        - generic [ref=e31]: PostgreSQL
+        - generic [ref=e32]: pgvector
+        - generic [ref=e33]: Stripe
+      - generic [ref=e37]:
+        - generic [ref=e39]: Prymal
+        - generic [ref=e69]: "2026"
+      - generic [ref=e104]:
+        - generic [ref=e105]:
+          - generic [ref=e106]:
+            - heading "The Challenge" [level=2] [ref=e107]
+            - paragraph [ref=e108]: Prymal needed to move beyond a simple AI chat interface. The platform had to coordinate specialist agents, ground answers in organisational knowledge, enforce quality checks, and expose billing, usage, governance, and admin controls as real SaaS surfaces.
+          - generic [ref=e109]:
+            - heading "The Solution" [level=2] [ref=e110]
+            - paragraph [ref=e111]: Built a full-stack AI workspace with a Vite/React frontend, Hono API, PostgreSQL and pgvector data layer, Clerk authentication, Stripe plans, team seats, execution credits, workflow orchestration, LORE knowledge retrieval, WARDEN input scanning, and SENTINEL QA review before risky output reaches users.
+          - generic [ref=e112]:
+            - heading "Outcomes" [level=2] [ref=e113]
+            - list [ref=e114]:
+              - listitem [ref=e115]:
+                - img [ref=e116]
+                - generic [ref=e119]: 14 specialist AI agents packaged into a coordinated business workspace
+              - listitem [ref=e120]:
+                - img [ref=e121]
+                - generic [ref=e124]: Grounded knowledge, workflow orchestration, billing, teams, and admin controls built into one product
+              - listitem [ref=e125]:
+                - img [ref=e126]
+                - generic [ref=e129]: Production deployment model using Docker Compose, Nginx SSL proxying, logging, Sentry, and OpenAPI documentation
+        - complementary [ref=e130]:
+          - generic [ref=e131]:
+            - heading "Key Features" [level=3] [ref=e132]
+            - list [ref=e133]:
+              - listitem [ref=e134]: Multi-agent AI workspace
+              - listitem [ref=e136]: LORE organisational memory
+              - listitem [ref=e138]: NEXUS workflow orchestration
+              - listitem [ref=e140]: WARDEN input firewall
+              - listitem [ref=e142]: SENTINEL QA gate
+              - listitem [ref=e144]: Stripe seats and credits
+            - generic [ref=e146]:
+              - generic [ref=e147]: Project Type
+              - generic [ref=e148]: AI SaaS Platform
+            - generic [ref=e149]:
+              - generic [ref=e150]: Location
+              - generic [ref=e151]: UK
+            - generic [ref=e152]:
+              - generic [ref=e153]: Year
+              - generic [ref=e154]: "2026"
+            - link "Start a Similar Project" [ref=e155]:
+              - /url: /quote
+            - link "View Repository" [ref=e156]:
+              - /url: https://github.com/TheFridey/Prymal
+              - text: View Repository
+              - img [ref=e157]
+    - region "Call to action" [ref=e161]:
+      - generic [ref=e162]:
+        - heading "Ready to build something that actually scales?" [level=2] [ref=e163]:
+          - text: Ready to build something
+          - text: that actually scales?
+        - paragraph [ref=e164]: Tell us about your business and we'll tell you exactly what you need to grow. No pitch. No pressure. Just honest advice.
+        - link "Get a Free Strategy Call" [ref=e165]:
+          - /url: /quote
+          - text: Get a Free Strategy Call
+          - img [ref=e166]
+  - contentinfo [ref=e168]:
+    - generic [ref=e169]:
+      - generic [ref=e170]:
+        - link "ScaleSmiths home" [ref=e171]:
+          - /url: /
+          - img "ScaleSmiths" [ref=e173]
+        - generic [ref=e174]: Strategy. Systems. Scale.
+      - navigation "Footer navigation" [ref=e175]:
+        - link "Home" [ref=e176]:
+          - /url: /
+        - link "Our Work" [ref=e177]:
+          - /url: /work
+        - link "Services" [ref=e178]:
+          - /url: /services
+        - link "Get a Quote" [ref=e179]:
+          - /url: /quote
+      - generic [ref=e181]: © 2026 ScaleSmiths · Hucknall, Nottinghamshire, UK
+  - alert [ref=e182]

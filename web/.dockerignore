@@ -1,0 +1,10 @@
+node_modules/
+.next/
+.turbo/
+dist/
+coverage/
+*.log
+tsconfig.tsbuildinfo
+.env
+.env.*
+!.env.example

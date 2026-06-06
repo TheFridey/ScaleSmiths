@@ -1,0 +1,7 @@
+{
+  "name": "scalesmiths",
+  "private": true,
+  "scripts": {
+    "check:env-hygiene": "node scripts/check-env-hygiene.mjs"
+  }
+}

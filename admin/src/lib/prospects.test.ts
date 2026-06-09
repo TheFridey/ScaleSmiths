@@ -102,6 +102,14 @@ describe("prospect pipeline", () => {
     expect(metrics.followUpsDueToday).toBe(1)
     expect(metrics.overdueFollowUps).toBe(1)
     expect(getFollowUpBucket("2026-06-04T10:00:00.000Z", now)).toBe("upcoming")
+
+    // Derived executive metrics.
+    expect(metrics.weightedPipelineValue).toBe(5550) // 5000*0.15 + 8000*0.6
+    expect(metrics.closeRate).toBe(100) // 1 won, 0 lost
+    expect(metrics.proposalConversionRate).toBe(50) // 1 won of 2 proposals sent
+    expect(metrics.avgProjectValue).toBe(6500) // 13000 across 2 open prospects
+    expect(metrics.avgRetainerValue).toBe(700) // (500 + 900) / 2
+    expect(metrics.openProspects).toBe(2)
   })
 
   it("maps won prospects into existing client fields", () => {

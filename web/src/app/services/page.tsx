@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 }
 
 export default function ServicesPage() {
-  const schema = buildServiceHubSchema(process.env.NEXT_PUBLIC_SITE_URL ?? "https://scalesmiths.io")
+  const schema = buildServiceHubSchema(process.env.NEXT_PUBLIC_SITE_URL ?? "https://scalesmiths.co.uk")
 
   return (
     <>

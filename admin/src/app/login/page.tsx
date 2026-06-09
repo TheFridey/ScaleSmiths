@@ -57,7 +57,7 @@ export default function LoginPage() {
                 autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@scalesmiths.io"
+                placeholder="admin@scalesmiths.co.uk"
                 required
               />
             </div>

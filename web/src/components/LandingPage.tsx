@@ -8,7 +8,7 @@ export function LandingPage({ page }: { page: LandingPageData }) {
   const proofProjects = projects.filter((project) => page.proofLinks.includes(project.slug))
   const proofLogs = buildLogs.filter((log) => page.buildLogLinks.includes(log.slug))
   const relatedPages = page.relatedPages.map((slug) => landingPages[slug]).filter(Boolean)
-  const schemas = buildLandingPageSchemas(page, process.env.NEXT_PUBLIC_SITE_URL ?? "https://scalesmiths.io")
+  const schemas = buildLandingPageSchemas(page, process.env.NEXT_PUBLIC_SITE_URL ?? "https://scalesmiths.co.uk")
   const faqs = getLandingPageFaqs(page)
 
   return (

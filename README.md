@@ -4,8 +4,8 @@ Strategy-led web development agency. Two Next.js apps, one Docker Compose stack.
 
 | App | Local | Production |
 |-----|-------|-----------|
-| Public site | `localhost:3000` | `scalesmiths.io` |
-| Admin panel | `localhost:3001` | `admin.scalesmiths.io` |
+| Public site | `localhost:3000` | `scalesmiths.co.uk` |
+| Admin panel | `localhost:3001` | `admin.scalesmiths.co.uk` |
 
 ---
 
@@ -27,7 +27,7 @@ Site:  http://localhost:3000
 Admin: http://localhost:3001  →  http://localhost:3001/login
 
 Default admin credentials (set in .env):
-- `ADMIN_EMAIL=admin@scalesmiths.io`
+- `ADMIN_EMAIL=admin@scalesmiths.co.uk`
 - `ADMIN_PASSWORD=changeme`
 
 ---
@@ -56,8 +56,8 @@ docker-compose up --build -d
 
 2. **SSL certs** (if not already set up with Let's Encrypt)
    ```bash
-   sudo certbot certonly --nginx -d scalesmiths.io -d www.scalesmiths.io
-   sudo certbot certonly --nginx -d admin.scalesmiths.io
+   sudo certbot certonly --nginx -d scalesmiths.co.uk -d www.scalesmiths.co.uk
+   sudo certbot certonly --nginx -d admin.scalesmiths.co.uk
    ```
 
 3. **Start**
@@ -95,8 +95,8 @@ database, while the existing host Nginx routes requests by `server_name`.
    ```
 
    Required production differences from local dev:
-   - `NEXT_PUBLIC_SITE_URL=https://scalesmiths.io`
-   - `NEXT_PUBLIC_ADMIN_URL=https://admin.scalesmiths.io`
+   - `NEXT_PUBLIC_SITE_URL=https://scalesmiths.co.uk`
+   - `NEXT_PUBLIC_ADMIN_URL=https://admin.scalesmiths.co.uk`
    - `DEMO_PORTAL_ENABLED=false`
    - `ADMIN_PASSWORD` should be a bcrypt hash
    - `POSTGRES_PASSWORD`, `AUTH_SECRET`, and `PORTAL_SECRET` should be fresh production secrets
@@ -128,8 +128,8 @@ database, while the existing host Nginx routes requests by `server_name`.
 
 6. **Issue SSL certificates**
    ```bash
-   sudo certbot --nginx -d scalesmiths.io -d www.scalesmiths.io
-   sudo certbot --nginx -d admin.scalesmiths.io
+   sudo certbot --nginx -d scalesmiths.co.uk -d www.scalesmiths.co.uk
+   sudo certbot --nginx -d admin.scalesmiths.co.uk
    ```
 
 7. **Switch to the final HTTPS config**
@@ -348,7 +348,7 @@ Run `cd admin && npm run db:migrate` after pulling the prospect pipeline migrati
 2. Keep `DEMO_PORTAL_ENABLED=false` unless intentionally testing demo access.
 3. Run web and admin migrations.
 4. Build both apps or rebuild Docker images.
-5. Confirm SSL certificates for `scalesmiths.io`, `www.scalesmiths.io`, and `admin.scalesmiths.io`.
+5. Confirm SSL certificates for `scalesmiths.co.uk`, `www.scalesmiths.co.uk`, and `admin.scalesmiths.co.uk`.
 6. Confirm `PORTAL_SECRET`, `AUTH_SECRET`, and bcrypt password hashes are present.
 7. Confirm Resend env vars are set before accepting quote traffic.
 8. Review `nginx/nginx.conf` admin IP restriction notes if the admin should be IP-locked.
@@ -377,7 +377,7 @@ npm run build
 
 ```
 scalesmiths/
-├── web/                    # Next.js 14 — scalesmiths.io
+├── web/                    # Next.js 14 — scalesmiths.co.uk
 │   ├── src/
 │   │   ├── app/            # App Router pages
 │   │   │   ├── page.tsx    # Homepage
@@ -392,7 +392,7 @@ scalesmiths/
 │   ├── Dockerfile
 │   └── package.json
 │
-├── admin/                  # Next.js 14 — admin.scalesmiths.io
+├── admin/                  # Next.js 14 — admin.scalesmiths.co.uk
 │   ├── src/
 │   │   ├── app/
 │   │   │   ├── login/      # Auth page

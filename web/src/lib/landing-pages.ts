@@ -143,7 +143,7 @@ export const landingPages: Record<string, LandingPage> = {
   },
 }
 
-export function buildLandingPageSchemas(page: LandingPage, baseUrl = "https://scalesmiths.io") {
+export function buildLandingPageSchemas(page: LandingPage, baseUrl = "https://scalesmiths.co.uk") {
   const url = `${baseUrl}/${page.slug}`
   const isLocal = page.location.includes("Nottingham") || page.location.includes("Hucknall")
   const organization = {

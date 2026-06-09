@@ -1,15 +1,16 @@
-/* eslint-disable @next/next/no-html-link-for-pages */
 "use client"
-import { useState, useEffect } from "react"
+
+import { useEffect, useState } from "react"
+import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { LogIn, Menu, X } from "lucide-react"
 import { Logo } from "./Logo"
 import { cn } from "@/lib/utils"
 
 const links = [
-  { href: "/work",     label: "Our Work"   },
-  { href: "/services", label: "Services"   },
-  { href: "/quote",    label: "Get a Quote"},
+  { href: "/work", label: "Our Work" },
+  { href: "/services", label: "Services" },
+  { href: "/quote", label: "Get a Quote" },
 ]
 
 export function Nav() {
@@ -22,6 +23,23 @@ export function Nav() {
     window.addEventListener("scroll", handler, { passive: true })
     return () => window.removeEventListener("scroll", handler)
   }, [])
+
+  function NavLink({ lk, onClick }: { lk: (typeof links)[number]; onClick?: () => void }) {
+    return (
+      <Link
+        href={lk.href}
+        prefetch={false}
+        aria-current={pathname === lk.href ? "page" : undefined}
+        className={cn(
+          "text-sm font-medium transition-colors",
+          pathname === lk.href ? "text-t1" : "text-t2 hover:text-t1",
+        )}
+        onClick={onClick}
+      >
+        {lk.label}
+      </Link>
+    )
+  }
 
   return (
     <header
@@ -41,28 +59,19 @@ export function Nav() {
         {/* Desktop links */}
         <div className="hidden md:flex items-center gap-8 ml-auto">
           {links.map((lk) => (
-            <a
-              key={lk.href}
-              href={lk.href}
-              aria-current={pathname === lk.href ? "page" : undefined}
-              className={cn(
-                "text-sm font-medium transition-colors",
-                pathname === lk.href ? "text-t1" : "text-t2 hover:text-t1",
-              )}
-            >
-              {lk.label}
-            </a>
+            <NavLink key={lk.href} lk={lk} />
           ))}
-          <a
+          <Link
             href="/portal/login"
+            prefetch={false}
             className="inline-flex items-center gap-1.5 rounded-lg border border-b2 px-4 py-2 font-dm text-sm font-medium text-t2 transition-colors hover:border-b3 hover:bg-s2 hover:text-t1"
           >
             <LogIn size={14} aria-hidden="true" />
             Your Portal
-          </a>
-          <a href="/quote" className="btn-sm">
+          </Link>
+          <Link href="/quote" prefetch={false} className="btn-sm">
             Start a Project
-          </a>
+          </Link>
         </div>
 
         {/* Mobile menu toggle */}
@@ -80,26 +89,20 @@ export function Nav() {
       {open && (
         <div className="md:hidden bg-s1 border-b border-b1 px-6 py-4 flex flex-col gap-4">
           {links.map((lk) => (
-            <a
-              key={lk.href}
-              href={lk.href}
-              onClick={() => setOpen(false)}
-              className="text-sm font-medium text-t2 py-2"
-            >
-              {lk.label}
-            </a>
+            <NavLink key={lk.href} lk={lk} onClick={() => setOpen(false)} />
           ))}
-          <a
+          <Link
             href="/portal/login"
+            prefetch={false}
             className="flex items-center justify-center gap-2 rounded-lg border border-b2 px-4 py-2.5 font-dm text-sm font-medium text-t2"
             onClick={() => setOpen(false)}
           >
             <LogIn size={15} aria-hidden="true" />
             Your Portal
-          </a>
-          <a href="/quote" className="btn-sm text-center" onClick={() => setOpen(false)}>
+          </Link>
+          <Link href="/quote" prefetch={false} className="btn-sm text-center" onClick={() => setOpen(false)}>
             Start a Project
-          </a>
+          </Link>
         </div>
       )}
     </header>

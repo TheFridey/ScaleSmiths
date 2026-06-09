@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 }
 
 export default function PricingPage() {
-  const schema = buildPricingSchema(process.env.NEXT_PUBLIC_SITE_URL ?? "https://scalesmiths.io")
+  const schema = buildPricingSchema(process.env.NEXT_PUBLIC_SITE_URL ?? "https://scalesmiths.co.uk")
 
   return (
     <>

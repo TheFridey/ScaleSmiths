@@ -4,7 +4,7 @@ import { landingPages } from "@/lib/landing-pages"
 import { buildLogs } from "@/lib/build-logs"
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const base = process.env.NEXT_PUBLIC_SITE_URL ?? "https://scalesmiths.io"
+  const base = process.env.NEXT_PUBLIC_SITE_URL ?? "https://scalesmiths.co.uk"
   return [
     { url: base,                  lastModified: new Date(), changeFrequency: "monthly", priority: 1 },
     { url: `${base}/work`,        lastModified: new Date(), changeFrequency: "monthly", priority: 0.9 },

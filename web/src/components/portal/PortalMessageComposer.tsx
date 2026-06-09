@@ -21,7 +21,7 @@ export function PortalMessageComposer({ clientName, clientId }: PortalMessageCom
       message.trim() || "Hi ScaleSmiths,",
     ].join("\n")
 
-    return `mailto:hello@scalesmiths.io?subject=${encodeURIComponent(cleanSubject)}&body=${encodeURIComponent(cleanBody)}`
+    return `mailto:hello@scalesmiths.co.uk?subject=${encodeURIComponent(cleanSubject)}&body=${encodeURIComponent(cleanBody)}`
   }, [clientId, clientName, message, subject])
 
   function submit(event: FormEvent<HTMLFormElement>) {

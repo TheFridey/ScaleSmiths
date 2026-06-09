@@ -59,7 +59,7 @@ export const pricingItems = [
   { name: "Hosting / maintenance", range: "Scoped to stack", note: "Deployment, SSL, backups, monitoring, and infrastructure support." },
 ]
 
-export function buildServiceHubSchema(baseUrl = "https://scalesmiths.io") {
+export function buildServiceHubSchema(baseUrl = "https://scalesmiths.co.uk") {
   return {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
@@ -74,7 +74,7 @@ export function buildServiceHubSchema(baseUrl = "https://scalesmiths.io") {
   }
 }
 
-export function buildPricingSchema(baseUrl = "https://scalesmiths.io") {
+export function buildPricingSchema(baseUrl = "https://scalesmiths.co.uk") {
   return {
     "@context": "https://schema.org",
     "@type": "FAQPage",

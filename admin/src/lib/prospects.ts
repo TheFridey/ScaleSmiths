@@ -26,6 +26,22 @@ export const STAGE_LABELS: Record<ProspectStage, string> = {
   lost: "Lost",
 }
 
+/**
+ * Probability that an open prospect at a given stage converts to a won deal.
+ * Used for weighted-pipeline (expected value) forecasting. Lightweight, deterministic.
+ */
+export const STAGE_WIN_PROBABILITY: Record<ProspectStage, number> = {
+  found: 0.05,
+  audited: 0.1,
+  contacted: 0.15,
+  replied: 0.25,
+  discovery_booked: 0.4,
+  proposal_sent: 0.6,
+  follow_up_due: 0.5,
+  won: 1,
+  lost: 0,
+}
+
 type ParseResult<T> = { ok: true; data: T } | { ok: false; error: string }
 
 export interface ProspectWrite {
@@ -298,8 +314,18 @@ export function computeSalesMetrics(prospects: ProspectMetricRow[], activities: 
   const followUpsDueToday = activeProspects.filter((prospect) => getFollowUpBucket(prospect.nextFollowUpAt, now) === "today").length
   const overdueFollowUps = activeProspects.filter((prospect) => getFollowUpBucket(prospect.nextFollowUpAt, now) === "overdue").length
   const wonCount = prospects.filter((prospect) => prospect.stage === "won").length
+  const lostCount = prospects.filter((prospect) => prospect.stage === "lost").length
   const repliedCount = prospects.filter((prospect) => stageIndex(prospect.stage) >= stageIndex("replied") && prospect.stage !== "lost").length
   const proposalCount = prospects.filter((prospect) => stageIndex(prospect.stage) >= stageIndex("proposal_sent") && prospect.stage !== "lost").length
+
+  const pipelineValue = activeProspects.reduce((sum, prospect) => sum + prospect.estimatedProjectValue, 0)
+  const weightedPipelineValue = Math.round(
+    activeProspects.reduce((sum, prospect) => sum + prospect.estimatedProjectValue * (STAGE_WIN_PROBABILITY[prospect.stage] ?? 0), 0),
+  )
+  // Total proposals ever sent (by tracked proposalSentAt or stage progression past proposal_sent).
+  const proposalsSentTotal = prospects.filter(
+    (prospect) => Boolean(prospect.proposalSentAt) || stageIndex(prospect.stage) >= stageIndex("proposal_sent"),
+  ).length
 
   return {
     outreachSentThisWeek: activities.filter((activity) => activity.direction === "outbound" && isInRange(activity.createdAt, weekStart, now)).length,
@@ -308,14 +334,23 @@ export function computeSalesMetrics(prospects: ProspectMetricRow[], activities: 
     proposalsSent: Math.max(proposalsThisWeek, proposalSentThisWeekFromProspects),
     dealsWonThisMonth: prospects.filter((prospect) => isInRange(prospect.wonAt, monthStart, now)).length,
     dealsLostThisMonth: prospects.filter((prospect) => isInRange(prospect.lostAt, monthStart, now)).length,
-    pipelineValue: activeProspects.reduce((sum, prospect) => sum + prospect.estimatedProjectValue, 0),
+    pipelineValue,
+    weightedPipelineValue,
     expectedMonthlyRetainerValue: activeProspects.reduce((sum, prospect) => sum + prospect.estimatedMonthlyRetainer, 0),
     followUpsDueToday,
     overdueFollowUps,
     prospectsByStage: byStage,
     replyRate: percentage(repliedCount, prospects.length),
     proposalRate: percentage(proposalCount, prospects.length),
-    winRate: percentage(wonCount, wonCount + prospects.filter((prospect) => prospect.stage === "lost").length),
+    winRate: percentage(wonCount, wonCount + lostCount),
+    // Derived executive metrics — lightweight, computed in-place.
+    closeRate: percentage(wonCount, wonCount + lostCount),
+    proposalConversionRate: percentage(wonCount, proposalsSentTotal),
+    avgProjectValue: activeProspects.length ? Math.round(pipelineValue / activeProspects.length) : 0,
+    avgRetainerValue: activeProspects.length
+      ? Math.round(activeProspects.reduce((sum, prospect) => sum + prospect.estimatedMonthlyRetainer, 0) / activeProspects.length)
+      : 0,
+    openProspects: activeProspects.length,
   }
 }
 

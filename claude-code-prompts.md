@@ -330,5 +330,5 @@ ScaleSmiths works with.
 - [ ] Set up Resend domain verification for email sending
 - [ ] Add cookie consent banner (if targeting EU users: yes, you need it)
 - [ ] Lock admin IP in nginx.conf before going live (uncomment allow/deny lines)
-- [ ] Run Lighthouse audit: `npx lighthouse https://scalesmiths.io --view`
+- [ ] Run Lighthouse audit: `npx lighthouse https://scalesmiths.co.uk --view`
 - [ ] Add .well-known/security.txt

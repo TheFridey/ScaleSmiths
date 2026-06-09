@@ -30,7 +30,7 @@ const SAFE_PLACEHOLDER_CLIENT = {
   nextAction: "ScaleSmiths will publish your next milestone after onboarding.",
   keyDates: "Key dates will appear after the project schedule is agreed.",
   responseWindow: "One working day",
-  supportEmail: "hello@scalesmiths.io",
+  supportEmail: "hello@scalesmiths.co.uk",
 }
 
 const milestones = [

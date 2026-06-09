@@ -163,7 +163,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return {
       title: log.title,
       description: log.summary,
-      alternates: { canonical: `https://scalesmiths.io/work/${log.slug}` },
+      alternates: { canonical: `https://scalesmiths.co.uk/work/${log.slug}` },
       openGraph: { title: log.title, description: log.summary },
     }
   }
@@ -173,7 +173,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: p.name,
     description: p.headline,
-    alternates: { canonical: `https://scalesmiths.io/work/${p.slug}` },
+    alternates: { canonical: `https://scalesmiths.co.uk/work/${p.slug}` },
     openGraph: {
       title: p.name,
       description: p.headline,
@@ -188,7 +188,7 @@ function BuildLogPage({ log }: { log: BuildLog }) {
     "@type": "TechArticle",
     headline: log.title,
     description: log.summary,
-    url: `https://scalesmiths.io/work/${log.slug}`,
+    url: `https://scalesmiths.co.uk/work/${log.slug}`,
     author: { "@type": "Organization", name: "ScaleSmiths" },
   }
 

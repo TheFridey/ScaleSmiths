@@ -58,19 +58,30 @@ docker-compose up --build -d
    ```bash
    sudo certbot certonly --nginx -d scalesmiths.co.uk -d www.scalesmiths.co.uk
    sudo certbot certonly --nginx -d admin.scalesmiths.co.uk
+   # Optional only if Forge will use its own hostname:
+   sudo certbot certonly --nginx -d forge.scalesmiths.co.uk
    ```
 
-3. **Start**
+3. **Prepare Forge workspace storage**
+   ```bash
+   cd /srv/scalesmiths
+   mkdir -p generated-sites
+   sudo chown -R 1001:1001 generated-sites
+   chmod 750 generated-sites
+   ```
+
+4. **Start**
    ```bash
    cd /srv/scalesmiths
    cp .env.example .env && nano .env
    docker-compose up --build -d
    ```
 
-4. **Check**
+5. **Check**
    ```bash
    docker-compose ps
    docker-compose logs -f web
+   docker-compose logs -f admin
    ```
 
 The nginx container handles SSL termination and proxies to the app containers.
@@ -101,15 +112,26 @@ database, while the existing host Nginx routes requests by `server_name`.
    - `ADMIN_PASSWORD` should be a bcrypt hash
    - `POSTGRES_PASSWORD`, `AUTH_SECRET`, and `PORTAL_SECRET` should be fresh production secrets
    - `RESEND_API_KEY` and `RESEND_FROM` must be set before quote traffic is accepted
+   - Forge should stay at `https://admin.scalesmiths.co.uk/forge` unless a separate hostname is intentionally configured
+   - Set `FORGE_ENABLE_AI=true` only when the AI provider keys are present and spend has been reviewed
 
-3. **Start Postgres and run migrations**
+3. **Prepare Forge workspace storage**
+   ```bash
+   mkdir -p generated-sites
+   sudo chown -R 1001:1001 generated-sites
+   chmod 750 generated-sites
+   ```
+
+   The admin Docker image runs as UID/GID `1001`. Forge generated client-site workspaces are bind-mounted from `./generated-sites` to `/app/generated-sites`, so this directory must be writable by that container user and must not be served directly by Nginx.
+
+4. **Start Postgres and run migrations**
    ```bash
    docker compose -f docker-compose.host-nginx.yml up -d postgres
    docker compose -f docker-compose.host-nginx.yml run --rm web-migrate
    docker compose -f docker-compose.host-nginx.yml run --rm admin-migrate
    ```
 
-4. **Start the app containers on localhost-only ports**
+5. **Start the app containers on localhost-only ports**
    ```bash
    docker compose -f docker-compose.host-nginx.yml up --build -d web admin
    ```
@@ -118,7 +140,7 @@ database, while the existing host Nginx routes requests by `server_name`.
    - public site: `127.0.0.1:3100`
    - admin: `127.0.0.1:3101`
 
-5. **Install the temporary HTTP host Nginx site**
+6. **Install the temporary HTTP host Nginx site**
    ```bash
    sudo cp nginx/host-scalesmiths-http.conf /etc/nginx/sites-available/scalesmiths
    sudo ln -s /etc/nginx/sites-available/scalesmiths /etc/nginx/sites-enabled/scalesmiths
@@ -126,18 +148,120 @@ database, while the existing host Nginx routes requests by `server_name`.
    sudo systemctl reload nginx
    ```
 
-6. **Issue SSL certificates**
+7. **Issue SSL certificates**
    ```bash
    sudo certbot --nginx -d scalesmiths.co.uk -d www.scalesmiths.co.uk
    sudo certbot --nginx -d admin.scalesmiths.co.uk
+   # Optional only if using a dedicated Forge hostname:
+   sudo certbot --nginx -d forge.scalesmiths.co.uk
    ```
 
-7. **Switch to the final HTTPS config**
+8. **Switch to the final HTTPS config**
    ```bash
    sudo cp nginx/host-scalesmiths.conf /etc/nginx/sites-available/scalesmiths
    sudo nginx -t
    sudo systemctl reload nginx
    ```
+
+   If `forge.scalesmiths.co.uk` is required, use `nginx/forge-admin-subdomain.example.conf` as a reviewed starting point and proxy it to the same admin container on `127.0.0.1:3101`. Do not enable that hostname until DNS and certificates are ready.
+
+
+---
+
+## Forge VPS Deployment Preparation
+
+Recommended target: keep Forge under `https://admin.scalesmiths.co.uk/forge`. The existing admin app already protects `/forge` with Auth.js admin auth and avoids introducing another public service. Use `forge.scalesmiths.co.uk` only as an optional hostname that proxies to the same admin container.
+
+Forge production env is configured in the root `.env` used by Docker Compose:
+
+- `FORGE_ENABLE_AI=false` by default; set to `true` only after provider keys and spend limits are ready
+- `FORGE_DEFAULT_AI_PROVIDER=mock`, `openai`, or `anthropic`
+- `OPENAI_API_KEY` and `ANTHROPIC_API_KEY` stay server-only and must never be prefixed with `NEXT_PUBLIC_`
+- `FORGE_AI_MAX_TOKENS_PER_TASK`, `FORGE_AI_DAILY_TOKEN_BUDGET`, and `FORGE_AI_DAILY_USD_BUDGET` provide fail-closed live AI budget controls before provider calls are made
+- `FORGE_MAX_REPAIR_ATTEMPTS=3` unless a tighter repair loop is desired
+- `RESEND_API_KEY` is needed for generated client-site contact forms
+- `FORGE_MIN_LIGHTHOUSE_PERFORMANCE`, `FORGE_MIN_LIGHTHOUSE_ACCESSIBILITY`, and `FORGE_MIN_LIGHTHOUSE_SEO` control generated-site QA thresholds
+- `FORGE_SANDBOX_RUNNER=local` by default; set `FORGE_SANDBOX_RUNNER=docker` on a VPS once Docker is available for generated-site preview/QA isolation
+- `FORGE_SANDBOX_CPUS`, `FORGE_SANDBOX_MEMORY`, `FORGE_SANDBOX_NETWORK`, `FORGE_SANDBOX_INSTALL_NETWORK`, and `FORGE_SANDBOX_PREVIEW_NETWORK` control generated-site sandbox limits
+- `FORGE_ARTIFACT_MAX_VERSIONS`, `FORGE_ARTIFACT_MAX_CONTENT_BYTES`, and `FORGE_QA_LOG_MAX_CHARS` control retained artifact history and large QA log size
+
+Migration order for a VPS deploy:
+
+```bash
+docker compose -f docker-compose.host-nginx.yml up -d postgres
+docker compose -f docker-compose.host-nginx.yml run --rm web-migrate
+docker compose -f docker-compose.host-nginx.yml run --rm admin-migrate
+docker compose -f docker-compose.host-nginx.yml up --build -d web admin
+```
+
+For container-owned Nginx, use the same migration order with the default compose file, or run app migrations from a one-off shell before bringing the full stack up. Forge database tables live in the admin migrations.
+
+Workspace storage:
+
+- `generated-sites/` is ignored except for `generated-sites/.gitignore`.
+- Production compose files bind-mount `./generated-sites` into the admin container at `/app/generated-sites`.
+- The directory should be owned by UID/GID `1001`, matching the admin container's `nextjs` user.
+- Keep permissions restrictive, for example `chmod 750 generated-sites`.
+- Do not point Nginx at `generated-sites/`; previews must stay behind the admin Forge UI.
+- Include `generated-sites/` in VPS backup planning if generated project work should survive a server rebuild.
+- For production Forge QA/preview, prefer `FORGE_SANDBOX_RUNNER=docker`. Docker commands run with a secret-free environment, CPU/memory limits, dropped Linux capabilities, `no-new-privileges`, and restricted network mode.
+- Keep `FORGE_SANDBOX_NETWORK=none` for typecheck/lint/build. `FORGE_SANDBOX_INSTALL_NETWORK=none` is safest and requires dependencies to be preinstalled or cached; set it to `bridge` only for a controlled install window.
+- Docker previews publish only to the configured preview host, which should stay `127.0.0.1` unless a private preview network has been reviewed.
+
+Nginx routing:
+
+- Existing deployment routes `admin.scalesmiths.co.uk` to the admin app. Forge works at `/forge` with no extra Nginx route.
+- Optional `forge.scalesmiths.co.uk` should proxy to the same admin container, not to generated workspaces. Review `nginx/forge-admin-subdomain.example.conf` before enabling it.
+- Keep admin and Forge behind HTTPS and consider uncommenting the IP allowlist in the Nginx admin server block.
+- If using Cloudflare, orange-cloud the admin/Forge hostname, enable WAF or Access policies, and optionally restrict origin traffic to Cloudflare IPs at Nginx.
+
+Process management:
+
+- The current VPS path uses Docker Compose with `restart: unless-stopped`; PM2 is not used.
+- Host Nginx is managed by systemd, so config changes should be followed by `sudo nginx -t` and `sudo systemctl reload nginx`.
+- Docker itself is systemd-managed on most VPS images. Confirm it starts on boot with `sudo systemctl enable docker`.
+
+Private access recommendations:
+
+- Keep `ADMIN_EMAIL` private and store `ADMIN_PASSWORD` as a bcrypt hash.
+- Do not add public signup to the admin app.
+- Keep `FORGE_ALLOW_PUBLIC_PREVIEWS=false` unless a private preview network is deliberately designed.
+- Prefer `admin.scalesmiths.co.uk/forge` plus admin auth for V1.
+- Add an IP allowlist or Cloudflare Access if Forge will handle real client data or live deployment credentials.
+- Keep AI, Resend, and future integration keys in `.env` or the host secret manager only.
+
+Forge deploy checklist:
+
+1. Confirm DNS for `admin.scalesmiths.co.uk`; optionally confirm `forge.scalesmiths.co.uk`.
+2. Create and permission `/srv/scalesmiths/generated-sites` for UID/GID `1001`.
+3. Fill Forge env vars in `/srv/scalesmiths/.env`.
+4. Keep `FORGE_ENABLE_AI=false` for first boot unless provider keys are ready.
+5. Confirm AI budgets are set before enabling live providers.
+6. Run web migrations, then admin migrations.
+7. Rebuild and start the admin container.
+8. Confirm `/forge` requires admin login.
+9. Confirm `generated-sites/` is writable by creating a Forge workspace from the UI.
+10. Confirm Nginx does not serve `generated-sites/` directly.
+11. If Docker sandboxing is enabled, run one generated-site QA job and confirm Docker has no app secrets in the child environment.
+12. Confirm Cloudflare/IP allowlist decisions are documented before client data is added.
+
+## Forge End-To-End Demo
+
+Stage 27 includes a safe mock demo for `Nottingham HomeCare Repairs`, a realistic local repairs and property maintenance business. The demo can be validated without live AI or Resend keys:
+
+```bash
+cd admin
+npm run forge:demo -- --dry-run
+```
+
+To seed the admin database and create the generated workspace:
+
+```bash
+cd admin
+npm run forge:demo
+```
+
+The seeded project simulates intake, research, sitemap, copy, design direction, component specification, site generation, QA, and proposal generation. It writes only to the admin database and `generated-sites/`, uses mock/provider-safe metadata, and does not call OpenAI, Anthropic, Resend, npm install, or deploy commands. See `docs/forge-demo.md` for the full admin walkthrough and screenshot placeholders.
 
 
 ---
@@ -174,6 +298,12 @@ ignored and should stay on the machine or secret manager that needs them.
 - `AUTH_SECRET`
 - `ADMIN_EMAIL`, `ADMIN_PASSWORD`
 - `RESEND_API_KEY`, `RESEND_FROM`
+- `FORGE_ENABLE_AI`, `FORGE_DEFAULT_AI_PROVIDER`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` only when Forge AI is intentionally enabled
+- `FORGE_AI_MAX_TOKENS_PER_TASK`, `FORGE_AI_DAILY_TOKEN_BUDGET`, `FORGE_AI_DAILY_USD_BUDGET` must be set before live Forge AI usage
+- `FORGE_PREVIEW_HOST`, `FORGE_PREVIEW_PORT_BASE`, `FORGE_ALLOW_PUBLIC_PREVIEWS`, `FORGE_MAX_REPAIR_ATTEMPTS` only for Forge generated-site previews/QA; keep public previews disabled unless intentionally configuring a private preview network
+- `FORGE_SANDBOX_RUNNER`, `FORGE_SANDBOX_DOCKER_IMAGE`, `FORGE_SANDBOX_CPUS`, `FORGE_SANDBOX_MEMORY`, `FORGE_SANDBOX_NETWORK`, `FORGE_SANDBOX_INSTALL_NETWORK`, `FORGE_SANDBOX_PREVIEW_NETWORK`, `FORGE_SANDBOX_PREVIEW_INTERNAL_PORT` optionally enable Dockerized generated-site preview/QA
+- `FORGE_ARTIFACT_MAX_VERSIONS`, `FORGE_ARTIFACT_MAX_CONTENT_BYTES`, `FORGE_QA_LOG_MAX_CHARS` optionally tune Forge artifact/version retention
+- `FORGE_RATE_LIMIT_WINDOW_MS`, `FORGE_MUTATION_RATE_LIMIT`, `FORGE_TASK_RATE_LIMIT` optionally tune admin-only Forge mutation/task throttles; defaults are 60 seconds, 30 mutations, and 10 task/AI actions per actor/route
 
 Before committing or packaging a release, run the env hygiene check from the
 repo root:
@@ -229,6 +359,16 @@ is a generic failure and provider details are never exposed.
 
 After a successful quote submission users are sent to `/quote/thanks`, which is marked `noindex`.
 
+Forge remains private to the admin app. Admin middleware protects all `/forge` pages and `/api/forge/*` routes, and mutating Forge API requests are additionally rate-limited in memory by authenticated actor, method, route, and task/mutation bucket. AI prompts include a global safety preface forbidding secret requests, unknown outbound telemetry, destructive shell commands, or writes outside generated workspaces.
+
+Generated client-site files are only written through Forge workspace utilities. Those utilities keep writes inside `generated-sites/`, reject path traversal and core app targets, enforce a file allowlist, deny secret filenames such as `.env`, `.env.local`, `.npmrc`, private keys, and credential files, block secret references except approved generated-site runtime placeholders like `RESEND_API_KEY`, and reject unknown external phone-home URLs or destructive command content.
+
+Forge audit logs cover project create/update/archive actions, AI task start/failure events, generated file writes, integration config changes, export creation, and deployment status changes. Do not store API keys in Forge project memory, artifacts, exports, or generated code. Production secrets should stay in the target environment or secret manager only.
+
+Live Forge AI is budget-gated before provider calls. Keep `FORGE_ENABLE_AI=false` until `FORGE_AI_MAX_TOKENS_PER_TASK`, `FORGE_AI_DAILY_TOKEN_BUDGET`, and `FORGE_AI_DAILY_USD_BUDGET` have been reviewed for the current client workload. The in-process ledger protects a single admin runtime; use lower provider-side spend limits as the outer guardrail.
+
+Generated-site QA and preview can run in Docker by setting `FORGE_SANDBOX_RUNNER=docker`. Docker sandbox commands receive a secret-free environment, resource limits, dropped capabilities, `no-new-privileges`, and explicit network modes. Keep build/test network disabled by default and only allow install networking during a reviewed dependency install window.
+
 ---
 
 ## Current routes
@@ -254,6 +394,7 @@ Admin:
 - `/clients`
 - `/clients/new`
 - `/prospects`
+- `/forge`
 - `/messages`
 - `/roadmap`
 
@@ -311,6 +452,54 @@ Dashboard sales metrics are calculated from `prospects`, `outreach_activities`, 
 - follow-ups due today and overdue: open prospects grouped by `next_follow_up_at`
 
 Won prospects can be converted into clients from the prospect detail actions. Conversion creates a client with the prospect business/contact details, uses estimated monthly retainer as MRR, and stores the generated client id on `prospects.converted_client_id`.
+
+---
+
+## Admin Forge
+
+The admin `/forge` route is a private shell for the internal ScaleSmiths AI website production engine. Stage 1 adds the protected dashboard, navigation entry, empty operational cards, and workflow markers only. Stage 2 adds admin-owned database foundations for Forge projects, tasks, generated artifacts, integration configs, activity logs, and project memory. Stage 3 adds project management: list, create, detail, edit, archive, and activity logging for Forge projects. Stage 4 adds structured website intake inside each Forge project, saving drafts and completed intake into an `Intake Summary` artifact with completeness scoring and missing-field tracking.
+
+Forge migrations live under `admin/drizzle` and should be run with the admin migration command. Project management APIs live under `/api/forge/projects` inside the admin app and perform explicit admin session checks in addition to the admin middleware. Structured intake is saved through `/api/forge/projects/[id]/intake`; it does not call AI yet, but its artifact metadata is shaped for future research, sitemap, copy, design, build, and integration agents.
+
+Stage 5 adds a server-only AI provider layer under `admin/src/lib/server/forge-ai.ts`. It supports OpenAI, Anthropic, and a mock provider, routes planning/copywriting/code/repair/QA tasks through model config, validates structured JSON responses, applies retries/timeouts, and exposes one admin-only smoke-test endpoint at `/api/forge/ai/test`. AI remains disabled unless `FORGE_ENABLE_AI=true`; otherwise Forge falls back to the mock provider. Live provider calls are guarded by per-task token limits plus daily token/spend budgets. Keep `OPENAI_API_KEY` and `ANTHROPIC_API_KEY` server-only and never prefix them with `NEXT_PUBLIC_`.
+
+Stage 6 adds the server-only Research Agent under `admin/src/lib/server/forge-research-agent.ts` with an admin-only trigger at `/api/forge/projects/[id]/research`. It creates and updates a `research` Forge task, uses the AI provider layer with mock fallback, writes a `Research Report` artifact of type `research_report`, and records activity logs. This stage does not scrape or crawl websites; project website URLs and competitor URLs are treated as supplied planning context only.
+
+Stage 7 adds the server-only Sitemap and Strategy Agent under `admin/src/lib/server/forge-sitemap-agent.ts` with an admin-only trigger at `/api/forge/projects/[id]/sitemap`. It generates a structured local/service-business sitemap from intake and research, writes a `Sitemap & Strategy` artifact of type `sitemap`, and lets admins edit/approve the strategy from the project detail page. Approved sitemap strategy is stored separately in the artifact metadata as `approvedStrategy`.
+
+Stage 8 adds the server-only Copy Agent under `admin/src/lib/server/forge-copy-agent.ts` with an admin-only trigger at `/api/forge/projects/[id]/copy`. It requires an approved sitemap, uses intake, research, brand notes, and target audience context, writes a structured `Copy Document` artifact of type `copy_doc`, supports per-page regeneration, and lets admins approve edited copy. Approved copy is stored separately in artifact metadata as `approvedCopy`; the copy helper also flags banned generic phrases and sloppy copy risks before approval.
+
+Stage 9 adds the server-only Design Agent under `admin/src/lib/server/forge-design-agent.ts` with an admin-only trigger at `/api/forge/projects/[id]/design`. It requires approved copy, chooses or hybridises one of the internal style packs, writes a structured `Design Direction` artifact of type `design_direction`, and lets admins change/approve the selected style pack before any code is generated. Approved design direction is stored separately in artifact metadata as `approvedDirection`, and every direction includes a warning against over-animated designs.
+
+Stage 10 adds the server-only Component Specification Agent under `admin/src/lib/server/forge-component-spec-agent.ts` with an admin-only trigger at `/api/forge/projects/[id]/component-spec`. It requires approved sitemap, copy, and design direction, writes a structured `Component Specification` artifact of type `component_spec`, and lets admins edit/approve the exact page/component blueprint before code generation. Approved specs are stored separately in artifact metadata as `approvedSpec`.
+
+Stage 11 adds the generated-site workspace foundation. Generated client sites live under the ignored repo-root `generated-sites/` workspace, with only `generated-sites/.gitignore` tracked. Server-only utilities in `admin/src/lib/server/forge-workspace.ts` create, read, write, list, and carefully delete project workspaces while preventing path traversal, executable script writes unless explicitly approved, and writes outside the generated workspace. The admin trigger lives at `/api/forge/projects/[id]/workspace` and stores workspace metadata in Forge memory under `generated_site_workspace`.
+
+Stage 12 adds Frontend Code Generator V1 under `admin/src/lib/server/forge-frontend-code-agent.ts` with an admin-only trigger at `/api/forge/projects/[id]/generate-site`. It requires a generated workspace plus approved sitemap, copy, design direction, and component specification, then writes a static Next.js, TypeScript, Tailwind, and Framer Motion client site into the project workspace only. The generator creates route files, metadata, JSON-LD helpers, reusable sections, a Resend-ready contact placeholder, WhatsApp CTA modules, task/activity logs, and a `Generated Site Code Summary` artifact of type `generated_code`.
+
+Stage 13 adds Preview System V1 under `admin/src/lib/server/forge-preview.ts` with an admin-only API at `/api/forge/projects/[id]/preview`. V1 starts a local Next.js dev preview from the generated workspace, binds to `127.0.0.1` by default, stores preview state in Forge memory under `generated_site_preview`, and logs preview start/stop/failure events. When `FORGE_SANDBOX_RUNNER=docker`, previews run in a resource-limited Docker container with a secret-free environment and loopback-only published port. The project detail UI includes Start Preview, Stop Preview, Open Preview, iframe preview, and desktop/tablet/mobile viewport toggles. Do not expose previews publicly unless `FORGE_ALLOW_PUBLIC_PREVIEWS=true` is deliberately configured for a private network.
+
+Stage 14 adds the generated-site Build/Test/Repair loop under `admin/src/lib/server/forge-qa-agent.ts` with an admin-only trigger at `/api/forge/projects/[id]/qa`. QA creates a `qa` task, runs `npm install --no-audit --no-fund`, typecheck/lint when package scripts exist, and `npm run build`, then writes a versioned `QA Report` artifact of type `qa_report`. With `FORGE_SANDBOX_RUNNER=docker`, commands run inside Docker with CPU/memory limits, dropped capabilities, `no-new-privileges`, a secret-free environment, and explicit network modes. Repair creates a `repair` task after failed QA, sends the failure summary and relevant generated workspace files to the Repair Agent, applies returned full-file updates only through workspace-safe write utilities, records repair history, and reruns the checks. `FORGE_MAX_REPAIR_ATTEMPTS` defaults to `3`.
+
+Stage 15 adds the Resend integration module. Admins configure from email, to email, reply-to behaviour, subject prefix, enabled/disabled, and test mode from the Forge project cockpit; the API key is never stored in Forge and must come from the generated site's `RESEND_API_KEY` environment variable. Regenerated client sites include a production-ready contact API route, validation helpers, honeypot field, rate-limit placeholder, email template, Resend config module, form UI fields, and handover documentation. QA now checks that generated Resend form files exist when the Resend integration is enabled.
+
+Stage 16 adds the WhatsApp integration module. Admins configure the business WhatsApp number, default prefilled message, CTA label, placements, and enabled/disabled state from the Forge project cockpit. Regenerated client sites include a generated WhatsApp config module, inline CTAs, service-page-specific messages, a contact-page option, and an optional sticky button using `wa.me` links only. WhatsApp Cloud API is not required for V1; `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, and `WHATSAPP_VERIFY_TOKEN` are documented as future placeholders. QA now checks that generated WhatsApp files exist and valid `wa.me` links can be produced when WhatsApp is enabled.
+
+Stage 17 adds Advanced Animation Packs. Design directions now recommend and store one controlled animation pack: Minimal Premium, Cinematic Hero, Smooth Local Business, Editorial Reveal, Glass Motion, or Industrial Precision. The project cockpit lets admins select the pack before generation/approval, warns when a heavier pack is chosen for a simple local/service design, and regenerated sites include animation config, reduced-motion-safe Framer Motion wrappers, stable motion utility classes, and optional Lenis/GSAP dependencies only when the selected pack calls for them. QA now checks that generated sites retain `prefers-reduced-motion` support, reduced-motion transform fallbacks, and the generated animation config.
+
+Stage 23 adds Command Chat UI. Each Forge project now has an admin-only command panel that classifies instructions such as "regenerate homepage copy", "make design more premium", "add WhatsApp CTA", "run QA", "repair build errors", and "generate proposal" into approved command-router intents. The router creates a Forge task for every command, stores the project transcript in Forge memory under `forge_command_chat`, logs activity, uses the AI provider layer with mock fallback for classification, and only calls existing safe pipeline actions. Risky actions such as generated code updates and repair runs require confirmation, and chat never blindly edits generated files.
+
+Stage 24 upgrades the Forge project detail screen into a production cockpit with a stage sidebar, centre artifact/task/chat work area, right-side preview rail, viewport controls, artifact tabs, and a bottom QA logs drawer while keeping the existing Forge project pages intact.
+
+Stage 25 hardens Forge as a private production system. Middleware keeps Forge pages/APIs admin-only and rate-limits mutating `/api/forge/*` requests, generated-workspace writes now enforce path traversal checks, a file allowlist, dangerous filename denylists, secret/content safety checks, and audit logs include normalized events for generated file writes and deployment status changes. Forge AI calls receive a global safety preface that forbids secret requests, unknown phone-home URLs, destructive scripts, and workspace escapes.
+
+Stage 26 prepares Forge for private VPS operation. Production compose files now persist `generated-sites/` into the admin container, the README documents Forge env vars, migration order, workspace ownership, Nginx routing choices for `/forge` vs `forge.scalesmiths.co.uk`, Docker/systemd expectations, private access recommendations, and a Forge-specific deploy checklist. Optional subdomain routing is documented in `nginx/forge-admin-subdomain.example.conf`.
+
+Stage 27 adds an end-to-end internal demo project. `npm run forge:demo -- --dry-run` verifies mock mode from a clean environment, while `npm run forge:demo` seeds a realistic Nottingham home repairs project with completed intake, research, sitemap, copy, design, component spec, generated-code summary, mock QA, proposal pack, integrations, activity logs, and a generated workspace under `generated-sites/`. The admin walkthrough and screenshot placeholders live in `docs/forge-demo.md`.
+
+The final Forge hardening pass adds DB indexes for frequent Forge lookups, artifact version/retention fields, versioned QA artifacts, transient generated-workspace cleanup, API route auth regression tests, Dockerized preview/QA sandbox controls, and live AI budget checks.
+
+Export and deploy workflows should be added incrementally inside the admin app.
 
 ---
 

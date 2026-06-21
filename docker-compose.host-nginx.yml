@@ -29,6 +29,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    volumes:
+      - ./generated-sites:/app/generated-sites
     networks: [ss-net]
 
   web-migrate:

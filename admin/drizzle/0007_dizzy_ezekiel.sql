@@ -1,0 +1,1 @@
+ALTER TYPE "public"."forge_artifact_type" ADD VALUE 'export_record';

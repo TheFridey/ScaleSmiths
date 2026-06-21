@@ -1,12 +1,43 @@
+# Dependencies
 node_modules/
 **/node_modules/
+
+# Build output / caches
 .next/
 **/.next/
-.git/
-.turbo/
+out/
+**/out/
 dist/
-*.log
+**/dist/
+.turbo/
+coverage/
+**/coverage/
+*.tsbuildinfo
+**/*.tsbuildinfo
+
+# Version control
+.git/
+.gitignore
+
+# Secrets / environment (keep only *.env.example)
 .env
 .env.*
 !.env.example
 !**/.env.example
+
+# Logs
+*.log
+**/*.log
+logs/
+
+# Editor / IDE
+.idea/
+.vscode/
+
+# Local test / tooling artifacts
+.playwright-mcp/
+playwright-report/
+test-results/
+
+# Forge generated client sites (never ship in an image)
+generated-sites/

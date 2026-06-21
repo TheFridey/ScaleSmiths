@@ -1,0 +1,1 @@
+ALTER TYPE "public"."forge_task_agent_type" ADD VALUE 'seo' BEFORE 'qa';

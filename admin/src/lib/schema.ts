@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm"
-import { boolean, integer, pgEnum, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core"
+import { boolean, index, integer, jsonb, pgEnum, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core"
 
 export const kanbanColumn = pgEnum("kanban_column", ["backlog", "progress", "review", "done"])
 export const messageDirection = pgEnum("message_direction", ["inbound", "outbound"])
@@ -11,6 +11,12 @@ export const outreachActivityType = pgEnum("outreach_activity_type", ["linkedin_
 export const outreachDirection = pgEnum("outreach_direction", ["outbound", "inbound", "internal"])
 export const proposalPackageType = pgEnum("proposal_package_type", ["foundation", "growth", "forge", "retainer", "custom"])
 export const proposalStatus = pgEnum("proposal_status", ["draft", "sent", "viewed", "follow_up_due", "accepted", "rejected"])
+export const forgeProjectStatus = pgEnum("forge_project_status", ["intake", "research", "strategy", "sitemap", "copy", "design", "build", "qa", "integrations", "preview", "client_review", "ready_to_deploy", "deployed", "archived"])
+export const forgePriority = pgEnum("forge_priority", ["low", "medium", "high"])
+export const forgeTaskAgentType = pgEnum("forge_task_agent_type", ["intake", "research", "strategy", "sitemap", "copy", "design", "frontend", "integration", "seo", "qa", "deploy", "repair"])
+export const forgeTaskStatus = pgEnum("forge_task_status", ["queued", "running", "completed", "failed", "cancelled"])
+export const forgeArtifactType = pgEnum("forge_artifact_type", ["research_report", "sitemap", "copy_doc", "design_direction", "component_spec", "generated_code", "qa_report", "seo_pack", "visual_qa", "proposal", "handover_doc", "deployment_notes", "export_record"])
+export const forgeIntegrationProvider = pgEnum("forge_integration_provider", ["resend", "whatsapp", "analytics", "calendly", "stripe", "cloudinary", "custom"])
 
 export const clients = pgTable("clients", {
   id: serial("id").primaryKey(),
@@ -137,10 +143,140 @@ export const proposalTrackings = pgTable("proposal_trackings", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 })
 
+export const forgeProjects = pgTable("forge_projects", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  businessName: text("business_name").notNull(),
+  industry: text("industry"),
+  websiteUrl: text("website_url"),
+  status: forgeProjectStatus("status").default("intake").notNull(),
+  priority: forgePriority("priority").default("medium").notNull(),
+  ownerActor: text("owner_actor"),
+  clientId: integer("client_id").references(() => clients.id, { onDelete: "set null" }),
+  prospectId: integer("prospect_id").references(() => prospects.id, { onDelete: "set null" }),
+  brandNotes: text("brand_notes"),
+  targetAudience: text("target_audience"),
+  primaryGoal: text("primary_goal"),
+  budgetRange: text("budget_range"),
+  deadline: timestamp("deadline", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("forge_projects_status_idx").on(table.status),
+  index("forge_projects_priority_idx").on(table.priority),
+  index("forge_projects_updated_at_idx").on(table.updatedAt),
+])
+
+export const forgeTasks = pgTable("forge_tasks", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => forgeProjects.id, { onDelete: "cascade" }).notNull(),
+  title: text("title").notNull(),
+  description: text("description"),
+  agentType: forgeTaskAgentType("agent_type").notNull(),
+  status: forgeTaskStatus("status").default("queued").notNull(),
+  inputJson: jsonb("input_json").$type<Record<string, unknown>>(),
+  outputJson: jsonb("output_json").$type<Record<string, unknown>>(),
+  error: text("error"),
+  startedAt: timestamp("started_at", { withTimezone: true }),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("forge_tasks_project_id_idx").on(table.projectId),
+  index("forge_tasks_project_status_idx").on(table.projectId, table.status),
+  index("forge_tasks_project_agent_type_idx").on(table.projectId, table.agentType),
+  index("forge_tasks_status_updated_at_idx").on(table.status, table.updatedAt),
+])
+
+export const forgeArtifacts = pgTable("forge_artifacts", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => forgeProjects.id, { onDelete: "cascade" }).notNull(),
+  type: forgeArtifactType("type").notNull(),
+  title: text("title").notNull(),
+  content: text("content"),
+  metadataJson: jsonb("metadata_json").$type<Record<string, unknown>>(),
+  version: integer("version").default(1).notNull(),
+  supersededAt: timestamp("superseded_at", { withTimezone: true }),
+  retentionPolicy: text("retention_policy").default("standard").notNull(),
+  contentBytes: integer("content_bytes").default(0).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("forge_artifacts_project_id_idx").on(table.projectId),
+  index("forge_artifacts_project_type_idx").on(table.projectId, table.type),
+  index("forge_artifacts_project_type_title_idx").on(table.projectId, table.type, table.title),
+  index("forge_artifacts_version_idx").on(table.projectId, table.type, table.title, table.version),
+])
+
+export const forgeIntegrationConfigs = pgTable("forge_integration_configs", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => forgeProjects.id, { onDelete: "cascade" }).notNull(),
+  provider: forgeIntegrationProvider("provider").notNull(),
+  configJson: jsonb("config_json").$type<Record<string, unknown>>(),
+  enabled: boolean("enabled").default(false).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("forge_integration_configs_project_id_idx").on(table.projectId),
+  index("forge_integration_configs_project_provider_idx").on(table.projectId, table.provider),
+  index("forge_integration_configs_provider_idx").on(table.provider),
+])
+
+export const forgeActivityLogs = pgTable("forge_activity_logs", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => forgeProjects.id, { onDelete: "cascade" }).notNull(),
+  actor: text("actor"),
+  action: text("action").notNull(),
+  message: text("message").notNull(),
+  metadataJson: jsonb("metadata_json").$type<Record<string, unknown>>(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("forge_activity_logs_project_id_idx").on(table.projectId),
+  index("forge_activity_logs_project_created_at_idx").on(table.projectId, table.createdAt),
+  index("forge_activity_logs_action_idx").on(table.action),
+])
+
+export const forgeMemories = pgTable("forge_memories", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => forgeProjects.id, { onDelete: "cascade" }).notNull(),
+  key: text("key").notNull(),
+  value: text("value").notNull(),
+  source: text("source"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("forge_memories_project_id_idx").on(table.projectId),
+  index("forge_memories_project_key_idx").on(table.projectId, table.key),
+])
+
+// Lightweight job queue for long-running Forge actions. The API enqueues a row and returns
+// quickly; the worker (in-process by default, or a drained queue) executes the handler, which
+// updates the detailed forgeTasks/forgeArtifacts/forgeActivityLogs records. `kind` and `status`
+// are text (validated in app code) to avoid enum migrations as new job kinds are added.
+export const forgeJobs = pgTable("forge_jobs", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => forgeProjects.id, { onDelete: "cascade" }).notNull(),
+  kind: text("kind").notNull(),
+  status: text("status").default("queued").notNull(),
+  payloadJson: jsonb("payload_json").$type<Record<string, unknown>>(),
+  resultJson: jsonb("result_json").$type<Record<string, unknown>>(),
+  error: text("error"),
+  actor: text("actor"),
+  attempts: integer("attempts").default(0).notNull(),
+  startedAt: timestamp("started_at", { withTimezone: true }),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("forge_jobs_project_id_idx").on(table.projectId),
+  index("forge_jobs_status_created_at_idx").on(table.status, table.createdAt),
+])
+
 export const clientRelations = relations(clients, ({ many }) => ({
   kanbanCards: many(kanbanCards),
   messages: many(messages),
   convertedProspects: many(prospects),
+  forgeProjects: many(forgeProjects),
 }))
 
 export const kanbanCardRelations = relations(kanbanCards, ({ one }) => ({
@@ -160,6 +296,7 @@ export const messageRelations = relations(messages, ({ one }) => ({
 export const prospectRelations = relations(prospects, ({ many, one }) => ({
   outreachActivities: many(outreachActivities),
   proposals: many(proposalTrackings),
+  forgeProjects: many(forgeProjects),
   convertedClient: one(clients, {
     fields: [prospects.convertedClientId],
     references: [clients.id],
@@ -177,5 +314,64 @@ export const proposalTrackingRelations = relations(proposalTrackings, ({ one }) 
   prospect: one(prospects, {
     fields: [proposalTrackings.prospectId],
     references: [prospects.id],
+  }),
+}))
+
+export const forgeProjectRelations = relations(forgeProjects, ({ many, one }) => ({
+  client: one(clients, {
+    fields: [forgeProjects.clientId],
+    references: [clients.id],
+  }),
+  prospect: one(prospects, {
+    fields: [forgeProjects.prospectId],
+    references: [prospects.id],
+  }),
+  tasks: many(forgeTasks),
+  artifacts: many(forgeArtifacts),
+  integrationConfigs: many(forgeIntegrationConfigs),
+  activityLogs: many(forgeActivityLogs),
+  memories: many(forgeMemories),
+  jobs: many(forgeJobs),
+}))
+
+export const forgeTaskRelations = relations(forgeTasks, ({ one }) => ({
+  project: one(forgeProjects, {
+    fields: [forgeTasks.projectId],
+    references: [forgeProjects.id],
+  }),
+}))
+
+export const forgeJobRelations = relations(forgeJobs, ({ one }) => ({
+  project: one(forgeProjects, {
+    fields: [forgeJobs.projectId],
+    references: [forgeProjects.id],
+  }),
+}))
+
+export const forgeArtifactRelations = relations(forgeArtifacts, ({ one }) => ({
+  project: one(forgeProjects, {
+    fields: [forgeArtifacts.projectId],
+    references: [forgeProjects.id],
+  }),
+}))
+
+export const forgeIntegrationConfigRelations = relations(forgeIntegrationConfigs, ({ one }) => ({
+  project: one(forgeProjects, {
+    fields: [forgeIntegrationConfigs.projectId],
+    references: [forgeProjects.id],
+  }),
+}))
+
+export const forgeActivityLogRelations = relations(forgeActivityLogs, ({ one }) => ({
+  project: one(forgeProjects, {
+    fields: [forgeActivityLogs.projectId],
+    references: [forgeProjects.id],
+  }),
+}))
+
+export const forgeMemoryRelations = relations(forgeMemories, ({ one }) => ({
+  project: one(forgeProjects, {
+    fields: [forgeMemories.projectId],
+    references: [forgeProjects.id],
   }),
 }))

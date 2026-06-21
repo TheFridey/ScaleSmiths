@@ -21,6 +21,9 @@ RUN --mount=type=cache,target=/root/.npm \
       --fetch-retry-maxtimeout=120000 \
       --fetch-timeout=300000
 COPY . .
+# Produce the standalone server bundle that the runner stage copies below. This Linux build
+# does the node_modules copy quickly; local dev builds skip it (see next.config.mjs).
+ENV NEXT_OUTPUT_STANDALONE 1
 RUN npm run build
 
 FROM node:22-alpine AS runner

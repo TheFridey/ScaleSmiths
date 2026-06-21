@@ -1,10 +1,42 @@
+# Dependencies
 node_modules/
+
+# Build output / caches
 .next/
+out/
+dist/
+.turbo/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+
+# Secrets / environment (keep only *.env.example)
 .env
 .env.*
 !.env.example
 !**/.env.example
-.DS_Store
+
+# Logs
 *.log
-dist/
-.turbo/
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor / IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local test / tooling artifacts
+.playwright-mcp/
+playwright-report/
+test-results/
+
+# Forge generated client sites (workspaces are local only)
+generated-sites/*
+!generated-sites/.gitignore

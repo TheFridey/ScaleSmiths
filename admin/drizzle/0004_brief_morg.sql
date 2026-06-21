@@ -1,0 +1,1 @@
+ALTER TYPE "public"."forge_artifact_type" ADD VALUE 'seo_pack' BEFORE 'proposal';

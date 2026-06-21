@@ -1,10 +1,32 @@
+# Dependencies
 node_modules/
+
+# Build output / caches
 .next/
-.turbo/
+out/
 dist/
+.turbo/
 coverage/
-*.log
-tsconfig.tsbuildinfo
+*.tsbuildinfo
+
+# Version control
+.git/
+.gitignore
+
+# Secrets / environment (keep only *.env.example)
 .env
 .env.*
 !.env.example
+
+# Logs
+*.log
+logs/
+
+# Editor / IDE
+.idea/
+.vscode/
+
+# Local test / tooling artifacts
+.playwright-mcp/
+playwright-report/
+test-results/

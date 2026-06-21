@@ -1,0 +1,1 @@
+ALTER TYPE "public"."forge_artifact_type" ADD VALUE 'visual_qa' BEFORE 'proposal';

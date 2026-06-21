@@ -2,13 +2,14 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { signOut } from "next-auth/react"
-import { LayoutDashboard, Users, GitBranch, MessageSquare, LogOut, Target } from "lucide-react"
+import { LayoutDashboard, Users, GitBranch, MessageSquare, LogOut, Target, Gauge } from "lucide-react"
 import { Logo } from "@/components/Logo"
 
 const NAV = [
   { href:"/dashboard", label:"Dashboard", Icon:LayoutDashboard },
   { href:"/clients",   label:"Clients",   Icon:Users           },
   { href:"/prospects", label:"Pipeline",  Icon:Target          },
+  { href:"/forge",     label:"Forge",     Icon:Gauge           },
   { href:"/roadmap",   label:"Roadmap",   Icon:GitBranch       },
   { href:"/messages",  label:"Messages",  Icon:MessageSquare   },
 ]

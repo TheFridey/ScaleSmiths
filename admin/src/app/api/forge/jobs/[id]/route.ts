@@ -6,6 +6,7 @@ import { forgeJobs } from "@/lib/schema"
 import { toForgeJobView } from "@/lib/forge-jobs"
 
 export const dynamic = "force-dynamic"
+export const runtime = "nodejs"
 
 function parseId(value: string) {
   const id = Number(value)

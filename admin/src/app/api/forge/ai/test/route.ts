@@ -4,6 +4,7 @@ import { FORGE_AI_TEST_SCHEMA, isForgeAiProvider, isForgeAiTaskType, type JsonVa
 import { buildForgeTaskOutputMetadata, ForgeAiError, runForgeAiJson } from "@/lib/server/forge-ai"
 
 export const dynamic = "force-dynamic"
+export const runtime = "nodejs"
 
 type TestResponse = {
   summary: string

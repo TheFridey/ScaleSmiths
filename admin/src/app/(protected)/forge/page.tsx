@@ -6,6 +6,7 @@ import { forgeActivityLogs, forgeProjects } from "@/lib/schema"
 
 export const metadata: Metadata = { title: "Forge" }
 export const dynamic = "force-dynamic"
+export const runtime = "nodejs"
 
 export default async function ForgePage() {
   const [projects, recentActivity] = await Promise.all([

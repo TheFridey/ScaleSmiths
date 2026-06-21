@@ -24,6 +24,7 @@ import { FORGE_WORKSPACE_MEMORY_KEY, readForgeWorkspaceMemory } from "@/lib/forg
 
 export const metadata: Metadata = { title: "Forge Project" }
 export const dynamic = "force-dynamic"
+export const runtime = "nodejs"
 
 function parseId(value: string) {
   const id = Number(value)

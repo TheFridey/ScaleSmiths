@@ -7,6 +7,7 @@ import { createForgeProjectWorkspace, ForgeWorkspaceError } from "@/lib/server/f
 import { forgeActivityLogs, forgeMemories, forgeProjects } from "@/lib/schema"
 
 export const dynamic = "force-dynamic"
+export const runtime = "nodejs"
 
 function sessionActor(session: { user?: { email?: string | null; name?: string | null } } | null) {
   return session?.user?.email ?? session?.user?.name ?? "admin"

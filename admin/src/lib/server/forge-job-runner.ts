@@ -10,15 +10,6 @@ import {
 import { forgeActivityLogs, forgeJobs } from "@/lib/schema"
 import { isForgeAnimationPack } from "@/lib/forge-animation"
 import { isForgeDesignStylePack } from "@/lib/forge-design"
-import { runForgeResearchAgent } from "./forge-research-agent"
-import { runForgeSitemapAgent } from "./forge-sitemap-agent"
-import { runForgeCopyAgent } from "./forge-copy-agent"
-import { runForgeDesignAgent } from "./forge-design-agent"
-import { runForgeComponentSpecAgent } from "./forge-component-spec-agent"
-import { runForgeFrontendCodeAgent } from "./forge-frontend-code-agent"
-import { runForgeQaAgent, runForgeRepairAgent } from "./forge-qa-agent"
-import { startForgePreview } from "./forge-preview"
-import { runForgeProposalAgent } from "./forge-proposal-agent"
 
 export class ForgeJobError extends Error {
   safeMessage: string
@@ -37,29 +28,32 @@ type JobResult = Record<string, unknown>
 type JobHandler = (projectId: number, actor: string, payload: JobPayload) => Promise<JobResult>
 
 /**
- * The job registry maps each long-running Forge action to a handler. Handlers delegate to the
- * existing agents, which own the detailed forgeTasks/forgeArtifacts/forgeActivityLogs updates.
- * Adding a future automatic execution path only means swapping how handlers are invoked.
+ * The job registry maps each long-running Forge action to a handler. Handlers lazily import the
+ * agent module so that merely importing this runner (which every Forge action route does) does
+ * NOT pull the entire agent dependency graph (pg, node:child_process, zlib, AI, drizzle, ...) into
+ * every route bundle. Static imports here previously bundled all agents into every route, which
+ * blew up `next build` compile time and stalled "Collecting page data". Agents are still executed
+ * exactly as before — they own the detailed forgeTasks/forgeArtifacts/forgeActivityLogs updates.
  */
 const JOB_HANDLERS: Record<Exclude<ForgeJobKind, "export">, JobHandler> = {
-  research: (projectId, actor) => runForgeResearchAgent(projectId, actor),
-  sitemap: (projectId, actor) => runForgeSitemapAgent(projectId, actor),
-  copy: (projectId, actor, payload) =>
-    runForgeCopyAgent(projectId, actor, typeof payload.regeneratePagePath === "string" ? payload.regeneratePagePath : null),
-  design: (projectId, actor, payload) =>
-    runForgeDesignAgent(
+  research: async (projectId, actor) => (await import("./forge-research-agent")).runForgeResearchAgent(projectId, actor),
+  sitemap: async (projectId, actor) => (await import("./forge-sitemap-agent")).runForgeSitemapAgent(projectId, actor),
+  copy: async (projectId, actor, payload) =>
+    (await import("./forge-copy-agent")).runForgeCopyAgent(projectId, actor, typeof payload.regeneratePagePath === "string" ? payload.regeneratePagePath : null),
+  design: async (projectId, actor, payload) =>
+    (await import("./forge-design-agent")).runForgeDesignAgent(
       projectId,
       actor,
       isForgeDesignStylePack(payload.preferredStylePack) ? payload.preferredStylePack : null,
       isForgeAnimationPack(payload.preferredAnimationPack) ? payload.preferredAnimationPack : null,
     ),
-  component_spec: (projectId, actor) => runForgeComponentSpecAgent(projectId, actor),
-  generate_site: (projectId, actor) => runForgeFrontendCodeAgent(projectId, actor),
-  qa: (projectId, actor) => runForgeQaAgent(projectId, actor),
-  repair: (projectId, actor) => runForgeRepairAgent(projectId, actor),
-  preview_start: async (projectId, actor) => ({ ok: true, preview: await startForgePreview(projectId, actor) }),
-  proposal: (projectId, actor, payload) =>
-    runForgeProposalAgent(projectId, actor, payload.action === "audit" ? "audit" : "proposal"),
+  component_spec: async (projectId, actor) => (await import("./forge-component-spec-agent")).runForgeComponentSpecAgent(projectId, actor),
+  generate_site: async (projectId, actor) => (await import("./forge-frontend-code-agent")).runForgeFrontendCodeAgent(projectId, actor),
+  qa: async (projectId, actor) => (await import("./forge-qa-agent")).runForgeQaAgent(projectId, actor),
+  repair: async (projectId, actor) => (await import("./forge-qa-agent")).runForgeRepairAgent(projectId, actor),
+  preview_start: async (projectId, actor) => ({ ok: true, preview: await (await import("./forge-preview")).startForgePreview(projectId, actor) }),
+  proposal: async (projectId, actor, payload) =>
+    (await import("./forge-proposal-agent")).runForgeProposalAgent(projectId, actor, payload.action === "audit" ? "audit" : "proposal"),
 }
 
 export interface EnqueueForgeJobInput {

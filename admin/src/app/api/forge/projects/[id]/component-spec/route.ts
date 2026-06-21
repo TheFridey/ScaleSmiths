@@ -5,6 +5,7 @@ import { ForgeComponentSpecAgentError, approveForgeComponentSpec } from "@/lib/s
 import { enqueueForgeJob, forgeJobResponseBody } from "@/lib/server/forge-job-runner"
 
 export const dynamic = "force-dynamic"
+export const runtime = "nodejs"
 
 function sessionActor(session: { user?: { email?: string | null; name?: string | null } } | null) {
   return session?.user?.email ?? session?.user?.name ?? "admin"

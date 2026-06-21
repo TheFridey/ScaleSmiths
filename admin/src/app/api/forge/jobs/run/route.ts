@@ -3,6 +3,7 @@ import { auth } from "../../../../../../auth"
 import { runDueForgeJobs } from "@/lib/server/forge-job-runner"
 
 export const dynamic = "force-dynamic"
+export const runtime = "nodejs"
 export const maxDuration = 300
 
 /**

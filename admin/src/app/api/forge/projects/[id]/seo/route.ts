@@ -3,6 +3,7 @@ import { auth } from "../../../../../../../auth"
 import { ForgeSeoAgentError, runForgeSeoAgent } from "@/lib/server/forge-seo-agent"
 
 export const dynamic = "force-dynamic"
+export const runtime = "nodejs"
 
 function sessionActor(session: { user?: { email?: string | null; name?: string | null } } | null) {
   return session?.user?.email ?? session?.user?.name ?? "admin"

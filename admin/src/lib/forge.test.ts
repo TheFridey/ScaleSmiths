@@ -63,6 +63,7 @@ import {
   type ForgeRateLimitStore,
 } from "./forge-security"
 import { buildForgeGeneratedProcessEnv } from "./forge-process-env"
+import { isBuildPhaseWithoutDatabase } from "./build-env"
 import {
   buildForgeArtifactVersionMetadata,
   compactForgeLargeLog,
@@ -381,6 +382,24 @@ describe("forge shell", () => {
     expect(resolveForgeAiProvider({ FORGE_ENABLE_AI: "true", FORGE_DEFAULT_AI_PROVIDER: "openai" })).toBe("openai")
     expect(resolveForgeAiProvider({ FORGE_ENABLE_AI: "true", FORGE_DEFAULT_AI_PROVIDER: "unknown" })).toBe("mock")
     expect(resolveForgeAiModel("copywriting", "mock")).toBe(FORGE_AI_MODEL_ROUTES.copywriting.mock)
+  })
+
+  it("detects build-time page-data collection where Forge must not open a database pool", () => {
+    expect(isBuildPhaseWithoutDatabase({
+      NEXT_PHASE: "phase-production-build",
+      DATABASE_URL: "postgres://example",
+    })).toBe(true)
+    expect(isBuildPhaseWithoutDatabase({
+      npm_lifecycle_event: "build",
+      DATABASE_URL: "postgres://example",
+    })).toBe(true)
+    expect(isBuildPhaseWithoutDatabase({
+      NODE_ENV: "production",
+      DATABASE_URL: "postgres://example",
+    })).toBe(false)
+    expect(isBuildPhaseWithoutDatabase({
+      NODE_ENV: "production",
+    })).toBe(true)
   })
 
   it("validates structured AI response JSON against a schema", () => {

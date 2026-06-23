@@ -21,6 +21,10 @@ const globalForDb = globalThis as unknown as {
 }
 
 function createPool() {
+  if (!process.env.DATABASE_URL) {
+    throw new Error("DATABASE_URL is required for database access.")
+  }
+
   return new Pool({
     connectionString: process.env.DATABASE_URL,
     allowExitOnIdle: true,
@@ -29,10 +33,21 @@ function createPool() {
   })
 }
 
-const pool = globalForDb.__scalesmithsPool ?? createPool()
-export const db: NodePgDatabase<typeof schema> = globalForDb.__scalesmithsDb ?? drizzle(pool, { schema })
+function createUnavailableDb(): NodePgDatabase<typeof schema> {
+  return new Proxy({}, {
+    get() {
+      throw new Error("DATABASE_URL is required for database access.")
+    },
+  }) as NodePgDatabase<typeof schema>
+}
 
-if (process.env.NODE_ENV !== "production") {
+const hasDatabaseUrl = Boolean(process.env.DATABASE_URL)
+const pool = hasDatabaseUrl ? globalForDb.__scalesmithsPool ?? createPool() : undefined
+export const db: NodePgDatabase<typeof schema> = hasDatabaseUrl
+  ? globalForDb.__scalesmithsDb ?? drizzle(pool as Pool, { schema })
+  : createUnavailableDb()
+
+if (process.env.NODE_ENV !== "production" && pool) {
   globalForDb.__scalesmithsPool = pool
   globalForDb.__scalesmithsDb = db
 }

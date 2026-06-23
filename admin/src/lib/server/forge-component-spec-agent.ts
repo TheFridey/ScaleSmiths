@@ -106,6 +106,8 @@ export async function runForgeComponentSpecAgent(projectId: number, actor: strin
       maxTokens: 3000,
       timeoutMs: 35_000,
       maxRetries: 2,
+      projectId,
+      taskId: task.id,
       mockData: createMockComponentSpec(approvedSitemap, approvedCopy, approvedDesign),
     })
     const parsed = parseForgeComponentSpecPayload(result.data)

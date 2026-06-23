@@ -135,6 +135,8 @@ export async function runForgeDesignAgent(
       maxTokens: 2200,
       timeoutMs: 30_000,
       maxRetries: 2,
+      projectId,
+      taskId: task.id,
       mockData: createMockDesignDirection({ project, intake: intake.intake, approvedSitemap, approvedCopy, preferredStylePack, preferredAnimationPack }),
     })
     const direction = normalizeDesignDirection(result.data as ForgeDesignDirection)

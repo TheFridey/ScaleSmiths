@@ -16,6 +16,7 @@ export const FORGE_JOB_KINDS = [
   "design",
   "component_spec",
   "generate_site",
+  "visual_critique",
   "qa",
   "repair",
   "preview_start",
@@ -25,10 +26,9 @@ export const FORGE_JOB_KINDS = [
 
 export type ForgeJobKind = (typeof FORGE_JOB_KINDS)[number]
 
-// Kinds that must execute inline because they stream a response (e.g. a file download) rather
-// than producing a JSON result that can be polled. Queuing these would require object storage,
-// which is not provisioned, so they always run directly.
-export const FORGE_JOB_INLINE_ONLY: readonly ForgeJobKind[] = ["export"]
+// Kinds that must execute inline because they cannot produce a JSON result that can be polled.
+// Export jobs now return export metadata through the queue; downloads remain in the Export panel.
+export const FORGE_JOB_INLINE_ONLY: readonly ForgeJobKind[] = []
 
 export const FORGE_JOB_STATUSES = ["queued", "running", "completed", "failed", "cancelled"] as const
 export type ForgeJobStatus = (typeof FORGE_JOB_STATUSES)[number]

@@ -1,7 +1,7 @@
 import "server-only"
 import {
   buildForgeTaskOutputMetadata,
-  assertForgeAiBudgetAllowsRequest,
+  assertForgeAiBudgetAllowsRequest as assertForgeAiTokenBudgetAllowsRequest,
   createMockStructuredResponse,
   estimateForgeAiCostUsd,
   getForgeAiBudgetDate,
@@ -18,6 +18,11 @@ import {
   type ForgeJsonSchema,
   type JsonValue,
 } from "@/lib/forge-ai"
+import {
+  ForgeAiBudgetExceededError,
+  assertForgeAiBudgetAllowsRequest,
+  recordForgeAiUsage,
+} from "./forge-ai-usage"
 
 const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses"
 const ANTHROPIC_MESSAGES_URL = "https://api.anthropic.com/v1/messages"
@@ -59,6 +64,8 @@ export interface ForgeAiRequest<TData extends JsonValue = JsonValue> {
   maxTokens?: number
   temperature?: number
   mockData?: TData
+  projectId?: number | null
+  taskId?: number | null
 }
 
 export async function runForgeAiJson<TData extends JsonValue = JsonValue>(request: ForgeAiRequest<TData>): Promise<ForgeAiResult<TData>> {
@@ -66,7 +73,8 @@ export async function runForgeAiJson<TData extends JsonValue = JsonValue>(reques
   const configuredProvider = request.provider ?? resolveForgeAiProvider(env)
   const provider = providerReady(configuredProvider, env) ? configuredProvider : "mock"
   const model = resolveForgeAiModel(request.taskType, provider)
-  const startedAt = Date.now()
+  const startedAtDate = new Date()
+  const startedAt = startedAtDate.getTime()
 
   if (provider === "mock") {
     const data = request.mockData ?? createMockStructuredResponse(request.schema, request.taskType)
@@ -76,27 +84,55 @@ export async function runForgeAiJson<TData extends JsonValue = JsonValue>(reques
       throw new ForgeAiError("Mock AI response did not match the requested schema.")
     }
 
-    return {
+    const completedAt = new Date()
+    const result = {
       provider,
       model,
       taskType: request.taskType,
       data: parsed.data,
       usage: { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
       costEstimateUsd: null,
-      latencyMs: Date.now() - startedAt,
+      latencyMs: completedAt.getTime() - startedAt,
       retries: 0,
       responseId: "mock",
     }
+    await recordForgeAiUsage({
+      projectId: request.projectId ?? null,
+      taskId: request.taskId ?? null,
+      provider,
+      model,
+      usage: result.usage,
+      estimatedCost: result.costEstimateUsd,
+      startedAt: startedAtDate,
+      completedAt,
+    })
+    return result
   }
 
   const budgetConfig = resolveForgeAiBudgetConfig(env)
   const requestedMaxTokens = request.maxTokens ?? 800
-  const budgetCheck = assertForgeAiBudgetAllowsRequest({
+  const budgetCheck = assertForgeAiTokenBudgetAllowsRequest({
     config: budgetConfig,
     ledger: currentBudgetLedger(),
     requestedMaxTokens,
   })
   if (!budgetCheck.ok) throw new ForgeAiError(budgetCheck.error)
+
+  const estimatedMaxCost = estimateForgeAiCostUsd(provider, {
+    inputTokens: estimatePromptTokens(request),
+    outputTokens: requestedMaxTokens,
+    totalTokens: estimatePromptTokens(request) + requestedMaxTokens,
+  }) ?? 0
+  try {
+    await assertForgeAiBudgetAllowsRequest({
+      projectId: request.projectId ?? null,
+      estimatedMaxCost,
+      env,
+    })
+  } catch (error) {
+    if (error instanceof ForgeAiBudgetExceededError) throw new ForgeAiError(error.safeMessage)
+    throw error
+  }
 
   const maxRetries = Math.max(0, request.maxRetries ?? DEFAULT_MAX_RETRIES)
   let lastError: unknown
@@ -114,6 +150,17 @@ export async function runForgeAiJson<TData extends JsonValue = JsonValue>(reques
 
       const costEstimateUsd = estimateForgeAiCostUsd(provider, raw.usage)
       recordBudgetUsage(raw.usage.totalTokens ?? 0, costEstimateUsd ?? 0)
+      const completedAt = new Date()
+      await recordForgeAiUsage({
+        projectId: request.projectId ?? null,
+        taskId: request.taskId ?? null,
+        provider,
+        model,
+        usage: raw.usage,
+        estimatedCost: costEstimateUsd,
+        startedAt: startedAtDate,
+        completedAt,
+      })
 
       return {
         provider,
@@ -122,7 +169,7 @@ export async function runForgeAiJson<TData extends JsonValue = JsonValue>(reques
         data: parsed.data,
         usage: raw.usage,
         costEstimateUsd,
-        latencyMs: Date.now() - startedAt,
+        latencyMs: completedAt.getTime() - startedAt,
         retries: attempt,
         responseId: raw.responseId,
       }
@@ -322,6 +369,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+function estimatePromptTokens(request: ForgeAiRequest) {
+  const chars = `${request.systemPrompt ?? ""}\n${request.prompt}`.length
+  return Math.max(1, Math.ceil(chars / 4))
 }
 
 function currentBudgetLedger(): ForgeAiBudgetLedger {

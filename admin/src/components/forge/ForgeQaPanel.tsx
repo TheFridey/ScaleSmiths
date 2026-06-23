@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { Bug, ChevronDown, Hammer, Play, ScrollText } from "lucide-react"
 import type { ForgeGeneratedCodeArtifactState } from "@/lib/forge-frontend-code"
 import type { ForgeQaArtifactState, ForgeQaCommandResult, ForgeQaReport } from "@/lib/forge-qa"
+import type { ForgeVisualCritiqueArtifactState } from "@/lib/forge-visual-critique"
 import type { ForgeWorkspaceMetadata } from "@/lib/forge-workspace"
 import { submitForgeJob } from "@/lib/forge-job-client"
 
@@ -14,12 +15,14 @@ export function ForgeQaPanel({
   projectId,
   initialWorkspace,
   initialGeneratedCode,
+  initialVisualCritique = { report: null, status: "empty", score: null, approvedAt: null, approvedBy: null, autoFixAppliedAt: null },
   initialQa,
   disabled = false,
 }: {
   projectId: number
   initialWorkspace: ForgeWorkspaceMetadata | null
   initialGeneratedCode: ForgeGeneratedCodeArtifactState
+  initialVisualCritique?: ForgeVisualCritiqueArtifactState
   initialQa: ForgeQaArtifactState
   disabled?: boolean
 }) {
@@ -37,8 +40,9 @@ export function ForgeQaPanel({
     const missing: string[] = []
     if (!initialWorkspace) missing.push("generated workspace")
     if (initialGeneratedCode.status !== "generated") missing.push("generated site code")
+    if (initialVisualCritique.status !== "approved") missing.push("approved visual critique")
     return missing
-  }, [initialGeneratedCode.status, initialWorkspace])
+  }, [initialGeneratedCode.status, initialVisualCritique.status, initialWorkspace])
   const status = report?.status ?? "not_run"
   const canRunQa = !disabled && busy === null && readiness.length === 0
   const canRepair = canRunQa && status === "failed"

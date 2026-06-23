@@ -104,6 +104,8 @@ export async function runForgeSitemapAgent(projectId: number, actor: string) {
       maxTokens: 2200,
       timeoutMs: 30_000,
       maxRetries: 2,
+      projectId,
+      taskId: task.id,
       mockData: createMockSitemapStrategy(project, intake.intake, researchReport),
     })
     const strategy = result.data as ForgeSitemapStrategy

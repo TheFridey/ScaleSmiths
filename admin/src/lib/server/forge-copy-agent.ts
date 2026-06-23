@@ -127,6 +127,8 @@ export async function runForgeCopyAgent(projectId: number, actor: string, regene
       maxTokens: 3200,
       timeoutMs: 35_000,
       maxRetries: 2,
+      projectId,
+      taskId: task.id,
       mockData: createMockCopyDocument(project, approvedSitemap, intake.intake, researchReport),
     })
     const copy = normalizeCopySelfCheck(result.data as ForgeCopyDocument)

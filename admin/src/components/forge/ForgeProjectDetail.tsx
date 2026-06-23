@@ -11,6 +11,9 @@ import {
   Brain,
   ChevronLeft,
   Code2,
+  DollarSign,
+  Download,
+  Eye,
   FileText,
   Gauge,
   Globe2,
@@ -40,6 +43,7 @@ import { ForgeResendConfigPanel } from "./ForgeResendConfigPanel"
 import { ForgeResearchActions } from "./ForgeResearchActions"
 import { ForgeSeoPanel } from "./ForgeSeoPanel"
 import { ForgeSitemapStrategyPanel } from "./ForgeSitemapStrategyPanel"
+import { ForgeVisualCritiquePanel } from "./ForgeVisualCritiquePanel"
 import { ForgeVisualQaPanel } from "./ForgeVisualQaPanel"
 import { ForgeWhatsAppConfigPanel } from "./ForgeWhatsAppConfigPanel"
 import { ForgeWorkspacePanel } from "./ForgeWorkspacePanel"
@@ -52,6 +56,7 @@ import type { ForgeGeneratedCodeArtifactState } from "@/lib/forge-frontend-code"
 import type { ForgePreviewState } from "@/lib/forge-preview"
 import type { ForgeQaArtifactState } from "@/lib/forge-qa"
 import type { ForgeSeoArtifactState } from "@/lib/forge-seo"
+import type { ForgeVisualCritiqueArtifactState } from "@/lib/forge-visual-critique"
 import type { ForgeVisualQaArtifactState } from "@/lib/forge-visual-qa"
 import type { ForgeProposalArtifactState } from "@/lib/forge-proposal"
 import type { ForgeExportArtifactState } from "@/lib/forge-export"
@@ -67,9 +72,9 @@ type ProjectTab = "command" | "intake" | "strategy" | "build" | "qa" | "launch" 
 type IntakePane = "brief" | "settings"
 type StrategyPane = "research" | "sitemap" | "copy" | "design" | "spec"
 type BuildPane = "workspace" | "integrations" | "generate" | "seo"
-type QaPane = "checks" | "visual"
+type QaPane = "critique" | "checks" | "visual"
 type LaunchPane = "proposal" | "export" | "deploy"
-type RecordsPane = "tasks" | "activity" | "memory" | "integrations" | "details"
+type RecordsPane = "tasks" | "activity" | "usage" | "memory" | "integrations" | "details"
 
 const TABS: Array<{ key: ProjectTab; label: string; Icon: LucideIcon }> = [
   { key: "command", label: "Command", Icon: Bot },
@@ -122,6 +127,45 @@ interface ForgeMemoryRow {
   updatedAt: Date | string
 }
 
+interface ForgeAiUsageMetrics {
+  totals: ForgeAiUsageSummary
+  today: ForgeAiUsageSummary
+  week: ForgeAiUsageSummary
+  month: ForgeAiUsageSummary
+  budget: {
+    project: ForgeAiBudgetState
+    monthly: ForgeAiBudgetState
+  }
+  recent: Array<{
+    id: number
+    taskId: number | null
+    provider: string
+    model: string
+    promptTokens: number
+    completionTokens: number
+    totalTokens: number
+    estimatedCost: number
+    completedAt: Date | string
+  }>
+}
+
+interface ForgeAiUsageSummary {
+  requests: number
+  promptTokens: number
+  completionTokens: number
+  totalTokens: number
+  estimatedCost: number
+}
+
+interface ForgeAiBudgetState {
+  limit: number | null
+  used: number
+  remaining: number | null
+  ratio: number | null
+  blocked: boolean
+  warning: boolean
+}
+
 export function ForgeProjectDetail({
   project,
   tasks,
@@ -129,6 +173,7 @@ export function ForgeProjectDetail({
   integrations,
   activityLogs,
   memories,
+  aiUsage,
   initialIntake,
   initialSitemap,
   initialCopy,
@@ -136,6 +181,7 @@ export function ForgeProjectDetail({
   initialComponentSpec,
   initialWorkspace,
   initialGeneratedCode,
+  initialVisualCritique,
   initialPreview,
   initialQa,
   initialSeo,
@@ -153,6 +199,7 @@ export function ForgeProjectDetail({
   integrations: ForgeIntegrationRow[]
   activityLogs: ForgeActivityRow[]
   memories: ForgeMemoryRow[]
+  aiUsage: ForgeAiUsageMetrics
   initialIntake: ForgeIntakeState
   initialSitemap: ForgeSitemapArtifactState
   initialCopy: ForgeCopyArtifactState
@@ -160,6 +207,7 @@ export function ForgeProjectDetail({
   initialComponentSpec: ForgeComponentSpecArtifactState
   initialWorkspace: ForgeWorkspaceMetadata | null
   initialGeneratedCode: ForgeGeneratedCodeArtifactState
+  initialVisualCritique: ForgeVisualCritiqueArtifactState
   initialPreview: ForgePreviewState | null
   initialQa: ForgeQaArtifactState
   initialSeo: ForgeSeoArtifactState
@@ -175,7 +223,7 @@ export function ForgeProjectDetail({
   const [intakePane, setIntakePane] = useState<IntakePane>("brief")
   const [strategyPane, setStrategyPane] = useState<StrategyPane>("research")
   const [buildPane, setBuildPane] = useState<BuildPane>("workspace")
-  const [qaPane, setQaPane] = useState<QaPane>("checks")
+  const [qaPane, setQaPane] = useState<QaPane>("critique")
   const [launchPane, setLaunchPane] = useState<LaunchPane>("proposal")
   const [recordsPane, setRecordsPane] = useState<RecordsPane>("tasks")
   const projectId = project.id ?? 0
@@ -187,6 +235,7 @@ export function ForgeProjectDetail({
       copy: initialCopy,
       design: initialDesign,
       generatedCode: initialGeneratedCode,
+      visualCritique: initialVisualCritique,
       qa: initialQa,
       preview: initialPreview,
       deploy: initialDeploy,
@@ -194,7 +243,7 @@ export function ForgeProjectDetail({
       artifacts,
       integrations,
     }),
-    [artifacts, initialCopy, initialDeploy, initialDesign, initialGeneratedCode, initialIntake, initialPreview, initialQa, initialSitemap, integrations, tasks],
+    [artifacts, initialCopy, initialDeploy, initialDesign, initialGeneratedCode, initialIntake, initialPreview, initialQa, initialSitemap, initialVisualCritique, integrations, tasks],
   )
   const completedStages = stages.filter((stage) => stage.status === "approved" || stage.status === "complete").length
   const activeTasks = tasks.filter((task) => task.status === "queued" || task.status === "running")
@@ -377,13 +426,25 @@ export function ForgeProjectDetail({
               {activeTab === "qa" && (
                 <SectionDeck
                   options={[
+                    { key: "critique", label: "Critique", Icon: Eye },
                     { key: "checks", label: "Checks", Icon: ShieldCheck },
                     { key: "visual", label: "Visual QA", Icon: Monitor },
                   ]}
                   active={qaPane}
                   onChange={setQaPane}
                 >
-                  {qaPane === "checks" && <ForgeQaPanel projectId={projectId} initialWorkspace={initialWorkspace} initialGeneratedCode={initialGeneratedCode} initialQa={initialQa} disabled={archived} />}
+                  {qaPane === "critique" && (
+                    <ForgeVisualCritiquePanel
+                      projectId={projectId}
+                      initialDesign={initialDesign}
+                      initialCopy={initialCopy}
+                      initialComponentSpec={initialComponentSpec}
+                      initialGeneratedCode={initialGeneratedCode}
+                      initialCritique={initialVisualCritique}
+                      disabled={archived}
+                    />
+                  )}
+                  {qaPane === "checks" && <ForgeQaPanel projectId={projectId} initialWorkspace={initialWorkspace} initialGeneratedCode={initialGeneratedCode} initialVisualCritique={initialVisualCritique} initialQa={initialQa} disabled={archived} />}
                   {qaPane === "visual" && <ForgeVisualQaPanel projectId={projectId} initialWorkspace={initialWorkspace} initialGeneratedCode={initialGeneratedCode} initialVisualQa={initialVisualQa} disabled={archived} />}
                 </SectionDeck>
               )}
@@ -417,6 +478,7 @@ export function ForgeProjectDetail({
                   options={[
                     { key: "tasks", label: "Tasks", Icon: ListChecks },
                     { key: "activity", label: "Activity", Icon: Activity },
+                    { key: "usage", label: "AI Usage", Icon: DollarSign },
                     { key: "memory", label: "Memory", Icon: Brain },
                     { key: "integrations", label: "Integrations", Icon: Link2 },
                     { key: "details", label: "Details", Icon: Box },
@@ -426,6 +488,7 @@ export function ForgeProjectDetail({
                 >
                   {recordsPane === "tasks" && <Panel title="Tasks" icon={ListChecks}><TaskList rows={tasks} /></Panel>}
                   {recordsPane === "activity" && <Panel title="Activity Log" icon={Activity}><ActivityList rows={activityLogs} /></Panel>}
+                  {recordsPane === "usage" && <Panel title="AI Usage" icon={DollarSign}><AiUsagePanel projectId={projectId} usage={aiUsage} /></Panel>}
                   {recordsPane === "memory" && <Panel title="Project Memory" icon={Brain}><MemoryList rows={memories} /></Panel>}
                   {recordsPane === "integrations" && <Panel title="Integrations" icon={Link2}><IntegrationList rows={integrations} /></Panel>}
                   {recordsPane === "details" && <Panel title="Core Details" icon={Box}><DetailGrid project={project} /></Panel>}
@@ -603,6 +666,7 @@ function buildStageTimeline({
   copy,
   design,
   generatedCode,
+  visualCritique,
   qa,
   preview,
   deploy,
@@ -615,6 +679,7 @@ function buildStageTimeline({
   copy: ForgeCopyArtifactState
   design: ForgeDesignArtifactState
   generatedCode: ForgeGeneratedCodeArtifactState
+  visualCritique: ForgeVisualCritiqueArtifactState
   qa: ForgeQaArtifactState
   preview: ForgePreviewState | null
   deploy: ForgeDeployArtifactState
@@ -658,6 +723,12 @@ function buildStageTimeline({
       status: generatedCode.status === "generated" ? "complete" : stageTaskStatus(tasks, ["frontend"], "needs_review"),
       detail: generatedCode.summary ? `${generatedCode.summary.fileCount} generated files` : "Generated site workspace",
       tab: "build",
+    },
+    {
+      label: "Visual Critique",
+      status: visualCritique.status === "approved" ? "approved" : visualCritique.status === "draft" ? "needs_review" : stageTaskStatus(tasks, ["qa"], "needs_review"),
+      detail: visualCritique.score === null ? "Design review before QA" : `Score ${visualCritique.score}/100`,
+      tab: "qa",
     },
     {
       label: "QA",
@@ -741,6 +812,70 @@ function ActivityList({ rows }: { rows: ForgeActivityRow[] }) {
           <div className="mt-2 font-dm text-[11px]" style={{ color:T.t3 }}>{row.actor ?? "admin"}</div>
         </div>
       ))}
+    </div>
+  )
+}
+
+function AiUsagePanel({ projectId, usage }: { projectId: number; usage: ForgeAiUsageMetrics }) {
+  const warning = usage.budget.project.blocked || usage.budget.monthly.blocked
+    ? "AI budget reached. Further AI jobs are blocked until limits are increased or the monthly window resets."
+    : usage.budget.project.warning || usage.budget.monthly.warning
+      ? "AI usage is approaching a configured budget limit."
+      : null
+
+  return (
+    <div className="space-y-4">
+      {warning && (
+        <div className="rounded-[8px] border px-3 py-2 font-dm text-sm" style={{ background:"rgba(245,158,11,.08)", borderColor:"rgba(245,158,11,.28)", color:T.t1 }}>
+          {warning}
+        </div>
+      )}
+
+      <div className="grid gap-2 md:grid-cols-4">
+        <UsageMetric label="Today" value={formatCost(usage.today.estimatedCost)} detail={`${usage.today.requests} request${usage.today.requests === 1 ? "" : "s"}`} />
+        <UsageMetric label="This Week" value={formatCost(usage.week.estimatedCost)} detail={`${usage.week.totalTokens.toLocaleString()} tokens`} />
+        <UsageMetric label="This Month" value={formatCost(usage.month.estimatedCost)} detail={budgetDetail(usage.budget.monthly)} />
+        <UsageMetric label="Project Total" value={formatCost(usage.totals.estimatedCost)} detail={budgetDetail(usage.budget.project)} />
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h3 className="font-dm text-sm font-semibold">Recent AI Requests</h3>
+          <p className="font-dm text-xs" style={{ color:T.t2 }}>Provider, model, token usage, and estimated cost.</p>
+        </div>
+        <Link href={`/api/forge/ai-usage/export?projectId=${projectId}`} className="inline-flex h-9 items-center gap-2 rounded-[8px] border px-3 font-dm text-xs font-semibold" style={{ background:T.s2, borderColor:T.b1, color:T.t1 }}>
+          <Download size={14} aria-hidden="true" />
+          Export CSV
+        </Link>
+      </div>
+
+      {usage.recent.length === 0 ? (
+        <Empty icon={DollarSign} text="No AI usage has been recorded for this project yet." />
+      ) : (
+        <div className="space-y-2">
+          {usage.recent.map((row) => (
+            <div key={row.id} className="grid gap-3 rounded-[8px] border p-3 md:grid-cols-[1fr_.7fr_.8fr_.6fr]" style={{ background:T.s2, borderColor:T.b1 }}>
+              <div className="min-w-0">
+                <div className="truncate font-dm text-sm font-semibold">{labelize(row.provider)} / {row.model}</div>
+                <div className="font-dm text-[11px]" style={{ color:T.t2 }}>{formatDate(row.completedAt)}{row.taskId ? ` / Task #${row.taskId}` : ""}</div>
+              </div>
+              <div className="font-dm text-xs" style={{ color:T.t2 }}>Prompt: {row.promptTokens.toLocaleString()}</div>
+              <div className="font-dm text-xs" style={{ color:T.t2 }}>Completion: {row.completionTokens.toLocaleString()} / Total: {row.totalTokens.toLocaleString()}</div>
+              <div className="font-syne text-sm font-extrabold" style={{ color:"#22d3ee" }}>{formatCost(row.estimatedCost)}</div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function UsageMetric({ label, value, detail }: { label: string; value: string; detail: string }) {
+  return (
+    <div className="rounded-[8px] border p-3" style={{ background:T.s2, borderColor:T.b1 }}>
+      <div className="font-dm text-[10px] font-semibold uppercase tracking-[.1em]" style={{ color:T.t2 }}>{label}</div>
+      <div className="mt-1 font-syne text-xl font-extrabold" style={{ color:"#22d3ee" }}>{value}</div>
+      <div className="mt-1 truncate font-dm text-[11px]" style={{ color:T.t2 }}>{detail}</div>
     </div>
   )
 }
@@ -835,6 +970,16 @@ function formatDate(value: Date | string | null | undefined) {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return "No date"
   return date.toLocaleDateString("en-GB", { day:"2-digit", month:"short", year:"numeric" })
+}
+
+function formatCost(value: number) {
+  return `$${value.toFixed(value >= 10 ? 2 : 4)}`
+}
+
+function budgetDetail(budget: ForgeAiBudgetState) {
+  if (!budget.limit) return "No limit set"
+  const percent = Math.round(((budget.used / budget.limit) || 0) * 100)
+  return `${percent}% of ${formatCost(budget.limit)}`
 }
 
 function labelize(value: string) {

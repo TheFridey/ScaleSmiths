@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm"
-import { boolean, index, integer, jsonb, pgEnum, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core"
+import { boolean, index, integer, jsonb, numeric, pgEnum, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core"
 
 export const kanbanColumn = pgEnum("kanban_column", ["backlog", "progress", "review", "done"])
 export const messageDirection = pgEnum("message_direction", ["inbound", "outbound"])
@@ -15,7 +15,7 @@ export const forgeProjectStatus = pgEnum("forge_project_status", ["intake", "res
 export const forgePriority = pgEnum("forge_priority", ["low", "medium", "high"])
 export const forgeTaskAgentType = pgEnum("forge_task_agent_type", ["intake", "research", "strategy", "sitemap", "copy", "design", "frontend", "integration", "seo", "qa", "deploy", "repair"])
 export const forgeTaskStatus = pgEnum("forge_task_status", ["queued", "running", "completed", "failed", "cancelled"])
-export const forgeArtifactType = pgEnum("forge_artifact_type", ["research_report", "sitemap", "copy_doc", "design_direction", "component_spec", "generated_code", "qa_report", "seo_pack", "visual_qa", "proposal", "handover_doc", "deployment_notes", "export_record"])
+export const forgeArtifactType = pgEnum("forge_artifact_type", ["research_report", "sitemap", "copy_doc", "design_direction", "component_spec", "generated_code", "visual_critique", "qa_report", "seo_pack", "visual_qa", "proposal", "handover_doc", "deployment_notes", "export_record"])
 export const forgeIntegrationProvider = pgEnum("forge_integration_provider", ["resend", "whatsapp", "analytics", "calendly", "stripe", "cloudinary", "custom"])
 
 export const clients = pgTable("clients", {
@@ -272,6 +272,25 @@ export const forgeJobs = pgTable("forge_jobs", {
   index("forge_jobs_status_created_at_idx").on(table.status, table.createdAt),
 ])
 
+export const forgeAiUsage = pgTable("forge_ai_usage", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => forgeProjects.id, { onDelete: "cascade" }),
+  taskId: integer("task_id").references(() => forgeTasks.id, { onDelete: "set null" }),
+  provider: text("provider").notNull(),
+  model: text("model").notNull(),
+  promptTokens: integer("prompt_tokens").default(0).notNull(),
+  completionTokens: integer("completion_tokens").default(0).notNull(),
+  totalTokens: integer("total_tokens").default(0).notNull(),
+  estimatedCost: numeric("estimated_cost", { precision: 12, scale: 6 }).default("0").notNull(),
+  startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
+  completedAt: timestamp("completed_at", { withTimezone: true }).notNull(),
+}, (table) => [
+  index("forge_ai_usage_project_id_idx").on(table.projectId),
+  index("forge_ai_usage_task_id_idx").on(table.taskId),
+  index("forge_ai_usage_completed_at_idx").on(table.completedAt),
+  index("forge_ai_usage_provider_idx").on(table.provider),
+])
+
 export const clientRelations = relations(clients, ({ many }) => ({
   kanbanCards: many(kanbanCards),
   messages: many(messages),
@@ -332,19 +351,32 @@ export const forgeProjectRelations = relations(forgeProjects, ({ many, one }) =>
   activityLogs: many(forgeActivityLogs),
   memories: many(forgeMemories),
   jobs: many(forgeJobs),
+  aiUsage: many(forgeAiUsage),
 }))
 
-export const forgeTaskRelations = relations(forgeTasks, ({ one }) => ({
+export const forgeTaskRelations = relations(forgeTasks, ({ many, one }) => ({
   project: one(forgeProjects, {
     fields: [forgeTasks.projectId],
     references: [forgeProjects.id],
   }),
+  aiUsage: many(forgeAiUsage),
 }))
 
 export const forgeJobRelations = relations(forgeJobs, ({ one }) => ({
   project: one(forgeProjects, {
     fields: [forgeJobs.projectId],
     references: [forgeProjects.id],
+  }),
+}))
+
+export const forgeAiUsageRelations = relations(forgeAiUsage, ({ one }) => ({
+  project: one(forgeProjects, {
+    fields: [forgeAiUsage.projectId],
+    references: [forgeProjects.id],
+  }),
+  task: one(forgeTasks, {
+    fields: [forgeAiUsage.taskId],
+    references: [forgeTasks.id],
   }),
 }))
 

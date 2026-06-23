@@ -16,6 +16,15 @@ import {
   type ForgeMobileCheck,
   type ForgeSmokeTest,
 } from "./forge-visual-qa"
+import {
+  FORGE_VISUAL_CRITIQUE_ARTIFACT_KIND,
+  approveForgeVisualCritiqueReport,
+  buildForgeVisualCritiqueArtifactContent,
+  buildForgeVisualCritiqueReport,
+  parseForgeVisualCritiquePayload,
+  readForgeVisualCritiqueArtifact,
+  safeForgeVisualCritiqueRecommendations,
+} from "./forge-visual-critique"
 
 const thresholds = { performance: 50, accessibility: 90, seo: 90 }
 
@@ -175,5 +184,48 @@ describe("forge visual QA engine", () => {
     // Build/typecheck/SEO badges still resolve from existing artifacts.
     expect(report.badges.find((badge) => badge.key === "build")?.status).toBe("pass")
     expect(report.badges.find((badge) => badge.key === "seo")?.status).toBe("pass")
+  })
+})
+
+describe("forge visual critique engine", () => {
+  const rawCritique = {
+    overallScore: 120,
+    scores: {
+      designQuality: 86,
+      conversionQuality: 78,
+      trustSignals: 69,
+      mobileExperience: 74,
+    },
+    strengths: ["Clear visual direction"],
+    weaknesses: [
+      { category: "CTA prominence", severity: "Medium", finding: "Mid-page CTA could be stronger.", evidence: "Only hero and footer CTA are explicit." },
+    ],
+    recommendations: [
+      { title: "Move trust proof after hero", category: "Trust section placement", severity: "Medium", rationale: "Proof should reduce friction before services.", safeAutoFix: true, safeFixType: "trust_section_placement" },
+      { title: "Manual mobile screenshot review", category: "Mobile UX", severity: "Low", rationale: "Needs viewport inspection.", safeAutoFix: false, safeFixType: "none" },
+    ],
+    summary: "Review CTA rhythm and local proof placement.",
+  }
+
+  it("parses, clamps, reads and approves visual critique reports", () => {
+    const parsed = parseForgeVisualCritiquePayload(rawCritique)
+    expect(parsed.ok).toBe(true)
+    if (!parsed.ok) return
+
+    const report = buildForgeVisualCritiqueReport({ data: parsed.data, generatedAt: "2026-06-23T10:00:00.000Z" })
+    expect(report.kind).toBe(FORGE_VISUAL_CRITIQUE_ARTIFACT_KIND)
+    expect(report.overallScore).toBe(100)
+    expect(safeForgeVisualCritiqueRecommendations(report).length).toBe(1)
+
+    const approved = approveForgeVisualCritiqueReport(report, "admin@example.com", "2026-06-23T11:00:00.000Z")
+    const state = readForgeVisualCritiqueArtifact({ kind: FORGE_VISUAL_CRITIQUE_ARTIFACT_KIND, report: approved })
+    expect(state.status).toBe("approved")
+    expect(state.score).toBe(100)
+    expect(state.approvedBy).toBe("admin@example.com")
+
+    const content = buildForgeVisualCritiqueArtifactContent(approved)
+    expect(content).toContain("# Visual Critique")
+    expect(content).toContain("Design Quality")
+    expect(content).toContain("Move trust proof")
   })
 })

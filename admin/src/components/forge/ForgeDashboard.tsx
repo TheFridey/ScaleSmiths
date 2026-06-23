@@ -11,6 +11,8 @@ import {
   CircleDot,
   Clock,
   Code2,
+  Download,
+  DollarSign,
   FileText,
   Gauge,
   Layers3,
@@ -22,6 +24,7 @@ import {
   Sparkles,
   Target,
   TerminalSquare,
+  TrendingUp,
   Workflow,
 } from "lucide-react"
 import { FORGE_DASHBOARD_CARDS, FORGE_WORKFLOW_STAGES, type ForgePriority, type ForgeProjectStatus } from "@/lib/forge"
@@ -80,7 +83,36 @@ interface ForgeActivitySummary {
   createdAt: Date | string
 }
 
-export function ForgeDashboard({ projects, recentActivity }: { projects: ForgeProjectSummary[]; recentActivity: ForgeActivitySummary[] }) {
+interface ForgeAiDashboardMetrics {
+  todaySpend: number
+  monthSpend: number
+  mostExpensiveProject: {
+    projectId: number | null
+    projectName: string
+    businessName: string | null
+    estimatedCost: number
+  } | null
+  averageCostPerSite: number
+  budget: {
+    monthly: {
+      limit: number | null
+      warning: boolean
+      blocked: boolean
+    }
+  }
+}
+
+export function ForgeDashboard({
+  projects,
+  recentActivity,
+  aiMetrics,
+  averageDesignScore,
+}: {
+  projects: ForgeProjectSummary[]
+  recentActivity: ForgeActivitySummary[]
+  aiMetrics: ForgeAiDashboardMetrics
+  averageDesignScore: number | null
+}) {
   const [activeTab, setActiveTab] = useState<DashboardTab>("projects")
 
   const activeProjects = projects.filter((project) => project.status !== "archived")
@@ -142,6 +174,7 @@ export function ForgeDashboard({ projects, recentActivity }: { projects: ForgePr
 
         <div className="hidden items-center gap-2 md:flex">
           <Pill icon={Radio} label={`${recentActivity.length || 0} signals`} tone="cyan" />
+          <Pill icon={Gauge} label={`Design ${averageDesignScore === null ? "n/a" : `${averageDesignScore}/100`}`} tone={averageDesignScore !== null && averageDesignScore >= 80 ? "green" : "cyan"} />
           <Pill icon={ShieldCheck} label="Admin only" tone="green" />
         </div>
 
@@ -173,7 +206,7 @@ export function ForgeDashboard({ projects, recentActivity }: { projects: ForgePr
               <div className="grid grid-cols-3 gap-2">
                 <Metric label="Active" value={activeProjects.length} tone="cyan" />
                 <Metric label="QA" value={qaProjects.length} tone="amber" />
-                <Metric label="Ready" value={readyProjects.length} tone="green" />
+                <Metric label="Design" value={averageDesignScore ?? "n/a"} tone={averageDesignScore !== null && averageDesignScore >= 80 ? "green" : "cyan"} />
               </div>
             </div>
           </div>
@@ -235,6 +268,32 @@ export function ForgeDashboard({ projects, recentActivity }: { projects: ForgePr
             </div>
           </div>
 
+          <div className="mb-3 grid shrink-0 gap-2 sm:grid-cols-2 xl:grid-cols-4">
+            <AiSpendCard icon={DollarSign} label="Today's AI Spend" value={formatCost(aiMetrics.todaySpend)} detail="Usage completed today" tone={aiMetrics.budget.monthly.blocked ? "amber" : "cyan"} />
+            <AiSpendCard
+              icon={TrendingUp}
+              label="This Month AI Spend"
+              value={formatCost(aiMetrics.monthSpend)}
+              detail={aiMetrics.budget.monthly.limit ? `${Math.round(((aiMetrics.monthSpend / aiMetrics.budget.monthly.limit) || 0) * 100)}% of monthly limit` : "No monthly limit set"}
+              tone={aiMetrics.budget.monthly.warning ? "amber" : "green"}
+            />
+            <AiSpendCard
+              icon={Activity}
+              label="Most Expensive Project"
+              value={aiMetrics.mostExpensiveProject ? formatCost(aiMetrics.mostExpensiveProject.estimatedCost) : "$0.0000"}
+              detail={aiMetrics.mostExpensiveProject?.projectName ?? "No AI usage yet"}
+              tone="violet"
+            />
+            <Link href="/api/forge/ai-usage/export" className="group rounded-[8px] border p-3 transition-colors hover:bg-[rgba(56,189,248,.045)]" style={{ background:T.s1, borderColor:T.b1 }}>
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div className="font-dm text-[10px] font-semibold uppercase tracking-[.1em]" style={{ color:T.t2 }}>Average Cost Per Site</div>
+                <Download size={15} style={{ color:"#22d3ee" }} aria-hidden="true" />
+              </div>
+              <div className="font-syne text-xl font-extrabold" style={{ color:"#22d3ee" }}>{formatCost(aiMetrics.averageCostPerSite)}</div>
+              <div className="mt-1 font-dm text-[11px]" style={{ color:T.t2 }}>Export CSV report</div>
+            </Link>
+          </div>
+
           <section className="min-h-0 flex-1 overflow-hidden rounded-[8px] border" style={{ background:T.s1, borderColor:T.b1 }}>
             <div className="grid h-12 grid-cols-3 border-b md:grid-cols-6" style={{ borderColor:T.b1, background:T.s2 }}>
               {FORGE_DASHBOARD_CARDS.map((card) => {
@@ -266,6 +325,19 @@ export function ForgeDashboard({ projects, recentActivity }: { projects: ForgePr
           </section>
         </main>
       </div>
+    </div>
+  )
+}
+
+function AiSpendCard({ icon: Icon, label, value, detail, tone }: { icon: LucideIcon; label: string; value: string; detail: string; tone: "cyan" | "green" | "amber" | "violet" }) {
+  return (
+    <div className="rounded-[8px] border p-3" style={{ background:T.s1, borderColor:T.b1 }}>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="font-dm text-[10px] font-semibold uppercase tracking-[.1em]" style={{ color:T.t2 }}>{label}</div>
+        <Icon size={15} style={{ color:toneColor(tone) }} aria-hidden="true" />
+      </div>
+      <div className="font-syne text-xl font-extrabold" style={{ color:toneColor(tone) }}>{value}</div>
+      <div className="mt-1 truncate font-dm text-[11px]" style={{ color:T.t2 }}>{detail}</div>
     </div>
   )
 }
@@ -451,7 +523,7 @@ function Pill({ icon: Icon, label, tone }: { icon: LucideIcon; label: string; to
   )
 }
 
-function Metric({ label, value, tone }: { label: string; value: number; tone: "cyan" | "amber" | "green" }) {
+function Metric({ label, value, tone }: { label: string; value: string | number; tone: "cyan" | "amber" | "green" }) {
   return (
     <div className="rounded-[8px] border p-3" style={{ background:"rgba(15,23,42,.64)", borderColor:"rgba(148,163,184,.14)" }}>
       <div className="font-dm text-[10px] font-semibold uppercase tracking-[.1em]" style={{ color:"#94a3b8" }}>{label}</div>
@@ -567,6 +639,7 @@ function stageToStatus(stage: string): ForgeProjectStatus | null {
   if (normalized.includes("copy")) return "copy"
   if (normalized.includes("design")) return "design"
   if (normalized.includes("build")) return "build"
+  if (normalized.includes("critique")) return "qa"
   if (normalized.includes("qa")) return "qa"
   if (normalized.includes("integrations")) return "integrations"
   if (normalized.includes("preview")) return "preview"
@@ -580,6 +653,10 @@ function formatDate(value: Date | string | null) {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return "No date"
   return date.toLocaleDateString("en-GB", { day:"2-digit", month:"short", year:"numeric" })
+}
+
+function formatCost(value: number) {
+  return `$${value.toFixed(value >= 10 ? 2 : 4)}`
 }
 
 function labelize(value: string) {

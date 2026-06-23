@@ -35,10 +35,62 @@ export function ForgeCommandChatPanel({
     () => [...chat.messages].reverse().find((item) => item.role === "assistant" && item.requiresConfirmation),
     [chat.messages],
   )
+  const activeJobIds = useMemo(
+    () => Array.from(new Set(chat.messages
+      .filter((item) => typeof item.jobId === "number" && (item.status === "queued" || item.status === "running"))
+      .map((item) => item.jobId as number))),
+    [chat.messages],
+  )
 
   useEffect(() => {
     setChat(initialChat)
   }, [initialChat])
+
+  useEffect(() => {
+    if (!activeJobIds.length) return
+
+    let cancelled = false
+    const poll = async () => {
+      const updates = await Promise.all(activeJobIds.map(async (jobId) => {
+        const response = await fetch(`/api/forge/jobs/${jobId}`, { cache: "no-store" })
+        const json = await response.json().catch(() => ({}))
+        if (!response.ok) return null
+        return {
+          jobId,
+          status: json.status === "running" || json.status === "completed" || json.status === "failed" ? json.status : "queued",
+        } as const
+      }))
+      if (cancelled) return
+
+      const statusByJob = new Map(
+        updates
+          .filter((item): item is { jobId: number; status: "queued" | "running" | "completed" | "failed" } => item !== null)
+          .map((item) => [item.jobId, item.status]),
+      )
+      if (!statusByJob.size) return
+
+      setChat((current) => ({
+        ...current,
+        messages: current.messages.map((item) => (
+          typeof item.jobId === "number" && statusByJob.has(item.jobId)
+            ? { ...item, status: statusByJob.get(item.jobId) ?? item.status }
+            : item
+        )),
+        updatedAt: new Date().toISOString(),
+      }))
+
+      if ([...statusByJob.values()].some((status) => status === "completed" || status === "failed")) {
+        router.refresh()
+      }
+    }
+
+    void poll()
+    const timer = window.setInterval(() => void poll(), 1800)
+    return () => {
+      cancelled = true
+      window.clearInterval(timer)
+    }
+  }, [activeJobIds, router])
 
   async function sendCommand(value = message, confirmed = false) {
     const command = value.trim()
@@ -185,9 +237,10 @@ function MessageBubble({ message }: { message: ForgeCommandChatMessage }) {
           <span className="font-dm text-[11px] font-semibold uppercase tracking-[.06em]" style={{ color:isUser ? T.acc : T.t3 }}>
             {isUser ? "Admin" : "Forge"}
           </span>
-          {message.intent && <Badge value={forgeCommandLabel(message.intent)} tone="muted" />}
-          {message.status && <Badge value={message.status} tone={message.status === "failed" ? "bad" : message.status === "needs_confirmation" ? "warn" : "good"} />}
+          {message.action && <Badge value={forgeCommandLabel(message.action)} tone="muted" />}
+          {message.status && <Badge value={statusLabel(message.status)} tone={statusTone(message.status)} />}
           {message.taskId && <span className="font-dm text-[11px]" style={{ color:T.t3 }}>Task #{message.taskId}</span>}
+          {message.jobId && <span className="font-dm text-[11px]" style={{ color:T.t3 }}>Job #{message.jobId}</span>}
         </div>
         <p className="whitespace-pre-wrap font-dm text-sm leading-relaxed" style={{ color:T.t1 }}>{message.content}</p>
       </div>
@@ -206,4 +259,17 @@ function Badge({ value, tone }: { value: string; tone: "accent" | "good" | "warn
 
 function lastUserCommand(messages: ForgeCommandChatMessage[]) {
   return [...messages].reverse().find((item) => item.role === "user")?.content ?? ""
+}
+
+function statusLabel(status: NonNullable<ForgeCommandChatMessage["status"]>) {
+  if (status === "needs_confirmation") return "Needs confirmation"
+  return status.charAt(0).toUpperCase() + status.slice(1)
+}
+
+function statusTone(status: NonNullable<ForgeCommandChatMessage["status"]>): "accent" | "good" | "warn" | "bad" | "muted" {
+  if (status === "failed") return "bad"
+  if (status === "needs_confirmation" || status === "queued") return "warn"
+  if (status === "running") return "accent"
+  if (status === "completed") return "good"
+  return "muted"
 }

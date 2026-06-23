@@ -17,6 +17,12 @@ import {
   validateJsonSchemaValue,
 } from "./forge-ai"
 import {
+  buildForgeAiBudgetStatus,
+  formatForgeAiCost,
+  parseForgeAiCostLimit,
+  resolveForgeAiCostBudgetConfig,
+} from "./forge-ai-usage"
+import {
   FORGE_ARTIFACT_TYPES,
   FORGE_DASHBOARD_CARDS,
   FORGE_INTEGRATION_PROVIDERS,
@@ -211,6 +217,7 @@ describe("forge shell", () => {
       "Copy",
       "Design",
       "Build",
+      "Visual Critique",
       "QA",
       "Deploy",
     ])
@@ -226,6 +233,7 @@ describe("forge shell", () => {
     expect(FORGE_PROJECT_STATUSES).toContain("archived")
     expect(FORGE_TASK_AGENT_TYPES).toContain("repair")
     expect(FORGE_TASK_STATUSES).toEqual(["queued", "running", "completed", "failed", "cancelled"])
+    expect(FORGE_ARTIFACT_TYPES).toContain("visual_critique")
     expect(FORGE_ARTIFACT_TYPES).toContain("deployment_notes")
     expect(FORGE_INTEGRATION_PROVIDERS).toEqual(["resend", "whatsapp", "analytics", "calendly", "stripe", "cloudinary", "custom"])
   })
@@ -1415,14 +1423,17 @@ describe("forge shell", () => {
 
   it("classifies Forge command chat intents and persists transcript memory", () => {
     expect(FORGE_COMMAND_CHAT_MEMORY_KEY).toBe("forge_command_chat")
-    expect(classifyForgeCommandHeuristic("regenerate homepage copy").intent).toBe("copy_update")
-    expect(classifyForgeCommandHeuristic("make design more premium").intent).toBe("design_update")
-    expect(classifyForgeCommandHeuristic("add WhatsApp CTA").intent).toBe("integration_update")
-    expect(classifyForgeCommandHeuristic("run QA").intent).toBe("qa_run")
-    expect(classifyForgeCommandHeuristic("repair build errors").intent).toBe("repair_run")
-    expect(classifyForgeCommandHeuristic("generate proposal").intent).toBe("proposal_generate")
-    expect(classifyForgeCommandHeuristic("improve hero section").intent).toBe("code_update")
-    expect(forgeCommandRequiresConfirmation("code_update")).toBe(true)
+    expect(classifyForgeCommandHeuristic("regenerate homepage copy").action).toBe("copy_update")
+    expect(classifyForgeCommandHeuristic("make design more premium").action).toBe("design_update")
+    expect(classifyForgeCommandHeuristic("run research").action).toBe("research_run")
+    expect(classifyForgeCommandHeuristic("generate sitemap").action).toBe("sitemap_run")
+    expect(classifyForgeCommandHeuristic("run QA").action).toBe("qa_run")
+    expect(classifyForgeCommandHeuristic("repair build errors").action).toBe("repair_run")
+    expect(classifyForgeCommandHeuristic("generate proposal").action).toBe("proposal_generate")
+    expect(classifyForgeCommandHeuristic("export handover pack").action).toBe("export_run")
+    expect(classifyForgeCommandHeuristic("start preview").action).toBe("preview_start")
+    expect(classifyForgeCommandHeuristic("improve hero section").action).toBe("site_generate")
+    expect(forgeCommandRequiresConfirmation("site_generate")).toBe(true)
     expect(forgeCommandRequiresConfirmation("repair_run")).toBe(true)
     expect(forgeCommandRequiresConfirmation("qa_run")).toBe(false)
 
@@ -1431,15 +1442,18 @@ describe("forge shell", () => {
       role: "user",
       content: "run QA",
       createdAt: "2026-06-21T10:00:00.000Z",
+      action: "qa_run",
       intent: "qa_run",
       status: "classified",
       taskId: 10,
+      jobId: 20,
       requiresConfirmation: false,
     }], "2026-06-21T10:01:00.000Z")
     const read = readForgeCommandChatMemory(JSON.stringify(state))
 
     expect(read.messages).toHaveLength(1)
-    expect(read.messages[0].intent).toBe("qa_run")
+    expect(read.messages[0].action).toBe("qa_run")
+    expect(read.messages[0].jobId).toBe(20)
     expect(readForgeCommandChatMemory("not json").messages).toHaveLength(0)
   })
 
@@ -1675,6 +1689,28 @@ describe("forge shell", () => {
     expect(assertForgeAiBudgetAllowsRequest({ config, ledger, requestedMaxTokens: 700 }).ok).toBe(false)
     expect(estimateForgeAiCostUsd("openai", { inputTokens: 1000, outputTokens: 500 })).toBeGreaterThan(0)
     expect(resolveForgeAiBudgetConfig({ FORGE_ENABLE_AI: "false" }).enabled).toBe(false)
+  })
+
+  it("resolves persisted Forge AI cost budgets and warning states", () => {
+    const config = resolveForgeAiCostBudgetConfig({
+      FORGE_MAX_PROJECT_AI_COST: "12.5",
+      FORGE_MAX_MONTHLY_AI_COST: "100",
+    })
+
+    expect(config.maxProjectAiCost).toBe(12.5)
+    expect(config.maxMonthlyAiCost).toBe(100)
+    expect(parseForgeAiCostLimit("0")).toBeNull()
+    expect(parseForgeAiCostLimit("not-a-number")).toBeNull()
+
+    const safe = buildForgeAiBudgetStatus(5, config.maxProjectAiCost, 1)
+    const warning = buildForgeAiBudgetStatus(9.9, config.maxProjectAiCost, 0.2)
+    const blocked = buildForgeAiBudgetStatus(12.4, config.maxProjectAiCost, 0.2)
+
+    expect(safe.warning).toBe(false)
+    expect(safe.blocked).toBe(false)
+    expect(warning.warning).toBe(true)
+    expect(blocked.blocked).toBe(true)
+    expect(formatForgeAiCost(0.123456)).toBe("$0.1235")
   })
 
   it("versions artifacts and compacts large retained logs", () => {

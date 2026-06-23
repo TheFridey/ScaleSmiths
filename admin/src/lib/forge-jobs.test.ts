@@ -20,6 +20,7 @@ describe("forge job primitives", () => {
       "design",
       "component_spec",
       "generate_site",
+      "visual_critique",
       "qa",
       "repair",
       "preview_start",
@@ -30,8 +31,8 @@ describe("forge job primitives", () => {
     expect(isForgeJobKind("nope")).toBe(false)
   })
 
-  it("marks export as inline-only (it streams a file) but queues everything else", () => {
-    expect(isForgeJobInlineOnly("export")).toBe(true)
+  it("allows command-routed export jobs to queue without streaming response bodies", () => {
+    expect(isForgeJobInlineOnly("export")).toBe(false)
     expect(isForgeJobInlineOnly("qa")).toBe(false)
     expect(isForgeJobInlineOnly("preview_start")).toBe(false)
   })
@@ -47,8 +48,8 @@ describe("forge job primitives", () => {
     expect(resolveForgeJobMode({ FORGE_JOBS_MODE: "weird", NODE_ENV: "production" })).toBe("background")
   })
 
-  it("forces inline-only kinds to run inline regardless of mode", () => {
-    expect(resolveForgeJobModeForKind("export", { NODE_ENV: "production" })).toBe("inline")
+  it("resolves per-kind mode without special-casing command-routed exports", () => {
+    expect(resolveForgeJobModeForKind("export", { NODE_ENV: "production" })).toBe("background")
     expect(resolveForgeJobModeForKind("qa", { NODE_ENV: "production" })).toBe("background")
     expect(resolveForgeJobModeForKind("qa", { FORGE_JOBS_MODE: "inline" })).toBe("inline")
   })

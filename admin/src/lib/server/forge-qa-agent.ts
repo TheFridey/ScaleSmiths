@@ -208,6 +208,8 @@ export async function runForgeRepairAgent(projectId: number, actor: string) {
       maxTokens: 5000,
       timeoutMs: 45_000,
       maxRetries: 1,
+      projectId,
+      taskId: task.id,
       mockData: {
         summary: "Mock repair provider did not apply file changes. Enable AI or inspect the QA logs.",
         patches: [],

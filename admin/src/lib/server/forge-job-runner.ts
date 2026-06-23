@@ -7,9 +7,16 @@ import {
   type ForgeJobKind,
   type ForgeJobMode,
 } from "@/lib/forge-jobs"
-import { forgeActivityLogs, forgeJobs } from "@/lib/schema"
+import {
+  FORGE_COMMAND_CHAT_MEMORY_KEY,
+  readForgeCommandChatMemory,
+  type ForgeCommandMessageStatus,
+} from "@/lib/forge-command-chat"
+import { forgeActivityLogs, forgeJobs, forgeMemories, forgeTasks } from "@/lib/schema"
 import { isForgeAnimationPack } from "@/lib/forge-animation"
 import { isForgeDesignStylePack } from "@/lib/forge-design"
+import type { ForgeExportKind } from "@/lib/forge-export"
+import { ForgeAiBudgetExceededError, assertForgeAiBudgetAllowsJob } from "./forge-ai-usage"
 
 export class ForgeJobError extends Error {
   safeMessage: string
@@ -26,6 +33,7 @@ export class ForgeJobError extends Error {
 type JobPayload = Record<string, unknown>
 type JobResult = Record<string, unknown>
 type JobHandler = (projectId: number, actor: string, payload: JobPayload) => Promise<JobResult>
+const AI_BACKED_JOB_KINDS = new Set<ForgeJobKind>(["research", "sitemap", "copy", "design", "component_spec", "visual_critique", "repair"])
 
 /**
  * The job registry maps each long-running Forge action to a handler. Handlers lazily import the
@@ -35,7 +43,7 @@ type JobHandler = (projectId: number, actor: string, payload: JobPayload) => Pro
  * blew up `next build` compile time and stalled "Collecting page data". Agents are still executed
  * exactly as before — they own the detailed forgeTasks/forgeArtifacts/forgeActivityLogs updates.
  */
-const JOB_HANDLERS: Record<Exclude<ForgeJobKind, "export">, JobHandler> = {
+const JOB_HANDLERS: Record<ForgeJobKind, JobHandler> = {
   research: async (projectId, actor) => (await import("./forge-research-agent")).runForgeResearchAgent(projectId, actor),
   sitemap: async (projectId, actor) => (await import("./forge-sitemap-agent")).runForgeSitemapAgent(projectId, actor),
   copy: async (projectId, actor, payload) =>
@@ -49,11 +57,24 @@ const JOB_HANDLERS: Record<Exclude<ForgeJobKind, "export">, JobHandler> = {
     ),
   component_spec: async (projectId, actor) => (await import("./forge-component-spec-agent")).runForgeComponentSpecAgent(projectId, actor),
   generate_site: async (projectId, actor) => (await import("./forge-frontend-code-agent")).runForgeFrontendCodeAgent(projectId, actor),
+  visual_critique: async (projectId, actor) => (await import("./forge-visual-critique-agent")).runForgeVisualCritiqueAgent(projectId, actor),
   qa: async (projectId, actor) => (await import("./forge-qa-agent")).runForgeQaAgent(projectId, actor),
   repair: async (projectId, actor) => (await import("./forge-qa-agent")).runForgeRepairAgent(projectId, actor),
   preview_start: async (projectId, actor) => ({ ok: true, preview: await (await import("./forge-preview")).startForgePreview(projectId, actor) }),
   proposal: async (projectId, actor, payload) =>
     (await import("./forge-proposal-agent")).runForgeProposalAgent(projectId, actor, payload.action === "audit" ? "audit" : "proposal"),
+  export: async (projectId, actor, payload) => {
+    const kind = isForgeExportKind(payload.kind) ? payload.kind : "proposal"
+    const result = await (await import("./forge-export-agent")).runForgeExport(projectId, actor, kind)
+    return {
+      ok: true,
+      filename: result.filename,
+      contentType: result.contentType,
+      fileCount: result.fileCount,
+      excludedCount: result.excludedCount,
+      note: "Export was generated and recorded. Download files from the Export panel.",
+    }
+  },
 }
 
 export interface EnqueueForgeJobInput {
@@ -62,6 +83,7 @@ export interface EnqueueForgeJobInput {
   actor: string
   payload?: JobPayload
   mode?: ForgeJobMode
+  autoStart?: boolean
 }
 
 export type EnqueueForgeJobOutcome =
@@ -89,6 +111,14 @@ export async function enqueueForgeJob(input: EnqueueForgeJobInput): Promise<Enqu
   }
   if (!(input.kind in JOB_HANDLERS)) {
     throw new ForgeJobError(`Unknown job kind "${input.kind}".`, 400)
+  }
+  if (AI_BACKED_JOB_KINDS.has(input.kind)) {
+    try {
+      await assertForgeAiBudgetAllowsJob(input.projectId)
+    } catch (error) {
+      if (error instanceof ForgeAiBudgetExceededError) throw new ForgeJobError(error.safeMessage, 402)
+      throw error
+    }
   }
 
   const mode = input.mode ?? resolveForgeJobModeForKind(input.kind)
@@ -118,7 +148,9 @@ export async function enqueueForgeJob(input: EnqueueForgeJobInput): Promise<Enqu
 
   // Fire-and-forget background execution in the persistent server process. The job row is the
   // source of truth, so a restart can be recovered by draining the queue (runDueForgeJobs).
-  void processForgeJob(job.id, { propagate: false }).catch(() => undefined)
+  if (input.autoStart !== false) {
+    void processForgeJob(job.id, { propagate: false }).catch(() => undefined)
+  }
   return { mode: "background", jobId: job.id }
 }
 
@@ -136,7 +168,10 @@ export async function processForgeJob(jobId: number, options: { propagate?: bool
 
   if (!claimed) return null
 
-  const handler = JOB_HANDLERS[claimed.kind as Exclude<ForgeJobKind, "export">]
+  const payload = (claimed.payloadJson as JobPayload) ?? {}
+  await markCommandJobProgress(claimed.projectId, claimed.actor ?? "system", claimed.id, payload, "running")
+
+  const handler = JOB_HANDLERS[claimed.kind as ForgeJobKind]
   if (!handler) {
     await failJob(jobId, claimed.attempts, `Unknown job kind "${claimed.kind}".`)
     if (options.propagate) throw new ForgeJobError(`Unknown job kind "${claimed.kind}".`, 400)
@@ -144,7 +179,7 @@ export async function processForgeJob(jobId: number, options: { propagate?: bool
   }
 
   try {
-    const result = await handler(claimed.projectId, claimed.actor ?? "system", (claimed.payloadJson as JobPayload) ?? {})
+    const result = await handler(claimed.projectId, claimed.actor ?? "system", payload)
     const completedAt = new Date()
     await db.update(forgeJobs).set({
       status: "completed",
@@ -153,10 +188,12 @@ export async function processForgeJob(jobId: number, options: { propagate?: bool
       completedAt,
       updatedAt: completedAt,
     }).where(eq(forgeJobs.id, jobId))
+    await markCommandJobProgress(claimed.projectId, claimed.actor ?? "system", claimed.id, payload, "completed", result)
     return result
   } catch (error) {
     const safeMessage = extractSafeMessage(error)
     await failJob(jobId, claimed.attempts, safeMessage)
+    await markCommandJobProgress(claimed.projectId, claimed.actor ?? "system", claimed.id, payload, "failed", { error: safeMessage })
     if (options.propagate) throw error
     return null
   }
@@ -191,6 +228,72 @@ async function failJob(jobId: number, attempts: number, message: string) {
     completedAt,
     updatedAt: completedAt,
   }).where(eq(forgeJobs.id, jobId))
+}
+
+async function markCommandJobProgress(
+  projectId: number,
+  actor: string,
+  jobId: number,
+  payload: JobPayload,
+  status: Extract<ForgeCommandMessageStatus, "running" | "completed" | "failed">,
+  output?: Record<string, unknown>,
+) {
+  const commandTaskId = typeof payload.commandTaskId === "number" ? payload.commandTaskId : null
+  const commandMessageId = typeof payload.commandMessageId === "string" ? payload.commandMessageId : null
+  const commandAction = typeof payload.commandAction === "string" ? payload.commandAction : null
+
+  if (!commandTaskId && !commandMessageId) return
+
+  const now = new Date()
+  await db.transaction(async (tx) => {
+    if (commandTaskId) {
+      await tx.update(forgeTasks).set({
+        status,
+        outputJson: status === "failed" ? { error: output?.error ?? "Job failed.", jobId, commandAction } : { ...(output ?? {}), jobId, commandAction },
+        error: status === "failed" && typeof output?.error === "string" ? output.error : null,
+        startedAt: status === "running" ? now : undefined,
+        completedAt: status === "completed" || status === "failed" ? now : undefined,
+        updatedAt: now,
+      }).where(eq(forgeTasks.id, commandTaskId))
+    }
+
+    const [memory] = await tx
+      .select({ id: forgeMemories.id, value: forgeMemories.value })
+      .from(forgeMemories)
+      .where(and(eq(forgeMemories.projectId, projectId), eq(forgeMemories.key, FORGE_COMMAND_CHAT_MEMORY_KEY)))
+      .limit(1)
+
+    if (memory) {
+      const state = readForgeCommandChatMemory(memory.value)
+      const nextState = {
+        ...state,
+        messages: state.messages.map((message) => {
+          const sameMessage = commandMessageId ? message.id === commandMessageId : false
+          const sameJob = typeof message.jobId === "number" ? message.jobId === jobId : false
+          const sameTask = commandTaskId && message.role === "assistant" ? message.taskId === commandTaskId : false
+          return sameMessage || sameJob || sameTask ? { ...message, status } : message
+        }),
+        updatedAt: now.toISOString(),
+      }
+
+      await tx.update(forgeMemories).set({
+        value: JSON.stringify(nextState),
+        updatedAt: now,
+      }).where(eq(forgeMemories.id, memory.id))
+    }
+
+    await tx.insert(forgeActivityLogs).values({
+      projectId,
+      actor,
+      action: `command_job_${status}`,
+      message: `Command job ${jobId} ${status}${commandAction ? ` for ${commandAction}` : ""}.`,
+      metadataJson: { jobId, commandTaskId, commandMessageId, commandAction, output },
+    })
+  })
+}
+
+function isForgeExportKind(value: unknown): value is ForgeExportKind {
+  return value === "site" || value === "proposal" || value === "audit" || value === "handover"
 }
 
 function extractSafeMessage(error: unknown): string {

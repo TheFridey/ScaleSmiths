@@ -20,7 +20,7 @@ const TABS = [
   { key: "copy", label: "Copy", types: ["copy_doc"] },
   { key: "design", label: "Design", types: ["design_direction", "component_spec"] },
   { key: "code", label: "Code", types: ["generated_code"] },
-  { key: "qa", label: "QA", types: ["qa_report", "seo_pack", "visual_qa"] },
+  { key: "qa", label: "QA", types: ["visual_critique", "qa_report", "seo_pack", "visual_qa"] },
   { key: "proposal", label: "Proposal", types: ["proposal"] },
 ] as const
 

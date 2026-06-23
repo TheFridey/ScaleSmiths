@@ -3,9 +3,7 @@ import { randomUUID } from "node:crypto"
 import { and, desc, eq } from "drizzle-orm"
 import {
   FORGE_COMMAND_CHAT_MEMORY_KEY,
-  FORGE_COMMAND_CLASSIFICATION_SCHEMA,
   appendForgeCommandMessages,
-  classifyForgeCommandHeuristic,
   forgeCommandLabel,
   forgeCommandRequiresConfirmation,
   readForgeCommandChatMemory,
@@ -15,12 +13,10 @@ import {
 } from "@/lib/forge-command-chat"
 import { db } from "@/lib/db"
 import { forgeActivityLogs, forgeMemories, forgeProjects, forgeTasks } from "@/lib/schema"
-import { ForgeAiError, runForgeAiJson } from "./forge-ai"
-import { runForgeCopyAgent } from "./forge-copy-agent"
-import { runForgeDesignAgent } from "./forge-design-agent"
-import { runForgeFrontendCodeAgent } from "./forge-frontend-code-agent"
-import { runForgeProposalAgent } from "./forge-proposal-agent"
-import { runForgeQaAgent, runForgeRepairAgent } from "./forge-qa-agent"
+import { enqueueForgeJob, processForgeJob } from "./forge-job-runner"
+import { classifyCommand, commandRouteView, routeCommandToForgeJob } from "./forge-command-router"
+
+type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
 
 export class ForgeCommandChatError extends Error {
   safeMessage: string
@@ -56,22 +52,22 @@ export async function runForgeCommandChat(projectId: number, actor: string, mess
   const startedAt = now.toISOString()
   const state = await getForgeCommandChatState(projectId)
   const userMessage = buildMessage("user", cleaned, startedAt)
-  const classification = await classifyCommand(project, cleaned, state)
-  const requiresConfirmation = forgeCommandRequiresConfirmation(classification.intent) || classification.requiresConfirmation
+  const classification = await classifyCommand({ projectId, project, message: cleaned, state })
+  const requiresConfirmation = forgeCommandRequiresConfirmation(classification.action) || classification.requiresConfirmation
 
   const [routerTask] = await db.transaction(async (tx) => {
     const [task] = await tx.insert(forgeTasks).values({
       projectId,
-      title: `Command chat: ${forgeCommandLabel(classification.intent)}`,
-      description: "Classify a project-level Forge command and route it to an approved pipeline action.",
+      title: `Command chat: ${forgeCommandLabel(classification.action)}`,
+      description: "Classify a project-level Forge command and create a queued Forge job.",
       agentType: "strategy",
-      status: "running",
+      status: "queued",
       inputJson: {
         message: cleaned,
         confirmed,
         classification,
+        route: commandRouteView(classification),
       },
-      startedAt: now,
       updatedAt: now,
     }).returning()
 
@@ -79,10 +75,11 @@ export async function runForgeCommandChat(projectId: number, actor: string, mess
       projectId,
       actor,
       action: "command_chat_classified",
-      message: `Forge command classified as ${classification.intent}.`,
+      message: `Forge command classified as ${classification.action}.`,
       metadataJson: {
         taskId: task.id,
         classification,
+        route: commandRouteView(classification),
         confirmed,
       },
     })
@@ -117,28 +114,42 @@ export async function runForgeCommandChat(projectId: number, actor: string, mess
         requiresConfirmation: true,
         reason: classification.reason,
       },
-      assistantContent: `${classification.summary} This is a guarded ${forgeCommandLabel(classification.intent).toLowerCase()} and needs confirmation before Forge runs it. No files were changed.`,
+      assistantContent: `${classification.summary} This is a guarded ${forgeCommandLabel(classification.action).toLowerCase()} and needs confirmation before Forge runs it. No files were changed.`,
       requiresConfirmation: true,
     })
   }
 
   try {
-    const actionResult = await executeApprovedCommand(projectId, actor, classification)
-    return completeCommand({
+    const jobRoute = routeCommandToForgeJob(classification)
+    const assistantMessageId = randomUUID()
+    const outcome = await enqueueForgeJob({
+      projectId,
+      kind: jobRoute.kind,
+      actor,
+      payload: {
+        ...jobRoute.payload,
+        commandTaskId: routerTask.id,
+        commandMessageId: assistantMessageId,
+      },
+      mode: "background",
+      autoStart: false,
+    })
+
+    const queued = await queueCommand({
       projectId,
       actor,
       state,
       userMessage,
       taskId: routerTask.id,
+      jobId: outcome.jobId,
+      assistantMessageId,
       classification,
-      status: "completed",
-      output: actionResult,
-      assistantContent: actionResult.message,
+      assistantContent: buildQueuedMessage(classification, routerTask.id, outcome.jobId),
     })
+    void processForgeJob(outcome.jobId, { propagate: false }).catch(() => undefined)
+    return queued
   } catch (error) {
-    const safeMessage = error instanceof ForgeAiError
-      ? error.safeMessage
-      : error instanceof Error && "safeMessage" in error && typeof error.safeMessage === "string"
+    const safeMessage = error instanceof Error && "safeMessage" in error && typeof error.safeMessage === "string"
         ? error.safeMessage
         : error instanceof Error
           ? error.message
@@ -153,105 +164,86 @@ export async function runForgeCommandChat(projectId: number, actor: string, mess
       classification,
       status: "failed",
       output: { error: safeMessage },
-      assistantContent: `I classified this as ${classification.intent}, but the approved Forge action could not run: ${safeMessage}`,
+      assistantContent: `I classified this as ${classification.action}, but the Forge job could not be queued: ${safeMessage}`,
     })
   }
 }
 
-async function classifyCommand(
-  project: { name: string; businessName: string; industry: string | null; status: string },
-  message: string,
-  state: ForgeCommandChatState,
-) {
-  const mockData = classifyForgeCommandHeuristic(message)
-  const result = await runForgeAiJson<ForgeCommandClassification>({
-    taskType: "planning",
-    schemaName: "forge_command_classification",
-    schema: FORGE_COMMAND_CLASSIFICATION_SCHEMA,
-    systemPrompt: [
-      "You are the ScaleSmiths Forge Command Router.",
-      "Classify the user request into one approved Forge control intent.",
-      "This is not a chatbot. Do not invent file edits or unapproved actions.",
-      "Mark repair_run and code_update as requiring confirmation.",
-    ].join(" "),
-    prompt: [
-      "Project:",
-      `- Name: ${project.name}`,
-      `- Business: ${project.businessName}`,
-      `- Industry: ${project.industry ?? "Not set"}`,
-      `- Status: ${project.status}`,
-      "",
-      "Recent command context:",
-      ...state.messages.slice(-8).map((item) => `- ${item.role}: ${item.content}`),
-      "",
-      "User command:",
-      message,
-    ].join("\n"),
-    maxTokens: 500,
-    timeoutMs: 15_000,
-    maxRetries: 1,
-    mockData,
+async function queueCommand({
+  projectId,
+  actor,
+  state,
+  userMessage,
+  taskId,
+  jobId,
+  assistantMessageId,
+  classification,
+  assistantContent,
+}: {
+  projectId: number
+  actor: string
+  state: ForgeCommandChatState
+  userMessage: ForgeCommandChatMessage
+  taskId: number
+  jobId: number
+  assistantMessageId: string
+  classification: ForgeCommandClassification
+  assistantContent: string
+}) {
+  const queuedAt = new Date()
+  const assistantMessage = buildMessage(
+    "assistant",
+    assistantContent,
+    queuedAt.toISOString(),
+    classification.action,
+    "queued",
+    taskId,
+    false,
+    jobId,
+    assistantMessageId,
+  )
+  const nextState = appendForgeCommandMessages(state, [
+    { ...userMessage, action: classification.action, intent: classification.action, status: "classified", taskId, jobId, requiresConfirmation: false },
+    assistantMessage,
+  ], queuedAt.toISOString())
+
+  await db.transaction(async (tx) => {
+    await tx.update(forgeTasks).set({
+      status: "queued",
+      outputJson: {
+        classification,
+        route: commandRouteView(classification),
+        jobId,
+      },
+      error: null,
+      updatedAt: queuedAt,
+    }).where(eq(forgeTasks.id, taskId))
+
+    await upsertCommandMemory(tx, projectId, nextState, queuedAt)
+
+    await tx.insert(forgeActivityLogs).values({
+      projectId,
+      actor,
+      action: "command_job_queued",
+      message: `Forge command queued ${classification.action} as job ${jobId}.`,
+      metadataJson: {
+        taskId,
+        jobId,
+        classification,
+        route: commandRouteView(classification),
+      },
+    })
   })
 
-  const data = result.data
   return {
-    ...data,
-    confidence: Math.max(0, Math.min(1, data.confidence)),
-    requiresConfirmation: data.requiresConfirmation || forgeCommandRequiresConfirmation(data.intent),
-  }
-}
-
-async function executeApprovedCommand(projectId: number, actor: string, classification: ForgeCommandClassification) {
-  switch (classification.intent) {
-    case "copy_update": {
-      const pagePath = classification.target === "/" ? "/" : null
-      const result = await runForgeCopyAgent(projectId, actor, pagePath)
-      return {
-        message: pagePath ? "I routed this to the Copy Agent and regenerated homepage copy from approved sitemap context." : "I routed this to the Copy Agent and regenerated the approved copy document.",
-        result,
-      }
-    }
-    case "design_update": {
-      const preferPremium = /premium|luxury|cinematic/i.test(`${classification.summary} ${classification.target} ${classification.reason}`)
-      const result = await runForgeDesignAgent(projectId, actor, preferPremium ? "Luxury Dark" : null, preferPremium ? "Cinematic Hero" : null)
-      return {
-        message: "I routed this to the Design Agent. Review and approve the new design direction before code generation.",
-        result,
-      }
-    }
-    case "code_update": {
-      const result = await runForgeFrontendCodeAgent(projectId, actor)
-      return {
-        message: "I regenerated the generated site from approved artifacts only. Forge did not perform blind file edits.",
-        result,
-      }
-    }
-    case "integration_update":
-      return {
-        message: integrationGuidance(classification),
-        result: { routed: "integration_update", target: classification.target },
-      }
-    case "qa_run": {
-      const result = await runForgeQaAgent(projectId, actor)
-      return {
-        message: "I routed this to generated-site QA. The result is based on actual checks, not AI claims.",
-        result,
-      }
-    }
-    case "repair_run": {
-      const result = await runForgeRepairAgent(projectId, actor)
-      return {
-        message: "I routed this to the Repair Agent after confirmation. Any patch is restricted to the generated workspace.",
-        result,
-      }
-    }
-    case "proposal_generate": {
-      const result = await runForgeProposalAgent(projectId, actor, "proposal")
-      return {
-        message: "I generated the proposal pack from the available Forge project artifacts.",
-        result,
-      }
-    }
+    ok: true,
+    queued: true,
+    taskId,
+    jobId,
+    classification,
+    route: commandRouteView(classification),
+    chat: nextState,
+    message: assistantMessage,
   }
 }
 
@@ -283,13 +275,13 @@ async function completeCommand({
     "assistant",
     assistantContent,
     completedAt.toISOString(),
-    classification.intent,
+    classification.action,
     requiresConfirmation ? "needs_confirmation" : status,
     taskId,
     requiresConfirmation,
   )
   const nextState = appendForgeCommandMessages(state, [
-    { ...userMessage, intent: classification.intent, status: "classified", taskId, requiresConfirmation },
+    { ...userMessage, action: classification.action, intent: classification.action, status: "classified", taskId, requiresConfirmation },
     assistantMessage,
   ], completedAt.toISOString())
 
@@ -305,37 +297,17 @@ async function completeCommand({
       updatedAt: completedAt,
     }).where(eq(forgeTasks.id, taskId))
 
-    const [existingMemory] = await tx
-      .select({ id: forgeMemories.id })
-      .from(forgeMemories)
-      .where(and(eq(forgeMemories.projectId, projectId), eq(forgeMemories.key, FORGE_COMMAND_CHAT_MEMORY_KEY)))
-      .orderBy(desc(forgeMemories.updatedAt))
-      .limit(1)
-
-    const memoryValues = {
-      value: JSON.stringify(nextState),
-      source: "forge_command_chat",
-      updatedAt: completedAt,
-    }
-    if (existingMemory) {
-      await tx.update(forgeMemories).set(memoryValues).where(eq(forgeMemories.id, existingMemory.id))
-    } else {
-      await tx.insert(forgeMemories).values({
-        projectId,
-        key: FORGE_COMMAND_CHAT_MEMORY_KEY,
-        ...memoryValues,
-      })
-    }
+    await upsertCommandMemory(tx, projectId, nextState, completedAt)
 
     await tx.insert(forgeActivityLogs).values({
       projectId,
       actor,
       action: status === "failed" ? "command_chat_failed" : requiresConfirmation ? "command_chat_confirmation_required" : "command_chat_completed",
       message: status === "failed"
-        ? `Forge command failed after classification as ${classification.intent}.`
+        ? `Forge command failed after classification as ${classification.action}.`
         : requiresConfirmation
-          ? `Forge command requires confirmation before running ${classification.intent}.`
-          : `Forge command routed to ${classification.intent}.`,
+          ? `Forge command requires confirmation before running ${classification.action}.`
+          : `Forge command routed to ${classification.action}.`,
       metadataJson: {
         taskId,
         classification,
@@ -358,29 +330,58 @@ function buildMessage(
   role: "user" | "assistant",
   content: string,
   createdAt: string,
-  intent: ForgeCommandClassification["intent"] | null = null,
+  action: ForgeCommandClassification["action"] | null = null,
   status: ForgeCommandChatMessage["status"] = null,
   taskId: number | null = null,
   requiresConfirmation = false,
+  jobId: number | null = null,
+  id: string = randomUUID(),
 ): ForgeCommandChatMessage {
   return {
-    id: randomUUID(),
+    id,
     role,
     content,
     createdAt,
-    intent,
+    action,
+    intent: action,
     status,
     taskId,
+    jobId,
     requiresConfirmation,
   }
 }
 
-function integrationGuidance(classification: ForgeCommandClassification) {
-  if (classification.target === "whatsapp") {
-    return "I mapped this to the WhatsApp integration. Configure the WhatsApp number and placements in the WhatsApp CTAs panel, then regenerate the site so Forge writes the CTA module. No files were edited from chat."
+async function upsertCommandMemory(tx: DbTransaction, projectId: number, nextState: ForgeCommandChatState, updatedAt: Date) {
+  const [existingMemory] = await tx
+    .select({ id: forgeMemories.id })
+    .from(forgeMemories)
+    .where(and(eq(forgeMemories.projectId, projectId), eq(forgeMemories.key, FORGE_COMMAND_CHAT_MEMORY_KEY)))
+    .orderBy(desc(forgeMemories.updatedAt))
+    .limit(1)
+
+  const memoryValues = {
+    value: JSON.stringify(nextState),
+    source: "forge_command_chat",
+    updatedAt,
   }
-  if (classification.target === "resend") {
-    return "I mapped this to the Resend integration. Configure sender/recipient settings in the Resend panel, then regenerate the site so Forge writes the contact route. API keys stay in environment variables."
+  if (existingMemory) {
+    await tx.update(forgeMemories).set(memoryValues).where(eq(forgeMemories.id, existingMemory.id))
+  } else {
+    await tx.insert(forgeMemories).values({
+      projectId,
+      key: FORGE_COMMAND_CHAT_MEMORY_KEY,
+      ...memoryValues,
+    })
   }
-  return "I mapped this to an integration update. Use the relevant Forge integration panel first, then regenerate the site from approved artifacts. Chat did not edit files directly."
+}
+
+function buildQueuedMessage(classification: ForgeCommandClassification, taskId: number, jobId: number) {
+  return [
+    "Job Created",
+    `Task ID: ${taskId}`,
+    `Job ID: ${jobId}`,
+    "Status: Queued",
+    "",
+    `${forgeCommandLabel(classification.action)} has been queued for the Forge worker.`,
+  ].join("\n")
 }

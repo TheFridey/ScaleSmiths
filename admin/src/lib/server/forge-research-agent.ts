@@ -130,6 +130,8 @@ export async function runForgeResearchAgent(projectId: number, actor: string) {
       maxTokens: 2200,
       timeoutMs: 90_000,
       maxRetries: 1,
+      projectId,
+      taskId: task.id,
       mockData: createMockResearchReport(project, intake.intake),
     })
     const report = result.data as ForgeResearchReport

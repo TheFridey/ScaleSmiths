@@ -16,8 +16,10 @@ import { FORGE_RESEND_PROVIDER, readForgeResendConfig } from "@/lib/forge-resend
 import { FORGE_SEO_ARTIFACT_TITLE, readForgeSeoArtifact } from "@/lib/forge-seo"
 import { FORGE_SITEMAP_ARTIFACT_TITLE, readForgeSitemapStrategyArtifact } from "@/lib/forge-sitemap"
 import { FORGE_VISUAL_QA_ARTIFACT_TITLE, readForgeVisualQaArtifact } from "@/lib/forge-visual-qa"
+import { FORGE_VISUAL_CRITIQUE_ARTIFACT_TITLE, readForgeVisualCritiqueArtifact } from "@/lib/forge-visual-critique"
 import { FORGE_WHATSAPP_PROVIDER, readForgeWhatsAppConfig } from "@/lib/forge-whatsapp"
 import { FORGE_WORKSPACE_MEMORY_KEY, readForgeWorkspaceMemory } from "@/lib/forge-workspace"
+import { buildForgeAiBudgetStatus } from "@/lib/forge-ai-usage"
 import {
   forgeActivityLogs,
   forgeArtifacts,
@@ -29,11 +31,26 @@ import {
 
 export async function loadForgeDashboardPageData() {
   if (isBuildPhaseWithoutDatabase()) {
-    return { projects: [], recentActivity: [] }
+    return {
+      projects: [],
+      recentActivity: [],
+      aiMetrics: {
+        todaySpend: 0,
+        monthSpend: 0,
+        mostExpensiveProject: null,
+        averageCostPerSite: 0,
+        budget: {
+          project: buildForgeAiBudgetStatus(0, null),
+          monthly: buildForgeAiBudgetStatus(0, null),
+        },
+      },
+      averageDesignScore: null,
+    }
   }
 
   const { db } = await import("@/lib/db")
-  const [projects, recentActivity] = await Promise.all([
+  const { loadForgeAiDashboardMetrics } = await import("./forge-ai-usage")
+  const [projects, recentActivity, aiMetrics, averageDesignScore] = await Promise.all([
     db
       .select({
         id: forgeProjects.id,
@@ -59,20 +76,23 @@ export async function loadForgeDashboardPageData() {
       .from(forgeActivityLogs)
       .orderBy(desc(forgeActivityLogs.createdAt))
       .limit(6),
+    loadForgeAiDashboardMetrics(),
+    loadAverageDesignScore(),
   ])
 
-  return { projects, recentActivity }
+  return { projects, recentActivity, aiMetrics, averageDesignScore }
 }
 
 export async function loadForgeProjectPageData(id: number) {
   if (isBuildPhaseWithoutDatabase()) return null
 
   const { db } = await import("@/lib/db")
+  const { loadForgeAiProjectMetrics } = await import("./forge-ai-usage")
   const [project] = await db.select().from(forgeProjects).where(eq(forgeProjects.id, id)).limit(1)
 
   if (!project) return null
 
-  const [tasks, artifacts, integrations, activityLogs, memories, intakeArtifacts, sitemapArtifacts, copyArtifacts, designArtifacts, componentSpecArtifacts, generatedCodeArtifacts, qaArtifacts, seoArtifacts, visualQaArtifacts, proposalArtifacts, exportArtifacts, deployArtifacts] = await Promise.all([
+  const [tasks, artifacts, integrations, activityLogs, memories, aiUsage, intakeArtifacts, sitemapArtifacts, copyArtifacts, designArtifacts, componentSpecArtifacts, generatedCodeArtifacts, visualCritiqueArtifacts, qaArtifacts, seoArtifacts, visualQaArtifacts, proposalArtifacts, exportArtifacts, deployArtifacts] = await Promise.all([
     db
       .select({
         id: forgeTasks.id,
@@ -129,12 +149,14 @@ export async function loadForgeProjectPageData(id: number) {
       .from(forgeMemories)
       .where(eq(forgeMemories.projectId, id))
       .orderBy(desc(forgeMemories.updatedAt)),
+    loadForgeAiProjectMetrics(id),
     selectArtifactMetadata(id, "handover_doc", FORGE_INTAKE_ARTIFACT_TITLE),
     selectArtifactMetadata(id, "sitemap", FORGE_SITEMAP_ARTIFACT_TITLE),
     selectArtifactMetadata(id, "copy_doc", FORGE_COPY_ARTIFACT_TITLE),
     selectArtifactMetadata(id, "design_direction", FORGE_DESIGN_ARTIFACT_TITLE),
     selectArtifactMetadata(id, "component_spec", FORGE_COMPONENT_SPEC_ARTIFACT_TITLE),
     selectArtifactMetadata(id, "generated_code", FORGE_GENERATED_CODE_ARTIFACT_TITLE),
+    selectArtifactMetadata(id, "visual_critique", FORGE_VISUAL_CRITIQUE_ARTIFACT_TITLE),
     selectArtifactMetadata(id, "qa_report", FORGE_QA_ARTIFACT_TITLE),
     selectArtifactMetadata(id, "seo_pack", FORGE_SEO_ARTIFACT_TITLE),
     selectArtifactMetadata(id, "visual_qa", FORGE_VISUAL_QA_ARTIFACT_TITLE),
@@ -155,6 +177,7 @@ export async function loadForgeProjectPageData(id: number) {
     integrations,
     activityLogs,
     memories,
+    aiUsage,
     initialIntake: readForgeIntakeArtifact(intakeArtifacts[0]?.metadataJson),
     initialSitemap: readForgeSitemapStrategyArtifact(sitemapArtifacts[0]?.metadataJson),
     initialCopy: readForgeCopyDocumentArtifact(copyArtifacts[0]?.metadataJson),
@@ -162,6 +185,7 @@ export async function loadForgeProjectPageData(id: number) {
     initialComponentSpec: readForgeComponentSpecArtifact(componentSpecArtifacts[0]?.metadataJson),
     initialWorkspace: readForgeWorkspaceMemory(workspaceMemory?.value),
     initialGeneratedCode: readForgeGeneratedCodeArtifact(generatedCodeArtifacts[0]?.metadataJson),
+    initialVisualCritique: readForgeVisualCritiqueArtifact(visualCritiqueArtifacts[0]?.metadataJson),
     initialPreview: readForgePreviewMemory(previewMemory?.value),
     initialQa: readForgeQaArtifact(qaArtifacts[0]?.metadataJson),
     initialSeo: readForgeSeoArtifact(seoArtifacts[0]?.metadataJson),
@@ -187,4 +211,19 @@ async function selectArtifactMetadata(projectId: number, type: ForgeArtifactType
     ))
     .orderBy(desc(forgeArtifacts.version), desc(forgeArtifacts.updatedAt))
     .limit(1)
+}
+
+async function loadAverageDesignScore() {
+  const { db } = await import("@/lib/db")
+  const rows = await db
+    .select({ metadataJson: forgeArtifacts.metadataJson })
+    .from(forgeArtifacts)
+    .where(eq(forgeArtifacts.type, "visual_critique"))
+
+  const scores = rows
+    .map((row) => readForgeVisualCritiqueArtifact(row.metadataJson).score)
+    .filter((score): score is number => typeof score === "number")
+
+  if (!scores.length) return null
+  return Math.round(scores.reduce((total, score) => total + score, 0) / scores.length)
 }

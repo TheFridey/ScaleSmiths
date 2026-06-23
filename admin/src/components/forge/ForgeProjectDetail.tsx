@@ -1,9 +1,29 @@
 "use client"
 
+import { useMemo, useState, type ReactNode } from "react"
 import Link from "next/link"
-import { Activity, Archive, Box, Brain, ChevronLeft, Link2, ListChecks } from "lucide-react"
+import type { LucideIcon } from "lucide-react"
+import {
+  Activity,
+  Archive,
+  Bot,
+  Box,
+  Brain,
+  ChevronLeft,
+  Code2,
+  FileText,
+  Gauge,
+  Globe2,
+  Link2,
+  ListChecks,
+  Monitor,
+  Rocket,
+  Settings2,
+  ShieldCheck,
+  Target,
+  Workflow,
+} from "lucide-react"
 import { ForgeArtifactTabs } from "./ForgeArtifactTabs"
-import { ForgeBuildLogsDrawer } from "./ForgeBuildLogsDrawer"
 import { ForgeIntakeForm, type ForgeIntakeState } from "./ForgeIntakeForm"
 import { ForgeProjectForm, type ForgeProjectFormValue } from "./ForgeProjectForm"
 import { ForgeComponentSpecPanel } from "./ForgeComponentSpecPanel"
@@ -15,6 +35,7 @@ import { ForgeDeployPanel } from "./ForgeDeployPanel"
 import { ForgeExportPanel } from "./ForgeExportPanel"
 import { ForgePreviewRail } from "./ForgePreviewRail"
 import { ForgeProposalPanel } from "./ForgeProposalPanel"
+import { ForgeQaPanel } from "./ForgeQaPanel"
 import { ForgeResendConfigPanel } from "./ForgeResendConfigPanel"
 import { ForgeResearchActions } from "./ForgeResearchActions"
 import { ForgeSeoPanel } from "./ForgeSeoPanel"
@@ -41,6 +62,18 @@ import type { ForgeWhatsAppConfig } from "@/lib/forge-whatsapp"
 import type { ForgeWorkspaceMetadata } from "@/lib/forge-workspace"
 
 const T = { s1:"var(--s1)", s2:"var(--s2)", s3:"var(--s3)", b1:"var(--b1)", b2:"var(--b2)", t1:"var(--t1)", t2:"var(--t2)", t3:"var(--t3)", acc:"var(--acc)", grn:"var(--grn)", amb:"var(--amb)", red:"var(--red)" }
+
+type ProjectTab = "command" | "intake" | "strategy" | "build" | "qa" | "launch" | "records"
+
+const TABS: Array<{ key: ProjectTab; label: string; Icon: LucideIcon }> = [
+  { key: "command", label: "Command", Icon: Bot },
+  { key: "intake", label: "Intake", Icon: Target },
+  { key: "strategy", label: "Strategy", Icon: Workflow },
+  { key: "build", label: "Build", Icon: Code2 },
+  { key: "qa", label: "QA", Icon: ShieldCheck },
+  { key: "launch", label: "Launch", Icon: Rocket },
+  { key: "records", label: "Records", Icon: FileText },
+]
 
 interface ForgeTaskRow {
   id: number
@@ -132,157 +165,215 @@ export function ForgeProjectDetail({
   initialResendConfig: ForgeResendConfig
   initialWhatsAppConfig: ForgeWhatsAppConfig
 }) {
+  const [activeTab, setActiveTab] = useState<ProjectTab>("command")
+  const projectId = project.id ?? 0
+  const archived = project.status === "archived"
+  const stages = useMemo(
+    () => buildStageTimeline({
+      intake: initialIntake,
+      sitemap: initialSitemap,
+      copy: initialCopy,
+      design: initialDesign,
+      generatedCode: initialGeneratedCode,
+      qa: initialQa,
+      preview: initialPreview,
+      deploy: initialDeploy,
+      tasks,
+      artifacts,
+      integrations,
+    }),
+    [artifacts, initialCopy, initialDeploy, initialDesign, initialGeneratedCode, initialIntake, initialPreview, initialQa, initialSitemap, integrations, tasks],
+  )
+  const completedStages = stages.filter((stage) => stage.status === "approved" || stage.status === "complete").length
+  const activeTasks = tasks.filter((task) => task.status === "queued" || task.status === "running")
+  const failedTasks = tasks.filter((task) => task.status === "failed")
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <Link href="/forge" className="mb-3 inline-flex items-center gap-1.5 font-dm text-xs" style={{ color:T.t2 }}>
-            <ChevronLeft size={13} aria-hidden="true" /> Forge Projects
+    <div
+      className="mx-auto flex h-[calc(100vh-4rem)] min-h-[700px] max-w-[1600px] flex-col overflow-hidden rounded-[8px] border"
+      style={{
+        borderColor: "rgba(56,189,248,.18)",
+        background: "linear-gradient(135deg, #070b13 0%, #0b1020 48%, #060b10 100%)",
+        boxShadow: "0 24px 80px rgba(0,0,0,.34)",
+      }}
+    >
+      <header className="flex h-[58px] shrink-0 items-center justify-between gap-4 border-b px-4" style={{ borderColor:"rgba(148,163,184,.14)" }}>
+        <div className="flex min-w-0 items-center gap-3">
+          <Link href="/forge" className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] border" style={{ background:"rgba(15,23,42,.72)", borderColor:"rgba(148,163,184,.16)", color:"#cbd5e1" }} aria-label="Back to Forge projects">
+            <ChevronLeft size={17} aria-hidden="true" />
           </Link>
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="font-syne text-3xl font-extrabold tracking-tight">{project.name}</h1>
-            <Badge value={labelize(project.status ?? "intake")} tone={project.status === "archived" ? "muted" : project.status === "ready_to_deploy" ? "good" : "accent"} />
-            <Badge value={project.priority} tone={project.priority === "high" ? "warn" : project.priority === "low" ? "good" : "muted"} />
+          <div className="min-w-0">
+            <div className="flex min-w-0 items-center gap-2">
+              <h1 className="truncate font-syne text-lg font-extrabold text-white">{project.name}</h1>
+              <Badge value={labelize(project.status ?? "intake")} tone={archived ? "muted" : project.status === "ready_to_deploy" ? "good" : "accent"} />
+              <Badge value={project.priority} tone={project.priority === "high" ? "warn" : project.priority === "low" ? "good" : "muted"} />
+            </div>
+            <p className="truncate font-dm text-xs" style={{ color:"#94a3b8" }}>{project.businessName} / {project.industry ?? "No industry set"}</p>
           </div>
-          <p className="mt-1 font-dm text-sm" style={{ color:T.t2 }}>{project.businessName} / {project.industry ?? "No industry set"}</p>
         </div>
-        {project.status === "archived" && (
-          <div className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 font-dm text-sm" style={{ background:T.s2, borderColor:T.b1, color:T.t2 }}>
-            <Archive size={14} aria-hidden="true" /> Archived
+
+        <div className="hidden items-center gap-2 lg:flex">
+          <HeaderSignal icon={Gauge} label={`${completedStages}/${stages.length} ready`} tone={completedStages === stages.length ? "green" : "cyan"} />
+          <HeaderSignal icon={ListChecks} label={`${activeTasks.length} active tasks`} tone="violet" />
+          <HeaderSignal icon={Activity} label={`${failedTasks.length} failed`} tone={failedTasks.length ? "amber" : "green"} />
+        </div>
+
+        {archived && (
+          <div className="inline-flex h-9 shrink-0 items-center gap-2 rounded-full border px-3 font-dm text-xs font-semibold" style={{ background:T.s2, borderColor:T.b1, color:T.t2 }}>
+            <Archive size={14} aria-hidden="true" />
+            Archived
           </div>
         )}
-      </div>
+      </header>
 
-      <div className="grid items-start gap-4 xl:grid-cols-[260px_minmax(0,1fr)_380px] 2xl:grid-cols-[280px_minmax(0,1fr)_460px]">
-        <aside className="space-y-4 xl:sticky xl:top-4">
-          <StageSidebar
-            project={project}
-            stages={buildStageTimeline({
-              intake: initialIntake,
-              sitemap: initialSitemap,
-              copy: initialCopy,
-              design: initialDesign,
-              generatedCode: initialGeneratedCode,
-              qa: initialQa,
-              preview: initialPreview,
-              deploy: initialDeploy,
-              tasks,
-              artifacts,
-              integrations,
-            })}
-          />
-          <Panel title="Core Details" icon={Box}>
-            <DetailGrid rows={[
-              ["Business", project.businessName],
-              ["Industry", project.industry ?? "Not set"],
-              ["Website", project.websiteUrl ?? "Not set"],
-              ["Audience", project.targetAudience ?? "Not set"],
-              ["Goal", project.primaryGoal ?? "Not set"],
-              ["Budget", project.budgetRange ?? "Not set"],
-              ["Deadline", formatDate(project.deadline)],
-              ["Brand notes", project.brandNotes ?? "Not set"],
-            ]} />
-          </Panel>
-          <ForgeProjectForm mode="edit" project={project} />
+      <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[320px_minmax(0,1fr)] 2xl:grid-cols-[320px_minmax(0,1fr)_420px]">
+        <aside className="hidden min-h-0 flex-col border-r p-4 lg:flex" style={{ borderColor:"rgba(148,163,184,.14)" }}>
+          <ProjectSummary project={project} completedStages={completedStages} totalStages={stages.length} />
+          <div className="mt-4 min-h-0 flex-1 overflow-auto rounded-[8px] border" style={{ background:T.s1, borderColor:T.b1 }}>
+            <div className="sticky top-0 z-10 flex h-11 items-center gap-2 border-b px-3" style={{ borderColor:T.b1, background:T.s1 }}>
+              <Workflow size={15} style={{ color:"#22d3ee" }} aria-hidden="true" />
+              <h2 className="font-dm text-sm font-semibold">Production Stages</h2>
+            </div>
+            <div className="space-y-2 p-3">
+              {stages.map((stage, index) => (
+                <button
+                  key={stage.label}
+                  type="button"
+                  onClick={() => setActiveTab(stage.tab)}
+                  className="group w-full rounded-[8px] border p-3 text-left transition-colors hover:bg-[rgba(56,189,248,.045)]"
+                  style={{ background:T.s2, borderColor:activeTab === stage.tab ? "rgba(56,189,248,.45)" : T.b1 }}
+                >
+                  <div className="mb-1 flex items-center justify-between gap-2">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span className="font-syne text-xs font-extrabold" style={{ color:T.t2 }}>{String(index + 1).padStart(2, "0")}</span>
+                      <span className="truncate font-dm text-sm font-semibold">{stage.label}</span>
+                    </div>
+                    <StageBadge status={stage.status} />
+                  </div>
+                  <p className="line-clamp-2 font-dm text-[11px] leading-4" style={{ color:T.t2 }}>{stage.detail}</p>
+                </button>
+              ))}
+            </div>
+          </div>
         </aside>
 
-        <main className="min-w-0 space-y-4">
-          <ForgeCommandChatPanel projectId={project.id ?? 0} initialChat={initialCommandChat} disabled={project.status === "archived"} />
-          <ForgeArtifactTabs artifacts={artifacts} />
-
-          <section className="space-y-4">
-            <div className="rounded-xl border p-4" style={{ background:T.s1, borderColor:T.b1 }}>
-              <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <h2 className="font-syne text-lg font-bold">Production Workstream</h2>
-                  <p className="mt-1 font-dm text-sm" style={{ color:T.t2 }}>Run and review the core Forge pipeline without leaving the cockpit.</p>
-                </div>
-                <StatusBadge value="needs review" status="needs_review" />
-              </div>
+        <main className="flex min-h-0 flex-col p-4">
+          <div className="mb-3 flex shrink-0 flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="font-dm text-[11px] font-semibold uppercase tracking-[.22em]" style={{ color:"#7dd3fc" }}>Project Cockpit</p>
+              <h2 className="font-syne text-xl font-extrabold text-white">{tabTitle(activeTab)}</h2>
             </div>
-            <ForgeIntakeForm projectId={project.id ?? 0} initialIntake={initialIntake} />
-            <ForgeResearchActions projectId={project.id ?? 0} disabled={project.status === "archived"} />
-            <ForgeSitemapStrategyPanel projectId={project.id ?? 0} initialState={initialSitemap} disabled={project.status === "archived"} />
-            <ForgeCopyPanel projectId={project.id ?? 0} initialState={initialCopy} sitemapState={initialSitemap} disabled={project.status === "archived"} />
-            <ForgeDesignDirectionPanel projectId={project.id ?? 0} initialState={initialDesign} copyState={initialCopy} disabled={project.status === "archived"} />
-            <ForgeComponentSpecPanel projectId={project.id ?? 0} initialState={initialComponentSpec} designState={initialDesign} disabled={project.status === "archived"} />
-            <ForgeWorkspacePanel projectId={project.id ?? 0} initialWorkspace={initialWorkspace} disabled={project.status === "archived"} />
-            <ForgeResendConfigPanel projectId={project.id ?? 0} initialConfig={initialResendConfig} disabled={project.status === "archived"} />
-            <ForgeWhatsAppConfigPanel projectId={project.id ?? 0} initialConfig={initialWhatsAppConfig} disabled={project.status === "archived"} />
-            <ForgeGenerateSitePanel
-              projectId={project.id ?? 0}
-              initialWorkspace={initialWorkspace}
-              componentSpecState={initialComponentSpec}
-              initialGeneratedCode={initialGeneratedCode}
-              disabled={project.status === "archived"}
-            />
-            <ForgeSeoPanel
-              projectId={project.id ?? 0}
-              initialSeo={initialSeo}
-              sitemapState={initialSitemap}
-              copyState={initialCopy}
-              disabled={project.status === "archived"}
-            />
-            <ForgeVisualQaPanel
-              projectId={project.id ?? 0}
-              initialWorkspace={initialWorkspace}
-              initialGeneratedCode={initialGeneratedCode}
-              initialVisualQa={initialVisualQa}
-              disabled={project.status === "archived"}
-            />
-            <ForgeProposalPanel
-              projectId={project.id ?? 0}
-              initialProposal={initialProposal}
-              intakeReady={(initialIntake.completenessScore ?? 0) > 0}
-              disabled={project.status === "archived"}
-            />
-            <ForgeExportPanel
-              projectId={project.id ?? 0}
-              initialExport={initialExport}
-              siteReady={initialGeneratedCode.status === "generated"}
-              proposalReady={initialProposal.status === "generated"}
-              disabled={project.status === "archived"}
-            />
-            <ForgeDeployPanel
-              projectId={project.id ?? 0}
-              initialDeploy={initialDeploy}
-              siteReady={initialGeneratedCode.status === "generated"}
-              disabled={project.status === "archived"}
-            />
-          </section>
+            <div className="flex max-w-full overflow-x-auto rounded-full border p-1" style={{ background:"rgba(15,23,42,.72)", borderColor:"rgba(148,163,184,.16)" }}>
+              {TABS.map(({ key, label, Icon }) => {
+                const active = activeTab === key
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setActiveTab(key)}
+                    className="inline-flex h-9 shrink-0 items-center gap-2 rounded-full px-3 font-dm text-xs font-semibold transition-colors"
+                    style={{ background:active ? "#f8fafc" : "transparent", color:active ? "#06121f" : "#94a3b8" }}
+                  >
+                    <Icon size={14} aria-hidden="true" />
+                    {label}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
 
-          <section className="grid gap-4 lg:grid-cols-2">
-            <Panel title="Tasks" icon={ListChecks}>
-              <TaskList rows={tasks} />
-            </Panel>
-            <Panel title="Activity Log" icon={Activity}>
-              <ActivityList rows={activityLogs} />
-            </Panel>
-            <Panel title="Project Memory" icon={Brain}>
-              <MemoryList rows={memories} />
-            </Panel>
-            <Panel title="Integrations" icon={Link2}>
-              <IntegrationList rows={integrations} />
-            </Panel>
+          <section className="min-h-0 flex-1 overflow-hidden rounded-[8px] border" style={{ background:T.s1, borderColor:T.b1 }}>
+            <div className="h-full overflow-auto p-4">
+              {activeTab === "command" && (
+                <TabGrid>
+                  <ForgeCommandChatPanel projectId={projectId} initialChat={initialCommandChat} disabled={archived} />
+                  <ForgeArtifactTabs artifacts={artifacts} />
+                </TabGrid>
+              )}
+
+              {activeTab === "intake" && (
+                <TabGrid>
+                  <Panel title="Project Settings" icon={Settings2}>
+                    <ForgeProjectForm mode="edit" project={project} />
+                  </Panel>
+                  <ForgeIntakeForm projectId={projectId} initialIntake={initialIntake} />
+                </TabGrid>
+              )}
+
+              {activeTab === "strategy" && (
+                <TabStack>
+                  <ForgeResearchActions projectId={projectId} disabled={archived} />
+                  <ForgeSitemapStrategyPanel projectId={projectId} initialState={initialSitemap} disabled={archived} />
+                  <ForgeCopyPanel projectId={projectId} initialState={initialCopy} sitemapState={initialSitemap} disabled={archived} />
+                  <ForgeDesignDirectionPanel projectId={projectId} initialState={initialDesign} copyState={initialCopy} disabled={archived} />
+                  <ForgeComponentSpecPanel projectId={projectId} initialState={initialComponentSpec} designState={initialDesign} disabled={archived} />
+                </TabStack>
+              )}
+
+              {activeTab === "build" && (
+                <TabStack>
+                  <ForgeWorkspacePanel projectId={projectId} initialWorkspace={initialWorkspace} disabled={archived} />
+                  <div className="grid gap-4 xl:grid-cols-2">
+                    <ForgeResendConfigPanel projectId={projectId} initialConfig={initialResendConfig} disabled={archived} />
+                    <ForgeWhatsAppConfigPanel projectId={projectId} initialConfig={initialWhatsAppConfig} disabled={archived} />
+                  </div>
+                  <ForgeGenerateSitePanel
+                    projectId={projectId}
+                    initialWorkspace={initialWorkspace}
+                    componentSpecState={initialComponentSpec}
+                    initialGeneratedCode={initialGeneratedCode}
+                    disabled={archived}
+                  />
+                  <ForgeSeoPanel projectId={projectId} initialSeo={initialSeo} sitemapState={initialSitemap} copyState={initialCopy} disabled={archived} />
+                </TabStack>
+              )}
+
+              {activeTab === "qa" && (
+                <TabStack>
+                  <ForgeQaPanel projectId={projectId} initialWorkspace={initialWorkspace} initialGeneratedCode={initialGeneratedCode} initialQa={initialQa} disabled={archived} />
+                  <ForgeVisualQaPanel projectId={projectId} initialWorkspace={initialWorkspace} initialGeneratedCode={initialGeneratedCode} initialVisualQa={initialVisualQa} disabled={archived} />
+                </TabStack>
+              )}
+
+              {activeTab === "launch" && (
+                <TabStack>
+                  <ForgeProposalPanel projectId={projectId} initialProposal={initialProposal} intakeReady={(initialIntake.completenessScore ?? 0) > 0} disabled={archived} />
+                  <ForgeExportPanel
+                    projectId={projectId}
+                    initialExport={initialExport}
+                    siteReady={initialGeneratedCode.status === "generated"}
+                    proposalReady={initialProposal.status === "generated"}
+                    disabled={archived}
+                  />
+                  <ForgeDeployPanel projectId={projectId} initialDeploy={initialDeploy} siteReady={initialGeneratedCode.status === "generated"} disabled={archived} />
+                </TabStack>
+              )}
+
+              {activeTab === "records" && (
+                <div className="grid gap-4 xl:grid-cols-2">
+                  <Panel title="Tasks" icon={ListChecks}><TaskList rows={tasks} /></Panel>
+                  <Panel title="Activity Log" icon={Activity}><ActivityList rows={activityLogs} /></Panel>
+                  <Panel title="Project Memory" icon={Brain}><MemoryList rows={memories} /></Panel>
+                  <Panel title="Integrations" icon={Link2}><IntegrationList rows={integrations} /></Panel>
+                  <Panel title="Core Details" icon={Box}><DetailGrid project={project} /></Panel>
+                </div>
+              )}
+            </div>
           </section>
         </main>
 
-        <ForgePreviewRail
-          projectId={project.id ?? 0}
-          initialWorkspace={initialWorkspace}
-          initialGeneratedCode={initialGeneratedCode}
-          initialPreview={initialPreview}
-          disabled={project.status === "archived"}
-        />
+        <aside className="hidden min-h-0 border-l p-4 2xl:block" style={{ borderColor:"rgba(148,163,184,.14)" }}>
+          <div className="h-full overflow-auto">
+            <ForgePreviewRail
+              projectId={projectId}
+              initialWorkspace={initialWorkspace}
+              initialGeneratedCode={initialGeneratedCode}
+              initialPreview={initialPreview}
+              disabled={archived}
+            />
+          </div>
+        </aside>
       </div>
-
-      <ForgeBuildLogsDrawer
-        projectId={project.id ?? 0}
-        initialWorkspace={initialWorkspace}
-        initialGeneratedCode={initialGeneratedCode}
-        initialQa={initialQa}
-        disabled={project.status === "archived"}
-      />
     </div>
   )
 }
@@ -293,32 +384,104 @@ interface CockpitStage {
   label: string
   status: CockpitStageStatus
   detail: string
+  tab: ProjectTab
 }
 
-function StageSidebar({ project, stages }: { project: ForgeProjectFormValue; stages: CockpitStage[] }) {
-  const completed = stages.filter((stage) => stage.status === "approved" || stage.status === "complete").length
+function ProjectSummary({ project, completedStages, totalStages }: { project: ForgeProjectFormValue; completedStages: number; totalStages: number }) {
   return (
-    <section className="rounded-xl border p-4" style={{ background:T.s1, borderColor:T.b1 }}>
-      <div className="mb-4">
-        <div className="font-dm text-[11px] uppercase tracking-[.08em]" style={{ color:T.t3 }}>Project cockpit</div>
-        <h2 className="mt-1 font-syne text-lg font-bold">{project.businessName}</h2>
-        <div className="mt-2 flex flex-wrap gap-2">
-          <StatusBadge value={project.status ?? "intake"} status={project.status === "archived" ? "failed" : "running"} />
-          <StatusBadge value={`${completed}/${stages.length} ready`} status={completed === stages.length ? "complete" : "needs_review"} />
+    <section className="relative shrink-0 overflow-hidden rounded-[8px] border p-4" style={{ background:"rgba(2,6,23,.58)", borderColor:"rgba(56,189,248,.18)" }}>
+      <GridWash />
+      <div className="relative">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div>
+            <p className="font-dm text-[11px] font-semibold uppercase tracking-[.22em]" style={{ color:"#7dd3fc" }}>Live Run</p>
+            <h2 className="mt-1 truncate font-syne text-2xl font-extrabold leading-none text-white">{project.businessName}</h2>
+          </div>
+          <Monitor size={20} style={{ color:"#22d3ee" }} aria-hidden="true" />
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          <Metric label="Ready" value={`${completedStages}/${totalStages}`} tone={completedStages === totalStages ? "green" : "cyan"} />
+          <Metric label="Priority" value={project.priority} tone={project.priority === "high" ? "amber" : "violet"} />
+          <Metric label="Status" value={labelize(project.status ?? "intake")} tone="cyan" />
+        </div>
+        <div className="mt-3 grid gap-2">
+          <MiniDetail icon={Globe2} label="Website" value={project.websiteUrl ?? "No website set"} />
+          <MiniDetail icon={Target} label="Goal" value={project.primaryGoal ?? "No goal set"} />
         </div>
       </div>
-      <div className="space-y-2">
-        {stages.map((stage) => (
-          <div key={stage.label} className="rounded-lg border p-3" style={{ background:T.s2, borderColor:T.b1 }}>
-            <div className="flex items-center justify-between gap-2">
-              <div className="font-dm text-sm font-semibold" style={{ color:T.t1 }}>{stage.label}</div>
-              <StatusBadge value={stage.status.replace("_", " ")} status={stage.status} />
-            </div>
-            <p className="mt-1 font-dm text-[11px] leading-relaxed" style={{ color:T.t2 }}>{stage.detail}</p>
-          </div>
-        ))}
-      </div>
     </section>
+  )
+}
+
+function HeaderSignal({ icon: Icon, label, tone }: { icon: LucideIcon; label: string; tone: "cyan" | "green" | "amber" | "violet" }) {
+  return (
+    <div className="inline-flex h-8 items-center gap-2 rounded-full border px-3" style={{ background:"rgba(15,23,42,.7)", borderColor:"rgba(148,163,184,.16)" }}>
+      <Icon size={13} style={{ color:toneColor(tone) }} aria-hidden="true" />
+      <span className="font-dm text-[11px] font-semibold" style={{ color:"#cbd5e1" }}>{label}</span>
+    </div>
+  )
+}
+
+function Metric({ label, value, tone }: { label: string; value: string | number; tone: "cyan" | "green" | "amber" | "violet" }) {
+  return (
+    <div className="rounded-[8px] border p-3" style={{ background:"rgba(15,23,42,.64)", borderColor:"rgba(148,163,184,.14)" }}>
+      <div className="font-dm text-[10px] font-semibold uppercase tracking-[.1em]" style={{ color:"#94a3b8" }}>{label}</div>
+      <div className="mt-1 truncate font-syne text-lg font-extrabold" style={{ color:toneColor(tone) }}>{value}</div>
+    </div>
+  )
+}
+
+function MiniDetail({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string }) {
+  return (
+    <div className="flex min-w-0 items-center gap-2 rounded-[8px] border px-3 py-2" style={{ background:"rgba(15,23,42,.54)", borderColor:"rgba(148,163,184,.14)" }}>
+      <Icon size={13} style={{ color:"#94a3b8" }} aria-hidden="true" />
+      <span className="shrink-0 font-dm text-[11px]" style={{ color:"#64748b" }}>{label}</span>
+      <span className="truncate font-dm text-[11px]" style={{ color:"#cbd5e1" }}>{value}</span>
+    </div>
+  )
+}
+
+function TabGrid({ children }: { children: ReactNode }) {
+  return <div className="grid gap-4 xl:grid-cols-2">{children}</div>
+}
+
+function TabStack({ children }: { children: ReactNode }) {
+  return <div className="space-y-4">{children}</div>
+}
+
+function Panel({ title, icon: Icon, children }: { title: string; icon: LucideIcon; children: ReactNode }) {
+  return (
+    <section className="rounded-[8px] border p-4" style={{ background:T.s1, borderColor:T.b1 }}>
+      <div className="mb-4 flex items-center gap-2">
+        <Icon size={16} style={{ color:"#38bdf8" }} aria-hidden="true" />
+        <h2 className="font-syne text-lg font-bold">{title}</h2>
+      </div>
+      {children}
+    </section>
+  )
+}
+
+function DetailGrid({ project }: { project: ForgeProjectFormValue }) {
+  const rows: [string, string][] = [
+    ["Business", project.businessName],
+    ["Industry", project.industry ?? "Not set"],
+    ["Website", project.websiteUrl ?? "Not set"],
+    ["Audience", project.targetAudience ?? "Not set"],
+    ["Goal", project.primaryGoal ?? "Not set"],
+    ["Budget", project.budgetRange ?? "Not set"],
+    ["Deadline", formatDate(project.deadline)],
+    ["Brand notes", project.brandNotes ?? "Not set"],
+  ]
+
+  return (
+    <div className="grid gap-2">
+      {rows.map(([label, value]) => (
+        <div key={label} className="rounded-[8px] border p-3" style={{ background:T.s2, borderColor:T.b1 }}>
+          <div className="font-dm text-[11px] uppercase tracking-[.08em]" style={{ color:T.t3 }}>{label}</div>
+          <div className="mt-1 whitespace-pre-wrap font-dm text-sm leading-relaxed" style={{ color:T.t1 }}>{value}</div>
+        </div>
+      ))}
+    </div>
   )
 }
 
@@ -350,53 +513,63 @@ function buildStageTimeline({
   return [
     {
       label: "Intake",
-      status: intake.status === "completed" ? "approved" : intake.completenessScore > 0 ? "needs_review" : stageTaskStatus(tasks, ["intake"], "needs_review"),
-      detail: `${intake.completenessScore}% complete`,
+      status: intake.status === "completed" ? "approved" : (intake.completenessScore ?? 0) > 0 ? "needs_review" : stageTaskStatus(tasks, ["intake"], "needs_review"),
+      detail: `${intake.completenessScore ?? 0}% complete`,
+      tab: "intake",
     },
     {
       label: "Research",
       status: stageArtifactStatus(tasks, artifacts, ["research"], ["research_report"]),
       detail: "Business and market research",
+      tab: "strategy",
     },
     {
       label: "Strategy",
       status: sitemap.status === "approved" ? "approved" : sitemap.status === "draft" ? "needs_review" : stageTaskStatus(tasks, ["strategy", "sitemap"], "needs_review"),
       detail: "Sitemap and page strategy",
+      tab: "strategy",
     },
     {
       label: "Copy",
       status: copy.status === "approved" ? "approved" : copy.status === "draft" ? "needs_review" : stageTaskStatus(tasks, ["copy"], "needs_review"),
       detail: "SEO copy and page content",
+      tab: "strategy",
     },
     {
       label: "Design",
       status: design.status === "approved" ? "approved" : design.status === "draft" ? "needs_review" : stageTaskStatus(tasks, ["design"], "needs_review"),
       detail: "Style, motion, and component direction",
+      tab: "strategy",
     },
     {
       label: "Build",
       status: generatedCode.status === "generated" ? "complete" : stageTaskStatus(tasks, ["frontend"], "needs_review"),
       detail: generatedCode.summary ? `${generatedCode.summary.fileCount} generated files` : "Generated site workspace",
+      tab: "build",
     },
     {
       label: "QA",
       status: qa.status === "passed" ? "complete" : qa.status === "failed" ? "failed" : stageTaskStatus(tasks, ["qa", "repair"], "needs_review"),
       detail: qa.report ? `${qa.report.commands.length} checks` : "Build and repair checks",
+      tab: "qa",
     },
     {
       label: "Integrations",
       status: integrations.some((integration) => integration.enabled) ? "complete" : stageTaskStatus(tasks, ["integration"], "needs_review"),
       detail: `${integrations.filter((integration) => integration.enabled).length} enabled`,
+      tab: "build",
     },
     {
       label: "Preview",
       status: preview?.status === "running" ? "running" : preview?.status === "failed" ? "failed" : generatedCode.status === "generated" ? "complete" : "needs_review",
       detail: preview?.url ?? "No active preview",
+      tab: "build",
     },
     {
-      label: "Deploy",
+      label: "Launch",
       status: deploy.lifecycle === "deployed" ? "complete" : deploy.ready ? "approved" : stageTaskStatus(tasks, ["deploy"], "needs_review"),
       detail: deploy.lifecycle === "deployed" ? "Deployed" : deploy.ready ? "Ready to deploy" : "Deployment checklist",
+      tab: "launch",
     },
   ]
 }
@@ -415,52 +588,12 @@ function stageTaskStatus(tasks: ForgeTaskRow[], agentTypes: ForgeTaskAgentType[]
   return fallback
 }
 
-function StatusBadge({ value, status }: { value: string; status: CockpitStageStatus }) {
-  const color = status === "approved" || status === "complete" ? T.grn : status === "failed" ? T.red : status === "running" ? T.acc : T.amb
+function StageBadge({ status }: { status: CockpitStageStatus }) {
+  const color = status === "approved" || status === "complete" ? T.grn : status === "failed" ? T.red : status === "running" ? "#38bdf8" : T.amb
   return (
-    <span className="inline-flex w-fit rounded px-2 py-0.5 font-dm text-[10px] font-semibold uppercase tracking-[.05em]" style={{ background:T.s2, border:`1px solid ${T.b2}`, color }}>
-      {value}
+    <span className="inline-flex w-fit rounded-full px-2 py-0.5 font-dm text-[9px] font-semibold uppercase tracking-[.05em]" style={{ background:T.s2, border:`1px solid ${T.b2}`, color }}>
+      {status.replace("_", " ")}
     </span>
-  )
-}
-
-function Panel({ title, icon: Icon, children }: { title: string; icon: typeof Activity; children: React.ReactNode }) {
-  return (
-    <section className="rounded-xl border p-5" style={{ background:T.s1, borderColor:T.b1 }}>
-      <div className="mb-4 flex items-center gap-2">
-        <Icon size={16} style={{ color:T.acc }} aria-hidden="true" />
-        <h2 className="font-syne text-lg font-bold">{title}</h2>
-      </div>
-      {children}
-    </section>
-  )
-}
-
-function DetailGrid({ rows }: { rows: [string, string][] }) {
-  return (
-    <div className="grid gap-3">
-      {rows.map(([label, value]) => (
-        <div key={label} className="rounded-lg border p-3" style={{ background:T.s2, borderColor:T.b1 }}>
-          <div className="font-dm text-[11px] uppercase tracking-[.08em]" style={{ color:T.t3 }}>{label}</div>
-          <div className="mt-1 whitespace-pre-wrap font-dm text-sm leading-relaxed" style={{ color:T.t1 }}>{value}</div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function MemoryList({ rows }: { rows: ForgeMemoryRow[] }) {
-  if (rows.length === 0) return <Empty icon={Brain} text="No project memory has been captured yet." />
-  return (
-    <div className="space-y-2">
-      {rows.map((row) => (
-        <div key={row.id} className="rounded-lg border p-3" style={{ background:T.s2, borderColor:T.b1 }}>
-          <div className="font-dm text-sm font-semibold">{row.key}</div>
-          <p className="mt-1 font-dm text-xs leading-relaxed" style={{ color:T.t2 }}>{row.value}</p>
-          <div className="mt-2 font-dm text-[11px]" style={{ color:T.t3 }}>{row.source ?? "manual"} / {formatDate(row.updatedAt)}</div>
-        </div>
-      ))}
-    </div>
   )
 }
 
@@ -469,7 +602,7 @@ function TaskList({ rows }: { rows: ForgeTaskRow[] }) {
   return (
     <div className="space-y-2">
       {rows.map((row) => (
-        <div key={row.id} className="rounded-lg border p-3" style={{ background:T.s2, borderColor:T.b1 }}>
+        <div key={row.id} className="rounded-[8px] border p-3" style={{ background:T.s2, borderColor:T.b1 }}>
           <div className="flex items-center justify-between gap-3">
             <div className="font-dm text-sm font-semibold">{row.title}</div>
             <Badge value={row.status} tone={row.status === "completed" ? "good" : row.status === "failed" ? "bad" : "accent"} />
@@ -482,17 +615,50 @@ function TaskList({ rows }: { rows: ForgeTaskRow[] }) {
   )
 }
 
+function ActivityList({ rows }: { rows: ForgeActivityRow[] }) {
+  if (rows.length === 0) return <Empty icon={Activity} text="No actions have been logged for this project." />
+  return (
+    <div className="space-y-2">
+      {rows.map((row) => (
+        <div key={row.id} className="rounded-[8px] border p-3" style={{ background:T.s2, borderColor:T.b1 }}>
+          <div className="flex items-center justify-between gap-3">
+            <div className="truncate font-dm text-xs font-semibold">{labelize(row.action)}</div>
+            <div className="shrink-0 font-dm text-[11px]" style={{ color:T.t3 }}>{formatDate(row.createdAt)}</div>
+          </div>
+          <p className="mt-1 line-clamp-2 font-dm text-xs leading-relaxed" style={{ color:T.t2 }}>{row.message}</p>
+          <div className="mt-2 font-dm text-[11px]" style={{ color:T.t3 }}>{row.actor ?? "admin"}</div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function MemoryList({ rows }: { rows: ForgeMemoryRow[] }) {
+  if (rows.length === 0) return <Empty icon={Brain} text="No project memory has been captured yet." />
+  return (
+    <div className="space-y-2">
+      {rows.map((row) => (
+        <div key={row.id} className="rounded-[8px] border p-3" style={{ background:T.s2, borderColor:T.b1 }}>
+          <div className="font-dm text-sm font-semibold">{row.key}</div>
+          <p className="mt-1 line-clamp-3 font-dm text-xs leading-relaxed" style={{ color:T.t2 }}>{row.value}</p>
+          <div className="mt-2 font-dm text-[11px]" style={{ color:T.t3 }}>{row.source ?? "manual"} / {formatDate(row.updatedAt)}</div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function IntegrationList({ rows }: { rows: ForgeIntegrationRow[] }) {
   if (rows.length === 0) return <Empty icon={Link2} text="No integration configs are connected for this project." />
   return (
     <div className="space-y-2">
       {rows.map((row) => (
-        <div key={row.id} className="rounded-lg border p-3" style={{ background:T.s2, borderColor:T.b1 }}>
+        <div key={row.id} className="rounded-[8px] border p-3" style={{ background:T.s2, borderColor:T.b1 }}>
           <div className="flex items-center justify-between gap-3">
             <div className="font-dm text-sm font-semibold">{labelize(row.provider)}</div>
             <Badge value={row.enabled ? "Enabled" : "Disabled"} tone={row.enabled ? "good" : "muted"} />
           </div>
-          <pre className="mt-2 overflow-auto rounded border p-2 font-mono text-[11px]" style={{ background:T.s3, borderColor:T.b1, color:T.t2 }}>
+          <pre className="mt-2 max-h-40 overflow-auto rounded border p-2 font-mono text-[11px]" style={{ background:T.s3, borderColor:T.b1, color:T.t2 }}>
             {JSON.stringify(redactIntegrationConfig(row.configJson), null, 2)}
           </pre>
         </div>
@@ -501,27 +667,9 @@ function IntegrationList({ rows }: { rows: ForgeIntegrationRow[] }) {
   )
 }
 
-function ActivityList({ rows }: { rows: ForgeActivityRow[] }) {
-  if (rows.length === 0) return <Empty icon={Activity} text="No actions have been logged for this project." />
+function Empty({ icon: Icon, text }: { icon: LucideIcon; text: string }) {
   return (
-    <div className="space-y-2">
-      {rows.map((row) => (
-        <div key={row.id} className="rounded-lg border p-3" style={{ background:T.s2, borderColor:T.b1 }}>
-          <div className="flex items-center justify-between gap-3">
-            <div className="font-dm text-xs font-semibold">{labelize(row.action)}</div>
-            <div className="font-dm text-[11px]" style={{ color:T.t3 }}>{formatDate(row.createdAt)}</div>
-          </div>
-          <p className="mt-1 font-dm text-xs leading-relaxed" style={{ color:T.t2 }}>{row.message}</p>
-          <div className="mt-2 font-dm text-[11px]" style={{ color:T.t3 }}>{row.actor ?? "admin"}</div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function Empty({ icon: Icon, text }: { icon: typeof Activity; text: string }) {
-  return (
-    <div className="rounded-lg border border-dashed p-4" style={{ background:T.s2, borderColor:T.b2 }}>
+    <div className="rounded-[8px] border border-dashed p-4" style={{ background:T.s2, borderColor:T.b2 }}>
       <Icon size={16} className="mb-3 text-acc" aria-hidden="true" />
       <p className="font-dm text-sm" style={{ color:T.t2 }}>{text}</p>
     </div>
@@ -529,13 +677,45 @@ function Empty({ icon: Icon, text }: { icon: typeof Activity; text: string }) {
 }
 
 function Badge({ value, tone }: { value: string; tone: "accent" | "good" | "warn" | "bad" | "muted" }) {
-  const color = tone === "good" ? T.grn : tone === "warn" ? T.amb : tone === "bad" ? T.red : tone === "accent" ? T.acc : T.t2
+  const color = tone === "good" ? T.grn : tone === "warn" ? T.amb : tone === "bad" ? T.red : tone === "accent" ? "#38bdf8" : T.t2
 
   return (
-    <span className="inline-flex w-fit rounded px-2 py-0.5 font-dm text-[10px] font-semibold uppercase tracking-[.05em]" style={{ background:T.s2, border:`1px solid ${T.b2}`, color }}>
+    <span className="inline-flex w-fit rounded-full px-2 py-0.5 font-dm text-[10px] font-semibold uppercase tracking-[.05em]" style={{ background:T.s2, border:`1px solid ${T.b2}`, color }}>
       {value}
     </span>
   )
+}
+
+function GridWash() {
+  return (
+    <div
+      className="pointer-events-none absolute inset-0 opacity-60"
+      style={{
+        backgroundImage:
+          "linear-gradient(rgba(148,163,184,.06) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,.06) 1px, transparent 1px)",
+        backgroundSize: "34px 34px",
+        maskImage: "linear-gradient(to bottom, black, transparent 90%)",
+      }}
+      aria-hidden="true"
+    />
+  )
+}
+
+function tabTitle(tab: ProjectTab) {
+  if (tab === "command") return "Command & Artifacts"
+  if (tab === "intake") return "Intake & Settings"
+  if (tab === "strategy") return "Strategy, Copy & Design"
+  if (tab === "build") return "Build & Integrations"
+  if (tab === "qa") return "QA & Repair"
+  if (tab === "launch") return "Proposal, Export & Deploy"
+  return "Project Records"
+}
+
+function toneColor(tone: "cyan" | "green" | "amber" | "violet") {
+  if (tone === "green") return T.grn
+  if (tone === "amber") return T.amb
+  if (tone === "violet") return "#a78bfa"
+  return "#22d3ee"
 }
 
 function formatDate(value: Date | string | null | undefined) {

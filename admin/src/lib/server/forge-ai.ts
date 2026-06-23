@@ -21,7 +21,7 @@ import {
 
 const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses"
 const ANTHROPIC_MESSAGES_URL = "https://api.anthropic.com/v1/messages"
-const DEFAULT_TIMEOUT_MS = 20_000
+const DEFAULT_TIMEOUT_MS = 60_000
 const DEFAULT_MAX_RETRIES = 2
 const FORGE_AI_SAFETY_SYSTEM_PROMPT = [
   "Return only safe structured JSON for ScaleSmiths Forge.",

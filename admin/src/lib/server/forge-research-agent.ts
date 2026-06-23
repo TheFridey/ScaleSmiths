@@ -128,8 +128,8 @@ export async function runForgeResearchAgent(projectId: number, actor: string) {
       ].join(" "),
       prompt: buildForgeResearchPrompt({ project, intake: intake.intake, memories }),
       maxTokens: 2200,
-      timeoutMs: 30_000,
-      maxRetries: 2,
+      timeoutMs: 90_000,
+      maxRetries: 1,
       mockData: createMockResearchReport(project, intake.intake),
     })
     const report = result.data as ForgeResearchReport

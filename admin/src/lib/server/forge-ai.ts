@@ -9,6 +9,7 @@ import {
   resolveForgeAiBudgetConfig,
   resolveForgeAiModel,
   resolveForgeAiProvider,
+  supportsOpenAiTemperature,
   type ForgeAiBudgetLedger,
   type ForgeAiProvider,
   type ForgeAiResult,
@@ -142,6 +143,27 @@ export { buildForgeTaskOutputMetadata }
 async function callOpenAi(request: ForgeAiRequest, model: string, env: NodeJS.ProcessEnv) {
   const apiKey = env.OPENAI_API_KEY
   if (!apiKey) throw new ForgeAiError("OpenAI is not configured.")
+  const body: Record<string, unknown> = {
+    model,
+    input: [
+      { role: "system", content: buildSafeSystemPrompt(request.systemPrompt) },
+      { role: "user", content: request.prompt },
+    ],
+    text: {
+      format: {
+        type: "json_schema",
+        name: request.schemaName,
+        schema: request.schema,
+        strict: true,
+      },
+    },
+    max_output_tokens: request.maxTokens ?? 800,
+  }
+  const temperature = request.temperature
+
+  if (typeof temperature === "number" && supportsOpenAiTemperature(model)) {
+    body.temperature = temperature
+  }
 
   const response = await fetchWithTimeout(OPENAI_RESPONSES_URL, {
     method: "POST",
@@ -149,23 +171,7 @@ async function callOpenAi(request: ForgeAiRequest, model: string, env: NodeJS.Pr
       "Authorization": `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      model,
-      input: [
-        { role: "system", content: buildSafeSystemPrompt(request.systemPrompt) },
-        { role: "user", content: request.prompt },
-      ],
-      text: {
-        format: {
-          type: "json_schema",
-          name: request.schemaName,
-          schema: request.schema,
-          strict: true,
-        },
-      },
-      max_output_tokens: request.maxTokens ?? 800,
-      temperature: request.temperature ?? 0.2,
-    }),
+    body: JSON.stringify(body),
   }, request.timeoutMs ?? DEFAULT_TIMEOUT_MS)
 
   const json = await response.json().catch(() => null)

@@ -13,6 +13,7 @@ import {
   resolveForgeAiBudgetConfig,
   resolveForgeAiModel,
   resolveForgeAiProvider,
+  supportsOpenAiTemperature,
   validateJsonSchemaValue,
 } from "./forge-ai"
 import {
@@ -382,6 +383,9 @@ describe("forge shell", () => {
     expect(resolveForgeAiProvider({ FORGE_ENABLE_AI: "true", FORGE_DEFAULT_AI_PROVIDER: "openai" })).toBe("openai")
     expect(resolveForgeAiProvider({ FORGE_ENABLE_AI: "true", FORGE_DEFAULT_AI_PROVIDER: "unknown" })).toBe("mock")
     expect(resolveForgeAiModel("copywriting", "mock")).toBe(FORGE_AI_MODEL_ROUTES.copywriting.mock)
+    expect(supportsOpenAiTemperature("gpt-5.5")).toBe(false)
+    expect(supportsOpenAiTemperature("o3-mini")).toBe(false)
+    expect(supportsOpenAiTemperature("gpt-4.1")).toBe(true)
   })
 
   it("detects build-time page-data collection where Forge must not open a database pool", () => {

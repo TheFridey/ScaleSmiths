@@ -111,6 +111,11 @@ export function resolveForgeAiModel(taskType: ForgeAiTaskType, provider: ForgeAi
   return FORGE_AI_MODEL_ROUTES[taskType][provider]
 }
 
+export function supportsOpenAiTemperature(model: string) {
+  const normalised = model.trim().toLowerCase()
+  return !/^(gpt-5|o\d|o-|o\.|codex)/.test(normalised)
+}
+
 export function resolveForgeAiBudgetConfig(env: Partial<Record<string, string | undefined>> = process.env): ForgeAiBudgetConfig {
   return {
     enabled: env.FORGE_ENABLE_AI === "true",

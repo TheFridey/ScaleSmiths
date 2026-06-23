@@ -1,65 +1,143 @@
 "use client"
+
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { signOut } from "next-auth/react"
-import { LayoutDashboard, Users, GitBranch, MessageSquare, LogOut, Target, Gauge } from "lucide-react"
+import {
+  Gauge,
+  GitBranch,
+  LayoutDashboard,
+  LogOut,
+  MessageSquare,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Target,
+  Users,
+} from "lucide-react"
 import { Logo } from "@/components/Logo"
 
 const NAV = [
-  { href:"/dashboard", label:"Dashboard", Icon:LayoutDashboard },
-  { href:"/clients",   label:"Clients",   Icon:Users           },
-  { href:"/prospects", label:"Pipeline",  Icon:Target          },
-  { href:"/forge",     label:"Forge",     Icon:Gauge           },
-  { href:"/roadmap",   label:"Roadmap",   Icon:GitBranch       },
-  { href:"/messages",  label:"Messages",  Icon:MessageSquare   },
+  { href: "/dashboard", label: "Dashboard", Icon: LayoutDashboard },
+  { href: "/clients", label: "Clients", Icon: Users },
+  { href: "/prospects", label: "Pipeline", Icon: Target },
+  { href: "/forge", label: "Forge", Icon: Gauge },
+  { href: "/roadmap", label: "Roadmap", Icon: GitBranch },
+  { href: "/messages", label: "Messages", Icon: MessageSquare },
 ]
 
 export default function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+  const [collapsed, setCollapsed] = useState(true)
+  const [compactViewport, setCompactViewport] = useState(false)
+
+  useEffect(() => {
+    const updateViewport = () => setCompactViewport(window.innerWidth < 640)
+    const stored = window.localStorage.getItem("scalesmiths-admin-sidebar")
+    updateViewport()
+    setCollapsed(stored ? stored === "collapsed" : window.innerWidth < 1024)
+    window.addEventListener("resize", updateViewport)
+    return () => window.removeEventListener("resize", updateViewport)
+  }, [])
+
+  function toggleCollapsed() {
+    setCollapsed((value) => {
+      const next = !value
+      window.localStorage.setItem("scalesmiths-admin-sidebar", next ? "collapsed" : "expanded")
+      return next
+    })
+  }
 
   const logout = async () => {
     await signOut({ redirectTo: "/login" })
   }
 
   return (
-    <div className="flex min-h-screen" style={{ background:"var(--bg)" }}>
-      <aside style={{ width:220, background:"var(--s1)", borderRight:"1px solid var(--b1)" }}
-        className="flex flex-col p-3.5 shrink-0 sticky top-0 h-screen overflow-y-auto">
-        <div className="px-2.5 py-3 mb-6">
-          <Logo size={24} />
+    <div className="flex min-h-screen overflow-hidden" style={{ background: "var(--bg)" }}>
+      <aside
+        className="sticky top-0 flex h-screen shrink-0 flex-col overflow-hidden p-3 transition-[width] duration-200"
+        style={{ width: collapsed ? compactViewport ? 56 : 72 : 220, background: "var(--s1)", borderRight: "1px solid var(--b1)" }}
+      >
+        <div className={`mb-4 flex items-center gap-2 px-1 py-2 ${collapsed ? "justify-center" : "justify-between"}`}>
+          <div className={collapsed ? "w-8 overflow-hidden" : "min-w-0"}>
+            <Logo size={collapsed ? 28 : 24} compact={collapsed} />
+          </div>
+          {!collapsed && (
+            <button
+              type="button"
+              onClick={toggleCollapsed}
+              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border"
+              style={{ background: "var(--s2)", borderColor: "var(--b1)", color: "var(--t2)" }}
+              aria-label="Collapse sidebar"
+              title="Collapse sidebar"
+            >
+              <PanelLeftClose size={15} aria-hidden="true" />
+            </button>
+          )}
         </div>
-        <nav className="flex flex-col gap-0.5">
+
+        {collapsed && (
+          <button
+            type="button"
+            onClick={toggleCollapsed}
+            className="mb-3 inline-flex h-9 w-full items-center justify-center rounded-lg border"
+            style={{ background: "var(--s2)", borderColor: "var(--b1)", color: "var(--t2)" }}
+            aria-label="Expand sidebar"
+            title="Expand sidebar"
+          >
+            <PanelLeftOpen size={15} aria-hidden="true" />
+          </button>
+        )}
+
+        <nav className="flex flex-col gap-1">
           {NAV.map(({ href, label, Icon }) => {
-            const active = pathname === href
+            const active = pathname === href || pathname.startsWith(`${href}/`)
             return (
-              <Link key={href} href={href}
-                className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg font-dm text-[13px] transition-colors"
+              <Link
+                key={href}
+                href={href}
+                className={`flex min-h-10 items-center gap-2.5 rounded-lg font-dm text-[13px] transition-colors ${
+                  collapsed ? "justify-center px-0" : "px-3"
+                }`}
                 aria-current={active ? "page" : undefined}
+                aria-label={collapsed ? label : undefined}
+                title={collapsed ? label : undefined}
                 style={{
                   background: active ? "var(--s2)" : "none",
-                  border:     active ? "1px solid var(--b2)" : "1px solid transparent",
+                  border: active ? "1px solid var(--b2)" : "1px solid transparent",
                   fontWeight: active ? 500 : 400,
-                  color:      active ? "var(--t1)" : "var(--t2)",
-                }}>
-                <Icon size={15} style={{ color: active ? "var(--acc)" : "var(--t2)" }} aria-hidden="true"/>
-                {label}
+                  color: active ? "var(--t1)" : "var(--t2)",
+                }}
+              >
+                <Icon size={15} style={{ color: active ? "var(--acc)" : "var(--t2)" }} aria-hidden="true" />
+                {!collapsed && label}
               </Link>
             )
           })}
         </nav>
-        <div className="mt-auto">
-          <div className="rounded-xl p-3.5 mb-3" style={{ background:"var(--acc-dim)", border:"1px solid var(--acc-b)" }}>
-            <div className="font-dm text-[11px] mb-1" style={{ color:"var(--t2)" }}>Monthly MRR</div>
-            <div className="font-syne text-[22px] font-extrabold">£3,500</div>
-          </div>
-          <button onClick={logout}
-            className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg font-dm text-[13px] transition-colors"
-            style={{ color:"var(--t2)" }}>
-            <LogOut size={15} aria-hidden="true"/> Sign out
+
+        <div className="mt-auto pt-3">
+          {!collapsed && (
+            <div className="mb-3 rounded-lg p-3.5" style={{ background: "var(--acc-dim)", border: "1px solid var(--acc-b)" }}>
+              <div className="mb-1 font-dm text-[11px]" style={{ color: "var(--t2)" }}>Monthly MRR</div>
+              <div className="font-syne text-[22px] font-extrabold">GBP 3,500</div>
+            </div>
+          )}
+          <button
+            onClick={logout}
+            className={`flex min-h-10 w-full items-center gap-2.5 rounded-lg font-dm text-[13px] transition-colors ${
+              collapsed ? "justify-center px-0" : "px-3"
+            }`}
+            style={{ color: "var(--t2)" }}
+            aria-label={collapsed ? "Sign out" : undefined}
+            title={collapsed ? "Sign out" : undefined}
+          >
+            <LogOut size={15} aria-hidden="true" /> {!collapsed && "Sign out"}
           </button>
         </div>
       </aside>
-      <main className="flex-1 p-8 overflow-auto">{children}</main>
+
+      <main className="h-screen min-w-0 flex-1 overflow-auto p-2 sm:p-3 lg:p-5">{children}</main>
     </div>
   )
 }

@@ -117,7 +117,7 @@ export function ForgeDashboard({ projects, recentActivity }: { projects: ForgePr
 
   return (
     <div
-      className="mx-auto flex h-[calc(100vh-4rem)] min-h-[640px] max-w-[1500px] flex-col overflow-hidden rounded-[8px] border"
+      className="mx-auto flex h-[calc(100vh-1rem)] max-w-[1500px] flex-col overflow-hidden rounded-[8px] border sm:h-[calc(100vh-1.5rem)] lg:h-[calc(100vh-2.5rem)]"
       style={{
         borderColor: "rgba(56,189,248,.18)",
         background: "linear-gradient(135deg, #070b13 0%, #0b1020 48%, #060b10 100%)",

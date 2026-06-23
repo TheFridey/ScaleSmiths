@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState, type ReactNode } from "react"
+import { Children, useMemo, useState, type ReactNode } from "react"
 import Link from "next/link"
 import type { LucideIcon } from "lucide-react"
 import {
@@ -64,6 +64,12 @@ import type { ForgeWorkspaceMetadata } from "@/lib/forge-workspace"
 const T = { s1:"var(--s1)", s2:"var(--s2)", s3:"var(--s3)", b1:"var(--b1)", b2:"var(--b2)", t1:"var(--t1)", t2:"var(--t2)", t3:"var(--t3)", acc:"var(--acc)", grn:"var(--grn)", amb:"var(--amb)", red:"var(--red)" }
 
 type ProjectTab = "command" | "intake" | "strategy" | "build" | "qa" | "launch" | "records"
+type IntakePane = "brief" | "settings"
+type StrategyPane = "research" | "sitemap" | "copy" | "design" | "spec"
+type BuildPane = "workspace" | "integrations" | "generate" | "seo"
+type QaPane = "checks" | "visual"
+type LaunchPane = "proposal" | "export" | "deploy"
+type RecordsPane = "tasks" | "activity" | "memory" | "integrations" | "details"
 
 const TABS: Array<{ key: ProjectTab; label: string; Icon: LucideIcon }> = [
   { key: "command", label: "Command", Icon: Bot },
@@ -166,6 +172,12 @@ export function ForgeProjectDetail({
   initialWhatsAppConfig: ForgeWhatsAppConfig
 }) {
   const [activeTab, setActiveTab] = useState<ProjectTab>("command")
+  const [intakePane, setIntakePane] = useState<IntakePane>("brief")
+  const [strategyPane, setStrategyPane] = useState<StrategyPane>("research")
+  const [buildPane, setBuildPane] = useState<BuildPane>("workspace")
+  const [qaPane, setQaPane] = useState<QaPane>("checks")
+  const [launchPane, setLaunchPane] = useState<LaunchPane>("proposal")
+  const [recordsPane, setRecordsPane] = useState<RecordsPane>("tasks")
   const projectId = project.id ?? 0
   const archived = project.status === "archived"
   const stages = useMemo(
@@ -190,23 +202,25 @@ export function ForgeProjectDetail({
 
   return (
     <div
-      className="mx-auto flex h-[calc(100vh-4rem)] min-h-[700px] max-w-[1600px] flex-col overflow-hidden rounded-[8px] border"
+      className="mx-auto flex h-[calc(100vh-1rem)] max-w-[1600px] flex-col overflow-hidden rounded-[8px] border sm:h-[calc(100vh-1.5rem)] lg:h-[calc(100vh-2.5rem)]"
       style={{
         borderColor: "rgba(56,189,248,.18)",
         background: "linear-gradient(135deg, #070b13 0%, #0b1020 48%, #060b10 100%)",
         boxShadow: "0 24px 80px rgba(0,0,0,.34)",
       }}
     >
-      <header className="flex h-[58px] shrink-0 items-center justify-between gap-4 border-b px-4" style={{ borderColor:"rgba(148,163,184,.14)" }}>
+      <header className="flex h-[58px] shrink-0 items-center justify-between gap-3 border-b px-3 sm:px-4" style={{ borderColor:"rgba(148,163,184,.14)" }}>
         <div className="flex min-w-0 items-center gap-3">
           <Link href="/forge" className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] border" style={{ background:"rgba(15,23,42,.72)", borderColor:"rgba(148,163,184,.16)", color:"#cbd5e1" }} aria-label="Back to Forge projects">
             <ChevronLeft size={17} aria-hidden="true" />
           </Link>
           <div className="min-w-0">
             <div className="flex min-w-0 items-center gap-2">
-              <h1 className="truncate font-syne text-lg font-extrabold text-white">{project.name}</h1>
-              <Badge value={labelize(project.status ?? "intake")} tone={archived ? "muted" : project.status === "ready_to_deploy" ? "good" : "accent"} />
-              <Badge value={project.priority} tone={project.priority === "high" ? "warn" : project.priority === "low" ? "good" : "muted"} />
+              <h1 className="truncate font-syne text-base font-extrabold text-white sm:text-lg">{project.name}</h1>
+              <div className="hidden shrink-0 items-center gap-2 sm:flex">
+                <Badge value={labelize(project.status ?? "intake")} tone={archived ? "muted" : project.status === "ready_to_deploy" ? "good" : "accent"} />
+                <Badge value={project.priority} tone={project.priority === "high" ? "warn" : project.priority === "low" ? "good" : "muted"} />
+              </div>
             </div>
             <p className="truncate font-dm text-xs" style={{ color:"#94a3b8" }}>{project.businessName} / {project.industry ?? "No industry set"}</p>
           </div>
@@ -257,7 +271,7 @@ export function ForgeProjectDetail({
           </div>
         </aside>
 
-        <main className="flex min-h-0 flex-col p-4">
+        <main className="flex min-h-0 flex-col p-3 sm:p-4">
           <div className="mb-3 flex shrink-0 flex-wrap items-center justify-between gap-3">
             <div>
               <p className="font-dm text-[11px] font-semibold uppercase tracking-[.22em]" style={{ color:"#7dd3fc" }}>Project Cockpit</p>
@@ -283,7 +297,7 @@ export function ForgeProjectDetail({
           </div>
 
           <section className="min-h-0 flex-1 overflow-hidden rounded-[8px] border" style={{ background:T.s1, borderColor:T.b1 }}>
-            <div className="h-full overflow-auto p-4">
+            <div className="h-full overflow-auto p-3 sm:p-4">
               {activeTab === "command" && (
                 <TabGrid>
                   <ForgeCommandChatPanel projectId={projectId} initialChat={initialCommandChat} disabled={archived} />
@@ -292,71 +306,130 @@ export function ForgeProjectDetail({
               )}
 
               {activeTab === "intake" && (
-                <TabGrid>
-                  <Panel title="Project Settings" icon={Settings2}>
-                    <ForgeProjectForm mode="edit" project={project} />
-                  </Panel>
-                  <ForgeIntakeForm projectId={projectId} initialIntake={initialIntake} />
-                </TabGrid>
+                <SectionDeck
+                  options={[
+                    { key: "brief", label: "Brief", Icon: FileText },
+                    { key: "settings", label: "Settings", Icon: Settings2 },
+                  ]}
+                  active={intakePane}
+                  onChange={setIntakePane}
+                >
+                  {intakePane === "brief" && <ForgeIntakeForm projectId={projectId} initialIntake={initialIntake} />}
+                  {intakePane === "settings" && (
+                    <Panel title="Project Settings" icon={Settings2}>
+                      <ForgeProjectForm mode="edit" project={project} />
+                    </Panel>
+                  )}
+                </SectionDeck>
               )}
 
               {activeTab === "strategy" && (
-                <TabStack>
-                  <ForgeResearchActions projectId={projectId} disabled={archived} />
-                  <ForgeSitemapStrategyPanel projectId={projectId} initialState={initialSitemap} disabled={archived} />
-                  <ForgeCopyPanel projectId={projectId} initialState={initialCopy} sitemapState={initialSitemap} disabled={archived} />
-                  <ForgeDesignDirectionPanel projectId={projectId} initialState={initialDesign} copyState={initialCopy} disabled={archived} />
-                  <ForgeComponentSpecPanel projectId={projectId} initialState={initialComponentSpec} designState={initialDesign} disabled={archived} />
-                </TabStack>
+                <SectionDeck
+                  options={[
+                    { key: "research", label: "Research", Icon: Brain },
+                    { key: "sitemap", label: "Sitemap", Icon: Workflow },
+                    { key: "copy", label: "Copy", Icon: FileText },
+                    { key: "design", label: "Design", Icon: Monitor },
+                    { key: "spec", label: "Spec", Icon: Box },
+                  ]}
+                  active={strategyPane}
+                  onChange={setStrategyPane}
+                >
+                  {strategyPane === "research" && <ForgeResearchActions projectId={projectId} disabled={archived} />}
+                  {strategyPane === "sitemap" && <ForgeSitemapStrategyPanel projectId={projectId} initialState={initialSitemap} disabled={archived} />}
+                  {strategyPane === "copy" && <ForgeCopyPanel projectId={projectId} initialState={initialCopy} sitemapState={initialSitemap} disabled={archived} />}
+                  {strategyPane === "design" && <ForgeDesignDirectionPanel projectId={projectId} initialState={initialDesign} copyState={initialCopy} disabled={archived} />}
+                  {strategyPane === "spec" && <ForgeComponentSpecPanel projectId={projectId} initialState={initialComponentSpec} designState={initialDesign} disabled={archived} />}
+                </SectionDeck>
               )}
 
               {activeTab === "build" && (
-                <TabStack>
-                  <ForgeWorkspacePanel projectId={projectId} initialWorkspace={initialWorkspace} disabled={archived} />
-                  <div className="grid gap-4 xl:grid-cols-2">
-                    <ForgeResendConfigPanel projectId={projectId} initialConfig={initialResendConfig} disabled={archived} />
-                    <ForgeWhatsAppConfigPanel projectId={projectId} initialConfig={initialWhatsAppConfig} disabled={archived} />
-                  </div>
-                  <ForgeGenerateSitePanel
-                    projectId={projectId}
-                    initialWorkspace={initialWorkspace}
-                    componentSpecState={initialComponentSpec}
-                    initialGeneratedCode={initialGeneratedCode}
-                    disabled={archived}
-                  />
-                  <ForgeSeoPanel projectId={projectId} initialSeo={initialSeo} sitemapState={initialSitemap} copyState={initialCopy} disabled={archived} />
-                </TabStack>
+                <SectionDeck
+                  options={[
+                    { key: "workspace", label: "Workspace", Icon: Box },
+                    { key: "integrations", label: "Integrations", Icon: Link2 },
+                    { key: "generate", label: "Generate", Icon: Code2 },
+                    { key: "seo", label: "SEO", Icon: Globe2 },
+                  ]}
+                  active={buildPane}
+                  onChange={setBuildPane}
+                >
+                  {buildPane === "workspace" && <ForgeWorkspacePanel projectId={projectId} initialWorkspace={initialWorkspace} disabled={archived} />}
+                  {buildPane === "integrations" && (
+                    <TabGrid>
+                      <ForgeResendConfigPanel projectId={projectId} initialConfig={initialResendConfig} disabled={archived} />
+                      <ForgeWhatsAppConfigPanel projectId={projectId} initialConfig={initialWhatsAppConfig} disabled={archived} />
+                    </TabGrid>
+                  )}
+                  {buildPane === "generate" && (
+                    <ForgeGenerateSitePanel
+                      projectId={projectId}
+                      initialWorkspace={initialWorkspace}
+                      componentSpecState={initialComponentSpec}
+                      initialGeneratedCode={initialGeneratedCode}
+                      disabled={archived}
+                    />
+                  )}
+                  {buildPane === "seo" && <ForgeSeoPanel projectId={projectId} initialSeo={initialSeo} sitemapState={initialSitemap} copyState={initialCopy} disabled={archived} />}
+                </SectionDeck>
               )}
 
               {activeTab === "qa" && (
-                <TabStack>
-                  <ForgeQaPanel projectId={projectId} initialWorkspace={initialWorkspace} initialGeneratedCode={initialGeneratedCode} initialQa={initialQa} disabled={archived} />
-                  <ForgeVisualQaPanel projectId={projectId} initialWorkspace={initialWorkspace} initialGeneratedCode={initialGeneratedCode} initialVisualQa={initialVisualQa} disabled={archived} />
-                </TabStack>
+                <SectionDeck
+                  options={[
+                    { key: "checks", label: "Checks", Icon: ShieldCheck },
+                    { key: "visual", label: "Visual QA", Icon: Monitor },
+                  ]}
+                  active={qaPane}
+                  onChange={setQaPane}
+                >
+                  {qaPane === "checks" && <ForgeQaPanel projectId={projectId} initialWorkspace={initialWorkspace} initialGeneratedCode={initialGeneratedCode} initialQa={initialQa} disabled={archived} />}
+                  {qaPane === "visual" && <ForgeVisualQaPanel projectId={projectId} initialWorkspace={initialWorkspace} initialGeneratedCode={initialGeneratedCode} initialVisualQa={initialVisualQa} disabled={archived} />}
+                </SectionDeck>
               )}
 
               {activeTab === "launch" && (
-                <TabStack>
-                  <ForgeProposalPanel projectId={projectId} initialProposal={initialProposal} intakeReady={(initialIntake.completenessScore ?? 0) > 0} disabled={archived} />
-                  <ForgeExportPanel
-                    projectId={projectId}
-                    initialExport={initialExport}
-                    siteReady={initialGeneratedCode.status === "generated"}
-                    proposalReady={initialProposal.status === "generated"}
-                    disabled={archived}
-                  />
-                  <ForgeDeployPanel projectId={projectId} initialDeploy={initialDeploy} siteReady={initialGeneratedCode.status === "generated"} disabled={archived} />
-                </TabStack>
+                <SectionDeck
+                  options={[
+                    { key: "proposal", label: "Proposal", Icon: FileText },
+                    { key: "export", label: "Export", Icon: Archive },
+                    { key: "deploy", label: "Deploy", Icon: Rocket },
+                  ]}
+                  active={launchPane}
+                  onChange={setLaunchPane}
+                >
+                  {launchPane === "proposal" && <ForgeProposalPanel projectId={projectId} initialProposal={initialProposal} intakeReady={(initialIntake.completenessScore ?? 0) > 0} disabled={archived} />}
+                  {launchPane === "export" && (
+                    <ForgeExportPanel
+                      projectId={projectId}
+                      initialExport={initialExport}
+                      siteReady={initialGeneratedCode.status === "generated"}
+                      proposalReady={initialProposal.status === "generated"}
+                      disabled={archived}
+                    />
+                  )}
+                  {launchPane === "deploy" && <ForgeDeployPanel projectId={projectId} initialDeploy={initialDeploy} siteReady={initialGeneratedCode.status === "generated"} disabled={archived} />}
+                </SectionDeck>
               )}
 
               {activeTab === "records" && (
-                <div className="grid gap-4 xl:grid-cols-2">
-                  <Panel title="Tasks" icon={ListChecks}><TaskList rows={tasks} /></Panel>
-                  <Panel title="Activity Log" icon={Activity}><ActivityList rows={activityLogs} /></Panel>
-                  <Panel title="Project Memory" icon={Brain}><MemoryList rows={memories} /></Panel>
-                  <Panel title="Integrations" icon={Link2}><IntegrationList rows={integrations} /></Panel>
-                  <Panel title="Core Details" icon={Box}><DetailGrid project={project} /></Panel>
-                </div>
+                <SectionDeck
+                  options={[
+                    { key: "tasks", label: "Tasks", Icon: ListChecks },
+                    { key: "activity", label: "Activity", Icon: Activity },
+                    { key: "memory", label: "Memory", Icon: Brain },
+                    { key: "integrations", label: "Integrations", Icon: Link2 },
+                    { key: "details", label: "Details", Icon: Box },
+                  ]}
+                  active={recordsPane}
+                  onChange={setRecordsPane}
+                >
+                  {recordsPane === "tasks" && <Panel title="Tasks" icon={ListChecks}><TaskList rows={tasks} /></Panel>}
+                  {recordsPane === "activity" && <Panel title="Activity Log" icon={Activity}><ActivityList rows={activityLogs} /></Panel>}
+                  {recordsPane === "memory" && <Panel title="Project Memory" icon={Brain}><MemoryList rows={memories} /></Panel>}
+                  {recordsPane === "integrations" && <Panel title="Integrations" icon={Link2}><IntegrationList rows={integrations} /></Panel>}
+                  {recordsPane === "details" && <Panel title="Core Details" icon={Box}><DetailGrid project={project} /></Panel>}
+                </SectionDeck>
               )}
             </div>
           </section>
@@ -442,11 +515,50 @@ function MiniDetail({ icon: Icon, label, value }: { icon: LucideIcon; label: str
 }
 
 function TabGrid({ children }: { children: ReactNode }) {
-  return <div className="grid gap-4 xl:grid-cols-2">{children}</div>
+  return (
+    <div className="grid min-w-0 gap-4 xl:grid-cols-2">
+      {Children.map(children, (child, index) => (
+        <div key={index} className="min-w-0">
+          {child}
+        </div>
+      ))}
+    </div>
+  )
 }
 
-function TabStack({ children }: { children: ReactNode }) {
-  return <div className="space-y-4">{children}</div>
+function SectionDeck<T extends string>({
+  options,
+  active,
+  onChange,
+  children,
+}: {
+  options: Array<{ key: T; label: string; Icon: LucideIcon }>
+  active: T
+  onChange: (value: T) => void
+  children: ReactNode
+}) {
+  return (
+    <div className="min-w-0 space-y-4">
+      <div className="flex max-w-full overflow-x-auto rounded-[8px] border p-1" style={{ background:T.s2, borderColor:T.b1 }}>
+        {options.map(({ key, label, Icon }) => {
+          const selected = active === key
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => onChange(key)}
+              className="inline-flex h-9 shrink-0 items-center gap-2 rounded-[7px] px-3 font-dm text-xs font-semibold transition-colors"
+              style={{ background:selected ? "#f8fafc" : "transparent", color:selected ? "#06121f" : T.t2 }}
+            >
+              <Icon size={14} aria-hidden="true" />
+              {label}
+            </button>
+          )
+        })}
+      </div>
+      <div className="min-w-0">{children}</div>
+    </div>
+  )
 }
 
 function Panel({ title, icon: Icon, children }: { title: string; icon: LucideIcon; children: ReactNode }) {

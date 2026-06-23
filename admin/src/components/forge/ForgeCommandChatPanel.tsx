@@ -68,13 +68,15 @@ export function ForgeCommandChatPanel({
   }
 
   return (
-    <section className="rounded-xl border p-5" style={{ background:T.s1, borderColor:T.b1 }}>
+    <section className="rounded-xl border p-4 sm:p-5" style={{ background:T.s1, borderColor:T.b1 }}>
       <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <div className="mb-2 flex items-center gap-2">
+        <div className="min-w-0">
+          <div className="mb-2 flex min-w-0 items-center gap-2">
             <Bot size={16} style={{ color:T.acc }} aria-hidden="true" />
             <h2 className="font-syne text-lg font-bold">Command Chat</h2>
-            <Badge value="Control surface" tone="accent" />
+            <span className="hidden sm:inline-flex">
+              <Badge value="Control surface" tone="accent" />
+            </span>
           </div>
           <p className="max-w-[780px] font-dm text-sm leading-relaxed" style={{ color:T.t2 }}>
             Classifies project commands and routes them to approved Forge actions. Chat does not blindly edit generated files.
@@ -105,7 +107,7 @@ export function ForgeCommandChatPanel({
             type="button"
             onClick={() => void sendCommand(suggestion)}
             disabled={busy || disabled}
-            className="rounded-lg border px-3 py-2 font-dm text-xs disabled:cursor-not-allowed disabled:opacity-60"
+            className="max-w-full rounded-lg border px-3 py-2 text-left font-dm text-xs leading-4 disabled:cursor-not-allowed disabled:opacity-60"
             style={{ background:T.s2, borderColor:T.b1, color:T.t2 }}
           >
             {suggestion}

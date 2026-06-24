@@ -6,6 +6,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   Clock3,
+  ExternalLink,
   FileText,
   Folder,
   Globe2,
@@ -23,6 +24,8 @@ import {
   type ClientRequestPriority,
   type ClientRequestStatus,
 } from "@/lib/client-requests"
+import type { ClientPortalTimelineEvent } from "@/lib/client-timeline"
+import { PortalTimeline } from "@/components/portal/PortalTimeline"
 
 interface PortalRequestRow {
   id: number
@@ -34,6 +37,8 @@ interface PortalRequestRow {
   updatedAt: string | Date
 }
 
+type PortalTimelineRow = ClientPortalTimelineEvent & { createdAt: string | Date }
+
 interface PortalOperatingHubProps {
   clientId: string
   websiteName: string
@@ -41,6 +46,22 @@ interface PortalOperatingHubProps {
   planTier: string | null
   currentStatus: string
   supportEmail: string
+  latestReport: {
+    id: number
+    title: string
+    summary: string
+    periodLabel: string
+    publishedAt: string | Date | null
+  } | null
+  recentMessages: {
+    id: number
+    requestId: number
+    requestTitle: string
+    senderType: "client" | "admin" | "system"
+    senderName: string
+    body: string
+    createdAt: string | Date
+  }[]
 }
 
 const OPEN_STATUSES = new Set<ClientRequestStatus>(["new", "triaged", "in_progress"])
@@ -72,8 +93,11 @@ export function PortalOperatingHub({
   planTier,
   currentStatus,
   supportEmail,
+  latestReport,
+  recentMessages,
 }: PortalOperatingHubProps) {
   const [requests, setRequests] = useState<PortalRequestRow[]>([])
+  const [timeline, setTimeline] = useState<PortalTimelineRow[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
 
@@ -85,14 +109,25 @@ export function PortalOperatingHub({
       setError("")
 
       try {
-        const response = await fetch("/portal/api/requests", { cache: "no-store" })
-        const json = await response.json().catch(() => ({}))
+        const [requestResponse, timelineResponse] = await Promise.all([
+          fetch("/portal/api/requests", { cache: "no-store" }),
+          fetch("/portal/api/timeline", { cache: "no-store" }),
+        ])
+        const json = await requestResponse.json().catch(() => ({}))
+        const timelineJson = await timelineResponse.json().catch(() => ({}))
 
-        if (!response.ok || !json.ok) {
+        if (!requestResponse.ok || !json.ok) {
           throw new Error(json.error || "Unable to load request summary.")
         }
 
-        if (mounted) setRequests(Array.isArray(json.requests) ? json.requests : [])
+        if (!timelineResponse.ok || !timelineJson.ok) {
+          throw new Error(timelineJson.error || "Unable to load timeline.")
+        }
+
+        if (mounted) {
+          setRequests(Array.isArray(json.requests) ? json.requests : [])
+          setTimeline(Array.isArray(timelineJson.timeline) ? timelineJson.timeline : [])
+        }
       } catch (err) {
         if (mounted) setError(err instanceof Error ? err.message : "Unable to load request summary.")
       } finally {
@@ -120,6 +155,7 @@ export function PortalOperatingHub({
   }, [requests])
 
   const requestWorkHref = `/portal/${clientId}?tab=requests`
+  const nextAction = getNextRecommendedAction(requestGroups.waiting.length, requestGroups.open.length, latestReport)
 
   return (
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(340px,0.9fr)]">
@@ -176,7 +212,7 @@ export function PortalOperatingHub({
         </p>
       </section>
 
-      <section className="rounded-2xl border border-b1 bg-s1 p-6 xl:col-span-2">
+      <section id="request-centre" className="rounded-2xl border border-b1 bg-s1 p-6 xl:col-span-2">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="font-syne text-xl font-bold">Request centre</h2>
@@ -195,11 +231,75 @@ export function PortalOperatingHub({
           <PanelNotice Icon={FileText} title="No requests yet" body="When you request work or support, open and completed items will appear here." />
         ) : (
           <div className="grid gap-3 lg:grid-cols-3">
-            <RequestWidget title="Open requests" requests={requestGroups.open} empty="No open requests right now." />
-            <RequestWidget title="Waiting on client" requests={requestGroups.waiting} empty="Nothing is waiting on you." />
-            <RequestWidget title="Completed recently" requests={requestGroups.completed} empty="Completed requests will appear here." />
+            <RequestWidget title="Open requests" requests={requestGroups.open} empty="No open requests right now." clientId={clientId} />
+            <RequestWidget title="Waiting on client" requests={requestGroups.waiting} empty="Nothing is waiting on you." clientId={clientId} />
+            <RequestWidget title="Completed recently" requests={requestGroups.completed} empty="Completed requests will appear here." clientId={clientId} />
           </div>
         )}
+      </section>
+
+      <section id="latest-report" className="rounded-2xl border border-b1 bg-s1 p-6">
+        <MessageSquare size={18} className="mb-4 text-acc" aria-hidden="true" />
+        <h2 className="font-syne text-xl font-bold">Recent chat</h2>
+        <p className="mt-1 font-dm text-sm text-t2">Latest client-visible replies from your request threads.</p>
+        <div className="mt-5">
+          {recentMessages.length === 0 ? (
+            <PanelNotice Icon={MessageSquare} title="No thread replies yet" body="When ScaleSmiths replies to a request, the update will appear here and inside the request thread." />
+          ) : (
+            <div className="grid gap-3">
+              {recentMessages.slice(0, 4).map((message) => (
+                <article key={message.id} className="rounded-xl border border-b1 bg-s2 p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="font-dm text-xs font-semibold text-t1">{message.senderType === "admin" ? "ScaleSmiths" : message.senderName}</div>
+                    <div className="font-dm text-[11px] text-t3">{formatDate(message.createdAt)}</div>
+                  </div>
+                  <p className="mt-2 line-clamp-3 font-dm text-sm leading-relaxed text-t2">{message.body}</p>
+                  <Link href={`/portal/${clientId}/requests/${message.requestId}`} className="mt-3 inline-flex items-center gap-1 font-dm text-xs font-semibold text-acc underline-offset-2 hover:underline">
+                    Open thread <ExternalLink size={12} aria-hidden="true" />
+                  </Link>
+                </article>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-b1 bg-s1 p-6">
+        <FileText size={18} className="mb-4 text-acc" aria-hidden="true" />
+        <h2 className="font-syne text-xl font-bold">Latest monthly report</h2>
+        <p className="mt-1 font-dm text-sm text-t2">Published ScaleSmiths overview of work, recommendations, and next steps.</p>
+        {latestReport ? (
+          <article className="mt-5 rounded-xl border border-b1 bg-s2 p-4">
+            <div className="font-dm text-xs text-t3">{latestReport.periodLabel}</div>
+            <h3 className="mt-1 font-syne text-lg font-bold">{latestReport.title}</h3>
+            <p className="mt-2 line-clamp-4 font-dm text-sm leading-relaxed text-t2">{latestReport.summary}</p>
+            <Link href={`/portal/${clientId}/reports/${latestReport.id}`} className="mt-3 inline-flex items-center gap-1 font-dm text-xs font-semibold text-acc underline-offset-2 hover:underline">
+              Open report <ExternalLink size={12} aria-hidden="true" />
+            </Link>
+          </article>
+        ) : (
+          <div className="mt-5">
+            <PanelNotice Icon={FileText} title="No report published yet" body="Your first monthly report will appear here once ScaleSmiths publishes it to the portal." />
+          </div>
+        )}
+      </section>
+
+      <section className="rounded-2xl border border-acc/20 bg-acc/10 p-6 xl:col-span-2">
+        <Sparkles size={18} className="mb-4 text-acc" aria-hidden="true" />
+        <h2 className="font-syne text-xl font-bold">Next recommended action</h2>
+        <p className="mt-2 max-w-[760px] font-dm text-sm leading-relaxed text-t2">{nextAction.body}</p>
+        <Link href={nextAction.href} className="mt-4 inline-flex w-fit items-center rounded-lg bg-acc px-4 py-2 font-dm text-sm font-semibold text-white transition-opacity hover:opacity-90">
+          {nextAction.label}
+        </Link>
+      </section>
+
+      <section className="rounded-2xl border border-b1 bg-s1 p-6 xl:col-span-2">
+        <Clock3 size={18} className="mb-4 text-acc" aria-hidden="true" />
+        <h2 className="font-syne text-xl font-bold">Timeline</h2>
+        <p className="mt-1 font-dm text-sm text-t2">Client-visible updates from requests, project progress, replies, and reports.</p>
+        <div className="mt-5">
+          <PortalTimeline events={timeline} emptyText="No timeline updates have been published yet." />
+        </div>
       </section>
 
       <section className="rounded-2xl border border-b1 bg-s1 p-6">
@@ -222,6 +322,16 @@ export function PortalOperatingHub({
         </div>
       </section>
 
+      <section className="rounded-2xl border border-b1 bg-s1 p-6">
+        <LifeBuoy size={18} className="mb-4 text-acc" aria-hidden="true" />
+        <h2 className="font-syne text-xl font-bold">Contact and support routes</h2>
+        <div className="mt-5 grid gap-3">
+          <SupportRoute title="Request work" body="Best for tracked changes, fixes, content, and approvals." href={requestWorkHref} label="Open requests" />
+          <SupportRoute title="Email support" body={`Best for critical backup communication: ${supportEmail}`} href={`mailto:${supportEmail}`} label="Email ScaleSmiths" />
+          <SupportRoute title="Reports" body="Review published monthly summaries and next-step recommendations." href={`/portal/${clientId}?tab=reports`} label="Open reports" />
+        </div>
+      </section>
+
       <section className="rounded-2xl border border-b1 bg-s1 p-6 xl:col-span-2">
         <Sparkles size={18} className="mb-4 text-acc" aria-hidden="true" />
         <h2 className="font-syne text-xl font-bold">Performance and health</h2>
@@ -239,7 +349,51 @@ export function PortalOperatingHub({
   )
 }
 
-function RequestWidget({ title, requests, empty }: { title: string; requests: PortalRequestRow[]; empty: string }) {
+function SupportRoute({ title, body, href, label }: { title: string; body: string; href: string; label: string }) {
+  return (
+    <div className="rounded-xl border border-b1 bg-s2 p-4">
+      <div className="font-dm text-sm font-semibold text-t1">{title}</div>
+      <p className="mt-1 font-dm text-sm leading-relaxed text-t2">{body}</p>
+      <Link href={href} className="mt-3 inline-flex font-dm text-xs font-semibold text-acc underline-offset-2 hover:underline">
+        {label}
+      </Link>
+    </div>
+  )
+}
+
+function getNextRecommendedAction(waitingCount: number, openCount: number, latestReport: PortalOperatingHubProps["latestReport"]) {
+  if (waitingCount > 0) {
+    return {
+      label: "Review waiting requests",
+      href: "#request-centre",
+      body: `${waitingCount} request${waitingCount === 1 ? " is" : "s are"} waiting for your reply or approval. Clearing that keeps delivery moving.`,
+    }
+  }
+
+  if (latestReport) {
+    return {
+      label: "Read latest report",
+      href: `#latest-report`,
+      body: "Review the latest monthly report for completed work, active improvements, and recommended next steps.",
+    }
+  }
+
+  if (openCount > 0) {
+    return {
+      label: "Check open requests",
+      href: "#request-centre",
+      body: "Your open requests are being tracked. Check their current status and add details if anything has changed.",
+    }
+  }
+
+  return {
+    label: "Submit a request",
+    href: "#request-centre",
+    body: "Your workspace is clear. Add a request when you need a website change, support, or a new improvement reviewed.",
+  }
+}
+
+function RequestWidget({ title, requests, empty, clientId }: { title: string; requests: PortalRequestRow[]; empty: string; clientId: string }) {
   return (
     <div className="rounded-xl border border-b1 bg-s2 p-4">
       <div className="mb-3 flex items-center justify-between gap-3">
@@ -252,7 +406,11 @@ function RequestWidget({ title, requests, empty }: { title: string; requests: Po
         <div className="grid gap-2">
           {requests.slice(0, 3).map((request) => (
             <article key={request.id} className="rounded-lg border border-b1 bg-s1 p-3">
-              <h4 className="line-clamp-2 font-dm text-sm font-semibold text-t1">{request.title}</h4>
+              <h4 className="line-clamp-2 font-dm text-sm font-semibold text-t1">
+                <Link href={`/portal/${clientId}/requests/${request.id}`} className="underline-offset-2 hover:text-acc hover:underline">
+                  {request.title}
+                </Link>
+              </h4>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 <Badge>{STATUS_LABELS[request.status]}</Badge>
                 <Badge>{CATEGORY_LABELS[request.category]}</Badge>

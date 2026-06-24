@@ -6,10 +6,16 @@ import {
   Rocket,
   ShieldCheck,
 } from "lucide-react"
+import Link from "next/link"
+import { and, desc, eq } from "drizzle-orm"
 import { PortalNav } from "@/components/portal/PortalNav"
 import { PortalMessageComposer } from "@/components/portal/PortalMessageComposer"
 import { PortalOperatingHub } from "@/components/portal/PortalOperatingHub"
 import { PortalRequestsPanel } from "@/components/portal/PortalRequestsPanel"
+import { formatReportPeriod } from "@/lib/monthly-reports"
+import { db } from "@/lib/db"
+import { requireClientPortalAccess } from "@/lib/portal-session"
+import { clientRequestMessages, clientRequests, monthlyReports } from "@/lib/schema"
 
 interface PortalPageProps {
   params: Promise<{ clientId: string }>
@@ -39,16 +45,22 @@ const milestones = [
 
 export default async function PortalClientPage({ params, searchParams }: PortalPageProps) {
   const { clientId } = await params
+  const session = await requireClientPortalAccess(clientId)
   const resolvedSearchParams = await searchParams
   const tab = resolvedSearchParams.tab ?? "overview"
-  const websiteName = deriveWebsiteName(clientId)
-  const domain = deriveDomain(clientId)
+  const portalClientId = session.clientId
+  const websiteName = deriveWebsiteName(portalClientId)
+  const domain = deriveDomain(portalClientId)
   const planTier = SAFE_PLACEHOLDER_CLIENT.tier
+  const [latestReport, recentMessages] = await Promise.all([
+    loadLatestReport(portalClientId),
+    loadRecentThreadMessages(portalClientId),
+  ])
 
   return (
     <div className="flex min-h-screen flex-col bg-bg text-t1 md:flex-row">
       <PortalNav
-        clientId={clientId}
+        clientId={portalClientId}
         clientName={websiteName}
         tier={planTier ?? "Plan pending"}
         price={SAFE_PLACEHOLDER_CLIENT.price}
@@ -72,13 +84,22 @@ export default async function PortalClientPage({ params, searchParams }: PortalP
         {tab === "files" ? (
           <DocumentsTab />
         ) : tab === "messages" ? (
-          <MessagesTab clientId={clientId} />
+          <MessagesTab clientId={portalClientId} />
         ) : tab === "board" ? (
           <ProgressTab />
         ) : tab === "requests" ? (
-          <RequestsTab />
+          <RequestsTab clientId={portalClientId} />
+        ) : tab === "reports" ? (
+          <ReportsTab clientId={portalClientId} />
         ) : (
-          <OverviewTab clientId={clientId} websiteName={websiteName} domain={domain} planTier={planTier} />
+          <OverviewTab
+            clientId={portalClientId}
+            websiteName={websiteName}
+            domain={domain}
+            planTier={planTier}
+            latestReport={latestReport}
+            recentMessages={recentMessages}
+          />
         )}
       </main>
     </div>
@@ -90,11 +111,15 @@ function OverviewTab({
   websiteName,
   domain,
   planTier,
+  latestReport,
+  recentMessages,
 }: {
   clientId: string
   websiteName: string
   domain: string | null
   planTier: string | null
+  latestReport: Awaited<ReturnType<typeof loadLatestReport>>
+  recentMessages: Awaited<ReturnType<typeof loadRecentThreadMessages>>
 }) {
   return (
     <PortalOperatingHub
@@ -104,8 +129,65 @@ function OverviewTab({
       planTier={planTier}
       currentStatus={SAFE_PLACEHOLDER_CLIENT.status}
       supportEmail={SAFE_PLACEHOLDER_CLIENT.supportEmail}
+      latestReport={latestReport}
+      recentMessages={recentMessages}
     />
   )
+}
+
+async function loadLatestReport(clientId: string) {
+  const [report] = await db
+    .select({
+      id: monthlyReports.id,
+      month: monthlyReports.month,
+      year: monthlyReports.year,
+      title: monthlyReports.title,
+      summary: monthlyReports.summary,
+      publishedAt: monthlyReports.publishedAt,
+    })
+    .from(monthlyReports)
+    .where(and(
+      eq(monthlyReports.clientId, clientId),
+      eq(monthlyReports.status, "published"),
+    ))
+    .orderBy(desc(monthlyReports.year), desc(monthlyReports.month), desc(monthlyReports.publishedAt))
+    .limit(1)
+
+  if (!report) return null
+
+  return {
+    id: report.id,
+    title: report.title,
+    summary: report.summary,
+    periodLabel: formatReportPeriod(report.month, report.year),
+    publishedAt: report.publishedAt?.toISOString() ?? null,
+  }
+}
+
+async function loadRecentThreadMessages(clientId: string) {
+  const rows = await db
+    .select({
+      id: clientRequestMessages.id,
+      requestId: clientRequestMessages.requestId,
+      requestTitle: clientRequests.title,
+      senderType: clientRequestMessages.senderType,
+      senderName: clientRequestMessages.senderName,
+      body: clientRequestMessages.body,
+      createdAt: clientRequestMessages.createdAt,
+    })
+    .from(clientRequestMessages)
+    .innerJoin(clientRequests, eq(clientRequestMessages.requestId, clientRequests.id))
+    .where(and(
+      eq(clientRequests.clientId, clientId),
+      eq(clientRequestMessages.visibility, "client_visible"),
+    ))
+    .orderBy(desc(clientRequestMessages.createdAt))
+    .limit(6)
+
+  return rows.map((row) => ({
+    ...row,
+    createdAt: row.createdAt.toISOString(),
+  }))
 }
 
 function ProgressTab() {
@@ -186,8 +268,53 @@ function MessagesTab({ clientId }: { clientId: string }) {
   )
 }
 
-function RequestsTab() {
-  return <PortalRequestsPanel />
+function RequestsTab({ clientId }: { clientId: string }) {
+  return <PortalRequestsPanel clientId={clientId} />
+}
+
+async function ReportsTab({ clientId }: { clientId: string }) {
+  const reports = await db
+    .select({
+      id: monthlyReports.id,
+      month: monthlyReports.month,
+      year: monthlyReports.year,
+      title: monthlyReports.title,
+      summary: monthlyReports.summary,
+      publishedAt: monthlyReports.publishedAt,
+    })
+    .from(monthlyReports)
+    .where(and(
+      eq(monthlyReports.clientId, clientId),
+      eq(monthlyReports.status, "published"),
+    ))
+    .orderBy(desc(monthlyReports.year), desc(monthlyReports.month), desc(monthlyReports.publishedAt))
+
+  return (
+    <section className="rounded-2xl border border-b1 bg-s1 p-6">
+      <FileText size={18} className="mb-4 text-acc" aria-hidden="true" />
+      <h2 className="font-syne text-xl font-bold">Monthly reports</h2>
+      <p className="mt-1 font-dm text-sm text-t2">Published ScaleSmiths reports for your website and support activity.</p>
+      {reports.length === 0 ? (
+        <div className="mt-6 rounded-xl border border-dashed border-b2 bg-s2 p-5">
+          <div className="font-dm text-sm font-semibold text-t1">No reports published yet</div>
+          <p className="mt-1 font-dm text-sm leading-relaxed text-t2">Reports will appear here once ScaleSmiths publishes them to your portal.</p>
+        </div>
+      ) : (
+        <div className="mt-6 grid gap-3">
+          {reports.map((report) => (
+            <article key={report.id} className="rounded-xl border border-b1 bg-s2 p-4">
+              <div className="font-dm text-xs text-t3">{formatReportPeriod(report.month, report.year)}</div>
+              <h3 className="mt-1 font-syne text-lg font-bold">{report.title}</h3>
+              <p className="mt-2 font-dm text-sm leading-relaxed text-t2">{report.summary}</p>
+              <Link href={`/portal/${clientId}/reports/${report.id}`} className="mt-3 inline-flex font-dm text-xs font-semibold text-acc underline-offset-2 hover:underline">
+                Open report
+              </Link>
+            </article>
+          ))}
+        </div>
+      )}
+    </section>
+  )
 }
 
 function ProgressMeter({ value }: { value: number }) {

@@ -20,6 +20,11 @@ export const forgeIntegrationProvider = pgEnum("forge_integration_provider", ["r
 export const clientRequestCategory = pgEnum("client_request_category", ["website_update", "website_issue", "form_issue", "seo_request", "new_page", "content_assets", "urgent_support", "general_support"])
 export const clientRequestPriority = pgEnum("client_request_priority", ["low", "medium", "high", "critical"])
 export const clientRequestStatus = pgEnum("client_request_status", ["new", "triaged", "in_progress", "waiting_client", "completed", "cancelled"])
+export const requestMessageSenderType = pgEnum("request_message_sender_type", ["client", "admin", "system"])
+export const requestMessageVisibility = pgEnum("request_message_visibility", ["client_visible", "internal"])
+export const monthlyReportStatus = pgEnum("monthly_report_status", ["draft", "published"])
+export const monthlyReportGeneratedBy = pgEnum("monthly_report_generated_by", ["forge", "manual"])
+export const salesProposalGeneratedBy = pgEnum("sales_proposal_generated_by", ["forge", "manual"])
 
 export const clients = pgTable("clients", {
   id: serial("id").primaryKey(),
@@ -78,6 +83,60 @@ export const clientRequests = pgTable("client_requests", {
   index("client_requests_priority_idx").on(table.priority),
   index("client_requests_category_idx").on(table.category),
   index("client_requests_created_at_idx").on(table.createdAt),
+])
+
+export const clientRequestMessages = pgTable("client_request_messages", {
+  id: serial("id").primaryKey(),
+  requestId: integer("request_id").references(() => clientRequests.id, { onDelete: "cascade" }).notNull(),
+  senderType: requestMessageSenderType("sender_type").notNull(),
+  senderName: text("sender_name").notNull(),
+  body: text("body").notNull(),
+  visibility: requestMessageVisibility("visibility").default("client_visible").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }),
+}, (table) => [
+  index("client_request_messages_request_id_idx").on(table.requestId),
+  index("client_request_messages_visibility_idx").on(table.visibility),
+  index("client_request_messages_created_at_idx").on(table.createdAt),
+])
+
+export const clientTimelineEvents = pgTable("client_timeline_events", {
+  id: serial("id").primaryKey(),
+  clientId: text("client_id").notNull(),
+  requestId: integer("request_id").references(() => clientRequests.id, { onDelete: "cascade" }),
+  projectId: integer("project_id"),
+  type: text("type").notNull(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  visibility: requestMessageVisibility("visibility").default("client_visible").notNull(),
+  createdBy: text("created_by").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("client_timeline_events_client_id_idx").on(table.clientId),
+  index("client_timeline_events_request_id_idx").on(table.requestId),
+  index("client_timeline_events_project_id_idx").on(table.projectId),
+  index("client_timeline_events_visibility_idx").on(table.visibility),
+  index("client_timeline_events_created_at_idx").on(table.createdAt),
+])
+
+export const monthlyReports = pgTable("monthly_reports", {
+  id: serial("id").primaryKey(),
+  clientId: text("client_id").notNull(),
+  month: integer("month").notNull(),
+  year: integer("year").notNull(),
+  title: text("title").notNull(),
+  summary: text("summary").notNull(),
+  htmlContent: text("html_content").notNull(),
+  status: monthlyReportStatus("status").default("draft").notNull(),
+  generatedBy: monthlyReportGeneratedBy("generated_by").default("forge").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  publishedAt: timestamp("published_at", { withTimezone: true }),
+}, (table) => [
+  index("monthly_reports_client_id_idx").on(table.clientId),
+  index("monthly_reports_period_idx").on(table.clientId, table.year, table.month),
+  index("monthly_reports_status_idx").on(table.status),
+  index("monthly_reports_published_at_idx").on(table.publishedAt),
 ])
 
 export const quoteRequests = pgTable("quote_requests", {
@@ -171,6 +230,28 @@ export const proposalTrackings = pgTable("proposal_trackings", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 })
+
+export const salesProposals = pgTable("sales_proposals", {
+  id: serial("id").primaryKey(),
+  prospectId: integer("prospect_id").references(() => prospects.id, { onDelete: "cascade" }),
+  clientId: integer("client_id").references(() => clients.id, { onDelete: "set null" }),
+  title: text("title").notNull(),
+  summary: text("summary").notNull(),
+  htmlContent: text("html_content").notNull(),
+  status: proposalStatus("status").default("draft").notNull(),
+  generatedBy: salesProposalGeneratedBy("generated_by").default("forge").notNull(),
+  selectedServices: text("selected_services"),
+  buildPrice: integer("build_price").default(0).notNull(),
+  retainerPrice: integer("retainer_price").default(0).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  sentAt: timestamp("sent_at", { withTimezone: true }),
+}, (table) => [
+  index("sales_proposals_prospect_id_idx").on(table.prospectId),
+  index("sales_proposals_client_id_idx").on(table.clientId),
+  index("sales_proposals_status_idx").on(table.status),
+  index("sales_proposals_updated_at_idx").on(table.updatedAt),
+])
 
 export const forgeProjects = pgTable("forge_projects", {
   id: serial("id").primaryKey(),
@@ -325,6 +406,7 @@ export const clientRelations = relations(clients, ({ many }) => ({
   messages: many(messages),
   convertedProspects: many(prospects),
   forgeProjects: many(forgeProjects),
+  salesProposals: many(salesProposals),
 }))
 
 export const kanbanCardRelations = relations(kanbanCards, ({ one }) => ({
@@ -344,6 +426,7 @@ export const messageRelations = relations(messages, ({ one }) => ({
 export const prospectRelations = relations(prospects, ({ many, one }) => ({
   outreachActivities: many(outreachActivities),
   proposals: many(proposalTrackings),
+  salesProposals: many(salesProposals),
   forgeProjects: many(forgeProjects),
   convertedClient: one(clients, {
     fields: [prospects.convertedClientId],
@@ -362,6 +445,17 @@ export const proposalTrackingRelations = relations(proposalTrackings, ({ one }) 
   prospect: one(prospects, {
     fields: [proposalTrackings.prospectId],
     references: [prospects.id],
+  }),
+}))
+
+export const salesProposalRelations = relations(salesProposals, ({ one }) => ({
+  prospect: one(prospects, {
+    fields: [salesProposals.prospectId],
+    references: [prospects.id],
+  }),
+  client: one(clients, {
+    fields: [salesProposals.clientId],
+    references: [clients.id],
   }),
 }))
 

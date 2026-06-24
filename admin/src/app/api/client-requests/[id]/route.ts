@@ -2,13 +2,14 @@ import { NextRequest, NextResponse } from "next/server"
 import { eq } from "drizzle-orm"
 import { auth } from "../../../../../auth"
 import { db } from "@/lib/db"
-import { clientRequests } from "@/lib/schema"
+import { clientRequests, clientTimelineEvents } from "@/lib/schema"
 import {
   isClientRequestCategory,
   isClientRequestPriority,
   isClientRequestStatus,
   optionalTrimmedString,
 } from "@/lib/client-requests"
+import { timelineEventForRequestStatus } from "@/lib/client-timeline"
 import {
   formatClientRequestTriageChecklist,
   formatClientRequestTriageSummary,
@@ -124,11 +125,37 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     return NextResponse.json({ error: "No client request updates supplied." }, { status: 400 })
   }
 
-  const [requestRow] = await db
-    .update(clientRequests)
-    .set(updates)
-    .where(eq(clientRequests.id, id))
-    .returning()
+  const statusEvent = updates.status && updates.status !== existing.status
+    ? timelineEventForRequestStatus(updates.status)
+    : null
 
-  return NextResponse.json({ ok: true, request: requestRow })
+  const { requestRow, timelineEvent } = await db.transaction(async (tx) => {
+    const [updatedRequest] = await tx
+      .update(clientRequests)
+      .set(updates)
+      .where(eq(clientRequests.id, id))
+      .returning()
+
+    if (!statusEvent) {
+      return { requestRow: updatedRequest, timelineEvent: null }
+    }
+
+    const [createdTimelineEvent] = await tx
+      .insert(clientTimelineEvents)
+      .values({
+        clientId: existing.clientId,
+        requestId: existing.id,
+        type: statusEvent.type,
+        title: statusEvent.title,
+        description: statusEvent.description,
+        visibility: "client_visible",
+        createdBy: sessionActor(session),
+        createdAt: now,
+      })
+      .returning()
+
+    return { requestRow: updatedRequest, timelineEvent: createdTimelineEvent }
+  })
+
+  return NextResponse.json({ ok: true, request: requestRow, timelineEvent })
 }

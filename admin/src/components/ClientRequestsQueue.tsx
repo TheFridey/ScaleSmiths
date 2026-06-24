@@ -8,10 +8,14 @@ import {
   ClipboardList,
   Clock3,
   Copy,
+  FileText,
   Loader2,
+  LockKeyhole,
+  MessageSquare,
   RotateCcw,
   Save,
   Search,
+  Send,
   Sparkles,
 } from "lucide-react"
 import {
@@ -58,6 +62,47 @@ export interface AdminClientRequestRow {
   createdAt: string
   updatedAt: string
   completedAt: string | null
+  messages: AdminRequestMessage[]
+  timelineEvents: AdminTimelineEvent[]
+}
+
+export interface AdminRequestMessage {
+  id: number
+  requestId: number
+  senderType: "client" | "admin" | "system"
+  senderName: string
+  body: string
+  visibility: "client_visible" | "internal"
+  createdAt: string
+  updatedAt: string | null
+}
+
+export interface AdminTimelineEvent {
+  id: number
+  clientId: string
+  requestId: number | null
+  projectId: number | null
+  type: string
+  title: string
+  description: string
+  visibility: "client_visible" | "internal"
+  createdBy: string
+  createdAt: string
+}
+
+interface AdminMonthlyReport {
+  id: number
+  clientId: string
+  month: number
+  year: number
+  title: string
+  summary: string
+  htmlContent: string
+  status: "draft" | "published"
+  generatedBy: "forge" | "manual"
+  createdAt: string
+  updatedAt: string
+  publishedAt: string | null
 }
 
 interface Props {
@@ -179,6 +224,15 @@ export function ClientRequestsQueue({ initialRequests, loadError, initialSelecte
     category: ClientRequestCategory
   } | null>(null)
   const [internalNote, setInternalNote] = useState("")
+  const [clientReply, setClientReply] = useState("")
+  const [timelineTitle, setTimelineTitle] = useState("")
+  const [timelineDescription, setTimelineDescription] = useState("")
+  const now = new Date()
+  const [reportMonth, setReportMonth] = useState(now.getMonth() + 1)
+  const [reportYear, setReportYear] = useState(now.getFullYear())
+  const [monthlyReports, setMonthlyReports] = useState<AdminMonthlyReport[]>([])
+  const [activeReport, setActiveReport] = useState<AdminMonthlyReport | null>(null)
+  const [reportDraft, setReportDraft] = useState<{ title: string; summary: string; htmlContent: string } | null>(null)
   const [busyAction, setBusyAction] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
   const [copiedField, setCopiedField] = useState<string | null>(null)
@@ -219,7 +273,42 @@ export function ClientRequestsQueue({ initialRequests, loadError, initialSelecte
       category: selected.category,
     })
     setInternalNote("")
+    setClientReply("")
+    setTimelineTitle("")
+    setTimelineDescription("")
+    setActiveReport(null)
+    setReportDraft(null)
+    setMonthlyReports([])
     setActionError(null)
+  }, [selected])
+
+  useEffect(() => {
+    if (!selected) return
+    let mounted = true
+
+    async function loadReports() {
+      try {
+        const response = await fetch(`/api/monthly-reports?clientId=${encodeURIComponent(selected.clientId)}`, { cache: "no-store" })
+        const json = await response.json().catch(() => null)
+        if (!response.ok || !json?.ok) return
+        if (!mounted) return
+        const reports = Array.isArray(json.reports) ? json.reports as AdminMonthlyReport[] : []
+        setMonthlyReports(reports)
+        setActiveReport(reports[0] ?? null)
+        setReportDraft(reports[0] ? {
+          title: reports[0].title,
+          summary: reports[0].summary,
+          htmlContent: reports[0].htmlContent,
+        } : null)
+      } catch {
+        // Report loading is non-critical for request triage.
+      }
+    }
+
+    void loadReports()
+    return () => {
+      mounted = false
+    }
   }, [selected])
 
   const summary = useMemo(() => {
@@ -258,7 +347,17 @@ export function ClientRequestsQueue({ initialRequests, loadError, initialSelecte
       }
 
       const updated = json.request as AdminClientRequestRow
-      setRequests((current) => current.map((request) => (request.id === updated.id ? updated : request)))
+      const timelineEvent = json.timelineEvent as AdminTimelineEvent | null | undefined
+      setRequests((current) => current.map((request) => (
+        request.id === updated.id
+          ? {
+            ...request,
+            ...updated,
+            messages: request.messages,
+            timelineEvents: timelineEvent ? [...request.timelineEvents, timelineEvent] : request.timelineEvents,
+          }
+          : request
+      )))
       setSelectedId(updated.id)
       setInternalNote("")
     } catch (error) {
@@ -275,8 +374,182 @@ export function ClientRequestsQueue({ initialRequests, loadError, initialSelecte
       status: draft.status,
       priority: draft.priority,
       category: draft.category,
-      internalNote,
     }, "save")
+  }
+
+  async function sendRequestMessage(visibility: AdminRequestMessage["visibility"], messageBody: string, actionLabel: string) {
+    if (!selected) return
+    const trimmed = messageBody.trim()
+    if (!trimmed) return
+
+    setBusyAction(actionLabel)
+    setActionError(null)
+
+    try {
+      const response = await fetch(`/api/client-requests/${selected.id}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ visibility, body: trimmed }),
+      })
+      const json = await response.json().catch(() => null)
+
+      if (!response.ok || !json?.ok || !json.message || !json.request) {
+        throw new Error(json?.error ?? "Unable to send this message.")
+      }
+
+      const message = json.message as AdminRequestMessage
+      const updated = json.request as AdminClientRequestRow
+      const timelineEvent = json.timelineEvent as AdminTimelineEvent | null | undefined
+
+      setRequests((current) => current.map((request) => (
+        request.id === selected.id
+          ? {
+            ...request,
+            ...updated,
+            messages: [...request.messages, message],
+            timelineEvents: timelineEvent ? [...request.timelineEvents, timelineEvent] : request.timelineEvents,
+          }
+          : request
+      )))
+      setSelectedId(selected.id)
+      if (visibility === "client_visible") setClientReply("")
+      if (visibility === "internal") setInternalNote("")
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : "Unable to send this message.")
+    } finally {
+      setBusyAction(null)
+    }
+  }
+
+  async function addTimelineUpdate(visibility: AdminTimelineEvent["visibility"], actionLabel: string) {
+    if (!selected) return
+
+    setBusyAction(actionLabel)
+    setActionError(null)
+
+    try {
+      const response = await fetch(`/api/client-requests/${selected.id}/timeline`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: timelineTitle,
+          description: timelineDescription,
+          visibility,
+        }),
+      })
+      const json = await response.json().catch(() => null)
+
+      if (!response.ok || !json?.ok || !json.timelineEvent) {
+        throw new Error(json?.error ?? "Unable to add this timeline update.")
+      }
+
+      const timelineEvent = json.timelineEvent as AdminTimelineEvent
+      setRequests((current) => current.map((request) => (
+        request.id === selected.id
+          ? { ...request, timelineEvents: [...request.timelineEvents, timelineEvent], updatedAt: timelineEvent.createdAt }
+          : request
+      )))
+      setTimelineTitle("")
+      setTimelineDescription("")
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : "Unable to add this timeline update.")
+    } finally {
+      setBusyAction(null)
+    }
+  }
+
+  async function generateMonthlyReport() {
+    if (!selected) return
+    setBusyAction("generate-report")
+    setActionError(null)
+
+    try {
+      const response = await fetch("/api/monthly-reports", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clientId: selected.clientId,
+          month: reportMonth,
+          year: reportYear,
+        }),
+      })
+      const json = await response.json().catch(() => null)
+
+      if (!response.ok || !json?.ok || !json.report) {
+        throw new Error(json?.error ?? "Unable to generate monthly report.")
+      }
+
+      const report = json.report as AdminMonthlyReport
+      setMonthlyReports((current) => [report, ...current.filter((item) => item.id !== report.id)])
+      setActiveReport(report)
+      setReportDraft({ title: report.title, summary: report.summary, htmlContent: report.htmlContent })
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : "Unable to generate monthly report.")
+    } finally {
+      setBusyAction(null)
+    }
+  }
+
+  async function saveReport() {
+    if (!activeReport || !reportDraft) return
+    setBusyAction("save-report")
+    setActionError(null)
+
+    try {
+      const response = await fetch(`/api/monthly-reports/${activeReport.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "update", ...reportDraft }),
+      })
+      const json = await response.json().catch(() => null)
+
+      if (!response.ok || !json?.ok || !json.report) {
+        throw new Error(json?.error ?? "Unable to save monthly report.")
+      }
+
+      const report = json.report as AdminMonthlyReport
+      setActiveReport(report)
+      setReportDraft({ title: report.title, summary: report.summary, htmlContent: report.htmlContent })
+      setMonthlyReports((current) => current.map((item) => item.id === report.id ? report : item))
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : "Unable to save monthly report.")
+    } finally {
+      setBusyAction(null)
+    }
+  }
+
+  async function publishReport() {
+    if (!activeReport) return
+    setBusyAction("publish-report")
+    setActionError(null)
+
+    try {
+      const response = await fetch(`/api/monthly-reports/${activeReport.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "publish" }),
+      })
+      const json = await response.json().catch(() => null)
+
+      if (!response.ok || !json?.ok || !json.report) {
+        throw new Error(json?.error ?? "Unable to publish monthly report.")
+      }
+
+      const report = json.report as AdminMonthlyReport
+      const timelineEvent = json.timelineEvent as AdminTimelineEvent | null | undefined
+      setActiveReport(report)
+      setReportDraft({ title: report.title, summary: report.summary, htmlContent: report.htmlContent })
+      setMonthlyReports((current) => current.map((item) => item.id === report.id ? report : item))
+      if (timelineEvent) {
+        setRequests((current) => current.map((request) => request.clientId === report.clientId
+          ? { ...request, timelineEvents: request.id === selected?.id ? [...request.timelineEvents, timelineEvent] : request.timelineEvents }
+          : request))
+      }
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : "Unable to publish monthly report.")
+    } finally {
+      setBusyAction(null)
+    }
   }
 
   async function copySuggestion(label: string, value: string | null) {
@@ -488,6 +761,289 @@ export function ClientRequestsQueue({ initialRequests, loadError, initialSelecte
                       </p>
                     </section>
 
+                    <section>
+                      <div className="mb-2 flex items-center justify-between gap-2">
+                        <h3 className="font-syne text-[13px] font-bold uppercase tracking-[.07em]" style={{ color: T.t2 }}>Request Thread</h3>
+                        <span className="font-dm text-[11px]" style={{ color: T.t3 }}>{selected.messages.length} message{selected.messages.length === 1 ? "" : "s"}</span>
+                      </div>
+                      <div className="max-h-[360px] space-y-3 overflow-auto rounded-[8px] border p-3" style={{ background: T.s2, borderColor: T.b1 }}>
+                        {selected.messages.length === 0 ? (
+                          <p className="font-dm text-sm" style={{ color: T.t3 }}>No thread messages yet.</p>
+                        ) : (
+                          selected.messages.map((message) => (
+                            <article
+                              key={message.id}
+                              className="rounded-[8px] border p-3"
+                              style={{
+                                background: message.visibility === "internal" ? "rgba(245,158,11,.08)" : T.s1,
+                                borderColor: message.visibility === "internal" ? "rgba(245,158,11,.24)" : T.b1,
+                              }}
+                            >
+                              <div className="mb-1 flex flex-wrap items-center gap-2 font-dm text-[11px]" style={{ color: T.t3 }}>
+                                {message.visibility === "internal" ? <LockKeyhole size={13} aria-hidden="true" /> : <MessageSquare size={13} aria-hidden="true" />}
+                                <span style={{ color: T.t2 }}>{message.senderName}</span>
+                                <span>{message.senderType}</span>
+                                <span>{message.visibility === "internal" ? "Internal note" : "Client-visible"}</span>
+                                <span>{formatDateTime(message.createdAt)}</span>
+                              </div>
+                              <p className="whitespace-pre-wrap break-words font-dm text-sm leading-relaxed">{message.body}</p>
+                            </article>
+                          ))
+                        )}
+                      </div>
+                    </section>
+
+                    <section>
+                      <div className="mb-2 flex items-center justify-between gap-2">
+                        <h3 className="font-syne text-[13px] font-bold uppercase tracking-[.07em]" style={{ color: T.t2 }}>Timeline</h3>
+                        <span className="font-dm text-[11px]" style={{ color: T.t3 }}>{selected.timelineEvents.length} event{selected.timelineEvents.length === 1 ? "" : "s"}</span>
+                      </div>
+                      <div className="max-h-[320px] space-y-3 overflow-auto rounded-[8px] border p-3" style={{ background: T.s2, borderColor: T.b1 }}>
+                        {selected.timelineEvents.length === 0 ? (
+                          <p className="font-dm text-sm" style={{ color: T.t3 }}>No timeline events yet.</p>
+                        ) : (
+                          selected.timelineEvents.map((event) => (
+                            <article
+                              key={event.id}
+                              className="rounded-[8px] border p-3"
+                              style={{
+                                background: event.visibility === "internal" ? "rgba(245,158,11,.08)" : T.s1,
+                                borderColor: event.visibility === "internal" ? "rgba(245,158,11,.24)" : T.b1,
+                              }}
+                            >
+                              <div className="mb-1 flex flex-wrap items-center gap-2 font-dm text-[11px]" style={{ color: T.t3 }}>
+                                {event.visibility === "internal" ? <LockKeyhole size={13} aria-hidden="true" /> : <Clock3 size={13} aria-hidden="true" />}
+                                <span>{event.visibility === "internal" ? "Internal event" : "Client-visible"}</span>
+                                <span>{event.createdBy}</span>
+                                <span>{formatDateTime(event.createdAt)}</span>
+                              </div>
+                              <h4 className="font-dm text-sm font-semibold">{event.title}</h4>
+                              <p className="mt-1 whitespace-pre-wrap break-words font-dm text-sm leading-relaxed" style={{ color: T.t2 }}>{event.description}</p>
+                            </article>
+                          ))
+                        )}
+                      </div>
+                    </section>
+
+                    <section className="grid gap-3">
+                      <div className="rounded-[8px] border p-3" style={{ background: T.s2, borderColor: T.b1 }}>
+                        <div className="mb-2 flex items-center gap-2">
+                          <MessageSquare size={15} style={{ color: T.acc }} aria-hidden="true" />
+                          <h3 className="font-syne text-[13px] font-bold uppercase tracking-[.07em]" style={{ color: T.t2 }}>Reply to client</h3>
+                        </div>
+                        <textarea
+                          className="min-h-[112px]"
+                          value={clientReply}
+                          onChange={(event) => setClientReply(event.target.value)}
+                          placeholder="This reply will appear in the client portal thread."
+                        />
+                        <button
+                          type="button"
+                          onClick={() => void sendRequestMessage("client_visible", clientReply, "client-reply")}
+                          disabled={Boolean(busyAction) || !clientReply.trim()}
+                          className="mt-2 inline-flex min-h-10 items-center justify-center gap-2 rounded-[8px] px-3 py-2 font-dm text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
+                          style={{ background: T.acc }}
+                        >
+                          {busyAction === "client-reply" ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
+                          Send Reply
+                        </button>
+                      </div>
+
+                      <div className="rounded-[8px] border p-3" style={{ background: "rgba(245,158,11,.08)", borderColor: "rgba(245,158,11,.24)" }}>
+                        <div className="mb-2 flex items-center gap-2">
+                          <LockKeyhole size={15} style={{ color: T.amb }} aria-hidden="true" />
+                          <h3 className="font-syne text-[13px] font-bold uppercase tracking-[.07em]" style={{ color: T.t2 }}>Internal note</h3>
+                        </div>
+                        <textarea
+                          className="min-h-[112px]"
+                          value={internalNote}
+                          onChange={(event) => setInternalNote(event.target.value)}
+                          placeholder="Visible to admins only. Never shown in the client portal."
+                        />
+                        <button
+                          type="button"
+                          onClick={() => void sendRequestMessage("internal", internalNote, "internal-note")}
+                          disabled={Boolean(busyAction) || !internalNote.trim()}
+                          className="mt-2 inline-flex min-h-10 items-center justify-center gap-2 rounded-[8px] border px-3 py-2 font-dm text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60"
+                          style={{ background: T.s1, borderColor: "rgba(245,158,11,.24)", color: T.t1 }}
+                        >
+                          {busyAction === "internal-note" ? <Loader2 size={15} className="animate-spin" /> : <LockKeyhole size={15} />}
+                          Add Internal Note
+                        </button>
+                      </div>
+                    </section>
+
+                    <section className="rounded-[8px] border p-3" style={{ background: T.s2, borderColor: T.b1 }}>
+                      <h3 className="font-syne text-[13px] font-bold uppercase tracking-[.07em]" style={{ color: T.t2 }}>Manual timeline update</h3>
+                      <div className="mt-3 grid gap-2">
+                        <input
+                          value={timelineTitle}
+                          onChange={(event) => setTimelineTitle(event.target.value)}
+                          placeholder="Timeline title"
+                          aria-label="Timeline title"
+                        />
+                        <textarea
+                          className="min-h-[96px]"
+                          value={timelineDescription}
+                          onChange={(event) => setTimelineDescription(event.target.value)}
+                          placeholder="Timeline description"
+                          aria-label="Timeline description"
+                        />
+                      </div>
+                      <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                        <button
+                          type="button"
+                          onClick={() => void addTimelineUpdate("client_visible", "timeline-public")}
+                          disabled={Boolean(busyAction) || !timelineTitle.trim() || !timelineDescription.trim()}
+                          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-[8px] px-3 py-2 font-dm text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
+                          style={{ background: T.acc }}
+                        >
+                          {busyAction === "timeline-public" ? <Loader2 size={15} className="animate-spin" /> : <Clock3 size={15} />}
+                          Publish Update
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void addTimelineUpdate("internal", "timeline-internal")}
+                          disabled={Boolean(busyAction) || !timelineTitle.trim() || !timelineDescription.trim()}
+                          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-[8px] border px-3 py-2 font-dm text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60"
+                          style={{ background: T.s1, borderColor: T.b1, color: T.t1 }}
+                        >
+                          {busyAction === "timeline-internal" ? <Loader2 size={15} className="animate-spin" /> : <LockKeyhole size={15} />}
+                          Add Internal Update
+                        </button>
+                      </div>
+                    </section>
+
+                    <section className="rounded-[8px] border p-3" style={{ background: T.s2, borderColor: T.b1 }}>
+                      <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <FileText size={15} style={{ color: T.acc }} aria-hidden="true" />
+                            <h3 className="font-syne text-[13px] font-bold uppercase tracking-[.07em]" style={{ color: T.t2 }}>Monthly report</h3>
+                          </div>
+                          <p className="mt-1 font-dm text-xs leading-relaxed" style={{ color: T.t2 }}>
+                            Generate a branded client report from portal requests, visible timeline updates, and safe summaries.
+                          </p>
+                        </div>
+                        {activeReport && <Badge style={STATUS_STYLE[activeReport.status === "published" ? "completed" : "triaged"]}>{activeReport.status}</Badge>}
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-[.7fr_.8fr_1fr]">
+                        <label className="font-dm text-xs" style={{ color: T.t2 }}>
+                          Month
+                          <input
+                            className="mt-1"
+                            type="number"
+                            min="1"
+                            max="12"
+                            value={reportMonth}
+                            onChange={(event) => setReportMonth(Number(event.target.value))}
+                          />
+                        </label>
+                        <label className="font-dm text-xs" style={{ color: T.t2 }}>
+                          Year
+                          <input
+                            className="mt-1"
+                            type="number"
+                            min="2020"
+                            max="2100"
+                            value={reportYear}
+                            onChange={(event) => setReportYear(Number(event.target.value))}
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => void generateMonthlyReport()}
+                          disabled={Boolean(busyAction)}
+                          className="mt-auto inline-flex min-h-10 items-center justify-center gap-2 rounded-[8px] px-3 py-2 font-dm text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
+                          style={{ background: T.acc }}
+                        >
+                          {busyAction === "generate-report" ? <Loader2 size={15} className="animate-spin" /> : <Sparkles size={15} />}
+                          Generate Report
+                        </button>
+                      </div>
+
+                      {monthlyReports.length > 0 && (
+                        <label className="mt-3 block font-dm text-xs" style={{ color: T.t2 }}>
+                          Recent reports
+                          <select
+                            className="mt-1"
+                            value={activeReport?.id ?? ""}
+                            onChange={(event) => {
+                              const report = monthlyReports.find((item) => item.id === Number(event.target.value)) ?? null
+                              setActiveReport(report)
+                              setReportDraft(report ? { title: report.title, summary: report.summary, htmlContent: report.htmlContent } : null)
+                            }}
+                          >
+                            {monthlyReports.map((report) => (
+                              <option key={report.id} value={report.id}>
+                                {report.month}/{report.year} - {report.status}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      )}
+
+                      {activeReport && reportDraft && (
+                        <div className="mt-4 space-y-3">
+                          <label className="block font-dm text-xs" style={{ color: T.t2 }}>
+                            Title
+                            <input
+                              className="mt-1"
+                              value={reportDraft.title}
+                              onChange={(event) => setReportDraft((current) => current && { ...current, title: event.target.value })}
+                            />
+                          </label>
+                          <label className="block font-dm text-xs" style={{ color: T.t2 }}>
+                            Summary
+                            <textarea
+                              className="mt-1 min-h-[84px]"
+                              value={reportDraft.summary}
+                              onChange={(event) => setReportDraft((current) => current && { ...current, summary: event.target.value })}
+                            />
+                          </label>
+                          <div className="overflow-hidden rounded-[8px] border" style={{ borderColor: T.b1, background: T.s1 }}>
+                            <iframe
+                              title="Monthly report preview"
+                              srcDoc={reportDraft.htmlContent}
+                              className="h-[460px] w-full bg-white"
+                              sandbox=""
+                            />
+                          </div>
+                          <label className="block font-dm text-xs" style={{ color: T.t2 }}>
+                            HTML content
+                            <textarea
+                              className="mt-1 min-h-[220px] font-mono text-xs"
+                              value={reportDraft.htmlContent}
+                              onChange={(event) => setReportDraft((current) => current && { ...current, htmlContent: event.target.value })}
+                            />
+                          </label>
+                          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                            <button
+                              type="button"
+                              onClick={() => void saveReport()}
+                              disabled={Boolean(busyAction)}
+                              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-[8px] border px-3 py-2 font-dm text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60"
+                              style={{ background: T.s1, borderColor: T.b1, color: T.t1 }}
+                            >
+                              {busyAction === "save-report" ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
+                              Save Draft
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void publishReport()}
+                              disabled={Boolean(busyAction) || activeReport.status === "published"}
+                              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-[8px] px-3 py-2 font-dm text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
+                              style={{ background: T.grn }}
+                            >
+                              {busyAction === "publish-report" ? <Loader2 size={15} className="animate-spin" /> : <CheckCircle2 size={15} />}
+                              Publish to Portal
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </section>
+
                     <section className="space-y-3">
                       <h3 className="font-syne text-[13px] font-bold uppercase tracking-[.07em]" style={{ color: T.t2 }}>Admin Actions</h3>
                       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 xl:grid-cols-1 2xl:grid-cols-3">
@@ -510,15 +1066,6 @@ export function ClientRequestsQueue({ initialRequests, loadError, initialSelecte
                           </select>
                         </label>
                       </div>
-                      <label className="block font-dm text-xs" style={{ color: T.t2 }}>
-                        Add internal note
-                        <textarea
-                          className="mt-1 min-h-[112px]"
-                          value={internalNote}
-                          onChange={(event) => setInternalNote(event.target.value)}
-                          placeholder="Visible to admins only"
-                        />
-                      </label>
                       {actionError && <div className="rounded-[8px] border p-3 font-dm text-sm" style={{ background: "rgba(239,68,68,.08)", borderColor: "rgba(239,68,68,.24)", color: T.red }}>{actionError}</div>}
                       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 2xl:grid-cols-4">
                         <button

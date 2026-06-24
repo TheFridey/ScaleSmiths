@@ -4,6 +4,7 @@ import { db } from "@/lib/db"
 import { checkLoginRateLimit, genericLoginError, getRequestIp, loginRateLimitKeys } from "@/lib/login-limiter"
 import { portalClientAccounts } from "@/lib/schema"
 import {
+  PORTAL_SESSION_COOKIE,
   authenticateDemoPortal,
   authenticatePortalAccount,
   createPortalSessionToken,
@@ -47,7 +48,7 @@ export async function POST(request: NextRequest) {
   const token = await createPortalSessionToken(session.clientId, process.env.PORTAL_SECRET)
 
   const response = NextResponse.json({ ok: true, clientId: session.clientId })
-  response.cookies.set("ss-client-session", token, portalSessionCookieOptions())
+  response.cookies.set(PORTAL_SESSION_COOKIE, token, portalSessionCookieOptions())
 
   return response
 }

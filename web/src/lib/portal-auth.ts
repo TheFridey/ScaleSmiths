@@ -17,6 +17,8 @@ export interface PortalSession {
   clientId: string
 }
 
+export const PORTAL_SESSION_COOKIE = "ss-client-session"
+
 export function portalSessionCookieOptions(env: NodeJS.ProcessEnv = process.env) {
   return {
     httpOnly: true,
@@ -97,4 +99,8 @@ export async function verifyPortalSessionToken(
   } catch {
     return null
   }
+}
+
+export function isClientPortalAccessAllowed(session: PortalSession | null, clientId: string) {
+  return Boolean(session && clientId === session.clientId)
 }

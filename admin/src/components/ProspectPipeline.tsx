@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
-import { CalendarClock, CheckCircle2, CircleDollarSign, Clock, FileText, MailPlus, Plus, Save, Target, XCircle } from "lucide-react"
+import { CalendarClock, CheckCircle2, CircleDollarSign, Clock, Download, FileText, MailPlus, Plus, Save, Send, Target, Wand2, XCircle } from "lucide-react"
 import {
   OUTREACH_ACTIVITY_TYPES,
   OUTREACH_DIRECTIONS,
@@ -88,12 +88,30 @@ interface ProposalTracking {
   updatedAt: DateLike
 }
 
+interface SalesProposal {
+  id: number
+  prospectId: number | null
+  clientId: number | null
+  title: string
+  summary: string
+  htmlContent: string
+  status: ProposalStatus
+  generatedBy: "forge" | "manual"
+  selectedServices: string | null
+  buildPrice: number
+  retainerPrice: number
+  createdAt: DateLike
+  updatedAt: DateLike
+  sentAt: DateLike
+}
+
 type SalesMetrics = ReturnType<typeof computeSalesMetrics>
 
 interface ProspectPipelineProps {
   initialProspects: Prospect[]
   initialActivities: OutreachActivity[]
   initialProposals: ProposalTracking[]
+  initialSalesProposals: SalesProposal[]
 }
 
 const STAGE_COLOR: Record<ProspectStage, string> = {
@@ -108,11 +126,12 @@ const STAGE_COLOR: Record<ProspectStage, string> = {
   lost: "#ef4444",
 }
 
-export function ProspectPipeline({ initialProspects, initialActivities, initialProposals }: ProspectPipelineProps) {
+export function ProspectPipeline({ initialProspects, initialActivities, initialProposals, initialSalesProposals }: ProspectPipelineProps) {
   const router = useRouter()
   const [prospects, setProspects] = useState(initialProspects)
   const [activities, setActivities] = useState(initialActivities)
   const [proposals, setProposals] = useState(initialProposals)
+  const [salesProposals, setSalesProposals] = useState(initialSalesProposals)
   const [selectedId, setSelectedId] = useState(initialProspects[0]?.id ?? null)
   const [view, setView] = useState<"pipeline" | "followups">("pipeline")
   const [showNew, setShowNew] = useState(initialProspects.length === 0)
@@ -124,13 +143,15 @@ export function ProspectPipeline({ initialProspects, initialActivities, initialP
     setProspects(initialProspects)
     setActivities(initialActivities)
     setProposals(initialProposals)
+    setSalesProposals(initialSalesProposals)
     setSelectedId((current) => current ?? initialProspects[0]?.id ?? null)
-  }, [initialProspects, initialActivities, initialProposals])
+  }, [initialProspects, initialActivities, initialProposals, initialSalesProposals])
 
   const selected = prospects.find((prospect) => prospect.id === selectedId) ?? prospects[0] ?? null
   const metrics = useMemo(() => computeSalesMetrics(prospects, activities, proposals), [prospects, activities, proposals])
   const selectedActivities = activities.filter((activity) => activity.prospectId === selected?.id)
   const selectedProposals = proposals.filter((proposal) => proposal.prospectId === selected?.id)
+  const selectedSalesProposals = salesProposals.filter((proposal) => proposal.prospectId === selected?.id)
   const followUps = useMemo(() => ({
     today: prospects.filter((prospect) => getFollowUpBucket(prospect.nextFollowUpAt) === "today" && !isClosed(prospect)),
     overdue: prospects.filter((prospect) => getFollowUpBucket(prospect.nextFollowUpAt) === "overdue" && !isClosed(prospect)),
@@ -225,6 +246,45 @@ export function ProspectPipeline({ initialProspects, initialActivities, initialP
       router.refresh()
     } catch (err) {
       setError(errorMessage(err, "Unable to mark proposal sent."))
+    } finally {
+      setBusy("")
+    }
+  }
+
+  async function generateProposal(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!selected) return
+
+    const form = event.currentTarget
+    const body = { prospectId: selected.id, ...Object.fromEntries(new FormData(form)) }
+    setBusy("generate-proposal")
+    setError("")
+
+    try {
+      const json = await api("/api/proposals", { method: "POST", body })
+      setSalesProposals((current) => [json.proposal, ...current])
+      form.reset()
+      router.refresh()
+    } catch (err) {
+      setError(errorMessage(err, "Unable to generate proposal."))
+    } finally {
+      setBusy("")
+    }
+  }
+
+  async function saveSalesProposal(id: number, body: Record<string, unknown>) {
+    setBusy(`sales-proposal-${id}`)
+    setError("")
+
+    try {
+      const json = await api(`/api/proposals/${id}`, { method: "PATCH", body })
+      setSalesProposals((current) => current.map((proposal) => proposal.id === id ? json.proposal : proposal))
+      if (body.status === "sent" && selected) {
+        mergeProspect({ ...selected, stage: "proposal_sent", proposalSentAt: json.proposal.sentAt, updatedAt: json.proposal.updatedAt })
+      }
+      router.refresh()
+    } catch (err) {
+      setError(errorMessage(err, "Unable to save proposal."))
     } finally {
       setBusy("")
     }
@@ -327,12 +387,15 @@ export function ProspectPipeline({ initialProspects, initialActivities, initialP
             prospect={selected}
             activities={selectedActivities}
             proposals={selectedProposals}
+            salesProposals={selectedSalesProposals}
             busy={busy}
             onUpdate={updateProspect}
             onStage={(stage) => selected && moveStage(selected, stage)}
             onFollowUp={setFollowUp}
             onActivity={addActivity}
             onProposal={markProposalSent}
+            onGenerateProposal={generateProposal}
+            onSaveSalesProposal={saveSalesProposal}
             onWon={() => selected && patchProspect(selected.id, { action:"markWon" }, "won")}
             onLost={markLost}
             onConvert={() => selected && patchProspect(selected.id, { action:"convertToClient" }, "convert")}
@@ -433,16 +496,19 @@ function KanbanBoard({ prospects, selectedId, dragging, setDragging, onMove, onS
   )
 }
 
-function DetailPanel({ prospect, activities, proposals, busy, onUpdate, onStage, onFollowUp, onActivity, onProposal, onWon, onLost, onConvert }: {
+function DetailPanel({ prospect, activities, proposals, salesProposals, busy, onUpdate, onStage, onFollowUp, onActivity, onProposal, onGenerateProposal, onSaveSalesProposal, onWon, onLost, onConvert }: {
   prospect: Prospect | null
   activities: OutreachActivity[]
   proposals: ProposalTracking[]
+  salesProposals: SalesProposal[]
   busy: string
   onUpdate: (event: FormEvent<HTMLFormElement>) => void
   onStage: (stage: ProspectStage) => void
   onFollowUp: (event: FormEvent<HTMLFormElement>) => void
   onActivity: (event: FormEvent<HTMLFormElement>) => void
   onProposal: (event: FormEvent<HTMLFormElement>) => void
+  onGenerateProposal: (event: FormEvent<HTMLFormElement>) => void
+  onSaveSalesProposal: (id: number, body: Record<string, unknown>) => void
   onWon: () => void
   onLost: (event: FormEvent<HTMLFormElement>) => void
   onConvert: () => void
@@ -557,6 +623,39 @@ function DetailPanel({ prospect, activities, proposals, busy, onUpdate, onStage,
       </div>
 
       <div className="rounded-[8px] border p-4 sm:p-5" style={{ background:T.s1, borderColor:T.b1 }}>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h3 className="font-syne text-[15px] font-bold">Proposal Generator</h3>
+          <span className="rounded px-2 py-1 font-dm text-[10px] uppercase tracking-[.06em]" style={{ background:T.s2, border:`1px solid ${T.b2}`, color:T.t2 }}>Draft first</span>
+        </div>
+        {prospect.stage === "proposal_sent" && salesProposals.length === 0 && (
+          <div className="mb-3 rounded-lg border px-3 py-2 font-dm text-xs" style={{ background:"rgba(245,158,11,.1)", borderColor:"rgba(245,158,11,.35)", color:T.t1 }}>
+            This prospect is at proposal stage but has no generated proposal draft yet.
+          </div>
+        )}
+        <form onSubmit={onGenerateProposal} className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <Field label="Build price" name="buildPrice" type="number" min="0" defaultValue={String(prospect.estimatedProjectValue)} />
+          <Field label="Retainer price" name="retainerPrice" type="number" min="0" defaultValue={String(prospect.estimatedMonthlyRetainer)} />
+          <div className="sm:col-span-2">
+            <TextArea label="Selected services" name="selectedServices" placeholder="Website rebuild, SEO foundations, care plan..." defaultValue="" />
+          </div>
+          <button disabled={busy === "generate-proposal"} className="flex items-center justify-center gap-1.5 rounded-lg px-4 py-2 font-dm text-sm font-medium text-white disabled:opacity-60 sm:col-span-2" style={{ background:T.acc }}>
+            <Wand2 size={15} /> {busy === "generate-proposal" ? "Generating..." : "Generate Draft Proposal"}
+          </button>
+        </form>
+        <div className="mt-4 space-y-4">
+          {salesProposals.length === 0 && <div className="font-dm text-sm" style={{ color:T.t2 }}>No generated proposals yet.</div>}
+          {salesProposals.map((proposal) => (
+            <SalesProposalEditor
+              key={proposal.id}
+              proposal={proposal}
+              busy={busy === `sales-proposal-${proposal.id}`}
+              onSave={onSaveSalesProposal}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div className="rounded-[8px] border p-4 sm:p-5" style={{ background:T.s1, borderColor:T.b1 }}>
         <h3 className="mb-3 font-syne text-[15px] font-bold">Proposal Tracking</h3>
         <form onSubmit={onProposal} className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <Select label="Package" name="packageType" options={PROPOSAL_PACKAGE_TYPES} defaultValue="custom" />
@@ -588,6 +687,86 @@ function DetailPanel({ prospect, activities, proposals, busy, onUpdate, onStage,
         </div>
       </div>
     </aside>
+  )
+}
+
+function SalesProposalEditor({ proposal, busy, onSave }: {
+  proposal: SalesProposal
+  busy: boolean
+  onSave: (id: number, body: Record<string, unknown>) => void
+}) {
+  const [title, setTitle] = useState(proposal.title)
+  const [summary, setSummary] = useState(proposal.summary)
+  const [htmlContent, setHtmlContent] = useState(proposal.htmlContent)
+  const [previewOpen, setPreviewOpen] = useState(true)
+
+  useEffect(() => {
+    setTitle(proposal.title)
+    setSummary(proposal.summary)
+    setHtmlContent(proposal.htmlContent)
+  }, [proposal.id, proposal.title, proposal.summary, proposal.htmlContent])
+
+  const payload = { title, summary, htmlContent }
+
+  return (
+    <div className="rounded-lg border p-3" style={{ background:T.s2, borderColor:T.b1 }}>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <div className="font-dm text-xs font-semibold">{proposal.status} / {proposal.generatedBy}</div>
+          <div className="mt-1 font-dm text-[11px]" style={{ color:T.t3 }}>Updated {formatDate(proposal.updatedAt)}</div>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <a href={`/api/proposals/${proposal.id}`} className="flex items-center gap-1 rounded-lg border px-3 py-2 font-dm text-xs" style={{ borderColor:T.b2, color:T.t1 }}>
+            <Download size={13} /> HTML
+          </a>
+          <button type="button" onClick={() => setPreviewOpen((open) => !open)} className="rounded-lg border px-3 py-2 font-dm text-xs" style={{ borderColor:T.b2 }}>
+            {previewOpen ? "Hide Preview" : "Preview"}
+          </button>
+        </div>
+      </div>
+      <div className="grid gap-2">
+        <Field label="Title" name={`title-${proposal.id}`} value={title} onChange={(event) => setTitle(event.target.value)} />
+        <TextArea label="Summary" name={`summary-${proposal.id}`} value={summary} onChange={(event) => setSummary(event.target.value)} />
+        <label className="font-dm text-sm">
+          <span className="mb-1 block text-[11px]" style={{ color:T.t2 }}>Editable HTML</span>
+          <textarea
+            value={htmlContent}
+            onChange={(event) => setHtmlContent(event.target.value)}
+            rows={10}
+            className="font-mono text-xs"
+          />
+        </label>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => onSave(proposal.id, { ...payload, status: "draft" })}
+            className="flex items-center justify-center gap-1.5 rounded-lg px-4 py-2 font-dm text-sm font-medium text-white disabled:opacity-60"
+            style={{ background:T.acc }}
+          >
+            <Save size={15} /> {busy ? "Saving..." : "Save Draft"}
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => onSave(proposal.id, { ...payload, status: "sent" })}
+            className="flex items-center justify-center gap-1.5 rounded-lg px-4 py-2 font-dm text-sm font-medium text-white disabled:opacity-60"
+            style={{ background:T.grn }}
+          >
+            <Send size={15} /> Mark Sent
+          </button>
+        </div>
+        {previewOpen && (
+          <iframe
+            title={`${proposal.title} preview`}
+            srcDoc={htmlContent}
+            sandbox=""
+            className="h-[420px] w-full rounded-lg border bg-white"
+            style={{ borderColor:T.b1 }}
+          />
+        )}
+      </div>
+    </div>
   )
 }
 

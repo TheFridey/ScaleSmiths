@@ -1,6 +1,7 @@
 "use client"
 
 import { FormEvent, useEffect, useState } from "react"
+import Link from "next/link"
 import { AlertCircle, CheckCircle2, ClipboardList, Loader2, Send } from "lucide-react"
 import {
   CLIENT_REQUEST_CATEGORIES,
@@ -18,6 +19,10 @@ interface PortalRequestRow {
   status: ClientRequestStatus
   createdAt: string | Date
   updatedAt: string | Date
+}
+
+interface PortalRequestsPanelProps {
+  clientId: string
 }
 
 const CATEGORY_LABELS: Record<ClientRequestCategory, string> = {
@@ -47,7 +52,7 @@ const STATUS_LABELS: Record<ClientRequestStatus, string> = {
   cancelled: "Cancelled",
 }
 
-export function PortalRequestsPanel() {
+export function PortalRequestsPanel({ clientId }: PortalRequestsPanelProps) {
   const [requests, setRequests] = useState<PortalRequestRow[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -256,7 +261,11 @@ export function PortalRequestsPanel() {
               <article key={request.id} className="rounded-xl border border-b1 bg-s2 p-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <h3 className="break-words font-dm text-sm font-semibold text-t1">{request.title}</h3>
+                    <h3 className="break-words font-dm text-sm font-semibold text-t1">
+                      <Link href={`/portal/${clientId}/requests/${request.id}`} className="underline-offset-2 hover:text-acc hover:underline">
+                        {request.title}
+                      </Link>
+                    </h3>
                     <div className="mt-2 flex flex-wrap gap-2">
                       <Badge>{CATEGORY_LABELS[request.category]}</Badge>
                       <Badge>{labelize(request.priority)}</Badge>
@@ -274,6 +283,9 @@ export function PortalRequestsPanel() {
                     <dd>{formatDate(request.updatedAt)}</dd>
                   </div>
                 </dl>
+                <Link href={`/portal/${clientId}/requests/${request.id}`} className="mt-3 inline-flex font-dm text-xs font-semibold text-acc underline-offset-2 hover:underline">
+                  Open thread
+                </Link>
               </article>
             ))}
           </div>

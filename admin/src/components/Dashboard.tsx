@@ -1,7 +1,7 @@
 "use client"
 
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer } from "recharts"
-import { Activity, AlertTriangle, Bell, CalendarClock, FileText, Gauge, Mail, Plus, PoundSterling, Target, TrendingUp, Trophy, Users } from "lucide-react"
+import { Activity, AlertTriangle, Bell, CalendarClock, CheckCircle2, Clock3, FileText, Gauge, Mail, MessageSquare, Plus, PoundSterling, Target, TrendingUp, Trophy, Users } from "lucide-react"
 import Link from "next/link"
 import { PROSPECT_STAGES, STAGE_LABELS, type ProspectStage } from "@/lib/prospects"
 
@@ -10,11 +10,57 @@ const T = { t1:"var(--t1)",t2:"var(--t2)",t3:"var(--t3)",s1:"var(--s1)",s2:"var(
 const gbp = (n: number) => `GBP ${Math.round(n).toLocaleString("en-GB")}`
 
 interface DashboardClient {
+  id: number
   name: string
   tier: string | null
   mrr: number
   status: string
   progress: number
+}
+
+interface OperationalSnapshot {
+  unreadClientReplies: {
+    id: number
+    requestId: number
+    senderName: string
+    body: string
+    createdAt: string
+    requestTitle: string
+    clientId: string
+    requestStatus: string
+  }[]
+  criticalRequests: DashboardRequest[]
+  waitingClientRequests: DashboardRequest[]
+  reportsDueThisMonth: {
+    id: number
+    name: string
+    tier: string | null
+    status: string
+  }[]
+  proposalsMissing: {
+    id: number
+    businessName: string
+    contactName: string | null
+    proposalSentAt: string | null
+  }[]
+  recentTimeline: {
+    id: number
+    clientId: string
+    title: string
+    description: string
+    visibility: "client_visible" | "internal"
+    createdAt: string
+  }[]
+  currentMonthReportCount: number
+}
+
+interface DashboardRequest {
+  id: number
+  clientId: string
+  title: string
+  priority: "low" | "medium" | "high" | "critical"
+  status: "new" | "triaged" | "in_progress" | "waiting_client" | "completed" | "cancelled"
+  updatedAt: string
 }
 
 interface SalesMetrics {
@@ -44,6 +90,7 @@ interface DashboardContentProps {
   clients: DashboardClient[]
   salesMetrics: SalesMetrics
   todayLabel: string
+  operational: OperationalSnapshot
 }
 
 interface MetricCard {
@@ -108,7 +155,7 @@ function MetricGrid({ cards, size = 24 }: { cards: MetricCard[]; size?: number }
   )
 }
 
-export function DashboardContent({ clients, salesMetrics, todayLabel }: DashboardContentProps) {
+export function DashboardContent({ clients, salesMetrics, todayLabel, operational }: DashboardContentProps) {
   const activeClients = clients.filter((c) => c.status === "active")
   const totalMrr = clients.reduce((sum, c) => sum + c.mrr, 0)
   const avgRetainer = activeClients.length ? Math.round(totalMrr / activeClients.length) : 0
@@ -175,6 +222,91 @@ export function DashboardContent({ clients, salesMetrics, todayLabel }: Dashboar
           </span>
         ))}
       </div>
+
+      <section>
+        <SectionLabel>Client Operations</SectionLabel>
+        <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
+          <OpsPanel
+            title="Unread client replies"
+            count={operational.unreadClientReplies.length}
+            Icon={MessageSquare}
+            tone={operational.unreadClientReplies.length > 0 ? T.amb : T.grn}
+            emptyTitle="No client replies waiting"
+            emptyBody="Client-visible request threads are clear."
+          >
+            {operational.unreadClientReplies.slice(0, 4).map((reply) => (
+              <OpsItem key={reply.id} href={`/requests?request=${reply.requestId}`} title={reply.requestTitle} meta={`${reply.clientId} / ${formatDate(reply.createdAt)}`} body={reply.body} />
+            ))}
+          </OpsPanel>
+
+          <OpsPanel
+            title="Critical requests"
+            count={operational.criticalRequests.length}
+            Icon={AlertTriangle}
+            tone={operational.criticalRequests.length > 0 ? T.red : T.grn}
+            emptyTitle="No critical requests"
+            emptyBody="No active critical support items are open."
+          >
+            {operational.criticalRequests.map((request) => (
+              <OpsItem key={request.id} href={`/requests?request=${request.id}`} title={request.title} meta={`${request.clientId} / ${labelize(request.status)}`} body={`Updated ${formatDate(request.updatedAt)}`} />
+            ))}
+          </OpsPanel>
+
+          <OpsPanel
+            title="Waiting client"
+            count={operational.waitingClientRequests.length}
+            Icon={Clock3}
+            tone={operational.waitingClientRequests.length > 0 ? T.amb : T.grn}
+            emptyTitle="Nothing waiting on clients"
+            emptyBody="No request is currently blocked on client input."
+          >
+            {operational.waitingClientRequests.map((request) => (
+              <OpsItem key={request.id} href={`/requests?request=${request.id}`} title={request.title} meta={request.clientId} body={`Waiting since ${formatDate(request.updatedAt)}`} />
+            ))}
+          </OpsPanel>
+        </div>
+
+        <div className="mt-3 grid grid-cols-1 gap-3 xl:grid-cols-3">
+          <OpsPanel
+            title="Reports due this month"
+            count={operational.reportsDueThisMonth.length}
+            Icon={FileText}
+            tone={operational.reportsDueThisMonth.length > 0 ? T.amb : T.grn}
+            emptyTitle="Reports covered"
+            emptyBody={`${operational.currentMonthReportCount} report${operational.currentMonthReportCount === 1 ? "" : "s"} exist for this month.`}
+          >
+            {operational.reportsDueThisMonth.slice(0, 5).map((client) => (
+              <OpsItem key={client.id} href="/requests" title={client.name} meta={client.tier ?? "No tier"} body={`Status: ${client.status}`} />
+            ))}
+          </OpsPanel>
+
+          <OpsPanel
+            title="Missing proposal drafts"
+            count={operational.proposalsMissing.length}
+            Icon={Target}
+            tone={operational.proposalsMissing.length > 0 ? T.amb : T.grn}
+            emptyTitle="Proposal drafts covered"
+            emptyBody="Every proposal-stage prospect has a generated proposal draft."
+          >
+            {operational.proposalsMissing.slice(0, 5).map((prospect) => (
+              <OpsItem key={prospect.id} href="/prospects" title={prospect.businessName} meta={prospect.contactName ?? "No contact"} body={prospect.proposalSentAt ? `Proposal stage since ${formatDate(prospect.proposalSentAt)}` : "Proposal stage"} />
+            ))}
+          </OpsPanel>
+
+          <OpsPanel
+            title="Recent timeline activity"
+            count={operational.recentTimeline.length}
+            Icon={Activity}
+            tone={T.acc}
+            emptyTitle="No timeline activity yet"
+            emptyBody="Client-visible and internal timeline events will appear here."
+          >
+            {operational.recentTimeline.slice(0, 5).map((event) => (
+              <OpsItem key={event.id} href="/requests" title={event.title} meta={`${event.clientId} / ${event.visibility === "internal" ? "internal" : "client-visible"}`} body={event.description} />
+            ))}
+          </OpsPanel>
+        </div>
+      </section>
 
       <section>
         <SectionLabel>Revenue &amp; Clients</SectionLabel>
@@ -271,4 +403,59 @@ export function DashboardContent({ clients, salesMetrics, todayLabel }: Dashboar
 
 function initial(value: string) {
   return value.trim().charAt(0).toUpperCase() || "?"
+}
+
+function OpsPanel({ title, count, Icon, tone, emptyTitle, emptyBody, children }: {
+  title: string
+  count: number
+  Icon: typeof AlertTriangle
+  tone: string
+  emptyTitle: string
+  emptyBody: string
+  children: React.ReactNode
+}) {
+  return (
+    <div className="rounded-[8px] border p-4" style={{ background:T.s1, borderColor:T.b1 }}>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <Icon size={15} style={{ color:tone }} aria-hidden="true" />
+          <h3 className="truncate font-syne text-[15px] font-bold">{title}</h3>
+        </div>
+        <span className="rounded border px-2 py-0.5 font-syne text-xs font-bold" style={{ borderColor:T.b2, background:T.s2, color:tone }}>{count}</span>
+      </div>
+      {count === 0 ? (
+        <div className="rounded-lg border border-dashed p-4" style={{ borderColor:T.b1, background:T.s2 }}>
+          <CheckCircle2 size={15} className="mb-2" style={{ color:T.grn }} aria-hidden="true" />
+          <div className="font-dm text-sm font-semibold">{emptyTitle}</div>
+          <p className="mt-1 font-dm text-xs leading-relaxed" style={{ color:T.t2 }}>{emptyBody}</p>
+        </div>
+      ) : (
+        <div className="space-y-2">{children}</div>
+      )}
+    </div>
+  )
+}
+
+function OpsItem({ href, title, meta, body }: { href: string; title: string; meta: string; body: string }) {
+  return (
+    <Link href={href} className="block rounded-lg border p-3 transition-colors hover:border-acc/60" style={{ background:T.s2, borderColor:T.b1 }}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="line-clamp-1 font-dm text-sm font-semibold">{title}</div>
+          <div className="mt-1 font-dm text-[11px]" style={{ color:T.t3 }}>{meta}</div>
+        </div>
+      </div>
+      <p className="mt-2 line-clamp-2 font-dm text-xs leading-relaxed" style={{ color:T.t2 }}>{body}</p>
+    </Link>
+  )
+}
+
+function labelize(value: string) {
+  return value.replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase())
+}
+
+function formatDate(value: string) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return "No date"
+  return date.toLocaleDateString("en-GB", { day:"2-digit", month:"short" })
 }

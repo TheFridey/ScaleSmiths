@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useSearchParams, useRouter } from "next/navigation"
-import { ClipboardList, Folder, LayoutDashboard, LogOut, MessageSquare, Columns3 } from "lucide-react"
+import { ClipboardList, FileText, Folder, LayoutDashboard, LogOut, MessageSquare, Columns3 } from "lucide-react"
 import { Logo } from "@/components/Logo"
 import { cn } from "@/lib/utils"
 
@@ -12,6 +12,7 @@ const TABS = [
   { id: "files", label: "Files", Icon: Folder },
   { id: "messages", label: "Messages", Icon: MessageSquare },
   { id: "requests", label: "Requests", Icon: ClipboardList },
+  { id: "reports", label: "Reports", Icon: FileText },
 ]
 
 interface PortalNavProps {

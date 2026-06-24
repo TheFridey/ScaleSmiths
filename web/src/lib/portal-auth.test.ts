@@ -3,6 +3,7 @@ import {
   authenticateDemoPortal,
   authenticatePortalAccount,
   createPortalSessionToken,
+  isClientPortalAccessAllowed,
   portalLogoutCookieOptions,
   portalSessionCookieOptions,
   verifyPortalSessionToken,
@@ -57,6 +58,12 @@ describe("portal auth", () => {
     const session = await verifyPortalSessionToken(token, "test-secret-with-enough-entropy")
 
     expect(session).toEqual({ clientId: "client-one" })
+  })
+
+  it("allows portal access only to the session client", () => {
+    expect(isClientPortalAccessAllowed({ clientId: "client-one" }, "client-one")).toBe(true)
+    expect(isClientPortalAccessAllowed({ clientId: "client-one" }, "client-two")).toBe(false)
+    expect(isClientPortalAccessAllowed(null, "client-one")).toBe(false)
   })
 
   it("sets secure cookie options for production", () => {

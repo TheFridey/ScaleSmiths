@@ -1,5 +1,6 @@
 import "server-only"
 import { and, eq } from "drizzle-orm"
+import type { ForgeAiResult, JsonValue } from "@/lib/forge-ai"
 import { db } from "@/lib/db"
 import { buildForgeTaskOutputMetadata, ForgeAiError, runForgeAiJson } from "@/lib/server/forge-ai"
 import {
@@ -90,28 +91,14 @@ export async function runForgeSitemapAgent(projectId: number, actor: string) {
     })
   })
 
-  try {
-    const result = await runForgeAiJson({
-      taskType: "planning",
-      schemaName: "forge_sitemap_strategy",
-      schema: FORGE_SITEMAP_STRATEGY_SCHEMA,
-      systemPrompt: [
-        "You are the ScaleSmiths Forge Sitemap and Strategy Agent.",
-        "Return practical structured JSON for a local/service-business website.",
-        "Do not generate generic SaaS sitemap recommendations unless the intake explicitly asks for a SaaS product website.",
-      ].join(" "),
-      prompt: buildForgeSitemapPrompt({ project, intakeSummary, researchReport }),
-      maxTokens: 2200,
-      timeoutMs: 30_000,
-      maxRetries: 2,
-      projectId,
-      taskId: task.id,
-      mockData: createMockSitemapStrategy(project, intake.intake, researchReport),
-    })
-    const strategy = result.data as ForgeSitemapStrategy
+  const fallbackStrategy = createMockSitemapStrategy(project, intake.intake, researchReport)
+
+  async function completeSitemapRun(result: ForgeAiResult, fallbackReason?: string) {
+    const strategy = result.data as unknown as ForgeSitemapStrategy
     const completedAt = new Date()
     const content = buildForgeSitemapArtifactContent(strategy)
     const aiMetadata = buildForgeTaskOutputMetadata(result)
+    const outputJson = fallbackReason ? { ...aiMetadata, fallbackReason } : aiMetadata
 
     const [artifact] = await db.transaction(async (tx) => {
       const [existing] = await tx
@@ -132,6 +119,7 @@ export async function runForgeSitemapAgent(projectId: number, actor: string) {
         strategy,
         taskId: task.id,
         ai: aiMetadata.ai,
+        fallbackReason,
       }
 
       const [saved] = existing
@@ -160,7 +148,7 @@ export async function runForgeSitemapAgent(projectId: number, actor: string) {
         .update(forgeTasks)
         .set({
           status: "completed",
-          outputJson: aiMetadata,
+          outputJson,
           completedAt,
           updatedAt: completedAt,
         })
@@ -169,13 +157,16 @@ export async function runForgeSitemapAgent(projectId: number, actor: string) {
       await tx.insert(forgeActivityLogs).values({
         projectId,
         actor,
-        action: "sitemap_completed",
-        message: `Generated sitemap and strategy for ${project.name}.`,
+        action: fallbackReason ? "sitemap_completed_with_fallback" : "sitemap_completed",
+        message: fallbackReason
+          ? `Generated fallback sitemap and strategy for ${project.name} after the AI provider failed.`
+          : `Generated sitemap and strategy for ${project.name}.`,
         metadataJson: {
           taskId: task.id,
           artifactId: saved.id,
           provider: result.provider,
           model: result.model,
+          fallbackReason,
         },
       })
 
@@ -189,7 +180,43 @@ export async function runForgeSitemapAgent(projectId: number, actor: string) {
       strategy,
       ai: aiMetadata.ai,
     }
+  }
+
+  try {
+    const result = await runForgeAiJson({
+      taskType: "planning",
+      schemaName: "forge_sitemap_strategy",
+      schema: FORGE_SITEMAP_STRATEGY_SCHEMA,
+      systemPrompt: [
+        "You are the ScaleSmiths Forge Sitemap and Strategy Agent.",
+        "Return practical structured JSON for a local/service-business website.",
+        "Do not generate generic SaaS sitemap recommendations unless the intake explicitly asks for a SaaS product website.",
+      ].join(" "),
+      prompt: buildForgeSitemapPrompt({ project, intakeSummary, researchReport }),
+      maxTokens: 2200,
+      timeoutMs: 30_000,
+      maxRetries: 2,
+      projectId,
+      taskId: task.id,
+      mockData: fallbackStrategy,
+      fallbackOnSchemaMismatch: true,
+    })
+    return completeSitemapRun(result)
   } catch (error) {
+    if (error instanceof ForgeAiError && error.retryable) {
+      return completeSitemapRun({
+        provider: "mock",
+        model: "deterministic-sitemap-fallback",
+        taskType: "planning",
+        data: fallbackStrategy as unknown as JsonValue,
+        usage: { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
+        costEstimateUsd: null,
+        latencyMs: 0,
+        retries: 0,
+        responseId: "provider-fallback",
+      }, error.safeMessage)
+    }
+
     const completedAt = new Date()
     const safeMessage = error instanceof ForgeAiError
       ? error.safeMessage

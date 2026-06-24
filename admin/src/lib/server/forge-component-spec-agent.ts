@@ -1,5 +1,6 @@
 import "server-only"
 import { and, eq } from "drizzle-orm"
+import type { ForgeAiResult, JsonValue } from "@/lib/forge-ai"
 import { db } from "@/lib/db"
 import { buildForgeTaskOutputMetadata, ForgeAiError, runForgeAiJson } from "@/lib/server/forge-ai"
 import {
@@ -91,32 +92,17 @@ export async function runForgeComponentSpecAgent(projectId: number, actor: strin
     })
   })
 
-  try {
-    const result = await runForgeAiJson({
-      taskType: "planning",
-      schemaName: "forge_component_spec",
-      schema: FORGE_COMPONENT_SPEC_SCHEMA,
-      systemPrompt: [
-        "You are the ScaleSmiths Forge Component Specification Agent.",
-        "Create exact implementation blueprints before code generation.",
-        "Do not generate code. Return structured JSON only.",
-        "Every required reusable component must be included.",
-      ].join(" "),
-      prompt: buildForgeComponentSpecPrompt({ approvedSitemap, approvedCopy, approvedDesign }),
-      maxTokens: 3000,
-      timeoutMs: 35_000,
-      maxRetries: 2,
-      projectId,
-      taskId: task.id,
-      mockData: createMockComponentSpec(approvedSitemap, approvedCopy, approvedDesign),
-    })
+  const fallbackSpec = createMockComponentSpec(approvedSitemap, approvedCopy, approvedDesign)
+
+  async function completeComponentSpecRun(result: ForgeAiResult, fallbackReason?: string) {
     const parsed = parseForgeComponentSpecPayload(result.data)
     if (!parsed.ok) throw new ForgeComponentSpecAgentError(parsed.error, 500)
 
     const spec = parsed.data
     const completedAt = new Date()
     const content = buildForgeComponentSpecArtifactContent(spec)
-    const aiMetadata = buildForgeTaskOutputMetadata({ ...result, data: spec })
+    const aiMetadata = buildForgeTaskOutputMetadata({ ...result, data: spec as unknown as JsonValue })
+    const outputJson = fallbackReason ? { ...aiMetadata, fallbackReason } : aiMetadata
 
     const [artifact] = await db.transaction(async (tx) => {
       const [existing] = await tx
@@ -136,6 +122,7 @@ export async function runForgeComponentSpecAgent(projectId: number, actor: strin
         spec,
         taskId: task.id,
         ai: aiMetadata.ai,
+        fallbackReason,
       }
 
       const [saved] = existing
@@ -160,7 +147,7 @@ export async function runForgeComponentSpecAgent(projectId: number, actor: strin
         .update(forgeTasks)
         .set({
           status: "completed",
-          outputJson: aiMetadata,
+          outputJson,
           completedAt,
           updatedAt: completedAt,
         })
@@ -169,14 +156,17 @@ export async function runForgeComponentSpecAgent(projectId: number, actor: strin
       await tx.insert(forgeActivityLogs).values({
         projectId,
         actor,
-        action: "component_spec_completed",
-        message: `Generated component specification for ${project.name}.`,
+        action: fallbackReason ? "component_spec_completed_with_fallback" : "component_spec_completed",
+        message: fallbackReason
+          ? `Generated fallback component specification for ${project.name} after the AI provider failed.`
+          : `Generated component specification for ${project.name}.`,
         metadataJson: {
           taskId: task.id,
           artifactId: saved.id,
           componentCount: spec.components.length,
           provider: result.provider,
           model: result.model,
+          fallbackReason,
         },
       })
 
@@ -190,7 +180,44 @@ export async function runForgeComponentSpecAgent(projectId: number, actor: strin
       spec,
       ai: aiMetadata.ai,
     }
+  }
+
+  try {
+    const result = await runForgeAiJson({
+      taskType: "planning",
+      schemaName: "forge_component_spec",
+      schema: FORGE_COMPONENT_SPEC_SCHEMA,
+      systemPrompt: [
+        "You are the ScaleSmiths Forge Component Specification Agent.",
+        "Create exact implementation blueprints before code generation.",
+        "Do not generate code. Return structured JSON only.",
+        "Every required reusable component must be included.",
+      ].join(" "),
+      prompt: buildForgeComponentSpecPrompt({ approvedSitemap, approvedCopy, approvedDesign }),
+      maxTokens: 3000,
+      timeoutMs: 35_000,
+      maxRetries: 2,
+      projectId,
+      taskId: task.id,
+      mockData: fallbackSpec,
+      fallbackOnSchemaMismatch: true,
+    })
+    return completeComponentSpecRun(result)
   } catch (error) {
+    if (error instanceof ForgeAiError && error.retryable) {
+      return completeComponentSpecRun({
+        provider: "mock",
+        model: "deterministic-component-spec-fallback",
+        taskType: "planning",
+        data: fallbackSpec as unknown as JsonValue,
+        usage: { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
+        costEstimateUsd: null,
+        latencyMs: 0,
+        retries: 0,
+        responseId: "provider-fallback",
+      }, error.safeMessage)
+    }
+
     const completedAt = new Date()
     const safeMessage = error instanceof ForgeAiError
       ? error.safeMessage

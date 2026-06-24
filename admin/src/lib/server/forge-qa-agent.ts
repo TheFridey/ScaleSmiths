@@ -36,6 +36,7 @@ import { FORGE_RESEND_PROVIDER, readForgeResendConfig, type ForgeResendConfig } 
 import { FORGE_WHATSAPP_PROVIDER, readForgeWhatsAppConfig, type ForgeWhatsAppConfig } from "@/lib/forge-whatsapp"
 import { FORGE_WORKSPACE_MEMORY_KEY, readForgeWorkspaceMemory, type ForgeWorkspaceMetadata } from "@/lib/forge-workspace"
 import { forgeActivityLogs, forgeArtifacts, forgeIntegrationConfigs, forgeMemories, forgeProjects, forgeTasks } from "@/lib/schema"
+import { validateForgeRepairPatchSyntax } from "./forge-repair-syntax"
 import { saveVersionedForgeArtifact } from "./forge-artifacts"
 import { cleanupForgeWorkspaceTransientOutput, readForgeWorkspaceFile, resolveWorkspaceRoot, writeForgeWorkspaceFile } from "./forge-workspace"
 
@@ -246,6 +247,9 @@ export async function runForgeRepairAgent(projectId: number, actor: string) {
     const patches = repairData.patches
     const validated = validateForgeRepairPatches(patches)
     if (!validated.ok) throw new ForgeQaAgentError(validated.error, 400)
+
+    const syntaxValidated = await validateForgeRepairPatchSyntax(patches)
+    if (!syntaxValidated.ok) throw new ForgeQaAgentError(syntaxValidated.error, 422)
 
     for (const patch of patches) {
       await writeForgeWorkspaceFile(workspace, patch.path, patch.content, {

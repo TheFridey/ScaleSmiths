@@ -1,6 +1,18 @@
-import { boolean, integer, pgEnum, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core"
+import { boolean, index, integer, jsonb, pgEnum, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core"
 
 export const quoteStatus = pgEnum("quote_status", ["new", "read", "replied", "reviewed", "contacted", "qualified", "won", "lost"])
+export const clientRequestCategory = pgEnum("client_request_category", [
+  "website_update",
+  "website_issue",
+  "form_issue",
+  "seo_request",
+  "new_page",
+  "content_assets",
+  "urgent_support",
+  "general_support",
+])
+export const clientRequestPriority = pgEnum("client_request_priority", ["low", "medium", "high", "critical"])
+export const clientRequestStatus = pgEnum("client_request_status", ["new", "triaged", "in_progress", "waiting_client", "completed", "cancelled"])
 
 export const quoteRequests = pgTable("quote_requests", {
   id: serial("id").primaryKey(),
@@ -34,6 +46,32 @@ export const portalClientAccounts = pgTable("portal_client_accounts", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 })
+
+export const clientRequests = pgTable("client_requests", {
+  id: serial("id").primaryKey(),
+  clientId: text("client_id").notNull(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  category: clientRequestCategory("category").default("general_support").notNull(),
+  priority: clientRequestPriority("priority").default("medium").notNull(),
+  status: clientRequestStatus("status").default("new").notNull(),
+  affectedUrl: text("affected_url"),
+  pageUrl: text("page_url"),
+  attachmentMetadata: jsonb("attachment_metadata").$type<Record<string, unknown>>(),
+  internalNotes: text("internal_notes"),
+  forgeSummary: text("forge_summary"),
+  forgeSuggestedActions: text("forge_suggested_actions"),
+  forgeSuggestedReply: text("forge_suggested_reply"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+}, (table) => [
+  index("client_requests_client_id_idx").on(table.clientId),
+  index("client_requests_status_idx").on(table.status),
+  index("client_requests_priority_idx").on(table.priority),
+  index("client_requests_category_idx").on(table.category),
+  index("client_requests_created_at_idx").on(table.createdAt),
+])
 
 export const quoteRateLimits = pgTable("quote_rate_limits", {
   key: text("key").primaryKey(),

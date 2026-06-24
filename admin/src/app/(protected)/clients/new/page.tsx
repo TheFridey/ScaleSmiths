@@ -20,30 +20,34 @@ export default function NewClientPage() {
     setError(null)
     setIsSaving(true)
 
-    const formData = new FormData(event.currentTarget)
-    const response = await fetch("/api/clients", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: formData.get("name"),
-        contactName: formData.get("contactName"),
-        contactEmail: formData.get("contactEmail"),
-        tier: formData.get("tier"),
-        mrr: formData.get("mrr"),
-        status: formData.get("status"),
-      }),
-    })
+    try {
+      const formData = new FormData(event.currentTarget)
+      const response = await fetch("/api/clients", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formData.get("name"),
+          contactName: formData.get("contactName"),
+          contactEmail: formData.get("contactEmail"),
+          tier: formData.get("tier"),
+          mrr: formData.get("mrr"),
+          status: formData.get("status"),
+        }),
+      })
+      const data = await response.json().catch(() => ({}))
 
-    setIsSaving(false)
+      if (!response.ok || data.ok === false) {
+        setError(data.error ?? "Unable to create client.")
+        return
+      }
 
-    if (!response.ok) {
-      const data = await response.json().catch(() => null)
-      setError(data?.error ?? "Unable to create client.")
-      return
+      router.push("/clients")
+      router.refresh()
+    } catch {
+      setError("Unable to create client.")
+    } finally {
+      setIsSaving(false)
     }
-
-    router.push("/clients")
-    router.refresh()
   }
 
   return (
@@ -57,9 +61,9 @@ export default function NewClientPage() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="max-w-3xl rounded-2xl border p-6" style={{ background: T.s1, borderColor: T.b1 }}>
-        <div className="grid grid-cols-2 gap-4">
-          <label className="col-span-2 font-dm text-sm">
+      <form onSubmit={handleSubmit} className="max-w-3xl rounded-2xl border p-4 sm:p-6" style={{ background: T.s1, borderColor: T.b1 }}>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <label className="font-dm text-sm sm:col-span-2">
             <span className="mb-1.5 block" style={{ color: T.t2 }}>Name</span>
             <input name="name" required className="w-full rounded-lg border px-3 py-2.5 font-dm text-sm outline-none" style={{ background: T.s2, borderColor: T.b2, color: T.t1 }} />
           </label>

@@ -9,7 +9,12 @@ function optionalString(value: unknown) {
 }
 
 export async function POST(request: NextRequest) {
-  const body = await request.json()
+  const body = await request.json().catch(() => null)
+
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return NextResponse.json({ error: "Invalid client payload." }, { status: 400 })
+  }
+
   const name = optionalString(body.name)
 
   if (!name) {

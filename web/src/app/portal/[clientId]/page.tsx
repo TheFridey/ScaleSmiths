@@ -1,19 +1,15 @@
 import {
-  AlertCircle,
-  CalendarDays,
-  CheckCircle2,
-  ClipboardCheck,
   ClipboardList,
   Clock3,
   FileText,
-  LifeBuoy,
-  Link as LinkIcon,
   MessageSquare,
   Rocket,
   ShieldCheck,
 } from "lucide-react"
 import { PortalNav } from "@/components/portal/PortalNav"
 import { PortalMessageComposer } from "@/components/portal/PortalMessageComposer"
+import { PortalOperatingHub } from "@/components/portal/PortalOperatingHub"
+import { PortalRequestsPanel } from "@/components/portal/PortalRequestsPanel"
 
 interface PortalPageProps {
   params: Promise<{ clientId: string }>
@@ -22,9 +18,9 @@ interface PortalPageProps {
 
 const SAFE_PLACEHOLDER_CLIENT = {
   name: "Client Workspace",
-  tier: "Project Portal",
+  tier: null,
   price: "Active",
-  status: "Discovery / delivery setup",
+  status: "Portal active - website profile pending",
   phase: "Workspace setup",
   progress: 18,
   nextAction: "ScaleSmiths will publish your next milestone after onboarding.",
@@ -41,33 +37,20 @@ const milestones = [
   { title: "Launch and handoff", status: "Pending", body: "Final checks, DNS/deployment, analytics, documentation, and aftercare plan.", Icon: Rocket },
 ]
 
-const requests = [
-  "Brand assets: logo files, colours, fonts, tone notes, photography, and existing guidelines.",
-  "Access: domain/DNS provider, analytics, forms, booking tools, Stripe, or email marketing logins where needed.",
-  "Content: final copy, pricing, service descriptions, FAQs, legal pages, and team details.",
-  "Decisions: approvals, stakeholder feedback, feature priorities, and any launch blockers.",
-]
-
-const launchChecks = [
-  "SEO titles and descriptions",
-  "Contact forms and quote routing",
-  "Responsive checks",
-  "Performance pass",
-  "Analytics and event tracking",
-  "Backup and rollback plan",
-]
-
 export default async function PortalClientPage({ params, searchParams }: PortalPageProps) {
   const { clientId } = await params
   const resolvedSearchParams = await searchParams
   const tab = resolvedSearchParams.tab ?? "overview"
+  const websiteName = deriveWebsiteName(clientId)
+  const domain = deriveDomain(clientId)
+  const planTier = SAFE_PLACEHOLDER_CLIENT.tier
 
   return (
     <div className="flex min-h-screen flex-col bg-bg text-t1 md:flex-row">
       <PortalNav
         clientId={clientId}
-        clientName={SAFE_PLACEHOLDER_CLIENT.name}
-        tier={SAFE_PLACEHOLDER_CLIENT.tier}
+        clientName={websiteName}
+        tier={planTier ?? "Plan pending"}
         price={SAFE_PLACEHOLDER_CLIENT.price}
       />
 
@@ -75,9 +58,9 @@ export default async function PortalClientPage({ params, searchParams }: PortalP
         <div className="mb-8 flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <span className="font-dm text-xs font-semibold uppercase tracking-[0.14em] text-acc">Portal</span>
-            <h1 className="mt-2 font-syne text-[clamp(32px,5vw,48px)] font-extrabold tracking-[-0.03em]">Project workspace</h1>
+            <h1 className="mt-2 font-syne text-[clamp(32px,5vw,48px)] font-extrabold tracking-[-0.03em]">Operating hub</h1>
             <p className="mt-2 max-w-[700px] font-dm text-sm leading-relaxed text-t2">
-              Track progress, send direct project messages, review decisions, and keep useful launch information in one private place.
+              Track requests, support routes, website status, useful assets, and next-step guidance in one private ScaleSmiths workspace.
             </p>
           </div>
           <div className="rounded-xl border border-b1 bg-s1 px-4 py-3 lg:text-right">
@@ -93,54 +76,35 @@ export default async function PortalClientPage({ params, searchParams }: PortalP
         ) : tab === "board" ? (
           <ProgressTab />
         ) : tab === "requests" ? (
-          <RequestsTab clientId={clientId} />
+          <RequestsTab />
         ) : (
-          <OverviewTab clientId={clientId} />
+          <OverviewTab clientId={clientId} websiteName={websiteName} domain={domain} planTier={planTier} />
         )}
       </main>
     </div>
   )
 }
 
-function OverviewTab({ clientId }: { clientId: string }) {
+function OverviewTab({
+  clientId,
+  websiteName,
+  domain,
+  planTier,
+}: {
+  clientId: string
+  websiteName: string
+  domain: string | null
+  planTier: string | null
+}) {
   return (
-    <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
-      <section className="rounded-2xl border border-b1 bg-s1 p-6">
-        <div className="mb-6 flex items-center justify-between gap-4">
-          <div>
-            <h2 className="font-syne text-xl font-bold">Project status</h2>
-            <p className="mt-1 font-dm text-sm text-t2">{SAFE_PLACEHOLDER_CLIENT.status}</p>
-          </div>
-          <ShieldCheck size={22} className="text-acc" aria-hidden="true" />
-        </div>
-
-        <ProgressMeter value={SAFE_PLACEHOLDER_CLIENT.progress} />
-
-        <div className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {[
-            { label: "Current phase", value: SAFE_PLACEHOLDER_CLIENT.phase, Icon: ClipboardCheck },
-            { label: "Next action", value: SAFE_PLACEHOLDER_CLIENT.nextAction, Icon: CalendarDays },
-            { label: "Key dates", value: SAFE_PLACEHOLDER_CLIENT.keyDates, Icon: CalendarDays },
-            { label: "Recent updates", value: "No updates have been published yet.", Icon: MessageSquare },
-            { label: "Documents", value: "No shared documents yet.", Icon: FileText },
-            { label: "Client ID", value: clientId, Icon: LinkIcon },
-          ].map(({ label, value, Icon }) => (
-            <InfoTile key={label} label={label} value={value} Icon={Icon} />
-          ))}
-        </div>
-      </section>
-
-      <section className="rounded-2xl border border-acc/20 bg-acc/10 p-6">
-        <LifeBuoy size={18} className="mb-4 text-acc" aria-hidden="true" />
-        <h2 className="font-syne text-xl font-bold">Need support?</h2>
-        <p className="mt-3 font-dm text-sm leading-relaxed text-t2">
-          Use Messages for project decisions and Requests for assets, access, or changes. For urgent issues, email ScaleSmiths and reference your project name.
-        </p>
-        <a href={`mailto:${SAFE_PLACEHOLDER_CLIENT.supportEmail}`} className="btn-primary mt-6 inline-flex font-dm text-sm">
-          Contact Support
-        </a>
-      </section>
-    </div>
+    <PortalOperatingHub
+      clientId={clientId}
+      websiteName={websiteName}
+      domain={domain}
+      planTier={planTier}
+      currentStatus={SAFE_PLACEHOLDER_CLIENT.status}
+      supportEmail={SAFE_PLACEHOLDER_CLIENT.supportEmail}
+    />
   )
 }
 
@@ -222,44 +186,8 @@ function MessagesTab({ clientId }: { clientId: string }) {
   )
 }
 
-function RequestsTab({ clientId }: { clientId: string }) {
-  return (
-    <div className="grid gap-4 xl:grid-cols-[1fr_0.9fr]">
-      <section className="rounded-2xl border border-b1 bg-s1 p-6">
-        <h2 className="font-syne text-xl font-bold">What you can add here</h2>
-        <p className="mt-2 font-dm text-sm leading-relaxed text-t2">
-          Use this as the project intake checklist. Send anything that affects scope, content, launch readiness, or approvals.
-        </p>
-        <div className="mt-6 grid gap-3">
-          {requests.map((request) => (
-            <div key={request} className="flex gap-3 rounded-xl border border-b1 bg-s2 p-4">
-              <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-acc" aria-hidden="true" />
-              <p className="font-dm text-sm leading-relaxed text-t2">{request}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="rounded-2xl border border-b1 bg-s1 p-6">
-        <AlertCircle size={18} className="mb-4 text-amb" aria-hidden="true" />
-        <h2 className="font-syne text-xl font-bold">Launch readiness</h2>
-        <div className="mt-5 grid gap-2">
-          {launchChecks.map((check) => (
-            <div key={check} className="flex items-center justify-between rounded-lg border border-b1 bg-s2 px-3 py-2.5">
-              <span className="font-dm text-sm text-t2">{check}</span>
-              <span className="font-dm text-[11px] text-t3">Pending</span>
-            </div>
-          ))}
-        </div>
-        <a
-          href={`mailto:${SAFE_PLACEHOLDER_CLIENT.supportEmail}?subject=${encodeURIComponent(`Portal request for ${SAFE_PLACEHOLDER_CLIENT.name}`)}&body=${encodeURIComponent(`Client ID: ${clientId}\n\nHi ScaleSmiths,\n\nI would like to add:`)}`}
-          className="btn-primary mt-6 inline-flex font-dm text-sm"
-        >
-          Add Request
-        </a>
-      </section>
-    </div>
-  )
+function RequestsTab() {
+  return <PortalRequestsPanel />
 }
 
 function ProgressMeter({ value }: { value: number }) {
@@ -276,16 +204,6 @@ function ProgressMeter({ value }: { value: number }) {
   )
 }
 
-function InfoTile({ label, value, Icon }: { label: string; value: string; Icon: typeof FileText }) {
-  return (
-    <div className="rounded-xl border border-b1 bg-s2 p-4">
-      <Icon size={16} className="mb-3 text-acc" aria-hidden="true" />
-      <div className="font-dm text-xs text-t2">{label}</div>
-      <div className="mt-1 break-words font-dm text-sm leading-relaxed text-t1">{value}</div>
-    </div>
-  )
-}
-
 function EmptyState({ title, body, Icon }: { title: string; body: string; Icon: typeof FileText }) {
   return (
     <section className="rounded-2xl border border-b1 bg-s1 p-8">
@@ -298,4 +216,21 @@ function EmptyState({ title, body, Icon }: { title: string; body: string; Icon: 
       </div>
     </section>
   )
+}
+
+function deriveWebsiteName(clientId: string) {
+  const cleaned = clientId
+    .replace(/^https?:\/\//, "")
+    .replace(/^www\./, "")
+    .split(/[/.#?]/)[0]
+    .replace(/[-_]+/g, " ")
+    .trim()
+
+  if (!cleaned) return SAFE_PLACEHOLDER_CLIENT.name
+  return cleaned.replace(/\b\w/g, (letter) => letter.toUpperCase())
+}
+
+function deriveDomain(clientId: string) {
+  const cleaned = clientId.replace(/^https?:\/\//, "").replace(/\/.*$/, "").trim()
+  return cleaned.includes(".") ? cleaned : null
 }

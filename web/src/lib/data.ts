@@ -202,8 +202,8 @@ export const projects: Project[] = [
       "Realtime gateway foundation",
       "CI and deployment runbooks",
     ],
-    accentColor: "#2563eb",
-    gradient: "from-blue-500/10 to-sky-600/5",
+    accentColor: "#22d3ee",
+    gradient: "from-cyan-400/10 to-amber-200/5",
     heroImage: "/images/projects/veteranfinder/hero.jpg",
     thumbImage: "/images/projects/veteranfinder/thumb.jpg",
     blurDataURL: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAGCAIAAAB1kpiRAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAxUlEQVR4nAG6AEX/AJqq9LfH/6S0/3yJzVtpm0JNdi05WCQwUCc1VRwoSACUpvCsvf+RoexKV4s7SHIpNlsgLEsxPWA5R3A5RnYAV2SUMT1gPktxdoKlX2qKZW+LWGF+IixMFSFCKDRfAB0lNxkkQTI9X+/9/+v3/+/9/+Lu/yo3XBAeQQgXNAAKDxxebJlPXI00QW5ZZp8zQW9HVYA7SHAYJUoABSQAAAYYGydHOEVzU1+cbnfCcHjEWmamOER5EiBJAAEjv/BF0IdbfaYAAAAASUVORK5CYII=",
@@ -253,9 +253,9 @@ export const retainers = [
 ]
 
 export const testimonials = [
-  { name: "Tom H.",   biz: "Glow Tanning",   quote: "Completely transformed how we look online. The booking integration alone has paid for itself twice over.",                               stars: 5 },
-  { name: "Sarah K.", biz: "Pinkys Prints",  quote: "Went from a basic Shopify store to a fully custom site that actually feels like our brand. Outstanding work.",                       stars: 5 },
-  { name: "Chris M.", biz: "CSDS",           quote: "Professional, fast, and the admin panel makes everything easy to manage ourselves. Exactly what we needed.",                         stars: 5 },
+  { name: "Tom M.",   biz: "Glow Tanning",   quote: "Completely transformed how we look online. The booking integration alone has paid for itself twice over.",                               stars: 5 },
+  { name: "Beth C.", biz: "Pinkys Prints",  quote: "Went from a basic Shopify store to a fully custom site that actually feels like our brand. Outstanding work.",                       stars: 5 },
+  { name: "Chris S.", biz: "CSDS",           quote: "Professional, fast, and the admin panel makes everything easy to manage ourselves. Exactly what we needed.",                         stars: 5 },
 ]
 
 export const faqs = [

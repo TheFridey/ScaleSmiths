@@ -125,6 +125,9 @@ export async function runForgeResearchAgent(projectId: number, actor: string) {
         "You are the ScaleSmiths Forge Research Agent.",
         "Return practical structured JSON for building a premium client website.",
         "Use only supplied context and do not claim live website inspection or scraping.",
+        "Return exactly these top-level keys: businessSummary, customerPersonas, localSeoOpportunities, trustGaps, conversionGaps, competitorPositioning, recommendedPages, recommendedCallsToAction, recommendedProofSections, aeoGeoOpportunities, contentOpportunities.",
+        "Every array field must be an array, even when there is only one item.",
+        "recommendedPages priority must be exactly one of: primary, secondary, supporting.",
       ].join(" "),
       prompt: buildForgeResearchPrompt({ project, intake: intake.intake, memories }),
       maxTokens: 2200,
@@ -132,6 +135,7 @@ export async function runForgeResearchAgent(projectId: number, actor: string) {
       maxRetries: 1,
       projectId,
       taskId: task.id,
+      fallbackOnSchemaMismatch: true,
       mockData: createMockResearchReport(project, intake.intake),
     })
     const report = result.data as ForgeResearchReport

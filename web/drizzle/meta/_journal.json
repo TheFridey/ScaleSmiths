@@ -36,6 +36,13 @@
       "when": 1780350446424,
       "tag": "0004_sleepy_invaders",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1782248640589,
+      "tag": "0005_client_requests",
+      "breakpoints": true
     }
   ]
 }

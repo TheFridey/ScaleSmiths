@@ -51,14 +51,15 @@ export function Kanban() {
 
       try {
         const res = await fetch("/api/kanban")
-        const json = await res.json()
+        const json = await res.json().catch(() => ({}))
 
         if (!res.ok) {
           throw new Error(json.error || "Unable to load roadmap cards.")
         }
 
         if (mounted) {
-          setCards((json.cards ?? []).map((card: Card & { priority: string; col: string }) => ({
+          const rows = Array.isArray(json.cards) ? json.cards : []
+          setCards(rows.map((card: Card & { priority: string; col: string }) => ({
             ...card,
             col: normalizeColumn(card.col),
             priority: normalizePriority(card.priority),
@@ -101,7 +102,7 @@ export function Kanban() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ column: col }),
       })
-      const json = await res.json()
+      const json = await res.json().catch(() => ({}))
 
       if (!res.ok || !json.ok) {
         throw new Error(json.error || "Unable to update card.")
@@ -135,7 +136,8 @@ export function Kanban() {
           Loading roadmap...
         </div>
       ) : (
-        <div className="grid grid-cols-4 gap-3">
+        <div className="overflow-x-auto pb-2">
+        <div className="grid min-w-[920px] grid-cols-4 gap-3">
           {COLS.map(col => (
             <div
               key={col.id}
@@ -204,6 +206,7 @@ export function Kanban() {
               </button>
             </div>
           ))}
+        </div>
         </div>
       )}
     </div>

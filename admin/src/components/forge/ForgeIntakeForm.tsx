@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState, type ChangeEvent } from "react"
 import { useRouter } from "next/navigation"
-import { ClipboardCheck, Save } from "lucide-react"
+import { ClipboardCheck, Save, Sparkles } from "lucide-react"
 import { FORGE_INTAKE_SECTIONS, type ForgeIntakeData, type ForgeIntakeFieldKey } from "@/lib/forge"
 
 const T = { s1:"var(--s1)", s2:"var(--s2)", s3:"var(--s3)", b1:"var(--b1)", b2:"var(--b2)", t1:"var(--t1)", t2:"var(--t2)", t3:"var(--t3)", acc:"var(--acc)", grn:"var(--grn)", amb:"var(--amb)", red:"var(--red)" }
@@ -29,7 +29,7 @@ export interface ForgeIntakeState {
   status: "draft" | "completed"
 }
 
-export function ForgeIntakeForm({ projectId, initialIntake }: { projectId: number; initialIntake: ForgeIntakeState }) {
+export function ForgeIntakeForm({ projectId, initialIntake, websiteUrl }: { projectId: number; initialIntake: ForgeIntakeState; websiteUrl?: string | null }) {
   const router = useRouter()
   const [draft, setDraft] = useState<ForgeIntakeData>(initialIntake.intake)
   const [activeSectionKey, setActiveSectionKey] = useState<IntakeSectionKey>(FORGE_INTAKE_SECTIONS[0].key)
@@ -87,6 +87,45 @@ export function ForgeIntakeForm({ projectId, initialIntake }: { projectId: numbe
     }
   }
 
+  async function autofillFromWebsite() {
+    if (!websiteUrl) {
+      setError("Add a website URL in project settings first.")
+      return
+    }
+
+    setBusy("autofill")
+    setError("")
+
+    try {
+      const response = await fetch("/api/forge/url-autofill", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ websiteUrl }),
+      })
+      const json = await response.json().catch(() => ({}))
+
+      if (!response.ok || !json.ok) {
+        throw new Error(json.error || "Unable to autofill intake from that URL.")
+      }
+
+      const suggested = json.autofill?.intake ?? {}
+      setDraft((current) => {
+        const next = { ...current }
+        for (const field of allFields) {
+          const value = suggested[field.key]
+          if (!next[field.key]?.trim() && typeof value === "string" && value.trim()) {
+            next[field.key] = value.trim()
+          }
+        }
+        return next
+      })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to autofill intake from that URL.")
+    } finally {
+      setBusy("")
+    }
+  }
+
   return (
     <form className="rounded-xl border p-4 sm:p-5" style={{ background:T.s1, borderColor:T.b1 }} onSubmit={submit}>
       <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
@@ -109,6 +148,25 @@ export function ForgeIntakeForm({ projectId, initialIntake }: { projectId: numbe
           </div>
           <div className="mt-2 font-dm text-[11px]" style={{ color:status === "completed" ? T.grn : T.t2 }}>{status === "completed" ? "Completed" : "Draft"}</div>
         </div>
+      </div>
+
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3" style={{ background:T.s2, borderColor:T.b1 }}>
+        <div className="min-w-0">
+          <div className="font-dm text-sm font-semibold">Website-assisted intake</div>
+          <p className="mt-1 truncate font-dm text-xs" style={{ color:T.t2 }}>
+            {websiteUrl ? `Fill empty fields from ${websiteUrl}` : "Add a website URL in project settings to enable autofill."}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={autofillFromWebsite}
+          disabled={busy === "autofill" || !websiteUrl}
+          className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-[8px] border px-3 font-dm text-xs font-semibold disabled:opacity-55"
+          style={{ background:T.s1, borderColor:T.b2, color:T.t1 }}
+        >
+          <Sparkles size={14} style={{ color:"#22d3ee" }} aria-hidden="true" />
+          {busy === "autofill" ? "Reading..." : "Autofill intake"}
+        </button>
       </div>
 
       {error && (
@@ -200,7 +258,7 @@ export function ForgeIntakeForm({ projectId, initialIntake }: { projectId: numbe
       </div>
 
       <div className="sticky bottom-0 -mx-4 mt-5 flex flex-wrap justify-end gap-2 border-t px-4 pt-4 sm:-mx-5 sm:px-5" style={{ background:T.s1, borderColor:T.b1 }}>
-        <button disabled={busy === "save"} className="inline-flex items-center gap-1.5 rounded-lg border px-4 py-2 font-dm text-sm disabled:opacity-60" style={{ background:T.s2, borderColor:T.b2, color:T.t1 }}>
+        <button disabled={busy === "save" || busy === "autofill"} className="inline-flex items-center gap-1.5 rounded-lg border px-4 py-2 font-dm text-sm disabled:opacity-60" style={{ background:T.s2, borderColor:T.b2, color:T.t1 }}>
           <Save size={15} aria-hidden="true" /> {busy === "save" ? "Saving..." : "Save Draft"}
         </button>
         <button
@@ -208,7 +266,7 @@ export function ForgeIntakeForm({ projectId, initialIntake }: { projectId: numbe
           onClick={(event) => {
             if (event.currentTarget.form) void saveForm(event.currentTarget.form, "complete")
           }}
-          disabled={busy === "complete"}
+          disabled={busy === "complete" || busy === "autofill"}
           className="inline-flex items-center gap-1.5 rounded-lg px-4 py-2 font-dm text-sm font-medium text-white disabled:opacity-60"
           style={{ background:T.acc }}
         >

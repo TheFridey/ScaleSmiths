@@ -260,16 +260,16 @@ export function ProspectPipeline({ initialProspects, initialActivities, initialP
   }
 
   return (
-    <div>
-      <div className="mb-6 flex items-start justify-between gap-3">
+    <div className="mx-auto max-w-[1600px] rounded-[8px] border p-3 sm:p-4 lg:p-5" style={{ background:"rgba(2,6,23,.58)", borderColor:"rgba(56,189,248,.18)", boxShadow:"0 24px 80px rgba(0,0,0,.28)" }}>
+      <div className="mb-5 flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
         <div>
           <h1 className="font-syne text-2xl font-extrabold tracking-tight">Prospect Pipeline</h1>
           <p className="mt-1 font-dm text-sm" style={{ color:T.t2 }}>Outbound audits, follow-ups, proposals, retainers, and client conversion.</p>
         </div>
-        <div className="flex items-center gap-2">
-          <button onClick={() => setView("pipeline")} className="rounded-lg border px-3 py-2 font-dm text-sm" style={tabStyle(view === "pipeline")}>Pipeline</button>
-          <button onClick={() => setView("followups")} className="rounded-lg border px-3 py-2 font-dm text-sm" style={tabStyle(view === "followups")}>Follow-ups</button>
-          <button onClick={() => setShowNew((open) => !open)} className="flex items-center gap-1.5 rounded-lg px-4 py-2 font-dm text-sm font-medium text-white" style={{ background:T.acc }}>
+        <div className="flex flex-wrap items-center gap-2">
+          <button onClick={() => setView("pipeline")} className="rounded-[8px] border px-3 py-2 font-dm text-sm" style={tabStyle(view === "pipeline")}>Pipeline</button>
+          <button onClick={() => setView("followups")} className="rounded-[8px] border px-3 py-2 font-dm text-sm" style={tabStyle(view === "followups")}>Follow-ups</button>
+          <button onClick={() => setShowNew((open) => !open)} className="flex items-center gap-1.5 rounded-[8px] px-4 py-2 font-dm text-sm font-medium text-white" style={{ background:T.acc }}>
             <Plus size={15} /> Prospect
           </button>
         </div>
@@ -284,12 +284,12 @@ export function ProspectPipeline({ initialProspects, initialActivities, initialP
       <MetricsPanel metrics={metrics} />
 
       {showNew && (
-        <form onSubmit={createProspect} className="mb-5 rounded-xl border p-5" style={{ background:T.s1, borderColor:T.b1 }}>
+        <form onSubmit={createProspect} className="mb-5 rounded-[8px] border p-4 sm:p-5" style={{ background:T.s1, borderColor:T.b1 }}>
           <div className="mb-4 flex items-center gap-2">
             <Target size={16} style={{ color:T.acc }} />
             <h2 className="font-syne text-lg font-bold">New Prospect</h2>
           </div>
-          <div className="grid grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <Field label="Business" name="businessName" required />
             <Field label="Contact" name="contactName" />
             <Field label="Email" name="contactEmail" type="email" />
@@ -313,7 +313,7 @@ export function ProspectPipeline({ initialProspects, initialActivities, initialP
       {view === "followups" ? (
         <FollowUpsView buckets={followUps} onSelect={setSelectedId} onActivity={addActivity} busy={busy} />
       ) : prospects.length === 0 ? (
-        <div className="rounded-xl border p-8" style={{ background:T.s1, borderColor:T.b1 }}>
+        <div className="rounded-[8px] border p-6 sm:p-8" style={{ background:T.s1, borderColor:T.b1 }}>
           <Target size={22} className="mb-4 text-acc" />
           <h2 className="font-syne text-xl font-bold">No prospects yet</h2>
           <p className="mt-2 max-w-[560px] font-dm text-sm leading-relaxed" style={{ color:T.t2 }}>
@@ -321,7 +321,7 @@ export function ProspectPipeline({ initialProspects, initialActivities, initialP
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-[minmax(0,1.45fr)_minmax(380px,.75fr)] gap-4">
+        <div className="grid gap-4 2xl:grid-cols-[minmax(0,1.45fr)_minmax(380px,.75fr)]">
           <KanbanBoard prospects={prospects} selectedId={selected?.id ?? null} dragging={dragging} setDragging={setDragging} onMove={moveStage} onSelect={setSelectedId} />
           <DetailPanel
             prospect={selected}
@@ -356,9 +356,9 @@ function MetricsPanel({ metrics }: { metrics: SalesMetrics }) {
   ] as const
 
   return (
-    <div className="mb-5 grid grid-cols-4 gap-3">
+    <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-8">
       {cards.map(([label, value, sub, Icon, color]) => (
-        <div key={label} className="rounded-xl border p-4" style={{ background:T.s1, borderColor:T.b1 }}>
+        <div key={label} className="rounded-[8px] border p-4" style={{ background:T.s1, borderColor:T.b1 }}>
           <div className="mb-2 flex items-center justify-between">
             <span className="font-dm text-[11px]" style={{ color:T.t2 }}>{label}</span>
             <Icon size={15} style={{ color }} />
@@ -392,7 +392,7 @@ function KanbanBoard({ prospects, selectedId, dragging, setDragging, onMove, onS
               key={stage}
               onDragOver={(event) => { event.preventDefault(); setOver(stage) }}
               onDrop={() => { if (dragging) onMove(dragging, stage); setDragging(null); setOver(null) }}
-              className="min-h-[520px] rounded-xl border p-3"
+              className="min-h-[520px] rounded-[8px] border p-3"
               style={{ background:over === stage ? "rgba(37,99,235,.05)" : T.s1, borderColor:over === stage ? "var(--acc-b)" : T.b1 }}
             >
               <div className="mb-3 flex items-center gap-2">
@@ -454,12 +454,12 @@ function DetailPanel({ prospect, activities, proposals, busy, onUpdate, onStage,
   }, [prospect?.id, prospect?.stage])
 
   if (!prospect) {
-    return <div className="rounded-xl border p-6 font-dm text-sm" style={{ background:T.s1, borderColor:T.b1, color:T.t2 }}>Select a prospect to inspect the revenue audit and activity timeline.</div>
+    return <div className="rounded-[8px] border p-6 font-dm text-sm" style={{ background:T.s1, borderColor:T.b1, color:T.t2 }}>Select a prospect to inspect the revenue audit and activity timeline.</div>
   }
 
   return (
     <aside className="space-y-3">
-      <div className="rounded-xl border p-5" style={{ background:T.s1, borderColor:T.b1 }}>
+      <div className="rounded-[8px] border p-4 sm:p-5" style={{ background:T.s1, borderColor:T.b1 }}>
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
             <h2 className="font-syne text-xl font-extrabold">{prospect.businessName}</h2>
@@ -469,7 +469,7 @@ function DetailPanel({ prospect, activities, proposals, busy, onUpdate, onStage,
         </div>
 
         <form onSubmit={onUpdate} className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Field label="Business" name="businessName" defaultValue={prospect.businessName} required />
             <Field label="Contact" name="contactName" defaultValue={prospect.contactName ?? ""} />
             <Field label="Email" name="contactEmail" type="email" defaultValue={prospect.contactEmail ?? ""} />
@@ -483,7 +483,7 @@ function DetailPanel({ prospect, activities, proposals, busy, onUpdate, onStage,
             <Field label="Monthly retainer" name="estimatedMonthlyRetainer" type="number" min="0" defaultValue={String(prospect.estimatedMonthlyRetainer)} />
             <Field label="Discovery call" name="discoveryCallAt" type="datetime-local" defaultValue={dateTimeValue(prospect.discoveryCallAt)} />
           </div>
-          <div className="grid grid-cols-5 gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
             <Field label="Revenue" name="revenueScore" type="number" min="0" max="10" defaultValue={String(prospect.revenueScore)} />
             <Field label="Trust" name="trustScore" type="number" min="0" max="10" defaultValue={String(prospect.trustScore)} />
             <Field label="Conversion" name="conversionScore" type="number" min="0" max="10" defaultValue={String(prospect.conversionScore)} />
@@ -500,7 +500,7 @@ function DetailPanel({ prospect, activities, proposals, busy, onUpdate, onStage,
         </form>
       </div>
 
-      <div className="rounded-xl border p-5" style={{ background:T.s1, borderColor:T.b1 }}>
+      <div className="rounded-[8px] border p-4 sm:p-5" style={{ background:T.s1, borderColor:T.b1 }}>
         <h3 className="mb-3 font-syne text-[15px] font-bold">Sales Audit Framework</h3>
         <div className="space-y-2">
           <AuditRow label="Revenue" question="Where are they losing money?" score={prospect.revenueScore} detail={prospect.painPoints ?? prospect.auditSummary} />
@@ -511,7 +511,7 @@ function DetailPanel({ prospect, activities, proposals, busy, onUpdate, onStage,
         </div>
       </div>
 
-      <div className="rounded-xl border p-5" style={{ background:T.s1, borderColor:T.b1 }}>
+      <div className="rounded-[8px] border p-4 sm:p-5" style={{ background:T.s1, borderColor:T.b1 }}>
         <h3 className="mb-3 font-syne text-[15px] font-bold">Actions</h3>
         <div className="grid grid-cols-[1fr_auto] gap-2">
           <select value={stage} onChange={(event) => setStage(event.target.value as ProspectStage)} className="font-dm text-sm">
@@ -537,7 +537,7 @@ function DetailPanel({ prospect, activities, proposals, busy, onUpdate, onStage,
         </form>
       </div>
 
-      <div className="rounded-xl border p-5" style={{ background:T.s1, borderColor:T.b1 }}>
+      <div className="rounded-[8px] border p-4 sm:p-5" style={{ background:T.s1, borderColor:T.b1 }}>
         <h3 className="mb-3 font-syne text-[15px] font-bold">Add Activity</h3>
         <ActivityForm onSubmit={onActivity} busy={busy === `activity-${prospect.id}`} />
         <div className="mt-5 space-y-3">
@@ -556,9 +556,9 @@ function DetailPanel({ prospect, activities, proposals, busy, onUpdate, onStage,
         </div>
       </div>
 
-      <div className="rounded-xl border p-5" style={{ background:T.s1, borderColor:T.b1 }}>
+      <div className="rounded-[8px] border p-4 sm:p-5" style={{ background:T.s1, borderColor:T.b1 }}>
         <h3 className="mb-3 font-syne text-[15px] font-bold">Proposal Tracking</h3>
-        <form onSubmit={onProposal} className="grid grid-cols-2 gap-2">
+        <form onSubmit={onProposal} className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <Select label="Package" name="packageType" options={PROPOSAL_PACKAGE_TYPES} defaultValue="custom" />
           <Field label="Quoted amount" name="quotedAmount" type="number" min="0" defaultValue={String(prospect.estimatedProjectValue)} />
           <Field label="Monthly retainer" name="monthlyRetainerAmount" type="number" min="0" defaultValue={String(prospect.estimatedMonthlyRetainer)} />
@@ -566,10 +566,10 @@ function DetailPanel({ prospect, activities, proposals, busy, onUpdate, onStage,
             <span className="mb-1 block text-[11px]" style={{ color:T.t2 }}>Sent at</span>
             <input name="sentAt" type="datetime-local" />
           </label>
-          <div className="col-span-2">
+          <div className="sm:col-span-2">
             <TextArea label="Notes" name="notes" />
           </div>
-          <button disabled={busy === "proposal"} className="col-span-2 flex items-center justify-center gap-1.5 rounded-lg px-4 py-2 font-dm text-sm font-medium text-white disabled:opacity-60" style={{ background:T.acc }}>
+          <button disabled={busy === "proposal"} className="flex items-center justify-center gap-1.5 rounded-lg px-4 py-2 font-dm text-sm font-medium text-white disabled:opacity-60 sm:col-span-2" style={{ background:T.acc }}>
             <FileText size={15} /> {busy === "proposal" ? "Saving..." : "Mark Proposal Sent"}
           </button>
         </form>
@@ -598,13 +598,13 @@ function FollowUpsView({ buckets, onSelect, onActivity, busy }: {
   busy: string
 }) {
   return (
-    <div className="grid grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
       {([
         ["Overdue", buckets.overdue, T.red],
         ["Due Today", buckets.today, T.amb],
         ["Upcoming", buckets.upcoming, T.acc],
       ] as const).map(([label, rows, color]) => (
-        <section key={label} className="rounded-xl border p-4" style={{ background:T.s1, borderColor:T.b1 }}>
+        <section key={label} className="rounded-[8px] border p-4" style={{ background:T.s1, borderColor:T.b1 }}>
           <div className="mb-3 flex items-center gap-2">
             <Clock size={15} style={{ color }} />
             <h2 className="font-syne text-lg font-bold">{label}</h2>
@@ -636,19 +636,19 @@ function FollowUpsView({ buckets, onSelect, onActivity, busy }: {
 
 function ActivityForm({ onSubmit, busy }: { onSubmit: (event: FormEvent<HTMLFormElement>) => void; busy: boolean }) {
   return (
-    <form onSubmit={onSubmit} className="grid grid-cols-2 gap-2">
+    <form onSubmit={onSubmit} className="grid grid-cols-1 gap-2 sm:grid-cols-2">
       <Select label="Type" name="type" options={OUTREACH_ACTIVITY_TYPES} defaultValue="email" />
       <Select label="Direction" name="direction" options={OUTREACH_DIRECTIONS} defaultValue="outbound" />
-      <div className="col-span-2">
+      <div className="sm:col-span-2">
         <Field label="Subject" name="subject" />
       </div>
-      <div className="col-span-2">
+      <div className="sm:col-span-2">
         <TextArea label="Body" name="body" />
       </div>
-      <div className="col-span-2">
+      <div className="sm:col-span-2">
         <Field label="Outcome" name="outcome" />
       </div>
-      <button disabled={busy} className="col-span-2 flex items-center justify-center gap-1.5 rounded-lg px-4 py-2 font-dm text-sm font-medium text-white disabled:opacity-60" style={{ background:T.acc }}>
+      <button disabled={busy} className="flex items-center justify-center gap-1.5 rounded-lg px-4 py-2 font-dm text-sm font-medium text-white disabled:opacity-60 sm:col-span-2" style={{ background:T.acc }}>
         <MailPlus size={15} /> {busy ? "Saving..." : "Add Activity"}
       </button>
     </form>

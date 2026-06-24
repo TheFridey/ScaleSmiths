@@ -37,14 +37,14 @@ export function Messages({ leads }: { leads: Lead[] }) {
   const [open, setOpen] = useState<number | null>(leads[0]?.id ?? null)
 
   return (
-    <div>
+    <div className="mx-auto max-w-[1500px] rounded-[8px] border p-3 sm:p-4 lg:p-5" style={{ background:"rgba(2,6,23,.58)", borderColor:"rgba(56,189,248,.18)", boxShadow:"0 24px 80px rgba(0,0,0,.28)" }}>
       <div className="mb-5">
         <h1 className="font-syne text-2xl font-extrabold tracking-tight">Leads</h1>
         <p className="mt-1 font-dm text-sm" style={{ color:T.t2 }}>Quote requests from the public site.</p>
       </div>
 
       {leads.length === 0 ? (
-        <div className="rounded-2xl border p-8" style={{ background:T.s1, borderColor:T.b1 }}>
+        <div className="rounded-[8px] border p-6 sm:p-8" style={{ background:T.s1, borderColor:T.b1 }}>
           <Inbox size={22} className="mb-4 text-acc" aria-hidden="true" />
           <h2 className="font-syne text-xl font-bold">No quote leads yet</h2>
           <p className="mt-2 max-w-[560px] font-dm text-sm leading-relaxed" style={{ color:T.t2 }}>
@@ -54,12 +54,12 @@ export function Messages({ leads }: { leads: Lead[] }) {
       ) : (
         <div className="flex flex-col gap-3">
           {leads.map((lead) => (
-            <article key={lead.id} className="rounded-2xl border" style={{ background:T.s1, borderColor:T.b1 }}>
+            <article key={lead.id} className="rounded-[8px] border" style={{ background:T.s1, borderColor:T.b1 }}>
               <button
                 onClick={() => setOpen(open === lead.id ? null : lead.id)}
-                className="flex w-full items-center gap-4 px-5 py-4 text-left"
+                className="flex w-full items-center gap-3 px-4 py-4 text-left sm:gap-4 sm:px-5"
               >
-                <div className="flex-1">
+                <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <h2 className="font-syne text-lg font-bold">{lead.business || lead.name}</h2>
                     <span className="rounded px-2 py-0.5 font-dm text-[10px] font-semibold uppercase tracking-[.06em]" style={{ background:T.s2, color:QUALITY_STYLE[lead.leadQuality] ?? T.t2, border:`1px solid ${T.b2}` }}>

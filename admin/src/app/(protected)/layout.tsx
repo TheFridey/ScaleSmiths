@@ -5,6 +5,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { signOut } from "next-auth/react"
 import {
+  ClipboardList,
   Gauge,
   GitBranch,
   LayoutDashboard,
@@ -20,6 +21,7 @@ import { Logo } from "@/components/Logo"
 const NAV = [
   { href: "/dashboard", label: "Dashboard", Icon: LayoutDashboard },
   { href: "/clients", label: "Clients", Icon: Users },
+  { href: "/requests", label: "Requests", Icon: ClipboardList },
   { href: "/prospects", label: "Pipeline", Icon: Target },
   { href: "/forge", label: "Forge", Icon: Gauge },
   { href: "/roadmap", label: "Roadmap", Icon: GitBranch },
@@ -53,10 +55,10 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="flex min-h-screen overflow-hidden" style={{ background: "var(--bg)" }}>
+    <div className="flex min-h-screen overflow-hidden">
       <aside
         className="sticky top-0 flex h-screen shrink-0 flex-col overflow-hidden p-3 transition-[width] duration-200"
-        style={{ width: collapsed ? compactViewport ? 56 : 72 : 220, background: "var(--s1)", borderRight: "1px solid var(--b1)" }}
+        style={{ width: collapsed ? compactViewport ? 56 : 72 : 220, background: "rgba(2,6,23,.72)", borderRight: "1px solid rgba(148,163,184,.14)", backdropFilter: "blur(18px)" }}
       >
         <div className={`mb-4 flex items-center gap-2 px-1 py-2 ${collapsed ? "justify-center" : "justify-between"}`}>
           <div className={collapsed ? "w-8 overflow-hidden" : "min-w-0"}>
@@ -89,7 +91,7 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
           </button>
         )}
 
-        <nav className="flex flex-col gap-1">
+        <nav className="flex flex-col gap-1.5">
           {NAV.map(({ href, label, Icon }) => {
             const active = pathname === href || pathname.startsWith(`${href}/`)
             return (
@@ -103,13 +105,13 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
                 aria-label={collapsed ? label : undefined}
                 title={collapsed ? label : undefined}
                 style={{
-                  background: active ? "var(--s2)" : "none",
-                  border: active ? "1px solid var(--b2)" : "1px solid transparent",
+                  background: active ? "rgba(15,23,42,.88)" : "none",
+                  border: active ? "1px solid rgba(56,189,248,.22)" : "1px solid transparent",
                   fontWeight: active ? 500 : 400,
                   color: active ? "var(--t1)" : "var(--t2)",
                 }}
               >
-                <Icon size={15} style={{ color: active ? "var(--acc)" : "var(--t2)" }} aria-hidden="true" />
+                <Icon size={15} style={{ color: active ? "#22d3ee" : "var(--t2)" }} aria-hidden="true" />
                 {!collapsed && label}
               </Link>
             )

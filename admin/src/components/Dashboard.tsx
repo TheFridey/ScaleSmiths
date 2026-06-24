@@ -7,7 +7,7 @@ import { PROSPECT_STAGES, STAGE_LABELS, type ProspectStage } from "@/lib/prospec
 
 const T = { t1:"var(--t1)",t2:"var(--t2)",t3:"var(--t3)",s1:"var(--s1)",s2:"var(--s2)",s3:"var(--s3)",b1:"var(--b1)",b2:"var(--b2)",acc:"var(--acc)",grn:"var(--grn)",amb:"var(--amb)",red:"var(--red)" }
 
-const gbp = (n: number) => `£${Math.round(n).toLocaleString("en-GB")}`
+const gbp = (n: number) => `GBP ${Math.round(n).toLocaleString("en-GB")}`
 
 interface DashboardClient {
   name: string
@@ -77,7 +77,7 @@ function buildInsights(m: SalesMetrics, totalMrr: number, activeClients: number)
   if (m.weightedPipelineValue > 0) out.push({ text: `${gbp(m.weightedPipelineValue)} weighted forecast`, tone: "neutral" })
   if (m.dealsWonThisMonth > 0) out.push({ text: `${m.dealsWonThisMonth} deal${m.dealsWonThisMonth === 1 ? "" : "s"} won this month`, tone: "positive" })
   if (totalMrr > 0) out.push({ text: `${gbp(totalMrr)} MRR across ${activeClients} client${activeClients === 1 ? "" : "s"}`, tone: "positive" })
-  if (out.length === 0) out.push({ text: "Pipeline is clear — add prospects to start tracking", tone: "neutral" })
+  if (out.length === 0) out.push({ text: "Pipeline is clear - add prospects to start tracking", tone: "neutral" })
   return out.slice(0, 4)
 }
 
@@ -93,7 +93,7 @@ function MetricGrid({ cards, size = 24 }: { cards: MetricCard[]; size?: number }
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
       {cards.map((m) => (
-        <div key={m.label} className="flex min-h-[112px] flex-col justify-between rounded-xl p-5 border" style={{ background: T.s1, borderColor: T.b1 }}>
+        <div key={m.label} className="flex min-h-[112px] flex-col justify-between rounded-[8px] border p-4 sm:p-5" style={{ background: T.s1, borderColor: T.b1 }}>
           <div className="flex items-center justify-between">
             <span className="font-dm text-xs" style={{ color: T.t2 }}>{m.label}</span>
             <m.Icon size={15} style={{ color: m.color }} aria-hidden="true" />
@@ -121,14 +121,14 @@ export function DashboardContent({ clients, salesMetrics, todayLabel }: Dashboar
   const revenueCards: MetricCard[] = [
     { label:"Monthly MRR", value:gbp(totalMrr), sub:"Live from clients table", color:T.grn, Icon:PoundSterling },
     { label:"Active Clients", value:String(activeClients.length), sub:`${clients.length} total clients`, color:T.acc, Icon:Users },
-    { label:"Avg. Retainer", value:gbp(avgRetainer), sub:"Target: £2k / client", color:T.grn, Icon:TrendingUp },
+    { label:"Avg. Retainer", value:gbp(avgRetainer), sub:"Target: GBP 2k / client", color:T.grn, Icon:TrendingUp },
     { label:"Active Projects", value:String(activeProjects), sub:`${inReview} in review`, color:T.amb, Icon:Activity },
   ]
 
   const pipelineCards: MetricCard[] = [
     { label:"Pipeline value", value:gbp(salesMetrics.pipelineValue), sub:`${salesMetrics.openProspects} open prospects`, color:T.acc, Icon:Target },
     { label:"Weighted forecast", value:gbp(salesMetrics.weightedPipelineValue), sub:"Stage-probability adjusted", color:T.acc, Icon:Gauge },
-    { label:"Close rate", value:`${salesMetrics.closeRate}%`, sub:`${salesMetrics.proposalConversionRate}% proposal → win`, color:T.grn, Icon:Trophy },
+    { label:"Close rate", value:`${salesMetrics.closeRate}%`, sub:`${salesMetrics.proposalConversionRate}% proposal to win`, color:T.grn, Icon:Trophy },
     { label:"Avg. deal value", value:gbp(salesMetrics.avgProjectValue), sub:`${gbp(salesMetrics.avgRetainerValue)}/mo avg retainer`, color:"var(--silver,#a8a8a8)", Icon:FileText },
   ]
 
@@ -140,20 +140,20 @@ export function DashboardContent({ clients, salesMetrics, todayLabel }: Dashboar
   ]
 
   return (
-    <div className="space-y-8">
+    <div className="mx-auto max-w-[1500px] space-y-6 rounded-[8px] border p-3 sm:p-4 lg:p-5" style={{ background:"rgba(2,6,23,.58)", borderColor:"rgba(56,189,248,.18)", boxShadow:"0 24px 80px rgba(0,0,0,.28)" }}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="font-syne text-2xl font-extrabold tracking-tight">Command Centre</h1>
           <p className="font-dm text-sm mt-0.5" style={{ color: T.t2 }}>{todayLabel}</p>
         </div>
         <div className="flex flex-wrap gap-2.5">
-          <button aria-label="Notifications" className="flex items-center p-2 rounded-lg border" style={{ background: T.s2, borderColor: T.b1 }}>
+          <button aria-label="Notifications" className="flex items-center rounded-[8px] border p-2" style={{ background: T.s2, borderColor: T.b1 }}>
             <Bell size={14} style={{ color: T.t2 }} />
           </button>
-          <Link href="/clients/new" className="flex items-center gap-1.5 px-4 py-2 rounded-lg font-dm text-sm font-medium text-white" style={{ background: "var(--acc)" }}>
+          <Link href="/clients/new" className="flex items-center gap-1.5 rounded-[8px] px-4 py-2 font-dm text-sm font-medium text-white" style={{ background: "var(--acc)" }}>
             <Plus size={14} /> New Client
           </Link>
-          <Link href="/prospects" className="flex items-center gap-1.5 px-4 py-2 rounded-lg border font-dm text-sm font-medium" style={{ background: T.s2, borderColor: T.b1, color: T.t1 }}>
+          <Link href="/prospects" className="flex items-center gap-1.5 rounded-[8px] border px-4 py-2 font-dm text-sm font-medium" style={{ background: T.s2, borderColor: T.b1, color: T.t1 }}>
             <Target size={14} /> Pipeline
           </Link>
         </div>
@@ -194,7 +194,7 @@ export function DashboardContent({ clients, salesMetrics, todayLabel }: Dashboar
       <section>
         <SectionLabel>Operations</SectionLabel>
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1.6fr_1fr]">
-          <div className="rounded-xl border p-6" style={{ background: T.s1, borderColor: T.b1 }}>
+          <div className="rounded-[8px] border p-4 sm:p-5" style={{ background: T.s1, borderColor: T.b1 }}>
             <h3 className="font-syne text-[15px] font-bold mb-4">MRR by Tier</h3>
             <ResponsiveContainer width="100%" height={148}>
               <BarChart data={mrrData} barSize={30}>
@@ -210,14 +210,14 @@ export function DashboardContent({ clients, salesMetrics, todayLabel }: Dashboar
             </ResponsiveContainer>
           </div>
 
-          <div className="rounded-xl border p-6" style={{ background: T.s1, borderColor: T.b1 }}>
+          <div className="rounded-[8px] border p-4 sm:p-5" style={{ background: T.s1, borderColor: T.b1 }}>
             <h3 className="font-syne text-[15px] font-bold mb-4">Active Clients</h3>
             {shownClients.length === 0 && (
               <div className="font-dm text-sm" style={{ color: T.t2 }}>No clients in the database yet.</div>
             )}
             {shownClients.map((c, i) => (
               <div key={c.name} className="flex items-center gap-2.5 py-2.5" style={{ borderBottom: i < shownClients.length - 1 ? `1px solid ${T.b1}` : "none" }}>
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 font-syne text-[13px] font-bold" style={{ background: T.s3, color: T.t2 }}>{c.name[0]}</div>
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 font-syne text-[13px] font-bold" style={{ background: T.s3, color: T.t2 }}>{initial(c.name)}</div>
                 <div className="flex-1 min-w-0">
                   <div className="font-dm text-[13px] font-medium truncate">{c.name}</div>
                   <div className="font-dm text-[11px]" style={{ color: T.t2 }}>{c.tier ?? "No tier set"}</div>
@@ -234,9 +234,9 @@ export function DashboardContent({ clients, salesMetrics, todayLabel }: Dashboar
       <section>
         <div className="mb-3 flex items-center justify-between">
           <SectionLabel>Pipeline Health</SectionLabel>
-          <Link href="/prospects" className="font-dm text-xs" style={{ color: T.acc }}>Open pipeline →</Link>
+          <Link href="/prospects" className="font-dm text-xs" style={{ color: T.acc }}>Open pipeline</Link>
         </div>
-        <div className="rounded-xl border p-6" style={{ background: T.s1, borderColor: T.b1 }}>
+        <div className="rounded-[8px] border p-4 sm:p-5" style={{ background: T.s1, borderColor: T.b1 }}>
           <div className="grid grid-cols-2 gap-2 sm:max-w-xs">
             <div className="rounded-lg border p-3" style={{ background:T.s2, borderColor:T.b1 }}>
               <div className="font-syne text-lg font-bold" style={{ color: salesMetrics.followUpsDueToday > 0 ? T.amb : T.t1 }}>{salesMetrics.followUpsDueToday}</div>
@@ -267,4 +267,8 @@ export function DashboardContent({ clients, salesMetrics, todayLabel }: Dashboar
       </section>
     </div>
   )
+}
+
+function initial(value: string) {
+  return value.trim().charAt(0).toUpperCase() || "?"
 }

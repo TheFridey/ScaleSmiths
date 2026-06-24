@@ -27,14 +27,17 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "resend": "^6.12.4",
-    "tailwind-merge": "^2.3.0"
+    "tailwind-merge": "^2.3.0",
+    "three": "^0.168.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.5",
+    "@playwright/test": "^1.61.0",
     "@types/node": "^22",
     "@types/pg": "^8.20.0",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "@types/three": "^0.184.1",
     "autoprefixer": "^10.4.19",
     "drizzle-kit": "^0.31.10",
     "eslint": "^9.39.4",

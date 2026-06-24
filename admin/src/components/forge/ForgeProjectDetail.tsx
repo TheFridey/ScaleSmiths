@@ -363,7 +363,7 @@ export function ForgeProjectDetail({
                   active={intakePane}
                   onChange={setIntakePane}
                 >
-                  {intakePane === "brief" && <ForgeIntakeForm projectId={projectId} initialIntake={initialIntake} />}
+                  {intakePane === "brief" && <ForgeIntakeForm projectId={projectId} initialIntake={initialIntake} websiteUrl={project.websiteUrl} />}
                   {intakePane === "settings" && (
                     <Panel title="Project Settings" icon={Settings2}>
                       <ForgeProjectForm mode="edit" project={project} />

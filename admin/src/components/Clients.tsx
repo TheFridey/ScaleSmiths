@@ -27,19 +27,19 @@ export function ClientsTable({ clients }: { clients: ClientRow[] }) {
   const [hovered, setHovered] = useState<number | null>(null)
 
   return (
-    <div>
-      <div className="mb-6 flex items-center justify-between">
+    <div className="mx-auto max-w-[1500px] rounded-[8px] border p-3 sm:p-4 lg:p-5" style={{ background:"rgba(2,6,23,.58)", borderColor:"rgba(56,189,248,.18)", boxShadow:"0 24px 80px rgba(0,0,0,.28)" }}>
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-syne text-2xl font-extrabold tracking-tight">Clients</h1>
           <p className="mt-1 font-dm text-sm" style={{ color: T.t2 }}>Live client records from the database.</p>
         </div>
-        <Link href="/clients/new" className="flex items-center gap-1.5 rounded-lg bg-acc px-4 py-2 font-dm text-sm font-medium text-white">
+        <Link href="/clients/new" className="inline-flex items-center gap-1.5 rounded-[8px] bg-acc px-4 py-2 font-dm text-sm font-medium text-white">
           <Plus size={15} /> Add Client
         </Link>
       </div>
 
       {clients.length === 0 ? (
-        <div className="rounded-2xl border p-8" style={{ background: T.s1, borderColor: T.b1 }}>
+        <div className="rounded-[8px] border p-6 sm:p-8" style={{ background: T.s1, borderColor: T.b1 }}>
           <Users size={20} className="mb-4 text-acc" aria-hidden="true" />
           <h2 className="font-syne text-xl font-bold">No clients yet</h2>
           <p className="mt-2 max-w-[520px] font-dm text-sm leading-relaxed" style={{ color: T.t2 }}>
@@ -47,8 +47,9 @@ export function ClientsTable({ clients }: { clients: ClientRow[] }) {
           </p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-2xl border" style={{ background: T.s1, borderColor: T.b1 }}>
-          <div className="grid gap-0 border-b px-6 py-3" style={{ gridTemplateColumns:"2fr 1.2fr .9fr .9fr 1.8fr", borderColor:T.b1, background:T.s2 }}>
+        <div className="overflow-x-auto rounded-[8px] border" style={{ background: T.s1, borderColor: T.b1 }}>
+          <div className="min-w-[820px]">
+          <div className="grid gap-0 border-b px-4 py-3 sm:px-5" style={{ gridTemplateColumns:"2fr 1.2fr .9fr .9fr 1.8fr", borderColor:T.b1, background:T.s2 }}>
             {["Client","Tier","MRR","Progress","Status"].map((h) => (
               <div key={h} className="font-dm text-[11px] font-semibold uppercase tracking-[.07em]" style={{ color:T.t2 }}>{h}</div>
             ))}
@@ -59,7 +60,7 @@ export function ClientsTable({ clients }: { clients: ClientRow[] }) {
             return (
               <div
                 key={client.id}
-                className="grid items-center px-6 py-4 transition-colors"
+                className="grid items-center px-4 py-4 transition-colors sm:px-5"
                 style={{
                   gridTemplateColumns:"2fr 1.2fr .9fr .9fr 1.8fr",
                   borderBottom:index < clients.length - 1 ? `1px solid ${T.b1}` : "none",
@@ -70,10 +71,10 @@ export function ClientsTable({ clients }: { clients: ClientRow[] }) {
               >
                 <div className="flex items-center gap-2.5">
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg font-syne text-[13px] font-bold" style={{ background:T.s3, color:T.t2 }}>
-                    {client.name[0]}
+                    {initial(client.name)}
                   </div>
-                  <div>
-                    <div className="font-dm text-sm font-medium">{client.name}</div>
+                  <div className="min-w-0">
+                    <div className="truncate font-dm text-sm font-medium">{client.name}</div>
                     <div className="font-dm text-[11px]" style={{ color:T.t2 }}>{client.contactName ?? "No contact set"}</div>
                   </div>
                 </div>
@@ -95,8 +96,13 @@ export function ClientsTable({ clients }: { clients: ClientRow[] }) {
               </div>
             )
           })}
+          </div>
         </div>
       )}
     </div>
   )
+}
+
+function initial(value: string) {
+  return value.trim().charAt(0).toUpperCase() || "?"
 }

@@ -96,7 +96,7 @@ export function Cursor() {
         aria-hidden="true"
         className="fixed left-0 top-0 z-[249] h-9 w-9 rounded-full pointer-events-none will-change-transform"
         style={{
-          border: "1.5px solid rgba(37,99,235,0.4)",
+          border: "1.5px solid rgba(34,211,238,0.42)",
           transform: "translate3d(-100px, -100px, 0)",
         }}
       />

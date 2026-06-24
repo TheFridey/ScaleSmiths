@@ -64,6 +64,7 @@ export interface ForgeAiRequest<TData extends JsonValue = JsonValue> {
   maxTokens?: number
   temperature?: number
   mockData?: TData
+  fallbackOnSchemaMismatch?: boolean
   projectId?: number | null
   taskId?: number | null
 }
@@ -145,6 +146,36 @@ export async function runForgeAiJson<TData extends JsonValue = JsonValue>(reques
       const parsed = parseAndValidateStructuredJson<TData>(request.schema, raw.text)
 
       if (!parsed.ok) {
+        if (request.fallbackOnSchemaMismatch && request.mockData && attempt === maxRetries) {
+          const fallback = parseAndValidateStructuredJson<TData>(request.schema, request.mockData)
+          if (fallback.ok) {
+            const costEstimateUsd = estimateForgeAiCostUsd(provider, raw.usage)
+            recordBudgetUsage(raw.usage.totalTokens ?? 0, costEstimateUsd ?? 0)
+            const completedAt = new Date()
+            await recordForgeAiUsage({
+              projectId: request.projectId ?? null,
+              taskId: request.taskId ?? null,
+              provider,
+              model,
+              usage: raw.usage,
+              estimatedCost: costEstimateUsd,
+              startedAt: startedAtDate,
+              completedAt,
+            })
+
+            return {
+              provider,
+              model,
+              taskType: request.taskType,
+              data: fallback.data,
+              usage: raw.usage,
+              costEstimateUsd,
+              latencyMs: completedAt.getTime() - startedAt,
+              retries: attempt,
+              responseId: raw.responseId ?? "schema-fallback",
+            }
+          }
+        }
         throw new ForgeAiError("AI response did not match the requested schema.", true)
       }
 

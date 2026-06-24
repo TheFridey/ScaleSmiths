@@ -1223,6 +1223,7 @@ describe("forge shell", () => {
       },
     })
     const packageJson = files.find((file) => file.path === "package.json")?.content ?? ""
+    const siteData = files.find((file) => file.path === "src/lib/site-data.ts")?.content ?? ""
 
     expect(validateForgeGeneratedFileSet(files)).toEqual({ ok: true })
     expect(files.map((file) => file.path)).toContain("src/app/page.tsx")
@@ -1254,6 +1255,8 @@ describe("forge shell", () => {
     expect(files.find((file) => file.path === "src/lib/whatsapp-config.ts")?.content).toContain("447700900123")
     expect(files.find((file) => file.path === "src/lib/whatsapp-config.ts")?.content).not.toContain("WHATSAPP_ACCESS_TOKEN=")
     expect(files.find((file) => file.path === "src/components/WhatsAppCTA.tsx")?.content).toContain("wa.me")
+    expect(siteData).toContain("trustElements: readonly string[]")
+    expect(siteData).toContain("sections: readonly { readonly heading: string; readonly body: string }[]")
     expect(packageJson).not.toContain("\"three\"")
     expect(files.some((file) => file.path.startsWith("admin/") || file.path.startsWith("web/"))).toBe(false)
   })
@@ -1471,6 +1474,7 @@ describe("forge shell", () => {
       ["lint", false],
       ["build", true],
     ])
+    expect(commands[0].command).toBe("npm install --include=dev --no-audit --no-fund")
   })
 
   it("controls repair attempts from actual failed QA reports", () => {

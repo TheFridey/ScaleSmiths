@@ -157,7 +157,7 @@ export function buildQaReport({
 export function getForgeQaCommands(packageJson: string | null | undefined) {
   const scripts = parsePackageScripts(packageJson)
   return [
-    { name: "install" as const, command: "npm install --no-audit --no-fund", shouldRun: true, skippedReason: null },
+    { name: "install" as const, command: "npm install --include=dev --no-audit --no-fund", shouldRun: true, skippedReason: null },
     { name: "typecheck" as const, command: "npm run typecheck", shouldRun: Boolean(scripts.typecheck), skippedReason: "No typecheck script defined." },
     { name: "lint" as const, command: "npm run lint", shouldRun: Boolean(scripts.lint), skippedReason: "No lint script defined." },
     { name: "build" as const, command: "npm run build", shouldRun: Boolean(scripts.build), skippedReason: "No build script defined." },

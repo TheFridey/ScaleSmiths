@@ -1,5 +1,6 @@
 import "server-only"
 import { and, eq } from "drizzle-orm"
+import type { ForgeAiResult, JsonValue } from "@/lib/forge-ai"
 import { db } from "@/lib/db"
 import { buildForgeTaskOutputMetadata, ForgeAiError, runForgeAiJson } from "@/lib/server/forge-ai"
 import {
@@ -105,36 +106,14 @@ export async function runForgeCopyAgent(projectId: number, actor: string, regene
     })
   })
 
-  try {
-    const result = await runForgeAiJson({
-      taskType: "copywriting",
-      schemaName: "forge_copy_document",
-      schema: FORGE_COPY_DOCUMENT_SCHEMA,
-      systemPrompt: [
-        "You are the ScaleSmiths Forge Copy Agent.",
-        "Write concrete website copy for local/service businesses.",
-        "Avoid generic AI phrases, vague hype, unsupported claims, and generic SaaS wording.",
-        "Return structured JSON with a self-check for sloppy or generic copy.",
-      ].join(" "),
-      prompt: buildForgeCopyPrompt({
-        project,
-        approvedSitemap,
-        researchReport,
-        intakeSummary,
-        regeneratePagePath,
-        existingCopy,
-      }),
-      maxTokens: 3200,
-      timeoutMs: 35_000,
-      maxRetries: 2,
-      projectId,
-      taskId: task.id,
-      mockData: createMockCopyDocument(project, approvedSitemap, intake.intake, researchReport),
-    })
-    const copy = normalizeCopySelfCheck(result.data as ForgeCopyDocument)
+  const fallbackCopy = createMockCopyDocument(project, approvedSitemap, intake.intake, researchReport)
+
+  async function completeCopyRun(result: ForgeAiResult, fallbackReason?: string) {
+    const copy = normalizeCopySelfCheck(result.data as unknown as ForgeCopyDocument)
     const completedAt = new Date()
     const content = buildForgeCopyArtifactContent(copy)
-    const aiMetadata = buildForgeTaskOutputMetadata({ ...result, data: copy })
+    const aiMetadata = buildForgeTaskOutputMetadata({ ...result, data: copy as unknown as JsonValue })
+    const outputJson = fallbackReason ? { ...aiMetadata, fallbackReason } : aiMetadata
 
     const [artifact] = await db.transaction(async (tx) => {
       const [existing] = await tx
@@ -155,6 +134,7 @@ export async function runForgeCopyAgent(projectId: number, actor: string, regene
         taskId: task.id,
         regeneratePagePath: regeneratePagePath ?? null,
         ai: aiMetadata.ai,
+        fallbackReason,
       }
 
       const [saved] = existing
@@ -183,7 +163,7 @@ export async function runForgeCopyAgent(projectId: number, actor: string, regene
         .update(forgeTasks)
         .set({
           status: "completed",
-          outputJson: aiMetadata,
+          outputJson,
           completedAt,
           updatedAt: completedAt,
         })
@@ -192,10 +172,16 @@ export async function runForgeCopyAgent(projectId: number, actor: string, regene
       await tx.insert(forgeActivityLogs).values({
         projectId,
         actor,
-        action: regeneratePagePath ? "copy_regenerated" : "copy_completed",
-        message: regeneratePagePath
-          ? `Regenerated copy for ${regeneratePagePath} on ${project.name}.`
-          : `Generated copy document for ${project.name}.`,
+        action: fallbackReason
+          ? "copy_completed_with_fallback"
+          : regeneratePagePath
+            ? "copy_regenerated"
+            : "copy_completed",
+        message: fallbackReason
+          ? `Generated fallback copy document for ${project.name} after the AI provider failed.`
+          : regeneratePagePath
+            ? `Regenerated copy for ${regeneratePagePath} on ${project.name}.`
+            : `Generated copy document for ${project.name}.`,
         metadataJson: {
           taskId: task.id,
           artifactId: saved.id,
@@ -203,6 +189,7 @@ export async function runForgeCopyAgent(projectId: number, actor: string, regene
           model: result.model,
           regeneratePagePath: regeneratePagePath ?? null,
           selfCheckStatus: copy.selfCheck.status,
+          fallbackReason,
         },
       })
 
@@ -216,7 +203,51 @@ export async function runForgeCopyAgent(projectId: number, actor: string, regene
       copy,
       ai: aiMetadata.ai,
     }
+  }
+
+  try {
+    const result = await runForgeAiJson({
+      taskType: "copywriting",
+      schemaName: "forge_copy_document",
+      schema: FORGE_COPY_DOCUMENT_SCHEMA,
+      systemPrompt: [
+        "You are the ScaleSmiths Forge Copy Agent.",
+        "Write concrete website copy for local/service businesses.",
+        "Avoid generic AI phrases, vague hype, unsupported claims, and generic SaaS wording.",
+        "Return structured JSON with a self-check for sloppy or generic copy.",
+      ].join(" "),
+      prompt: buildForgeCopyPrompt({
+        project,
+        approvedSitemap,
+        researchReport,
+        intakeSummary,
+        regeneratePagePath,
+        existingCopy,
+      }),
+      maxTokens: 3200,
+      timeoutMs: 35_000,
+      maxRetries: 2,
+      projectId,
+      taskId: task.id,
+      mockData: fallbackCopy,
+      fallbackOnSchemaMismatch: true,
+    })
+    return completeCopyRun(result)
   } catch (error) {
+    if (error instanceof ForgeAiError && error.retryable) {
+      return completeCopyRun({
+        provider: "mock",
+        model: "deterministic-copy-fallback",
+        taskType: "copywriting",
+        data: fallbackCopy as unknown as JsonValue,
+        usage: { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
+        costEstimateUsd: null,
+        latencyMs: 0,
+        retries: 0,
+        responseId: "provider-fallback",
+      }, error.safeMessage)
+    }
+
     const completedAt = new Date()
     const safeMessage = error instanceof ForgeAiError
       ? error.safeMessage

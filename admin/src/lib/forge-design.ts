@@ -72,6 +72,7 @@ export const FORGE_DESIGN_DIRECTION_SCHEMA = {
   required: [
     "designStyleName",
     "selectedStylePack",
+    "selectedAnimationPack",
     "hybridWith",
     "stylePackRationale",
     "mood",

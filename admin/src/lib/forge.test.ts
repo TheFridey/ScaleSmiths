@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { readdirSync, readFileSync } from "node:fs"
 import path from "node:path"
+import ts from "typescript"
 import {
   FORGE_AI_MODEL_ROUTES,
   FORGE_AI_TEST_SCHEMA,
@@ -1258,6 +1259,13 @@ describe("forge shell", () => {
     expect(files.find((file) => file.path === "src/components/WhatsAppCTA.tsx")?.content).toContain("wa.me")
     expect(siteData).toContain("trustElements: readonly string[]")
     expect(siteData).toContain("sections: readonly { readonly heading: string; readonly body: string }[]")
+    // Generated site-data.ts must be syntactically valid TypeScript: the canonical generator is the
+    // deterministic repair's source of truth for restoring a corrupted/stale workspace copy (e.g. an
+    // unterminated string literal), so it can never itself emit broken source.
+    const siteDataSyntaxErrors = ts
+      .transpileModule(siteData, { reportDiagnostics: true, compilerOptions: { target: ts.ScriptTarget.ESNext } })
+      .diagnostics?.filter((diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error) ?? []
+    expect(siteDataSyntaxErrors).toEqual([])
     expect(packageJson).not.toContain("\"three\"")
     expect(files.some((file) => file.path.startsWith("admin/") || file.path.startsWith("web/"))).toBe(false)
   })

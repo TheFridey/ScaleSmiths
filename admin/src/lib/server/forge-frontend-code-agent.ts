@@ -14,6 +14,7 @@ import {
   buildForgeGeneratedCodeSummary,
   createForgeFrontendCodeFiles,
   validateForgeGeneratedFileSet,
+  type ForgeGeneratedSiteFile,
 } from "@/lib/forge-frontend-code"
 import { FORGE_INTAKE_ARTIFACT_TITLE, readForgeIntakeArtifact, redactIntegrationConfig } from "@/lib/forge"
 import { buildForgeSeoContextFromIntake } from "@/lib/forge-seo-context"
@@ -286,6 +287,41 @@ export async function runForgeFrontendCodeAgent(projectId: number, actor: string
     if (error instanceof ForgeFrontendCodeAgentError) throw error
     throw new ForgeFrontendCodeAgentError("Frontend code generation failed.", 500)
   }
+}
+
+// Regenerates the canonical generated-site files deterministically from the project's approved
+// artifacts, without touching the database or queueing a task. Used by the QA repair agent to
+// restore a single drifted/corrupted generated file (e.g. a stale site-data.ts left by an older
+// generator) when the AI repair provider is unavailable. Returns null when required artifacts are
+// missing so the caller can fall back to other repair strategies.
+export async function regenerateForgeGeneratedFiles(projectId: number): Promise<ForgeGeneratedSiteFile[] | null> {
+  const context = await loadFrontendCodeContext(projectId)
+  if (
+    !context.workspace ||
+    !context.approvedSitemap ||
+    !context.approvedCopy ||
+    !context.approvedDesign ||
+    !context.approvedComponentSpec
+  ) {
+    return null
+  }
+
+  const files = createForgeFrontendCodeFiles({
+    project: context.project,
+    workspace: context.workspace,
+    approvedSitemap: context.approvedSitemap,
+    approvedCopy: context.approvedCopy,
+    approvedDesign: context.approvedDesign,
+    approvedComponentSpec: context.approvedComponentSpec,
+    integrationPlaceholders: context.integrationPlaceholders,
+    resendConfig: context.resendConfig,
+    whatsappConfig: context.whatsappConfig,
+    seoContext: context.seoContext,
+  })
+
+  const validated = validateForgeGeneratedFileSet(files)
+  if (!validated.ok) return null
+  return files
 }
 
 async function loadFrontendCodeContext(projectId: number) {

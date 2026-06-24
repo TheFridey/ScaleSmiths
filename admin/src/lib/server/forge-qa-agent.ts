@@ -28,6 +28,7 @@ import {
   type ForgeQaCommandResult,
   type ForgeQaReport,
   type ForgeRepairAttempt,
+  type ForgeRepairPatch,
   type ForgeRepairPatchResponse,
 } from "@/lib/forge-qa"
 import { FORGE_GENERATED_CODE_ARTIFACT_TITLE } from "@/lib/forge-frontend-code"
@@ -37,6 +38,7 @@ import { FORGE_WHATSAPP_PROVIDER, readForgeWhatsAppConfig, type ForgeWhatsAppCon
 import { FORGE_WORKSPACE_MEMORY_KEY, readForgeWorkspaceMemory, type ForgeWorkspaceMetadata } from "@/lib/forge-workspace"
 import { forgeActivityLogs, forgeArtifacts, forgeIntegrationConfigs, forgeMemories, forgeProjects, forgeTasks } from "@/lib/schema"
 import { validateForgeRepairPatchSyntax } from "./forge-repair-syntax"
+import { regenerateForgeGeneratedFiles } from "./forge-frontend-code-agent"
 import { saveVersionedForgeArtifact } from "./forge-artifacts"
 import { cleanupForgeWorkspaceTransientOutput, readForgeWorkspaceFile, resolveWorkspaceRoot, writeForgeWorkspaceFile } from "./forge-workspace"
 
@@ -227,7 +229,7 @@ export async function runForgeRepairAgent(projectId: number, actor: string) {
     } catch (error) {
       if (!(error instanceof ForgeAiError)) throw error
       deterministicFallback = true
-      repairData = buildDeterministicForgeRepairPatchResponse({ report: qaState.report, files: relevantFiles })
+      repairData = await buildForgeDeterministicRepair({ projectId, workspace, report: qaState.report, files: relevantFiles })
       repairMetadata = {
         ai: {
           provider: "mock",
@@ -616,6 +618,64 @@ async function runReducedMotionCheck(workspace: ForgeWorkspaceMetadata) {
 
 async function fileExists(workspace: ForgeWorkspaceMetadata, path: string) {
   return readForgeWorkspaceFile(workspace, path).then(() => true).catch(() => false)
+}
+
+// Deterministic repair used when the AI provider is unavailable. Preference order:
+//   1. Regenerate canonical generated files (e.g. a stale/corrupted site-data.ts) from the
+//      project's approved artifacts — this is the source of truth and fixes whole-file corruption
+//      such as an unterminated string literal that the AI cannot be relied on to reconstruct.
+//   2. Fall back to the narrow text-substitution patcher (readonly array alignment).
+async function buildForgeDeterministicRepair({
+  projectId,
+  workspace,
+  report,
+  files,
+}: {
+  projectId: number
+  workspace: ForgeWorkspaceMetadata
+  report: ForgeQaReport
+  files: { path: string; content: string }[]
+}): Promise<ForgeRepairPatchResponse> {
+  const canonicalPatches = await buildForgeCanonicalRegenerationPatches({ projectId, workspace, report })
+  if (canonicalPatches.length) {
+    return {
+      summary: `Regenerated ${canonicalPatches.length} canonical generated file(s) from approved artifacts after the AI repair provider was unavailable.`,
+      patches: canonicalPatches,
+    }
+  }
+
+  return buildDeterministicForgeRepairPatchResponse({ report, files })
+}
+
+// Rebuilds the canonical generated-site files from approved artifacts and returns patches for any
+// failure-implicated file whose current workspace content has drifted from canonical. Returns [] if
+// the project's artifacts are incomplete or nothing relevant changed.
+async function buildForgeCanonicalRegenerationPatches({
+  projectId,
+  workspace,
+  report,
+}: {
+  projectId: number
+  workspace: ForgeWorkspaceMetadata
+  report: ForgeQaReport
+}): Promise<ForgeRepairPatch[]> {
+  const canonical = await regenerateForgeGeneratedFiles(projectId).catch(() => null)
+  if (!canonical) return []
+
+  const flagged = new Set(extractLikelyRelevantFiles(report))
+  const patches: ForgeRepairPatch[] = []
+  for (const file of canonical) {
+    if (!flagged.has(file.path)) continue
+    const current = await readForgeWorkspaceFile(workspace, file.path).catch(() => null)
+    if (current === file.content) continue
+    patches.push({
+      path: file.path,
+      content: file.content,
+      reason: `Restored ${file.path} from the deterministic generator using approved artifacts; the workspace copy was corrupted or stale.`,
+    })
+  }
+
+  return patches
 }
 
 async function readRelevantFiles(workspace: ForgeWorkspaceMetadata, paths: string[]) {

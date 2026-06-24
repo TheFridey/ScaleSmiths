@@ -107,6 +107,7 @@ import {
   buildReducedMotionQaResult,
   buildResendFormQaResult,
   buildWhatsAppLinkQaResult,
+  buildDeterministicForgeRepairPatchResponse,
   buildQaReport,
   canAttemptForgeRepair,
   getForgeQaCommands,
@@ -1514,6 +1515,43 @@ describe("forge shell", () => {
     expect(validateForgeRepairPatches([
       { path: "web/src/app/page.tsx", content: "bad", reason: "Core app" },
     ]).ok).toBe(false)
+  })
+
+  it("builds deterministic repair patches for readonly generated site data errors", () => {
+    const report = buildQaReport({
+      workspacePath: "generated-sites/42-acme-ltd",
+      commands: [
+        {
+          name: "typecheck",
+          command: "npm run typecheck",
+          status: "failed",
+          exitCode: 2,
+          durationMs: 10,
+          stdout: "",
+          stderr: "trustElements is readonly and cannot be assigned to the mutable type string[]",
+          skippedReason: null,
+        },
+      ],
+    })
+    const repair = buildDeterministicForgeRepairPatchResponse({
+      report,
+      files: [{
+        path: "src/lib/site-data.ts",
+        content: [
+          "export type SitePage = {",
+          "  trustElements: string[]",
+          "  sectionHeadings: string[]",
+          "  sections: { heading: string; body: string }[]",
+          "  faqItems: { question: string; answer: string }[]",
+          "  serviceDescriptions: string[]",
+          "}",
+        ].join("\n"),
+      }],
+    })
+
+    expect(repair.patches).toHaveLength(1)
+    expect(repair.patches[0].content).toContain("trustElements: readonly string[]")
+    expect(repair.patches[0].content).toContain("sections: readonly { readonly heading: string; readonly body: string }[]")
   })
 
   it("reads and formats QA reports with repair history", () => {

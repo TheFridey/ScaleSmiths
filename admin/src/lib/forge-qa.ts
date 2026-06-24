@@ -384,6 +384,49 @@ export function buildRepairPrompt({
   ].join("\n")
 }
 
+export function buildDeterministicForgeRepairPatchResponse({
+  report,
+  files,
+}: {
+  report: ForgeQaReport
+  files: { path: string; content: string }[]
+}): ForgeRepairPatchResponse {
+  const failureText = [
+    report.failureSummary,
+    ...report.commands.flatMap((command) => [command.stdout, command.stderr]),
+  ].filter(Boolean).join("\n")
+  const patches: ForgeRepairPatch[] = []
+  const siteData = files.find((file) => file.path === "src/lib/site-data.ts")
+
+  if (
+    siteData &&
+    (/readonly|trustElements|SitePage|not comparable to type 'SitePage'|cannot be assigned to the mutable type/i.test(failureText) ||
+      /trustElements: string\[\]|sectionHeadings: string\[\]|serviceDescriptions: string\[\]/.test(siteData.content))
+  ) {
+    const updated = siteData.content
+      .replace(/trustElements: string\[\]/g, "trustElements: readonly string[]")
+      .replace(/sectionHeadings: string\[\]/g, "sectionHeadings: readonly string[]")
+      .replace(/sections: \{ heading: string; body: string \}\[\]/g, "sections: readonly { readonly heading: string; readonly body: string }[]")
+      .replace(/faqItems: \{ question: string; answer: string \}\[\]/g, "faqItems: readonly { readonly question: string; readonly answer: string }[]")
+      .replace(/serviceDescriptions: string\[\]/g, "serviceDescriptions: readonly string[]")
+
+    if (updated !== siteData.content) {
+      patches.push({
+        path: siteData.path,
+        content: updated,
+        reason: "Align generated SitePage array fields with the readonly site data emitted using as const.",
+      })
+    }
+  }
+
+  return {
+    summary: patches.length
+      ? "Applied deterministic generated-site repairs after the AI repair provider was unavailable."
+      : "AI repair provider was unavailable; no deterministic file patch matched, so QA should be rerun with the current local checks.",
+    patches,
+  }
+}
+
 export function extractLikelyRelevantFiles(report: ForgeQaReport) {
   const text = report.commands.map((command) => `${command.stdout}\n${command.stderr}`).join("\n")
   const matches = new Set<string>(["package.json", "tsconfig.json", "src/lib/site-data.ts"])

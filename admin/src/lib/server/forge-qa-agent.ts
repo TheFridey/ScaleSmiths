@@ -11,6 +11,7 @@ import {
   FORGE_REPAIR_PATCH_SCHEMA,
   buildForgeQaArtifactContent,
   buildQaReport,
+  buildDeterministicForgeRepairPatchResponse,
   buildRepairPrompt,
   buildReducedMotionQaResult,
   buildResendFormQaResult,
@@ -195,27 +196,54 @@ export async function runForgeRepairAgent(projectId: number, actor: string) {
   try {
     if (!qaState.report) throw new ForgeQaAgentError("Run QA before attempting repair.", 400)
     const relevantFiles = await readRelevantFiles(workspace, extractLikelyRelevantFiles(qaState.report))
-    const result = await runForgeAiJson<ForgeRepairPatchResponse>({
-      taskType: "repair",
-      schemaName: "forge_repair_patches",
-      schema: FORGE_REPAIR_PATCH_SCHEMA,
-      systemPrompt: [
-        "You are the ScaleSmiths Forge Repair Agent.",
-        "Return full replacement file contents for generated workspace files only.",
-        "Never target core ScaleSmiths app files or absolute paths.",
-      ].join(" "),
-      prompt: buildRepairPrompt({ report: qaState.report, files: relevantFiles }),
-      maxTokens: 5000,
-      timeoutMs: 45_000,
-      maxRetries: 1,
-      projectId,
-      taskId: task.id,
-      mockData: {
-        summary: "Mock repair provider did not apply file changes. Enable AI or inspect the QA logs.",
-        patches: [],
-      },
-    })
-    const patches = result.data.patches
+    let repairData: ForgeRepairPatchResponse
+    let repairMetadata
+    let deterministicFallback = false
+
+    try {
+      const result = await runForgeAiJson<ForgeRepairPatchResponse>({
+        taskType: "repair",
+        schemaName: "forge_repair_patches",
+        schema: FORGE_REPAIR_PATCH_SCHEMA,
+        systemPrompt: [
+          "You are the ScaleSmiths Forge Repair Agent.",
+          "Return full replacement file contents for generated workspace files only.",
+          "Never target core ScaleSmiths app files or absolute paths.",
+        ].join(" "),
+        prompt: buildRepairPrompt({ report: qaState.report, files: relevantFiles }),
+        maxTokens: 5000,
+        timeoutMs: 45_000,
+        maxRetries: 1,
+        projectId,
+        taskId: task.id,
+        mockData: {
+          summary: "Mock repair provider did not apply file changes. Enable AI or inspect the QA logs.",
+          patches: [],
+        },
+      })
+      repairData = result.data
+      repairMetadata = buildForgeTaskOutputMetadata({ ...result, data: result.data })
+    } catch (error) {
+      if (!(error instanceof ForgeAiError)) throw error
+      deterministicFallback = true
+      repairData = buildDeterministicForgeRepairPatchResponse({ report: qaState.report, files: relevantFiles })
+      repairMetadata = {
+        ai: {
+          provider: "mock",
+          model: "deterministic-repair-fallback",
+          taskType: "repair",
+          usage: {},
+          costEstimateUsd: null,
+          latencyMs: 0,
+          retries: 0,
+          responseId: null,
+        },
+        response: repairData,
+        fallbackReason: error.safeMessage,
+      }
+    }
+
+    const patches = repairData.patches
     const validated = validateForgeRepairPatches(patches)
     if (!validated.ok) throw new ForgeQaAgentError(validated.error, 400)
 
@@ -228,16 +256,16 @@ export async function runForgeRepairAgent(projectId: number, actor: string) {
 
     const completedAt = new Date()
     attempt.status = patches.length ? "applied" : "no_patch"
-    attempt.summary = result.data.summary
+    attempt.summary = repairData.summary
     attempt.patches = patches
     attempt.completedAt = completedAt.toISOString()
 
     const repairHistory = [...(qaState.report.repairHistory ?? []), attempt]
-    const report = patches.length
+    const shouldRerunChecks = patches.length > 0 || deterministicFallback
+    const report = shouldRerunChecks
       ? await runWorkspaceQa(workspace, repairHistory, resendConfig, whatsappConfig, seoPack)
       : { ...qaState.report, repairHistory, completedAt: completedAt.toISOString(), generatedAt: completedAt.toISOString() }
     const artifact = await saveQaReport(projectId, report, task.id, completedAt)
-    const aiMetadata = buildForgeTaskOutputMetadata({ ...result, data: result.data })
 
     await db.transaction(async (tx) => {
       await tx.update(forgeProjects).set({
@@ -249,10 +277,11 @@ export async function runForgeRepairAgent(projectId: number, actor: string) {
         status: report.status === "passed" || attempt.status !== "failed" ? "completed" : "failed",
         error: report.status === "failed" ? report.failureSummary : null,
         outputJson: {
-          ...aiMetadata,
+          ...repairMetadata,
           repairAttempt: attempt,
           qaStatus: report.status,
-          reranChecks: patches.length > 0,
+          reranChecks: shouldRerunChecks,
+          deterministicFallback,
         },
         completedAt,
         updatedAt: completedAt,

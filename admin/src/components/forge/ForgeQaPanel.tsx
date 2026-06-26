@@ -2,9 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Bug, ChevronDown, Hammer, Play, ScrollText } from "lucide-react"
+import { Bug, CheckCircle2, ChevronDown, Circle, Hammer, Play, ScrollText, XCircle } from "lucide-react"
 import type { ForgeGeneratedCodeArtifactState } from "@/lib/forge-frontend-code"
-import type { ForgeQaArtifactState, ForgeQaCommandResult, ForgeQaReport } from "@/lib/forge-qa"
+import { FORGE_MANDATORY_QA_CHECKS, type ForgeQaArtifactState, type ForgeQaCommandResult, type ForgeQaReport } from "@/lib/forge-qa"
 import type { ForgeVisualCritiqueArtifactState } from "@/lib/forge-visual-critique"
 import type { ForgeWorkspaceMetadata } from "@/lib/forge-workspace"
 import { submitForgeJob } from "@/lib/forge-job-client"
@@ -78,7 +78,7 @@ export function ForgeQaPanel({
             <Badge value={status} tone={status === "passed" ? "good" : status === "failed" ? "bad" : "muted"} />
           </div>
           <p className="max-w-[760px] font-dm text-sm leading-relaxed" style={{ color:T.t2 }}>
-            Runs actual generated-site checks: dependency install, typecheck and lint when available, then production build. Repairs are applied only inside the generated workspace.
+            Runs the mandatory Forge QA gate after generation. Typecheck, build, content, CTA, schema, design, mobile, and metadata checks must pass before the build can become ready.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -120,6 +120,10 @@ export function ForgeQaPanel({
 
       {disabled && <Notice text="Archived projects are locked from QA and repair changes." tone="muted" />}
       {!disabled && readiness.length > 0 && <Notice text={`Ready after: ${readiness.join(", ")}.`} tone="warn" />}
+
+      {report && <ReadinessCard report={report} />}
+
+      <MandatoryChecklist report={report} />
 
       {!report ? (
         <div className="rounded-lg border border-dashed p-4" style={{ background:T.s2, borderColor:T.b2 }}>
@@ -167,6 +171,69 @@ export function ForgeQaPanel({
         </div>
       )}
     </section>
+  )
+}
+
+function ReadinessCard({ report }: { report: ForgeQaReport }) {
+  const readiness = report.readiness
+  const tone = readiness.band === "client_ready" ? T.grn : readiness.band === "strong_draft" ? T.acc : readiness.band === "needs_review" ? T.amb : T.red
+
+  return (
+    <div className="mb-4 rounded-lg border p-4" style={{ background:T.s2, borderColor:T.b1 }}>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-2 font-syne text-lg font-bold" style={{ borderColor:tone, color:tone }}>
+            {readiness.score}
+          </div>
+          <div>
+            <div className="font-dm text-[11px] uppercase tracking-[.08em]" style={{ color:T.t3 }}>Forge readiness</div>
+            <div className="font-syne text-base font-bold" style={{ color:tone }}>{readiness.label}</div>
+            <div className="font-dm text-[11px]" style={{ color:T.t2 }}>Score {readiness.score}/100 · {readiness.clientReady ? "all hard checks passed" : "hard checks outstanding"}</div>
+          </div>
+        </div>
+        <span className="inline-flex w-fit rounded px-3 py-1 font-dm text-[11px] font-semibold uppercase tracking-[.05em]" style={{ background:T.s1, border:`1px solid ${tone}`, color:tone }}>
+          {readiness.clientReady ? "Client ready" : "Not client ready"}
+        </span>
+      </div>
+      {readiness.blockingReasons.length > 0 && (
+        <ul className="mt-3 space-y-1">
+          {readiness.blockingReasons.map((reason) => (
+            <li key={reason} className="flex items-start gap-2 font-dm text-xs leading-relaxed" style={{ color:T.t2 }}>
+              <XCircle size={13} style={{ color:T.red, marginTop:2 }} aria-hidden="true" /> {reason}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
+function MandatoryChecklist({ report }: { report: ForgeQaReport | null }) {
+  const statuses = new Map(report?.commands.map((command) => [command.name, command.status]) ?? [])
+
+  return (
+    <div className="mb-4 rounded-lg border p-4" style={{ background:T.s2, borderColor:T.b1 }}>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div className="font-dm text-[11px] uppercase tracking-[.08em]" style={{ color:T.t3 }}>Mandatory QA checklist</div>
+        <div className="font-dm text-[11px]" style={{ color:T.t3 }}>{report ? `${report.commands.length} checks recorded` : "Waiting for QA run"}</div>
+      </div>
+      <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-5">
+        {FORGE_MANDATORY_QA_CHECKS.map((item) => {
+          const status = statuses.get(item.name) ?? "not_run"
+          const Icon = status === "passed" ? CheckCircle2 : status === "failed" ? XCircle : Circle
+          const color = status === "passed" ? T.grn : status === "failed" ? T.red : T.t3
+          return (
+            <div key={item.name} className="flex min-h-11 items-center gap-2 rounded-lg border px-3 py-2" style={{ background:T.s1, borderColor:T.b1 }}>
+              <Icon size={15} style={{ color }} aria-hidden="true" />
+              <div className="min-w-0">
+                <div className="truncate font-dm text-xs font-semibold" style={{ color:T.t1 }}>{item.label}</div>
+                <div className="font-dm text-[10px] uppercase tracking-[.05em]" style={{ color }}>{status}</div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
   )
 }
 

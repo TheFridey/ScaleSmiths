@@ -263,18 +263,21 @@ export function createMockComponentSpec(approvedSitemap: ForgeSitemapStrategy, a
   const paths = approvedSitemap.sitemap.map((page) => page.path)
   const servicePaths = approvedSitemap.sitemap.filter((page) => /service|repair|maintenance|area/i.test(page.title)).map((page) => page.path)
   const primaryCta = approvedCopy.pages[0]?.primaryCta ?? "Request a quote"
+  const gaming = approvedSitemap.selectedStrategyPack === "gaming_community_server"
 
   return {
-    specSummary: `Build a ${approvedDesign.selectedStylePack} website from the approved sitemap, copy, and design direction. The code generator should implement stable reusable sections, exact page ordering, restrained motion, and clear lead-capture placeholders.`,
+    specSummary: `Build a ${approvedDesign.selectedStylePack} website from the approved ${approvedSitemap.selectedStrategyPack} sitemap, copy, and design direction. The code generator should implement stable reusable sections, exact page ordering, restrained motion, and clear conversion placeholders.`,
     globalLayout: "Use one app/site shell with semantic header, main, footer, consistent max-width containers, skip-link support, and shared CTA/contact data.",
     navbarStructure: `Desktop nav: logo, primary page links from sitemap, compact CTA button labelled "${primaryCta}". Mobile nav: logo, menu trigger, stacked links, CTA, and WhatsApp placeholder.`,
-    footerStructure: "Footer includes business summary, service links, service area links, contact block, WhatsApp placeholder, legal links, and LocalBusiness NAP/schema data source.",
+    footerStructure: gaming
+      ? "Footer includes server/community summary, play/join links, Discord/store/vote/support links, legal links, and no LocalBusiness NAP block unless explicitly supplied."
+      : "Footer includes business summary, service links, service area links, contact block, WhatsApp placeholder, legal links, and LocalBusiness NAP/schema data source.",
     pageTemplates: [
       {
         name: "HomeTemplate",
         appliesTo: ["/"],
-        layoutNotes: "Hero-led conversion page with proof, services, process, reviews, local SEO, FAQ, and contact.",
-        sections: ["Hero", "TrustBar", "ServicesGrid", "ProcessSection", "ReviewsSection", "LocalSEOSection", "FAQSection", "ContactSection"],
+        layoutNotes: gaming ? "Hero-led server/community page with server IP, status/stat placeholders, game modes, Discord/store/vote CTAs, news/events, rules/support, and FAQ." : "Hero-led conversion page with proof, services, process, reviews, local SEO, FAQ, and contact.",
+        sections: gaming ? ["Hero", "TrustBar", "ServicesGrid", "ProcessSection", "ReviewsSection", "FAQSection"] : ["Hero", "TrustBar", "ServicesGrid", "ProcessSection", "ReviewsSection", "LocalSEOSection", "FAQSection", "ContactSection"],
       },
       {
         name: "ServiceTemplate",
@@ -321,8 +324,7 @@ export function createMockComponentSpec(approvedSitemap: ForgeSitemapStrategy, a
       "Analytics event names for primary CTA, secondary CTA, form submit, WhatsApp click.",
     ],
     schemaMetadataRequirements: [
-      "LocalBusiness schema source object shared across layout.",
-      "Service schema per service/detail page.",
+      ...(gaming ? ["WebSite/Organization schema source object shared across layout.", "No LocalBusiness schema unless a true local venue/location is explicitly supplied."] : ["LocalBusiness schema source object shared across layout.", "Service schema per service/detail page."]),
       "FAQPage schema where FAQSection appears.",
       "ContactPoint schema on contact page/footer.",
     ],

@@ -9,12 +9,20 @@ import {
   FORGE_QA_ARTIFACT_KIND,
   FORGE_QA_ARTIFACT_TITLE,
   FORGE_REPAIR_PATCH_SCHEMA,
+  buildContentDepthQaResult,
+  buildCopyQualityQaResult,
+  buildCtaRelevanceQaResult,
+  buildForbiddenGenericContentQaResult,
   buildForgeQaArtifactContent,
   buildQaReport,
   buildDeterministicForgeRepairPatchResponse,
+  buildDesignAlignmentQaResult,
+  buildMobileResponsiveQaResult,
+  buildPlaceholderScanQaResult,
   buildRepairPrompt,
   buildReducedMotionQaResult,
   buildResendFormQaResult,
+  buildSchemaAppropriatenessQaResult,
   buildSeoScoreQaResult,
   buildWhatsAppLinkQaResult,
   canAttemptForgeRepair,
@@ -31,6 +39,7 @@ import {
   type ForgeRepairPatch,
   type ForgeRepairPatchResponse,
 } from "@/lib/forge-qa"
+import { FORGE_DESIGN_ARTIFACT_TITLE, readForgeDesignDirectionArtifact, type ForgeDesignDirection } from "@/lib/forge-design"
 import { FORGE_GENERATED_CODE_ARTIFACT_TITLE } from "@/lib/forge-frontend-code"
 import { FORGE_SEO_ARTIFACT_TITLE, readForgeSeoArtifact, type ForgeSeoPack } from "@/lib/forge-seo"
 import { FORGE_RESEND_PROVIDER, readForgeResendConfig, type ForgeResendConfig } from "@/lib/forge-resend"
@@ -40,7 +49,7 @@ import { forgeActivityLogs, forgeArtifacts, forgeIntegrationConfigs, forgeMemori
 import { validateForgeRepairPatchSyntax } from "./forge-repair-syntax"
 import { regenerateForgeGeneratedFiles } from "./forge-frontend-code-agent"
 import { saveVersionedForgeArtifact } from "./forge-artifacts"
-import { cleanupForgeWorkspaceTransientOutput, readForgeWorkspaceFile, resolveWorkspaceRoot, writeForgeWorkspaceFile } from "./forge-workspace"
+import { cleanupForgeWorkspaceTransientOutput, listForgeWorkspaceFiles, readForgeWorkspaceFile, resolveWorkspaceRoot, writeForgeWorkspaceFile } from "./forge-workspace"
 
 export class ForgeQaAgentError extends Error {
   safeMessage: string
@@ -57,7 +66,7 @@ export class ForgeQaAgentError extends Error {
 const COMMAND_TIMEOUT_MS = 180_000
 
 export async function runForgeQaAgent(projectId: number, actor: string) {
-  const { project, workspace, hasGeneratedCode, qaState, resendConfig, whatsappConfig, seoPack } = await loadQaContext(projectId)
+  const { project, workspace, hasGeneratedCode, qaState, resendConfig, whatsappConfig, seoPack, design } = await loadQaContext(projectId)
 
   if (project.status === "archived") throw new ForgeQaAgentError("Archived Forge projects cannot run QA.", 400)
   if (!workspace) throw new ForgeQaAgentError("Create a generated-site workspace before running QA.", 400)
@@ -95,7 +104,20 @@ export async function runForgeQaAgent(projectId: number, actor: string) {
   await markTaskRunning(projectId, task.id, actor, "qa_running", `Generated-site QA started for ${project.name}.`, startedAt)
 
   try {
-    const report = await runWorkspaceQa(workspace, qaState.report?.repairHistory ?? [], resendConfig, whatsappConfig, seoPack)
+    const initialReport = await runWorkspaceQa(workspace, qaState.report?.repairHistory ?? [], resendConfig, whatsappConfig, seoPack, design)
+    const report = initialReport.status === "failed"
+      ? await runAutomaticRepairLoop({
+        projectId,
+        actor,
+        projectName: project.name,
+        workspace,
+        initialReport,
+        resendConfig,
+        whatsappConfig,
+        seoPack,
+        design,
+      })
+      : initialReport
     const completedAt = new Date()
     const artifact = await saveQaReport(projectId, report, task.id, completedAt)
 
@@ -144,7 +166,7 @@ export async function runForgeQaAgent(projectId: number, actor: string) {
 }
 
 export async function runForgeRepairAgent(projectId: number, actor: string) {
-  const { project, workspace, qaState, resendConfig, whatsappConfig, seoPack } = await loadQaContext(projectId)
+  const { project, workspace, qaState, resendConfig, whatsappConfig, seoPack, design } = await loadQaContext(projectId)
 
   if (project.status === "archived") throw new ForgeQaAgentError("Archived Forge projects cannot run repairs.", 400)
   if (!workspace) throw new ForgeQaAgentError("Create a generated-site workspace before attempting repair.", 400)
@@ -269,7 +291,7 @@ export async function runForgeRepairAgent(projectId: number, actor: string) {
     const repairHistory = [...(qaState.report.repairHistory ?? []), attempt]
     const shouldRerunChecks = patches.length > 0 || deterministicFallback
     const report = shouldRerunChecks
-      ? await runWorkspaceQa(workspace, repairHistory, resendConfig, whatsappConfig, seoPack)
+      ? await runWorkspaceQa(workspace, repairHistory, resendConfig, whatsappConfig, seoPack, design)
       : { ...qaState.report, repairHistory, completedAt: completedAt.toISOString(), generatedAt: completedAt.toISOString() }
     const artifact = await saveQaReport(projectId, report, task.id, completedAt)
 
@@ -333,12 +355,202 @@ export async function runForgeRepairAgent(projectId: number, actor: string) {
   }
 }
 
+async function runAutomaticRepairLoop({
+  projectId,
+  actor,
+  projectName,
+  workspace,
+  initialReport,
+  resendConfig,
+  whatsappConfig,
+  seoPack,
+  design,
+}: {
+  projectId: number
+  actor: string
+  projectName: string
+  workspace: ForgeWorkspaceMetadata
+  initialReport: ForgeQaReport
+  resendConfig: ForgeResendConfig
+  whatsappConfig: ForgeWhatsAppConfig
+  seoPack: ForgeSeoPack | null
+  design: ForgeDesignDirection | null
+}) {
+  const maxAttempts = resolveForgeMaxRepairAttempts(process.env)
+  let report = initialReport
+
+  while (report.status === "failed" && report.repairHistory.length < maxAttempts) {
+    const attemptNumber = report.repairHistory.length + 1
+    const startedAt = new Date()
+    const [task] = await db.transaction(async (tx) => {
+      const [created] = await tx.insert(forgeTasks).values({
+        projectId,
+        title: `Auto repair generated site attempt ${attemptNumber}`,
+        description: "Forge mandatory QA failed, so the repair agent is patching the generated workspace and rerunning QA.",
+        agentType: "repair",
+        status: "running",
+        inputJson: {
+          projectId,
+          projectName,
+          workspace: workspace.relativePath,
+          attempt: attemptNumber,
+          failureSummary: report.failureSummary,
+          automatic: true,
+        },
+        startedAt,
+        updatedAt: startedAt,
+      }).returning()
+
+      await tx.insert(forgeActivityLogs).values({
+        projectId,
+        actor,
+        action: "repair_running",
+        message: `Automatic repair attempt ${attemptNumber} started for ${projectName}.`,
+        metadataJson: { taskId: created.id, attempt: attemptNumber, automatic: true },
+      })
+
+      return [created]
+    })
+
+    const attempt: ForgeRepairAttempt = {
+      attempt: attemptNumber,
+      taskId: task.id,
+      status: "failed",
+      summary: "Automatic repair attempt started.",
+      patches: [],
+      startedAt: startedAt.toISOString(),
+      completedAt: null,
+      error: null,
+    }
+
+    try {
+      const relevantFiles = await readRelevantFiles(workspace, extractLikelyRelevantFiles(report))
+      let repairData: ForgeRepairPatchResponse
+      let repairMetadata
+      let deterministicFallback = false
+
+      try {
+        const result = await runForgeAiJson<ForgeRepairPatchResponse>({
+          taskType: "repair",
+          schemaName: "forge_repair_patches",
+          schema: FORGE_REPAIR_PATCH_SCHEMA,
+          systemPrompt: [
+            "You are the ScaleSmiths Forge Repair Agent.",
+            "Return full replacement file contents for generated workspace files only.",
+            "Never target core ScaleSmiths app files or absolute paths.",
+            "Fix the failing mandatory QA checks and preserve approved design/copy intent.",
+          ].join(" "),
+          prompt: buildRepairPrompt({ report, files: relevantFiles }),
+          maxTokens: 5000,
+          timeoutMs: 45_000,
+          maxRetries: 1,
+          projectId,
+          taskId: task.id,
+          mockData: {
+            summary: "Mock repair provider did not apply file changes. Enable AI or inspect the QA logs.",
+            patches: [],
+          },
+        })
+        repairData = result.data
+        repairMetadata = buildForgeTaskOutputMetadata({ ...result, data: result.data })
+      } catch (error) {
+        if (!(error instanceof ForgeAiError)) throw error
+        deterministicFallback = true
+        repairData = await buildForgeDeterministicRepair({ projectId, workspace, report, files: relevantFiles })
+        repairMetadata = {
+          ai: {
+            provider: "mock",
+            model: "deterministic-repair-fallback",
+            taskType: "repair",
+            usage: {},
+            costEstimateUsd: null,
+            latencyMs: 0,
+            retries: 0,
+            responseId: null,
+          },
+          response: repairData,
+          fallbackReason: error.safeMessage,
+        }
+      }
+
+      const patches = repairData.patches
+      const validated = validateForgeRepairPatches(patches)
+      if (!validated.ok) throw new ForgeQaAgentError(validated.error, 400)
+
+      const syntaxValidated = await validateForgeRepairPatchSyntax(patches)
+      if (!syntaxValidated.ok) throw new ForgeQaAgentError(syntaxValidated.error, 422)
+
+      for (const patch of patches) {
+        await writeForgeWorkspaceFile(workspace, patch.path, patch.content, {
+          allowExecutableScripts: true,
+          overwrite: true,
+        })
+      }
+
+      const completedAt = new Date()
+      attempt.status = patches.length ? "applied" : "no_patch"
+      attempt.summary = repairData.summary
+      attempt.patches = patches
+      attempt.completedAt = completedAt.toISOString()
+
+      await db.transaction(async (tx) => {
+        await tx.update(forgeTasks).set({
+          status: attempt.status === "failed" ? "failed" : "completed",
+          error: attempt.error,
+          outputJson: {
+            ...repairMetadata,
+            repairAttempt: attempt,
+            deterministicFallback,
+            automatic: true,
+          },
+          completedAt,
+          updatedAt: completedAt,
+        }).where(eq(forgeTasks.id, task.id))
+
+        await tx.insert(forgeActivityLogs).values({
+          projectId,
+          actor,
+          action: "repair_completed",
+          message: `Automatic repair attempt ${attemptNumber} completed for ${projectName}.`,
+          metadataJson: { taskId: task.id, attempt, automatic: true, patches: patches.map((patch) => patch.path) },
+        })
+      })
+
+      const repairHistory = [...report.repairHistory, attempt]
+      if (!patches.length && !deterministicFallback) {
+        report = { ...report, repairHistory, completedAt: completedAt.toISOString(), generatedAt: completedAt.toISOString() }
+        break
+      }
+
+      report = await runWorkspaceQa(workspace, repairHistory, resendConfig, whatsappConfig, seoPack, design)
+    } catch (error) {
+      const completedAt = new Date()
+      const safeMessage = error instanceof ForgeAiError
+        ? error.safeMessage
+        : error instanceof Error
+          ? error.message
+          : "Automatic repair attempt failed."
+      attempt.status = "failed"
+      attempt.completedAt = completedAt.toISOString()
+      attempt.error = safeMessage
+      attempt.summary = "Automatic repair attempt failed before QA could pass."
+      report = { ...report, repairHistory: [...report.repairHistory, attempt], completedAt: completedAt.toISOString() }
+
+      await markTaskFailed(projectId, task.id, actor, "repair_failed", `Automatic repair attempt ${attemptNumber} failed for ${projectName}.`, safeMessage, completedAt)
+      break
+    }
+  }
+
+  return report
+}
+
 async function runWorkspaceQa(
   workspace: ForgeWorkspaceMetadata,
   repairHistory: ForgeRepairAttempt[],
   resendConfig: ForgeResendConfig,
   whatsappConfig: ForgeWhatsAppConfig,
   seoPack: ForgeSeoPack | null,
+  design: ForgeDesignDirection | null,
 ) {
   const packageJson = await readForgeWorkspaceFile(workspace, "package.json").catch(() => null)
   if (!packageJson) throw new ForgeQaAgentError("Generated workspace is missing package.json.", 400)
@@ -358,6 +570,16 @@ async function runWorkspaceQa(
   const reducedMotionCheck = await runReducedMotionCheck(workspace)
   results.push(reducedMotionCheck)
   if (reducedMotionCheck.status === "failed") return buildQaReport({ workspacePath: workspace.relativePath, commands: results, repairHistory })
+
+  const designAlignmentCheck = await runDesignAlignmentCheck(workspace, design)
+  results.push(designAlignmentCheck)
+  if (designAlignmentCheck.status === "failed") return buildQaReport({ workspacePath: workspace.relativePath, commands: results, repairHistory })
+
+  const contentChecks = await runGeneratedContentChecks(workspace)
+  for (const check of contentChecks) {
+    results.push(check)
+    if (check.status === "failed") return buildQaReport({ workspacePath: workspace.relativePath, commands: results, repairHistory })
+  }
 
   const seoCheck = await runSeoCheck(workspace, seoPack)
   results.push(seoCheck)
@@ -528,7 +750,7 @@ async function loadQaContext(projectId: number) {
   const [project] = await db.select().from(forgeProjects).where(eq(forgeProjects.id, projectId)).limit(1)
   if (!project) throw new ForgeQaAgentError("Forge project not found.", 404)
 
-  const [workspaceMemories, generatedCodeArtifacts, qaArtifacts, seoArtifacts, resendIntegrations, whatsappIntegrations] = await Promise.all([
+  const [workspaceMemories, generatedCodeArtifacts, qaArtifacts, seoArtifacts, designArtifacts, resendIntegrations, whatsappIntegrations] = await Promise.all([
     db.select({ value: forgeMemories.value }).from(forgeMemories).where(and(
       eq(forgeMemories.projectId, projectId),
       eq(forgeMemories.key, FORGE_WORKSPACE_MEMORY_KEY),
@@ -547,6 +769,11 @@ async function loadQaContext(projectId: number) {
       eq(forgeArtifacts.projectId, projectId),
       eq(forgeArtifacts.type, "seo_pack"),
       eq(forgeArtifacts.title, FORGE_SEO_ARTIFACT_TITLE),
+    )).orderBy(desc(forgeArtifacts.updatedAt)).limit(1),
+    db.select({ metadataJson: forgeArtifacts.metadataJson }).from(forgeArtifacts).where(and(
+      eq(forgeArtifacts.projectId, projectId),
+      eq(forgeArtifacts.type, "design_direction"),
+      eq(forgeArtifacts.title, FORGE_DESIGN_ARTIFACT_TITLE),
     )).orderBy(desc(forgeArtifacts.updatedAt)).limit(1),
     db.select({
       configJson: forgeIntegrationConfigs.configJson,
@@ -570,6 +797,7 @@ async function loadQaContext(projectId: number) {
     hasGeneratedCode: generatedCodeArtifacts.length > 0,
     qaState: readForgeQaArtifact(qaArtifacts[0]?.metadataJson),
     seoPack: readForgeSeoArtifact(seoArtifacts[0]?.metadataJson).pack,
+    design: readForgeDesignDirectionArtifact(designArtifacts[0]?.metadataJson).approvedDirection,
     resendConfig: readForgeResendConfig(resendIntegrations[0]?.configJson, resendIntegrations[0]?.enabled),
     whatsappConfig: readForgeWhatsAppConfig(whatsappIntegrations[0]?.configJson, whatsappIntegrations[0]?.enabled),
   }
@@ -614,6 +842,42 @@ async function runReducedMotionCheck(workspace: ForgeWorkspaceMetadata) {
   ])
 
   return buildReducedMotionQaResult({ globalsCss, motionSection, animationConfig })
+}
+
+async function runDesignAlignmentCheck(workspace: ForgeWorkspaceMetadata, design: ForgeDesignDirection | null) {
+  const [globalsCss, tailwindConfig, heroComponent, siteData] = await Promise.all([
+    readForgeWorkspaceFile(workspace, "src/app/globals.css").catch(() => null),
+    readForgeWorkspaceFile(workspace, "tailwind.config.ts").catch(() => null),
+    readForgeWorkspaceFile(workspace, "src/components/Hero.tsx").catch(() => null),
+    readForgeWorkspaceFile(workspace, "src/lib/site-data.ts").catch(() => null),
+  ])
+
+  return buildDesignAlignmentQaResult(design, { globalsCss, tailwindConfig, heroComponent, siteData })
+}
+
+async function runGeneratedContentChecks(workspace: ForgeWorkspaceMetadata) {
+  const files = await readGeneratedQaFiles(workspace)
+  return [
+    buildPlaceholderScanQaResult(files),
+    buildCopyQualityQaResult(files),
+    buildCtaRelevanceQaResult(files),
+    buildSchemaAppropriatenessQaResult(files),
+    buildMobileResponsiveQaResult(files),
+    buildContentDepthQaResult(files),
+    buildForbiddenGenericContentQaResult(files),
+  ]
+}
+
+async function readGeneratedQaFiles(workspace: ForgeWorkspaceMetadata) {
+  const paths = (await listForgeWorkspaceFiles(workspace)).filter((file) =>
+    file === "tailwind.config.ts" ||
+    /^src\/(?:app|components|lib)\/.+\.(?:ts|tsx|css)$/.test(file),
+  )
+  const files = await Promise.all(paths.map(async (path) => ({
+    path,
+    content: await readForgeWorkspaceFile(workspace, path).catch(() => ""),
+  })))
+  return files.filter((file) => file.content)
 }
 
 async function fileExists(workspace: ForgeWorkspaceMetadata, path: string) {

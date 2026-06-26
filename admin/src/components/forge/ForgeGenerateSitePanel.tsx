@@ -69,11 +69,11 @@ export function ForgeGenerateSitePanel({
             <h2 className="font-syne text-lg font-bold">Frontend Code Generator</h2>
           </div>
           <p className="max-w-[760px] font-dm text-sm leading-relaxed" style={{ color:T.t2 }}>
-            Generates a production-oriented static Next.js client site from approved sitemap, copy, design, component spec, and integration placeholders.
+            Runs the multi-pass build tail: code generation, SEO/schema generation, internal/design critique, automatic improvements, repairs, and final validation.
           </p>
           <p className="mt-2 flex max-w-[760px] items-start gap-1.5 font-dm text-xs leading-relaxed" style={{ color:T.amb }}>
             <ShieldCheck size={14} className="mt-0.5 shrink-0" aria-hidden="true" />
-            Files are written through Forge workspace safety utilities only, inside the generated-sites project folder.
+            Files are written through Forge workspace safety utilities only, inside the generated-sites project folder, and readiness is gated by mandatory QA.
           </p>
         </div>
         <button
@@ -83,7 +83,7 @@ export function ForgeGenerateSitePanel({
           className="inline-flex min-h-10 items-center gap-1.5 rounded-lg px-4 py-2 font-dm text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
           style={{ background:T.acc }}
         >
-          <Play size={15} aria-hidden="true" /> {busy ? "Generating..." : "Generate Site"}
+          <Play size={15} aria-hidden="true" /> {busy ? "Running pipeline..." : "Run Build Pipeline"}
         </button>
       </div>
 

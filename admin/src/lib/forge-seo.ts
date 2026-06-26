@@ -279,15 +279,29 @@ export function buildForgeWebPageSchema(page: ForgeSeoPageInput, business: Forge
 
 export function buildForgePageJsonLd(page: ForgeSeoPageInput, business: ForgeSeoBusiness): JsonValue[] {
   const graph: JsonValue[] = [buildForgeWebPageSchema(page, business), buildForgeBreadcrumbSchema(page, business)]
-  if (page.template === "home" || page.template === "contact" || page.template === "local") {
+  const localRelevant = Boolean(business.primaryLocation) || business.serviceAreas.length > 0
+  const gamingCommunity = isGamingCommunitySeoPage(page)
+  if ((page.template === "home" || page.template === "contact" || page.template === "local") && localRelevant && !gamingCommunity) {
     graph.push(buildForgeLocalBusinessSchema(business))
   }
-  if (page.template === "service") {
+  if (page.template === "service" && !gamingCommunity) {
     graph.push(buildForgeServiceSchema(page, business))
   }
   const faq = buildForgeFaqSchema(page.faqItems)
   if (faq) graph.push(faq)
   return graph
+}
+
+function isGamingCommunitySeoPage(page: ForgeSeoPageInput) {
+  return /minecraft|gaming|server ip|discord|game mode|players|vote for server|join server|login|register/i.test([
+    page.keyword,
+    page.h1,
+    page.heroSubheading,
+    page.bodyText,
+    page.localSeoCopy,
+    page.serviceName ?? "",
+    ...page.trustElements,
+  ].join(" "))
 }
 
 export function buildForgePageMetadata(page: ForgeSeoPageInput, business: ForgeSeoBusiness): ForgeSeoPageMetadata {

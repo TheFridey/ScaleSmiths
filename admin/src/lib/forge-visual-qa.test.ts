@@ -191,10 +191,14 @@ describe("forge visual critique engine", () => {
   const rawCritique = {
     overallScore: 120,
     scores: {
-      designQuality: 86,
-      conversionQuality: 78,
-      trustSignals: 69,
-      mobileExperience: 74,
+      brandFit: 86,
+      visualQuality: 78,
+      ctaRelevance: 76,
+      contentSpecificity: 69,
+      seoAeoQuality: 77,
+      accessibility: 74,
+      mobileReadiness: 73,
+      clientReadiness: 72,
     },
     strengths: ["Clear visual direction"],
     weaknesses: [
@@ -225,7 +229,8 @@ describe("forge visual critique engine", () => {
 
     const content = buildForgeVisualCritiqueArtifactContent(approved)
     expect(content).toContain("# Visual Critique")
-    expect(content).toContain("Design Quality")
+    expect(content).toContain("Brand Fit")
+    expect(content).toContain("Client Readiness")
     expect(content).toContain("Move trust proof")
   })
 })

@@ -16,10 +16,14 @@ export type ForgeVisualCritiqueSafeFixType = (typeof FORGE_VISUAL_CRITIQUE_SAFE_
 export type ForgeVisualCritiqueStatus = "draft" | "approved" | "empty"
 
 export interface ForgeVisualCritiqueScores extends Record<string, JsonValue> {
-  designQuality: number
-  conversionQuality: number
-  trustSignals: number
-  mobileExperience: number
+  brandFit: number
+  visualQuality: number
+  ctaRelevance: number
+  contentSpecificity: number
+  seoAeoQuality: number
+  accessibility: number
+  mobileReadiness: number
+  clientReadiness: number
 }
 
 export interface ForgeVisualCritiqueIssue extends Record<string, JsonValue> {
@@ -81,12 +85,16 @@ export const FORGE_VISUAL_CRITIQUE_SCHEMA = {
     scores: {
       type: "object",
       additionalProperties: false,
-      required: ["designQuality", "conversionQuality", "trustSignals", "mobileExperience"],
+      required: ["brandFit", "visualQuality", "ctaRelevance", "contentSpecificity", "seoAeoQuality", "accessibility", "mobileReadiness", "clientReadiness"],
       properties: {
-        designQuality: { type: "integer" },
-        conversionQuality: { type: "integer" },
-        trustSignals: { type: "integer" },
-        mobileExperience: { type: "integer" },
+        brandFit: { type: "integer" },
+        visualQuality: { type: "integer" },
+        ctaRelevance: { type: "integer" },
+        contentSpecificity: { type: "integer" },
+        seoAeoQuality: { type: "integer" },
+        accessibility: { type: "integer" },
+        mobileReadiness: { type: "integer" },
+        clientReadiness: { type: "integer" },
       },
     },
     strengths: { type: "array", items: { type: "string" } },
@@ -127,19 +135,24 @@ export const FORGE_VISUAL_CRITIQUE_SCHEMA = {
 type ParseResult<T> = { ok: true; data: T } | { ok: false; error: string }
 
 export function parseForgeVisualCritiquePayload(input: unknown): ParseResult<ForgeVisualCritiqueDraft> {
-  const errors = validateJsonSchemaValue(FORGE_VISUAL_CRITIQUE_SCHEMA, input)
+  const normalizedInput = normalizeVisualCritiquePayload(input)
+  const errors = validateJsonSchemaValue(FORGE_VISUAL_CRITIQUE_SCHEMA, normalizedInput)
   if (errors.length) return { ok: false, error: errors.join(" ") }
-  const raw = input as ForgeVisualCritiqueDraft
+  const raw = normalizedInput as ForgeVisualCritiqueDraft
   return {
     ok: true,
     data: {
       ...raw,
       overallScore: clampScore(raw.overallScore),
       scores: {
-        designQuality: clampScore(raw.scores.designQuality),
-        conversionQuality: clampScore(raw.scores.conversionQuality),
-        trustSignals: clampScore(raw.scores.trustSignals),
-        mobileExperience: clampScore(raw.scores.mobileExperience),
+        brandFit: clampScore(raw.scores.brandFit),
+        visualQuality: clampScore(raw.scores.visualQuality),
+        ctaRelevance: clampScore(raw.scores.ctaRelevance),
+        contentSpecificity: clampScore(raw.scores.contentSpecificity),
+        seoAeoQuality: clampScore(raw.scores.seoAeoQuality),
+        accessibility: clampScore(raw.scores.accessibility),
+        mobileReadiness: clampScore(raw.scores.mobileReadiness),
+        clientReadiness: clampScore(raw.scores.clientReadiness),
       },
       recommendations: raw.recommendations.map((item) => ({
         ...item,
@@ -200,10 +213,14 @@ export function readForgeVisualCritiqueArtifact(metadata: Record<string, unknown
   }
 
   const status = report.status === "approved" ? "approved" : "draft"
+  const normalizedReport = {
+    ...report,
+    scores: normalizeVisualCritiqueScores(report.scores as Record<string, unknown>),
+  } as ForgeVisualCritiqueReport
   return {
-    report: report as ForgeVisualCritiqueReport,
+    report: normalizedReport,
     status,
-    score: clampScore(report.overallScore),
+    score: clampScore(normalizedReport.overallScore),
     approvedAt: typeof report.approvedAt === "string" ? report.approvedAt : null,
     approvedBy: typeof report.approvedBy === "string" ? report.approvedBy : null,
     autoFixAppliedAt: typeof report.autoFixAppliedAt === "string" ? report.autoFixAppliedAt : null,
@@ -220,10 +237,14 @@ export function buildForgeVisualCritiqueArtifactContent(report: ForgeVisualCriti
     report.approvedAt ? `Approved: ${report.approvedAt} by ${report.approvedBy ?? "admin"}` : null,
     "",
     "## Scores",
-    `- Design Quality: ${report.scores.designQuality}/100`,
-    `- Conversion Quality: ${report.scores.conversionQuality}/100`,
-    `- Trust Signals: ${report.scores.trustSignals}/100`,
-    `- Mobile Experience: ${report.scores.mobileExperience}/100`,
+    `- Brand Fit: ${report.scores.brandFit}/100`,
+    `- Visual Quality: ${report.scores.visualQuality}/100`,
+    `- CTA Relevance: ${report.scores.ctaRelevance}/100`,
+    `- Content Specificity: ${report.scores.contentSpecificity}/100`,
+    `- SEO/AEO Quality: ${report.scores.seoAeoQuality}/100`,
+    `- Accessibility: ${report.scores.accessibility}/100`,
+    `- Mobile Readiness: ${report.scores.mobileReadiness}/100`,
+    `- Client Readiness: ${report.scores.clientReadiness}/100`,
     "",
     "## Strengths",
     ...(report.strengths.length ? report.strengths.map((item) => `- ${item}`) : ["- None recorded."]),
@@ -251,13 +272,19 @@ export function createMockVisualCritiqueReport(input: {
   const hasTrust = input.copy.pages.some((page) => page.trustProofCopy.trim() || page.localSeoCopy.trim())
   const hasMobileNotes = input.design.mobileUxNotes.length > 0 || input.spec.responsiveBehaviour.length > 0
   const animationOveruse = input.generated.animationStack.length > 5 || /over|excess/i.test(input.design.overAnimationWarning)
+  const ctaCount = input.copy.pages.filter((page) => page.primaryCta || page.secondaryCta).length
+  const hasSeoContent = input.copy.pages.some((page) => page.seoTitle && page.metaDescription && page.faqItems.length)
   const scores: ForgeVisualCritiqueScores = {
-    designQuality: animationOveruse ? 78 : 86,
-    conversionQuality: input.copy.pages.some((page) => page.primaryCta) ? 84 : 68,
-    trustSignals: hasTrust ? 82 : 62,
-    mobileExperience: hasMobileNotes ? 80 : 66,
+    brandFit: input.design.selectedStylePack ? 84 : 68,
+    visualQuality: animationOveruse ? 78 : 86,
+    ctaRelevance: ctaCount ? 84 : 68,
+    contentSpecificity: hasTrust ? 82 : 66,
+    seoAeoQuality: hasSeoContent ? 82 : 68,
+    accessibility: hasMobileNotes && !animationOveruse ? 80 : 72,
+    mobileReadiness: hasMobileNotes ? 80 : 66,
+    clientReadiness: hasTrust && ctaCount && input.generated.routeCount > 0 ? 82 : 70,
   }
-  const overallScore = Math.round((scores.designQuality + scores.conversionQuality + scores.trustSignals + scores.mobileExperience) / 4)
+  const overallScore = averageCritiqueScores(scores)
   return {
     overallScore,
     scores,
@@ -285,6 +312,12 @@ export function safeForgeVisualCritiqueRecommendations(report: ForgeVisualCritiq
   return report.recommendations.filter((item) => item.safeAutoFix && item.safeFixType !== "none")
 }
 
+export function forgeVisualCritiqueScoresBelowThreshold(report: ForgeVisualCritiqueReport, threshold = 75) {
+  return Object.entries(report.scores)
+    .filter(([, score]) => typeof score === "number" && score < threshold)
+    .map(([key, score]) => ({ key, score: score as number }))
+}
+
 function emptyForgeVisualCritiqueState(): ForgeVisualCritiqueArtifactState {
   return {
     report: null,
@@ -298,4 +331,34 @@ function emptyForgeVisualCritiqueState(): ForgeVisualCritiqueArtifactState {
 
 function clampScore(value: number) {
   return Math.max(0, Math.min(100, Math.round(value)))
+}
+
+function averageCritiqueScores(scores: ForgeVisualCritiqueScores) {
+  const values = Object.values(scores).filter((value): value is number => typeof value === "number")
+  return values.length ? Math.round(values.reduce((total, score) => total + score, 0) / values.length) : 0
+}
+
+function normalizeVisualCritiquePayload(input: unknown) {
+  if (!input || typeof input !== "object" || Array.isArray(input)) return input
+  const record = { ...(input as Record<string, unknown>) }
+  record.scores = normalizeVisualCritiqueScores(record.scores)
+  return record
+}
+
+function normalizeVisualCritiqueScores(input: unknown): ForgeVisualCritiqueScores {
+  const scores = input && typeof input === "object" && !Array.isArray(input)
+    ? { ...(input as Record<string, unknown>) }
+    : {}
+  const numberOr = (value: unknown, fallback: unknown) => typeof value === "number" ? value : typeof fallback === "number" ? fallback : 75
+
+  return {
+    brandFit: clampScore(numberOr(scores.brandFit, scores.designQuality ?? scores.visualQuality)),
+    visualQuality: clampScore(numberOr(scores.visualQuality, scores.designQuality)),
+    ctaRelevance: clampScore(numberOr(scores.ctaRelevance, scores.conversionQuality)),
+    contentSpecificity: clampScore(numberOr(scores.contentSpecificity, scores.trustSignals)),
+    seoAeoQuality: clampScore(numberOr(scores.seoAeoQuality, 75)),
+    accessibility: clampScore(numberOr(scores.accessibility, scores.mobileExperience)),
+    mobileReadiness: clampScore(numberOr(scores.mobileReadiness, scores.mobileExperience)),
+    clientReadiness: clampScore(numberOr(scores.clientReadiness, scores.trustSignals ?? scores.conversionQuality)),
+  }
 }

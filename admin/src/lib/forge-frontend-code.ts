@@ -1,6 +1,6 @@
 import type { ForgeComponentSpecification } from "./forge-component-spec"
 import type { ForgeCopyDocument, ForgePageCopy } from "./forge-copy"
-import type { ForgeDesignDirection } from "./forge-design"
+import { designTokensForPack, type ForgeDesignDirection } from "./forge-design"
 import { buildForgeAnimationConfigForSite, getForgeAnimationPack } from "./forge-animation"
 import { defaultForgeResendConfig, generatedResendConfigForSite, type ForgeResendConfig } from "./forge-resend"
 import { defaultForgeWhatsAppConfig, generatedWhatsAppConfigForSite, type ForgeWhatsAppConfig } from "./forge-whatsapp"
@@ -135,14 +135,14 @@ export function createForgeFrontendCodeFiles({
   const pages = buildGeneratedSitePages(project, approvedSitemap, approvedCopy)
   const components = approvedComponentSpec.components.map((component) => component.name)
   const animationPack = getForgeAnimationPack(approvedDesign.selectedAnimationPack)
-  const seoBusiness = buildSeoBusiness(project, workspace, seoContext)
+  const seoBusiness = buildSeoBusiness(project, workspace, seoContext, approvedSitemap)
   const seoMetadata = pages.map((page) => buildForgePageMetadata(toSeoPageInput(page), seoBusiness))
   const files: ForgeGeneratedSiteFile[] = [
     { path: "package.json", purpose: "Generated site package and scripts", content: buildPackageJson(workspace.slug, approvedDesign) },
     { path: "next.config.mjs", purpose: "Next.js config", content: "const nextConfig = {}\n\nexport default nextConfig\n" },
     { path: "tsconfig.json", purpose: "TypeScript config", content: buildTsConfig() },
     { path: "postcss.config.mjs", purpose: "PostCSS and Tailwind config", content: "export default { plugins: { tailwindcss: {}, autoprefixer: {} } }\n" },
-    { path: "tailwind.config.ts", purpose: "Tailwind content config", content: buildTailwindConfig() },
+    { path: "tailwind.config.ts", purpose: "Tailwind content config", content: buildTailwindConfig(approvedDesign) },
     { path: "README.md", purpose: "Generated workspace notes and client handover", content: buildGeneratedReadme(project, workspace, approvedDesign, resendConfig, whatsappConfig) },
     { path: "src/app/globals.css", purpose: "Global Tailwind and brand styling", content: buildGlobalsCss(approvedDesign) },
     { path: "src/app/layout.tsx", purpose: "Root layout, navigation, footer, and metadata", content: buildLayoutFile(project, pages) },
@@ -201,7 +201,7 @@ export function buildForgeSeoModel({
 }): { business: ForgeSeoBusiness; pages: ForgeSeoPageInput[] } {
   const pages = buildGeneratedSitePages(project, approvedSitemap, approvedCopy)
   return {
-    business: buildSeoBusiness(project, workspace, seoContext),
+    business: buildSeoBusiness(project, workspace, seoContext, approvedSitemap),
     pages: pages.map(toSeoPageInput),
   }
 }
@@ -278,11 +278,12 @@ export function buildForgeGeneratedCodeArtifactContent(summary: ForgeGeneratedCo
 export function validateForgeGeneratedFileSet(files: ForgeGeneratedSiteFile[]) {
   if (files.length === 0) return { ok: false as const, error: "Generated file set is empty." }
 
+  const hasGamingSupportRoute = files.some((file) => /^src\/app\/(support|play|community|store|vote)\/page\.tsx$/.test(file.path))
   const required = [
     "package.json",
     "src/app/layout.tsx",
     "src/app/page.tsx",
-    "src/app/contact/page.tsx",
+    ...(hasGamingSupportRoute ? [] : ["src/app/contact/page.tsx"]),
     "src/lib/animation-config.ts",
     "src/lib/site-data.ts",
     "src/lib/seo.ts",
@@ -315,13 +316,14 @@ export function routePathToFilePath(routePath: string) {
   return `src/app/${segments.join("/")}/page.tsx`
 }
 
-function buildSeoBusiness(project: ForgeFrontendCodeProject, workspace: ForgeWorkspaceMetadata, seoContext?: ForgeFrontendSeoContext): ForgeSeoBusiness {
+function buildSeoBusiness(project: ForgeFrontendCodeProject, workspace: ForgeWorkspaceMetadata, seoContext?: ForgeFrontendSeoContext, sitemap?: ForgeSitemapStrategy): ForgeSeoBusiness {
+  const suppressLocalEntity = sitemap?.selectedStrategyPack === "gaming_community_server"
   return {
     businessName: project.businessName || project.name,
     industry: project.industry,
     siteUrl: resolveForgeSeoSiteUrl(project.websiteUrl, workspace.slug),
-    primaryLocation: seoContext?.primaryLocation ?? null,
-    serviceAreas: seoContext?.serviceAreas ?? [],
+    primaryLocation: suppressLocalEntity ? null : seoContext?.primaryLocation ?? null,
+    serviceAreas: suppressLocalEntity ? [] : seoContext?.serviceAreas ?? [],
     telephone: seoContext?.telephone ?? null,
     email: seoContext?.email ?? null,
     sameAs: seoContext?.sameAs ?? [],
@@ -348,11 +350,15 @@ function toSeoPageInput(page: ForgeGeneratedSitePage): ForgeSeoPageInput {
 function buildGeneratedSitePages(project: ForgeFrontendCodeProject, sitemap: ForgeSitemapStrategy, copy: ForgeCopyDocument) {
   const warnings: string[] = []
   const pages = sitemap.sitemap.map((page) => mergePage(project, page, copy.pages.find((item) => normalizeRoutePath(item.path) === normalizeRoutePath(page.path))))
-  ensureFoundationalPage(project, pages, "about", warnings)
-  ensureFoundationalPage(project, pages, "contact", warnings)
+  const isGaming = sitemap.selectedStrategyPack === "gaming_community_server"
+
+  if (!isGaming) {
+    ensureFoundationalPage(project, pages, "about", warnings)
+    ensureFoundationalPage(project, pages, "contact", warnings)
+  }
 
   const hasService = pages.some((page) => page.template === "service")
-  if (!hasService) {
+  if (!hasService && !isGaming) {
     pages.splice(Math.min(1, pages.length), 0, createFallbackServicePage(project))
     warnings.push("Approved sitemap did not include a service page, so Forge added /services to satisfy the generated-site foundation.")
   }
@@ -364,6 +370,7 @@ function mergePage(project: ForgeFrontendCodeProject, sitemapPage: ForgeSitemapP
   const path = normalizeRoutePath(sitemapPage.path)
   const template = inferTemplate(path, sitemapPage.title)
   const business = project.businessName || project.name
+  const communityPage = /server|discord|store|vote|login|register|game mode|community|player/i.test(`${sitemapPage.primaryCta} ${sitemapPage.conversionNotes} ${sitemapPage.schemaRecommendation}`)
 
   return {
     title: copyPage?.pageTitle || sitemapPage.title,
@@ -379,8 +386,8 @@ function mergePage(project: ForgeFrontendCodeProject, sitemapPage: ForgeSitemapP
     metaDescription: copyPage?.metaDescription || sitemapPage.pagePurpose,
     h1: copyPage?.h1 || (path === "/" ? business : sitemapPage.title),
     heroSubheading: copyPage?.heroSubheading || sitemapPage.pagePurpose,
-    primaryCta: copyPage?.primaryCta || sitemapPage.primaryCta || "Request a quote",
-    secondaryCta: copyPage?.secondaryCta || "View services",
+    primaryCta: copyPage?.primaryCta || sitemapPage.primaryCta || (communityPage ? "Join Discord" : "Request a quote"),
+    secondaryCta: copyPage?.secondaryCta || (communityPage ? "View game modes" : "View services"),
     sectionHeadings: copyPage?.sectionHeadings || ["What you get", "Why it matters", "Next step"],
     sections: copyPage?.sections?.length ? copyPage.sections : [
       { heading: "What you get", body: sitemapPage.pagePurpose },
@@ -392,7 +399,9 @@ function mergePage(project: ForgeFrontendCodeProject, sitemapPage: ForgeSitemapP
     ],
     trustProofCopy: copyPage?.trustProofCopy || sitemapPage.trustElements.join(", ") || "Clear process, relevant proof, and practical next steps support this page.",
     serviceDescriptions: copyPage?.serviceDescriptions?.length ? copyPage.serviceDescriptions : [sitemapPage.pagePurpose],
-    localSeoCopy: copyPage?.localSeoCopy || `${business} supports customers with ${sitemapPage.title.toLowerCase()} across the relevant service area.`,
+    localSeoCopy: copyPage?.localSeoCopy || (communityPage
+      ? `${business} supports players with ${sitemapPage.title.toLowerCase()} through clear community routes, server actions, and support information.`
+      : `${business} supports customers with ${sitemapPage.title.toLowerCase()} across the relevant service area.`),
   }
 }
 
@@ -533,23 +542,29 @@ function buildTsConfig() {
   }, null, 2)
 }
 
-function buildTailwindConfig() {
+function buildTailwindConfig(design: ForgeDesignDirection) {
+  const tokens = design.designTokens ?? designTokensForPack(design.selectedStylePack)
   return [
     "import type { Config } from 'tailwindcss'",
     "",
+    `// Locked Forge design tokens for ${design.selectedStylePack}.`,
     "const config: Config = {",
     "  content: ['./src/**/*.{ts,tsx}'],",
     "  theme: {",
     "    extend: {",
     "      fontFamily: {",
-    "        display: ['var(--font-display)', 'ui-serif', 'Georgia', 'serif'],",
-    "        body: ['var(--font-body)', 'ui-sans-serif', 'system-ui', 'sans-serif'],",
+    `        display: ['var(--font-display)', ${JSON.stringify(tokens.fontDisplay)}, 'ui-sans-serif', 'system-ui', 'sans-serif'],`,
+    `        body: ['var(--font-body)', ${JSON.stringify(tokens.fontBody)}, 'ui-sans-serif', 'system-ui', 'sans-serif'],`,
     "      },",
     "      colors: {",
-    "        ink: '#111111',",
-    "        paper: '#f7f4ef',",
-    "        brand: '#315c54',",
-    "        accent: '#c7963f',",
+    `        ink: ${JSON.stringify(tokens.ink)},`,
+    `        paper: ${JSON.stringify(tokens.surface)},`,
+    `        panel: ${JSON.stringify(tokens.surfaceAlt)},`,
+    `        muted: ${JSON.stringify(tokens.muted)},`,
+    `        brand: ${JSON.stringify(tokens.brand)},`,
+    `        accent: ${JSON.stringify(tokens.accent)},`,
+    `        accent2: ${JSON.stringify(tokens.accentAlt)},`,
+    `        cta: ${JSON.stringify(tokens.ctaText)},`,
     "      },",
     "    },",
     "  },",
@@ -622,18 +637,25 @@ function buildGeneratedReadme(
 
 function buildGlobalsCss(design: ForgeDesignDirection) {
   const animation = getForgeAnimationPack(design.selectedAnimationPack)
+  const tokens = design.designTokens ?? designTokensForPack(design.selectedStylePack)
   return [
     "@tailwind base;",
     "@tailwind components;",
     "@tailwind utilities;",
     "",
     ":root {",
-    "  --font-display: 'Georgia';",
-    "  --font-body: 'Inter';",
-    "  --surface: #f7f4ef;",
-    "  --ink: #111111;",
-    "  --muted: #5f6662;",
-    "  --line: rgba(17, 17, 17, 0.12);",
+    `  --font-display: ${cssFontFamily(tokens.fontDisplay)};`,
+    `  --font-body: ${cssFontFamily(tokens.fontBody)};`,
+    `  --surface: ${tokens.surface};`,
+    `  --surface-alt: ${tokens.surfaceAlt};`,
+    `  --ink: ${tokens.ink};`,
+    `  --muted: ${tokens.muted};`,
+    `  --line: ${tokens.line};`,
+    `  --brand: ${tokens.brand};`,
+    `  --accent: ${tokens.accent};`,
+    `  --accent-alt: ${tokens.accentAlt};`,
+    `  --cta-text: ${tokens.ctaText};`,
+    `  --hero-bg: ${tokens.heroBackground};`,
     "}",
     "",
     "* { box-sizing: border-box; }",
@@ -646,7 +668,13 @@ function buildGlobalsCss(design: ForgeDesignDirection) {
     "}",
     "a { color: inherit; text-decoration: none; }",
     "button, input, textarea { font: inherit; }",
-    ".focus-ring:focus-visible { outline: 3px solid rgba(199, 150, 63, 0.55); outline-offset: 3px; }",
+    ".focus-ring:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent); outline-offset: 3px; }",
+    ".hero-brand-surface { background: var(--hero-bg); }",
+    ".token-panel { background: var(--surface-alt); border-color: var(--line); color: var(--ink); }",
+    ".token-section-alt { background: color-mix(in srgb, var(--surface-alt) 88%, var(--surface) 12%); }",
+    ".token-muted { color: var(--muted); }",
+    ".token-divide > :not([hidden]) ~ :not([hidden]) { border-color: var(--line); }",
+    ".token-glow-cta { box-shadow: 0 0 24px color-mix(in srgb, var(--brand) 28%, transparent); }",
     ".motion-safe-card { will-change: transform, box-shadow; transform: translateZ(0); }",
     ".motion-safe-card:hover { transform: translateY(-2px); }",
     ".motion-safe-cta { transition: background-color 160ms ease, color 160ms ease, box-shadow 160ms ease, transform 160ms ease; }",
@@ -934,11 +962,18 @@ function buildSiteDataFile(
     design: {
       styleName: design.designStyleName,
       selectedStylePack: design.selectedStylePack,
+      visualDirection: design.visualDirection,
       mood: design.mood,
       typographyDirection: design.typographyDirection,
+      sectionRhythm: design.sectionRhythm,
       colourUsage: design.colourUsage,
+      colourPalette: design.colourPalette,
       componentStyle: design.componentStyle,
+      ctaStyle: design.ctaStyle,
       animationStyle: design.animationStyle,
+      imageryIconDirection: design.imageryIconDirection,
+      forbiddenDesignMismatches: design.forbiddenDesignMismatches,
+      designTokens: design.designTokens ?? designTokensForPack(design.selectedStylePack),
       overAnimationWarning: design.overAnimationWarning,
     },
     spec: {
@@ -1170,15 +1205,15 @@ function buildNavigationComponent() {
     "",
     "export function Navigation({ site: siteData }: { site: typeof site }) {",
     "  return (",
-    "    <header className=\"sticky top-0 z-40 border-b border-black/10 bg-paper/90 backdrop-blur\">",
+    "    <header className=\"sticky top-0 z-40 border-b border-[color:var(--line)] bg-paper/90 backdrop-blur\">",
     "      <nav className=\"mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-4 md:px-8\" aria-label=\"Primary\">",
     "        <Link className=\"focus-ring font-display text-lg font-semibold tracking-normal\" href=\"/\">{siteData.businessName}</Link>",
     "        <div className=\"hidden items-center gap-5 md:flex\">",
     "          {siteData.nav.map((item) => (",
-    "            <Link key={item.href} className=\"focus-ring text-sm text-neutral-700 transition hover:text-neutral-950\" href={item.href}>{item.label}</Link>",
+    "            <Link key={item.href} className=\"focus-ring text-sm token-muted transition hover:text-brand\" href={item.href}>{item.label}</Link>",
     "          ))}",
     "        </div>",
-    "        <Link className=\"focus-ring motion-safe-cta rounded-full bg-ink px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand\" href=\"/contact\">Enquire</Link>",
+    "        <Link className=\"focus-ring motion-safe-cta rounded-full bg-brand px-4 py-2 text-sm font-semibold text-cta transition hover:bg-accent\" href=\"/contact\">Enquire</Link>",
     "      </nav>",
     "    </header>",
     "  )",
@@ -1194,7 +1229,7 @@ function buildFooterComponent() {
     "",
     "export function Footer({ site: siteData }: { site: typeof site }) {",
     "  return (",
-    "    <footer className=\"border-t border-black/10 bg-ink text-white\">",
+    "    <footer className=\"border-t border-[color:var(--line)] bg-ink text-white\">",
     "      <div className=\"mx-auto grid max-w-7xl gap-8 px-5 py-12 md:grid-cols-[1.2fr_.8fr_.8fr] md:px-8\">",
     "        <div>",
     "          <div className=\"font-display text-2xl font-semibold\">{siteData.businessName}</div>",
@@ -1209,7 +1244,7 @@ function buildFooterComponent() {
     "        <div>",
     "          <h2 className=\"text-sm font-semibold\">Next step</h2>",
     "          <p className=\"mt-3 text-sm leading-6 text-white/70\">Use the contact form or WhatsApp to start a qualified enquiry.</p>",
-    "          <Link className=\"focus-ring motion-safe-cta mt-4 inline-flex rounded-full bg-accent px-4 py-2 text-sm font-semibold text-ink\" href=\"/contact\">Contact</Link>",
+    "          <Link className=\"focus-ring motion-safe-cta mt-4 inline-flex rounded-full bg-accent px-4 py-2 text-sm font-semibold text-cta\" href=\"/contact\">Contact</Link>",
     "        </div>",
     "      </div>",
     "    </footer>",
@@ -1266,22 +1301,22 @@ function buildHeroComponent() {
     "",
     "export function Hero({ page }: { page: SitePage }) {",
     "  return (",
-    "    <section className=\"relative overflow-hidden border-b border-black/10\">",
+    "    <section className=\"hero-brand-surface relative overflow-hidden border-b border-[color:var(--line)]\">",
     "      <div className=\"mx-auto grid max-w-7xl gap-10 px-5 py-16 md:grid-cols-[1.1fr_.9fr] md:px-8 md:py-24\">",
     "        <div>",
     "          <p className=\"text-sm font-semibold uppercase text-brand\">{page.searchIntent}</p>",
     "          <h1 className=\"mt-4 max-w-4xl font-display text-4xl font-semibold leading-tight text-ink md:text-6xl\">{page.h1}</h1>",
-    "          <p className=\"mt-5 max-w-2xl text-lg leading-8 text-neutral-700\">{page.heroSubheading}</p>",
+    "          <p className=\"mt-5 max-w-2xl text-lg leading-8 token-muted\">{page.heroSubheading}</p>",
     "          <div className=\"mt-8 flex flex-wrap gap-3\">",
-    "            <Link className=\"focus-ring motion-safe-cta rounded-full bg-ink px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand\" href=\"/contact\">{page.primaryCta}</Link>",
-    "            <Link className=\"focus-ring motion-safe-cta rounded-full border border-black/15 px-5 py-3 text-sm font-semibold text-ink transition hover:border-brand hover:text-brand\" href=\"#services\">{page.secondaryCta}</Link>",
+    "            <Link className=\"focus-ring motion-safe-cta token-glow-cta rounded-full bg-brand px-5 py-3 text-sm font-semibold text-cta transition hover:bg-accent\" href=\"/contact\">{page.primaryCta}</Link>",
+    "            <Link className=\"focus-ring motion-safe-cta rounded-full border border-[color:var(--line)] px-5 py-3 text-sm font-semibold text-ink transition hover:border-brand hover:text-brand\" href=\"#services\">{page.secondaryCta}</Link>",
     "          </div>",
     "        </div>",
-    "        <div className=\"rounded-2xl border border-black/10 bg-white p-6 shadow-sm\">",
-    "          <p className=\"text-xs font-semibold uppercase text-neutral-500\">Page intent</p>",
+    "        <div className=\"token-panel rounded-2xl border p-6 shadow-sm\">",
+    "          <p className=\"text-xs font-semibold uppercase token-muted\">Page intent</p>",
     "          <p className=\"mt-3 text-xl font-semibold text-ink\">{page.purpose}</p>",
     "          <div className=\"mt-6 grid gap-3\">",
-    "            {page.trustElements.slice(0, 3).map((item) => <div key={item} className=\"rounded-xl bg-paper px-4 py-3 text-sm text-neutral-700\">{item}</div>)}",
+    "            {page.trustElements.slice(0, 3).map((item) => <div key={item} className=\"rounded-xl border border-[color:var(--line)] bg-paper px-4 py-3 text-sm token-muted\">{item}</div>)}",
     "          </div>",
     "        </div>",
     "      </div>",
@@ -1297,9 +1332,9 @@ function buildTrustBarComponent() {
     "export function TrustBar({ items }: { items: readonly string[] }) {",
     "  const proof = items.length ? items : ['Clear process', 'Practical advice', 'Direct enquiry route']",
     "  return (",
-    "    <section className=\"border-b border-black/10 bg-white\">",
+    "    <section className=\"token-section-alt border-b border-[color:var(--line)]\">",
     "      <div className=\"mx-auto grid max-w-7xl gap-3 px-5 py-5 md:grid-cols-3 md:px-8\">",
-    "        {proof.slice(0, 3).map((item) => <div key={item} className=\"text-sm font-semibold text-neutral-800\">{item}</div>)}",
+    "        {proof.slice(0, 3).map((item) => <div key={item} className=\"text-sm font-semibold text-ink\">{item}</div>)}",
     "      </div>",
     "    </section>",
     "  )",
@@ -1322,9 +1357,9 @@ function buildServicesGridComponent() {
     "      </div>",
     "      <div className=\"mt-8 grid gap-4 md:grid-cols-3\">",
     "        {services.map((service) => (",
-    "          <Link key={service.href} className=\"focus-ring motion-safe-card rounded-2xl border border-black/10 bg-white p-5 shadow-sm transition hover:border-brand\" href={service.href}>",
+    "          <Link key={service.href} className=\"focus-ring motion-safe-card token-panel rounded-2xl border p-5 shadow-sm transition hover:border-brand\" href={service.href}>",
     "            <h3 className=\"text-xl font-semibold text-ink\">{service.title}</h3>",
-    "            <p className=\"mt-3 text-sm leading-6 text-neutral-700\">{service.description}</p>",
+    "            <p className=\"mt-3 text-sm leading-6 token-muted\">{service.description}</p>",
     "          </Link>",
     "        ))}",
     "      </div>",
@@ -1345,13 +1380,13 @@ function buildServiceDetailComponent() {
     "      <div>",
     "        <p className=\"text-sm font-semibold uppercase text-brand\">Details</p>",
     "        <h2 className=\"mt-3 font-display text-3xl font-semibold text-ink\">{page.sectionHeadings[0] || page.title}</h2>",
-    "        <p className=\"mt-4 text-sm leading-6 text-neutral-600\">{page.conversionNotes}</p>",
+    "        <p className=\"mt-4 text-sm leading-6 token-muted\">{page.conversionNotes}</p>",
     "      </div>",
     "      <div className=\"grid gap-4\">",
     "        {page.sections.map((section) => (",
-    "          <article key={section.heading} className=\"rounded-2xl border border-black/10 bg-white p-5 shadow-sm\">",
+    "          <article key={section.heading} className=\"token-panel rounded-2xl border p-5 shadow-sm\">",
     "            <h3 className=\"text-lg font-semibold text-ink\">{section.heading}</h3>",
-    "            <p className=\"mt-3 text-sm leading-7 text-neutral-700\">{section.body}</p>",
+    "            <p className=\"mt-3 text-sm leading-7 token-muted\">{section.body}</p>",
     "          </article>",
     "        ))}",
     "      </div>",
@@ -1369,16 +1404,16 @@ function buildProcessSectionComponent() {
     "export function ProcessSection({ page }: { page: SitePage }) {",
     "  const steps = ['Share the context', 'Review the right route', 'Agree the next practical step']",
     "  return (",
-    "    <section className=\"bg-white\">",
+    "    <section className=\"token-section-alt\">",
     "      <div className=\"mx-auto max-w-7xl px-5 py-16 md:px-8\">",
     "        <p className=\"text-sm font-semibold uppercase text-brand\">Process</p>",
     "        <h2 className=\"mt-3 font-display text-3xl font-semibold text-ink\">A clear route from interest to action</h2>",
     "        <div className=\"mt-8 grid gap-4 md:grid-cols-3\">",
     "          {steps.map((step, index) => (",
-    "            <div key={step} className=\"motion-safe-card rounded-2xl border border-black/10 bg-paper p-5 transition\">",
+    "            <div key={step} className=\"motion-safe-card token-panel rounded-2xl border p-5 transition\">",
     "              <span className=\"text-sm font-semibold text-accent\">0{index + 1}</span>",
     "              <h3 className=\"mt-3 text-lg font-semibold text-ink\">{step}</h3>",
-    "              <p className=\"mt-3 text-sm leading-6 text-neutral-700\">{index === 0 ? page.primaryCta : index === 1 ? page.searchIntent : page.conversionNotes}</p>",
+    "              <p className=\"mt-3 text-sm leading-6 token-muted\">{index === 0 ? page.primaryCta : index === 1 ? page.searchIntent : page.conversionNotes}</p>",
     "            </div>",
     "          ))}",
     "        </div>",
@@ -1413,15 +1448,15 @@ function buildFaqSectionComponent() {
   return [
     "export function FAQSection({ items }: { items: readonly { question: string; answer: string }[] }) {",
     "  return (",
-    "    <section className=\"bg-white\">",
+    "    <section className=\"token-section-alt\">",
     "      <div className=\"mx-auto max-w-4xl px-5 py-16 md:px-8\">",
     "        <p className=\"text-sm font-semibold uppercase text-brand\">FAQ</p>",
     "        <h2 className=\"mt-3 font-display text-3xl font-semibold text-ink\">Useful answers before enquiry</h2>",
-    "        <div className=\"mt-8 divide-y divide-black/10 rounded-2xl border border-black/10 bg-paper\">",
+    "        <div className=\"token-divide mt-8 divide-y rounded-2xl border border-[color:var(--line)] bg-paper\">",
     "          {items.map((item) => (",
     "            <details key={item.question} className=\"group p-5\">",
     "              <summary className=\"cursor-pointer font-semibold text-ink\">{item.question}</summary>",
-    "              <p className=\"mt-3 text-sm leading-6 text-neutral-700\">{item.answer}</p>",
+    "              <p className=\"mt-3 text-sm leading-6 token-muted\">{item.answer}</p>",
     "            </details>",
     "          ))}",
     "        </div>",
@@ -1440,12 +1475,12 @@ function buildContactSectionComponent() {
     "export function ContactSection({ page }: { page: SitePage }) {",
     "  return (",
     "    <section className=\"mx-auto max-w-7xl px-5 py-16 md:px-8\">",
-    "      <div className=\"grid gap-6 rounded-3xl border border-black/10 bg-white p-6 shadow-sm md:grid-cols-[.9fr_1.1fr] md:p-10\">",
+    "      <div className=\"token-panel grid gap-6 rounded-3xl border p-6 shadow-sm md:grid-cols-[.9fr_1.1fr] md:p-10\">",
     "        <div>",
     "          <p className=\"text-sm font-semibold uppercase text-brand\">Contact</p>",
     "          <h2 className=\"mt-3 font-display text-3xl font-semibold text-ink\">Start with the details that matter</h2>",
     "        </div>",
-    "        <p className=\"text-base leading-7 text-neutral-700\">{page.heroSubheading}</p>",
+    "        <p className=\"text-base leading-7 token-muted\">{page.heroSubheading}</p>",
     "      </div>",
     "    </section>",
     "  )",
@@ -1467,7 +1502,7 @@ function buildWhatsAppCtaComponent() {
     "",
     "  return (",
     "    <section className=\"mx-auto max-w-7xl px-5 pb-16 md:px-8\">",
-    "      <a className=\"focus-ring motion-safe-cta inline-flex rounded-full border border-brand px-5 py-3 text-sm font-semibold text-brand transition hover:bg-brand hover:text-white\" href={href} target=\"_blank\" rel=\"noreferrer\">{whatsAppConfig.ctaLabel}</a>",
+    "      <a className=\"focus-ring motion-safe-cta inline-flex rounded-full border border-brand px-5 py-3 text-sm font-semibold text-brand transition hover:bg-brand hover:text-cta\" href={href} target=\"_blank\" rel=\"noreferrer\">{whatsAppConfig.ctaLabel}</a>",
     "    </section>",
     "  )",
     "}",
@@ -1500,7 +1535,7 @@ function buildStickyWhatsAppButtonComponent() {
     "  const href = `https://wa.me/${whatsAppConfig.businessNumber}?text=${encodeURIComponent(whatsAppConfig.defaultMessage)}`",
     "",
     "  return (",
-    "    <a className=\"focus-ring motion-safe-cta fixed bottom-5 right-5 z-50 inline-flex rounded-full bg-brand px-5 py-3 text-sm font-semibold text-white shadow-lg transition hover:bg-ink\" href={href} target=\"_blank\" rel=\"noreferrer\">",
+    "    <a className=\"focus-ring motion-safe-cta token-glow-cta fixed bottom-5 right-5 z-50 inline-flex rounded-full bg-brand px-5 py-3 text-sm font-semibold text-cta shadow-lg transition hover:bg-accent\" href={href} target=\"_blank\" rel=\"noreferrer\">",
     "      {whatsAppConfig.ctaLabel}",
     "    </a>",
     "  )",
@@ -1537,21 +1572,21 @@ function buildLeadFormComponent() {
     "  }",
     "",
     "  return (",
-    "    <section id=\"contact\" className=\"bg-brand text-white\">",
+    "    <section id=\"contact\" className=\"bg-brand text-cta\">",
     "      <div className=\"mx-auto grid max-w-7xl gap-8 px-5 py-16 md:grid-cols-[.9fr_1.1fr] md:px-8\">",
     "        <div>",
     "          <p className=\"text-sm font-semibold uppercase text-white/70\">Enquiry</p>",
     "          <h2 className=\"mt-3 font-display text-3xl font-semibold\">{page.primaryCta}</h2>",
-    "          <p className=\"mt-4 text-sm leading-6 text-white/75\">This form is wired to a safe placeholder API route and is ready for a server-side Resend integration.</p>",
+    "          <p className=\"mt-4 text-sm leading-6 text-white/75\">This form is wired to a protected API route and is ready for a server-side Resend integration.</p>",
     "        </div>",
-    "        <form onSubmit={submit} className=\"grid gap-3 rounded-2xl bg-white p-5 text-ink shadow-sm\">",
+    "        <form onSubmit={submit} className=\"token-panel grid gap-3 rounded-2xl border p-5 shadow-sm\">",
     "          <input className=\"hidden\" name=\"website\" tabIndex={-1} autoComplete=\"off\" aria-hidden=\"true\" />",
     "          <input className=\"focus-ring rounded-xl border border-black/10 px-4 py-3\" name=\"name\" placeholder=\"Name\" required />",
     "          <input className=\"focus-ring rounded-xl border border-black/10 px-4 py-3\" name=\"email\" type=\"email\" placeholder=\"Email\" required />",
     "          <input className=\"focus-ring rounded-xl border border-black/10 px-4 py-3\" name=\"company\" placeholder=\"Company\" />",
     "          <input className=\"focus-ring rounded-xl border border-black/10 px-4 py-3\" name=\"phone\" placeholder=\"Phone\" />",
     "          <textarea className=\"focus-ring min-h-32 rounded-xl border border-black/10 px-4 py-3\" name=\"message\" placeholder=\"What do you need help with?\" required />",
-    "          <button className=\"focus-ring rounded-full bg-ink px-5 py-3 text-sm font-semibold text-white disabled:opacity-60\" disabled={state === 'sending'}>{state === 'sending' ? 'Sending...' : page.primaryCta}</button>",
+    "          <button className=\"focus-ring rounded-full bg-brand px-5 py-3 text-sm font-semibold text-cta disabled:opacity-60\" disabled={state === 'sending'}>{state === 'sending' ? 'Sending...' : page.primaryCta}</button>",
     "          {state === 'sent' && <p className=\"text-sm text-brand\">Thanks. Your enquiry was received.</p>}",
     "          {state === 'error' && <p className=\"text-sm text-red-700\">Please check the required fields and try again.</p>}",
     "        </form>",
@@ -1572,7 +1607,7 @@ function buildLocalSeoSectionComponent() {
     "    <section className=\"mx-auto max-w-7xl px-5 py-16 md:px-8\">",
     "      <div className=\"grid gap-5 md:grid-cols-[.7fr_1.3fr]\">",
     "        <h2 className=\"font-display text-3xl font-semibold text-ink\">Local relevance</h2>",
-    "        <p className=\"text-base leading-7 text-neutral-700\">{page.localSeoCopy}</p>",
+    "        <p className=\"text-base leading-7 token-muted\">{page.localSeoCopy}</p>",
     "      </div>",
     "    </section>",
     "  )",
@@ -1661,4 +1696,8 @@ function slugify(value: string) {
 
 function cssComment(value: string) {
   return value.replace(/\*\//g, "").replace(/\r?\n/g, " ")
+}
+
+function cssFontFamily(value: string) {
+  return `'${value.replace(/\\/g, "\\\\").replace(/'/g, "\\'")}'`
 }

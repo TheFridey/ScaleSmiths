@@ -48,6 +48,13 @@ import {
   redactIntegrationConfig,
 } from "./forge"
 import {
+  applyForgeBuildBriefAnswer,
+  createForgeBuildBriefFromPrompt,
+  fallbackForgeBuildBriefQuestion,
+  finalizeForgeBuildBriefIntake,
+} from "./forge-intake-brief"
+import { selectForgeStrategyPack } from "./forge-strategy-packs"
+import {
   FORGE_GENERATED_SITES_DIR,
   FORGE_WORKSPACE_MEMORY_KEY,
   FORGE_WORKSPACE_TEMPLATE,
@@ -104,9 +111,19 @@ import {
 import {
   FORGE_QA_ARTIFACT_KIND,
   FORGE_QA_ARTIFACT_TITLE,
+  FORGE_MANDATORY_QA_CHECKS,
+  buildContentDepthQaResult,
+  buildCopyQualityQaResult,
+  buildCtaRelevanceQaResult,
+  buildForbiddenGenericContentQaResult,
   buildForgeQaArtifactContent,
+  computeForgeReadiness,
+  buildDesignAlignmentQaResult,
+  buildMobileResponsiveQaResult,
+  buildPlaceholderScanQaResult,
   buildReducedMotionQaResult,
   buildResendFormQaResult,
+  buildSchemaAppropriatenessQaResult,
   buildWhatsAppLinkQaResult,
   buildDeterministicForgeRepairPatchResponse,
   buildQaReport,
@@ -116,6 +133,7 @@ import {
   resolveForgeMaxRepairAttempts,
   truncateForgeQaLog,
   validateForgeRepairPatches,
+  type ForgeQaCommandResult,
 } from "./forge-qa"
 import {
   buildResendIntegrationPlaceholder,
@@ -214,14 +232,19 @@ describe("forge shell", () => {
   it("defines the initial production workflow stages", () => {
     expect(FORGE_WORKFLOW_STAGES).toEqual([
       "Intake",
-      "Research",
-      "Sitemap",
-      "Copy",
-      "Design",
-      "Build",
-      "Visual Critique",
-      "QA",
-      "Deploy",
+      "Strategy selection",
+      "Brief confirmation",
+      "Site plan",
+      "Design tokens",
+      "Code generation",
+      "Copy generation",
+      "SEO/schema generation",
+      "Internal critique",
+      "Design critique",
+      "Copy rewrite",
+      "Code repair",
+      "Final validation",
+      "Export/preview",
     ])
   })
 
@@ -386,6 +409,55 @@ describe("forge shell", () => {
     expect(summary).toContain("# Intake Summary")
     expect(summary).toContain("## Missing information")
     expect(summary).toContain("Business basics: Business overview")
+  })
+
+  it("starts a guided Forge build brief from one prompt", () => {
+    const { intake, state } = createForgeBuildBriefFromPrompt({
+      prompt: "Build a premium Minecraft server website for RTXGaming.",
+      project: {
+        businessName: "RTXGaming",
+        industry: "Gaming",
+        targetAudience: null,
+        primaryGoal: null,
+        websiteUrl: null,
+      },
+    })
+
+    expect(intake.businessOverview).toContain("Minecraft server")
+    expect(intake.requiredPages).toContain("Store")
+    expect(intake.conversionActions).toContain("Join server")
+    expect(state.messages[0].role).toBe("user")
+    expect(state.currentQuestionId).not.toBeNull()
+  })
+
+  it("applies guided answers and supports short-answer controls", () => {
+    const started = createForgeBuildBriefFromPrompt({
+      prompt: "Build a premium Minecraft server website for RTXGaming.",
+      project: {
+        businessName: "RTXGaming",
+        industry: "Gaming",
+        targetAudience: null,
+        primaryGoal: null,
+        websiteUrl: null,
+      },
+    })
+    const answered = applyForgeBuildBriefAnswer({
+      state: { ...started.state, currentQuestionId: "target_audience" },
+      intake: started.intake,
+      answer: "Competitive Minecraft players and streamers who want a polished server community.",
+    })
+    const short = applyForgeBuildBriefAnswer({
+      state: { ...answered.state, currentQuestionId: "brand_style" },
+      intake: answered.intake,
+      answer: "ask me less",
+    })
+    const final = finalizeForgeBuildBriefIntake(short.intake)
+    const question = fallbackForgeBuildBriefQuestion(final, short.state)
+
+    expect(answered.intake.idealCustomers).toContain("Competitive Minecraft")
+    expect(short.state.askLess).toBe(true)
+    expect(final.requiredIntegrations).toBeTruthy()
+    expect(question.question).toBeTruthy()
   })
 
   it("resolves Forge AI provider and model routing safely", () => {
@@ -555,11 +627,42 @@ describe("forge shell", () => {
     }, intake, researchReport)
 
     expect(validateJsonSchemaValue(FORGE_SITEMAP_STRATEGY_SCHEMA, strategy)).toEqual([])
+    expect(strategy.selectedStrategyPack).toBe("trades_business")
     expect(strategy.sitemap.map((page) => page.title)).toContain("Emergency repairs")
     expect(strategy.sitemap.some((page) => page.schemaRecommendation.includes("LocalBusiness"))).toBe(true)
   })
 
-  it("builds sitemap prompts that avoid generic SaaS strategy", () => {
+  it("selects a gaming/community strategy pack for Minecraft server sites", () => {
+    const intake = emptyForgeIntakeData()
+    intake.businessOverview = "Premium Minecraft server website for RTXGaming."
+    intake.coreServices = "Minecraft server\nGame modes\nDiscord community"
+    intake.conversionActions = "Copy server IP\nJoin Discord\nVisit store"
+    intake.requiredPages = "Home\nPlay\nGame modes\nStore\nVote\nRules\nSupport"
+
+    const project = {
+      name: "RTXGaming build",
+      businessName: "RTXGaming",
+      industry: "Gaming",
+      websiteUrl: null,
+      targetAudience: "Minecraft players",
+      primaryGoal: "Grow server joins",
+    }
+    const selection = selectForgeStrategyPack(project, intake)
+    const strategy = createMockSitemapStrategy(project, intake, null)
+
+    expect(selection.pack.id).toBe("gaming_community_server")
+    expect(strategy.selectedStrategyPack).toBe("gaming_community_server")
+    expect(strategy.strategyPackRationale).toMatch(/minecraft/i)
+    expect(strategy.sitemap.map((page) => page.title)).toEqual(expect.arrayContaining(["Play / Join", "Game Modes", "Store", "Vote", "Rules & Support"]))
+    expect(strategy.sitemap[0].primaryCta).toMatch(/server ip/i)
+    expect(strategy.sitemap.some((page) => /^LocalBusiness|Service schema with LocalBusiness/i.test(page.schemaRecommendation))).toBe(false)
+    expect(strategy.conversionNotes.join(" ")).toContain("Discord")
+  })
+
+  it("builds sitemap prompts around selected strategy packs", () => {
+    const intake = emptyForgeIntakeData()
+    intake.businessLocation = "Nottingham"
+    intake.coreServices = "Emergency repairs"
     const prompt = buildForgeSitemapPrompt({
       project: {
         name: "Acme rebuild",
@@ -569,12 +672,14 @@ describe("forge shell", () => {
         targetAudience: "Operations leaders",
         primaryGoal: "Increase enquiries",
       },
+      intake,
       intakeSummary: "# Intake Summary\nService business in Nottingham.",
       researchReport: null,
     })
 
-    expect(prompt).toContain("Avoid generic SaaS assumptions")
-    expect(prompt).toContain("local/service business")
+    expect(prompt).toContain("Selected strategy pack")
+    expect(prompt).toContain("Trades business")
+    expect(prompt).toContain("Forbidden generic sections")
     expect(prompt).toContain("Service business in Nottingham.")
   })
 
@@ -762,16 +867,17 @@ describe("forge shell", () => {
 
   it("defines internal design style packs and validates design direction output", () => {
     expect(FORGE_DESIGN_STYLE_PACKS).toEqual([
-      "Luxury Dark",
-      "Clean Local Pro",
-      "Bold Startup",
-      "Editorial Premium",
-      "Glass SaaS",
-      "Industrial Trust",
-      "Wellness Soft",
-      "High-Conversion Service",
+      "Neon command hub",
+      "Luxury dark premium",
+      "Clean local professional",
+      "Bold trade/industrial",
+      "Soft wellness/beauty",
+      "Charity trust/friendly",
+      "SaaS glass dashboard",
+      "Ecommerce conversion",
+      "Editorial/content-led",
     ])
-    expect(isForgeDesignStylePack("Industrial Trust")).toBe(true)
+    expect(isForgeDesignStylePack("Bold trade/industrial")).toBe(true)
     expect(isForgeDesignStylePack("Generic AI")).toBe(false)
     expect(FORGE_ANIMATION_PACKS).toEqual([
       "Minimal Premium",
@@ -818,12 +924,12 @@ describe("forge shell", () => {
     })
 
     expect(validateJsonSchemaValue(FORGE_DESIGN_DIRECTION_SCHEMA, direction)).toEqual([])
-    expect(direction.selectedStylePack).toBe("Industrial Trust")
+    expect(direction.selectedStylePack).toBe("Bold trade/industrial")
     expect(direction.selectedAnimationPack).toBe("Industrial Precision")
     expect(direction.overAnimationWarning).toMatch(/over-animate|over-animated|restrained/i)
     expect(getForgeAnimationPack(direction.selectedAnimationPack).reducedMotionFallback).toContain("Disable")
     expect(buildForgeAnimationConfigForSite(direction.selectedAnimationPack).threePlaceholder).toContain("not included")
-    expect(buildForgeAnimationWarning("Cinematic Hero", "Clean Local Pro")).toContain("heavier animation pack")
+    expect(buildForgeAnimationWarning("Cinematic Hero", "Clean local professional")).toContain("heavier animation pack")
     expect(chooseForgeAnimationPack({ industry: "Industrial repairs" })).toBe("Industrial Precision")
   })
 
@@ -852,12 +958,12 @@ describe("forge shell", () => {
       researchReport: null,
       approvedSitemap: sitemap,
       approvedCopy: copy,
-      preferredStylePack: "Luxury Dark",
+      preferredStylePack: "Luxury dark premium",
       preferredAnimationPack: "Cinematic Hero",
     })
 
     expect(prompt).toContain("Do not create generic AI website direction")
-    expect(prompt).toContain("Admin preferred style pack: Luxury Dark")
+    expect(prompt).toContain("Admin preferred style pack: Luxury dark premium")
     expect(prompt).toContain("Admin preferred animation pack: Cinematic Hero")
     expect(prompt).toContain("Internal animation packs")
     expect(prompt).toContain("warning against over-animated designs")
@@ -921,6 +1027,9 @@ describe("forge shell", () => {
     const content = buildForgeDesignArtifactContent(createMockDesignDirection({ project, intake, approvedSitemap: sitemap, approvedCopy: copy }))
 
     expect(content).toContain("# Design Direction")
+    expect(content).toContain("## Visual direction")
+    expect(content).toContain("## Locked design tokens")
+    expect(content).toContain("## Forbidden design mismatches")
     expect(content).toContain("## Animation pack behaviour")
     expect(content).toContain("## Premium interaction ideas")
     expect(content).toContain("## Over-animation warning")
@@ -1234,7 +1343,6 @@ describe("forge shell", () => {
     expect(files.map((file) => file.path)).toContain("src/app/robots.ts")
     expect(files.map((file) => file.path)).toContain("src/lib/seo.ts")
     const seoLib = files.find((file) => file.path === "src/lib/seo.ts")?.content ?? ""
-    expect(seoLib).toContain("LocalBusiness")
     expect(seoLib).toContain("BreadcrumbList")
     expect(seoLib).toContain("FAQPage")
     expect(seoLib).toContain("getPageSeo")
@@ -1268,6 +1376,74 @@ describe("forge shell", () => {
     expect(siteDataSyntaxErrors).toEqual([])
     expect(packageJson).not.toContain("\"three\"")
     expect(files.some((file) => file.path.startsWith("admin/") || file.path.startsWith("web/"))).toBe(false)
+  })
+
+  it("locks neon gaming design tokens into generated CSS and passes design alignment QA", () => {
+    const intake = emptyForgeIntakeData()
+    intake.coreServices = "Survival server\nRanks store\nDiscord community\nPlayer support"
+    intake.conversionActions = "Copy server IP\nJoin Discord\nLogin/Register\nVisit store"
+    intake.requiredIntegrations = "Discord, store, live server status placeholders"
+    intake.visualStyle = "Neon gaming command hub"
+    intake.brandTone = "Energetic, premium, community-first"
+
+    const project = {
+      id: 77,
+      name: "RTXGaming",
+      businessName: "RTXGaming",
+      industry: "Minecraft server",
+      websiteUrl: "https://rtxgaming.example",
+      brandNotes: "Neon cyan and violet gaming command centre",
+      targetAudience: "Minecraft players, streamers, and community members",
+      primaryGoal: "Grow player registrations and Discord community activity",
+    }
+    const sitemap = createMockSitemapStrategy(project, intake, null)
+    const copy = createMockCopyDocument(project, sitemap, intake, null)
+    const design = createMockDesignDirection({ project, intake, approvedSitemap: sitemap, approvedCopy: copy })
+    const spec = createMockComponentSpec(sitemap, copy, design)
+    const workspace = {
+      projectId: 77,
+      slug: "77-rtxgaming",
+      relativePath: "generated-sites/77-rtxgaming",
+      template: FORGE_WORKSPACE_TEMPLATE,
+      fileCount: 0,
+      createdAt: "2026-06-21T08:00:00.000Z",
+      updatedAt: "2026-06-21T08:00:00.000Z",
+    } as const
+
+    const files = createForgeFrontendCodeFiles({
+      project,
+      workspace,
+      approvedSitemap: sitemap,
+      approvedCopy: copy,
+      approvedDesign: design,
+      approvedComponentSpec: spec,
+      integrationPlaceholders: [],
+    })
+    const globalsCss = files.find((file) => file.path === "src/app/globals.css")?.content ?? ""
+    const tailwindConfig = files.find((file) => file.path === "tailwind.config.ts")?.content ?? ""
+    const heroComponent = files.find((file) => file.path === "src/components/Hero.tsx")?.content ?? ""
+    const siteData = files.find((file) => file.path === "src/lib/site-data.ts")?.content ?? ""
+
+    expect(design.selectedStylePack).toBe("Neon command hub")
+    expect(globalsCss).toContain("--font-display: 'Orbitron'")
+    expect(globalsCss).toContain("--surface: #05070f")
+    expect(globalsCss).toContain("--brand: #22d3ee")
+    expect(globalsCss).toContain("--hero-bg:")
+    expect(tailwindConfig).toContain("Orbitron")
+    expect(tailwindConfig).toContain("#22d3ee")
+    expect(`${globalsCss}\n${tailwindConfig}`).not.toMatch(/Georgia|#f7f4ef/i)
+    expect(heroComponent).toContain("hero-brand-surface")
+    expect(heroComponent).toContain("bg-brand")
+    expect(siteData).toContain("designTokens")
+    expect(siteData).toMatch(/Discord|server|store|player/i)
+
+    expect(buildDesignAlignmentQaResult(design, { globalsCss, tailwindConfig, heroComponent, siteData }).status).toBe("passed")
+    expect(buildDesignAlignmentQaResult(design, {
+      globalsCss: ":root { --font-display: 'Georgia'; --surface: #f7f4ef; }",
+      tailwindConfig: "paper: '#f7f4ef'",
+      heroComponent,
+      siteData,
+    }).status).toBe("failed")
   })
 
   it("summarises generated frontend code artifacts for admin review", () => {
@@ -1646,6 +1822,144 @@ describe("forge shell", () => {
     }).status).toBe("failed")
   })
 
+  it("defines mandatory generated-site QA gates", () => {
+    expect(FORGE_MANDATORY_QA_CHECKS.map((check) => check.name)).toEqual([
+      "typecheck",
+      "build",
+      "placeholder_scan",
+      "copy_quality",
+      "cta_relevance",
+      "schema_appropriateness",
+      "design_alignment",
+      "mobile_responsive",
+      "content_depth",
+      "seo_score",
+      "forbidden_generic_content",
+    ])
+  })
+
+  it("runs deterministic generated-site content QA scans", () => {
+    const files = [
+      {
+        path: "src/lib/site-data.ts",
+        content: `export const site = ${JSON.stringify({
+          businessName: "RTXGaming",
+          industry: "Minecraft server",
+          brandNotes: "Neon gaming server hub",
+          targetAudience: "Minecraft players",
+          primaryGoal: "Grow server joins",
+          nav: [{ label: "Play", href: "/play" }],
+          services: [{ title: "Survival server", href: "/play", description: "Join the RTXGaming survival world with community events." }],
+          pages: [{
+            title: "Home",
+            path: "/",
+            schema: "Organization schema",
+            h1: "RTXGaming Minecraft server",
+            heroSubheading: "Join the server, meet players on Discord, and explore game modes.",
+            primaryCta: "Copy server IP",
+            secondaryCta: "Join Discord",
+            trustElements: ["Active Discord", "Player support", "Store and vote routes"],
+            sections: [{ heading: "Game modes", body: "Survival, events, ranks, and player support are easy to find." }],
+            faqItems: [{ question: "How do I join?", answer: "Copy the server IP and join Discord for support." }],
+            localSeoCopy: "RTXGaming supports players through server actions and community updates.",
+          }],
+        })} as const`,
+      },
+      {
+        path: "src/lib/seo.ts",
+        content: "export const seo = { pages: { '/': { jsonLd: [{ '@type': 'Organization' }, { '@type': 'FAQPage' }] } } }",
+      },
+      {
+        path: "src/components/Hero.tsx",
+        content: "export function Hero(){ return <section className=\"grid max-w-7xl px-5 md:grid-cols-2\"><a>Copy server IP</a></section> }",
+      },
+      {
+        path: "src/app/globals.css",
+        content: "body{overflow-x:hidden}",
+      },
+    ]
+
+    expect(buildPlaceholderScanQaResult(files).status).toBe("passed")
+    expect(buildCopyQualityQaResult(files).status).toBe("passed")
+    expect(buildCtaRelevanceQaResult(files).status).toBe("passed")
+    expect(buildSchemaAppropriatenessQaResult(files).status).toBe("passed")
+    expect(buildMobileResponsiveQaResult(files).status).toBe("passed")
+    expect(buildForbiddenGenericContentQaResult(files).status).toBe("passed")
+
+    const badFiles = files.map((file) => file.path === "src/lib/site-data.ts"
+      ? { ...file, content: file.content.replace("Copy server IP", "Learn more").replace("Join Discord", "Lorem ipsum placeholder") }
+      : file)
+
+    expect(buildPlaceholderScanQaResult(badFiles).status).toBe("failed")
+    expect(buildForbiddenGenericContentQaResult(badFiles).status).toBe("failed")
+    expect(buildCtaRelevanceQaResult(badFiles).status).toBe("failed")
+    expect(buildContentDepthQaResult(files).status).toBe("passed")
+  })
+
+  it("flags thin and duplicated pages in the content depth check", () => {
+    const thinFiles = [{
+      path: "src/lib/site-data.ts",
+      content: `export const site = ${JSON.stringify({
+        businessName: "Acme",
+        pages: [
+          { path: "/", heroSubheading: "Hi.", sections: [{ heading: "x", body: "Short." }], faqItems: [], serviceDescriptions: [], localSeoCopy: "" },
+          { path: "/about", heroSubheading: "Hi.", sections: [{ heading: "x", body: "Short." }], faqItems: [], serviceDescriptions: [], localSeoCopy: "" },
+        ],
+      })} as const`,
+    }]
+    const result = buildContentDepthQaResult(thinFiles)
+
+    expect(result.status).toBe("failed")
+    expect(result.stderr).toContain("Thin pages")
+    expect(result.stderr).toContain("identical body copy")
+  })
+
+  it("scores readiness and gates Client ready on hard checks", () => {
+    const passed = (name: string): ForgeQaCommandResult => ({ name: name as ForgeQaCommandResult["name"], command: name, status: "passed", exitCode: 0, durationMs: 1, stdout: "ok", stderr: "", skippedReason: null })
+    const allHardPassing = [
+      "install",
+      ...FORGE_MANDATORY_QA_CHECKS.map((check) => check.name),
+    ].map(passed)
+
+    const ready = computeForgeReadiness(allHardPassing)
+    expect(ready.score).toBe(100)
+    expect(ready.band).toBe("client_ready")
+    expect(ready.clientReady).toBe(true)
+    expect(ready.blockingReasons).toEqual([])
+
+    // A failing catastrophic check (build) caps the score in the bottom band and blocks client ready.
+    const buildFailing = allHardPassing.map((command) =>
+      command.name === "build" ? { ...command, status: "failed" as const, exitCode: 1 } : command)
+    const broken = computeForgeReadiness(buildFailing)
+    expect(broken.clientReady).toBe(false)
+    expect(broken.band).toBe("not_acceptable")
+    expect(broken.score).toBeLessThan(60)
+    expect(broken.blockingReasons.some((reason) => /Production build/.test(reason))).toBe(true)
+
+    // A single non-catastrophic hard failure cannot reach Client ready, capped at Needs review.
+    const seoFailing = allHardPassing.map((command) =>
+      command.name === "seo_score" ? { ...command, status: "failed" as const, exitCode: 1 } : command)
+    const needsReview = computeForgeReadiness(seoFailing)
+    expect(needsReview.clientReady).toBe(false)
+    expect(needsReview.hardChecksPassed).toBe(false)
+    expect(needsReview.score).toBeLessThanOrEqual(74)
+  })
+
+  it("embeds the readiness assessment in QA reports and artifact content", () => {
+    const report = buildQaReport({
+      workspacePath: "generated-sites/42-acme-ltd",
+      commands: [
+        { name: "install", command: "npm install", status: "passed", exitCode: 0, durationMs: 10, stdout: "", stderr: "", skippedReason: null },
+        { name: "typecheck", command: "npm run typecheck", status: "failed", exitCode: 2, durationMs: 12, stdout: "", stderr: "type error", skippedReason: null },
+      ],
+    })
+
+    expect(report.readiness.clientReady).toBe(false)
+    expect(report.readiness.band).toBe("not_acceptable")
+    expect(buildForgeQaArtifactContent(report)).toContain("## Readiness")
+    expect(buildForgeQaArtifactContent(report)).toContain("Client ready: no")
+  })
+
   it("validates and redacts Forge WhatsApp integration config", () => {
     expect(parseForgeWhatsAppConfigPayload({ enabled: true, businessNumber: "not a phone" }).ok).toBe(false)
     const parsed = parseForgeWhatsAppConfigPayload({
@@ -1806,3 +2120,136 @@ function collectRouteFiles(root: string): string[] {
   }
   return files
 }
+
+// RTXGaming is the canonical "premium gaming/community site" scenario. It locks in that Forge cannot
+// regress back to generic local-business output (beige styling, LocalBusiness schema, enquiry-first
+// CTAs) for a Minecraft server/community brand. If any quality gate below flips to failing, Forge has
+// regressed and this test must fail.
+describe("RTXGaming Forge quality regression", () => {
+  function buildRtxScenario() {
+    const intake = emptyForgeIntakeData()
+    intake.coreServices = "Survival\nSkyblock\nBedwars\nPremium ranks"
+    intake.conversionActions = "Copy server IP\nJoin Discord\nRegister account\nVisit store\nVote for server"
+    intake.visualStyle = "Dark neon gaming command hub"
+    const project = {
+      id: 77,
+      name: "RTXGaming",
+      businessName: "RTXGaming",
+      industry: "Minecraft server and gaming community",
+      websiteUrl: "https://rtxgaming.example",
+      brandNotes: "Premium Minecraft server and Discord community with a dark neon gaming aesthetic",
+      targetAudience: "Minecraft players and Discord community members",
+      primaryGoal: "Grow server joins, Discord members, store visits and votes",
+    }
+    const sitemap = createMockSitemapStrategy(project, intake, null)
+    const copy = createMockCopyDocument(project, sitemap, intake, null)
+    const design = createMockDesignDirection({ project, intake, approvedSitemap: sitemap, approvedCopy: copy })
+    const spec = createMockComponentSpec(sitemap, copy, design)
+    const workspace = {
+      projectId: 77,
+      slug: "77-rtxgaming",
+      relativePath: "generated-sites/77-rtxgaming",
+      template: FORGE_WORKSPACE_TEMPLATE,
+      fileCount: 0,
+      createdAt: "2026-06-24T08:00:00.000Z",
+      updatedAt: "2026-06-24T08:00:00.000Z",
+    } as const
+    const files = createForgeFrontendCodeFiles({
+      project,
+      workspace,
+      approvedSitemap: sitemap,
+      approvedCopy: copy,
+      approvedDesign: design,
+      approvedComponentSpec: spec,
+      integrationPlaceholders: [],
+    })
+    const read = (path: string) => files.find((file) => file.path === path)?.content ?? ""
+    return { sitemap, design, files, siteData: read("src/lib/site-data.ts"), seo: read("src/lib/seo.ts"), globals: read("src/app/globals.css") }
+  }
+
+  it("produces a premium gaming site, not generic local-business output", () => {
+    const { sitemap, design, files, siteData, seo, globals } = buildRtxScenario()
+
+    // Gaming strategy + dark neon design pack are selected (not local-service / beige editorial).
+    expect(sitemap.selectedStrategyPack).toBe("gaming_community_server")
+    expect(design.selectedStylePack).toBe("Neon command hub")
+
+    // Expected gaming structure: game modes, store, vote, community, support pages.
+    const paths = sitemap.sitemap.map((page) => page.path)
+    expect(paths).toEqual(expect.arrayContaining(["/", "/game-modes", "/store", "/vote", "/community", "/support"]))
+
+    // Expected CTAs: server IP, Discord, login/register, store, vote.
+    const ctaText = [...siteData.matchAll(/"(?:primary|secondary)Cta":\s*"([^"]+)"/g)].map((match) => match[1]).join(" | ").toLowerCase()
+    expect(ctaText).toContain("server ip")
+    expect(ctaText).toContain("discord")
+    expect(ctaText).toMatch(/store|vote/)
+    expect(siteData.toLowerCase()).toMatch(/login|register/)
+
+    // Server stats placeholders present; no beige/editorial styling; no LocalBusiness schema.
+    expect(siteData.toLowerCase()).toMatch(/status|stat|player count|online/)
+    expect(/#f7f4ef|beige|cream|\bGeorgia\b/i.test(globals)).toBe(false)
+    expect(/"@type"\s*:\s*"LocalBusiness"/.test(seo)).toBe(false)
+    expect(seo).toContain("WebSite")
+
+    // Every mandatory content/design quality gate passes for the canonical gaming output.
+    expect(buildPlaceholderScanQaResult(files).status).toBe("passed")
+    expect(buildCopyQualityQaResult(files).status).toBe("passed")
+    expect(buildCtaRelevanceQaResult(files).status).toBe("passed")
+    expect(buildSchemaAppropriatenessQaResult(files).status).toBe("passed")
+    expect(buildMobileResponsiveQaResult(files).status).toBe("passed")
+    expect(buildContentDepthQaResult(files).status).toBe("passed")
+    expect(buildForbiddenGenericContentQaResult(files).status).toBe("passed")
+    expect(buildDesignAlignmentQaResult(design, {
+      globalsCss: globals,
+      tailwindConfig: files.find((file) => file.path === "tailwind.config.ts")?.content ?? "",
+      heroComponent: files.find((file) => file.path === "src/components/Hero.tsx")?.content ?? "",
+      siteData,
+    }).status).toBe("passed")
+
+    // site-data.ts is syntactically valid TypeScript (typecheck/build proxy at the unit level).
+    const syntaxErrors = ts
+      .transpileModule(siteData, { reportDiagnostics: true, compilerOptions: { target: ts.ScriptTarget.ESNext } })
+      .diagnostics?.filter((diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error) ?? []
+    expect(syntaxErrors).toEqual([])
+  })
+
+  it("reaches Client ready when the gaming gates and typecheck/build pass", () => {
+    const { files } = buildRtxScenario()
+    const commands: ForgeQaCommandResult[] = [
+      buildPlaceholderScanQaResult(files),
+      buildCopyQualityQaResult(files),
+      buildCtaRelevanceQaResult(files),
+      buildSchemaAppropriatenessQaResult(files),
+      buildMobileResponsiveQaResult(files),
+      buildContentDepthQaResult(files),
+      buildForbiddenGenericContentQaResult(files),
+      { name: "typecheck", command: "tsc --noEmit", status: "passed", exitCode: 0, durationMs: 1, stdout: "", stderr: "", skippedReason: null },
+      { name: "build", command: "next build", status: "passed", exitCode: 0, durationMs: 1, stdout: "", stderr: "", skippedReason: null },
+      { name: "design_alignment", command: "design", status: "passed", exitCode: 0, durationMs: 1, stdout: "", stderr: "", skippedReason: null },
+      { name: "seo_score", command: "seo", status: "passed", exitCode: 0, durationMs: 1, stdout: "", stderr: "", skippedReason: null },
+    ]
+    const readiness = computeForgeReadiness(commands)
+
+    expect(readiness.clientReady).toBe(true)
+    expect(readiness.band).toBe("client_ready")
+    expect(readiness.blockingReasons).toEqual([])
+  })
+
+  it("still rejects a regression to generic local-business output", () => {
+    const { files } = buildRtxScenario()
+    // Simulate Forge regressing to generic output: enquiry-first CTAs and LocalBusiness JSON-LD.
+    const regressed = files.map((file) => {
+      if (file.path === "src/lib/site-data.ts") {
+        // Strip every gaming CTA back to an enquiry-first label.
+        return { ...file, content: file.content.replace(/("(?:primary|secondary)Cta":\s*)"[^"]+"/g, '$1"Request a quote"') }
+      }
+      if (file.path === "src/lib/seo.ts") {
+        return { ...file, content: `${file.content}\nconst extra = { "@type": "LocalBusiness" }` }
+      }
+      return file
+    })
+
+    expect(buildCtaRelevanceQaResult(regressed).status).toBe("failed")
+    expect(buildSchemaAppropriatenessQaResult(regressed).status).toBe("failed")
+  })
+})

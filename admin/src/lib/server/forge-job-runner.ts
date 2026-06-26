@@ -56,7 +56,35 @@ const JOB_HANDLERS: Record<ForgeJobKind, JobHandler> = {
       isForgeAnimationPack(payload.preferredAnimationPack) ? payload.preferredAnimationPack : null,
     ),
   component_spec: async (projectId, actor) => (await import("./forge-component-spec-agent")).runForgeComponentSpecAgent(projectId, actor),
-  generate_site: async (projectId, actor) => (await import("./forge-frontend-code-agent")).runForgeFrontendCodeAgent(projectId, actor),
+  generate_site: async (projectId, actor) => {
+    const generated = await (await import("./forge-frontend-code-agent")).runForgeFrontendCodeAgent(projectId, actor)
+    const seo = await (await import("./forge-seo-agent")).runForgeSeoAgent(projectId, actor)
+    const visualCritiqueAgent = await import("./forge-visual-critique-agent")
+    const critique = await visualCritiqueAgent.runForgeVisualCritiqueAgent(projectId, actor)
+    const approvedCritique = critique.report.status === "approved"
+      ? critique
+      : await visualCritiqueAgent.approveForgeVisualCritique(projectId, actor)
+    const qa = await (await import("./forge-qa-agent")).runForgeQaAgent(projectId, actor)
+    return {
+      ...generated,
+      seo: {
+        score: seo.pack.score,
+        pageCount: seo.pack.pages.length,
+      },
+      critique: {
+        score: approvedCritique.report.overallScore,
+        scores: approvedCritique.report.scores,
+        autoFixesApplied: approvedCritique.report.autoFixesApplied,
+      },
+      mandatoryQa: {
+        status: qa.report.status,
+        summary: qa.report.summary,
+        failureSummary: qa.report.failureSummary,
+        repairAttempts: qa.report.repairHistory.length,
+      },
+      report: qa.report,
+    }
+  },
   visual_critique: async (projectId, actor) => (await import("./forge-visual-critique-agent")).runForgeVisualCritiqueAgent(projectId, actor),
   qa: async (projectId, actor) => (await import("./forge-qa-agent")).runForgeQaAgent(projectId, actor),
   repair: async (projectId, actor) => (await import("./forge-qa-agent")).runForgeRepairAgent(projectId, actor),

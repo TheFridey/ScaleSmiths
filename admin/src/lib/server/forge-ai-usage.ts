@@ -10,6 +10,13 @@ import {
   type ForgeAiUsageSummary,
 } from "@/lib/forge-ai-usage"
 import type { ForgeAiProvider, ForgeAiUsage } from "@/lib/forge-ai"
+import {
+  summarizeForgeCostQuality,
+  type ForgeCostQualitySummary,
+  type ForgeModelUsed,
+  type ForgeStageCost,
+} from "@/lib/forge-cost-quality"
+import type { ForgeQaArtifactState } from "@/lib/forge-qa"
 import { forgeActivityLogs, forgeAiUsage, forgeProjects, forgeTasks } from "@/lib/schema"
 
 export interface ForgeAiUsageInput {
@@ -238,6 +245,71 @@ export async function loadForgeAiProjectMetrics(projectId: number): Promise<Forg
       estimatedCost: toCost(row.estimatedCost),
     })),
   }
+}
+
+// Combines real AI spend (grouped by build stage) with the QA report's quality signals into the
+// cost/quality decision model surfaced in the project UI. The QA artifact is passed in so we reuse
+// the value already loaded for the page instead of re-querying it.
+export async function loadForgeCostQualityModel(projectId: number, qa: ForgeQaArtifactState): Promise<ForgeCostQualitySummary> {
+  const [stageRows, modelRows, taskRows, totalCost] = await Promise.all([
+    db
+      .select({
+        stage: forgeTasks.agentType,
+        costUsd: sql<string>`coalesce(sum(${forgeAiUsage.estimatedCost}), 0)`,
+        tokens: sql<string>`coalesce(sum(${forgeAiUsage.totalTokens}), 0)`,
+        calls: sql<string>`count(${forgeAiUsage.id})`,
+      })
+      .from(forgeAiUsage)
+      .innerJoin(forgeTasks, eq(forgeTasks.id, forgeAiUsage.taskId))
+      .where(eq(forgeAiUsage.projectId, projectId))
+      .groupBy(forgeTasks.agentType),
+    db
+      .selectDistinct({ provider: forgeAiUsage.provider, model: forgeAiUsage.model })
+      .from(forgeAiUsage)
+      .where(eq(forgeAiUsage.projectId, projectId)),
+    db
+      .select({ outputJson: forgeTasks.outputJson })
+      .from(forgeTasks)
+      .where(eq(forgeTasks.projectId, projectId)),
+    sumUsageCost(eq(forgeAiUsage.projectId, projectId)),
+  ])
+
+  const stageCosts: ForgeStageCost[] = stageRows.map((row) => ({
+    stage: row.stage,
+    costUsd: toCost(row.costUsd),
+    tokens: Number(row.tokens ?? 0),
+    calls: Number(row.calls ?? 0),
+  }))
+  // AI usage not tied to a task (or to a deleted task) is excluded by the join; surface the remainder
+  // as "other" so the per-stage breakdown still reconciles with the project's real total spend.
+  const trackedStageCost = stageCosts.reduce((sum, stage) => sum + stage.costUsd, 0)
+  const untrackedCost = roundCost(totalCost - trackedStageCost)
+  if (untrackedCost > 0.0001) {
+    stageCosts.push({ stage: "other", costUsd: untrackedCost, tokens: 0, calls: 0 })
+  }
+
+  const models: ForgeModelUsed[] = modelRows.map((row) => ({ provider: row.provider, model: row.model }))
+  const retries = taskRows.reduce((sum, row) => {
+    const ai = (row.outputJson as { ai?: { retries?: unknown } } | null)?.ai
+    const value = Number(ai?.retries)
+    return sum + (Number.isFinite(value) && value > 0 ? value : 0)
+  }, 0)
+
+  const report = qa.report
+  const buildCommand = report?.commands.find((command) => command.name === "build")
+
+  return summarizeForgeCostQuality({
+    stageCosts,
+    retries,
+    models,
+    qaStatus: report?.status ?? "not_run",
+    readinessScore: report?.readiness.score ?? null,
+    readinessBand: report?.readiness.band ?? null,
+    clientReady: report?.readiness.clientReady ?? false,
+    qaFailures: report?.commands.filter((command) => command.status === "failed").length ?? 0,
+    repairPasses: report?.repairHistory.filter((attempt) => attempt.status === "applied").length ?? 0,
+    buildDurationMs: buildCommand && buildCommand.status !== "skipped" ? buildCommand.durationMs : null,
+  })
 }
 
 export async function exportForgeAiUsageCsv(projectId?: number | null) {

@@ -55,14 +55,19 @@ export const FORGE_DASHBOARD_CARDS = [
 
 export const FORGE_WORKFLOW_STAGES = [
   "Intake",
-  "Research",
-  "Sitemap",
-  "Copy",
-  "Design",
-  "Build",
-  "Visual Critique",
-  "QA",
-  "Deploy",
+  "Strategy selection",
+  "Brief confirmation",
+  "Site plan",
+  "Design tokens",
+  "Code generation",
+  "Copy generation",
+  "SEO/schema generation",
+  "Internal critique",
+  "Design critique",
+  "Copy rewrite",
+  "Code repair",
+  "Final validation",
+  "Export/preview",
 ] as const
 
 export const FORGE_INTAKE_ARTIFACT_TITLE = "Intake Summary"

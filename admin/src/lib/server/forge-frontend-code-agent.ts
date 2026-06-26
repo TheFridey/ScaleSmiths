@@ -206,7 +206,7 @@ export async function runForgeFrontendCodeAgent(projectId: number, actor: string
 
       await tx
         .update(forgeProjects)
-        .set({ status: "preview", updatedAt: completedAt })
+        .set({ status: "qa", updatedAt: completedAt })
         .where(eq(forgeProjects.id, projectId))
 
       await tx
@@ -227,7 +227,7 @@ export async function runForgeFrontendCodeAgent(projectId: number, actor: string
         projectId,
         actor,
         action: "frontend_code_completed",
-        message: `Generated ${files.length} frontend files for ${project.name}.`,
+        message: `Generated ${files.length} frontend files for ${project.name}; mandatory QA is required before readiness.`,
         metadataJson: {
           taskId: task.id,
           artifactId: saved.id,

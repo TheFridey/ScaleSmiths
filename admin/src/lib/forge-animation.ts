@@ -115,6 +115,7 @@ export function chooseForgeAnimationPack(input: {
 }): ForgeAnimationPackName {
   const text = `${input.industry ?? ""} ${input.brandNotes ?? ""} ${input.stylePack ?? ""} ${input.visualStyle ?? ""}`.toLowerCase()
   if (/cinematic|luxury|hospitality|venue|portfolio/.test(text)) return "Cinematic Hero"
+  if (/gaming|minecraft|server|discord|neon|command hub/.test(text)) return "Glass Motion"
   if (/glass|saas|software|platform|app/.test(text)) return "Glass Motion"
   if (/editorial|magazine|journal|creative|story/.test(text)) return "Editorial Reveal"
   if (/industrial|manufactur|machin|repair|engineering|trade/.test(text)) return "Industrial Precision"
@@ -124,7 +125,7 @@ export function chooseForgeAnimationPack(input: {
 
 export function buildForgeAnimationWarning(packName: ForgeAnimationPackName, stylePack?: string | null) {
   const pack = getForgeAnimationPack(packName)
-  const simpleLocal = /clean local|high-conversion service|wellness soft/i.test(stylePack ?? "")
+  const simpleLocal = /clean local|clean local professional|high-conversion service|wellness soft|soft wellness/i.test(stylePack ?? "")
   if (!pack.heavy || !simpleLocal) return null
   return `${pack.name} is a heavier animation pack. For a simple local/service business, keep this restrained and remove any motion that slows proof, service copy, or enquiry.`
 }

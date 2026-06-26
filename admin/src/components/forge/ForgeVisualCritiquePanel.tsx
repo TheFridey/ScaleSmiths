@@ -113,12 +113,16 @@ export function ForgeVisualCritiquePanel({
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+          <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-5">
             <Score label="Overall" value={report.overallScore} />
-            <Score label="Design Quality" value={report.scores.designQuality} />
-            <Score label="Conversion" value={report.scores.conversionQuality} />
-            <Score label="Trust Signals" value={report.scores.trustSignals} />
-            <Score label="Mobile" value={report.scores.mobileExperience} />
+            <Score label="Brand Fit" value={report.scores.brandFit} />
+            <Score label="Visual Quality" value={report.scores.visualQuality} />
+            <Score label="CTA Relevance" value={report.scores.ctaRelevance} />
+            <Score label="Specificity" value={report.scores.contentSpecificity} />
+            <Score label="SEO/AEO" value={report.scores.seoAeoQuality} />
+            <Score label="Accessibility" value={report.scores.accessibility} />
+            <Score label="Mobile" value={report.scores.mobileReadiness} />
+            <Score label="Client Ready" value={report.scores.clientReadiness} />
           </div>
 
           <p className="font-dm text-sm leading-relaxed" style={{ color:T.t2 }}>{report.summary}</p>

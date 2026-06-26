@@ -54,7 +54,7 @@ export async function runForgeSitemapAgent(projectId: number, actor: string) {
       .values({
         projectId,
         title: "Generate sitemap and strategy",
-        description: "Create a local/service-business sitemap, search intent plan, CTAs, trust plan, and build order.",
+        description: "Select an industry/site-type strategy pack, then create sitemap, search intent plan, CTAs, trust plan, and build order.",
         agentType: "sitemap",
         status: "queued",
         inputJson: taskInput,
@@ -189,10 +189,11 @@ export async function runForgeSitemapAgent(projectId: number, actor: string) {
       schema: FORGE_SITEMAP_STRATEGY_SCHEMA,
       systemPrompt: [
         "You are the ScaleSmiths Forge Sitemap and Strategy Agent.",
-        "Return practical structured JSON for a local/service-business website.",
-        "Do not generate generic SaaS sitemap recommendations unless the intake explicitly asks for a SaaS product website.",
+        "Return practical structured JSON for the selected industry/site-type strategy pack.",
+        "Do not generate generic agency, local-service, or SaaS structures unless the selected pack supports them.",
+        "For gaming/community/server projects, include server IP, Discord, login/register, store, live status/stat placeholders, community/news/events, rules/support, and game mode/features strategy.",
       ].join(" "),
-      prompt: buildForgeSitemapPrompt({ project, intakeSummary, researchReport }),
+      prompt: buildForgeSitemapPrompt({ project, intake: intake.intake, intakeSummary, researchReport }),
       maxTokens: 2200,
       timeoutMs: 30_000,
       maxRetries: 2,

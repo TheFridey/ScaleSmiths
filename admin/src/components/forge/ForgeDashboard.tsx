@@ -149,7 +149,7 @@ export function ForgeDashboard({
 
   return (
     <div
-      className="mx-auto flex h-[calc(100vh-1rem)] max-w-[1500px] flex-col overflow-hidden rounded-[8px] border sm:h-[calc(100vh-1.5rem)] lg:h-[calc(100vh-2.5rem)]"
+      className="mx-auto flex h-[calc(100vh-1rem)] w-full max-w-none flex-col overflow-hidden rounded-[8px] border sm:h-[calc(100vh-1.5rem)] lg:h-[calc(100vh-2.5rem)]"
       style={{
         borderColor: "rgba(56,189,248,.18)",
         background: "linear-gradient(135deg, #070b13 0%, #0b1020 48%, #060b10 100%)",
@@ -634,15 +634,19 @@ function toneColor(tone: "cyan" | "green" | "amber" | "violet") {
 function stageToStatus(stage: string): ForgeProjectStatus | null {
   const normalized = stage.toLowerCase()
   if (normalized.includes("intake")) return "intake"
-  if (normalized.includes("research")) return "research"
-  if (normalized.includes("sitemap")) return "sitemap"
-  if (normalized.includes("copy")) return "copy"
-  if (normalized.includes("design")) return "design"
-  if (normalized.includes("build")) return "build"
-  if (normalized.includes("critique")) return "qa"
-  if (normalized.includes("qa")) return "qa"
-  if (normalized.includes("integrations")) return "integrations"
-  if (normalized.includes("preview")) return "preview"
+  if (normalized.includes("strategy")) return "strategy"
+  if (normalized.includes("brief")) return "strategy"
+  if (normalized.includes("site plan")) return "sitemap"
+  if (normalized.includes("design token")) return "design"
+  if (normalized.includes("code generation")) return "build"
+  if (normalized.includes("copy generation")) return "copy"
+  if (normalized.includes("seo") || normalized.includes("schema")) return "build"
+  if (normalized.includes("internal critique")) return "qa"
+  if (normalized.includes("design critique")) return "qa"
+  if (normalized.includes("copy rewrite")) return "copy"
+  if (normalized.includes("code repair")) return "qa"
+  if (normalized.includes("final validation")) return "qa"
+  if (normalized.includes("preview") || normalized.includes("export")) return "preview"
   if (normalized.includes("review")) return "client_review"
   if (normalized.includes("deploy")) return "ready_to_deploy"
   return null

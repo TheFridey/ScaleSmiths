@@ -1,6 +1,7 @@
 import type { ForgeJsonSchema, JsonValue } from "./forge-ai"
 import type { ForgeIntakeData } from "./forge"
 import type { ForgeResearchReport } from "./forge-research"
+import { formatForgeStrategyPackForPrompt, selectForgeStrategyPack, type ForgeStrategyPackId } from "./forge-strategy-packs"
 import { validateJsonSchemaValue } from "./forge-ai"
 
 export const FORGE_SITEMAP_ARTIFACT_TITLE = "Sitemap & Strategy"
@@ -23,6 +24,8 @@ export interface ForgeSitemapPage extends Record<string, JsonValue> {
 
 export interface ForgeSitemapStrategy extends Record<string, JsonValue> {
   strategySummary: string
+  selectedStrategyPack: ForgeStrategyPackId
+  strategyPackRationale: string
   sitemap: ForgeSitemapPage[]
   conversionNotes: string[]
   internalLinkingPlan: string[]
@@ -50,9 +53,11 @@ export interface ForgeSitemapArtifactState {
 export const FORGE_SITEMAP_STRATEGY_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["strategySummary", "sitemap", "conversionNotes", "internalLinkingPlan", "priorityBuildOrder"],
+  required: ["strategySummary", "selectedStrategyPack", "strategyPackRationale", "sitemap", "conversionNotes", "internalLinkingPlan", "priorityBuildOrder"],
   properties: {
-    strategySummary: { type: "string", description: "Short website strategy summary for a local/service business." },
+    strategySummary: { type: "string", description: "Short website strategy summary for the selected industry/site-type." },
+    selectedStrategyPack: { type: "string", enum: ["local_service_business", "ecommerce_store", "saas_startup", "charity_nonprofit", "restaurant_food", "trades_business", "gaming_community_server", "creator_personal_brand", "event_venue", "professional_services"] },
+    strategyPackRationale: { type: "string" },
     sitemap: {
       type: "array",
       description: "Recommended website pages.",
@@ -94,9 +99,10 @@ export const FORGE_SITEMAP_STRATEGY_SCHEMA = {
 type ParseResult<T> = { ok: true; data: T } | { ok: false; error: string }
 
 export function parseForgeSitemapStrategyPayload(input: unknown): ParseResult<ForgeSitemapStrategy> {
-  const errors = validateJsonSchemaValue(FORGE_SITEMAP_STRATEGY_SCHEMA, input)
+  const normalized = normalizeLegacyStrategyPack(input)
+  const errors = validateJsonSchemaValue(FORGE_SITEMAP_STRATEGY_SCHEMA, normalized)
   if (errors.length) return { ok: false, error: errors.join(" ") }
-  return { ok: true, data: input as ForgeSitemapStrategy }
+  return { ok: true, data: normalized as ForgeSitemapStrategy }
 }
 
 export function readForgeSitemapStrategyArtifact(metadata: Record<string, unknown> | null | undefined): ForgeSitemapArtifactState {
@@ -110,12 +116,10 @@ export function readForgeSitemapStrategyArtifact(metadata: Record<string, unknow
     }
   }
 
-  const strategy = parseForgeSitemapStrategyPayload(metadata.strategy).ok
-    ? (metadata.strategy as ForgeSitemapStrategy)
-    : null
-  const approvedStrategy = parseForgeSitemapStrategyPayload(metadata.approvedStrategy).ok
-    ? (metadata.approvedStrategy as ForgeSitemapStrategy)
-    : null
+  const parsedStrategy = parseForgeSitemapStrategyPayload(metadata.strategy)
+  const parsedApprovedStrategy = parseForgeSitemapStrategyPayload(metadata.approvedStrategy)
+  const strategy = parsedStrategy.ok ? parsedStrategy.data : null
+  const approvedStrategy = parsedApprovedStrategy.ok ? parsedApprovedStrategy.data : null
 
   return {
     strategy,
@@ -126,20 +130,37 @@ export function readForgeSitemapStrategyArtifact(metadata: Record<string, unknow
   }
 }
 
+function normalizeLegacyStrategyPack(input: unknown) {
+  if (!input || typeof input !== "object" || Array.isArray(input)) return input
+  const record = input as Record<string, unknown>
+  return {
+    selectedStrategyPack: "local_service_business",
+    strategyPackRationale: "Legacy sitemap created before strategy packs; defaulted to Local service business.",
+    ...record,
+  }
+}
+
 export function buildForgeSitemapPrompt({
   project,
+  intake,
   intakeSummary,
   researchReport,
 }: {
   project: ForgeSitemapProjectContext
+  intake: ForgeIntakeData
   intakeSummary: string
   researchReport: ForgeResearchReport | null
 }) {
+  const selectedPack = selectForgeStrategyPack(project, intake)
   const lines = [
-    "Generate a website strategy and sitemap for a real local/service business.",
-    "Avoid generic SaaS assumptions such as pricing pages, product tours, integrations pages, and feature grids unless explicitly supported by the intake.",
-    "Prioritise high-intent service pages, local search intent, proof, trust, and clear enquiry paths.",
+    "Generate a website strategy and sitemap for the selected industry/site-type strategy pack.",
+    "Do not force local-service, generic agency, or SaaS structure unless the selected pack supports it.",
+    "The response must include selectedStrategyPack and strategyPackRationale explaining why the pack was selected.",
+    "Use the selected pack's homepage sections, CTAs, schema direction, tone, trust signals, conversion goals, common page types, and forbidden generic sections.",
     "Every page should include page purpose, target keyword/search intent, CTA, trust elements, schema recommendation, and conversion notes.",
+    "",
+    "Selected strategy pack:",
+    formatForgeStrategyPackForPrompt(selectedPack),
     "",
     "Project:",
     `- Project name: ${project.name}`,
@@ -165,6 +186,10 @@ export function buildForgeSitemapArtifactContent(strategy: ForgeSitemapStrategy)
     "",
     "## Strategy summary",
     strategy.strategySummary,
+    "",
+    "## Selected strategy pack",
+    `- Pack: ${strategy.selectedStrategyPack}`,
+    `- Rationale: ${strategy.strategyPackRationale}`,
     "",
     "## Recommended sitemap",
     ...strategy.sitemap.flatMap((page, index) => [
@@ -193,6 +218,9 @@ export function buildForgeSitemapArtifactContent(strategy: ForgeSitemapStrategy)
 }
 
 export function createMockSitemapStrategy(project: ForgeSitemapProjectContext, intake: ForgeIntakeData, researchReport: ForgeResearchReport | null): ForgeSitemapStrategy {
+  const selection = selectForgeStrategyPack(project, intake)
+  if (selection.pack.id === "gaming_community_server") return createGamingSitemapStrategy(project, intake, selection)
+
   const businessName = project.businessName || project.name
   const location = intake.primaryLocation || intake.businessLocation || "local service area"
   const services = splitList(intake.coreServices || "Core services")
@@ -266,7 +294,9 @@ export function createMockSitemapStrategy(project: ForgeSitemapProjectContext, i
   ]
 
   return {
-    strategySummary: `${businessName} should use a service-led local sitemap focused on ${primaryService.toLowerCase()}, trust proof, local relevance around ${location}, and frictionless enquiry actions rather than a generic brochure or SaaS-style structure.`,
+    strategySummary: `${businessName} should use a ${selection.pack.label.toLowerCase()} sitemap focused on ${primaryService.toLowerCase()}, trust proof, relevant conversion actions, and page types that match the selected site type rather than a generic agency-style structure.`,
+    selectedStrategyPack: selection.pack.id,
+    strategyPackRationale: selection.reason,
     sitemap: dedupePages(sitemap, recommendedPages),
     conversionNotes: [
       "Repeat one primary CTA consistently across commercial pages.",
@@ -280,6 +310,129 @@ export function createMockSitemapStrategy(project: ForgeSitemapProjectContext, i
       "About reinforces credibility and routes visitors back to commercial pages.",
     ],
     priorityBuildOrder: ["Home", ...servicePages.map((page) => page.title), "Contact", "Service Area", "About"],
+  }
+}
+
+function createGamingSitemapStrategy(
+  project: ForgeSitemapProjectContext,
+  intake: ForgeIntakeData,
+  selection: ReturnType<typeof selectForgeStrategyPack>,
+): ForgeSitemapStrategy {
+  const businessName = project.businessName || project.name
+  const ctas = splitList(intake.conversionActions || selection.pack.correctCtas.join("\n"))
+  const primaryCta = ctas.find((cta) => /server|ip|join/i.test(cta)) ?? "Copy server IP"
+  const proof = splitList(intake.testimonials || selection.pack.trustSignals.join("\n"))
+  const features = splitList(intake.coreServices || "Survival gameplay\nCommunity events\nPremium ranks\nDiscord community")
+  const page = (
+    title: string,
+    path: string,
+    purpose: string,
+    cta: string,
+    trustElements: string[],
+    schemaRecommendation = "WebPage schema",
+    priority: ForgeSitemapPriority = "primary",
+  ): ForgeSitemapPage => ({
+    title,
+    path,
+    pagePurpose: purpose,
+    targetKeyword: `${businessName} ${title}`.toLowerCase(),
+    searchIntent: `Understand ${title.toLowerCase()} for ${businessName} and take the next community action.`,
+    primaryCta: cta,
+    trustElements,
+    schemaRecommendation,
+    conversionNotes: "Keep server actions visible, use live/stat placeholders only when data is connected, and avoid local-service enquiry framing.",
+    priority,
+  })
+
+  const sitemap: ForgeSitemapPage[] = [
+    page(
+      "Home",
+      "/",
+      `Position ${businessName} as a premium gaming community, show the server IP/status, route players to game modes, Discord, store, and support.`,
+      primaryCta,
+      ["Server IP CTA", "Discord CTA", "Live status/stat placeholders", ...proof.slice(0, 2)],
+      "WebSite schema plus Organization schema; no LocalBusiness unless a real local venue/location is supplied",
+    ),
+    page(
+      "Play / Join",
+      "/play",
+      "Help new players copy the server IP, understand versions/platforms, register or log in, and join Discord.",
+      "Copy server IP",
+      ["Server IP", "Version/platform notes", "Login/register CTA"],
+      "HowTo or FAQPage schema where setup steps are provided",
+    ),
+    page(
+      "Game Modes",
+      "/game-modes",
+      "Explain the server's main game modes, features, ranks, seasons, and reasons to keep playing.",
+      "View game modes",
+      features.slice(0, 4),
+      "ItemList schema for mode/features where appropriate",
+    ),
+    page(
+      "Store",
+      "/store",
+      "Route players to ranks, cosmetics, bundles, or supporter products without inventing prices or perks.",
+      "Visit store",
+      ["Store security notes", "No invented pricing", "Supporter benefits if supplied"],
+      "Product/Offer schema only for real supplied store items",
+    ),
+    page(
+      "Vote",
+      "/vote",
+      "Send players to voting links and explain rewards only if supplied.",
+      "Vote for server",
+      ["Voting links", "Reward notes if supplied"],
+      "WebPage schema",
+      "secondary",
+    ),
+    page(
+      "News / Events",
+      "/news",
+      "Show community updates, seasonal events, announcements, changelogs, and event recaps.",
+      "Join Discord",
+      ["Community/news/events sections", "Event placeholders", "Discord announcements"],
+      "Event schema for dated events; Article schema for news posts",
+      "secondary",
+    ),
+    page(
+      "Rules & Support",
+      "/support",
+      "Make rules, moderation, ban appeals, contact routes, and player support clear.",
+      "Get support",
+      ["Rules clarity", "Support routes", "Staff/moderation notes"],
+      "FAQPage schema",
+      "secondary",
+    ),
+    page(
+      "Community",
+      "/community",
+      "Promote Discord, social links, screenshots, creators, staff, and player community proof.",
+      "Join Discord",
+      ["Discord CTA", "Community screenshots", "Creator/social links"],
+      "Organization/SocialProfile links where supplied",
+      "secondary",
+    ),
+  ]
+
+  return {
+    strategySummary: `${businessName} should use a gaming/community/server strategy: server IP and Discord actions first, store/vote/login routes close behind, live status/stat placeholders where data is connected, and community/rules/game-mode content instead of local-service pages or request-a-quote framing.`,
+    selectedStrategyPack: selection.pack.id,
+    strategyPackRationale: selection.reason,
+    sitemap,
+    conversionNotes: [
+      "Make server IP, Discord, login/register, store, and vote CTAs persistent and easy to scan.",
+      "Use live status/stat cards as placeholders unless a real API/source is connected; never invent player counts.",
+      "Do not use LocalBusiness schema unless the brief supplies a genuine local venue/location requirement.",
+      "Replace service-area and quote flows with player onboarding, game mode discovery, support, and community retention.",
+    ],
+    internalLinkingPlan: [
+      "Home links immediately to Play / Join, Discord/community, Game Modes, Store, Vote, and Support.",
+      "Game Modes links to Play / Join and Store where ranks/perks are relevant.",
+      "News / Events and Community route players back to Discord and Play / Join.",
+      "Rules & Support is linked from footer, Play / Join, and account/support CTAs.",
+    ],
+    priorityBuildOrder: ["Home", "Play / Join", "Game Modes", "Rules & Support", "Store", "Vote", "News / Events", "Community"],
   }
 }
 

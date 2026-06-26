@@ -7,6 +7,8 @@ import type { ForgeRepairPatch } from "@/lib/forge-qa"
 // workspace, so a truncated/garbled response fails the attempt instead of corrupting the site.
 
 const PARSEABLE_EXTENSIONS = [".ts", ".tsx", ".mts", ".cts", ".js", ".jsx", ".mjs", ".cjs"]
+type TypeScriptModule = typeof import("typescript")
+let typescriptModulePromise: Promise<TypeScriptModule> | null = null
 
 function isParseablePath(path: string) {
   const lower = path.toLowerCase()
@@ -20,7 +22,7 @@ export async function validateForgeRepairPatchSyntax(
   if (!targets.length) return { ok: true }
 
   // typescript is a devDependency only needed when a repair runs, so import it lazily.
-  const ts = (await import("typescript")).default ?? (await import("typescript"))
+  const ts = await loadTypeScript()
 
   for (const patch of targets) {
     const result = ts.transpileModule(patch.content, {
@@ -47,4 +49,9 @@ export async function validateForgeRepairPatchSyntax(
   }
 
   return { ok: true }
+}
+
+async function loadTypeScript(): Promise<TypeScriptModule> {
+  typescriptModulePromise ??= import("typescript").then((mod) => mod.default ?? mod)
+  return typescriptModulePromise
 }

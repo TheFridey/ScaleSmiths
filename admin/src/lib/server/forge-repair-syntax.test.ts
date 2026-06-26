@@ -13,7 +13,7 @@ describe("validateForgeRepairPatchSyntax", () => {
       patch("src/components/Hero.tsx", "export function Hero() { return <div>hi</div> }\n"),
     ])
     expect(result).toEqual({ ok: true })
-  })
+  }, 15_000)
 
   it("rejects a truncated replacement with an unterminated string literal", async () => {
     // Mimics an AI repair response cut off at the token budget mid-string.

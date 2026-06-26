@@ -19,6 +19,7 @@ import {
   buildForgeVisualCritiqueArtifactContent,
   buildForgeVisualCritiqueReport,
   createMockVisualCritiqueReport,
+  forgeVisualCritiqueScoresBelowThreshold,
   parseForgeVisualCritiquePayload,
   readForgeVisualCritiqueArtifact,
   safeForgeVisualCritiqueRecommendations,
@@ -89,7 +90,9 @@ export async function runForgeVisualCritiqueAgent(projectId: number, actor: stri
       systemPrompt: [
         "You are the ScaleSmiths Forge Visual Critique Agent.",
         "Review generated-site metadata against approved design, copy, and component specifications.",
-        "Evaluate visual hierarchy, spacing consistency, CTA prominence, trust placement, section ordering, mobile UX, animation restraint, typography consistency, conversion friction, and local-business trust signals.",
+        "Score exactly these dimensions from 0-100: brandFit, visualQuality, ctaRelevance, contentSpecificity, seoAeoQuality, accessibility, mobileReadiness, clientReadiness.",
+        "Any score below 75 will trigger automatic improvement, so be honest and evidence-led.",
+        "Evaluate visual hierarchy, spacing consistency, CTA prominence, trust placement, section ordering, mobile UX, animation restraint, typography consistency, conversion friction, SEO/AEO quality, accessibility, and client readiness.",
         "Return practical design-review JSON only. Never rewrite the whole site.",
         "Only mark safeAutoFix true for spacing, section_ordering, cta_positioning, or trust_section_placement.",
       ].join(" "),
@@ -104,9 +107,9 @@ export async function runForgeVisualCritiqueAgent(projectId: number, actor: stri
     const parsed = parseForgeVisualCritiquePayload(result.data)
     if (!parsed.ok) throw new ForgeVisualCritiqueAgentError(parsed.error, 500)
 
-    const report = buildForgeVisualCritiqueReport({ data: parsed.data })
+    let report = buildForgeVisualCritiqueReport({ data: parsed.data })
     const completedAt = new Date()
-    const artifact = await saveVisualCritiqueReport(projectId, report, task.id, completedAt)
+    let artifact = await saveVisualCritiqueReport(projectId, report, task.id, completedAt)
     const aiMetadata = buildForgeTaskOutputMetadata({ ...result, data: report })
 
     await db.transaction(async (tx) => {
@@ -128,9 +131,16 @@ export async function runForgeVisualCritiqueAgent(projectId: number, actor: stri
         actor,
         action: "visual_critique_completed",
         message: `Visual critique completed for ${project.name} with score ${report.overallScore}/100.`,
-        metadataJson: { taskId: task.id, artifactId: artifact.id, score: report.overallScore },
+        metadataJson: { taskId: task.id, artifactId: artifact.id, score: report.overallScore, scoresBelow75: forgeVisualCritiqueScoresBelowThreshold(report) },
       })
     })
+
+    const lowScores = forgeVisualCritiqueScoresBelowThreshold(report)
+    if (lowScores.length && safeForgeVisualCritiqueRecommendations(report).length) {
+      const improved = await applyForgeVisualCritiqueSafeFixes(projectId, actor)
+      report = improved.report
+      artifact = { ...artifact, id: improved.artifactId }
+    }
 
     return { ok: true as const, taskId: task.id, artifactId: artifact.id, report }
   } catch (error) {

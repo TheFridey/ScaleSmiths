@@ -173,8 +173,12 @@ function inferParams(message: string, action: ForgeCommandAction, target: string
   const params: Record<string, JsonValue> = { target }
   if (target === "/") params.regeneratePagePath = "/"
   if (action === "design_update" && /premium|luxury|cinematic/.test(text)) {
-    params.preferredStylePack = "Luxury Dark"
+    params.preferredStylePack = "Luxury dark premium"
     params.preferredAnimationPack = "Cinematic Hero"
+  }
+  if (action === "design_update" && /gaming|minecraft|server|neon|discord|command/.test(text)) {
+    params.preferredStylePack = "Neon command hub"
+    params.preferredAnimationPack = "Glass Motion"
   }
   if (action === "proposal_generate" && /audit/.test(text)) params.action = "audit"
   if (action === "export_run") {

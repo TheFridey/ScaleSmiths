@@ -208,8 +208,14 @@ export function buildForgeCopyPrompt({
   existingCopy?: ForgeCopyDocument | null
 }) {
   const lines = [
-    "Generate practical website copy for a real local/service business.",
+    "Generate practical website copy for a real website using the approved industry/site-type strategy.",
     "Use the approved sitemap as the source of truth for page list, intent, CTA, proof, and conversion notes.",
+    approvedSitemap.selectedStrategyPack
+      ? `Use the approved strategy pack: ${approvedSitemap.selectedStrategyPack}. Rationale: ${approvedSitemap.strategyPackRationale}.`
+      : "Use the approved sitemap strategy and do not assume a local-service structure unless the sitemap does.",
+    approvedSitemap.selectedStrategyPack === "gaming_community_server"
+      ? "For gaming/community/server copy: prioritise server IP, Discord, login/register, store, vote, status/stat placeholders, news/events, rules/support, and game modes. Do not write request-a-quote, service-area, or LocalBusiness copy unless explicitly supplied."
+      : "Match the selected site type's conversion model instead of generic agency-style copy.",
     "Write concrete copy that sounds human, specific, and commercially useful.",
     `Avoid these generic phrases exactly: ${FORGE_GENERIC_COPY_PHRASES.join(", ")}.`,
     "Do not use vague AI filler, generic SaaS positioning, or inflated claims not supported by the intake or research.",
@@ -409,7 +415,7 @@ function createMockPageCopy({
       },
     ],
     trustProofCopy: `Trust should appear close to the CTA. Use ${proofLine}, practical process details, and real customer evidence so visitors can believe the claims before they enquire.`,
-    serviceDescriptions: services.slice(0, 4).map((item) => `${item}: clear explanation of who it helps, what is included, and when a visitor should ask for it.`),
+    serviceDescriptions: services.slice(0, 4).map((item) => `${item}: who it helps, what is included, and when to choose it.`),
     localSeoCopy: `${businessName} supports ${audience} across ${location}. The page should mention the service area naturally, answer local buying questions, and link to the strongest service and contact pages.`,
   }
 }

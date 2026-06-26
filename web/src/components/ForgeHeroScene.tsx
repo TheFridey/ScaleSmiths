@@ -66,26 +66,51 @@ function createAnvil() {
 
 function createHammer() {
   const group = new THREE.Group()
+  const handleMaterial = new THREE.MeshStandardMaterial({
+    color: "#7c4a24",
+    metalness: 0.18,
+    roughness: 0.52,
+  })
   const handle = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.08, 0.11, 2.8, 20),
-    new THREE.MeshStandardMaterial({
-      color: "#38bdf8",
-      metalness: 0.55,
-      roughness: 0.3,
-      emissive: "#0284c7",
-      emissiveIntensity: 0.25,
-    }),
+    new THREE.CylinderGeometry(0.075, 0.11, 2.34, 24),
+    handleMaterial,
   )
-  handle.rotation.z = Math.PI / 2
+  handle.position.set(0, -0.06, 0)
   handle.castShadow = true
+  handle.receiveShadow = true
 
-  const head = new THREE.MeshStandardMaterial({ color: "#e2e8f0", metalness: 0.92, roughness: 0.18 })
-  const trim = new THREE.MeshStandardMaterial({ color: "#7dd3fc", metalness: 0.82, roughness: 0.2 })
+  const head = new THREE.MeshStandardMaterial({ color: "#cbd5e1", metalness: 0.92, roughness: 0.2 })
+  const darkSteel = new THREE.MeshStandardMaterial({ color: "#64748b", metalness: 0.86, roughness: 0.24 })
+  const trim = new THREE.MeshStandardMaterial({
+    color: "#bae6fd",
+    metalness: 0.86,
+    roughness: 0.2,
+    emissive: "#0ea5e9",
+    emissiveIntensity: 0.08,
+  })
+  const socket = new THREE.MeshStandardMaterial({
+    color: "#94a3b8",
+    metalness: 0.9,
+    roughness: 0.22,
+    emissive: "#0ea5e9",
+    emissiveIntensity: 0.07,
+  })
 
   group.add(handle)
-  group.add(box([1, 0.42, 0.48], head, [0, -1.43, 0]))
-  group.add(box([0.32, 0.33, 0.42], trim, [-0.63, -1.43, 0]))
-  group.add(box([0.32, 0.33, 0.42], trim, [0.63, -1.43, 0]))
+  group.add(box([0.74, 0.5, 0.58], darkSteel, [0, -1.47, 0]))
+  group.add(box([0.42, 0.48, 0.55], head, [0.58, -1.47, 0]))
+  group.add(box([0.18, 0.38, 0.5], trim, [0.88, -1.47, 0]))
+
+  const peen = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.62, 4), head)
+  peen.position.set(-0.62, -1.47, 0)
+  peen.rotation.set(0, Math.PI / 4, Math.PI / 2)
+  peen.castShadow = true
+  peen.receiveShadow = true
+  group.add(peen)
+
+  group.add(box([0.4, 0.28, 0.64], socket, [0, -1.16, 0]))
+  group.add(box([0.2, 0.13, 0.68], socket, [0, -0.98, 0]))
+  group.add(box([0.15, 0.13, 0.22], trim, [0, 1.06, 0]))
   group.position.set(0.1, 0.85, 0)
   return group
 }
@@ -115,19 +140,24 @@ function createSparks(count: number) {
   return { points, positions, sparks, material }
 }
 
-function burstSparks(sparks: Spark[], origin: THREE.Vector3) {
+function burstSparks(sparks: Spark[], origin: THREE.Vector3, strength = 1) {
   const count = sparks.length
   sparks.forEach((spark, index) => {
     const angle = (index / count) * Math.PI * 2 + Math.sin(index * 12.9898) * 0.8
-    const speed = 0.035 + ((index * 17) % 11) * 0.006
+    const speed = (0.035 + ((index * 17) % 11) * 0.006) * strength
     spark.position.set(
       origin.x + Math.cos(angle) * 0.18,
       origin.y + Math.sin(angle) * 0.08,
       origin.z + ((index % 9) - 4) * 0.035,
     )
-    spark.velocity.set(Math.cos(angle) * speed, 0.045 + ((index * 7) % 10) * 0.006, Math.sin(angle) * speed * 0.45)
+    spark.velocity.set(Math.cos(angle) * speed, (0.045 + ((index * 7) % 10) * 0.006) * strength, Math.sin(angle) * speed * 0.45)
     spark.life = 1
   })
+}
+
+function smoothstep(edge0: number, edge1: number, value: number) {
+  const x = Math.max(0, Math.min(1, (value - edge0) / (edge1 - edge0)))
+  return x * x * (3 - 2 * x)
 }
 
 function disposeObject(object: THREE.Object3D) {
@@ -216,6 +246,10 @@ export function ForgeHeroScene() {
 
     let animationFrame = 0
     let sparkedCycle = -1
+    let baseSparkSize = 0.045
+    let scrollEnergy = 0
+    let lastScrollY = window.scrollY
+    let lastScrollSparkY = lastScrollY
     const clock = new THREE.Clock()
 
     const setResponsiveSize = () => {
@@ -235,12 +269,29 @@ export function ForgeHeroScene() {
       anvil.scale.setScalar(scale)
       hammer.scale.setScalar(mobile ? 0.74 : 1)
       cyanLight.intensity = mobile ? 5.4 : 7.4
-      sparkMaterial.size = mobile ? 0.035 : 0.045
+      baseSparkSize = mobile ? 0.035 : 0.045
+      sparkMaterial.size = baseSparkSize
     }
 
     const resizeObserver = new ResizeObserver(setResponsiveSize)
     resizeObserver.observe(canvas)
     setResponsiveSize()
+
+    const handleScroll = () => {
+      if (reducedMotion) return
+      const nextScrollY = window.scrollY
+      const delta = nextScrollY - lastScrollY
+      lastScrollY = nextScrollY
+      scrollEnergy = Math.min(1.6, scrollEnergy + Math.min(Math.abs(delta) / 220, 0.38))
+
+      if (Math.abs(nextScrollY - lastScrollSparkY) > 72 && Math.abs(delta) > 4) {
+        lastScrollSparkY = nextScrollY
+        const direction = delta > 0 ? 1 : -1
+        burstSparks(sparks, new THREE.Vector3(0.08 + direction * 0.18, -0.94, 0), 0.48 + Math.min(Math.abs(delta) / 180, 0.35))
+      }
+    }
+
+    window.addEventListener("scroll", handleScroll, { passive: true })
 
     const animate = () => {
       animationFrame = requestAnimationFrame(animate)
@@ -248,19 +299,24 @@ export function ForgeHeroScene() {
       const cycle = 4.2
       const phase = (elapsed % cycle) / cycle
       const cycleIndex = Math.floor(elapsed / cycle)
-      const active = !reducedMotion && phase > 0.58 && phase < 0.86
-      const strike = active ? Math.sin(((phase - 0.58) / 0.28) * Math.PI) : reducedMotion ? 0.28 : 0.05
+      const windUp = reducedMotion ? 0 : smoothstep(0.1, 0.4, phase) * (1 - smoothstep(0.42, 0.58, phase))
+      const downSwing = reducedMotion ? 0 : smoothstep(0.56, 0.72, phase)
+      const recover = reducedMotion ? 0 : smoothstep(0.75, 1, phase)
+      const strike = reducedMotion ? 0.22 : downSwing * (1 - recover)
+      const impactPulse = !reducedMotion && strike > 0.78 ? Math.sin(Math.min(1, (strike - 0.78) / 0.22) * Math.PI) : 0
+      const idle = reducedMotion ? 0 : Math.sin(elapsed * 1.45) * 0.025
 
-      hammer.rotation.z = -0.55 + (1 - strike) * 0.38
-      hammer.position.y = 0.2 + (1 - strike) * 0.82
-      hammer.position.x = 0.12 - strike * 0.14
+      hammer.rotation.z = -0.42 - windUp * 0.23 + strike * 0.28 + idle * 0.25
+      hammer.position.y = 1.18 + windUp * 0.13 - strike * 0.39 + idle
+      hammer.position.x = 0.12 + windUp * 0.07 - strike * 0.08
 
-      if (active && phase > 0.71 && sparkedCycle !== cycleIndex) {
+      if (!reducedMotion && impactPulse > 0.85 && sparkedCycle !== cycleIndex) {
         sparkedCycle = cycleIndex
-        burstSparks(sparks, new THREE.Vector3(0.18, -0.94, 0))
+        burstSparks(sparks, new THREE.Vector3(0.18, -0.94, 0), 0.62)
       }
 
       let visibleSparks = 0
+      scrollEnergy *= 0.92
       sparks.forEach((spark, index) => {
         if (spark.life <= 0) return
         spark.life -= 0.022
@@ -278,13 +334,16 @@ export function ForgeHeroScene() {
         }
       })
       points.geometry.attributes.position.needsUpdate = true
-      sparkMaterial.opacity = visibleSparks > 0 ? 0.95 : 0
+      sparkMaterial.opacity = visibleSparks > 0 ? 0.78 : 0
+      sparkMaterial.size = baseSparkSize * (1 + Math.min(scrollEnergy, 1) * 0.28)
 
       const glow = anvil.getObjectByName("anvilGlow") as THREE.Mesh<THREE.RingGeometry, THREE.MeshBasicMaterial> | undefined
-      if (glow) glow.material.opacity = 0.24 + Math.sin(elapsed * 2.1) * 0.08
+      if (glow) glow.material.opacity = 0.24 + Math.sin(elapsed * 2.1) * 0.08 + impactPulse * 0.18 + Math.min(scrollEnergy, 0.8) * 0.08
+      cyanLight.intensity = (window.matchMedia("(max-width: 767px)").matches ? 5.4 : 7.4) + impactPulse * 1.6 + Math.min(scrollEnergy, 1) * 1.1
+      warmLight.intensity = 1.8 + impactPulse * 1.2 + Math.min(scrollEnergy, 1) * 0.75
 
       emberGroup.children.forEach((ember, index) => {
-        ember.position.y += Math.sin(elapsed * 0.8 + index) * 0.0009
+        ember.position.y += Math.sin(elapsed * 0.8 + index) * (0.0009 + scrollEnergy * 0.0007)
       })
 
       renderer.render(scene, camera)
@@ -294,6 +353,7 @@ export function ForgeHeroScene() {
 
     return () => {
       cancelAnimationFrame(animationFrame)
+      window.removeEventListener("scroll", handleScroll)
       resizeObserver.disconnect()
       disposeObject(scene)
       renderer.dispose()

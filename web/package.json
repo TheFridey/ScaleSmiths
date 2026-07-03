@@ -14,6 +14,9 @@
     "portal:seed": "node --env-file-if-exists=../.env ./scripts/seed-portal-account.mjs"
   },
   "dependencies": {
+    "@gsap/react": "^2.1.2",
+    "@react-three/drei": "^9.122.0",
+    "@react-three/fiber": "^8.18.0",
     "bcryptjs": "^3.0.3",
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.45.2",
@@ -22,6 +25,7 @@
     "jose": "^5.2.0",
     "lenis": "~1.1.14",
     "lucide-react": "^0.383.0",
+    "motion": "^12.42.2",
     "next": "^15.5.13",
     "pg": "^8.21.0",
     "react": "^18.3.1",

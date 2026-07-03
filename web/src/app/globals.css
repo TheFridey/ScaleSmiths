@@ -81,6 +81,13 @@ body {
   100% { opacity: 0; transform: translate(var(--p-x, 0px), var(--p-y, -120px)) scale(0.8); }
 }
 
+@keyframes v2-loading-sweep {
+  0%   { transform: translateX(-100%); opacity: 0; }
+  20%  { opacity: 1; }
+  80%  { opacity: 1; }
+  100% { transform: translateX(220%); opacity: 0; }
+}
+
 /* ── Hero element styles ─────────────────────────────────────── */
 .hero-badge {
   display: inline-flex;
@@ -233,6 +240,34 @@ body {
   text-decoration: none;
 }
 .btn-sm:hover { opacity: 0.9; }
+
+.v2-form-field {
+  width: 100%;
+  min-height: 46px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.055);
+  padding: 11px 13px;
+  font-family: var(--font-dm);
+  font-size: 14px;
+  color: var(--t1);
+  outline: none;
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+
+.v2-form-field:focus {
+  border-color: rgba(34,211,238,0.58);
+  background: rgba(255,255,255,0.075);
+}
+
+.v2-form-field::placeholder {
+  color: var(--t3);
+}
+
+.v2-form-field option {
+  background: var(--s1);
+  color: var(--t1);
+}
 
 /* ── Card lift ───────────────────────────────────────────────── */
 .card-lift {

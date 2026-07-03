@@ -19,6 +19,10 @@ export function SmoothScroll({ children }: SmoothScrollProps) {
   const [lenis, setLenis] = useState<Lenis | null>(null)
 
   useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      return
+    }
+
     gsap.registerPlugin(ScrollTrigger)
 
     const lenisInstance = new Lenis({

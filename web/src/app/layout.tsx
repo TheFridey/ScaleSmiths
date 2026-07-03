@@ -1,10 +1,8 @@
 import type { Metadata } from "next"
-import { Nav } from "@/components/Nav"
-import { Footer } from "@/components/Footer"
 import { SmoothScroll } from "@/components/SmoothScroll"
 import { ScrollProgress } from "@/components/ScrollProgress"
-import { PageTransition } from "@/components/PageTransition"
 import { Cursor } from "@/components/Cursor"
+import { SiteChrome } from "@/components/SiteChrome"
 import "./globals.css"
 
 export const metadata: Metadata = {
@@ -85,14 +83,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Cursor />
         <ScrollProgress />
         <SmoothScroll>
-          <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-acc focus:text-white focus:rounded-md">
-            Skip to content
-          </a>
-          <Nav />
-          <PageTransition>
-            <main id="main">{children}</main>
-          </PageTransition>
-          <Footer />
+          <SiteChrome>{children}</SiteChrome>
         </SmoothScroll>
       </body>
     </html>

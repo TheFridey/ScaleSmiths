@@ -1,8 +1,7 @@
 "use client"
 
 import { ReactNode, useEffect, useState } from "react"
-import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { ArrowRight, Compass, RefreshCw, Sparkles } from "lucide-react"
 
 type ExperiencePreference = "normal" | "interactive"
@@ -55,12 +54,23 @@ interface HomeExperienceGateProps {
 
 export function HomeExperienceGate({ children }: HomeExperienceGateProps) {
   const [preference, setPreference] = useState<ExperiencePreference | null>(null)
+  const [mounted, setMounted] = useState(false)
   const router = useRouter()
   const reducedMotion = useReducedMotion()
 
   useEffect(() => {
-    setPreference(readPreference())
-  }, [])
+    const savedPreference = readPreference()
+
+    if (savedPreference === "interactive") {
+      setPreference("interactive")
+      setMounted(true)
+      router.replace("/interactive")
+      return
+    }
+
+    setPreference(savedPreference)
+    setMounted(true)
+  }, [router])
 
   function chooseNormal() {
     rememberPreference("normal")
@@ -70,7 +80,12 @@ export function HomeExperienceGate({ children }: HomeExperienceGateProps) {
 
   function chooseInteractive() {
     rememberPreference("interactive")
+    setPreference("interactive")
     router.push("/interactive")
+  }
+
+  if (!mounted) {
+    return <ExperiencePreferenceLoadingShell />
   }
 
   if (preference === "normal") {
@@ -83,22 +98,46 @@ export function HomeExperienceGate({ children }: HomeExperienceGateProps) {
   }
 
   if (preference === "interactive") {
-    return (
-      <>
-        <ContinueInteractivePrompt onReset={() => setPreference(null)} />
-        {children}
-      </>
-    )
+    return <ExperienceRedirectShell />
   }
 
   return (
-    <>
-      <ExperienceChoice
-        onChooseNormal={chooseNormal}
-        onChooseInteractive={chooseInteractive}
-      />
-      {children}
-    </>
+    <ExperienceChoice
+      onChooseNormal={chooseNormal}
+      onChooseInteractive={chooseInteractive}
+    />
+  )
+}
+
+function ExperiencePreferenceLoadingShell() {
+  return (
+    <section
+      aria-label="Loading experience preference"
+      className="relative isolate flex min-h-[calc(100vh-70px)] items-center justify-center overflow-hidden px-6 py-16 md:px-12 md:py-24"
+    >
+      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_24%_20%,rgba(34,211,238,0.12),transparent_28%),linear-gradient(135deg,rgba(11,22,38,0.78),rgba(7,17,31,0.96))]" />
+      <div className="h-px w-32 overflow-hidden rounded-full bg-white/10">
+        <div className="h-full w-1/2 rounded-full bg-acc/70 motion-safe:animate-[v2-loading-sweep_1.4s_ease-in-out_infinite]" />
+      </div>
+    </section>
+  )
+}
+
+function ExperienceRedirectShell() {
+  return (
+    <section
+      aria-live="polite"
+      aria-label="Opening interactive experience"
+      className="relative isolate flex min-h-[calc(100vh-70px)] items-center justify-center overflow-hidden px-6 py-16 text-center md:px-12 md:py-24"
+    >
+      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_50%_32%,rgba(34,211,238,0.14),transparent_30%),linear-gradient(135deg,rgba(11,22,38,0.82),rgba(7,17,31,0.98))]" />
+      <div>
+        <p className="font-dm text-xs font-semibold uppercase tracking-[0.14em] text-acc">Interactive preference saved</p>
+        <h1 className="mt-4 font-syne text-3xl font-black leading-tight tracking-normal text-t1 md:text-5xl">
+          Opening ScaleSmiths V2.
+        </h1>
+      </div>
+    </section>
   )
 }
 
@@ -191,6 +230,7 @@ export function ExperienceSwitchControl({ current, onReset }: ExperienceSwitchCo
   function resetPreference() {
     clearPreference()
     onReset?.()
+    router.push("/")
     router.refresh()
   }
 
@@ -218,39 +258,6 @@ export function ExperienceSwitchControl({ current, onReset }: ExperienceSwitchCo
   )
 }
 
-interface ContinueInteractivePromptProps {
-  onReset: () => void
-}
-
-function ContinueInteractivePrompt({ onReset }: ContinueInteractivePromptProps) {
-  return (
-    <>
-      <section
-        aria-labelledby="continue-interactive-heading"
-        className="border-b border-b2 bg-bg/95 px-6 py-5 md:px-12"
-      >
-        <div className="mx-auto flex max-w-[1180px] flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="font-dm text-xs font-semibold uppercase tracking-[0.14em] text-acc">Interactive preference saved</p>
-            <h1 id="continue-interactive-heading" className="mt-1 font-syne text-2xl font-black tracking-normal text-t1">
-              Continue your ScaleSmiths V2 journey.
-            </h1>
-          </div>
-          <Link
-            href="/interactive"
-            prefetch={false}
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-acc px-5 py-3 font-dm text-sm font-semibold text-bg transition hover:bg-[#67e8f9] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-acc"
-          >
-            Continue interactive journey
-            <ArrowRight size={16} aria-hidden="true" />
-          </Link>
-        </div>
-      </section>
-      <ExperienceSwitchControl current="interactive" onReset={onReset} />
-    </>
-  )
-}
-
 export function rememberInteractiveExperience() {
   rememberPreference("interactive")
 }
@@ -265,11 +272,10 @@ export function resetExperiencePreference() {
 
 export function ResetExperiencePreferenceButton() {
   const router = useRouter()
-  const pathname = usePathname()
 
   function resetPreference() {
     clearPreference()
-    router.push(pathname === "/interactive" ? "/" : pathname)
+    router.push("/")
     router.refresh()
   }
 

@@ -4,6 +4,9 @@ import { Component, ComponentType, ReactNode, Suspense, useEffect, useMemo, useR
 import * as THREE from "three"
 import { forgePanels } from "@/lib/v2/forge-panels"
 
+const TARGET_RENDER_FPS = 30
+const TARGET_FRAME_MS = 1000 / TARGET_RENDER_FPS
+
 interface ClientSceneCanvasProps {
   className?: string
   isForgeStep?: boolean
@@ -141,9 +144,12 @@ function ManualForgeScene({
     const pointer = new THREE.Vector2()
     const panelMeshes: Array<THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial> & { userData: { panelId: string; baseScale: number } }> = []
     const disposables: Array<{ dispose: () => void }> = []
-    let frame = 0
+    let frame: number | null = null
+    let frameTimer: number | null = null
     let disposed = false
     let hoveredPanel: string | null = null
+    let canvasVisible = true
+    const targetScale = new THREE.Vector3(1, 1, 1)
 
     camera.position.set(0, 2.15, 7.1)
     camera.lookAt(0, 0.35, 0)
@@ -261,6 +267,36 @@ function ManualForgeScene({
       camera.updateProjectionMatrix()
     }
 
+    const canRender = () => !disposed && !document.hidden && canvasVisible
+
+    const cancelRenderLoop = () => {
+      if (frame !== null) {
+        cancelAnimationFrame(frame)
+        frame = null
+      }
+      if (frameTimer !== null) {
+        window.clearTimeout(frameTimer)
+        frameTimer = null
+      }
+    }
+
+    const scheduleRenderLoop = (delay = TARGET_FRAME_MS) => {
+      if (!canRender() || frame !== null || frameTimer !== null) return
+      frameTimer = window.setTimeout(() => {
+        frameTimer = null
+        if (!canRender()) return
+        frame = requestAnimationFrame(animate)
+      }, delay)
+    }
+
+    const syncRenderLoop = () => {
+      if (canRender()) {
+        scheduleRenderLoop(0)
+      } else {
+        cancelRenderLoop()
+      }
+    }
+
     const updatePointer = (event: PointerEvent) => {
       const bounds = canvas.getBoundingClientRect()
       pointer.x = ((event.clientX - bounds.left) / bounds.width) * 2 - 1
@@ -288,7 +324,11 @@ function ManualForgeScene({
     }
 
     const animate = () => {
-      if (disposed) return
+      frame = null
+
+      if (!canRender()) {
+        return
+      }
 
       const elapsed = performance.now() / 1000
       const targetZ = forgeStepRef.current ? 5.75 : 7.1
@@ -309,34 +349,56 @@ function ManualForgeScene({
         const orbit = elapsed * 0.16 + (index / panelMeshes.length) * Math.PI * 2
         const panelId = panel.userData.panelId
         const active = panelId === activePanelRef.current || panelId === hoveredPanel
-        const targetScale = active ? 1.16 : 1
+        const nextScale = active ? 1.16 : 1
 
         panel.position.x = Math.cos(orbit) * 2.9
         panel.position.z = Math.sin(orbit) * 1.75
         panel.position.y = 1.1 + Math.sin(elapsed * 0.85 + index) * 0.12
-        panel.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.08)
+        targetScale.set(nextScale, nextScale, nextScale)
+        panel.scale.lerp(targetScale, 0.08)
         panel.lookAt(camera.position)
         panel.material.opacity = active ? 1 : 0.76
       })
 
       renderer.render(scene, camera)
-      frame = requestAnimationFrame(animate)
+      scheduleRenderLoop()
     }
+
+    const handleVisibilityChange = () => {
+      syncRenderLoop()
+    }
+
+    const observer = "IntersectionObserver" in window
+      ? new IntersectionObserver(
+          ([entry]) => {
+            canvasVisible = entry?.isIntersecting ?? true
+            syncRenderLoop()
+          },
+          { threshold: 0.01 },
+        )
+      : null
 
     resize()
     window.addEventListener("resize", resize)
+    document.addEventListener("visibilitychange", handleVisibilityChange)
+    observer?.observe(canvas)
     canvas.addEventListener("pointermove", updatePointer)
     canvas.addEventListener("pointerleave", leaveCanvas)
     canvas.addEventListener("click", clickPanel)
-    frame = requestAnimationFrame(animate)
+
+    // The forge has ambient motion, but it does not need a full 60fps render loop.
+    // Throttling and visibility pausing keeps the premium feel while reducing GPU work.
+    scheduleRenderLoop(0)
 
     return () => {
       disposed = true
       window.removeEventListener("resize", resize)
+      document.removeEventListener("visibilitychange", handleVisibilityChange)
+      observer?.disconnect()
       canvas.removeEventListener("pointermove", updatePointer)
       canvas.removeEventListener("pointerleave", leaveCanvas)
       canvas.removeEventListener("click", clickPanel)
-      cancelAnimationFrame(frame)
+      cancelRenderLoop()
       disposables.forEach((item) => item.dispose())
       renderer.dispose()
       scene.clear()
@@ -354,7 +416,101 @@ function ManualForgeScene({
 }
 
 function createFiberScene(fiber: typeof import("@react-three/fiber")) {
-  const { Canvas, useFrame } = fiber
+  const { Canvas, useFrame, useThree } = fiber
+
+  function FiberRenderGovernor({
+    activePanelId,
+    isForgeStep,
+  }: {
+    activePanelId?: string | null
+    isForgeStep?: boolean
+  }) {
+    const { gl, invalidate } = useThree()
+
+    useEffect(() => {
+      const canvas = gl.domElement
+      let frame: number | null = null
+      let frameTimer: number | null = null
+      let canvasVisible = true
+      let disposed = false
+
+      const canRender = () => !disposed && !document.hidden && canvasVisible
+
+      const cancelRenderLoop = () => {
+        if (frame !== null) {
+          cancelAnimationFrame(frame)
+          frame = null
+        }
+        if (frameTimer !== null) {
+          window.clearTimeout(frameTimer)
+          frameTimer = null
+        }
+      }
+
+      const animate = () => {
+        frame = null
+
+        if (!canRender()) {
+          return
+        }
+
+        invalidate()
+        scheduleRenderLoop()
+      }
+
+      const scheduleRenderLoop = (delay = TARGET_FRAME_MS) => {
+        if (!canRender() || frame !== null || frameTimer !== null) return
+        frameTimer = window.setTimeout(() => {
+          frameTimer = null
+          if (!canRender()) return
+          frame = requestAnimationFrame(animate)
+        }, delay)
+      }
+
+      const syncRenderLoop = () => {
+        if (canRender()) {
+          scheduleRenderLoop(0)
+          invalidate()
+        } else {
+          cancelRenderLoop()
+        }
+      }
+
+      const handleVisibilityChange = () => {
+        syncRenderLoop()
+      }
+
+      const observer = "IntersectionObserver" in window
+        ? new IntersectionObserver(
+            ([entry]) => {
+              canvasVisible = entry?.isIntersecting ?? true
+              syncRenderLoop()
+            },
+            { threshold: 0.01 },
+          )
+        : null
+
+      document.addEventListener("visibilitychange", handleVisibilityChange)
+      observer?.observe(canvas)
+
+      // R3F runs in demand mode below. This small governor invalidates at ~30fps
+      // only while visible, avoiding the default continuous 60fps render loop.
+      syncRenderLoop()
+
+      return () => {
+        disposed = true
+        document.removeEventListener("visibilitychange", handleVisibilityChange)
+        observer?.disconnect()
+        cancelRenderLoop()
+      }
+    }, [gl, invalidate])
+
+    useEffect(() => {
+      invalidate()
+    }, [activePanelId, isForgeStep, invalidate])
+
+    return null
+  }
 
   function Particles() {
     const pointsRef = useRef<THREE.Points>(null)
@@ -454,7 +610,9 @@ function createFiberScene(fiber: typeof import("@react-three/fiber")) {
       meshRef.current.position.x = Math.cos(orbit) * 2.9
       meshRef.current.position.z = Math.sin(orbit) * 1.75
       meshRef.current.position.y = 1.1 + Math.sin(elapsed * 0.85 + index) * 0.12
-      meshRef.current.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.08)
+      meshRef.current.scale.x += (targetScale - meshRef.current.scale.x) * 0.08
+      meshRef.current.scale.y += (targetScale - meshRef.current.scale.y) * 0.08
+      meshRef.current.scale.z += (targetScale - meshRef.current.scale.z) * 0.08
       meshRef.current.lookAt(camera.position)
     })
 
@@ -505,10 +663,11 @@ function createFiberScene(fiber: typeof import("@react-three/fiber")) {
         className={className}
         camera={{ position: [0, 2.15, 7.1], fov: 48 }}
         dpr={[1, 1.5]}
-        frameloop="always"
+        frameloop="demand"
         gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
       >
         <Suspense fallback={null}>
+          <FiberRenderGovernor activePanelId={activePanelId} isForgeStep={isForgeStep} />
           <CameraRig isForgeStep={isForgeStep} />
           <ForgePlatform />
           <Particles />

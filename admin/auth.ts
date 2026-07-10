@@ -2,6 +2,7 @@ import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
 import { authConfig } from "./auth.config"
 import { checkLoginRateLimit, getAuthRequestIp, loginRateLimitKeys } from "./src/lib/login-limiter"
+import { captureMonitoringException, captureMonitoringMessage } from "./src/lib/server/monitoring"
 
 /*
  * ScaleSmiths admin currently uses a single-user credentials pattern:
@@ -36,17 +37,32 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const adminPassword = process.env.ADMIN_PASSWORD ?? ""
         const allowed = await checkLoginRateLimit(loginRateLimitKeys("admin-login", getAuthRequestIp(request), email))
 
-        if (!allowed) return null
+        if (!allowed) {
+          captureMonitoringMessage("Admin authentication rate limit exceeded", "warning", { actorId: email || "unknown", errorCategory: "authentication_rate_limit" })
+          return null
+        }
 
         const user = users.find((u) => u.email?.toLowerCase() === email)
 
-        if (!user || !adminPassword) return null
+        if (!user || !adminPassword) {
+          captureMonitoringMessage("Admin authentication rejected", "warning", { actorId: email || "unknown", errorCategory: "authentication_credentials" })
+          return null
+        }
 
-        const valid = adminPassword.startsWith("$2")
-          ? await import("bcryptjs").then((bcrypt) => bcrypt.default.compare(password, adminPassword))
-          : password === adminPassword
+        let valid = false
+        try {
+          valid = adminPassword.startsWith("$2")
+            ? await import("bcryptjs").then((bcrypt) => bcrypt.default.compare(password, adminPassword))
+            : password === adminPassword
+        } catch (error) {
+          captureMonitoringException(error, { actorId: email, errorCategory: "authentication_internal" })
+          return null
+        }
 
-        if (!valid) return null
+        if (!valid) {
+          captureMonitoringMessage("Admin authentication rejected", "warning", { actorId: email, errorCategory: "authentication_credentials" })
+          return null
+        }
 
         return {
           id: user.id,

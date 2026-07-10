@@ -114,3 +114,6 @@ jobs:
 
       - name: Check env hygiene
         run: npm run check:env-hygiene
+
+      - name: Check architecture documentation
+        run: npm run check:architecture-docs

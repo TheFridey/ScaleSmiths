@@ -23,6 +23,9 @@ import {
   assertForgeAiBudgetAllowsRequest,
   recordForgeAiUsage,
 } from "./forge-ai-usage"
+import { normalizeUnknownError } from "./logging"
+import { requestLogger } from "./request-context"
+import { addMonitoringBreadcrumb, captureMonitoringException, setMonitoringContext } from "./monitoring"
 
 const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses"
 const ANTHROPIC_MESSAGES_URL = "https://api.anthropic.com/v1/messages"
@@ -42,12 +45,14 @@ declare global {
 export class ForgeAiError extends Error {
   safeMessage: string
   retryable: boolean
+  code?: string
 
-  constructor(safeMessage: string, retryable = false) {
-    super(safeMessage)
+  constructor(safeMessage: string, retryable = false, options: { code?: string; cause?: unknown } = {}) {
+    super(safeMessage, options.cause === undefined ? undefined : { cause: options.cause })
     this.name = "ForgeAiError"
     this.safeMessage = safeMessage
     this.retryable = retryable
+    this.code = options.code
   }
 }
 
@@ -76,6 +81,16 @@ export async function runForgeAiJson<TData extends JsonValue = JsonValue>(reques
   const model = resolveForgeAiModel(request.taskType, provider)
   const startedAtDate = new Date()
   const startedAt = startedAtDate.getTime()
+  const log = requestLogger({
+    component: "forge-ai",
+    projectId: request.projectId ?? undefined,
+    taskId: request.taskId ?? undefined,
+    forgeStage: request.taskType,
+    provider,
+    model,
+  })
+  setMonitoringContext({ projectId: request.projectId ?? undefined, taskId: request.taskId ?? undefined, forgeStage: request.taskType, provider, model })
+  addMonitoringBreadcrumb({ category: "forge.ai", message: "AI provider request started", data: { provider, model, projectId: request.projectId, taskId: request.taskId } })
 
   if (provider === "mock") {
     const data = request.mockData ?? createMockStructuredResponse(request.schema, request.taskType)
@@ -106,6 +121,11 @@ export async function runForgeAiJson<TData extends JsonValue = JsonValue>(reques
       estimatedCost: result.costEstimateUsd,
       startedAt: startedAtDate,
       completedAt,
+    })
+    log.debug("Forge AI mock response completed", {
+      durationMs: result.latencyMs,
+      fallbackUsed: configuredProvider !== "mock",
+      fallbackReason: configuredProvider !== "mock" ? "provider_not_ready" : undefined,
     })
     return result
   }
@@ -162,6 +182,12 @@ export async function runForgeAiJson<TData extends JsonValue = JsonValue>(reques
               startedAt: startedAtDate,
               completedAt,
             })
+            log.warn("Forge AI structured response used deterministic fallback", {
+              durationMs: completedAt.getTime() - startedAt,
+              retryCount: attempt,
+              fallbackUsed: true,
+              errorCategory: "schema_mismatch",
+            })
 
             return {
               provider,
@@ -192,6 +218,15 @@ export async function runForgeAiJson<TData extends JsonValue = JsonValue>(reques
         startedAt: startedAtDate,
         completedAt,
       })
+      log.info("Forge AI request completed", {
+        durationMs: completedAt.getTime() - startedAt,
+        retryCount: attempt,
+        fallbackUsed: false,
+        inputTokens: raw.usage.inputTokens,
+        outputTokens: raw.usage.outputTokens,
+        totalTokens: raw.usage.totalTokens,
+        estimatedCostUsd: costEstimateUsd,
+      })
 
       return {
         provider,
@@ -207,6 +242,27 @@ export async function runForgeAiJson<TData extends JsonValue = JsonValue>(reques
     } catch (error) {
       lastError = error
       const retryable = error instanceof ForgeAiError ? error.retryable : true
+      const normalizedError = normalizeUnknownError(error, {
+        safeMessage: error instanceof ForgeAiError ? error.safeMessage : "Unable to get a safe AI response right now.",
+        category: "ai_provider",
+      })
+      log.warn("Forge AI provider attempt failed", {
+        retryCount: attempt,
+        retryable,
+        fallbackUsed: false,
+        durationMs: Date.now() - startedAt,
+        errorCategory: normalizedError.category,
+        error: normalizedError,
+      })
+      captureMonitoringException(error, {
+        projectId: request.projectId ?? undefined,
+        taskId: request.taskId ?? undefined,
+        forgeStage: request.taskType,
+        provider,
+        model,
+        retryCount: attempt,
+        errorCategory: normalizedError.category,
+      })
       if (!retryable || attempt === maxRetries) break
       await wait(250 * (attempt + 1))
     }
@@ -255,7 +311,9 @@ async function callOpenAi(request: ForgeAiRequest, model: string, env: NodeJS.Pr
   const json = await response.json().catch(() => null)
 
   if (!response.ok) {
-    throw new ForgeAiError(providerErrorMessage("OpenAI", response.status, json), response.status >= 429)
+    throw new ForgeAiError(providerErrorMessage("OpenAI", response.status), response.status >= 429, {
+      code: `openai_http_${response.status}`,
+    })
   }
 
   return {
@@ -293,7 +351,9 @@ async function callAnthropic(request: ForgeAiRequest, model: string, env: NodeJS
   const json = await response.json().catch(() => null)
 
   if (!response.ok) {
-    throw new ForgeAiError(providerErrorMessage("Anthropic", response.status, json), response.status >= 429)
+    throw new ForgeAiError(providerErrorMessage("Anthropic", response.status), response.status >= 429, {
+      code: `anthropic_http_${response.status}`,
+    })
   }
 
   return {
@@ -379,15 +439,11 @@ function normalizeAnthropicUsage(usage: unknown): ForgeAiUsage {
   }
 }
 
-function providerErrorMessage(provider: string, status: number, body: unknown) {
-  const message = isRecord(body) && isRecord(body.error) && typeof body.error.message === "string"
-    ? body.error.message
-    : "Provider request failed."
-
+function providerErrorMessage(provider: string, status: number) {
   if (status === 401 || status === 403) return `${provider} credentials were rejected.`
   if (status === 429) return `${provider} rate limit reached.`
   if (status >= 500) return `${provider} is temporarily unavailable.`
-  return `${provider} request failed: ${message}`
+  return `${provider} request failed.`
 }
 
 function readNumber(value: unknown) {

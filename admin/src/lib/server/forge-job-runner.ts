@@ -17,6 +17,9 @@ import { isForgeAnimationPack } from "@/lib/forge-animation"
 import { isForgeDesignStylePack } from "@/lib/forge-design"
 import type { ForgeExportKind } from "@/lib/forge-export"
 import { ForgeAiBudgetExceededError, assertForgeAiBudgetAllowsJob } from "./forge-ai-usage"
+import { normalizeUnknownError } from "./logging"
+import { requestLogger } from "./request-context"
+import { addMonitoringBreadcrumb, captureMonitoringException, withMonitoringScope } from "./monitoring"
 
 export class ForgeJobError extends Error {
   safeMessage: string
@@ -134,6 +137,12 @@ export function forgeJobResponseBody(outcome: EnqueueForgeJobOutcome): JobResult
  * schedules background execution and returns immediately.
  */
 export async function enqueueForgeJob(input: EnqueueForgeJobInput): Promise<EnqueueForgeJobOutcome> {
+  const log = requestLogger({
+    component: "forge-job-runner",
+    actorId: input.actor,
+    projectId: input.projectId,
+    forgeStage: input.kind,
+  })
   if (isForgeJobInlineOnly(input.kind)) {
     throw new ForgeJobError(`Job kind "${input.kind}" streams its result and cannot be queued.`, 400)
   }
@@ -168,6 +177,8 @@ export async function enqueueForgeJob(input: EnqueueForgeJobInput): Promise<Enqu
     message: `Queued ${input.kind} job.`,
     metadataJson: { jobId: job.id, kind: input.kind, mode },
   })
+  log.info("Forge job queued", { jobId: job.id, executionMode: mode })
+  addMonitoringBreadcrumb({ category: "forge.task", message: "Forge job queued", data: { projectId: input.projectId, jobId: job.id, forgeStage: input.kind } })
 
   if (mode === "inline") {
     const result = await processForgeJob(job.id, { propagate: true })
@@ -197,6 +208,17 @@ export async function processForgeJob(jobId: number, options: { propagate?: bool
   if (!claimed) return null
 
   const payload = (claimed.payloadJson as JobPayload) ?? {}
+  const taskId = typeof payload.commandTaskId === "number" ? payload.commandTaskId : undefined
+  const log = requestLogger({
+    component: "forge-job-runner",
+    actorId: claimed.actor ?? "system",
+    projectId: claimed.projectId,
+    taskId,
+    jobId: claimed.id,
+    forgeStage: claimed.kind,
+    retryCount: claimed.attempts,
+  })
+  log.info("Forge job started")
   await markCommandJobProgress(claimed.projectId, claimed.actor ?? "system", claimed.id, payload, "running")
 
   const handler = JOB_HANDLERS[claimed.kind as ForgeJobKind]
@@ -207,7 +229,7 @@ export async function processForgeJob(jobId: number, options: { propagate?: bool
   }
 
   try {
-    const result = await handler(claimed.projectId, claimed.actor ?? "system", payload)
+    const result = await withMonitoringScope({ projectId: claimed.projectId, taskId, forgeStage: claimed.kind, jobId: claimed.id }, () => handler(claimed.projectId, claimed.actor ?? "system", payload))
     const completedAt = new Date()
     await db.update(forgeJobs).set({
       status: "completed",
@@ -217,11 +239,19 @@ export async function processForgeJob(jobId: number, options: { propagate?: bool
       updatedAt: completedAt,
     }).where(eq(forgeJobs.id, jobId))
     await markCommandJobProgress(claimed.projectId, claimed.actor ?? "system", claimed.id, payload, "completed", result)
+    log.info("Forge job completed", { durationMs: completedAt.getTime() - startedAt.getTime() })
     return result
   } catch (error) {
     const safeMessage = extractSafeMessage(error)
+    const normalizedError = normalizeUnknownError(error, { safeMessage, category: "forge_job" })
     await failJob(jobId, claimed.attempts, safeMessage)
     await markCommandJobProgress(claimed.projectId, claimed.actor ?? "system", claimed.id, payload, "failed", { error: safeMessage })
+    log.error("Forge job failed", {
+      durationMs: Date.now() - startedAt.getTime(),
+      errorCategory: normalizedError.category,
+      error: normalizedError,
+    })
+    captureMonitoringException(error, { projectId: claimed.projectId, taskId, forgeStage: claimed.kind, jobId: claimed.id, errorCategory: normalizedError.category })
     if (options.propagate) throw error
     return null
   }
@@ -317,6 +347,9 @@ async function markCommandJobProgress(
       message: `Command job ${jobId} ${status}${commandAction ? ` for ${commandAction}` : ""}.`,
       metadataJson: { jobId, commandTaskId, commandMessageId, commandAction, output },
     })
+  }).catch((error) => {
+    captureMonitoringException(error, { projectId, taskId: commandTaskId ?? undefined, jobId, errorCategory: "database_transaction" })
+    throw error
   })
 }
 

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 import { auth } from "../../../../../../auth"
 import { runDueForgeJobs } from "@/lib/server/forge-job-runner"
+import { normalizeUnknownError } from "@/lib/server/logging"
+import { requestIdFromRequest, requestLogger, withRequestLogContext } from "@/lib/server/request-context"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -18,13 +20,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 })
   }
 
-  const body = await request.json().catch(() => ({})) as { limit?: unknown }
-  const limit = Number.isInteger(body.limit) ? Number(body.limit) : 5
+  const actorId = session.user?.email ?? "admin"
 
-  try {
-    const result = await runDueForgeJobs(limit)
-    return NextResponse.json({ ok: true, ...result })
-  } catch {
-    return NextResponse.json({ error: "Unable to drain Forge jobs." }, { status: 500 })
-  }
+  return withRequestLogContext({ requestId: requestIdFromRequest(request), actorId }, async () => {
+    const body = await request.json().catch(() => ({})) as { limit?: unknown }
+    const limit = Number.isInteger(body.limit) ? Number(body.limit) : 5
+    const log = requestLogger({ component: "forge-job-worker" })
+
+    try {
+      const result = await runDueForgeJobs(limit)
+      log.info("Forge job drain completed", result)
+      return NextResponse.json({ ok: true, ...result })
+    } catch (error) {
+      log.error("Forge job drain failed", {
+        error: normalizeUnknownError(error, { safeMessage: "Unable to drain Forge jobs.", category: "forge_job_drain" }),
+      })
+      return NextResponse.json({ error: "Unable to drain Forge jobs." }, { status: 500 })
+    }
+  })
 }

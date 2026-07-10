@@ -6,6 +6,7 @@ import { formatSalesPrice } from "@/lib/sales-proposals"
 import { db } from "@/lib/db"
 import { clients, forgeArtifacts, forgeProjects, outreachActivities, proposalTrackings, prospects } from "@/lib/schema"
 import { runForgeAiJson } from "@/lib/server/forge-ai"
+import { captureMonitoringException } from "@/lib/server/monitoring"
 
 interface SalesProposalSectionData extends Record<string, JsonValue> {
   businessOverview: string
@@ -85,7 +86,8 @@ export async function generateSalesProposal(input: {
     })
     data = result.data
     generatedBy = result.provider === "mock" ? "manual" : "forge"
-  } catch {
+  } catch (error) {
+    captureMonitoringException(error, { prospectId: input.prospectId ?? undefined, clientId: input.clientId ?? undefined, forgeStage: "proposal_generation", fallbackUsed: true })
     data = fallback
   }
 

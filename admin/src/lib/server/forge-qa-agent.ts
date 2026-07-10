@@ -50,6 +50,7 @@ import { validateForgeRepairPatchSyntax } from "./forge-repair-syntax"
 import { regenerateForgeGeneratedFiles } from "./forge-frontend-code-agent"
 import { saveVersionedForgeArtifact } from "./forge-artifacts"
 import { cleanupForgeWorkspaceTransientOutput, listForgeWorkspaceFiles, readForgeWorkspaceFile, resolveWorkspaceRoot, writeForgeWorkspaceFile } from "./forge-workspace"
+import { captureMonitoringMessage } from "./monitoring"
 
 export class ForgeQaAgentError extends Error {
   safeMessage: string
@@ -605,7 +606,10 @@ async function runWorkspaceQa(
       ? await runDockerWorkspaceCommand(command.name, command.command, cwd, network)
       : await runWorkspaceCommand(command.name, command.command, cwd)
     results.push(result)
-    if (result.status === "failed") break
+    if (result.status === "failed") {
+      captureMonitoringMessage("Forge sandbox command failed", "error", { projectId: workspace.projectId, forgeStage: "qa", sandboxRunner: sandbox.runner, commandName: command.name, durationMs: result.durationMs, exitCode: result.exitCode })
+      break
+    }
   }
 
   await cleanupForgeWorkspaceTransientOutput(workspace)

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { Resend } from "resend"
+import { captureWebException, captureWebMessage } from "@/lib/server-monitoring"
 import { eq, sql } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { quoteRateLimits, quoteRequests } from "@/lib/schema"
@@ -122,6 +123,7 @@ export async function POST(request: NextRequest) {
 
     if (!apiKey || !from) {
       await markQuoteEmailStatus(quote.id, "failed", "configuration").catch(() => undefined)
+      captureWebMessage("Quote email configuration is incomplete", "warning", { quoteId: quote.id, emailOperation: "quote_notification", errorCategory: "email_configuration" })
       return NextResponse.json({ ok: true })
     }
 
@@ -193,12 +195,14 @@ export async function POST(request: NextRequest) {
 
       if (internal.error || reply.error) {
         await markQuoteEmailStatus(quote.id, "failed", "delivery").catch(() => undefined)
+        captureWebMessage("Quote email provider returned a delivery error", "error", { quoteId: quote.id, emailOperation: "quote_notification", errorCategory: "email_delivery" })
         return NextResponse.json({ ok: true })
       }
 
       await markQuoteEmailStatus(quote.id, "sent").catch(() => undefined)
-    } catch {
+    } catch (error) {
       await markQuoteEmailStatus(quote.id, "failed", "delivery").catch(() => undefined)
+      captureWebException(error, { quoteId: quote.id, emailOperation: "quote_notification", errorCategory: "email_delivery" })
       return NextResponse.json({ ok: true })
     }
 

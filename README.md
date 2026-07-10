@@ -2,6 +2,14 @@
 
 Strategy-led web development agency. Two Next.js apps, one Docker Compose stack.
 
+The audited implementation map is maintained in `docs/architecture/`:
+
+- [System overview](docs/architecture/system-overview.md)
+- [Forge workflow](docs/architecture/forge-workflow.md)
+- [Security boundaries](docs/architecture/security-boundaries.md)
+- [Deployment topology](docs/architecture/deployment-topology.md)
+- [Data model](docs/architecture/data-model.md)
+
 | App | Local | Production |
 |-----|-------|-----------|
 | Public site | `localhost:3000` | `scalesmiths.co.uk` |

@@ -11,6 +11,7 @@ import {
   type ForgeWorkspaceMetadata,
   type ForgeWorkspaceProject,
 } from "@/lib/forge-workspace"
+import { captureMonitoringException } from "./monitoring"
 
 export class ForgeWorkspaceError extends Error {
   safeMessage: string
@@ -36,16 +37,17 @@ export async function createForgeProjectWorkspace(project: ForgeWorkspaceProject
     updatedAt: now,
   }
 
-  const workspaceRoot = resolveWorkspaceRoot(metadata)
-  await mkdir(workspaceRoot, { recursive: true })
-
-  for (const file of buildTemplateFiles(project)) {
-    await writeForgeWorkspaceFile(metadata, file.path, file.content, { allowExecutableScripts: true, overwrite: false })
+  try {
+    const workspaceRoot = resolveWorkspaceRoot(metadata)
+    await mkdir(workspaceRoot, { recursive: true })
+    for (const file of buildTemplateFiles(project)) await writeForgeWorkspaceFile(metadata, file.path, file.content, { allowExecutableScripts: true, overwrite: false })
+    metadata.fileCount = (await listForgeWorkspaceFiles(metadata)).length
+    metadata.updatedAt = new Date().toISOString()
+    return metadata
+  } catch (error) {
+    captureMonitoringException(error, { projectId: project.id, forgeStage: "workspace_generation", workspacePath: metadata.relativePath })
+    throw error
   }
-
-  metadata.fileCount = (await listForgeWorkspaceFiles(metadata)).length
-  metadata.updatedAt = new Date().toISOString()
-  return metadata
 }
 
 export async function writeForgeWorkspaceFile(
@@ -58,8 +60,13 @@ export async function writeForgeWorkspaceFile(
 
   if (options.overwrite === false && await fileExists(target.absolutePath)) return
 
-  await mkdir(path.dirname(target.absolutePath), { recursive: true })
-  await writeFile(target.absolutePath, content, "utf8")
+  try {
+    await mkdir(path.dirname(target.absolutePath), { recursive: true })
+    await writeFile(target.absolutePath, content, "utf8")
+  } catch (error) {
+    captureMonitoringException(error, { projectId: workspace.projectId, forgeStage: "workspace_write", relativePath: target.relativePath })
+    throw error
+  }
 }
 
 export async function readForgeWorkspaceFile(workspace: ForgeWorkspaceMetadata, relativePath: string) {

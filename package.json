@@ -2,6 +2,7 @@
   "name": "scalesmiths",
   "private": true,
   "scripts": {
+    "check:architecture-docs": "node scripts/check-architecture-docs.mjs",
     "check:env-hygiene": "node scripts/check-env-hygiene.mjs"
   }
 }

@@ -25,6 +25,7 @@ import {
   type ForgePreviewState,
 } from "@/lib/forge-preview"
 import { FORGE_WORKSPACE_MEMORY_KEY, readForgeWorkspaceMemory, type ForgeWorkspaceMetadata } from "@/lib/forge-workspace"
+import { captureMonitoringException } from "./monitoring"
 import { forgeActivityLogs, forgeArtifacts, forgeMemories, forgeProjects } from "@/lib/schema"
 import { readForgeWorkspaceFile, resolveWorkspaceRoot } from "./forge-workspace"
 
@@ -194,6 +195,7 @@ export async function startForgePreview(projectId: number, actor: string) {
     await logPreviewActivity(projectId, actor, "preview_started", `Started local preview for ${project.name}.`, runningState)
     return runningState
   } catch (error) {
+    captureMonitoringException(error, { projectId, forgeStage: "preview", sandboxRunner: resolveForgeSandboxConfig().runner })
     const running = previewProcesses.get(projectId)
     if (running && isRunningPreviewAttached(running)) {
       await stopRunningPreview(running)

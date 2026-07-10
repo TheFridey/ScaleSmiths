@@ -3,6 +3,7 @@ import type {
   ClientRequestCategory,
   ClientRequestPriority,
 } from "./client-requests"
+import { captureWebException, captureWebMessage } from "./server-monitoring"
 
 export interface ClientRequestNotificationInput {
   requestId: number
@@ -88,6 +89,7 @@ export async function sendClientRequestNotifications(
 
   if (!config.apiKey || !config.from || !config.supportEmail) {
     warnRequestNotification("configuration", input.requestId)
+    captureWebMessage("Client request email configuration is incomplete", "warning", { requestId: input.requestId, emailOperation: "client_request_notification", errorCategory: "email_configuration" })
     return { ok: false, reason: "configuration" }
   }
 
@@ -120,10 +122,12 @@ export async function sendClientRequestNotifications(
     const results = await Promise.all(messages)
     if (results.some((result) => result.error)) {
       warnRequestNotification("delivery", input.requestId)
+      captureWebMessage("Client request email provider returned a delivery error", "error", { requestId: input.requestId, emailOperation: "client_request_notification", errorCategory: "email_delivery" })
       return { ok: false, reason: "delivery" }
     }
-  } catch {
+  } catch (error) {
     warnRequestNotification("delivery", input.requestId)
+    captureWebException(error, { requestId: input.requestId, emailOperation: "client_request_notification", errorCategory: "email_delivery" })
     return { ok: false, reason: "delivery" }
   }
 

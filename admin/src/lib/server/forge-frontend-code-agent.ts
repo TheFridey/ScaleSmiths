@@ -24,6 +24,7 @@ import { FORGE_WHATSAPP_PROVIDER, buildWhatsAppIntegrationPlaceholder, readForge
 import { FORGE_WORKSPACE_MEMORY_KEY, readForgeWorkspaceMemory, type ForgeWorkspaceMetadata } from "@/lib/forge-workspace"
 import { forgeActivityLogs, forgeArtifacts, forgeIntegrationConfigs, forgeMemories, forgeProjects, forgeTasks } from "@/lib/schema"
 import { listForgeWorkspaceFiles, writeForgeWorkspaceFile } from "./forge-workspace"
+import { evaluatePersistedProjectTransition } from "./forge-workflow"
 
 export class ForgeFrontendCodeAgentError extends Error {
   safeMessage: string
@@ -38,6 +39,7 @@ export class ForgeFrontendCodeAgentError extends Error {
 }
 
 export async function runForgeFrontendCodeAgent(projectId: number, actor: string) {
+  await evaluatePersistedProjectTransition({ projectId, to: "build" })
   const {
     project,
     workspace,

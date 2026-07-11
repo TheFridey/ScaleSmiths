@@ -46,6 +46,7 @@ export function evaluateAttempt(
   now: number,
   config: BreakerConfig,
 ): { next: ProviderBreakerState; allowed: boolean; transition: BreakerTransition | null; reason: string } {
+  void config
   if (state.state === "closed") {
     return { next: state, allowed: true, transition: null, reason: "closed" }
   }

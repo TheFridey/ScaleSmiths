@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { and, eq } from "drizzle-orm"
 import { auth } from "../../../../../../../auth"
 import { db } from "@/lib/db"
+import { getForgeAgentRegistryReference } from "@/lib/forge-prompt-registry"
 import { forgeActivityLogs, forgeArtifacts, forgeProjects } from "@/lib/schema"
 import {
   FORGE_INTAKE_ARTIFACT_KIND,
@@ -270,6 +271,7 @@ async function generateBriefQuestion({
 
   try {
     const result = await runForgeAiJson<ForgeBuildBriefQuestionResponse>({
+      ...getForgeAgentRegistryReference("intake_question"),
       taskType: "planning",
       schemaName: "forge_build_brief_question",
       schema: FORGE_BUILD_BRIEF_QUESTION_SCHEMA,

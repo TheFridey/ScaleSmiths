@@ -306,7 +306,7 @@ export function buildQaReport({
 export function getForgeQaCommands(packageJson: string | null | undefined) {
   const scripts = parsePackageScripts(packageJson)
   return [
-    { name: "install" as const, command: "npm install --include=dev --no-audit --no-fund", shouldRun: true, skippedReason: null },
+    { name: "install" as const, command: "npm install --ignore-scripts --include=dev --no-audit --no-fund", shouldRun: true, skippedReason: null },
     { name: "typecheck" as const, command: scripts.typecheck ? "npm run typecheck" : "npx tsc --noEmit", shouldRun: true, skippedReason: null },
     { name: "lint" as const, command: "npm run lint", shouldRun: Boolean(scripts.lint), skippedReason: "No lint script defined." },
     { name: "build" as const, command: scripts.build ? "npm run build" : "npx next build", shouldRun: true, skippedReason: null },

@@ -7,6 +7,7 @@ const requiredDocuments = {
   "security-boundaries.md": ["Trust zones", "AI boundary", "Generated workspace boundary", "Preview and publication boundary", "Database boundary"],
   "deployment-topology.md": ["Supported Compose variants", "Images and migrations", "Nginx routing", "CI topology"],
   "data-model.md": ["Domain map", "Public/shared operational tables", "Forge tables", "Migration inventory", "Integrity and lifecycle gaps"],
+  "rbac-policy.md": ["Capability matrix", "Enforcement", "Change control"],
 }
 
 const architectureRoot = path.resolve("docs", "architecture")

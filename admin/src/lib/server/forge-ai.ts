@@ -1,29 +1,23 @@
 import "server-only"
+import { createHash, randomUUID } from "node:crypto"
 import {
   buildForgeTaskOutputMetadata,
-  assertForgeAiBudgetAllowsRequest as assertForgeAiTokenBudgetAllowsRequest,
   createMockStructuredResponse,
   estimateForgeAiCostUsd,
-  getForgeAiBudgetDate,
   parseAndValidateStructuredJson,
-  resolveForgeAiBudgetConfig,
   resolveForgeAiProvider,
-  type ForgeAiBudgetLedger,
   type ForgeAiProvider,
   type ForgeAiResult,
   type ForgeAiTaskType,
   type ForgeJsonSchema,
   type JsonValue,
 } from "@/lib/forge-ai"
-import {
-  ForgeAiBudgetExceededError,
-  assertForgeAiBudgetAllowsRequest,
-  recordForgeAiUsage,
-} from "./forge-ai-usage"
+import { recordForgeAiUsage } from "./forge-ai-usage"
 import { normalizeUnknownError } from "./logging"
 import { requestLogger } from "./request-context"
 import { addMonitoringBreadcrumb, captureMonitoringException, setMonitoringContext } from "./monitoring"
 import { getForgeProviderAdapter, ProviderAdapterError } from "./forge-provider-adapters"
+import { ForgeBudgetReservationError, reconcileForgeAiBudget, reserveForgeAiBudget } from "./forge-budget-reservations"
 import { classifyRetryability, nextRetryDecision, resolveRetryPolicyConfig } from "@/lib/forge-retry-policy"
 import { isTripCategory } from "@/lib/forge-circuit-breaker"
 import {
@@ -42,10 +36,6 @@ const FORGE_AI_SAFETY_SYSTEM_PROMPT = [
   "Generated code must not phone home to unknown domains or add telemetry/beacons.",
   "Generated scripts must not contain destructive shell commands or modify files outside the generated workspace.",
 ].join(" ")
-
-declare global {
-  var __forgeAiBudgetLedger: ForgeAiBudgetLedger | undefined
-}
 
 export class ForgeAiError extends Error {
   safeMessage: string
@@ -105,6 +95,10 @@ export async function runForgeAiJson<TData extends JsonValue = JsonValue>(reques
   addMonitoringBreadcrumb({ category: "forge.ai", message: "AI provider request started", data: { provider, model, projectId: request.projectId, taskId: request.taskId } })
 
   if (provider === "mock") {
+    const reservation = await reserveForgeAiBudget({ projectId:request.projectId, taskId:request.taskId, provider, model, estimatedMaxCost:0, env, idempotencyKey:budgetIdempotencyKey(request, provider, model) }).catch((error) => {
+      if (error instanceof ForgeBudgetReservationError) throw new ForgeAiError(error.safeMessage, false, { code:error.code, cause:error })
+      throw error
+    })
     const data = request.mockData ?? createMockStructuredResponse(request.schema, request.taskType)
     const parsed = parseAndValidateStructuredJson<TData>(request.schema, data)
 
@@ -135,6 +129,7 @@ export async function runForgeAiJson<TData extends JsonValue = JsonValue>(reques
       startedAt: startedAtDate,
       completedAt,
     })
+    await reconcileForgeAiBudget({ reservationId:reservation.id, actualCost:0, usageKnown:true, fallbackProvider:configuredProvider === "mock" ? null : "mock" })
     log.debug("Forge AI mock response completed", {
       durationMs: result.latencyMs,
       fallbackUsed: configuredProvider !== "mock",
@@ -165,28 +160,17 @@ export async function runForgeAiJson<TData extends JsonValue = JsonValue>(reques
     }
   }
 
-  const budgetConfig = resolveForgeAiBudgetConfig(env)
   const requestedMaxTokens = request.maxTokens ?? 800
-  const budgetCheck = assertForgeAiTokenBudgetAllowsRequest({
-    config: budgetConfig,
-    ledger: currentBudgetLedger(),
-    requestedMaxTokens,
-  })
-  if (!budgetCheck.ok) throw new ForgeAiError(budgetCheck.error)
-
   const estimatedMaxCost = estimateForgeAiCostUsd(provider, {
     inputTokens: estimatePromptTokens(request),
     outputTokens: requestedMaxTokens,
     totalTokens: estimatePromptTokens(request) + requestedMaxTokens,
   }) ?? 0
+  let reservation
   try {
-    await assertForgeAiBudgetAllowsRequest({
-      projectId: request.projectId ?? null,
-      estimatedMaxCost,
-      env,
-    })
+    reservation = await reserveForgeAiBudget({ projectId:request.projectId, taskId:request.taskId, provider, model, estimatedMaxCost, env, idempotencyKey:budgetIdempotencyKey(request, provider, model) })
   } catch (error) {
-    if (error instanceof ForgeAiBudgetExceededError) throw new ForgeAiError(error.safeMessage)
+    if (error instanceof ForgeBudgetReservationError) throw new ForgeAiError(error.safeMessage, false, { code:error.code, cause:error })
     throw error
   }
 
@@ -205,7 +189,6 @@ export async function runForgeAiJson<TData extends JsonValue = JsonValue>(reques
           const fallback = parseAndValidateStructuredJson<TData>(request.schema, request.mockData)
           if (fallback.ok) {
             const costEstimateUsd = estimateForgeAiCostUsd(provider, raw.usage)
-            recordBudgetUsage(raw.usage.totalTokens ?? 0, costEstimateUsd ?? 0)
             const completedAt = new Date()
             await recordForgeAiUsage({
               projectId: request.projectId ?? null,
@@ -217,6 +200,7 @@ export async function runForgeAiJson<TData extends JsonValue = JsonValue>(reques
               startedAt: startedAtDate,
               completedAt,
             })
+            await reconcileForgeAiBudget({ reservationId:reservation.id, actualCost:costEstimateUsd, usageKnown:raw.usage.totalTokens != null, fallbackProvider:"mock" })
             log.warn("Forge AI structured response used deterministic fallback", {
               durationMs: completedAt.getTime() - startedAt,
               retryCount: attempt,
@@ -243,7 +227,6 @@ export async function runForgeAiJson<TData extends JsonValue = JsonValue>(reques
       }
 
       const costEstimateUsd = estimateForgeAiCostUsd(provider, raw.usage)
-      recordBudgetUsage(raw.usage.totalTokens ?? 0, costEstimateUsd ?? 0)
       const completedAt = new Date()
       await recordForgeAiUsage({
         projectId: request.projectId ?? null,
@@ -255,6 +238,7 @@ export async function runForgeAiJson<TData extends JsonValue = JsonValue>(reques
         startedAt: startedAtDate,
         completedAt,
       })
+      await reconcileForgeAiBudget({ reservationId:reservation.id, actualCost:costEstimateUsd, usageKnown:raw.usage.totalTokens != null, fallbackProvider:failover?.to ?? null })
       log.info("Forge AI request completed", {
         durationMs: completedAt.getTime() - startedAt,
         retryCount: attempt,
@@ -312,6 +296,7 @@ export async function runForgeAiJson<TData extends JsonValue = JsonValue>(reques
     }
   }
 
+  await reconcileForgeAiBudget({ reservationId:reservation.id, actualCost:Number(reservation.reservedCost), usageKnown:false, failureCategory:lastError instanceof ProviderAdapterError ? lastError.category : "provider_failure" })
   if (lastError instanceof ForgeAiError) throw lastError
   if (lastError instanceof ProviderAdapterError) throw new ForgeAiError(lastError.safeMessage, lastError.retryable, { code:`provider_${lastError.category}`, cause:lastError })
   throw new ForgeAiError("Unable to get a safe AI response right now.", true)
@@ -333,17 +318,7 @@ function estimatePromptTokens(request: ForgeAiRequest) {
   return Math.max(1, Math.ceil(chars / 4))
 }
 
-function currentBudgetLedger(): ForgeAiBudgetLedger {
-  const today = getForgeAiBudgetDate()
-  if (!globalThis.__forgeAiBudgetLedger || globalThis.__forgeAiBudgetLedger.date !== today) {
-    globalThis.__forgeAiBudgetLedger = { date: today, totalTokens: 0, totalCostUsd: 0, requests: 0 }
-  }
-  return globalThis.__forgeAiBudgetLedger
-}
-
-function recordBudgetUsage(tokens: number, costUsd: number) {
-  const ledger = currentBudgetLedger()
-  ledger.totalTokens += Math.max(0, tokens)
-  ledger.totalCostUsd = Number((ledger.totalCostUsd + Math.max(0, costUsd)).toFixed(6))
-  ledger.requests += 1
+function budgetIdempotencyKey(request: ForgeAiRequest, provider: ForgeAiProvider, model: string) {
+  const digest = createHash("sha256").update(`${request.promptIdentifier}:${request.promptVersion}:${request.prompt}`).digest("hex").slice(0, 24)
+  return request.taskId ? `task:${request.taskId}:${provider}:${model}:${digest}` : `call:${randomUUID()}`
 }

@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "check:architecture-docs": "node scripts/check-architecture-docs.mjs",
-    "check:env-hygiene": "node scripts/check-env-hygiene.mjs"
+    "check:env-hygiene": "node scripts/check-env-hygiene.mjs",
+    "update:cloudflare-ranges": "node scripts/update-cloudflare-nginx-ranges.mjs"
   }
 }

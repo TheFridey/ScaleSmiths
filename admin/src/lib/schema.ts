@@ -474,6 +474,30 @@ export const forgeAiUsage = pgTable("forge_ai_usage", {
   index("forge_ai_usage_provider_idx").on(table.provider),
 ])
 
+export const forgeAiBudgetReservations = pgTable("forge_ai_budget_reservations", {
+  id: serial("id").primaryKey(),
+  idempotencyKey: text("idempotency_key").notNull(),
+  projectId: integer("project_id").references(() => forgeProjects.id, { onDelete: "set null" }),
+  taskId: integer("task_id").references(() => forgeTasks.id, { onDelete: "set null" }),
+  provider: text("provider").notNull(),
+  model: text("model").notNull(),
+  status: text("status").default("reserved").notNull(),
+  reservedCost: numeric("reserved_cost", { precision: 12, scale: 6 }).notNull(),
+  actualCost: numeric("actual_cost", { precision: 12, scale: 6 }),
+  usageKnown: boolean("usage_known").default(false).notNull(),
+  fallbackProvider: text("fallback_provider"),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  reconciledAt: timestamp("reconciled_at", { withTimezone: true }),
+  failureCategory: text("failure_category"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("forge_ai_budget_reservations_idempotency_idx").on(table.idempotencyKey),
+  index("forge_ai_budget_reservations_status_expiry_idx").on(table.status, table.expiresAt),
+  index("forge_ai_budget_reservations_project_idx").on(table.projectId, table.createdAt),
+  index("forge_ai_budget_reservations_provider_idx").on(table.provider, table.createdAt),
+])
+
 export const forgeProviderHealth = pgTable("forge_provider_health", {
   id: serial("id").primaryKey(),
   provider: text("provider").notNull(),

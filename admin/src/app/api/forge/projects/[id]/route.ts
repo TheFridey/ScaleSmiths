@@ -4,6 +4,8 @@ import { auth } from "../../../../../../auth"
 import { db } from "@/lib/db"
 import { forgeActivityLogs, forgeProjects } from "@/lib/schema"
 import { parseForgeProjectPayload } from "@/lib/forge"
+import { evaluatePersistedProjectTransition, ForgeWorkflowError, workflowAuditMetadata } from "@/lib/server/forge-workflow"
+import type { AdminRole } from "@/lib/admin-users"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -70,8 +72,16 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const action = typeof input.action === "string" ? input.action : "update"
   const actor = sessionActor(session)
   const now = new Date()
+  const actorRole = session.user?.role as AdminRole | undefined
 
   if (action === "archive") {
+    let transition: Awaited<ReturnType<typeof evaluatePersistedProjectTransition>>
+    try {
+      transition = await evaluatePersistedProjectTransition({ projectId: id, to: "archived", actorRole, reason: typeof input.reason === "string" ? input.reason : "Project archived by administrator." })
+    } catch (error) {
+      if (error instanceof ForgeWorkflowError) return NextResponse.json({ error: error.safeMessage, code: error.code }, { status: error.status })
+      throw error
+    }
     const [project] = await db.transaction(async (tx) => {
       const [updated] = await tx
         .update(forgeProjects)
@@ -84,7 +94,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         actor,
         action: "archive",
         message: `Archived Forge project ${updated.name}.`,
-        metadataJson: { previousStatus: existing.status },
+        metadataJson: workflowAuditMetadata(transition, now),
       })
 
       return [updated]
@@ -107,6 +117,16 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     return NextResponse.json({ error: "No Forge project fields supplied." }, { status: 400 })
   }
 
+  let transition: Awaited<ReturnType<typeof evaluatePersistedProjectTransition>> | null = null
+  if (parsed.data.status && parsed.data.status !== existing.status) {
+    try {
+      transition = await evaluatePersistedProjectTransition({ projectId: id, to: parsed.data.status, actorRole, override: input.override === true, reason: typeof input.reason === "string" ? input.reason : undefined })
+    } catch (error) {
+      if (error instanceof ForgeWorkflowError) return NextResponse.json({ error: error.safeMessage, code: error.code }, { status: error.status })
+      throw error
+    }
+  }
+
   const project = await db.transaction(async (tx) => {
     const [updated] = await tx
       .update(forgeProjects)
@@ -119,7 +139,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       actor,
       action: "update",
       message: `Updated Forge project ${updated.name}.`,
-      metadataJson: { changedFields: Object.keys(parsed.data) },
+      metadataJson: { changedFields: Object.keys(parsed.data), ...(transition ? workflowAuditMetadata(transition, now) : {}) },
     })
 
     return updated

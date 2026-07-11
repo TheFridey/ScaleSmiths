@@ -10,6 +10,7 @@ import { buildForgeGeneratedProcessEnv } from "@/lib/forge-process-env"
 import {
   buildForgeDockerRunArgs,
   buildForgeDockerStopArgs,
+  appendBoundedSandboxLog,
   resolveForgeSandboxConfig,
   type ForgeSandboxNetworkMode,
 } from "@/lib/forge-sandbox"
@@ -27,7 +28,7 @@ import {
 import { FORGE_WORKSPACE_MEMORY_KEY, readForgeWorkspaceMemory, type ForgeWorkspaceMetadata } from "@/lib/forge-workspace"
 import { captureMonitoringException } from "./monitoring"
 import { forgeActivityLogs, forgeArtifacts, forgeMemories, forgeProjects } from "@/lib/schema"
-import { readForgeWorkspaceFile, resolveWorkspaceRoot } from "./forge-workspace"
+import { assertForgeWorkspaceExecutionSafe, readForgeWorkspaceFile } from "./forge-workspace"
 
 export class ForgePreviewError extends Error {
   safeMessage: string
@@ -131,9 +132,9 @@ export async function startForgePreview(projectId: number, actor: string) {
   await logPreviewActivity(projectId, actor, "preview_starting", `Starting local preview for ${project.name}.`, startingState)
 
   try {
-    const workspaceRoot = resolveWorkspaceRoot(workspace)
+    const workspaceRoot = await assertForgeWorkspaceExecutionSafe(workspace)
     if (sandbox.runner === "docker") {
-      await runDockerCommand("npm install --no-audit --no-fund", workspaceRoot, PREVIEW_INSTALL_TIMEOUT_MS, sandbox.installNetwork)
+      await runDockerCommand("npm install --ignore-scripts --no-audit --no-fund", workspaceRoot, PREVIEW_INSTALL_TIMEOUT_MS, sandbox.installNetwork)
       const containerName = `forge-preview-${projectId}-${Date.now()}`
       const containerId = await startDockerPreview({
         workspaceRoot,
@@ -478,7 +479,7 @@ async function waitForPreview(url: string, logs: string[]) {
 
 function attachProcessLogging(child: ChildProcessWithoutNullStreams, logs: string[]) {
   const push = (chunk: Buffer) => {
-    logs.push(chunk.toString("utf8").trim())
+    logs.push(appendBoundedSandboxLog("", chunk.toString("utf8"), 4096).value.trim())
     while (logs.length > PREVIEW_LOG_LIMIT) logs.shift()
   }
   child.stdout.on("data", push)

@@ -8,6 +8,8 @@
     "start": "node --env-file-if-exists=../.env ./node_modules/next/dist/bin/next start -p 3001",
     "test": "vitest run",
     "forge:demo": "node --env-file-if-exists=../.env scripts/seed-forge-demo.mjs",
+    "admin:bootstrap": "node --env-file-if-exists=../.env scripts/bootstrap-admin.mjs",
+    "admin:recover-owner": "node --env-file-if-exists=../.env scripts/bootstrap-admin.mjs --recover-owner",
     "lint": "eslint .",
     "db:generate": "node --env-file-if-exists=../.env ./node_modules/drizzle-kit/bin.cjs generate",
     "db:migrate": "node --env-file-if-exists=../.env ./node_modules/drizzle-kit/bin.cjs migrate",

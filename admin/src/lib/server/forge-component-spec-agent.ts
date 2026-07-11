@@ -1,4 +1,6 @@
 import "server-only"
+import { getForgeAgentRegistryReference } from "@/lib/forge-prompt-registry"
+import { evaluatePersistedProjectTransition } from "./forge-workflow"
 import { and, eq } from "drizzle-orm"
 import type { ForgeAiResult, JsonValue } from "@/lib/forge-ai"
 import { db } from "@/lib/db"
@@ -31,6 +33,7 @@ export class ForgeComponentSpecAgentError extends Error {
 }
 
 export async function runForgeComponentSpecAgent(projectId: number, actor: string) {
+  await evaluatePersistedProjectTransition({ projectId, to: "build" })
   const { project, approvedSitemap, approvedCopy, approvedDesign } = await loadComponentSpecContext(projectId)
 
   if (project.status === "archived") {
@@ -184,6 +187,7 @@ export async function runForgeComponentSpecAgent(projectId: number, actor: strin
 
   try {
     const result = await runForgeAiJson({
+      ...getForgeAgentRegistryReference("component_spec"),
       taskType: "planning",
       schemaName: "forge_component_spec",
       schema: FORGE_COMPONENT_SPEC_SCHEMA,

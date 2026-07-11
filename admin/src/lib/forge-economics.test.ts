@@ -1,0 +1,4 @@
+import { describe, expect, it } from "vitest"
+import { detectEconomicsSpikes, summarizeForgeEconomics } from "./forge-economics"
+it("aggregates estimated economics without presenting them as billing",()=>{const result=summarizeForgeEconomics([{projectId:1,projectName:"Site",clientId:"c",clientName:"Client",stage:"copy",provider:"openai",model:"m",cost:2,tokens:100,completedAt:"2026-01-02T00:00:00Z",retries:1,latencyMs:1000,fallback:true}],{completedWebsites:1,approvedArtifacts:2,proposals:1,estimatedRevenue:100});expect(result).toMatchObject({totalCost:2,retryCost:1,fallbackRate:1,costPerApprovedArtifact:1,estimatedGrossMarginImpact:98})})
+describe("spike alerts",()=>it("flags a greater-than-2x latest day",()=>expect(detectEconomicsSpikes([{label:"today",cost:3},{label:"prior",cost:1}])).toHaveLength(1)))

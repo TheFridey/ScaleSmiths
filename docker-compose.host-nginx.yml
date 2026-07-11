@@ -65,6 +65,22 @@ services:
         condition: service_healthy
     networks: [ss-net]
 
+  admin-bootstrap:
+    image: ss-admin-bootstrap
+    build:
+      context: ./admin
+      dockerfile: Dockerfile
+      target: builder
+    profiles: ["tools"]
+    env_file: .env
+    environment:
+      NODE_ENV: production
+    command: npm run admin:bootstrap
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [ss-net]
+
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped

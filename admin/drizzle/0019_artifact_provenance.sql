@@ -1,0 +1,32 @@
+ALTER TABLE "forge_artifacts" ADD COLUMN "parent_artifact_id" integer;
+ALTER TABLE "forge_artifacts" ADD COLUMN "source_task_id" integer;
+ALTER TABLE "forge_artifacts" ADD COLUMN "provider" text;
+ALTER TABLE "forge_artifacts" ADD COLUMN "model" text;
+ALTER TABLE "forge_artifacts" ADD COLUMN "prompt_version" text DEFAULT 'unknown' NOT NULL;
+ALTER TABLE "forge_artifacts" ADD COLUMN "schema_version" text DEFAULT '1' NOT NULL;
+ALTER TABLE "forge_artifacts" ADD COLUMN "source_version" text;
+ALTER TABLE "forge_artifacts" ADD COLUMN "upstream_artifact_ids" jsonb DEFAULT '[]'::jsonb NOT NULL;
+ALTER TABLE "forge_artifacts" ADD COLUMN "upstream_artifact_hashes" jsonb DEFAULT '{}'::jsonb NOT NULL;
+ALTER TABLE "forge_artifacts" ADD COLUMN "input_context_hash" text DEFAULT 'pending';
+ALTER TABLE "forge_artifacts" ADD COLUMN "output_hash" text DEFAULT 'pending';
+ALTER TABLE "forge_artifacts" ADD COLUMN "actor" text;
+ALTER TABLE "forge_artifacts" ADD COLUMN "validation_result" jsonb;
+ALTER TABLE "forge_artifacts" ADD COLUMN "quality_state" "forge_task_result_quality" DEFAULT 'requires_review' NOT NULL;
+ALTER TABLE "forge_artifacts" ADD COLUMN "approval_state" text DEFAULT 'unapproved' NOT NULL;
+ALTER TABLE "forge_artifacts" ADD COLUMN "approval_history" jsonb DEFAULT '[]'::jsonb NOT NULL;
+UPDATE "forge_artifacts" SET "input_context_hash" = md5(COALESCE("metadata_json"::text, '')), "output_hash" = md5(COALESCE("content", '')), "approval_state" = CASE WHEN "metadata_json"->>'status' = 'approved' THEN 'approved' ELSE 'unapproved' END;
+ALTER TABLE "forge_artifacts" ALTER COLUMN "input_context_hash" SET NOT NULL;
+ALTER TABLE "forge_artifacts" ALTER COLUMN "output_hash" SET NOT NULL;
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+CREATE FUNCTION "sync_forge_artifact_hashes"() RETURNS trigger AS $$
+BEGIN
+  IF NEW."input_context_hash" IS NULL OR NEW."input_context_hash" = 'pending' OR NEW."metadata_json" IS DISTINCT FROM OLD."metadata_json" THEN NEW."input_context_hash" := encode(digest(COALESCE(NEW."metadata_json"::text, ''), 'sha256'), 'hex'); END IF;
+  IF NEW."output_hash" IS NULL OR NEW."output_hash" = 'pending' OR NEW."content" IS DISTINCT FROM OLD."content" THEN NEW."output_hash" := encode(digest(COALESCE(NEW."content", ''), 'sha256'), 'hex'); END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+CREATE TRIGGER "forge_artifact_hash_trigger" BEFORE INSERT OR UPDATE OF "content", "metadata_json" ON "forge_artifacts" FOR EACH ROW EXECUTE FUNCTION "sync_forge_artifact_hashes"();
+ALTER TABLE "forge_artifacts" ADD CONSTRAINT "forge_artifacts_parent_artifact_id_forge_artifacts_id_fk" FOREIGN KEY ("parent_artifact_id") REFERENCES "public"."forge_artifacts"("id") ON DELETE SET NULL;
+ALTER TABLE "forge_artifacts" ADD CONSTRAINT "forge_artifacts_source_task_id_forge_tasks_id_fk" FOREIGN KEY ("source_task_id") REFERENCES "public"."forge_tasks"("id") ON DELETE SET NULL;
+CREATE INDEX "forge_artifacts_parent_idx" ON "forge_artifacts" USING btree ("parent_artifact_id");
+CREATE INDEX "forge_artifacts_source_task_idx" ON "forge_artifacts" USING btree ("source_task_id");

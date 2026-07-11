@@ -3,25 +3,8 @@ import Credentials from "next-auth/providers/credentials"
 import { authConfig } from "./auth.config"
 import { checkLoginRateLimit, getAuthRequestIp, loginRateLimitKeys } from "./src/lib/login-limiter"
 import { captureMonitoringException, captureMonitoringMessage } from "./src/lib/server/monitoring"
-
-/*
- * ScaleSmiths admin currently uses a single-user credentials pattern:
- * ADMIN_EMAIL identifies the allowed admin account and ADMIN_PASSWORD stores
- * that account's password. To add more users, add another object here and move
- * password lookup to a per-user secret or database column.
- *
- * ADMIN_PASSWORD may be a plain string for local development, but production
- * should use a bcrypt hash. Generate one with bcryptjs, store the hash in the
- * environment, and keep the value starting with "$2" so authorize() verifies it
- * with bcrypt.compare().
- */
-const users = [
-  {
-    id: "1",
-    email: process.env.ADMIN_EMAIL,
-    name: "Rhys",
-  },
-]
+import { authenticateAdminUser, findAdminUserById, recordSuccessfulAdminLogin, verifyAdminMfaChallenge } from "./src/lib/server/admin-users"
+import { isAdminSessionCurrent } from "./src/lib/admin-users"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
@@ -30,11 +13,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
+        totp: { label: "Authenticator code", type: "text" },
+        recoveryCode: { label: "Recovery code", type: "text" },
       },
       async authorize(credentials, request) {
         const email = String(credentials?.email ?? "").trim().toLowerCase()
         const password = String(credentials?.password ?? "")
-        const adminPassword = process.env.ADMIN_PASSWORD ?? ""
+        const totp = String(credentials?.totp ?? "").trim()
+        const recoveryCode = String(credentials?.recoveryCode ?? "").trim()
         const allowed = await checkLoginRateLimit(loginRateLimitKeys("admin-login", getAuthRequestIp(request), email))
 
         if (!allowed) {
@@ -42,34 +28,36 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return null
         }
 
-        const user = users.find((u) => u.email?.toLowerCase() === email)
-
-        if (!user || !adminPassword) {
-          captureMonitoringMessage("Admin authentication rejected", "warning", { actorId: email || "unknown", errorCategory: "authentication_credentials" })
-          return null
-        }
-
-        let valid = false
         try {
-          valid = adminPassword.startsWith("$2")
-            ? await import("bcryptjs").then((bcrypt) => bcrypt.default.compare(password, adminPassword))
-            : password === adminPassword
+          const user = await authenticateAdminUser(email, password)
+          if (!user) {
+            captureMonitoringMessage("Admin authentication rejected", "warning", { actorId: email || "unknown", errorCategory: "authentication_credentials" })
+            return null
+          }
+          const mfaValid = await verifyAdminMfaChallenge(user, { totp, recoveryCode })
+          if (!mfaValid) {
+            captureMonitoringMessage("Admin MFA challenge rejected", "warning", { actorId: user.id, errorCategory: "mfa_challenge" })
+            return null
+          }
+          await recordSuccessfulAdminLogin(user.id)
+          return { id: user.id, email: user.email, name: user.displayName, role: user.role, sessionVersion: user.sessionVersion, active: user.active }
         } catch (error) {
           captureMonitoringException(error, { actorId: email, errorCategory: "authentication_internal" })
           return null
         }
-
-        if (!valid) {
-          captureMonitoringMessage("Admin authentication rejected", "warning", { actorId: email, errorCategory: "authentication_credentials" })
-          return null
-        }
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-        }
       },
     }),
   ],
+  callbacks: {
+    ...authConfig.callbacks,
+    async jwt(params) {
+      const token = await authConfig.callbacks!.jwt!(params)
+      if (!params.user && token.sub) {
+        const persisted = await findAdminUserById(token.sub).catch(() => null)
+        token.accessRevoked = !persisted || !isAdminSessionCurrent(persisted, token.sessionVersion)
+        if (persisted) { token.role = persisted.role; token.active = persisted.active }
+      }
+      return token
+    },
+  },
 })

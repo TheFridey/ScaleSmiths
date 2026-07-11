@@ -1,4 +1,5 @@
 import "server-only"
+import { getForgeAgentRegistryReference } from "@/lib/forge-prompt-registry"
 import { and, desc, eq } from "drizzle-orm"
 import { db } from "@/lib/db"
 import {
@@ -84,6 +85,7 @@ export async function runForgeVisualCritiqueAgent(projectId: number, actor: stri
 
   try {
     const result = await runForgeAiJson({
+      ...getForgeAgentRegistryReference("visual_critique"),
       taskType: "qa",
       schemaName: "forge_visual_critique",
       schema: FORGE_VISUAL_CRITIQUE_SCHEMA,

@@ -1,4 +1,5 @@
 import "server-only"
+import { getForgeAgentRegistryReference } from "@/lib/forge-prompt-registry"
 import {
   buildClientRequestTriagePrompt,
   CLIENT_REQUEST_TRIAGE_SCHEMA,
@@ -19,6 +20,7 @@ export async function generateClientRequestTriage(input: ClientRequestTriageInpu
 
   try {
     const result = await runForgeAiJson<ClientRequestTriageResult>({
+      ...getForgeAgentRegistryReference("client_request_triage"),
       taskType: "planning",
       schemaName: "client_request_triage",
       schema: CLIENT_REQUEST_TRIAGE_SCHEMA,

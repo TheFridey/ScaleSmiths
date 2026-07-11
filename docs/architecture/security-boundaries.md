@@ -25,7 +25,9 @@ Portal login accepts untrusted credentials, uses bcrypt for stored accounts, dat
 
 ## Admin boundary
 
-Admin has no signup. A single environment-configured identity is authenticated by Auth.js credentials and an eight-hour JWT session. Middleware denies unauthenticated pages and APIs. Production depends on a strong `AUTH_SECRET` and bcrypt `ADMIN_PASSWORD`; plaintext admin passwords remain accepted outside an enforced production check, so operations must follow `.env.example` guidance.
+Admin has no signup. Persistent internal identities are authenticated by Auth.js credentials and eight-hour JWT sessions. Middleware denies unauthenticated requests and reloads the database identity to enforce active status and session revocation version across pages and APIs. Production depends on a strong `AUTH_SECRET`; passwords are stored only as bcrypt hashes. Owner/administrator management is authenticated server-side, owner grants and password resets require an owner, and the final active owner is protected.
+
+Privileged production identities require TOTP MFA after a bounded bootstrap grace deadline. TOTP secrets use AES-256-GCM server-side encryption, recovery codes use salted scrypt hashes and single-use transactional consumption, and setup/failure/disablement events are persisted without secret material.
 
 Forge mutation/task rate limiting is an in-memory map in middleware. It is per process, resets on restart, and is not globally effective across replicas. It is a safety throttle, not a durable abuse-control boundary.
 
@@ -68,4 +70,3 @@ The public app sends quote and client-request notifications through server-only 
 - no distributed admin/Forge rate limiter;
 - no automated restoration/reconciliation of orphaned preview processes or containers;
 - no end-to-end authorization matrix test across admin and portal APIs.
-

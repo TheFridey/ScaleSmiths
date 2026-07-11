@@ -1,4 +1,5 @@
 import "server-only"
+import { createHash } from "node:crypto"
 import { and, desc, eq, inArray } from "drizzle-orm"
 import { db } from "@/lib/db"
 import {
@@ -6,6 +7,7 @@ import {
   compactForgeLargeLog,
   resolveForgeArtifactRetentionConfig,
   type ForgeArtifactRetentionConfig,
+  type ForgeArtifactProvenanceInput,
 } from "@/lib/forge-artifacts"
 import { forgeActivityLogs, forgeArtifacts, type forgeArtifactType } from "@/lib/schema"
 
@@ -23,6 +25,7 @@ export async function saveVersionedForgeArtifact({
   retentionPolicy = "standard",
   now = new Date(),
   retention = resolveForgeArtifactRetentionConfig(),
+  provenance,
 }: {
   projectId: number
   type: ForgeArtifactType
@@ -35,9 +38,10 @@ export async function saveVersionedForgeArtifact({
   retentionPolicy?: "standard" | "qa-log"
   now?: Date
   retention?: ForgeArtifactRetentionConfig
+  provenance: ForgeArtifactProvenanceInput
 }) {
   const existing = await db
-    .select({ id: forgeArtifacts.id, version: forgeArtifacts.version })
+    .select({ id: forgeArtifacts.id, version: forgeArtifacts.version, outputHash: forgeArtifacts.outputHash })
     .from(forgeArtifacts)
     .where(and(eq(forgeArtifacts.projectId, projectId), eq(forgeArtifacts.type, type), eq(forgeArtifacts.title, title)))
     .orderBy(desc(forgeArtifacts.version), desc(forgeArtifacts.updatedAt))
@@ -71,6 +75,22 @@ export async function saveVersionedForgeArtifact({
       version,
       retentionPolicy,
       contentBytes: versionMetadata.contentBytes,
+      parentArtifactId: existing[0]?.id ?? null,
+      sourceTaskId: provenance.sourceTaskId ?? null,
+      provider: provenance.provider ?? null,
+      model: provenance.model ?? null,
+      promptVersion: provenance.promptVersion,
+      schemaVersion: provenance.schemaVersion,
+      sourceVersion: provenance.sourceVersion ?? process.env.ERROR_MONITORING_RELEASE ?? process.env.GIT_COMMIT_SHA ?? null,
+      upstreamArtifactIds: (provenance.upstreamArtifacts ?? []).map((item) => item.id),
+      upstreamArtifactHashes: Object.fromEntries((provenance.upstreamArtifacts ?? []).map((item) => [String(item.id), item.outputHash])),
+      inputContextHash: hashCanonical(provenance.inputContext),
+      outputHash: hashCanonical(retainedContent),
+      actor: provenance.actor ?? actor ?? null,
+      validationResult: provenance.validationResult ?? null,
+      qualityState: provenance.qualityState ?? "requires_review",
+      approvalState: provenance.approvalState ?? "unapproved",
+      approvalHistory: provenance.approvalHistory ?? [],
       updatedAt: now,
     }).returning()
 
@@ -92,19 +112,15 @@ export async function saveVersionedForgeArtifact({
     return [created]
   })
 
-  await pruneArtifactVersions(projectId, type, title, retention.maxVersionsPerArtifact)
   return artifact
 }
 
-async function pruneArtifactVersions(projectId: number, type: ForgeArtifactType, title: string, maxVersions: number) {
-  const versions = await db
-    .select({ id: forgeArtifacts.id })
-    .from(forgeArtifacts)
-    .where(and(eq(forgeArtifacts.projectId, projectId), eq(forgeArtifacts.type, type), eq(forgeArtifacts.title, title)))
-    .orderBy(desc(forgeArtifacts.version), desc(forgeArtifacts.updatedAt))
+export function hashCanonical(value: unknown) {
+  return createHash("sha256").update(stableJson(value)).digest("hex")
+}
 
-  const staleIds = versions.slice(maxVersions).map((item) => item.id)
-  if (staleIds.length) {
-    await db.delete(forgeArtifacts).where(inArray(forgeArtifacts.id, staleIds))
-  }
+function stableJson(value: unknown): string {
+  if (value === null || typeof value !== "object") return JSON.stringify(value) ?? "undefined"
+  if (Array.isArray(value)) return `[${value.map(stableJson).join(",")}]`
+  return `{${Object.entries(value as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b)).map(([key, item]) => `${JSON.stringify(key)}:${stableJson(item)}`).join(",")}}`
 }

@@ -1,4 +1,5 @@
 import "server-only"
+import { getForgeAgentRegistryReference } from "@/lib/forge-prompt-registry"
 import {
   FORGE_COMMAND_CLASSIFICATION_SCHEMA,
   classifyForgeCommandHeuristic,
@@ -37,6 +38,7 @@ export async function classifyCommand({
 
   try {
     const result = await runForgeAiJson<ForgeCommandClassification>({
+      ...getForgeAgentRegistryReference("command_classification"),
       taskType: "planning",
       schemaName: "forge_command_classification",
       schema: FORGE_COMMAND_CLASSIFICATION_SCHEMA,

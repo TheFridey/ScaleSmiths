@@ -1,4 +1,5 @@
 import "server-only"
+import { getForgeAgentRegistryReference } from "@/lib/forge-prompt-registry"
 import { lookup } from "node:dns/promises"
 import { isIP } from "node:net"
 import { runForgeAiJson } from "@/lib/server/forge-ai"
@@ -73,6 +74,7 @@ export async function generateForgeUrlAutofill(url: string): Promise<ForgeUrlAut
 
   const mockData = createHeuristicAutofill(rootUrl, pages)
   const result = await runForgeAiJson<ForgeUrlAutofillResult>({
+    ...getForgeAgentRegistryReference("url_autofill"),
     taskType: "planning",
     schemaName: "forge_url_autofill",
     schema: FORGE_URL_AUTOFILL_SCHEMA,

@@ -8,6 +8,8 @@ import { Logo } from "@/components/Logo"
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [totp, setTotp] = useState("")
+  const [recoveryCode, setRecoveryCode] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const router = useRouter()
@@ -21,6 +23,8 @@ export default function LoginPage() {
       const res = await signIn("credentials", {
         email,
         password,
+        totp,
+        recoveryCode,
         redirect: false,
         redirectTo: "/dashboard",
       })
@@ -61,6 +65,11 @@ export default function LoginPage() {
                 required
               />
             </div>
+            <div>
+              <label htmlFor="totp" className="font-dm text-sm text-t2 block mb-1.5">Authenticator code <span className="text-t3">(if enabled)</span></label>
+              <input id="totp" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" value={totp} onChange={(e) => setTotp(e.target.value)} placeholder="123456" />
+            </div>
+            <details className="text-sm text-t2"><summary className="cursor-pointer">Use a recovery code</summary><input aria-label="Recovery code" className="mt-2" autoComplete="one-time-code" value={recoveryCode} onChange={(e) => setRecoveryCode(e.target.value)} placeholder="XXXX-XXXX" /></details>
             <div>
               <label htmlFor="password" className="font-dm text-sm text-t2 block mb-1.5">Password</label>
               <input

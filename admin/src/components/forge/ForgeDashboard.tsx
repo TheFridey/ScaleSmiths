@@ -28,6 +28,8 @@ import {
   Workflow,
 } from "lucide-react"
 import { FORGE_DASHBOARD_CARDS, FORGE_WORKFLOW_STAGES, type ForgePriority, type ForgeProjectStatus } from "@/lib/forge"
+import { ForgeProviderHealthPanel } from "./ForgeProviderHealthPanel"
+import type { ProviderHealthSnapshot } from "@/lib/server/forge-provider-health"
 
 const T = {
   s1: "var(--s1)",
@@ -107,11 +109,13 @@ export function ForgeDashboard({
   recentActivity,
   aiMetrics,
   averageDesignScore,
+  providerHealth,
 }: {
   projects: ForgeProjectSummary[]
   recentActivity: ForgeActivitySummary[]
   aiMetrics: ForgeAiDashboardMetrics
   averageDesignScore: number | null
+  providerHealth: ProviderHealthSnapshot
 }) {
   const [activeTab, setActiveTab] = useState<DashboardTab>("projects")
 
@@ -298,6 +302,8 @@ export function ForgeDashboard({
               <div className="mt-1 font-dm text-[11px]" style={{ color:T.t2 }}>Export CSV report</div>
             </Link>
           </div>
+
+          <ForgeProviderHealthPanel health={providerHealth} />
 
           <section className="min-h-0 flex-1 overflow-hidden rounded-[8px] border" style={{ background:T.s1, borderColor:T.b1 }}>
             <div className="grid h-12 grid-cols-3 border-b md:grid-cols-6" style={{ borderColor:T.b1, background:T.s2 }}>

@@ -21,6 +21,7 @@ import { FORGE_WHATSAPP_PROVIDER, readForgeWhatsAppConfig } from "@/lib/forge-wh
 import { FORGE_WORKSPACE_MEMORY_KEY, readForgeWorkspaceMemory } from "@/lib/forge-workspace"
 import { readForgeBuildBriefState } from "@/lib/forge-intake-brief"
 import { buildForgeAiBudgetStatus } from "@/lib/forge-ai-usage"
+import { loadProviderHealthSnapshot } from "./forge-provider-health"
 import {
   forgeActivityLogs,
   forgeArtifacts,
@@ -46,12 +47,13 @@ export async function loadForgeDashboardPageData() {
         },
       },
       averageDesignScore: null,
+      providerHealth: { providers: [], recentEvents: [] },
     }
   }
 
   const { db } = await import("@/lib/db")
   const { loadForgeAiDashboardMetrics } = await import("./forge-ai-usage")
-  const [projects, recentActivity, aiMetrics, averageDesignScore] = await Promise.all([
+  const [projects, recentActivity, aiMetrics, averageDesignScore, providerHealth] = await Promise.all([
     db
       .select({
         id: forgeProjects.id,
@@ -79,9 +81,10 @@ export async function loadForgeDashboardPageData() {
       .limit(6),
     loadForgeAiDashboardMetrics(),
     loadAverageDesignScore(),
+    loadProviderHealthSnapshot(),
   ])
 
-  return { projects, recentActivity, aiMetrics, averageDesignScore }
+  return { projects, recentActivity, aiMetrics, averageDesignScore, providerHealth }
 }
 
 export async function loadForgeProjectPageData(id: number) {

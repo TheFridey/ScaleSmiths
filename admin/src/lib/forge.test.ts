@@ -1659,7 +1659,7 @@ describe("forge shell", () => {
       ["lint", false],
       ["build", true],
     ])
-    expect(commands[0].command).toBe("npm install --include=dev --no-audit --no-fund")
+    expect(commands[0].command).toBe("npm install --ignore-scripts --include=dev --no-audit --no-fund")
   })
 
   it("controls repair attempts from actual failed QA reports", () => {

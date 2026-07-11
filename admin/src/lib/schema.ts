@@ -1,5 +1,5 @@
-import { relations } from "drizzle-orm"
-import { boolean, index, integer, jsonb, numeric, pgEnum, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core"
+import { relations, sql } from "drizzle-orm"
+import { boolean, index, integer, jsonb, numeric, pgEnum, pgTable, serial, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core"
 
 export const kanbanColumn = pgEnum("kanban_column", ["backlog", "progress", "review", "done"])
 export const messageDirection = pgEnum("message_direction", ["inbound", "outbound"])
@@ -15,6 +15,7 @@ export const forgeProjectStatus = pgEnum("forge_project_status", ["intake", "res
 export const forgePriority = pgEnum("forge_priority", ["low", "medium", "high"])
 export const forgeTaskAgentType = pgEnum("forge_task_agent_type", ["intake", "research", "strategy", "sitemap", "copy", "design", "frontend", "integration", "seo", "qa", "deploy", "repair"])
 export const forgeTaskStatus = pgEnum("forge_task_status", ["queued", "running", "completed", "failed", "cancelled"])
+export const forgeTaskResultQuality = pgEnum("forge_task_result_quality", ["validated", "degraded", "fallback", "requires_review", "failed"])
 export const forgeArtifactType = pgEnum("forge_artifact_type", ["research_report", "sitemap", "copy_doc", "design_direction", "component_spec", "generated_code", "visual_critique", "qa_report", "seo_pack", "visual_qa", "proposal", "handover_doc", "deployment_notes", "export_record"])
 export const forgeIntegrationProvider = pgEnum("forge_integration_provider", ["resend", "whatsapp", "analytics", "calendly", "stripe", "cloudinary", "custom"])
 export const clientRequestCategory = pgEnum("client_request_category", ["website_update", "website_issue", "form_issue", "seo_request", "new_page", "content_assets", "urgent_support", "general_support"])
@@ -25,6 +26,40 @@ export const requestMessageVisibility = pgEnum("request_message_visibility", ["c
 export const monthlyReportStatus = pgEnum("monthly_report_status", ["draft", "published"])
 export const monthlyReportGeneratedBy = pgEnum("monthly_report_generated_by", ["forge", "manual"])
 export const salesProposalGeneratedBy = pgEnum("sales_proposal_generated_by", ["forge", "manual"])
+export const adminUserRole = pgEnum("admin_user_role", ["owner", "administrator", "sales", "project_manager", "developer", "finance", "viewer"])
+
+export const adminUsers = pgTable("admin_users", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  email: text("email").notNull(),
+  displayName: text("display_name").notNull(),
+  passwordHash: text("password_hash").notNull(),
+  role: adminUserRole("role").notNull(),
+  active: boolean("active").default(true).notNull(),
+  mfaEnabled: boolean("mfa_enabled").default(false).notNull(),
+  mfaState: jsonb("mfa_state").$type<Record<string, unknown>>(),
+  sessionVersion: integer("session_version").default(1).notNull(),
+  lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
+  passwordChangedAt: timestamp("password_changed_at", { withTimezone: true }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("admin_users_email_lower_idx").on(sql`lower(${table.email})`),
+  index("admin_users_role_active_idx").on(table.role, table.active),
+])
+
+export const adminSecurityAudit = pgTable("admin_security_audit", {
+  id: serial("id").primaryKey(),
+  actorUserId: uuid("actor_user_id").references(() => adminUsers.id, { onDelete: "set null" }),
+  targetUserId: uuid("target_user_id").references(() => adminUsers.id, { onDelete: "set null" }),
+  action: text("action").notNull(),
+  success: boolean("success").notNull(),
+  metadataJson: jsonb("metadata_json").$type<Record<string, unknown>>(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("admin_security_audit_actor_idx").on(table.actorUserId, table.createdAt),
+  index("admin_security_audit_target_idx").on(table.targetUserId, table.createdAt),
+  index("admin_security_audit_action_idx").on(table.action, table.createdAt),
+])
 
 export const clients = pgTable("clients", {
   id: serial("id").primaryKey(),
@@ -284,6 +319,23 @@ export const forgeTasks = pgTable("forge_tasks", {
   description: text("description"),
   agentType: forgeTaskAgentType("agent_type").notNull(),
   status: forgeTaskStatus("status").default("queued").notNull(),
+  resultQuality: forgeTaskResultQuality("result_quality").default("requires_review").notNull(),
+  fallbackReason: text("fallback_reason"),
+  providerAttempted: text("provider_attempted"),
+  modelAttempted: text("model_attempted"),
+  retryCount: integer("retry_count").default(0).notNull(),
+  promptIdentifier: text("prompt_identifier").default("forge.legacy").notNull(),
+  promptVersion: text("prompt_version").default("legacy").notNull(),
+  schemaIdentifier: text("schema_identifier").default("forge.legacy").notNull(),
+  schemaVersion: text("schema_version").default("legacy").notNull(),
+  validationResult: jsonb("validation_result").$type<Record<string, unknown>>(),
+  qualityScore: numeric("quality_score", { precision: 5, scale: 2 }),
+  downstreamAllowed: boolean("downstream_allowed").default(false).notNull(),
+  humanApprovalRequired: boolean("human_approval_required").default(true).notNull(),
+  publicationBlocked: boolean("publication_blocked").default(true).notNull(),
+  qualityApprovedBy: text("quality_approved_by"),
+  qualityApprovedAt: timestamp("quality_approved_at", { withTimezone: true }),
+  qualityApprovalReason: text("quality_approval_reason"),
   inputJson: jsonb("input_json").$type<Record<string, unknown>>(),
   outputJson: jsonb("output_json").$type<Record<string, unknown>>(),
   error: text("error"),
@@ -295,7 +347,8 @@ export const forgeTasks = pgTable("forge_tasks", {
   index("forge_tasks_project_id_idx").on(table.projectId),
   index("forge_tasks_project_status_idx").on(table.projectId, table.status),
   index("forge_tasks_project_agent_type_idx").on(table.projectId, table.agentType),
-  index("forge_tasks_status_updated_at_idx").on(table.status, table.updatedAt),
+    index("forge_tasks_status_updated_at_idx").on(table.status, table.updatedAt),
+    index("forge_tasks_project_result_quality_idx").on(table.projectId, table.resultQuality),
 ])
 
 export const forgeArtifacts = pgTable("forge_artifacts", {
@@ -306,6 +359,24 @@ export const forgeArtifacts = pgTable("forge_artifacts", {
   content: text("content"),
   metadataJson: jsonb("metadata_json").$type<Record<string, unknown>>(),
   version: integer("version").default(1).notNull(),
+  parentArtifactId: integer("parent_artifact_id"),
+  sourceTaskId: integer("source_task_id").references(() => forgeTasks.id, { onDelete: "set null" }),
+  provider: text("provider"),
+  model: text("model"),
+  promptIdentifier: text("prompt_identifier").default("forge.legacy").notNull(),
+  promptVersion: text("prompt_version").default("unknown").notNull(),
+  schemaIdentifier: text("schema_identifier").default("forge.legacy").notNull(),
+  schemaVersion: text("schema_version").default("1").notNull(),
+  sourceVersion: text("source_version"),
+  upstreamArtifactIds: jsonb("upstream_artifact_ids").$type<number[]>().default([]).notNull(),
+  upstreamArtifactHashes: jsonb("upstream_artifact_hashes").$type<Record<string, string>>().default({}).notNull(),
+  inputContextHash: text("input_context_hash").default("pending").notNull(),
+  outputHash: text("output_hash").default("pending").notNull(),
+  actor: text("actor"),
+  validationResult: jsonb("validation_result").$type<Record<string, unknown>>(),
+  qualityState: forgeTaskResultQuality("quality_state").default("requires_review").notNull(),
+  approvalState: text("approval_state").default("unapproved").notNull(),
+  approvalHistory: jsonb("approval_history").$type<Array<Record<string, unknown>>>().default([]).notNull(),
   supersededAt: timestamp("superseded_at", { withTimezone: true }),
   retentionPolicy: text("retention_policy").default("standard").notNull(),
   contentBytes: integer("content_bytes").default(0).notNull(),
@@ -316,6 +387,8 @@ export const forgeArtifacts = pgTable("forge_artifacts", {
   index("forge_artifacts_project_type_idx").on(table.projectId, table.type),
   index("forge_artifacts_project_type_title_idx").on(table.projectId, table.type, table.title),
   index("forge_artifacts_version_idx").on(table.projectId, table.type, table.title, table.version),
+  index("forge_artifacts_parent_idx").on(table.parentArtifactId),
+  index("forge_artifacts_source_task_idx").on(table.sourceTaskId),
 ])
 
 export const forgeIntegrationConfigs = pgTable("forge_integration_configs", {
@@ -399,6 +472,48 @@ export const forgeAiUsage = pgTable("forge_ai_usage", {
   index("forge_ai_usage_task_id_idx").on(table.taskId),
   index("forge_ai_usage_completed_at_idx").on(table.completedAt),
   index("forge_ai_usage_provider_idx").on(table.provider),
+])
+
+export const forgeAiBudgetReservations = pgTable("forge_ai_budget_reservations", {
+  id: serial("id").primaryKey(),
+  idempotencyKey: text("idempotency_key").notNull(),
+  projectId: integer("project_id").references(() => forgeProjects.id, { onDelete: "set null" }),
+  taskId: integer("task_id").references(() => forgeTasks.id, { onDelete: "set null" }),
+  provider: text("provider").notNull(),
+  model: text("model").notNull(),
+  status: text("status").default("reserved").notNull(),
+  reservedCost: numeric("reserved_cost", { precision: 12, scale: 6 }).notNull(),
+  actualCost: numeric("actual_cost", { precision: 12, scale: 6 }),
+  usageKnown: boolean("usage_known").default(false).notNull(),
+  fallbackProvider: text("fallback_provider"),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  reconciledAt: timestamp("reconciled_at", { withTimezone: true }),
+  failureCategory: text("failure_category"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("forge_ai_budget_reservations_idempotency_idx").on(table.idempotencyKey),
+  index("forge_ai_budget_reservations_status_expiry_idx").on(table.status, table.expiresAt),
+  index("forge_ai_budget_reservations_project_idx").on(table.projectId, table.createdAt),
+  index("forge_ai_budget_reservations_provider_idx").on(table.provider, table.createdAt),
+])
+
+export const forgeProviderHealth = pgTable("forge_provider_health", {
+  id: serial("id").primaryKey(),
+  provider: text("provider").notNull(),
+  event: text("event").notNull(),
+  fromState: text("from_state"),
+  toState: text("to_state"),
+  category: text("category"),
+  detail: text("detail"),
+  model: text("model"),
+  projectId: integer("project_id").references(() => forgeProjects.id, { onDelete: "set null" }),
+  taskId: integer("task_id").references(() => forgeTasks.id, { onDelete: "set null" }),
+  actor: text("actor"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("forge_provider_health_provider_idx").on(table.provider),
+  index("forge_provider_health_created_at_idx").on(table.createdAt),
 ])
 
 export const clientRelations = relations(clients, ({ many }) => ({

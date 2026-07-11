@@ -49,6 +49,7 @@ import { ForgeVisualQaPanel } from "./ForgeVisualQaPanel"
 import { ForgeWhatsAppConfigPanel } from "./ForgeWhatsAppConfigPanel"
 import { ForgeWorkspacePanel } from "./ForgeWorkspacePanel"
 import { redactIntegrationConfig, type ForgeArtifactType, type ForgeIntegrationProvider, type ForgeTaskAgentType, type ForgeTaskStatus } from "@/lib/forge"
+import type { ForgeTaskResultQuality } from "@/lib/forge-task-quality"
 import type { ForgeComponentSpecArtifactState } from "@/lib/forge-component-spec"
 import type { ForgeCommandChatState } from "@/lib/forge-command-chat"
 import type { ForgeCopyArtifactState } from "@/lib/forge-copy"
@@ -94,6 +95,18 @@ interface ForgeTaskRow {
   description: string | null
   agentType: ForgeTaskAgentType
   status: ForgeTaskStatus
+  resultQuality: ForgeTaskResultQuality
+  fallbackReason: string | null
+  providerAttempted: string | null
+  modelAttempted: string | null
+  retryCount: number
+  qualityScore: string | null
+  downstreamAllowed: boolean
+  humanApprovalRequired: boolean
+  publicationBlocked: boolean
+  qualityApprovedBy: string | null
+  qualityApprovedAt: Date | string | null
+  qualityApprovalReason: string | null
   createdAt: Date | string
 }
 
@@ -111,6 +124,19 @@ interface ForgeArtifactRow {
   type: ForgeArtifactType
   title: string
   content: string | null
+  version: number
+  parentArtifactId: number | null
+  sourceTaskId: number | null
+  provider: string | null
+  model: string | null
+  promptVersion: string
+  schemaVersion: string
+  upstreamArtifactIds: number[]
+  outputHash: string
+  qualityState: ForgeTaskResultQuality
+  approvalState: string
+  approvalHistory: Array<Record<string, unknown>>
+  supersededAt: Date | string | null
   createdAt: Date | string
 }
 
@@ -263,6 +289,7 @@ export function ForgeProjectDetail({
   const completedStages = stages.filter((stage) => stage.status === "approved" || stage.status === "complete").length
   const activeTasks = tasks.filter((task) => task.status === "queued" || task.status === "running")
   const failedTasks = tasks.filter((task) => task.status === "failed")
+  const approvedFallbackTasks = tasks.filter((task) => task.resultQuality === "fallback" && task.qualityApprovedAt)
   const currentStep = resolveCurrentStep(stages)
 
   return (
@@ -305,6 +332,7 @@ export function ForgeProjectDetail({
           </div>
         )}
       </header>
+      {approvedFallbackTasks.length > 0 && <div className="shrink-0 border-b border-amber-500/30 bg-amber-500/10 px-4 py-2 font-dm text-xs text-amber-200"><strong>Fallback dependency warning:</strong> this project contains human-approved fallback output. Deployment remains subject to the recorded quality approval{approvedFallbackTasks.length > 1 ? "s" : ""}.</div>}
 
       <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[300px_minmax(0,1fr)] xl:grid-cols-[300px_minmax(0,1fr)_380px]">
         <aside className="hidden min-h-0 flex-col border-r p-4 lg:flex" style={{ borderColor:"rgba(148,163,184,.14)" }}>
@@ -1159,17 +1187,25 @@ function StageBadge({ status }: { status: CockpitStageStatus }) {
 }
 
 function TaskList({ rows }: { rows: ForgeTaskRow[] }) {
+  const [qualityFilter, setQualityFilter] = useState<"all" | "degraded" | "fallback">("all")
+  const visible = qualityFilter === "all" ? rows : rows.filter((row) => row.resultQuality === qualityFilter)
   if (rows.length === 0) return <Empty icon={ListChecks} text="No production tasks have been queued yet." />
   return (
     <div className="space-y-2">
-      {rows.map((row) => (
+      <label className="flex items-center gap-2 font-dm text-xs" style={{ color:T.t2 }}>Quality filter
+        <select value={qualityFilter} onChange={(event) => setQualityFilter(event.target.value as typeof qualityFilter)}><option value="all">All</option><option value="degraded">Degraded</option><option value="fallback">Fallback</option></select>
+      </label>
+      {visible.map((row) => (
         <div key={row.id} className="rounded-[8px] border p-3" style={{ background:T.s2, borderColor:T.b1 }}>
           <div className="flex items-center justify-between gap-3">
             <div className="font-dm text-sm font-semibold">{row.title}</div>
             <Badge value={row.status} tone={row.status === "completed" ? "good" : row.status === "failed" ? "bad" : "accent"} />
+            <Badge value={row.resultQuality.replace("_", " ")} tone={row.resultQuality === "validated" ? "good" : row.resultQuality === "failed" ? "bad" : "warn"} />
           </div>
           <div className="mt-1 font-dm text-[11px]" style={{ color:T.t2 }}>{labelize(row.agentType)} / {formatDate(row.createdAt)}</div>
           {row.description && <p className="mt-2 font-dm text-xs leading-relaxed" style={{ color:T.t2 }}>{row.description}</p>}
+          {row.resultQuality !== "validated" && <div className="mt-2 rounded border border-amber-500/30 bg-amber-500/10 p-2 font-dm text-xs text-amber-200">This output is not validated{row.fallbackReason ? `: ${row.fallbackReason}` : "."} {row.publicationBlocked ? "Publication is blocked." : "Human approval recorded."}</div>}
+          <div className="mt-2 font-dm text-[11px]" style={{ color:T.t3 }}>{row.providerAttempted ?? "No provider recorded"}{row.modelAttempted ? ` / ${row.modelAttempted}` : ""} / {row.retryCount} retries{row.qualityApprovedBy ? ` / approved by ${row.qualityApprovedBy}` : ""}</div>
         </div>
       ))}
     </div>

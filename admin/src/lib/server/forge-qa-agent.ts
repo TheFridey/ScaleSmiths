@@ -1,9 +1,11 @@
 import "server-only"
+import { getForgeAgentRegistryReference } from "@/lib/forge-prompt-registry"
+import { evaluatePersistedProjectTransition } from "./forge-workflow"
 import { spawn } from "node:child_process"
 import { and, desc, eq } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { buildForgeTaskOutputMetadata, ForgeAiError, runForgeAiJson } from "@/lib/server/forge-ai"
-import { buildForgeDockerRunArgs, resolveForgeSandboxConfig, type ForgeSandboxNetworkMode } from "@/lib/forge-sandbox"
+import { appendBoundedSandboxLog, buildForgeDockerRunArgs, resolveForgeSandboxConfig, type ForgeSandboxNetworkMode } from "@/lib/forge-sandbox"
 import { buildForgeGeneratedProcessEnv } from "@/lib/forge-process-env"
 import {
   FORGE_QA_ARTIFACT_KIND,
@@ -49,7 +51,7 @@ import { forgeActivityLogs, forgeArtifacts, forgeIntegrationConfigs, forgeMemori
 import { validateForgeRepairPatchSyntax } from "./forge-repair-syntax"
 import { regenerateForgeGeneratedFiles } from "./forge-frontend-code-agent"
 import { saveVersionedForgeArtifact } from "./forge-artifacts"
-import { cleanupForgeWorkspaceTransientOutput, listForgeWorkspaceFiles, readForgeWorkspaceFile, resolveWorkspaceRoot, writeForgeWorkspaceFile } from "./forge-workspace"
+import { assertForgeWorkspaceExecutionSafe, cleanupForgeWorkspaceTransientOutput, listForgeWorkspaceFiles, readForgeWorkspaceFile, writeForgeWorkspaceFile } from "./forge-workspace"
 import { captureMonitoringMessage } from "./monitoring"
 
 export class ForgeQaAgentError extends Error {
@@ -67,6 +69,7 @@ export class ForgeQaAgentError extends Error {
 const COMMAND_TIMEOUT_MS = 180_000
 
 export async function runForgeQaAgent(projectId: number, actor: string) {
+  await evaluatePersistedProjectTransition({ projectId, to: "qa" })
   const { project, workspace, hasGeneratedCode, qaState, resendConfig, whatsappConfig, seoPack, design } = await loadQaContext(projectId)
 
   if (project.status === "archived") throw new ForgeQaAgentError("Archived Forge projects cannot run QA.", 400)
@@ -167,6 +170,7 @@ export async function runForgeQaAgent(projectId: number, actor: string) {
 }
 
 export async function runForgeRepairAgent(projectId: number, actor: string) {
+  await evaluatePersistedProjectTransition({ projectId, to: "qa" })
   const { project, workspace, qaState, resendConfig, whatsappConfig, seoPack, design } = await loadQaContext(projectId)
 
   if (project.status === "archived") throw new ForgeQaAgentError("Archived Forge projects cannot run repairs.", 400)
@@ -228,6 +232,7 @@ export async function runForgeRepairAgent(projectId: number, actor: string) {
 
     try {
       const result = await runForgeAiJson<ForgeRepairPatchResponse>({
+        ...getForgeAgentRegistryReference("repair"),
         taskType: "repair",
         schemaName: "forge_repair_patches",
         schema: FORGE_REPAIR_PATCH_SCHEMA,
@@ -432,6 +437,7 @@ async function runAutomaticRepairLoop({
 
       try {
         const result = await runForgeAiJson<ForgeRepairPatchResponse>({
+          ...getForgeAgentRegistryReference("repair"),
           taskType: "repair",
           schemaName: "forge_repair_patches",
           schema: FORGE_REPAIR_PATCH_SCHEMA,
@@ -558,7 +564,7 @@ async function runWorkspaceQa(
 
   const commands = getForgeQaCommands(packageJson)
   const results: ForgeQaCommandResult[] = []
-  const cwd = resolveWorkspaceRoot(workspace)
+  const cwd = await assertForgeWorkspaceExecutionSafe(workspace)
   const sandbox = resolveForgeSandboxConfig()
   const resendCheck = await runResendFormCheck(workspace, resendConfig)
   results.push(resendCheck)
@@ -635,8 +641,8 @@ function runWorkspaceCommand(name: ForgeQaCommandName, command: string, cwd: str
       stderr += "\nCommand timed out."
     }, COMMAND_TIMEOUT_MS)
 
-    child.stdout.on("data", (chunk: Buffer) => { stdout += chunk.toString("utf8") })
-    child.stderr.on("data", (chunk: Buffer) => { stderr += chunk.toString("utf8") })
+    child.stdout.on("data", (chunk: Buffer) => { stdout = appendBoundedSandboxLog(stdout, chunk.toString("utf8")).value })
+    child.stderr.on("data", (chunk: Buffer) => { stderr = appendBoundedSandboxLog(stderr, chunk.toString("utf8")).value })
     child.once("error", (error) => {
       clearTimeout(timer)
       resolve({
@@ -690,8 +696,8 @@ function runDockerWorkspaceCommand(name: ForgeQaCommandName, command: string, cw
       stderr += "\nDocker sandbox command timed out."
     }, COMMAND_TIMEOUT_MS)
 
-    child.stdout.on("data", (chunk: Buffer) => { stdout += chunk.toString("utf8") })
-    child.stderr.on("data", (chunk: Buffer) => { stderr += chunk.toString("utf8") })
+    child.stdout.on("data", (chunk: Buffer) => { stdout = appendBoundedSandboxLog(stdout, chunk.toString("utf8")).value })
+    child.stderr.on("data", (chunk: Buffer) => { stderr = appendBoundedSandboxLog(stderr, chunk.toString("utf8")).value })
     child.once("error", (error) => {
       clearTimeout(timer)
       resolve({
@@ -747,6 +753,15 @@ async function saveQaReport(projectId: number, report: ForgeQaReport, taskId: nu
     message: `Saved QA report artifact version for project ${projectId}.`,
     retentionPolicy: "qa-log",
     now,
+    provenance: {
+      sourceTaskId: taskId,
+      promptVersion: "qa-agent-v1",
+      schemaVersion: "forge-qa-report-v1",
+      inputContext: { projectId, taskId, previousArtifactId: existing?.id ?? null },
+      validationResult: { qaStatus: report.status },
+      qualityState: report.status === "passed" ? "validated" : "failed",
+      approvalState: report.status === "passed" ? "system_validated" : "unapproved",
+    },
   })
 }
 

@@ -25,6 +25,9 @@ import {
 } from "@/lib/forge-deploy"
 import { FORGE_WORKSPACE_MEMORY_KEY, readForgeWorkspaceMemory } from "@/lib/forge-workspace"
 import { forgeActivityLogs, forgeArtifacts, forgeIntegrationConfigs, forgeMemories, forgeProjects } from "@/lib/schema"
+import { forgeTasks } from "@/lib/schema"
+import { taskBlocksDeployment } from "@/lib/forge-task-quality"
+import { evaluatePersistedProjectTransition, workflowAuditMetadata } from "./forge-workflow"
 
 export class ForgeDeployError extends Error {
   safeMessage: string
@@ -84,7 +87,9 @@ async function updateChecklist(context: DeployContext, actor: string, request: F
 }
 
 async function markReady(context: DeployContext, actor: string) {
+  const transition = await evaluatePersistedProjectTransition({ projectId: context.project.id, to: "ready_to_deploy" })
   if (!context.signals.hasGeneratedSite) throw new ForgeDeployError("Generate the site before marking it ready to deploy.", 400)
+  if (context.qualityBlockers.length) throw new ForgeDeployError(`Deployment blocked by unapproved task quality: ${context.qualityBlockers.join(", ")}.`, 400)
 
   const method = context.existing.method
   const confirmations = context.existing.confirmations
@@ -114,7 +119,7 @@ async function markReady(context: DeployContext, actor: string) {
       actor,
       action: "deployment_status_changed",
       message: `Deployment status changed to ready for ${context.project.name}.`,
-      metadataJson: { artifactId: saved.id, method, status: "ready" },
+      metadataJson: { artifactId: saved.id, method, status: "ready", ...workflowAuditMetadata(transition, now) },
     })
     return saved
   })
@@ -123,6 +128,8 @@ async function markReady(context: DeployContext, actor: string) {
 }
 
 async function markDeployed(context: DeployContext, actor: string) {
+  const transition = await evaluatePersistedProjectTransition({ projectId: context.project.id, to: "deployed" })
+  if (context.qualityBlockers.length) throw new ForgeDeployError(`Deployment blocked by unapproved task quality: ${context.qualityBlockers.join(", ")}.`, 400)
   if (context.project.status !== "ready_to_deploy" && context.existing.lifecycle !== "ready") {
     throw new ForgeDeployError("Mark the project ready to deploy before marking it deployed.", 400)
   }
@@ -150,7 +157,7 @@ async function markDeployed(context: DeployContext, actor: string) {
       actor,
       action: "deployment_status_changed",
       message: `Deployment status changed to deployed for ${context.project.name}.`,
-      metadataJson: { artifactId: saved.id, method, status: "deployed" },
+      metadataJson: { artifactId: saved.id, method, status: "deployed", ...workflowAuditMetadata(transition, now) },
     })
     return saved
   })
@@ -246,7 +253,7 @@ async function loadDeployContext(projectId: number) {
   const [project] = await db.select().from(forgeProjects).where(eq(forgeProjects.id, projectId)).limit(1)
   if (!project) throw new ForgeDeployError("Forge project not found.", 404)
 
-  const [workspaceMemories, generatedCodeArtifacts, qaArtifacts, visualQaArtifacts, deployArtifacts, integrations] = await Promise.all([
+    const [workspaceMemories, generatedCodeArtifacts, qaArtifacts, visualQaArtifacts, deployArtifacts, integrations, qualityTasks] = await Promise.all([
     db.select({ value: forgeMemories.value }).from(forgeMemories).where(and(
       eq(forgeMemories.projectId, projectId),
       eq(forgeMemories.key, FORGE_WORKSPACE_MEMORY_KEY),
@@ -271,10 +278,12 @@ async function loadDeployContext(projectId: number) {
       eq(forgeArtifacts.type, "deployment_notes"),
       eq(forgeArtifacts.title, FORGE_DEPLOY_ARTIFACT_TITLE),
     )).limit(1),
-    db.select({
+      db.select({
       provider: forgeIntegrationConfigs.provider,
       enabled: forgeIntegrationConfigs.enabled,
-    }).from(forgeIntegrationConfigs).where(eq(forgeIntegrationConfigs.projectId, projectId)),
+      }).from(forgeIntegrationConfigs).where(eq(forgeIntegrationConfigs.projectId, projectId)),
+      db.select({ id: forgeTasks.id, title: forgeTasks.title, status: forgeTasks.status, resultQuality: forgeTasks.resultQuality, humanApprovalRequired: forgeTasks.humanApprovalRequired, qualityApprovedAt: forgeTasks.qualityApprovedAt, qualityApprovalReason: forgeTasks.qualityApprovalReason })
+        .from(forgeTasks).where(eq(forgeTasks.projectId, projectId)),
   ])
 
   const generated = readForgeGeneratedCodeArtifact(generatedCodeArtifacts[0]?.metadataJson)
@@ -301,8 +310,9 @@ async function loadDeployContext(projectId: number) {
     exportZipName: forgeExportFilename("site", project.businessName || project.name),
   }
 
-  return {
-    project,
+    return {
+      project,
+      qualityBlockers: qualityTasks.filter(taskBlocksDeployment).map((task) => `#${task.id} ${task.title}`),
     signals,
     deployContext,
     existing: {

@@ -15,9 +15,6 @@ const GENERATED_WORKSPACE_ENV_ALLOWLIST = [
   "npm_config_cache",
   "npm_config_user_agent",
   "npm_config_prefix",
-  "DOCKER_HOST",
-  "DOCKER_CONTEXT",
-  "DOCKER_CONFIG",
 ] as const
 
 type ForgeProcessEnvInput = Partial<Record<string, string | undefined>>

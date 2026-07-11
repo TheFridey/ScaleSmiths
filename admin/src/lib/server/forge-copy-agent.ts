@@ -1,4 +1,5 @@
 import "server-only"
+import { getForgeAgentRegistryReference } from "@/lib/forge-prompt-registry"
 import { and, eq } from "drizzle-orm"
 import type { ForgeAiResult, JsonValue } from "@/lib/forge-ai"
 import { db } from "@/lib/db"
@@ -207,6 +208,7 @@ export async function runForgeCopyAgent(projectId: number, actor: string, regene
 
   try {
     const result = await runForgeAiJson({
+      ...getForgeAgentRegistryReference("copy"),
       taskType: "copywriting",
       schemaName: "forge_copy_document",
       schema: FORGE_COPY_DOCUMENT_SCHEMA,

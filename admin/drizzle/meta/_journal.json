@@ -113,6 +113,55 @@
       "when": 1782305800000,
       "tag": "0015_sales_proposals",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1783684800000,
+      "tag": "0016_admin_identity",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1783688400000,
+      "tag": "0017_admin_mfa_audit",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1783756800000,
+      "tag": "0018_forge_task_quality",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1783843200000,
+      "tag": "0019_artifact_provenance",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1783929600000,
+      "tag": "0020_prompt_schema_registry",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1784016000000,
+      "tag": "0021_ai_budget_reservations",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1784016000000,
+      "tag": "0021_provider_health",
+      "breakpoints": true
     }
   ]
 }

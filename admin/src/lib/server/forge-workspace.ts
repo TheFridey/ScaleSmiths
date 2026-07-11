@@ -1,6 +1,6 @@
 import "server-only"
 import path from "node:path"
-import { mkdir, readFile, readdir, rm, stat, writeFile } from "node:fs/promises"
+import { lstat, mkdir, readFile, readdir, realpath, rm, stat, writeFile } from "node:fs/promises"
 import {
   FORGE_GENERATED_SITES_DIR,
   FORGE_WORKSPACE_TEMPLATE,
@@ -118,6 +118,17 @@ export function resolveWorkspaceRoot(workspace: ForgeWorkspaceMetadata) {
   return workspaceRoot
 }
 
+export async function assertForgeWorkspaceExecutionSafe(workspace: ForgeWorkspaceMetadata) {
+  const generatedRoot = path.resolve(repoRoot(), FORGE_GENERATED_SITES_DIR)
+  const workspaceRoot = resolveWorkspaceRoot(workspace)
+  const [canonicalGenerated, canonicalWorkspace, rootInfo] = await Promise.all([realpath(generatedRoot), realpath(workspaceRoot), lstat(workspaceRoot)])
+  ensureInside(canonicalGenerated, canonicalWorkspace)
+  if (rootInfo.isSymbolicLink()) throw new ForgeWorkspaceError("Generated workspace root may not be a symbolic link.", 400)
+  if (typeof process.getuid === "function" && rootInfo.uid !== process.getuid()) throw new ForgeWorkspaceError("Generated workspace ownership does not match the Forge process user.", 403)
+  await rejectSymlinks(canonicalWorkspace, canonicalWorkspace)
+  return canonicalWorkspace
+}
+
 function resolveWorkspaceFile(workspace: ForgeWorkspaceMetadata, relativePath: string, content = "", options: { allowExecutableScripts?: boolean } = {}) {
   const allowed = assertForgeWorkspaceFileAllowed(relativePath, content, options)
   if (!allowed.ok) throw new ForgeWorkspaceError(allowed.error, 400)
@@ -152,6 +163,7 @@ async function walk(root: string, current: string, files: string[]) {
     }
   }
 }
+async function rejectSymlinks(root:string,current:string):Promise<void>{for(const entry of await readdir(current,{withFileTypes:true})){if(entry.name==="node_modules"||entry.name===".next")continue;const absolute=path.join(current,entry.name);ensureInside(root,absolute);const info=await lstat(absolute);if(info.isSymbolicLink())throw new ForgeWorkspaceError(`Symbolic links are not allowed in executable workspaces (${path.relative(root,absolute)}).`,400);if(info.isDirectory())await rejectSymlinks(root,absolute)}}
 
 async function fileExists(absolutePath: string) {
   try {

@@ -6,6 +6,8 @@ import {
   approveForgeVisualCritique,
 } from "@/lib/server/forge-visual-critique-agent"
 import { enqueueForgeJob, forgeJobResponseBody } from "@/lib/server/forge-job-runner"
+import { guardApiCapability } from "@/lib/server/rbac"
+import { AdminIdentityError } from "@/lib/admin-users"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -40,15 +42,18 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
   try {
     if (action === "approve") {
+      await guardApiCapability("forge.approve")
       return NextResponse.json(await approveForgeVisualCritique(projectId, sessionActor(session)))
     }
     if (action === "auto_fix") {
+      await guardApiCapability("forge.approve")
       return NextResponse.json(await applyForgeVisualCritiqueSafeFixes(projectId, sessionActor(session)))
     }
 
     const outcome = await enqueueForgeJob({ projectId, kind: "visual_critique", actor: sessionActor(session) })
     return NextResponse.json(forgeJobResponseBody(outcome))
   } catch (error) {
+    if (error instanceof AdminIdentityError) return NextResponse.json({ error: error.safeMessage }, { status: error.status })
     if (error instanceof ForgeVisualCritiqueAgentError) {
       return NextResponse.json({ error: error.safeMessage }, { status: error.status })
     }

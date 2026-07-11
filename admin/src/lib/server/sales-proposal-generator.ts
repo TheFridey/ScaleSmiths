@@ -1,4 +1,5 @@
 import "server-only"
+import { getForgeAgentRegistryReference } from "@/lib/forge-prompt-registry"
 
 import { desc, eq } from "drizzle-orm"
 import type { ForgeJsonSchema, JsonValue } from "@/lib/forge-ai"
@@ -67,6 +68,7 @@ export async function generateSalesProposal(input: {
 
   try {
     const result = await runForgeAiJson<SalesProposalSectionData>({
+      ...getForgeAgentRegistryReference("sales_proposal"),
       taskType: "copywriting",
       schema: SALES_PROPOSAL_SCHEMA,
       schemaName: "sales_proposal_document",

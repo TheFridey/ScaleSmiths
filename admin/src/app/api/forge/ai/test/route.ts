@@ -3,6 +3,7 @@ import { auth } from "../../../../../../auth"
 import { FORGE_AI_TEST_SCHEMA, isForgeAiProvider, isForgeAiTaskType, type JsonValue } from "@/lib/forge-ai"
 import { buildForgeTaskOutputMetadata, ForgeAiError, runForgeAiJson } from "@/lib/server/forge-ai"
 import { requestIdFromRequest, withRequestLogContext } from "@/lib/server/request-context"
+import { getForgeAgentRegistryReference } from "@/lib/forge-prompt-registry"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -32,6 +33,7 @@ export async function POST(request: NextRequest) {
 
     try {
       const result = await runForgeAiJson<TestResponse & JsonValue>({
+        ...getForgeAgentRegistryReference("provider_test"),
         provider,
         taskType,
         prompt,

@@ -1,34 +1,33 @@
 import "server-only"
+import { createHash, randomUUID } from "node:crypto"
 import {
   buildForgeTaskOutputMetadata,
-  assertForgeAiBudgetAllowsRequest as assertForgeAiTokenBudgetAllowsRequest,
   createMockStructuredResponse,
   estimateForgeAiCostUsd,
-  getForgeAiBudgetDate,
   parseAndValidateStructuredJson,
-  resolveForgeAiBudgetConfig,
-  resolveForgeAiModel,
   resolveForgeAiProvider,
-  supportsOpenAiTemperature,
-  type ForgeAiBudgetLedger,
   type ForgeAiProvider,
   type ForgeAiResult,
   type ForgeAiTaskType,
-  type ForgeAiUsage,
   type ForgeJsonSchema,
   type JsonValue,
 } from "@/lib/forge-ai"
-import {
-  ForgeAiBudgetExceededError,
-  assertForgeAiBudgetAllowsRequest,
-  recordForgeAiUsage,
-} from "./forge-ai-usage"
+import { recordForgeAiUsage } from "./forge-ai-usage"
 import { normalizeUnknownError } from "./logging"
 import { requestLogger } from "./request-context"
 import { addMonitoringBreadcrumb, captureMonitoringException, setMonitoringContext } from "./monitoring"
+import { getForgeProviderAdapter, ProviderAdapterError } from "./forge-provider-adapters"
+import { ForgeBudgetReservationError, reconcileForgeAiBudget, reserveForgeAiBudget } from "./forge-budget-reservations"
+import { classifyRetryability, nextRetryDecision, resolveRetryPolicyConfig } from "@/lib/forge-retry-policy"
+import { isTripCategory } from "@/lib/forge-circuit-breaker"
+import {
+  providerCanAttempt,
+  recordProviderFailover,
+  recordProviderFailure,
+  recordProviderSuccess,
+  resolveFailoverTarget,
+} from "./forge-provider-health"
 
-const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses"
-const ANTHROPIC_MESSAGES_URL = "https://api.anthropic.com/v1/messages"
 const DEFAULT_TIMEOUT_MS = 60_000
 const DEFAULT_MAX_RETRIES = 2
 const FORGE_AI_SAFETY_SYSTEM_PROMPT = [
@@ -37,10 +36,6 @@ const FORGE_AI_SAFETY_SYSTEM_PROMPT = [
   "Generated code must not phone home to unknown domains or add telemetry/beacons.",
   "Generated scripts must not contain destructive shell commands or modify files outside the generated workspace.",
 ].join(" ")
-
-declare global {
-  var __forgeAiBudgetLedger: ForgeAiBudgetLedger | undefined
-}
 
 export class ForgeAiError extends Error {
   safeMessage: string
@@ -72,16 +67,23 @@ export interface ForgeAiRequest<TData extends JsonValue = JsonValue> {
   fallbackOnSchemaMismatch?: boolean
   projectId?: number | null
   taskId?: number | null
+  promptIdentifier: string
+  promptVersion: string
+  schemaIdentifier: string
+  schemaVersion: string
 }
 
 export async function runForgeAiJson<TData extends JsonValue = JsonValue>(request: ForgeAiRequest<TData>): Promise<ForgeAiResult<TData>> {
+  const registry = { promptIdentifier: request.promptIdentifier, promptVersion: request.promptVersion, schemaIdentifier: request.schemaIdentifier, schemaVersion: request.schemaVersion }
   const env = request.env ?? process.env
   const configuredProvider = request.provider ?? resolveForgeAiProvider(env)
-  const provider = providerReady(configuredProvider, env) ? configuredProvider : "mock"
-  const model = resolveForgeAiModel(request.taskType, provider)
+  let provider = getForgeProviderAdapter(configuredProvider).isConfigured(env) ? configuredProvider : "mock"
+  let adapter = getForgeProviderAdapter(provider)
+  let model = adapter.model(request.taskType)
+  let failover: ForgeAiResult["failover"] = null
   const startedAtDate = new Date()
   const startedAt = startedAtDate.getTime()
-  const log = requestLogger({
+  let log = requestLogger({
     component: "forge-ai",
     projectId: request.projectId ?? undefined,
     taskId: request.taskId ?? undefined,
@@ -93,6 +95,10 @@ export async function runForgeAiJson<TData extends JsonValue = JsonValue>(reques
   addMonitoringBreadcrumb({ category: "forge.ai", message: "AI provider request started", data: { provider, model, projectId: request.projectId, taskId: request.taskId } })
 
   if (provider === "mock") {
+    const reservation = await reserveForgeAiBudget({ projectId:request.projectId, taskId:request.taskId, provider, model, estimatedMaxCost:0, env, idempotencyKey:budgetIdempotencyKey(request, provider, model) }).catch((error) => {
+      if (error instanceof ForgeBudgetReservationError) throw new ForgeAiError(error.safeMessage, false, { code:error.code, cause:error })
+      throw error
+    })
     const data = request.mockData ?? createMockStructuredResponse(request.schema, request.taskType)
     const parsed = parseAndValidateStructuredJson<TData>(request.schema, data)
 
@@ -111,6 +117,7 @@ export async function runForgeAiJson<TData extends JsonValue = JsonValue>(reques
       latencyMs: completedAt.getTime() - startedAt,
       retries: 0,
       responseId: "mock",
+      registry,
     }
     await recordForgeAiUsage({
       projectId: request.projectId ?? null,
@@ -122,6 +129,7 @@ export async function runForgeAiJson<TData extends JsonValue = JsonValue>(reques
       startedAt: startedAtDate,
       completedAt,
     })
+    await reconcileForgeAiBudget({ reservationId:reservation.id, actualCost:0, usageKnown:true, fallbackProvider:configuredProvider === "mock" ? null : "mock" })
     log.debug("Forge AI mock response completed", {
       durationMs: result.latencyMs,
       fallbackUsed: configuredProvider !== "mock",
@@ -130,39 +138,50 @@ export async function runForgeAiJson<TData extends JsonValue = JsonValue>(reques
     return result
   }
 
-  const budgetConfig = resolveForgeAiBudgetConfig(env)
-  const requestedMaxTokens = request.maxTokens ?? 800
-  const budgetCheck = assertForgeAiTokenBudgetAllowsRequest({
-    config: budgetConfig,
-    ledger: currentBudgetLedger(),
-    requestedMaxTokens,
-  })
-  if (!budgetCheck.ok) throw new ForgeAiError(budgetCheck.error)
+  const healthCtx = { projectId: request.projectId ?? null, taskId: request.taskId ?? null, model, actor: "system" as const }
+  const gate = await providerCanAttempt(provider, healthCtx)
+  if (!gate.allowed) {
+    const target = resolveFailoverTarget(provider, env)
+    if (target && getForgeProviderAdapter(target).isConfigured(env)) {
+      const targetGate = await providerCanAttempt(target, { ...healthCtx })
+      if (targetGate.allowed) {
+        failover = { from: provider, to: target, reason: gate.reason }
+        await recordProviderFailover({ from: provider, to: target, reason: gate.reason, ctx: healthCtx })
+        provider = target
+        adapter = getForgeProviderAdapter(target)
+        model = adapter.model(request.taskType)
+        log = log.child({ provider, model })
+        healthCtx.model = model
+      } else {
+        throw new ForgeAiError("All approved AI providers are temporarily unavailable.", false, { code: "circuit_open" })
+      }
+    } else {
+      throw new ForgeAiError(`The ${provider} AI provider is temporarily unavailable (circuit open).`, false, { code: "circuit_open" })
+    }
+  }
 
+  const requestedMaxTokens = request.maxTokens ?? 800
   const estimatedMaxCost = estimateForgeAiCostUsd(provider, {
     inputTokens: estimatePromptTokens(request),
     outputTokens: requestedMaxTokens,
     totalTokens: estimatePromptTokens(request) + requestedMaxTokens,
   }) ?? 0
+  let reservation
   try {
-    await assertForgeAiBudgetAllowsRequest({
-      projectId: request.projectId ?? null,
-      estimatedMaxCost,
-      env,
-    })
+    reservation = await reserveForgeAiBudget({ projectId:request.projectId, taskId:request.taskId, provider, model, estimatedMaxCost, env, idempotencyKey:budgetIdempotencyKey(request, provider, model) })
   } catch (error) {
-    if (error instanceof ForgeAiBudgetExceededError) throw new ForgeAiError(error.safeMessage)
+    if (error instanceof ForgeBudgetReservationError) throw new ForgeAiError(error.safeMessage, false, { code:error.code, cause:error })
     throw error
   }
 
   const maxRetries = Math.max(0, request.maxRetries ?? DEFAULT_MAX_RETRIES)
+  const retryConfig = resolveRetryPolicyConfig(env, maxRetries)
   let lastError: unknown
 
   for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
     try {
-      const raw = provider === "openai"
-        ? await callOpenAi(request, model, env)
-        : await callAnthropic(request, model, env)
+      const raw = await adapter.generateStructuredJson({ taskType:request.taskType, prompt:request.prompt, systemPrompt:buildSafeSystemPrompt(request.systemPrompt), schema:request.schema, schemaName:request.schemaName, maxTokens:request.maxTokens ?? 800, temperature:request.temperature, timeoutMs:request.timeoutMs ?? DEFAULT_TIMEOUT_MS, env, mockData:request.mockData })
+      await recordProviderSuccess(provider)
       const parsed = parseAndValidateStructuredJson<TData>(request.schema, raw.text)
 
       if (!parsed.ok) {
@@ -170,7 +189,6 @@ export async function runForgeAiJson<TData extends JsonValue = JsonValue>(reques
           const fallback = parseAndValidateStructuredJson<TData>(request.schema, request.mockData)
           if (fallback.ok) {
             const costEstimateUsd = estimateForgeAiCostUsd(provider, raw.usage)
-            recordBudgetUsage(raw.usage.totalTokens ?? 0, costEstimateUsd ?? 0)
             const completedAt = new Date()
             await recordForgeAiUsage({
               projectId: request.projectId ?? null,
@@ -182,6 +200,7 @@ export async function runForgeAiJson<TData extends JsonValue = JsonValue>(reques
               startedAt: startedAtDate,
               completedAt,
             })
+            await reconcileForgeAiBudget({ reservationId:reservation.id, actualCost:costEstimateUsd, usageKnown:raw.usage.totalTokens != null, fallbackProvider:"mock" })
             log.warn("Forge AI structured response used deterministic fallback", {
               durationMs: completedAt.getTime() - startedAt,
               retryCount: attempt,
@@ -190,6 +209,7 @@ export async function runForgeAiJson<TData extends JsonValue = JsonValue>(reques
             })
 
             return {
+              registry,
               provider,
               model,
               taskType: request.taskType,
@@ -199,14 +219,14 @@ export async function runForgeAiJson<TData extends JsonValue = JsonValue>(reques
               latencyMs: completedAt.getTime() - startedAt,
               retries: attempt,
               responseId: raw.responseId ?? "schema-fallback",
+              failover,
             }
           }
         }
-        throw new ForgeAiError("AI response did not match the requested schema.", true)
+        throw new ForgeAiError("AI response did not match the requested schema.", true, { code: "schema_mismatch" })
       }
 
       const costEstimateUsd = estimateForgeAiCostUsd(provider, raw.usage)
-      recordBudgetUsage(raw.usage.totalTokens ?? 0, costEstimateUsd ?? 0)
       const completedAt = new Date()
       await recordForgeAiUsage({
         projectId: request.projectId ?? null,
@@ -218,6 +238,7 @@ export async function runForgeAiJson<TData extends JsonValue = JsonValue>(reques
         startedAt: startedAtDate,
         completedAt,
       })
+      await reconcileForgeAiBudget({ reservationId:reservation.id, actualCost:costEstimateUsd, usageKnown:raw.usage.totalTokens != null, fallbackProvider:failover?.to ?? null })
       log.info("Forge AI request completed", {
         durationMs: completedAt.getTime() - startedAt,
         retryCount: attempt,
@@ -229,6 +250,7 @@ export async function runForgeAiJson<TData extends JsonValue = JsonValue>(reques
       })
 
       return {
+        registry,
         provider,
         model,
         taskType: request.taskType,
@@ -238,12 +260,13 @@ export async function runForgeAiJson<TData extends JsonValue = JsonValue>(reques
         latencyMs: completedAt.getTime() - startedAt,
         retries: attempt,
         responseId: raw.responseId,
+        failover,
       }
     } catch (error) {
       lastError = error
-      const retryable = error instanceof ForgeAiError ? error.retryable : true
+      const retryable = error instanceof ForgeAiError || error instanceof ProviderAdapterError ? error.retryable : true
       const normalizedError = normalizeUnknownError(error, {
-        safeMessage: error instanceof ForgeAiError ? error.safeMessage : "Unable to get a safe AI response right now.",
+        safeMessage: error instanceof ForgeAiError || error instanceof ProviderAdapterError ? error.safeMessage : "Unable to get a safe AI response right now.",
         category: "ai_provider",
       })
       log.warn("Forge AI provider attempt failed", {
@@ -263,195 +286,27 @@ export async function runForgeAiJson<TData extends JsonValue = JsonValue>(reques
         retryCount: attempt,
         errorCategory: normalizedError.category,
       })
-      if (!retryable || attempt === maxRetries) break
-      await wait(250 * (attempt + 1))
+      const classification = classifyRetryability(error)
+      if (provider !== "mock" && isTripCategory(classification.category)) {
+        await recordProviderFailure(provider, classification.category, normalizedError.safeMessage, healthCtx)
+      }
+      const decision = nextRetryDecision({ classification, attempt, elapsedMs: Date.now() - startedAt, config: retryConfig })
+      if (!decision.retry) break
+      await wait(decision.delayMs)
     }
   }
 
+  await reconcileForgeAiBudget({ reservationId:reservation.id, actualCost:Number(reservation.reservedCost), usageKnown:false, failureCategory:lastError instanceof ProviderAdapterError ? lastError.category : "provider_failure" })
   if (lastError instanceof ForgeAiError) throw lastError
+  if (lastError instanceof ProviderAdapterError) throw new ForgeAiError(lastError.safeMessage, lastError.retryable, { code:`provider_${lastError.category}`, cause:lastError })
   throw new ForgeAiError("Unable to get a safe AI response right now.", true)
 }
 
 export { buildForgeTaskOutputMetadata }
 
-async function callOpenAi(request: ForgeAiRequest, model: string, env: NodeJS.ProcessEnv) {
-  const apiKey = env.OPENAI_API_KEY
-  if (!apiKey) throw new ForgeAiError("OpenAI is not configured.")
-  const body: Record<string, unknown> = {
-    model,
-    input: [
-      { role: "system", content: buildSafeSystemPrompt(request.systemPrompt) },
-      { role: "user", content: request.prompt },
-    ],
-    text: {
-      format: {
-        type: "json_schema",
-        name: request.schemaName,
-        schema: request.schema,
-        strict: true,
-      },
-    },
-    max_output_tokens: request.maxTokens ?? 800,
-  }
-  const temperature = request.temperature
-
-  if (typeof temperature === "number" && supportsOpenAiTemperature(model)) {
-    body.temperature = temperature
-  }
-
-  const response = await fetchWithTimeout(OPENAI_RESPONSES_URL, {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(body),
-  }, request.timeoutMs ?? DEFAULT_TIMEOUT_MS)
-
-  const json = await response.json().catch(() => null)
-
-  if (!response.ok) {
-    throw new ForgeAiError(providerErrorMessage("OpenAI", response.status), response.status >= 429, {
-      code: `openai_http_${response.status}`,
-    })
-  }
-
-  return {
-    text: extractOpenAiText(json),
-    usage: normalizeOpenAiUsage(json?.usage),
-    responseId: typeof json?.id === "string" ? json.id : null,
-  }
-}
-
-async function callAnthropic(request: ForgeAiRequest, model: string, env: NodeJS.ProcessEnv) {
-  const apiKey = env.ANTHROPIC_API_KEY
-  if (!apiKey) throw new ForgeAiError("Anthropic is not configured.")
-
-  const response = await fetchWithTimeout(ANTHROPIC_MESSAGES_URL, {
-    method: "POST",
-    headers: {
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      model,
-      max_tokens: request.maxTokens ?? 800,
-      system: buildSafeSystemPrompt(request.systemPrompt),
-      messages: [{ role: "user", content: request.prompt }],
-      output_config: {
-        format: {
-          type: "json_schema",
-          schema: request.schema,
-        },
-      },
-    }),
-  }, request.timeoutMs ?? DEFAULT_TIMEOUT_MS)
-
-  const json = await response.json().catch(() => null)
-
-  if (!response.ok) {
-    throw new ForgeAiError(providerErrorMessage("Anthropic", response.status), response.status >= 429, {
-      code: `anthropic_http_${response.status}`,
-    })
-  }
-
-  return {
-    text: extractAnthropicText(json),
-    usage: normalizeAnthropicUsage(json?.usage),
-    responseId: typeof json?.id === "string" ? json.id : null,
-  }
-}
-
-function providerReady(provider: ForgeAiProvider, env: NodeJS.ProcessEnv) {
-  if (provider === "mock") return true
-  if (env.FORGE_ENABLE_AI !== "true") return false
-  if (provider === "openai") return Boolean(env.OPENAI_API_KEY)
-  if (provider === "anthropic") return Boolean(env.ANTHROPIC_API_KEY)
-  return false
-}
-
 function buildSafeSystemPrompt(systemPrompt: string | undefined) {
   if (!systemPrompt) return FORGE_AI_SAFETY_SYSTEM_PROMPT
   return `${FORGE_AI_SAFETY_SYSTEM_PROMPT}\n\nTask instructions:\n${systemPrompt}`
-}
-
-async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: number) {
-  const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), timeoutMs)
-
-  try {
-    return await fetch(url, { ...init, signal: controller.signal })
-  } catch (error) {
-    if (error instanceof Error && error.name === "AbortError") {
-      throw new ForgeAiError("AI provider request timed out.", true)
-    }
-    throw error
-  } finally {
-    clearTimeout(timeout)
-  }
-}
-
-function extractOpenAiText(json: unknown) {
-  if (isRecord(json) && typeof json.output_text === "string") return json.output_text
-
-  if (isRecord(json) && Array.isArray(json.output)) {
-    for (const item of json.output) {
-      if (!isRecord(item) || !Array.isArray(item.content)) continue
-      for (const content of item.content) {
-        if (isRecord(content) && typeof content.text === "string") return content.text
-      }
-    }
-  }
-
-  throw new ForgeAiError("OpenAI returned an unreadable response.", true)
-}
-
-function extractAnthropicText(json: unknown) {
-  if (!isRecord(json) || !Array.isArray(json.content)) {
-    throw new ForgeAiError("Anthropic returned an unreadable response.", true)
-  }
-
-  for (const content of json.content) {
-    if (isRecord(content) && typeof content.text === "string") return content.text
-  }
-
-  throw new ForgeAiError("Anthropic returned no text content.", true)
-}
-
-function normalizeOpenAiUsage(usage: unknown): ForgeAiUsage {
-  if (!isRecord(usage)) return {}
-  return {
-    inputTokens: readNumber(usage.input_tokens),
-    outputTokens: readNumber(usage.output_tokens),
-    totalTokens: readNumber(usage.total_tokens),
-  }
-}
-
-function normalizeAnthropicUsage(usage: unknown): ForgeAiUsage {
-  if (!isRecord(usage)) return {}
-  const inputTokens = readNumber(usage.input_tokens)
-  const outputTokens = readNumber(usage.output_tokens)
-  return {
-    inputTokens,
-    outputTokens,
-    totalTokens: inputTokens !== null && outputTokens !== null ? inputTokens + outputTokens : null,
-  }
-}
-
-function providerErrorMessage(provider: string, status: number) {
-  if (status === 401 || status === 403) return `${provider} credentials were rejected.`
-  if (status === 429) return `${provider} rate limit reached.`
-  if (status >= 500) return `${provider} is temporarily unavailable.`
-  return `${provider} request failed.`
-}
-
-function readNumber(value: unknown) {
-  return typeof value === "number" && Number.isFinite(value) ? value : null
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value)
 }
 
 function wait(ms: number) {
@@ -463,17 +318,7 @@ function estimatePromptTokens(request: ForgeAiRequest) {
   return Math.max(1, Math.ceil(chars / 4))
 }
 
-function currentBudgetLedger(): ForgeAiBudgetLedger {
-  const today = getForgeAiBudgetDate()
-  if (!globalThis.__forgeAiBudgetLedger || globalThis.__forgeAiBudgetLedger.date !== today) {
-    globalThis.__forgeAiBudgetLedger = { date: today, totalTokens: 0, totalCostUsd: 0, requests: 0 }
-  }
-  return globalThis.__forgeAiBudgetLedger
-}
-
-function recordBudgetUsage(tokens: number, costUsd: number) {
-  const ledger = currentBudgetLedger()
-  ledger.totalTokens += Math.max(0, tokens)
-  ledger.totalCostUsd = Number((ledger.totalCostUsd + Math.max(0, costUsd)).toFixed(6))
-  ledger.requests += 1
+function budgetIdempotencyKey(request: ForgeAiRequest, provider: ForgeAiProvider, model: string) {
+  const digest = createHash("sha256").update(`${request.promptIdentifier}:${request.promptVersion}:${request.prompt}`).digest("hex").slice(0, 24)
+  return request.taskId ? `task:${request.taskId}:${provider}:${model}:${digest}` : `call:${randomUUID()}`
 }

@@ -1,4 +1,5 @@
 import "server-only"
+import { getForgeAgentRegistryReference } from "@/lib/forge-prompt-registry"
 import { and, eq } from "drizzle-orm"
 import type { ForgeAiResult, JsonValue } from "@/lib/forge-ai"
 import { db } from "@/lib/db"
@@ -184,6 +185,7 @@ export async function runForgeSitemapAgent(projectId: number, actor: string) {
 
   try {
     const result = await runForgeAiJson({
+      ...getForgeAgentRegistryReference("sitemap"),
       taskType: "planning",
       schemaName: "forge_sitemap_strategy",
       schema: FORGE_SITEMAP_STRATEGY_SCHEMA,

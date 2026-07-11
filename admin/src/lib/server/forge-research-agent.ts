@@ -1,4 +1,5 @@
 import "server-only"
+import { getForgeAgentRegistryReference } from "@/lib/forge-prompt-registry"
 import { and, eq } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { buildForgeTaskOutputMetadata, ForgeAiError, runForgeAiJson } from "@/lib/server/forge-ai"
@@ -118,6 +119,7 @@ export async function runForgeResearchAgent(projectId: number, actor: string) {
 
   try {
     const result = await runForgeAiJson({
+      ...getForgeAgentRegistryReference("research"),
       taskType: "planning",
       schemaName: "forge_research_report",
       schema: FORGE_RESEARCH_REPORT_SCHEMA,

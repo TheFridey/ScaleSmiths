@@ -53,7 +53,7 @@ The UI calls authenticated route handlers in `admin/src/app/api`. Domain code is
 
 ### Admin
 
-Auth.js v5 uses a credentials provider in `admin/auth.ts`, JWT sessions with an eight-hour lifetime, and a single environment-configured admin identity. There is no signup route or user table. Production passwords are expected to be bcrypt hashes; plaintext comparison remains available for local development. Login attempts use database-backed rate-limit rows. Middleware enforces authentication and applies an additional process-local Forge mutation/task limiter.
+Auth.js v5 uses a credentials provider in `admin/auth.ts`, persistent `admin_users`, and JWT sessions with an eight-hour lifetime. There is no signup route. Passwords are bcrypt hashes. Roles and session versions are embedded in the JWT, while Node middleware reloads the database identity on protected requests so disabled accounts and revoked sessions fail closed. Login attempts use database-backed rate-limit rows. Middleware also applies a process-local Forge mutation/task limiter.
 
 ### Client portal
 
@@ -109,4 +109,3 @@ No direct import cycle was found in the traced web, authentication, CRM, or Forg
 - Its initial production quickstart brings the full stack up without first showing the two migration services; later sections provide the correct migration order.
 - Forge is described extensively later in the README, but the opening architecture summary does not expose its job worker, sandbox, workspace, preview, artifact, or AI-usage subsystems.
 - The generated-site workspace is not a public web root; this is correctly stated later but is easy to miss in the initial deployment instructions.
-

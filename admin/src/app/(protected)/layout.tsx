@@ -15,23 +15,30 @@ import {
   PanelLeftOpen,
   Target,
   Users,
+  UserCog,
+  ShieldCheck,
 } from "lucide-react"
 import { Logo } from "@/components/Logo"
+import { isNavigationVisible, type Capability } from "@/lib/rbac"
+import type { AdminRole } from "@/lib/admin-users"
 
-const NAV = [
-  { href: "/dashboard", label: "Dashboard", Icon: LayoutDashboard },
-  { href: "/clients", label: "Clients", Icon: Users },
-  { href: "/requests", label: "Requests", Icon: ClipboardList },
-  { href: "/prospects", label: "Pipeline", Icon: Target },
-  { href: "/forge", label: "Forge", Icon: Gauge },
-  { href: "/roadmap", label: "Roadmap", Icon: GitBranch },
-  { href: "/messages", label: "Messages", Icon: MessageSquare },
+const NAV: Array<{ href: string; label: string; Icon: typeof LayoutDashboard; capability: Capability }> = [
+  { href: "/dashboard", label: "Dashboard", Icon: LayoutDashboard, capability: "projects.read" },
+  { href: "/clients", label: "Clients", Icon: Users, capability: "clients.read" },
+  { href: "/requests", label: "Requests", Icon: ClipboardList, capability: "clients.read" },
+  { href: "/prospects", label: "Pipeline", Icon: Target, capability: "leads.read" },
+  { href: "/forge", label: "Forge", Icon: Gauge, capability: "forge.read" },
+  { href: "/roadmap", label: "Roadmap", Icon: GitBranch, capability: "projects.read" },
+  { href: "/messages", label: "Messages", Icon: MessageSquare, capability: "clients.read" },
+  { href: "/users", label: "Admin users", Icon: UserCog, capability: "users.manage" },
+  { href: "/security", label: "Security", Icon: ShieldCheck, capability: "settings.manage" },
 ]
 
 export default function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(true)
   const [compactViewport, setCompactViewport] = useState(false)
+  const [role, setRole] = useState<AdminRole | null>(null)
 
   useEffect(() => {
     const updateViewport = () => setCompactViewport(window.innerWidth < 640)
@@ -40,6 +47,15 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
     setCollapsed(stored ? stored === "collapsed" : window.innerWidth < 1024)
     window.addEventListener("resize", updateViewport)
     return () => window.removeEventListener("resize", updateViewport)
+  }, [])
+
+  useEffect(() => {
+    let active = true
+    fetch("/api/auth/session", { cache: "no-store" })
+      .then((response) => response.json())
+      .then((session) => { if (active && session?.user?.role) setRole(session.user.role as AdminRole) })
+      .catch(() => undefined)
+    return () => { active = false }
   }, [])
 
   function toggleCollapsed() {
@@ -92,7 +108,7 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
         )}
 
         <nav className="flex flex-col gap-1.5">
-          {NAV.map(({ href, label, Icon }) => {
+          {NAV.filter((item) => role && isNavigationVisible(role, item.capability)).map(({ href, label, Icon }) => {
             const active = pathname === href || pathname.startsWith(`${href}/`)
             return (
               <Link

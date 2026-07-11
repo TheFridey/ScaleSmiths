@@ -179,6 +179,11 @@ export function ForgeDashboard({
         </div>
 
         <Link
+          href="/forge/economics"
+          className="hidden rounded-full border px-4 py-2 text-sm font-semibold text-cyan-200 sm:inline-flex"
+          style={{ borderColor:"rgba(34,211,238,.3)" }}
+        >Economics</Link>
+        <Link
           href="/forge/new"
           className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-full px-4 font-dm text-sm font-bold text-[#06121f] transition-transform hover:-translate-y-0.5"
           style={{ background:"linear-gradient(135deg, #f8fafc, #67e8f9)" }}

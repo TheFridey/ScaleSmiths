@@ -9,6 +9,8 @@ The audited implementation map is maintained in `docs/architecture/`:
 - [Security boundaries](docs/architecture/security-boundaries.md)
 - [Deployment topology](docs/architecture/deployment-topology.md)
 - [Data model](docs/architecture/data-model.md)
+- [Admin RBAC policy](docs/architecture/rbac-policy.md)
+- [Admin MFA operations](docs/operations/admin-mfa.md)
 
 | App | Local | Production |
 |-----|-------|-----------|

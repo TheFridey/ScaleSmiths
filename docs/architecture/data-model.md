@@ -44,6 +44,8 @@ Shared tables are duplicated in TypeScript rather than imported from one package
 
 ## Admin CRM and delivery tables
 
+- `admin_users`: internal UUID identity, case-insensitive unique email, display name, bcrypt hash, role, active/MFA state, login/password timestamps, and session revocation version.
+- `admin_security_audit`: actor/target identity, security action, outcome, safe metadata, and timestamp for MFA/security events.
 - `clients`: agency clients, contact/tier/MRR/status/progress.
 - `kanban_cards`: delivery roadmap cards with client FK, column and position.
 - `messages`: basic inbound/outbound client message records; separate from threaded client request messages.
@@ -74,7 +76,7 @@ Important enums define quote status, request category/priority/status, message v
 ## Migration inventory
 
 - Web migrations `0000`-`0008` build quote capture, portal accounts/rate limits, request threads/timeline, and reports.
-- Admin migrations `0000`-`0015` build operational CRM, login limits, Forge and runtime hardening, request threads/timeline, reports, and sales proposals.
+- Admin migrations `0000`-`0017` build operational CRM, login limits, Forge/runtime hardening, request threads/timeline, reports, proposals, persistent admin identity, and MFA security auditing.
 
 The histories are independent. Their Drizzle journals do not provide a single global order, despite targeting the same database. Deployment compensates by always running web then admin migrations.
 
@@ -86,4 +88,3 @@ The histories are independent. Their Drizzle journals do not provide a single gl
 - Artifact consumers depend on title/type/metadata conventions and can read stale or incompatible records if those conventions drift.
 - HTML report/proposal content is persisted; safe rendering depends on trusted generator/admin inputs and rendering discipline.
 - No automated cross-app migration test or schema-diff gate exists.
-

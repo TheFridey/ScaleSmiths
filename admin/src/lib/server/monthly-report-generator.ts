@@ -1,4 +1,5 @@
 import "server-only"
+import { getForgeAgentRegistryReference } from "@/lib/forge-prompt-registry"
 
 import { and, desc, eq, gte, lt, ne } from "drizzle-orm"
 import type { ForgeJsonSchema, JsonValue } from "@/lib/forge-ai"
@@ -56,6 +57,7 @@ export async function generateMonthlyClientReport(input: {
 
   try {
     const result = await runForgeAiJson<ReportSectionData>({
+      ...getForgeAgentRegistryReference("monthly_report"),
       taskType: "copywriting",
       schema: REPORT_SCHEMA,
       schemaName: "monthly_client_report",

@@ -93,7 +93,7 @@ export async function runForgeAiJson<TData extends JsonValue = JsonValue>(reques
   let failover: ForgeAiResult["failover"] = null
   const startedAtDate = new Date()
   const startedAt = startedAtDate.getTime()
-  const log = requestLogger({
+  let log = requestLogger({
     component: "forge-ai",
     projectId: request.projectId ?? undefined,
     taskId: request.taskId ?? undefined,
@@ -155,6 +155,8 @@ export async function runForgeAiJson<TData extends JsonValue = JsonValue>(reques
         provider = target
         adapter = getForgeProviderAdapter(target)
         model = adapter.model(request.taskType)
+        log = log.child({ provider, model })
+        healthCtx.model = model
       } else {
         throw new ForgeAiError("All approved AI providers are temporarily unavailable.", false, { code: "circuit_open" })
       }

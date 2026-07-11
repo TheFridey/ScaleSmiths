@@ -31,6 +31,8 @@ export interface ForgeAiResult<TData extends JsonValue = JsonValue> {
   latencyMs: number
   retries: number
   responseId?: string | null
+  registry?: { promptIdentifier: string; promptVersion: string; schemaIdentifier: string; schemaVersion: string }
+  failover?: { from: ForgeAiProvider; to: ForgeAiProvider; reason: string } | null
 }
 
 export interface ForgeAiBudgetConfig {
@@ -229,6 +231,18 @@ export function parseAndValidateStructuredJson<TData extends JsonValue>(schema: 
 
 export function buildForgeTaskOutputMetadata(result: ForgeAiResult) {
   return {
+    quality: {
+      resultQuality: result.provider === "mock" ? "fallback" : "requires_review",
+      fallbackReason: result.provider === "mock" ? "Deterministic mock provider output was used." : null,
+      providerAttempted: result.provider,
+      modelAttempted: result.model,
+      retryCount: result.retries,
+      validationResult: { structuredOutput: "passed", providerValidated: false },
+      downstreamAllowed: true,
+      humanApprovalRequired: true,
+      publicationBlocked: true,
+    },
+    registry: result.registry ?? null,
     ai: {
       provider: result.provider,
       model: result.model,
@@ -238,6 +252,7 @@ export function buildForgeTaskOutputMetadata(result: ForgeAiResult) {
       latencyMs: result.latencyMs,
       retries: result.retries,
       responseId: result.responseId ?? null,
+      failover: result.failover ?? null,
     },
     response: result.data,
   }

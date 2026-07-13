@@ -36,6 +36,7 @@ import { ForgeCopyPanel } from "./ForgeCopyPanel"
 import { ForgeDesignDirectionPanel } from "./ForgeDesignDirectionPanel"
 import { ForgeGenerateSitePanel } from "./ForgeGenerateSitePanel"
 import { ForgeDeployPanel } from "./ForgeDeployPanel"
+import { ForgeEstimatorPanel, type ProjectEstimateSnapshot } from "./ForgeEstimatorPanel"
 import { ForgeExportPanel } from "./ForgeExportPanel"
 import { ForgePreviewRail } from "./ForgePreviewRail"
 import { ForgeProposalPanel } from "./ForgeProposalPanel"
@@ -76,7 +77,7 @@ type IntakePane = "brief" | "settings"
 type StrategyPane = "research" | "sitemap" | "copy" | "design" | "spec"
 type BuildPane = "workspace" | "integrations" | "generate" | "seo"
 type QaPane = "critique" | "checks" | "visual" | "cost"
-type LaunchPane = "proposal" | "export" | "deploy"
+type LaunchPane = "proposal" | "estimate" | "export" | "deploy"
 type RecordsPane = "tasks" | "activity" | "usage" | "memory" | "integrations" | "details"
 
 const TABS: Array<{ key: ProjectTab; label: string; Icon: LucideIcon }> = [
@@ -124,6 +125,7 @@ interface ForgeArtifactRow {
   type: ForgeArtifactType
   title: string
   content: string | null
+  metadataJson: Record<string, unknown> | null
   version: number
   parentArtifactId: number | null
   sourceTaskId: number | null
@@ -226,6 +228,7 @@ export function ForgeProjectDetail({
   initialSeo,
   initialVisualQa,
   initialProposal,
+  latestEstimate,
   initialExport,
   initialDeploy,
   initialCommandChat,
@@ -254,6 +257,7 @@ export function ForgeProjectDetail({
   initialSeo: ForgeSeoArtifactState
   initialVisualQa: ForgeVisualQaArtifactState
   initialProposal: ForgeProposalArtifactState
+  latestEstimate: ProjectEstimateSnapshot | null
   initialExport: ForgeExportArtifactState
   initialDeploy: ForgeDeployArtifactState
   initialCommandChat: ForgeCommandChatState
@@ -493,6 +497,7 @@ export function ForgeProjectDetail({
                 <SectionDeck
                   options={[
                     { key: "proposal", label: "Proposal", Icon: FileText },
+                    { key: "estimate", label: "Estimate", Icon: DollarSign },
                     { key: "export", label: "Export", Icon: Archive },
                     { key: "deploy", label: "Deploy", Icon: Rocket },
                   ]}
@@ -500,6 +505,7 @@ export function ForgeProjectDetail({
                   onChange={setLaunchPane}
                 >
                   {launchPane === "proposal" && <ForgeProposalPanel projectId={projectId} initialProposal={initialProposal} intakeReady={(initialIntake.completenessScore ?? 0) > 0} disabled={archived} />}
+                  {launchPane === "estimate" && <ForgeEstimatorPanel projectId={projectId} initialEstimate={latestEstimate} disabled={archived} />}
                   {launchPane === "export" && (
                     <ForgeExportPanel
                       projectId={projectId}

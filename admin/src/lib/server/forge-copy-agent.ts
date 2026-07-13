@@ -20,6 +20,8 @@ import { FORGE_INTAKE_ARTIFACT_TITLE, readForgeIntakeArtifact } from "@/lib/forg
 import { FORGE_RESEARCH_ARTIFACT_KIND, FORGE_RESEARCH_ARTIFACT_TITLE, type ForgeResearchReport } from "@/lib/forge-research"
 import { FORGE_SITEMAP_ARTIFACT_TITLE, readForgeSitemapStrategyArtifact } from "@/lib/forge-sitemap"
 import { forgeActivityLogs, forgeArtifacts, forgeProjects, forgeTasks } from "@/lib/schema"
+import { buildForgeHumanEditTracking, mergeHumanEditTracking } from "@/lib/forge-human-edits"
+import { appendArtifactDecision, parseForgeArtifactDecision, type ForgeArtifactDecisionInput } from "@/lib/forge-approval-intelligence"
 
 export class ForgeCopyAgentError extends Error {
   safeMessage: string
@@ -314,7 +316,15 @@ export async function approveForgeCopyDocument(projectId: number, actor: string,
       ))
       .limit(1)
 
-    const metadataJson = {
+    const editTracking = existing ? buildForgeHumanEditTracking({
+      artifact: existing,
+      approvedContent: content,
+      editor: actor,
+      reason: "Copy reviewed and approved.",
+      now,
+    }) : null
+
+    const baseMetadataJson = {
       ...(existing?.metadataJson ?? {}),
       kind: FORGE_COPY_ARTIFACT_KIND,
       status: "approved",
@@ -323,6 +333,9 @@ export async function approveForgeCopyDocument(projectId: number, actor: string,
       approvedAt: now.toISOString(),
       approvedBy: actor,
     }
+    const approvalDecision = parseForgeArtifactDecision({ decision: "approved", primaryReason: "Copy reviewed and approved.", category: "client_request", severity: "low", affectsFutureRegeneration: false, acceptanceScope: "partial_acceptance" }, actor, now)
+    const decisionState = appendArtifactDecision(baseMetadataJson, existing?.approvalHistory, approvalDecision)
+    const metadataJson = editTracking ? mergeHumanEditTracking(decisionState.metadataJson, editTracking) : decisionState.metadataJson
 
     const [saved] = existing
       ? await tx
@@ -330,6 +343,8 @@ export async function approveForgeCopyDocument(projectId: number, actor: string,
         .set({
           content,
           metadataJson,
+          approvalState: "approved",
+          approvalHistory: decisionState.approvalHistory,
           updatedAt: now,
         })
         .where(eq(forgeArtifacts.id, existing.id))
@@ -342,6 +357,8 @@ export async function approveForgeCopyDocument(projectId: number, actor: string,
           title: FORGE_COPY_ARTIFACT_TITLE,
           content,
           metadataJson,
+          approvalState: "approved",
+          approvalHistory: decisionState.approvalHistory,
           updatedAt: now,
         })
         .returning()
@@ -356,6 +373,8 @@ export async function approveForgeCopyDocument(projectId: number, actor: string,
         pageCount: copy.pages.length,
         selfCheckStatus: copy.selfCheck.status,
         flaggedPhrases: copy.selfCheck.flaggedPhrases,
+        humanEditTracking: editTracking,
+        approvalDecision,
       },
     })
 
@@ -367,6 +386,28 @@ export async function approveForgeCopyDocument(projectId: number, actor: string,
     artifactId: artifact.id,
     copy,
   }
+}
+
+export async function rejectForgeCopyDocument(projectId: number, actor: string, reasonOrInput: string | ForgeArtifactDecisionInput, pagePathInput?: string) {
+  const input = typeof reasonOrInput === "string" ? { reason: reasonOrInput, pagePath: pagePathInput } : reasonOrInput
+  let decision
+  try {
+    decision = parseForgeArtifactDecision({ ...input, decision: "rejected" }, actor)
+  } catch {
+    throw new ForgeCopyAgentError("A structured rejection reason of at least 3 characters is required.", 400)
+  }
+  const pagePath = decision.pagePath ?? pagePathInput ?? ""
+  if (!pagePath.startsWith("/")) throw new ForgeCopyAgentError("A valid rejected page path is required.", 400)
+  const now = new Date()
+  return db.transaction(async (tx) => {
+    const [artifact] = await tx.select().from(forgeArtifacts).where(and(eq(forgeArtifacts.projectId, projectId), eq(forgeArtifacts.type, "copy_doc"), eq(forgeArtifacts.title, FORGE_COPY_ARTIFACT_TITLE))).limit(1)
+    if (!artifact) throw new ForgeCopyAgentError("Generate copy before rejecting it.", 409)
+    const rejection = { ...decision, pagePath, decidedAt: now.toISOString() }
+    const decisionState = appendArtifactDecision({ ...(artifact.metadataJson ?? {}), status: "rejected", rejection }, artifact.approvalHistory, rejection)
+    await tx.update(forgeArtifacts).set({ approvalState: "rejected", approvalHistory: decisionState.approvalHistory, metadataJson: decisionState.metadataJson, updatedAt: now }).where(eq(forgeArtifacts.id, artifact.id))
+    await tx.insert(forgeActivityLogs).values({ projectId, actor, action: "copy_rejected", message: `Rejected copy for ${pagePath}.`, metadataJson: { artifactId: artifact.id, ...rejection } })
+    return { ok: true as const, artifactId: artifact.id, rejection }
+  })
 }
 
 async function loadCopyContext(projectId: number) {

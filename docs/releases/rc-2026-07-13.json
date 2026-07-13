@@ -1,0 +1,73 @@
+{
+  "candidateId": "rc-2026-07-13-00bc821-29df03f7",
+  "createdAt": "2026-07-13T23:08:41.1875798+01:00",
+  "state": "blocked",
+  "ready": false,
+  "automaticDeployment": false,
+  "repository": {
+    "branch": "master",
+    "baseCommit": "00bc8211ea65e44365d1cc52a9af215a0e847a5c",
+    "dirty": true,
+    "changedEntries": 272,
+    "sourceFileCount": 716,
+    "sourceManifestSha256": "29df03f7d73ed06ef618152067f53b7cd147d1c384232a22dd98bb565ab19e5f",
+    "hashScope": "git ls-files --cached --others --exclude-standard, existing files only, sorted by repository path; docs/releases excluded from the payload"
+  },
+  "versions": {
+    "web": "0.1.0",
+    "admin": "0.1.0",
+    "nodeTested": "22.12.0",
+    "npmTested": "10.9.0",
+    "requiredNode": ">=22.13.0 <23",
+    "postgres": "16",
+    "nextResolvedByLockfiles": "15.5.19"
+  },
+  "hashes": {
+    "webPackageLockSha256": "f079bf4d195f85bfe5069fbc3841e9f29174af9be40497da699b86f008abf294",
+    "adminPackageLockSha256": "37d3d5775f3880f7c1c09b291fae5833aa19d4740382ffcc7cadbbf0902ca2d8",
+    "migrationFileCount": 52,
+    "migrationManifestSha256": "df261d11d976160b38cb48097e63cb1cd1a423577cf92b8c5c162b82efe5735e",
+    "webMigrationJournalSha256": "96bb1472f3ae323f9143f31df26d0c0308025da0b18feab5db59a1fccc2549ca",
+    "adminMigrationJournalSha256": "85019106680a1986b212d522f5dd60b352526ff6ffa9412048b6705b382af1d1",
+    "releaseComposeSha256": "bb8eca7ee037b280dbb1e3d11accc1c82caef6f0ebe840847d64b1720bb23b55",
+    "releaseManagerSha256": "ab829e6dee9bd11d2ec6b7c849910b6827914773c6d44c5a5d5f4284a65a61df",
+    "environmentExampleSha256": "16bfcf3c8d9d2c3dddd35d648a6744053ce154b0532b14df5197263c807d28d9"
+  },
+  "passed": [
+    "environment hygiene",
+    "architecture documentation check",
+    "migration journal consistency: 42 admin entries and 42 admin SQL files",
+    "web production dependency audit: zero high or critical",
+    "admin production dependency audit: zero high or critical",
+    "Compose configuration with explicit release variables",
+    "release and rollback simulation: 7 tests"
+  ],
+  "blockers": [
+    "web npm ci timed out after 10 minutes and left an incomplete dependency tree",
+    "admin npm ci timed out after 10 minutes and left an incomplete dependency tree",
+    "web npm ci --ignore-scripts also timed out after 10 minutes",
+    "local Node 22.12.0 is below a resolved transitive package requirement of Node 22.13.0",
+    "Docker Desktop Linux engine is unavailable",
+    "the repository payload contains 272 uncommitted status entries",
+    "no immutable Forge deployment candidate could be created or approved from the blocked environment"
+  ],
+  "notExecuted": [
+    "empty-database migration",
+    "previous-production-schema migration",
+    "unit tests",
+    "PostgreSQL integration tests",
+    "Forge end-to-end workflow",
+    "browser and visual regression tests",
+    "CodeQL, secret-history scan, container scan and container SBOM",
+    "web and admin container builds",
+    "web and admin production builds",
+    "Forge deterministic demo",
+    "generated-site sandbox tests",
+    "performance and accessibility runtime checks",
+    "deployment-candidate verification and release-gate verification"
+  ],
+  "acceptedRisks": [
+    "moderate PostCSS advisory retained pending a non-breaking upstream Next.js resolution",
+    "browser-family and live-provider evaluations remain scheduled CI activities rather than pull-request hard gates"
+  ]
+}

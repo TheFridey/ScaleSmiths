@@ -4,6 +4,7 @@ import { buildForgeGeneratedProcessEnv } from "./forge-process-env"
 import { assertForgeWorkspaceFileAllowed, normalizeForgeWorkspacePath } from "./forge-workspace"
 
 describe("generated execution security fixtures",()=>{
+  it("defaults production execution to Docker while preserving local development",()=>{expect(resolveForgeSandboxConfig({NODE_ENV:"production"}).runner).toBe("docker");expect(resolveForgeSandboxConfig({NODE_ENV:"development"}).runner).toBe("local")})
   const config=resolveForgeSandboxConfig({FORGE_SANDBOX_RUNNER:"docker",FORGE_SANDBOX_NETWORK:"none",FORGE_SANDBOX_PIDS_LIMIT:"32",FORGE_SANDBOX_USER:"1000:1000"})
   const args=buildForgeDockerRunArgs({workspaceRoot:"/srv/scalesmiths/generated-sites/1-attack-fixture",command:"npm run build",config})
   it("runs non-root with kernel and resource restrictions",()=>{for(const expected of ["--user","1000:1000","--cap-drop","ALL","--security-opt","no-new-privileges","--pids-limit","32","--read-only","--init","--cpus","--memory","--ulimit","nproc=32:32","nofile=1024:1024","--tmpfs"])expect(args).toContain(expected)})

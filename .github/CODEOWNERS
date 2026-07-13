@@ -1,0 +1,63 @@
+# Replace @TheFridey/scalesmiths-maintainers with the actual GitHub user or team
+# before enabling "Require review from Code Owners" in branch protection.
+
+* @TheFridey/scalesmiths-maintainers
+
+# Repository governance and CI
+/.github/ @TheFridey/scalesmiths-maintainers
+/CONTRIBUTING.md @TheFridey/scalesmiths-maintainers
+/SECURITY.md @TheFridey/scalesmiths-maintainers
+
+# Environment handling and deployment
+/.env.example @TheFridey/scalesmiths-maintainers
+/docker-compose*.yml @TheFridey/scalesmiths-maintainers
+/*Dockerfile* @TheFridey/scalesmiths-maintainers
+/nginx/ @TheFridey/scalesmiths-maintainers
+/scripts/check-env-hygiene.mjs @TheFridey/scalesmiths-maintainers
+/scripts/release-manager.mjs @TheFridey/scalesmiths-maintainers
+/scripts/update-cloudflare-nginx-ranges.mjs @TheFridey/scalesmiths-maintainers
+
+# Public authentication, portal access, quote data and migrations
+/web/src/lib/portal-auth.ts @TheFridey/scalesmiths-maintainers
+/web/src/lib/portal-session.ts @TheFridey/scalesmiths-maintainers
+/web/src/app/portal/api/ @TheFridey/scalesmiths-maintainers
+/web/src/app/api/quote/ @TheFridey/scalesmiths-maintainers
+/web/src/lib/quote-security.ts @TheFridey/scalesmiths-maintainers
+/web/src/lib/schema.ts @TheFridey/scalesmiths-maintainers
+/web/drizzle/ @TheFridey/scalesmiths-maintainers
+/web/drizzle.config.ts @TheFridey/scalesmiths-maintainers
+/web/.env.example @TheFridey/scalesmiths-maintainers
+
+# Admin authentication, MFA, RBAC, finance, Forge and migrations
+/admin/auth.ts @TheFridey/scalesmiths-maintainers
+/admin/auth.config.ts @TheFridey/scalesmiths-maintainers
+/admin/src/middleware.ts @TheFridey/scalesmiths-maintainers
+/admin/src/app/api/auth/ @TheFridey/scalesmiths-maintainers
+/admin/src/app/api/security/ @TheFridey/scalesmiths-maintainers
+/admin/src/lib/server/mfa.ts @TheFridey/scalesmiths-maintainers
+/admin/src/lib/server/rbac.ts @TheFridey/scalesmiths-maintainers
+/admin/src/lib/rbac.ts @TheFridey/scalesmiths-maintainers
+/admin/src/lib/admin-users.ts @TheFridey/scalesmiths-maintainers
+/admin/src/lib/schema.ts @TheFridey/scalesmiths-maintainers
+/admin/drizzle/ @TheFridey/scalesmiths-maintainers
+/admin/drizzle.config.ts @TheFridey/scalesmiths-maintainers
+/admin/.env.example @TheFridey/scalesmiths-maintainers
+
+# Forge provider layer, AI budgets, sandboxing and release controls
+/admin/src/lib/server/forge-ai.ts @TheFridey/scalesmiths-maintainers
+/admin/src/lib/server/forge-provider-adapters.ts @TheFridey/scalesmiths-maintainers
+/admin/src/lib/server/forge-provider-health.ts @TheFridey/scalesmiths-maintainers
+/admin/src/lib/server/forge-budget-reservations.ts @TheFridey/scalesmiths-maintainers
+/admin/src/lib/forge-budget-reservations.ts @TheFridey/scalesmiths-maintainers
+/admin/src/lib/forge-economics.ts @TheFridey/scalesmiths-maintainers
+/admin/src/lib/server/forge-economics.ts @TheFridey/scalesmiths-maintainers
+/admin/src/lib/forge-cost-quality.ts @TheFridey/scalesmiths-maintainers
+/admin/src/lib/forge-sandbox.ts @TheFridey/scalesmiths-maintainers
+/admin/src/lib/server/forge-workspace.ts @TheFridey/scalesmiths-maintainers
+/admin/src/lib/server/forge-qa-agent.ts @TheFridey/scalesmiths-maintainers
+/admin/src/lib/server/forge-deploy-agent.ts @TheFridey/scalesmiths-maintainers
+/admin/src/lib/forge-deploy.ts @TheFridey/scalesmiths-maintainers
+/admin/src/lib/forge-release-gates.ts @TheFridey/scalesmiths-maintainers
+/admin/src/lib/server/forge-deployment-candidates.ts @TheFridey/scalesmiths-maintainers
+/admin/src/lib/forge-deployment-candidates.ts @TheFridey/scalesmiths-maintainers
+/admin/src/app/api/forge/ @TheFridey/scalesmiths-maintainers

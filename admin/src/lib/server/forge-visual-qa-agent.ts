@@ -1,8 +1,8 @@
 import "server-only"
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process"
+import { createHash } from "node:crypto"
 import { existsSync } from "node:fs"
-import net from "node:net"
-import { mkdtemp, readFile, rm } from "node:fs/promises"
+import { mkdir, mkdtemp, readFile, rm } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import path from "node:path"
 import { and, desc, eq } from "drizzle-orm"
@@ -28,10 +28,13 @@ import {
   type ForgeSmokeTest,
   type ForgeVisualQaReport,
 } from "@/lib/forge-visual-qa"
-import { resolveForgePreviewHost, resolveForgePreviewPortBase, buildForgePreviewUrl, FORGE_PREVIEW_VIEWPORTS, type ForgePreviewEnv } from "@/lib/forge-preview"
-import { FORGE_WORKSPACE_MEMORY_KEY, readForgeWorkspaceMemory, type ForgeWorkspaceMetadata } from "@/lib/forge-workspace"
+import { FORGE_PREVIEW_VIEWPORTS } from "@/lib/forge-preview"
+import { FORGE_WORKSPACE_MEMORY_KEY, readForgeWorkspaceMemory } from "@/lib/forge-workspace"
 import { forgeActivityLogs, forgeArtifacts, forgeMemories, forgeProjects, forgeTasks } from "@/lib/schema"
-import { resolveWorkspaceRoot } from "./forge-workspace"
+import { startForgePreview, stopForgePreview } from "./forge-preview"
+import { saveVersionedForgeArtifact } from "./forge-artifacts"
+import { getForgeAgentRegistryReference } from "@/lib/forge-prompt-registry"
+import { evaluateDeterministicVisualSignals, FORGE_SCREENSHOT_QA_VERSION, FORGE_SCREENSHOT_VIEWPORTS, proposeVisualRepairTasks, type ForgeLayoutSignal, type ForgeScreenshotRecord } from "@/lib/forge-screenshot-qa"
 
 export class ForgeVisualQaAgentError extends Error {
   safeMessage: string
@@ -45,8 +48,6 @@ export class ForgeVisualQaAgentError extends Error {
   }
 }
 
-const INSTALL_TIMEOUT_MS = 180_000
-const SERVER_READY_TIMEOUT_MS = 60_000
 const LIGHTHOUSE_TIMEOUT_MS = 120_000
 const LOG_LIMIT = 120
 
@@ -101,19 +102,23 @@ export async function runForgeVisualQaAgent(projectId: number, actor: string) {
     let smokeTests: ForgeSmokeTest[] = skippedSmokeTests(routes)
     let mobile = skippedMobile()
     let consoleErrors = skippedConsoleErrors(maxConsoleErrors)
+    let screenshotQa: ForgeVisualQaReport["screenshotQa"] | undefined
 
     if (tooling.lighthouse || tooling.browser) {
-      const server = await startEphemeralServer(workspace, pushLog)
+      const preview = await startForgePreview(projectId, actor)
+      if (!preview.url) throw new ForgeVisualQaAgentError("Approved preview did not provide a URL.", 500)
+      const server = { url: preview.url, stop: async () => { await stopForgePreview(projectId, actor) } }
       previewUrl = server.url
       try {
         if (tooling.lighthouse) {
           lighthouse = await runLighthouse(server.url, thresholds, pushLog)
         }
         if (tooling.browser) {
-          const browserResults = await runBrowserChecks(server.url, routes, maxConsoleErrors, pushLog)
+          const browserResults = await runBrowserChecks(server.url, routes, maxConsoleErrors, pushLog, projectId, task.id)
           smokeTests = browserResults.smokeTests
           mobile = browserResults.mobile
           consoleErrors = browserResults.consoleErrors
+          screenshotQa = browserResults.screenshotQa
         } else {
           smokeTests = await runFetchSmoke(server.url, routes, pushLog)
         }
@@ -136,10 +141,11 @@ export async function runForgeVisualQaAgent(projectId: number, actor: string) {
       seoScore,
       seoThreshold,
       logs,
+      screenshotQa,
     })
 
     const completedAt = new Date()
-    const artifact = await saveVisualQaReport(projectId, report, task.id, completedAt)
+    const artifact = await saveVisualQaReport(projectId, report, task.id, actor, completedAt)
 
     await db.transaction(async (tx) => {
       await tx.update(forgeTasks).set({
@@ -227,35 +233,6 @@ async function loadPlaywright(): Promise<PlaywrightModule | null> {
 
 /* ── ephemeral preview server ───────────────────────────────────────── */
 
-async function startEphemeralServer(workspace: ForgeWorkspaceMetadata, pushLog: (line: string) => void) {
-  const env = previewEnv()
-  const host = resolveForgePreviewHost(env)
-  const port = await findAvailablePort(resolveForgePreviewPortBase(env) + 50, host)
-  const url = buildForgePreviewUrl(host, port)
-  const cwd = resolveWorkspaceRoot(workspace)
-
-  await runNpm(["install", "--no-audit", "--no-fund"], cwd, INSTALL_TIMEOUT_MS, pushLog)
-  const child = spawn(npmCommand(), ["run", "dev", "--", "--hostname", host, "-p", String(port)], {
-    cwd,
-    env: buildForgeGeneratedProcessEnv(),
-    windowsHide: true,
-    stdio: "pipe",
-  })
-  attachLogging(child, pushLog)
-
-  try {
-    await waitForServer(url)
-  } catch (error) {
-    await stopProcess(child)
-    throw new ForgeVisualQaAgentError(error instanceof Error ? error.message : "Preview server failed to start for visual QA.", 500)
-  }
-
-  return {
-    url,
-    stop: async () => { await stopProcess(child) },
-  }
-}
-
 /* ── Lighthouse via CLI (graceful) ──────────────────────────────────── */
 
 async function runLighthouse(url: string, thresholds: ForgeLighthouseThresholds, pushLog: (line: string) => void): Promise<ForgeLighthouseResult> {
@@ -314,17 +291,21 @@ interface PlaywrightPage {
   on(event: string, handler: (payload: { type?: () => string; text?: () => string }) => void): void
   goto(url: string, options?: Record<string, unknown>): Promise<unknown>
   title(): Promise<string>
-  locator(selector: string): { count(): Promise<number>; first(): { click(options?: Record<string, unknown>): Promise<void> } }
+  locator(selector: string): { count(): Promise<number>; first(): { click(options?: Record<string, unknown>): Promise<void> }; nth(index: number): { screenshot(options?: Record<string, unknown>): Promise<Buffer> } }
   url(): string
+  screenshot(options?: Record<string, unknown>): Promise<Buffer>
+  evaluate<T>(expression: string): Promise<T>
+  waitForTimeout(ms: number): Promise<void>
 }
 
-async function runBrowserChecks(baseUrl: string, routes: string[], maxConsoleErrors: number, pushLog: (line: string) => void) {
+async function runBrowserChecks(baseUrl: string, routes: string[], maxConsoleErrors: number, pushLog: (line: string) => void, projectId: number, taskId: number) {
   const playwright = await loadPlaywright()
   if (!playwright) {
     return {
       smokeTests: await runFetchSmoke(baseUrl, routes, pushLog),
       mobile: skippedMobile(),
       consoleErrors: skippedConsoleErrors(maxConsoleErrors),
+      screenshotQa: emptyScreenshotQa(),
     }
   }
 
@@ -332,6 +313,7 @@ async function runBrowserChecks(baseUrl: string, routes: string[], maxConsoleErr
   let browser: PlaywrightBrowser | null = null
   const smokeTests: ForgeSmokeTest[] = []
   let mobile = skippedMobile()
+  let screenshotQa = emptyScreenshotQa()
 
   try {
     browser = await playwright.chromium.launch({ args: ["--no-sandbox"] })
@@ -398,6 +380,7 @@ async function runBrowserChecks(baseUrl: string, routes: string[], maxConsoleErr
     }
 
     await context.close().catch(() => undefined)
+    screenshotQa = await captureVisualEvidence(browser, baseUrl, routes, projectId, taskId, pushLog)
   } catch (error) {
     pushLog(`Browser checks degraded: ${error instanceof Error ? error.message : "unknown error"}.`)
     if (!smokeTests.length) {
@@ -405,6 +388,7 @@ async function runBrowserChecks(baseUrl: string, routes: string[], maxConsoleErr
         smokeTests: await runFetchSmoke(baseUrl, routes, pushLog),
         mobile: skippedMobile(),
         consoleErrors: skippedConsoleErrors(maxConsoleErrors),
+        screenshotQa: emptyScreenshotQa(),
       }
     }
   } finally {
@@ -418,7 +402,48 @@ async function runBrowserChecks(baseUrl: string, routes: string[], maxConsoleErr
     messages: consoleMessages.slice(0, 20),
   }
 
-  return { smokeTests, mobile, consoleErrors }
+  return { smokeTests, mobile, consoleErrors, screenshotQa }
+}
+
+function emptyScreenshotQa(): ForgeVisualQaReport["screenshotQa"] { return { evaluatorVersion: FORGE_SCREENSHOT_QA_VERSION, screenshots: [], layoutSignals: [], findings: [], proposedRepairs: [], evaluator: null, comparison: null } }
+
+async function captureVisualEvidence(browser: PlaywrightBrowser, baseUrl: string, routes: string[], projectId: number, taskId: number, pushLog: (line: string) => void): Promise<ForgeVisualQaReport["screenshotQa"]> {
+  const evidenceRoot = path.resolve(process.env.FORGE_VISUAL_EVIDENCE_ROOT ?? path.join(process.cwd(), "..", "generated-sites", ".forge-evidence"))
+  const runRoot = path.join(evidenceRoot, String(projectId), String(taskId))
+  await mkdir(runRoot, { recursive: true })
+  const screenshots: ForgeScreenshotRecord[] = []
+  const layoutSignals: ForgeLayoutSignal[] = []
+  const criticalRoutes = [...new Set(["/", "/style-guide", ...routes])].slice(0, 12)
+  for (const [viewport, dimensions] of Object.entries(FORGE_SCREENSHOT_VIEWPORTS)) {
+    const context = await browser.newContext({ viewport: dimensions, reducedMotion: "reduce" })
+    try {
+      const page = await context.newPage()
+      for (const route of criticalRoutes) {
+        await page.goto(joinUrl(baseUrl, route), { waitUntil: "domcontentloaded", timeout: 30_000 })
+        await page.waitForTimeout(500)
+        const safeRoute = route === "/" ? "home" : route.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "")
+        const filename = `${safeRoute}-${viewport}.png`
+        const buffer = await page.screenshot({ fullPage: true, animations: "disabled" })
+        await import("node:fs/promises").then(({ writeFile }) => writeFile(path.join(runRoot, filename), buffer))
+        const id = `${projectId}-${taskId}-${safeRoute}-${viewport}`
+        screenshots.push({ id, route, section: "full-page", viewport: viewport as keyof typeof FORGE_SCREENSHOT_VIEWPORTS, ...dimensions, relativePath: path.relative(evidenceRoot, path.join(runRoot, filename)).replaceAll("\\", "/"), sha256: createHash("sha256").update(buffer).digest("hex"), capturedAt: new Date().toISOString() })
+        const sections = page.locator("main section, main > div[data-section]")
+        const sectionCount = Math.min(await sections.count(), 8)
+        for (let sectionIndex = 0; sectionIndex < sectionCount; sectionIndex += 1) {
+          const sectionBuffer = await sections.nth(sectionIndex).screenshot({ animations: "disabled" }).catch(() => null)
+          if (!sectionBuffer) continue
+          const sectionFilename = `${safeRoute}-${viewport}-section-${sectionIndex + 1}.png`
+          await import("node:fs/promises").then(({ writeFile }) => writeFile(path.join(runRoot, sectionFilename), sectionBuffer))
+          screenshots.push({ id: `${id}-section-${sectionIndex + 1}`, route, section: `section-${sectionIndex + 1}`, viewport: viewport as keyof typeof FORGE_SCREENSHOT_VIEWPORTS, ...dimensions, relativePath: path.relative(evidenceRoot, path.join(runRoot, sectionFilename)).replaceAll("\\", "/"), sha256: createHash("sha256").update(sectionBuffer).digest("hex"), capturedAt: new Date().toISOString() })
+        }
+        const signal = await page.evaluate<ForgeLayoutSignal>(`(() => { const els=[...document.querySelectorAll('body *')]; const visible=e=>{const s=getComputedStyle(e),r=e.getBoundingClientRect();return s.display!=='none'&&s.visibility!=='hidden'&&r.width>0&&r.height>0}; const rgb=v=>{const m=v.match(/\\d+(?:\\.\\d+)?/g);return m?m.slice(0,3).map(Number):[0,0,0]}; const lum=c=>{const q=c.map(x=>{x/=255;return x<=.03928?x/12.92:Math.pow((x+.055)/1.055,2.4)});return .2126*q[0]+.7152*q[1]+.0722*q[2]}; const low=els.filter(e=>visible(e)&&e.textContent?.trim()&&(()=>{const s=getComputedStyle(e),a=lum(rgb(s.color)),b=lum(rgb(s.backgroundColor));return (Math.max(a,b)+.05)/(Math.min(a,b)+.05)<3})()).length; return {route:${JSON.stringify(route)},viewport:${JSON.stringify(viewport)},documentWidth:document.documentElement.scrollWidth,viewportWidth:innerWidth,hiddenTextCount:els.filter(e=>e.textContent?.trim()&&!visible(e)).length,clippedCount:els.filter(e=>{if(!visible(e))return false;const s=getComputedStyle(e);return ['hidden','clip'].includes(s.overflow)&&e.scrollHeight>e.clientHeight+2}).length,lowContrastCount:low,smallTextCount:els.filter(e=>visible(e)&&e.textContent?.trim()&&parseFloat(getComputedStyle(e).fontSize)<12).length,weakCtaCount:[...document.querySelectorAll('a,button')].filter(e=>/book|quote|contact|call|buy|get started/i.test(e.textContent||'')&&(!visible(e)||e.getBoundingClientRect().height<32)).length,missingHeader:![...document.querySelectorAll('header,nav')].some(visible),missingFooter:![...document.querySelectorAll('footer')].some(visible),layoutShift:performance.getEntriesByType('layout-shift').reduce((n,e)=>n+(e.hadRecentInput?0:e.value),0),animatedHiddenCount:els.filter(e=>e.textContent?.trim()&&getComputedStyle(e).opacity==='0'&&getComputedStyle(e).animationName!=='none').length}; })()`)
+        layoutSignals.push(signal)
+      }
+    } finally { await context.close().catch(() => undefined) }
+  }
+  const findings = evaluateDeterministicVisualSignals(layoutSignals, screenshots)
+  pushLog(`Captured ${screenshots.length} screenshot(s) with ${findings.length} advisory deterministic finding(s).`)
+  return { evaluatorVersion: FORGE_SCREENSHOT_QA_VERSION, screenshots, layoutSignals, findings, proposedRepairs: proposeVisualRepairTasks(findings), evaluator: null, comparison: null }
 }
 
 /* ── Fetch-based smoke fallback (no browser required) ───────────────── */
@@ -443,6 +468,12 @@ async function runFetchSmoke(baseUrl: string, routes: string[], pushLog: (line: 
     return { ok: hasForm, detail: hasForm ? "Contact form fields present in /contact markup." : "Contact form fields not detected on /contact." }
   }))
 
+  tests.push(await timedCheck("style guide renders", async () => {
+    const html = await fetchText(joinUrl(baseUrl, "/style-guide"))
+    const hasStyleGuide = html ? /Generated design-token implementation|Internal style guide|design-token/i.test(html) : false
+    return { ok: hasStyleGuide, detail: hasStyleGuide ? "Generated style-guide route rendered." : "Generated style-guide route did not render expected content." }
+  }))
+
   tests.push(await timedCheck("service pages load", async () => {
     const servicePaths = routes.filter((route) => route !== "/" && !/about|contact/i.test(route)).slice(0, 4)
     if (!servicePaths.length) return { ok: true, detail: "No dedicated service routes to verify." }
@@ -459,34 +490,20 @@ async function runFetchSmoke(baseUrl: string, routes: string[], pushLog: (line: 
 
 /* ── persistence + context ──────────────────────────────────────────── */
 
-async function saveVisualQaReport(projectId: number, report: ForgeVisualQaReport, taskId: number, now: Date) {
+async function saveVisualQaReport(projectId: number, report: ForgeVisualQaReport, taskId: number, actor: string, now: Date) {
   const content = buildForgeVisualQaArtifactContent(report)
-  const [existing] = await db.select().from(forgeArtifacts).where(and(
-    eq(forgeArtifacts.projectId, projectId),
-    eq(forgeArtifacts.type, "visual_qa"),
-    eq(forgeArtifacts.title, FORGE_VISUAL_QA_ARTIFACT_TITLE),
-  )).limit(1)
-
-  const metadataJson = {
-    ...(existing?.metadataJson ?? {}),
+  const upstream = await db.select({ id: forgeArtifacts.id, outputHash: forgeArtifacts.outputHash }).from(forgeArtifacts).where(and(eq(forgeArtifacts.projectId, projectId), eq(forgeArtifacts.approvalState, "approved")))
+  const registry = getForgeAgentRegistryReference("screenshot_visual_qa")
+  return saveVersionedForgeArtifact({
+    projectId, type: "visual_qa", title: FORGE_VISUAL_QA_ARTIFACT_TITLE, content, actor, now,
+    metadataJson: {
     kind: FORGE_VISUAL_QA_ARTIFACT_KIND,
     status: report.status,
     report,
     taskId,
-  }
-
-  const [artifact] = existing
-    ? await db.update(forgeArtifacts).set({ content, metadataJson, updatedAt: now }).where(eq(forgeArtifacts.id, existing.id)).returning()
-    : await db.insert(forgeArtifacts).values({
-      projectId,
-      type: "visual_qa",
-      title: FORGE_VISUAL_QA_ARTIFACT_TITLE,
-      content,
-      metadataJson,
-      updatedAt: now,
-    }).returning()
-
-  return artifact
+    },
+    provenance: { sourceTaskId: taskId, provider: report.screenshotQa.evaluator?.provider ?? "deterministic", model: report.screenshotQa.evaluator?.model ?? `layout-rules-${FORGE_SCREENSHOT_QA_VERSION}`, promptIdentifier: registry.promptIdentifier, promptVersion: registry.promptVersion, schemaIdentifier: registry.schemaIdentifier, schemaVersion: registry.schemaVersion, upstreamArtifacts: upstream, inputContext: { screenshots: report.screenshotQa.screenshots.map(({ id, sha256 }) => ({ id, sha256 })), evaluatorVersion: report.screenshotQa.evaluatorVersion }, validationResult: { valid: true, findingCount: report.screenshotQa.findings.length }, qualityState: report.status === "failed" ? "requires_review" : "validated", approvalState: "unapproved" },
+  })
 }
 
 async function loadVisualQaContext(projectId: number) {
@@ -561,6 +578,7 @@ function skippedSmokeTests(routes: string[]): ForgeSmokeTest[] {
     { name: "homepage loads", status: "skipped", detail: "Browser/preview tooling unavailable.", durationMs: 0 },
     { name: "navigation works", status: "skipped", detail: "Browser/preview tooling unavailable.", durationMs: 0 },
     { name: "contact form renders", status: "skipped", detail: "Browser/preview tooling unavailable.", durationMs: 0 },
+    { name: "style guide renders", status: "skipped", detail: "Browser/preview tooling unavailable.", durationMs: 0 },
     { name: "service pages load", status: "skipped", detail: "Browser/preview tooling unavailable.", durationMs: 0 },
   ]
 }
@@ -601,14 +619,8 @@ function joinUrl(base: string, route: string) {
   return `${base.replace(/\/$/, "")}${normalizedRoute === "/" ? "" : normalizedRoute}` || base
 }
 
-function runNpm(args: string[], cwd: string, timeoutMs: number, pushLog: (line: string) => void) {
-  return runCommand(npmCommand(), args, cwd, timeoutMs, pushLog).then((result) => {
-    if (result.code !== 0) throw new ForgeVisualQaAgentError("Dependency install failed for visual QA preview.", 500)
-  })
-}
-
 function runCommand(bin: string, args: string[], cwd: string, timeoutMs: number, pushLog: (line: string) => void) {
-  const executable = bin === "npm" ? npmCommand() : bin === "npx" ? npxCommand() : bin
+  const executable = bin === "npx" ? npxCommand() : bin
   return new Promise<{ code: number | null }>((resolve) => {
     const child = spawn(executable, args, {
       cwd,
@@ -632,35 +644,6 @@ function attachLogging(child: ChildProcessWithoutNullStreams, pushLog: (line: st
   child.stderr.on("data", push)
 }
 
-async function waitForServer(url: string) {
-  const started = Date.now()
-  while (Date.now() - started < SERVER_READY_TIMEOUT_MS) {
-    try {
-      const response = await fetch(url, { method: "GET", cache: "no-store" })
-      if (response.ok || response.status < 500) return
-    } catch {
-      // keep polling
-    }
-    await delay(1000)
-  }
-  throw new Error("Preview server did not become ready for visual QA.")
-}
-
-function findAvailablePort(basePort: number, host: string) {
-  return new Promise<number>((resolve, reject) => {
-    let offset = 0
-    const tryPort = () => {
-      if (offset >= 50) { reject(new ForgeVisualQaAgentError("No available local port for visual QA preview.", 500)); return }
-      const port = basePort + offset
-      const server = net.createServer()
-      server.once("error", () => { offset += 1; tryPort() })
-      server.once("listening", () => server.close(() => resolve(port)))
-      server.listen(port, host)
-    }
-    tryPort()
-  })
-}
-
 function stopProcess(child: ChildProcessWithoutNullStreams) {
   return new Promise<void>((resolve) => {
     if (child.killed || !child.pid) { resolve(); return }
@@ -675,22 +658,6 @@ function stopProcess(child: ChildProcessWithoutNullStreams) {
   })
 }
 
-function delay(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms))
-}
-
-function npmCommand() {
-  return process.platform === "win32" ? "npm.cmd" : "npm"
-}
-
 function npxCommand() {
   return process.platform === "win32" ? "npx.cmd" : "npx"
-}
-
-function previewEnv(): ForgePreviewEnv {
-  return {
-    FORGE_PREVIEW_HOST: process.env.FORGE_PREVIEW_HOST,
-    FORGE_PREVIEW_PORT_BASE: process.env.FORGE_PREVIEW_PORT_BASE,
-    FORGE_ALLOW_PUBLIC_PREVIEWS: process.env.FORGE_ALLOW_PUBLIC_PREVIEWS,
-  }
 }

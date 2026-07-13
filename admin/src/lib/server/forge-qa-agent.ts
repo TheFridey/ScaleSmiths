@@ -66,7 +66,7 @@ export class ForgeQaAgentError extends Error {
   }
 }
 
-const COMMAND_TIMEOUT_MS = 180_000
+const COMMAND_TIMEOUT_MS = Number.parseInt(process.env.FORGE_QA_COMMAND_TIMEOUT_MS ?? "180000", 10)
 
 export async function runForgeQaAgent(projectId: number, actor: string) {
   await evaluatePersistedProjectTransition({ projectId, to: "qa" })
@@ -109,7 +109,7 @@ export async function runForgeQaAgent(projectId: number, actor: string) {
 
   try {
     const initialReport = await runWorkspaceQa(workspace, qaState.report?.repairHistory ?? [], resendConfig, whatsappConfig, seoPack, design)
-    const report = initialReport.status === "failed"
+    const report = initialReport.status === "failed" && process.env.FORGE_DISABLE_AUTO_REPAIR !== "true"
       ? await runAutomaticRepairLoop({
         projectId,
         actor,
@@ -254,6 +254,10 @@ export async function runForgeRepairAgent(projectId: number, actor: string) {
       })
       repairData = result.data
       repairMetadata = buildForgeTaskOutputMetadata({ ...result, data: result.data })
+      if (result.provider === "mock" && repairData.patches.length === 0) {
+        deterministicFallback = true
+        repairData = await buildForgeDeterministicRepair({ projectId, workspace, report: qaState.report, files: relevantFiles })
+      }
     } catch (error) {
       if (!(error instanceof ForgeAiError)) throw error
       deterministicFallback = true
@@ -624,11 +628,13 @@ async function runWorkspaceQa(
 
 function runWorkspaceCommand(name: ForgeQaCommandName, command: string, cwd: string) {
   const [bin, ...args] = command.split(" ")
-  const executable = bin === "npm" ? npmCommand() : bin
+  const isWindowsNpm = bin === "npm" && process.platform === "win32"
+  const executable = isWindowsNpm ? (process.env.ComSpec ?? "cmd.exe") : bin === "npm" ? "npm" : bin
+  const spawnArgs = isWindowsNpm ? ["/d", "/s", "/c", "npm", ...args] : args
   const started = Date.now()
 
   return new Promise<ForgeQaCommandResult>((resolve) => {
-    const child = spawn(executable, args, {
+    const child = spawn(executable, spawnArgs, {
       cwd,
       env: buildForgeGeneratedProcessEnv(),
       windowsHide: true,
@@ -671,7 +677,6 @@ function runWorkspaceCommand(name: ForgeQaCommandName, command: string, cwd: str
     })
   })
 }
-
 function runDockerWorkspaceCommand(name: ForgeQaCommandName, command: string, cwd: string, network: ForgeSandboxNetworkMode) {
   const sandbox = resolveForgeSandboxConfig()
   const args = buildForgeDockerRunArgs({
@@ -783,7 +788,7 @@ async function loadQaContext(projectId: number) {
       eq(forgeArtifacts.projectId, projectId),
       eq(forgeArtifacts.type, "qa_report"),
       eq(forgeArtifacts.title, FORGE_QA_ARTIFACT_TITLE),
-    )).orderBy(desc(forgeArtifacts.updatedAt)).limit(1),
+    )).orderBy(desc(forgeArtifacts.version), desc(forgeArtifacts.updatedAt)).limit(1),
     db.select({ metadataJson: forgeArtifacts.metadataJson }).from(forgeArtifacts).where(and(
       eq(forgeArtifacts.projectId, projectId),
       eq(forgeArtifacts.type, "seo_pack"),
@@ -1002,6 +1007,3 @@ async function markTaskFailed(projectId: number, taskId: number, actor: string, 
   })
 }
 
-function npmCommand() {
-  return process.platform === "win32" ? "npm.cmd" : "npm"
-}

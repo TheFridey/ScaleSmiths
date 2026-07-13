@@ -6,6 +6,8 @@ import { usePathname } from "next/navigation"
 import { signOut } from "next-auth/react"
 import {
   ClipboardList,
+  CalendarClock,
+  BarChart3,
   Gauge,
   GitBranch,
   LayoutDashboard,
@@ -28,6 +30,9 @@ const NAV: Array<{ href: string; label: string; Icon: typeof LayoutDashboard; ca
   { href: "/requests", label: "Requests", Icon: ClipboardList, capability: "clients.read" },
   { href: "/prospects", label: "Pipeline", Icon: Target, capability: "leads.read" },
   { href: "/forge", label: "Forge", Icon: Gauge, capability: "forge.read" },
+  { href: "/operations/brief", label: "Brief", Icon: CalendarClock, capability: "projects.read" },
+  { href: "/operations/capacity", label: "Capacity", Icon: CalendarClock, capability: "projects.read" },
+  { href: "/operations/experience-analytics", label: "Experience", Icon: BarChart3, capability: "leads.read" },
   { href: "/roadmap", label: "Roadmap", Icon: GitBranch, capability: "projects.read" },
   { href: "/messages", label: "Messages", Icon: MessageSquare, capability: "clients.read" },
   { href: "/users", label: "Admin users", Icon: UserCog, capability: "users.manage" },

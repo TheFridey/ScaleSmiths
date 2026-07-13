@@ -4,6 +4,7 @@ import type { FormEvent, ReactNode } from "react"
 import { useMemo, useRef, useState } from "react"
 import { motion, useReducedMotion } from "framer-motion"
 import { CheckCircle2, ClipboardList, MailCheck, Send, Sparkles } from "lucide-react"
+import { trackExperienceEvent } from "@/lib/experience-analytics-client"
 import type { V2Industry } from "@/lib/v2/scenes"
 import { getIndustryContent, industryContent } from "@/lib/v2/industryContent"
 
@@ -130,11 +131,13 @@ export function V2ConversionLayer({ industry }: V2ConversionLayerProps) {
 
   function updateField<Key extends keyof ConversionFormData>(key: Key, value: ConversionFormData[Key]) {
     setError("")
+    trackExperienceEvent("quote_form_started", { preference: "interactive", metadata: { source: "interactive_conversion", step: key } })
     setFormData((current) => ({ ...current, [key]: value }))
   }
 
   function chooseIntent(nextIntent: ConversionIntent) {
     setIntent(nextIntent)
+    trackExperienceEvent("quote_cta_clicked", { preference: "interactive", metadata: { target: nextIntent } })
     formRef.current?.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "center" })
   }
 
@@ -199,8 +202,10 @@ export function V2ConversionLayer({ industry }: V2ConversionLayerProps) {
         throw new Error(json.error || "Unable to send this plan right now.")
       }
 
+      trackExperienceEvent("quote_form_submitted", { preference: "interactive", metadata: { source: "interactive_conversion" } })
       setSubmitted(true)
     } catch (err) {
+      trackExperienceEvent("experience_error", { preference: "interactive", errorCategory: "quote_submission", metadata: { source: "interactive_conversion" } })
       setError(err instanceof Error ? err.message : "Unable to send this plan right now.")
     } finally {
       setSubmitting(false)

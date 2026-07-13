@@ -1,7 +1,7 @@
 import "server-only"
 import { getForgeAgentRegistryReference } from "@/lib/forge-prompt-registry"
 import { evaluatePersistedProjectTransition } from "./forge-workflow"
-import { and, eq } from "drizzle-orm"
+import { and, desc, eq } from "drizzle-orm"
 import type { ForgeAiResult, JsonValue } from "@/lib/forge-ai"
 import { db } from "@/lib/db"
 import { buildForgeTaskOutputMetadata, ForgeAiError, runForgeAiJson } from "@/lib/server/forge-ai"
@@ -17,8 +17,11 @@ import {
 } from "@/lib/forge-component-spec"
 import { FORGE_COPY_ARTIFACT_TITLE, readForgeCopyDocumentArtifact } from "@/lib/forge-copy"
 import { FORGE_DESIGN_ARTIFACT_TITLE, readForgeDesignDirectionArtifact } from "@/lib/forge-design"
+import { FORGE_DESIGN_SYSTEM_ARTIFACT_TITLE, readForgeDesignSystemArtifact } from "@/lib/forge-design-system"
 import { FORGE_SITEMAP_ARTIFACT_TITLE, readForgeSitemapStrategyArtifact } from "@/lib/forge-sitemap"
 import { forgeActivityLogs, forgeArtifacts, forgeProjects, forgeTasks } from "@/lib/schema"
+import { buildForgeHumanEditTracking, mergeHumanEditTracking } from "@/lib/forge-human-edits"
+import { appendArtifactDecision, parseForgeArtifactDecision } from "@/lib/forge-approval-intelligence"
 
 export class ForgeComponentSpecAgentError extends Error {
   safeMessage: string
@@ -34,7 +37,7 @@ export class ForgeComponentSpecAgentError extends Error {
 
 export async function runForgeComponentSpecAgent(projectId: number, actor: string) {
   await evaluatePersistedProjectTransition({ projectId, to: "build" })
-  const { project, approvedSitemap, approvedCopy, approvedDesign } = await loadComponentSpecContext(projectId)
+  const { project, approvedSitemap, approvedCopy, approvedDesign, approvedDesignSystem } = await loadComponentSpecContext(projectId)
 
   if (project.status === "archived") {
     throw new ForgeComponentSpecAgentError("Archived Forge projects cannot generate component specs.", 400)
@@ -43,6 +46,7 @@ export async function runForgeComponentSpecAgent(projectId: number, actor: strin
   if (!approvedSitemap) throw new ForgeComponentSpecAgentError("Approve the sitemap before generating component specs.", 400)
   if (!approvedCopy) throw new ForgeComponentSpecAgentError("Approve copy before generating component specs.", 400)
   if (!approvedDesign) throw new ForgeComponentSpecAgentError("Approve design direction before generating component specs.", 400)
+  if (!approvedDesignSystem) throw new ForgeComponentSpecAgentError("Approve the design-system specification before generating component specs.", 400)
 
   const now = new Date()
   const [task] = await db.transaction(async (tx) => {
@@ -61,6 +65,8 @@ export async function runForgeComponentSpecAgent(projectId: number, actor: strin
           copyPages: approvedCopy.pages.map((page) => page.path),
           designStyle: approvedDesign.designStyleName,
           selectedStylePack: approvedDesign.selectedStylePack,
+          designSystemVersion: approvedDesignSystem.version,
+          designSystemRequiredTokens: approvedDesignSystem.requiredTokenIds,
         },
         updatedAt: now,
       })
@@ -197,7 +203,7 @@ export async function runForgeComponentSpecAgent(projectId: number, actor: strin
         "Do not generate code. Return structured JSON only.",
         "Every required reusable component must be included.",
       ].join(" "),
-      prompt: buildForgeComponentSpecPrompt({ approvedSitemap, approvedCopy, approvedDesign }),
+      prompt: buildForgeComponentSpecPrompt({ approvedSitemap, approvedCopy, approvedDesign, approvedDesignSystem }),
       maxTokens: 3000,
       timeoutMs: 35_000,
       maxRetries: 2,
@@ -277,7 +283,14 @@ export async function approveForgeComponentSpec(projectId: number, actor: string
       ))
       .limit(1)
 
-    const metadataJson = {
+    const editTracking = existing ? buildForgeHumanEditTracking({
+      artifact: existing,
+      approvedContent: content,
+      editor: actor,
+      reason: "Component specification reviewed and approved.",
+      now,
+    }) : null
+    const baseMetadataJson = {
       ...(existing?.metadataJson ?? {}),
       kind: FORGE_COMPONENT_SPEC_ARTIFACT_KIND,
       status: "approved",
@@ -286,11 +299,14 @@ export async function approveForgeComponentSpec(projectId: number, actor: string
       approvedAt: now.toISOString(),
       approvedBy: actor,
     }
+    const approvalDecision = parseForgeArtifactDecision({ decision: "approved", primaryReason: "Component specification reviewed and approved.", category: "technical_issue", severity: "low", affectsFutureRegeneration: false, acceptanceScope: "partial_acceptance" }, actor, now)
+    const decisionState = appendArtifactDecision(baseMetadataJson, existing?.approvalHistory, approvalDecision)
+    const metadataJson = editTracking ? mergeHumanEditTracking(decisionState.metadataJson, editTracking) : decisionState.metadataJson
 
     const [saved] = existing
       ? await tx
         .update(forgeArtifacts)
-        .set({ content, metadataJson, updatedAt: now })
+        .set({ content, metadataJson, approvalState: "approved", approvalHistory: decisionState.approvalHistory, updatedAt: now })
         .where(eq(forgeArtifacts.id, existing.id))
         .returning()
       : await tx
@@ -301,6 +317,8 @@ export async function approveForgeComponentSpec(projectId: number, actor: string
           title: FORGE_COMPONENT_SPEC_ARTIFACT_TITLE,
           content,
           metadataJson,
+          approvalState: "approved",
+          approvalHistory: decisionState.approvalHistory,
           updatedAt: now,
         })
         .returning()
@@ -315,6 +333,8 @@ export async function approveForgeComponentSpec(projectId: number, actor: string
         componentCount: parsed.data.components.length,
         pageCount: parsed.data.pages.length,
         approvedAt: now.toISOString(),
+        humanEditTracking: editTracking,
+        approvalDecision,
       },
     })
 
@@ -332,32 +352,24 @@ async function loadComponentSpecContext(projectId: number) {
   const [project] = await db.select().from(forgeProjects).where(eq(forgeProjects.id, projectId)).limit(1)
   if (!project) throw new ForgeComponentSpecAgentError("Forge project not found.", 404)
 
-  const [sitemapArtifacts, copyArtifacts, designArtifacts, specArtifacts] = await Promise.all([
-    db.select({ metadataJson: forgeArtifacts.metadataJson }).from(forgeArtifacts).where(and(
-      eq(forgeArtifacts.projectId, projectId),
-      eq(forgeArtifacts.type, "sitemap"),
-      eq(forgeArtifacts.title, FORGE_SITEMAP_ARTIFACT_TITLE),
-    )).limit(1),
-    db.select({ metadataJson: forgeArtifacts.metadataJson }).from(forgeArtifacts).where(and(
-      eq(forgeArtifacts.projectId, projectId),
-      eq(forgeArtifacts.type, "copy_doc"),
-      eq(forgeArtifacts.title, FORGE_COPY_ARTIFACT_TITLE),
-    )).limit(1),
-    db.select({ metadataJson: forgeArtifacts.metadataJson }).from(forgeArtifacts).where(and(
-      eq(forgeArtifacts.projectId, projectId),
-      eq(forgeArtifacts.type, "design_direction"),
-      eq(forgeArtifacts.title, FORGE_DESIGN_ARTIFACT_TITLE),
-    )).limit(1),
-    db.select({ metadataJson: forgeArtifacts.metadataJson }).from(forgeArtifacts).where(and(
-      eq(forgeArtifacts.projectId, projectId),
-      eq(forgeArtifacts.type, "component_spec"),
-      eq(forgeArtifacts.title, FORGE_COMPONENT_SPEC_ARTIFACT_TITLE),
-    )).limit(1),
+  const latestArtifact = (type: "sitemap" | "copy_doc" | "design_direction" | "design_system" | "component_spec", title: string) => db
+    .select({ metadataJson: forgeArtifacts.metadataJson })
+    .from(forgeArtifacts)
+    .where(and(eq(forgeArtifacts.projectId, projectId), eq(forgeArtifacts.type, type), eq(forgeArtifacts.title, title)))
+    .orderBy(desc(forgeArtifacts.version), desc(forgeArtifacts.updatedAt))
+    .limit(1)
+  const [sitemapArtifacts, copyArtifacts, designArtifacts, designSystemArtifacts, specArtifacts] = await Promise.all([
+    latestArtifact("sitemap", FORGE_SITEMAP_ARTIFACT_TITLE),
+    latestArtifact("copy_doc", FORGE_COPY_ARTIFACT_TITLE),
+    latestArtifact("design_direction", FORGE_DESIGN_ARTIFACT_TITLE),
+    latestArtifact("design_system", FORGE_DESIGN_SYSTEM_ARTIFACT_TITLE),
+    latestArtifact("component_spec", FORGE_COMPONENT_SPEC_ARTIFACT_TITLE),
   ])
 
   const sitemap = readForgeSitemapStrategyArtifact(sitemapArtifacts[0]?.metadataJson)
   const copy = readForgeCopyDocumentArtifact(copyArtifacts[0]?.metadataJson)
   const design = readForgeDesignDirectionArtifact(designArtifacts[0]?.metadataJson)
+  const designSystem = readForgeDesignSystemArtifact(designSystemArtifacts[0]?.metadataJson)
   const componentSpec = readForgeComponentSpecArtifact(specArtifacts[0]?.metadataJson)
 
   return {
@@ -365,6 +377,7 @@ async function loadComponentSpecContext(projectId: number) {
     approvedSitemap: sitemap.approvedStrategy,
     approvedCopy: copy.approvedCopy,
     approvedDesign: design.approvedDirection,
+    approvedDesignSystem: designSystem.approvedSpecification,
     existingSpec: componentSpec.spec,
   }
 }

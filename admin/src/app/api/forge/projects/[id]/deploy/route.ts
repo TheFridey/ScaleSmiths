@@ -2,6 +2,8 @@ import { NextResponse } from "next/server"
 import { auth } from "../../../../../../../auth"
 import { ForgeDeployError, runForgeDeployAgent, type ForgeDeployAction } from "@/lib/server/forge-deploy-agent"
 import { isForgeDeployMethod, type ForgeDeployConfirmations } from "@/lib/forge-deploy"
+import { guardApiCapability } from "@/lib/server/rbac"
+import { ForgeDeploymentCandidateError } from "@/lib/server/forge-deployment-candidates"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -35,6 +37,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (!session) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 })
   }
+  await guardApiCapability("deployments.execute")
 
   const { id: rawId } = await params
   const projectId = parseId(rawId)
@@ -58,7 +61,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     })
     return NextResponse.json(result)
   } catch (error) {
-    if (error instanceof ForgeDeployError) {
+    if (error instanceof ForgeDeployError || error instanceof ForgeDeploymentCandidateError) {
       return NextResponse.json({ error: error.safeMessage }, { status: error.status })
     }
 

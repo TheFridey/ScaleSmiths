@@ -15,7 +15,10 @@ import {
   findForgeProposalOverpromises,
   type ForgeProposalInputs,
 } from "@/lib/forge-proposal"
-import { forgeActivityLogs, forgeArtifacts, forgeIntegrationConfigs, forgeProjects, forgeTasks } from "@/lib/schema"
+import { forgeActivityLogs, forgeArtifacts, forgeIntegrationConfigs, forgeProjects, forgeTasks, outreachActivities, prospects } from "@/lib/schema"
+import { saveVersionedForgeArtifact } from "./forge-artifacts"
+import { getLatestProjectEstimateSnapshot } from "./project-estimator"
+import type { ProjectEstimateResult } from "@/lib/project-estimator"
 
 type ForgeArtifactTypeName = "handover_doc" | "research_report" | "sitemap" | "seo_pack" | "generated_code" | "qa_report"
 
@@ -78,7 +81,7 @@ export async function runForgeProposalAgent(projectId: number, actor: string, ac
     }
 
     const completedAt = new Date()
-    const artifact = await saveProposalBundle(projectId, bundle, task.id, completedAt)
+    const artifact = await saveProposalBundle(projectId, bundle, task.id, completedAt, actor)
 
     await db.transaction(async (tx) => {
       await tx.update(forgeTasks).set({
@@ -132,41 +135,47 @@ export async function runForgeProposalAgent(projectId: number, actor: string, ac
   }
 }
 
-async function saveProposalBundle(projectId: number, bundle: ReturnType<typeof buildForgeProposalBundle>, taskId: number, now: Date) {
+async function saveProposalBundle(projectId: number, bundle: ReturnType<typeof buildForgeProposalBundle>, taskId: number, now: Date, actor: string) {
   const content = buildForgeProposalArtifactContent(bundle)
-  const [existing] = await db.select().from(forgeArtifacts).where(and(
-    eq(forgeArtifacts.projectId, projectId),
-    eq(forgeArtifacts.type, "proposal"),
-    eq(forgeArtifacts.title, FORGE_PROPOSAL_ARTIFACT_TITLE),
-  )).limit(1)
-
   const metadataJson = {
-    ...(existing?.metadataJson ?? {}),
     kind: FORGE_PROPOSAL_ARTIFACT_KIND,
     status: "generated",
     bundle,
     taskId,
   }
-
-  const [artifact] = existing
-    ? await db.update(forgeArtifacts).set({ content, metadataJson, updatedAt: now }).where(eq(forgeArtifacts.id, existing.id)).returning()
-    : await db.insert(forgeArtifacts).values({
-      projectId,
-      type: "proposal",
-      title: FORGE_PROPOSAL_ARTIFACT_TITLE,
-      content,
-      metadataJson,
-      updatedAt: now,
-    }).returning()
-
-  return artifact
+  return saveVersionedForgeArtifact({
+    projectId,
+    type: "proposal",
+    title: FORGE_PROPOSAL_ARTIFACT_TITLE,
+    content,
+    metadataJson,
+    actor,
+    action: "proposal_version_saved",
+    message: `Saved proposal version for project ${projectId}.`,
+    now,
+    provenance: {
+      sourceTaskId: taskId,
+      provider: "deterministic",
+      model: "forge-proposal-personalisation-v1",
+      promptIdentifier: "forge.proposal.personalised",
+      promptVersion: "1.0.0",
+      schemaIdentifier: "forge.proposal.bundle",
+      schemaVersion: "2.0.0",
+      upstreamArtifacts: [],
+      inputContext: { businessName: bundle.businessName, evidenceMap: bundle.evidenceMap, estimate: bundle.proposal.buildPricePlaceholder },
+      actor,
+      validationResult: { valid: true, supportingRecords: bundle.evidenceMap.length, assumptions: bundle.proposal.assumptionsRequiringConfirmation.length },
+      qualityState: "requires_review",
+      approvalState: "unapproved",
+    },
+  })
 }
 
 async function loadProposalContext(projectId: number): Promise<{ project: typeof forgeProjects.$inferSelect; inputs: ForgeProposalInputs }> {
   const [project] = await db.select().from(forgeProjects).where(eq(forgeProjects.id, projectId)).limit(1)
   if (!project) throw new ForgeProposalAgentError("Forge project not found.", 404)
 
-  const [intakeArtifacts, researchArtifacts, sitemapArtifacts, seoArtifacts, generatedCodeArtifacts, qaArtifacts, integrations] = await Promise.all([
+  const [intakeArtifacts, researchArtifacts, sitemapArtifacts, seoArtifacts, generatedCodeArtifacts, qaArtifacts, integrations, estimate, leadEvidence] = await Promise.all([
     selectArtifact(projectId, "handover_doc", FORGE_INTAKE_ARTIFACT_TITLE),
     selectArtifact(projectId, "research_report", FORGE_RESEARCH_ARTIFACT_TITLE),
     selectArtifact(projectId, "sitemap", FORGE_SITEMAP_ARTIFACT_TITLE),
@@ -177,6 +186,8 @@ async function loadProposalContext(projectId: number): Promise<{ project: typeof
       provider: forgeIntegrationConfigs.provider,
       enabled: forgeIntegrationConfigs.enabled,
     }).from(forgeIntegrationConfigs).where(eq(forgeIntegrationConfigs.projectId, projectId)),
+    getLatestProjectEstimateSnapshot(projectId),
+    loadLeadEvidence(project.prospectId),
   ])
 
   const intakeState = readForgeIntakeArtifact(intakeArtifacts[0]?.metadataJson)
@@ -205,9 +216,39 @@ async function loadProposalContext(projectId: number): Promise<{ project: typeof
     generatedSite: generated.summary,
     qa: qa.report,
     integrations: integrations.map((integration) => ({ provider: String(integration.provider), enabled: Boolean(integration.enabled) })),
+    estimate: estimate ? estimateSnapshotToResult(estimate) : null,
+    leadEvidence,
   }
 
   return { project, inputs }
+}
+
+export async function recordForgeProposalApproval(projectId: number, actor: string, input: { state: "approved" | "rejected"; reason: string }) {
+  const artifact = await latestProposalArtifact(projectId)
+  if (!artifact) throw new ForgeProposalAgentError("Generate a proposal before recording approval.", 404)
+  const metadata = artifact.metadataJson ?? {}
+  const bundle = metadata.bundle as ReturnType<typeof buildForgeProposalBundle> | undefined
+  if (!bundle) throw new ForgeProposalAgentError("Proposal bundle is missing.", 400)
+  const now = new Date()
+  const updated = { ...bundle, approval: { state: input.state, actor, reason: input.reason, decidedAt: now.toISOString() } }
+  const history = [...(Array.isArray(artifact.approvalHistory) ? artifact.approvalHistory : []), { state: input.state, actor, reason: input.reason, at: now.toISOString() }]
+  const [saved] = await db.update(forgeArtifacts).set({ metadataJson: { ...metadata, bundle: updated }, approvalState: input.state, approvalHistory: history, updatedAt: now }).where(eq(forgeArtifacts.id, artifact.id)).returning()
+  await db.insert(forgeActivityLogs).values({ projectId, actor, action: `proposal_${input.state}`, message: `${input.state === "approved" ? "Approved" : "Rejected"} proposal version ${artifact.version}.`, metadataJson: { artifactId: artifact.id, version: artifact.version, reason: input.reason } })
+  return saved
+}
+
+export async function recordForgeProposalClientResponse(projectId: number, actor: string, input: { response: "accepted" | "changes_requested" | "declined" | "no_response"; contact?: string | null; notes?: string | null }) {
+  const artifact = await latestProposalArtifact(projectId)
+  if (!artifact) throw new ForgeProposalAgentError("Generate a proposal before recording a client response.", 404)
+  const metadata = artifact.metadataJson ?? {}
+  const bundle = metadata.bundle as ReturnType<typeof buildForgeProposalBundle> | undefined
+  if (!bundle) throw new ForgeProposalAgentError("Proposal bundle is missing.", 400)
+  const now = new Date()
+  const clientResponse = { response: input.response, contact: input.contact ?? null, notes: input.notes ?? null, receivedAt: now.toISOString() }
+  const updated = { ...bundle, clientResponse }
+  const [saved] = await db.update(forgeArtifacts).set({ metadataJson: { ...metadata, bundle: updated, clientResponseHistory: [...(Array.isArray(metadata.clientResponseHistory) ? metadata.clientResponseHistory : []), clientResponse] }, updatedAt: now }).where(eq(forgeArtifacts.id, artifact.id)).returning()
+  await db.insert(forgeActivityLogs).values({ projectId, actor, action: "proposal_client_response", message: `Recorded client response for proposal version ${artifact.version}: ${input.response}.`, metadataJson: { artifactId: artifact.id, version: artifact.version, response: input.response } })
+  return saved
 }
 
 function readResearchReport(metadata: Record<string, unknown> | null | undefined): ForgeResearchReport | null {
@@ -232,4 +273,48 @@ async function selectArtifact(projectId: number, type: ForgeArtifactTypeName, ti
     ))
     .orderBy(desc(forgeArtifacts.updatedAt))
     .limit(1)
+}
+
+async function latestProposalArtifact(projectId: number) {
+  return (await db.select().from(forgeArtifacts).where(and(eq(forgeArtifacts.projectId, projectId), eq(forgeArtifacts.type, "proposal"), eq(forgeArtifacts.title, FORGE_PROPOSAL_ARTIFACT_TITLE))).orderBy(desc(forgeArtifacts.version), desc(forgeArtifacts.updatedAt)).limit(1))[0] ?? null
+}
+
+async function loadLeadEvidence(prospectId: number | null) {
+  if (!prospectId) return null
+  const [prospect, activities] = await Promise.all([
+    db.select().from(prospects).where(eq(prospects.id, prospectId)).limit(1),
+    db.select().from(outreachActivities).where(eq(outreachActivities.prospectId, prospectId)).orderBy(desc(outreachActivities.createdAt)).limit(8),
+  ])
+  const row = prospect[0]
+  if (!row) return null
+  return {
+    painPoints: [row.painPoints, row.objectionNotes, row.opportunityNotes].filter((value): value is string => Boolean(value?.trim())),
+    discoveryNotes: activities.flatMap((activity) => [activity.subject, activity.body, activity.outcome]).filter((value): value is string => Boolean(value?.trim())).slice(0, 8),
+    sourceRecords: [
+      { label: `Prospect ${row.businessName}`, recordType: "prospect", recordId: row.id },
+      ...activities.map((activity) => ({ label: activity.subject ?? activity.outcome ?? activity.type, recordType: "outreach_activity", recordId: activity.id })),
+    ],
+  }
+}
+
+function estimateSnapshotToResult(snapshot: Awaited<ReturnType<typeof getLatestProjectEstimateSnapshot>>): ProjectEstimateResult | null {
+  if (!snapshot) return null
+  return {
+    modelVersion: snapshot.modelVersion,
+    estimatedHours: snapshot.manualHours ?? snapshot.estimatedHours,
+    confidenceRange: snapshot.confidenceRange,
+    confidence: snapshot.confidence as ProjectEstimateResult["confidence"],
+    complexityRating: snapshot.complexityRating,
+    riskFactors: snapshot.riskFactors,
+    suggestedBuildPrice: snapshot.manualBuildPrice ?? snapshot.suggestedBuildPrice,
+    suggestedRetainer: snapshot.manualRetainer ?? snapshot.suggestedRetainer,
+    minimumViableScope: snapshot.minimumViableScope,
+    optionalEnhancements: snapshot.optionalEnhancements,
+    estimatedDeliveryRange: snapshot.estimatedDeliveryRange,
+    marginEstimate: snapshot.marginEstimate,
+    knownInputs: snapshot.knownInputs,
+    assumptions: snapshot.assumptions,
+    underpricingRisks: snapshot.underpricingRisks,
+    disclaimer: snapshot.disclaimer,
+  }
 }

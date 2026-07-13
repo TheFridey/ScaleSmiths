@@ -4,7 +4,7 @@ export const FORGE_PROJECT_STATUSES = ["intake", "research", "strategy", "sitema
 export const FORGE_PRIORITIES = ["low", "medium", "high"] as const
 export const FORGE_TASK_AGENT_TYPES = ["intake", "research", "strategy", "sitemap", "copy", "design", "frontend", "integration", "seo", "qa", "deploy", "repair"] as const
 export const FORGE_TASK_STATUSES = ["queued", "running", "completed", "failed", "cancelled"] as const
-export const FORGE_ARTIFACT_TYPES = ["research_report", "sitemap", "copy_doc", "design_direction", "component_spec", "generated_code", "visual_critique", "qa_report", "seo_pack", "visual_qa", "proposal", "handover_doc", "deployment_notes", "export_record"] as const
+export const FORGE_ARTIFACT_TYPES = ["research_report", "sitemap", "copy_doc", "design_direction", "design_system", "component_spec", "generated_code", "visual_critique", "qa_report", "seo_pack", "visual_qa", "accessibility_report", "proposal", "handover_doc", "deployment_notes", "export_record", "consistency_report", "copy_quality_report", "council_review", "originality_report", "site_inventory", "migration_analysis", "migration_candidate"] as const
 export const FORGE_INTEGRATION_PROVIDERS = ["resend", "whatsapp", "analytics", "calendly", "stripe", "cloudinary", "custom"] as const
 
 export type ForgeProjectStatus = (typeof FORGE_PROJECT_STATUSES)[number]

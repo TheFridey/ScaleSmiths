@@ -21,6 +21,7 @@ import {
   type ProspectSource,
   type ProspectStage,
 } from "@/lib/prospects"
+import type { LeadScoreFactor, LeadScoreOutcome } from "@/lib/lead-scoring"
 
 const T = { s1:"var(--s1)",s2:"var(--s2)",s3:"var(--s3)",b1:"var(--b1)",b2:"var(--b2)",t1:"var(--t1)",t2:"var(--t2)",t3:"var(--t3)",acc:"var(--acc)",grn:"var(--grn)",amb:"var(--amb)",red:"var(--red)" }
 
@@ -105,6 +106,33 @@ interface SalesProposal {
   sentAt: DateLike
 }
 
+interface LeadScoreSnapshot {
+  id: number
+  prospectId: number
+  score: number
+  confidence: string
+  probabilityOfClosing: number
+  estimatedProjectValue: number
+  estimatedRetainerPotential: number
+  recommendedNextAction: string
+  positiveFactors: LeadScoreFactor[]
+  negativeFactors: LeadScoreFactor[]
+  neutralFactors: LeadScoreFactor[]
+  missingInformation: string[]
+  affectedData: Array<{ field: string; value: string | number | boolean | null; note: string }>
+  modelVersion: string
+  overrideScore: number | null
+  overrideReason: string | null
+  overrideBy: string | null
+  overrideAt: DateLike
+  outcome: LeadScoreOutcome | null
+  outcomeValue: number | null
+  outcomeRetainer: number | null
+  outcomeNotes: string | null
+  outcomeRecordedAt: DateLike
+  createdAt: DateLike
+}
+
 type SalesMetrics = ReturnType<typeof computeSalesMetrics>
 
 interface ProspectPipelineProps {
@@ -112,6 +140,7 @@ interface ProspectPipelineProps {
   initialActivities: OutreachActivity[]
   initialProposals: ProposalTracking[]
   initialSalesProposals: SalesProposal[]
+  initialLeadScores: Record<number, LeadScoreSnapshot>
 }
 
 const STAGE_COLOR: Record<ProspectStage, string> = {
@@ -126,12 +155,13 @@ const STAGE_COLOR: Record<ProspectStage, string> = {
   lost: "#ef4444",
 }
 
-export function ProspectPipeline({ initialProspects, initialActivities, initialProposals, initialSalesProposals }: ProspectPipelineProps) {
+export function ProspectPipeline({ initialProspects, initialActivities, initialProposals, initialSalesProposals, initialLeadScores }: ProspectPipelineProps) {
   const router = useRouter()
   const [prospects, setProspects] = useState(initialProspects)
   const [activities, setActivities] = useState(initialActivities)
   const [proposals, setProposals] = useState(initialProposals)
   const [salesProposals, setSalesProposals] = useState(initialSalesProposals)
+  const [leadScores, setLeadScores] = useState<Record<number, LeadScoreSnapshot>>(initialLeadScores)
   const [selectedId, setSelectedId] = useState(initialProspects[0]?.id ?? null)
   const [view, setView] = useState<"pipeline" | "followups">("pipeline")
   const [showNew, setShowNew] = useState(initialProspects.length === 0)
@@ -144,14 +174,16 @@ export function ProspectPipeline({ initialProspects, initialActivities, initialP
     setActivities(initialActivities)
     setProposals(initialProposals)
     setSalesProposals(initialSalesProposals)
+    setLeadScores(initialLeadScores)
     setSelectedId((current) => current ?? initialProspects[0]?.id ?? null)
-  }, [initialProspects, initialActivities, initialProposals, initialSalesProposals])
+  }, [initialProspects, initialActivities, initialProposals, initialSalesProposals, initialLeadScores])
 
   const selected = prospects.find((prospect) => prospect.id === selectedId) ?? prospects[0] ?? null
   const metrics = useMemo(() => computeSalesMetrics(prospects, activities, proposals), [prospects, activities, proposals])
   const selectedActivities = activities.filter((activity) => activity.prospectId === selected?.id)
   const selectedProposals = proposals.filter((proposal) => proposal.prospectId === selected?.id)
   const selectedSalesProposals = salesProposals.filter((proposal) => proposal.prospectId === selected?.id)
+  const selectedLeadScore = selected ? leadScores[selected.id] ?? null : null
   const followUps = useMemo(() => ({
     today: prospects.filter((prospect) => getFollowUpBucket(prospect.nextFollowUpAt) === "today" && !isClosed(prospect)),
     overdue: prospects.filter((prospect) => getFollowUpBucket(prospect.nextFollowUpAt) === "overdue" && !isClosed(prospect)),
@@ -298,6 +330,60 @@ export function ProspectPipeline({ initialProspects, initialActivities, initialP
     await patchProspect(selected.id, { action: "markLost", lostReason }, "lost")
   }
 
+  async function refreshLeadScore(prospectId = selected?.id) {
+    if (!prospectId) return
+    setBusy(`lead-score-${prospectId}`)
+    setError("")
+
+    try {
+      const json = await api(`/api/prospects/${prospectId}/lead-score`, { method: "POST", body: {} })
+      setLeadScores((current) => ({ ...current, [prospectId]: json.snapshot }))
+      router.refresh()
+    } catch (err) {
+      setError(errorMessage(err, "Unable to score lead."))
+    } finally {
+      setBusy("")
+    }
+  }
+
+  async function overrideLeadScore(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!selected) return
+
+    const body = { action: "override", ...Object.fromEntries(new FormData(event.currentTarget)) }
+    setBusy("lead-score-override")
+    setError("")
+
+    try {
+      const json = await api(`/api/prospects/${selected.id}/lead-score`, { method: "PATCH", body })
+      setLeadScores((current) => ({ ...current, [selected.id]: json.snapshot }))
+      router.refresh()
+    } catch (err) {
+      setError(errorMessage(err, "Unable to override score."))
+    } finally {
+      setBusy("")
+    }
+  }
+
+  async function recordLeadScoreOutcome(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!selected) return
+
+    const body = { action: "outcome", ...Object.fromEntries(new FormData(event.currentTarget)) }
+    setBusy("lead-score-outcome")
+    setError("")
+
+    try {
+      const json = await api(`/api/prospects/${selected.id}/lead-score`, { method: "PATCH", body })
+      setLeadScores((current) => ({ ...current, [selected.id]: json.snapshot }))
+      router.refresh()
+    } catch (err) {
+      setError(errorMessage(err, "Unable to record outcome."))
+    } finally {
+      setBusy("")
+    }
+  }
+
   async function patchProspect(id: number, body: Record<string, unknown>, busyKey: string) {
     setBusy(busyKey)
     setError("")
@@ -388,6 +474,7 @@ export function ProspectPipeline({ initialProspects, initialActivities, initialP
             activities={selectedActivities}
             proposals={selectedProposals}
             salesProposals={selectedSalesProposals}
+            leadScore={selectedLeadScore}
             busy={busy}
             onUpdate={updateProspect}
             onStage={(stage) => selected && moveStage(selected, stage)}
@@ -396,6 +483,9 @@ export function ProspectPipeline({ initialProspects, initialActivities, initialP
             onProposal={markProposalSent}
             onGenerateProposal={generateProposal}
             onSaveSalesProposal={saveSalesProposal}
+            onRefreshLeadScore={refreshLeadScore}
+            onOverrideLeadScore={overrideLeadScore}
+            onRecordLeadScoreOutcome={recordLeadScoreOutcome}
             onWon={() => selected && patchProspect(selected.id, { action:"markWon" }, "won")}
             onLost={markLost}
             onConvert={() => selected && patchProspect(selected.id, { action:"convertToClient" }, "convert")}
@@ -496,11 +586,12 @@ function KanbanBoard({ prospects, selectedId, dragging, setDragging, onMove, onS
   )
 }
 
-function DetailPanel({ prospect, activities, proposals, salesProposals, busy, onUpdate, onStage, onFollowUp, onActivity, onProposal, onGenerateProposal, onSaveSalesProposal, onWon, onLost, onConvert }: {
+function DetailPanel({ prospect, activities, proposals, salesProposals, leadScore, busy, onUpdate, onStage, onFollowUp, onActivity, onProposal, onGenerateProposal, onSaveSalesProposal, onRefreshLeadScore, onOverrideLeadScore, onRecordLeadScoreOutcome, onWon, onLost, onConvert }: {
   prospect: Prospect | null
   activities: OutreachActivity[]
   proposals: ProposalTracking[]
   salesProposals: SalesProposal[]
+  leadScore: LeadScoreSnapshot | null
   busy: string
   onUpdate: (event: FormEvent<HTMLFormElement>) => void
   onStage: (stage: ProspectStage) => void
@@ -509,6 +600,9 @@ function DetailPanel({ prospect, activities, proposals, salesProposals, busy, on
   onProposal: (event: FormEvent<HTMLFormElement>) => void
   onGenerateProposal: (event: FormEvent<HTMLFormElement>) => void
   onSaveSalesProposal: (id: number, body: Record<string, unknown>) => void
+  onRefreshLeadScore: () => void
+  onOverrideLeadScore: (event: FormEvent<HTMLFormElement>) => void
+  onRecordLeadScoreOutcome: (event: FormEvent<HTMLFormElement>) => void
   onWon: () => void
   onLost: (event: FormEvent<HTMLFormElement>) => void
   onConvert: () => void
@@ -525,6 +619,14 @@ function DetailPanel({ prospect, activities, proposals, salesProposals, busy, on
 
   return (
     <aside className="space-y-3">
+      <LeadScorePanel
+        score={leadScore}
+        busy={busy}
+        onRefresh={onRefreshLeadScore}
+        onOverride={onOverrideLeadScore}
+        onOutcome={onRecordLeadScoreOutcome}
+      />
+
       <div className="rounded-[8px] border p-4 sm:p-5" style={{ background:T.s1, borderColor:T.b1 }}>
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
@@ -687,6 +789,112 @@ function DetailPanel({ prospect, activities, proposals, salesProposals, busy, on
         </div>
       </div>
     </aside>
+  )
+}
+
+function LeadScorePanel({ score, busy, onRefresh, onOverride, onOutcome }: {
+  score: LeadScoreSnapshot | null
+  busy: string
+  onRefresh: () => void
+  onOverride: (event: FormEvent<HTMLFormElement>) => void
+  onOutcome: (event: FormEvent<HTMLFormElement>) => void
+}) {
+  const effectiveScore = score?.overrideScore ?? score?.score ?? null
+  const positive = score?.positiveFactors ?? []
+  const negative = score?.negativeFactors ?? []
+  const missing = score?.missingInformation ?? []
+
+  return (
+    <div className="rounded-[8px] border p-4 sm:p-5" style={{ background:T.s1, borderColor:T.b1 }}>
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div>
+          <h3 className="font-syne text-[15px] font-bold">Lead Score</h3>
+          <p className="mt-1 font-dm text-xs leading-relaxed" style={{ color:T.t2 }}>Explainable scoring from pipeline data only. No protected personal characteristics are used.</p>
+        </div>
+        <button type="button" onClick={onRefresh} disabled={busy.startsWith("lead-score")} className="rounded-lg px-3 py-2 font-dm text-xs font-medium text-white disabled:opacity-60" style={{ background:T.acc }}>
+          {busy.startsWith("lead-score-") ? "Scoring..." : score ? "Rescore" : "Score"}
+        </button>
+      </div>
+
+      {!score ? (
+        <div className="rounded-lg border border-dashed p-3 font-dm text-sm" style={{ borderColor:T.b1, color:T.t2 }}>No score snapshot yet.</div>
+      ) : (
+        <div className="space-y-3">
+          <div className="grid grid-cols-3 gap-2">
+            <ScoreTile label="Score" value={effectiveScore === null ? "?" : `${effectiveScore}/100`} tone={scoreTone(effectiveScore ?? 0)} />
+            <ScoreTile label="Confidence" value={score.confidence} tone={score.confidence === "high" ? T.grn : score.confidence === "medium" ? T.amb : T.red} />
+            <ScoreTile label="Close Prob." value={`${score.probabilityOfClosing}%`} tone={scoreTone(score.probabilityOfClosing)} />
+          </div>
+          {score.overrideScore !== null && (
+            <div className="rounded-lg border px-3 py-2 font-dm text-xs leading-relaxed" style={{ background:"rgba(245,158,11,.08)", borderColor:"rgba(245,158,11,.28)", color:T.t1 }}>
+              Human override: {score.overrideScore}/100 by {score.overrideBy ?? "admin"} - {score.overrideReason}
+            </div>
+          )}
+          <div className="rounded-lg border p-3" style={{ background:T.s2, borderColor:T.b1 }}>
+            <div className="font-dm text-[11px] uppercase tracking-[.06em]" style={{ color:T.t3 }}>Recommended next action</div>
+            <p className="mt-1 font-dm text-sm leading-relaxed" style={{ color:T.t1 }}>{score.recommendedNextAction}</p>
+            <div className="mt-2 font-dm text-[11px]" style={{ color:T.t2 }}>
+              Est. value GBP {score.estimatedProjectValue.toLocaleString()} / retainer GBP {score.estimatedRetainerPotential.toLocaleString()}
+            </div>
+          </div>
+          <FactorList title="Positive factors" factors={positive} tone={T.grn} />
+          <FactorList title="Negative factors" factors={negative} tone={T.red} />
+          {missing.length > 0 && (
+            <div>
+              <div className="mb-1 font-dm text-[11px] uppercase tracking-[.06em]" style={{ color:T.t3 }}>Missing information</div>
+              <div className="flex flex-wrap gap-1.5">
+                {missing.map((item) => <span key={item} className="rounded border px-2 py-1 font-dm text-[11px]" style={{ borderColor:T.b1, color:T.t2 }}>{item}</span>)}
+              </div>
+            </div>
+          )}
+          <form onSubmit={onOverride} className="grid grid-cols-[88px_1fr] gap-2">
+            <Field label="Override" name="overrideScore" type="number" min="0" max="100" defaultValue={String(effectiveScore ?? score.score)} />
+            <Field label="Reason" name="reason" placeholder="Why human judgment differs" />
+            <button disabled={busy === "lead-score-override"} className="col-span-2 rounded-lg px-3 py-2 font-dm text-xs font-medium text-white disabled:opacity-60" style={{ background:T.amb }}>Save Override</button>
+          </form>
+          <form onSubmit={onOutcome} className="grid grid-cols-2 gap-2">
+            <Select label="Outcome" name="outcome" options={["won", "lost", "no_decision", "disqualified"]} defaultValue={score.outcome ?? "no_decision"} />
+            <Field label="Outcome value" name="outcomeValue" type="number" min="0" defaultValue={String(score.outcomeValue ?? score.estimatedProjectValue)} />
+            <Field label="Outcome retainer" name="outcomeRetainer" type="number" min="0" defaultValue={String(score.outcomeRetainer ?? score.estimatedRetainerPotential)} />
+            <Field label="Notes" name="notes" defaultValue={score.outcomeNotes ?? ""} />
+            <button disabled={busy === "lead-score-outcome"} className="col-span-2 rounded-lg px-3 py-2 font-dm text-xs font-medium text-white disabled:opacity-60" style={{ background:T.grn }}>Record Outcome</button>
+          </form>
+          <div className="font-dm text-[10px] leading-relaxed" style={{ color:T.t3 }}>
+            Snapshot {score.id} / {score.modelVersion} / created {formatDate(score.createdAt)}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ScoreTile({ label, value, tone }: { label: string; value: string; tone: string }) {
+  return (
+    <div className="rounded-lg border p-2" style={{ background:T.s2, borderColor:T.b1 }}>
+      <div className="font-dm text-[10px]" style={{ color:T.t3 }}>{label}</div>
+      <div className="mt-1 font-syne text-lg font-extrabold" style={{ color:tone }}>{value}</div>
+    </div>
+  )
+}
+
+function FactorList({ title, factors, tone }: { title: string; factors: LeadScoreFactor[]; tone: string }) {
+  if (!factors.length) return null
+
+  return (
+    <div>
+      <div className="mb-1 font-dm text-[11px] uppercase tracking-[.06em]" style={{ color:T.t3 }}>{title}</div>
+      <div className="space-y-1.5">
+        {factors.slice(0, 4).map((factor) => (
+          <div key={`${factor.category}-${factor.label}`} className="rounded border px-2 py-1.5 font-dm text-xs leading-relaxed" style={{ borderColor:T.b1, background:T.s2 }}>
+            <div className="flex justify-between gap-2">
+              <span>{factor.label}</span>
+              <span style={{ color:tone }}>{factor.points > 0 ? "+" : ""}{factor.points}</span>
+            </div>
+            <div className="mt-0.5" style={{ color:T.t3 }}>{factor.evidence[0]}</div>
+          </div>
+        ))}
+      </div>
+    </div>
   )
 }
 
@@ -934,6 +1142,12 @@ function followUpColor(value: DateLike) {
   if (bucket === "today") return T.amb
   if (bucket === "upcoming") return T.grn
   return T.t3
+}
+
+function scoreTone(score: number) {
+  if (score >= 75) return T.grn
+  if (score >= 50) return T.amb
+  return T.red
 }
 
 function priorityColor(priority: ProspectPriority) {

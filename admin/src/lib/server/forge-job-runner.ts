@@ -36,7 +36,7 @@ export class ForgeJobError extends Error {
 type JobPayload = Record<string, unknown>
 type JobResult = Record<string, unknown>
 type JobHandler = (projectId: number, actor: string, payload: JobPayload) => Promise<JobResult>
-const AI_BACKED_JOB_KINDS = new Set<ForgeJobKind>(["research", "sitemap", "copy", "design", "component_spec", "visual_critique", "repair"])
+const AI_BACKED_JOB_KINDS = new Set<ForgeJobKind>(["research", "sitemap", "copy", "design", "design_system", "component_spec", "visual_critique", "repair"])
 
 /**
  * The job registry maps each long-running Forge action to a handler. Handlers lazily import the
@@ -58,7 +58,26 @@ const JOB_HANDLERS: Record<ForgeJobKind, JobHandler> = {
       isForgeDesignStylePack(payload.preferredStylePack) ? payload.preferredStylePack : null,
       isForgeAnimationPack(payload.preferredAnimationPack) ? payload.preferredAnimationPack : null,
     ),
+  design_system: async (projectId, actor) => (await import("./forge-design-system-agent")).runForgeDesignSystemAgent(projectId, actor),
   component_spec: async (projectId, actor) => (await import("./forge-component-spec-agent")).runForgeComponentSpecAgent(projectId, actor),
+  accessibility_gate: async (projectId, actor) => (await import("./forge-accessibility-agent")).runForgeAccessibilityAgent(projectId, actor),
+  consistency_review: async (projectId, actor) => (await import("./forge-consistency-agent")).runForgeConsistencyEvaluator(projectId, actor),
+  copy_quality_review: async (projectId, actor) => (await import("./forge-copy-quality-agent")).runForgeCopyQualityEvaluator(projectId, actor),
+  review_council: async (projectId, actor) => (await import("./forge-review-council-agent")).runForgeReviewCouncil(projectId, actor),
+  originality_review: async (projectId, actor) => (await import("./forge-originality-agent")).runForgeOriginalityEvaluator(projectId, actor),
+  site_inventory: async (projectId, actor, payload) => (await import("./forge-site-inventory-agent")).runForgeSiteInventoryAgent(
+    projectId,
+    actor,
+    typeof payload.startUrl === "string" ? payload.startUrl : "",
+    {
+      maxPages: typeof payload.maxPages === "number" ? payload.maxPages : undefined,
+      maxDepth: typeof payload.maxDepth === "number" ? payload.maxDepth : undefined,
+      allowedDomains: Array.isArray(payload.allowedDomains) ? payload.allowedDomains.filter((value): value is string => typeof value === "string") : undefined,
+      robotsPolicy: payload.robotsPolicy === "ignore" ? "ignore" : "respect",
+    },
+  ),
+  migration_analysis: async (projectId, actor) => (await import("./forge-migration-analysis-agent")).runForgeMigrationAnalysisAgent(projectId, actor),
+  migration_execution: async (projectId, actor) => (await import("./forge-migration-execution-agent")).runForgeMigrationExecutionAgent(projectId, actor),
   generate_site: async (projectId, actor) => {
     const generated = await (await import("./forge-frontend-code-agent")).runForgeFrontendCodeAgent(projectId, actor)
     const seo = await (await import("./forge-seo-agent")).runForgeSeoAgent(projectId, actor)
@@ -67,7 +86,9 @@ const JOB_HANDLERS: Record<ForgeJobKind, JobHandler> = {
     const approvedCritique = critique.report.status === "approved"
       ? critique
       : await visualCritiqueAgent.approveForgeVisualCritique(projectId, actor)
-    const qa = await (await import("./forge-qa-agent")).runForgeQaAgent(projectId, actor)
+    const qa = process.env.FORGE_E2E_CONTROLLED_QA === "true"
+      ? { report: { status: "not_run", summary: "QA is controlled by the end-to-end failure fixture.", failureSummary: null, repairHistory: [] } }
+      : await (await import("./forge-qa-agent")).runForgeQaAgent(projectId, actor)
     return {
       ...generated,
       seo: {

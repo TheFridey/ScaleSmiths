@@ -29,6 +29,7 @@ import {
 } from "@/lib/forge-visual-critique"
 import { FORGE_WORKSPACE_MEMORY_KEY, readForgeWorkspaceMemory } from "@/lib/forge-workspace"
 import { forgeActivityLogs, forgeArtifacts, forgeMemories, forgeProjects, forgeTasks } from "@/lib/schema"
+import { buildForgeHumanEditTracking, mergeHumanEditTracking } from "@/lib/forge-human-edits"
 import { buildForgeTaskOutputMetadata, runForgeAiJson } from "./forge-ai"
 import { writeForgeWorkspaceFile } from "./forge-workspace"
 
@@ -175,7 +176,7 @@ export async function runForgeVisualCritiqueAgent(projectId: number, actor: stri
 export async function approveForgeVisualCritique(projectId: number, actor: string) {
   const { project, report, artifactId } = await loadLatestVisualCritique(projectId)
   const approved = approveForgeVisualCritiqueReport(report, actor)
-  const artifact = await saveVisualCritiqueReport(projectId, approved, null, new Date(), artifactId)
+  const artifact = await saveVisualCritiqueReport(projectId, approved, null, new Date(), artifactId, actor, "Visual critique reviewed and approved.")
 
   await db.insert(forgeActivityLogs).values({
     projectId,
@@ -202,7 +203,7 @@ export async function applyForgeVisualCritiqueSafeFixes(projectId: number, actor
   })
 
   const updated = withForgeVisualCritiqueAutoFixes(report, applied)
-  const artifact = await saveVisualCritiqueReport(projectId, updated, null, new Date(), artifactId)
+  const artifact = await saveVisualCritiqueReport(projectId, updated, null, new Date(), artifactId, actor, "Applied safe layout and conversion fixes from visual critique.")
 
   await db.insert(forgeActivityLogs).values({
     projectId,
@@ -215,7 +216,7 @@ export async function applyForgeVisualCritiqueSafeFixes(projectId: number, actor
   return { ok: true as const, artifactId: artifact.id, report: updated, fixes: applied }
 }
 
-async function saveVisualCritiqueReport(projectId: number, report: ForgeVisualCritiqueReport, taskId: number | null, now: Date, existingArtifactId?: number) {
+async function saveVisualCritiqueReport(projectId: number, report: ForgeVisualCritiqueReport, taskId: number | null, now: Date, existingArtifactId?: number, editor?: string, reason?: string) {
   const content = buildForgeVisualCritiqueArtifactContent(report)
   const [existing] = existingArtifactId
     ? await db.select().from(forgeArtifacts).where(eq(forgeArtifacts.id, existingArtifactId)).limit(1)
@@ -225,13 +226,21 @@ async function saveVisualCritiqueReport(projectId: number, report: ForgeVisualCr
         eq(forgeArtifacts.title, FORGE_VISUAL_CRITIQUE_ARTIFACT_TITLE),
       )).limit(1)
 
-  const metadataJson = {
+  const editTracking = existing && editor ? buildForgeHumanEditTracking({
+    artifact: existing,
+    approvedContent: content,
+    editor,
+    reason,
+    now,
+  }) : null
+  const baseMetadataJson = {
     ...(existing?.metadataJson ?? {}),
     kind: FORGE_VISUAL_CRITIQUE_ARTIFACT_KIND,
     status: report.status,
     report,
     taskId: taskId ?? existing?.metadataJson?.taskId ?? null,
   }
+  const metadataJson = editTracking ? mergeHumanEditTracking(baseMetadataJson, editTracking) : baseMetadataJson
 
   const [saved] = existing
     ? await db.update(forgeArtifacts).set({ content, metadataJson, updatedAt: now }).where(eq(forgeArtifacts.id, existing.id)).returning()

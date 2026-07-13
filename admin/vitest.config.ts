@@ -18,4 +18,7 @@ export default defineConfig({
       "server-only": path.resolve(__dirname, "./test/stubs/server-only.ts"),
     },
   },
+  test: {
+    exclude: ["test/integration/**", "node_modules/**", ".next/**"],
+  },
 })

@@ -15,6 +15,7 @@ import {
 } from "@/lib/forge-research"
 import { FORGE_INTAKE_ARTIFACT_TITLE, readForgeIntakeArtifact } from "@/lib/forge"
 import { forgeActivityLogs, forgeArtifacts, forgeMemories, forgeProjects, forgeTasks } from "@/lib/schema"
+import { buildForgeHumanEditTracking, mergeHumanEditTracking } from "@/lib/forge-human-edits"
 
 export class ForgeResearchAgentError extends Error {
   safeMessage: string
@@ -260,4 +261,33 @@ export async function runForgeResearchAgent(projectId: number, actor: string) {
     if (error instanceof ForgeAiError) throw error
     throw new ForgeResearchAgentError("Research agent failed.", 500)
   }
+}
+
+export async function approveForgeResearchReport(projectId: number, actor: string) {
+  const now = new Date()
+  return db.transaction(async (tx) => {
+    const [artifact] = await tx.select().from(forgeArtifacts).where(and(
+      eq(forgeArtifacts.projectId, projectId),
+      eq(forgeArtifacts.type, "research_report"),
+      eq(forgeArtifacts.title, FORGE_RESEARCH_ARTIFACT_TITLE),
+    )).limit(1)
+    if (!artifact) throw new ForgeResearchAgentError("Generate research before approving it.", 409)
+    const editTracking = buildForgeHumanEditTracking({
+      artifact,
+      approvedContent: artifact.content ?? "",
+      editor: actor,
+      reason: "Research reviewed and approved.",
+      now,
+    })
+    const history = [...(artifact.approvalHistory ?? []), { state: "approved", actor, reason: "Research reviewed and approved.", at: now.toISOString(), humanEditTracking: editTracking }]
+    const baseMetadataJson = { ...(artifact.metadataJson ?? {}), status: "approved", approvedBy: actor, approvedAt: now.toISOString() }
+    const [saved] = await tx.update(forgeArtifacts).set({
+      approvalState: "approved",
+      approvalHistory: history,
+      metadataJson: mergeHumanEditTracking(baseMetadataJson, editTracking),
+      updatedAt: now,
+    }).where(eq(forgeArtifacts.id, artifact.id)).returning()
+    await tx.insert(forgeActivityLogs).values({ projectId, actor, action: "research_approved", message: "Reviewed and approved the Forge research report.", metadataJson: { artifactId: saved.id, humanEditTracking: editTracking } })
+    return { ok: true as const, artifactId: saved.id }
+  })
 }

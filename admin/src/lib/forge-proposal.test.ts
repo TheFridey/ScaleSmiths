@@ -109,6 +109,10 @@ describe("forge proposal & audit generator", () => {
     expect(bundle.proposal.seoAeoGeoBenefits.join(" ")).toMatch(/AEO/)
     expect(bundle.proposal.buildPricePlaceholder).toContain("£[BUILD]")
     expect(bundle.proposal.monthlyRetainerRecommendation).toContain(bundle.retainer.recommendedTier)
+    expect(bundle.proposal.goodBetterBest.map((option) => option.tier)).toEqual(["good", "better", "best"])
+    expect(bundle.proposal.supportingRecords.some((record) => record.section === "Business problem")).toBe(true)
+    expect(bundle.approval.state).toBe("draft")
+    expect(bundle.clientResponse).toBeNull()
     expect(bundle.proposal.nextSteps.length).toBeGreaterThanOrEqual(3)
   })
 
@@ -119,6 +123,41 @@ describe("forge proposal & audit generator", () => {
     expect(bundle.roadmap.phases.length).toBeGreaterThanOrEqual(4)
     expect(bundle.handover.maintenanceNotes.length).toBeGreaterThan(0)
     expect(bundle.audit.gaps.length).toBeGreaterThan(0)
+  })
+
+  it("personalises pricing and assumptions from the internal estimator and lead evidence", () => {
+    const bundle = buildForgeProposalBundle(baseInputs({
+      estimate: {
+        modelVersion: "test-estimator",
+        estimatedHours: 72,
+        confidenceRange: { low: 60, high: 88 },
+        confidence: "medium",
+        complexityRating: "high",
+        riskFactors: [{ category: "approval", severity: "high", impactHours: 8, explanation: "Client approvals are complex." }],
+        suggestedBuildPrice: 8500,
+        suggestedRetainer: 650,
+        minimumViableScope: ["Core pages"],
+        optionalEnhancements: ["Photography", "Content programme"],
+        estimatedDeliveryRange: { minWeeks: 3, maxWeeks: 5 },
+        marginEstimate: { revenue: 8500, labourCost: 3000, grossMargin: 5500, grossMarginPercent: 65, assumedHourlyCost: 38 },
+        knownInputs: [],
+        assumptions: [{ key: "photography", label: "Photography", value: false, status: "assumed", evidence: "Not approved yet." }],
+        underpricingRisks: ["Do not absorb unapproved work."],
+        disclaimer: "Internal estimate only.",
+      },
+      leadEvidence: {
+        painPoints: ["Slow suppliers and missed enquiries"],
+        discoveryNotes: ["Client wants better proof near quote CTA"],
+        sourceRecords: [{ label: "Discovery call note", recordType: "outreach_activity", recordId: 7 }],
+      },
+    }))
+
+    expect(bundle.proposal.buildPricePlaceholder).toContain("8,500")
+    expect(bundle.proposal.monthlyRetainerRecommendation).toContain("650")
+    expect(bundle.proposal.assumptionsRequiringConfirmation.join(" ")).toContain("Photography")
+    expect(bundle.proposal.risks.join(" ")).toContain("Client approvals are complex")
+    expect(bundle.proposal.supportingRecords.some((record) => record.recordType === "outreach_activity")).toBe(true)
+    expect(buildForgeProposalMarkdown(bundle)).toContain("Good / better / best")
   })
 
   it("flags a missing website as a gap and recommends a tier", () => {

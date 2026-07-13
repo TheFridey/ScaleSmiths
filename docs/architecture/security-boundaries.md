@@ -39,8 +39,8 @@ Remaining risks:
 
 - prompt injection can influence semantically valid structured output;
 - schema validation guarantees shape, not business correctness;
-- provider pricing is hard-coded and estimates may understate current cost;
-- the in-memory daily ledger is process-local, though database project/monthly checks provide an additional control.
+- provider pricing is source-controlled and estimates may differ from current provider billing;
+- reservation enforcement is database-authoritative, but operational alerts and abandoned-reservation cleanup still depend on application activity.
 
 ## Generated workspace boundary
 
@@ -62,11 +62,12 @@ Both apps use the same database credential and therefore have database-level acc
 
 The public app sends quote and client-request notifications through server-only Resend credentials. Forge stores non-secret Resend project configuration and represents the key as environment-owned/redacted. Generated sites refer to `RESEND_API_KEY` only from generated server routes. WhatsApp V1 produces `wa.me` integration behaviour; future Cloud API variables are documented but not a current browser credential path.
 
-## Security controls not currently automated
+## Residual controls and gaps
 
-- no CI scan for dependency vulnerabilities, containers, secrets beyond real `.env` filenames, or generated-code policy bypasses;
+- CI now runs dependency review, verified-secret scanning, npm audit thresholds, Dockerfile linting, container scanning, SBOM generation, migration/integration checks, CodeQL and sandbox fixtures;
+- generated-site dependency admission, vulnerability/licence evaluation and per-site SBOM production are not implemented, so the dependency release gate has no normal evidence producer;
 - no integration test for host-Nginx headers/TLS/routing;
 - no database role separation or row-level security;
 - no distributed admin/Forge rate limiter;
 - no automated restoration/reconciliation of orphaned preview processes or containers;
-- no end-to-end authorization matrix test across admin and portal APIs.
+- RBAC matrix and direct-route tests exist, but there is no exhaustive end-to-end authorization matrix across every admin and portal API.

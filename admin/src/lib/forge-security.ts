@@ -29,7 +29,7 @@ export function isForgeMutatingMethod(method: string) {
 
 export function isForgeTaskEndpoint(pathname: string) {
   return /^\/api\/forge\/ai\/test$/.test(pathname) ||
-    /^\/api\/forge\/projects\/[^/]+\/(?:command-chat|component-spec|copy|deploy|design|export|generate-site|preview|proposal|qa|research|seo|sitemap|visual-critique|visual-qa|workspace)(?:\/)?$/.test(pathname)
+    /^\/api\/forge\/projects\/[^/]+\/(?:accessibility|command-chat|component-spec|copy|copy-quality|deploy|design|export|generate-site|preview|proposal|qa|research|seo|sitemap|visual-critique|visual-qa|workspace)(?:\/)?$/.test(pathname)
 }
 
 export function buildForgeRateLimitKey(parts: {

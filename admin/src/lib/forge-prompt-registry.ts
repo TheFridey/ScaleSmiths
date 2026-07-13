@@ -3,6 +3,7 @@ export const FORGE_AGENT_REGISTRY = {
   sitemap: entry("forge.sitemap", "1.0.0", "forge.sitemap-strategy", "1.0.0", "Approved research to sitemap strategy", { pages: ["/"] }),
   copy: entry("forge.copy", "1.0.0", "forge.copy-document", "1.0.0", "Approved sitemap to page copy", { page: "/" }),
   design: entry("forge.design", "1.0.0", "forge.design-direction", "1.0.0", "Brief and copy to design direction", { style: "editorial" }),
+  design_system: entry("forge.design-system", "1.0.0", "forge.design-system-specification", "1.0.0", "Approved design direction to token-governed design system", { requiredTokenIds: ["color.surface"] }),
   component_spec: entry("forge.component-spec", "1.0.0", "forge.component-specification", "1.0.0", "Approved inputs to component contract", { components: ["Hero"] }),
   visual_critique: entry("forge.visual-critique", "1.0.0", "forge.visual-critique-report", "1.0.0", "Generated build to visual critique", { viewport: "desktop" }),
   repair: entry("forge.repair", "1.0.0", "forge.repair-patch", "1.0.0", "Failed QA evidence to bounded repair patch", { failingChecks: ["build"] }),
@@ -13,6 +14,16 @@ export const FORGE_AGENT_REGISTRY = {
   client_request_triage: entry("forge.client-request-triage", "1.0.0", "forge.client-request-triage", "1.0.0", "Client request triage", { request: "Update homepage" }),
   sales_proposal: entry("forge.sales-proposal", "1.0.0", "forge.sales-proposal-sections", "1.0.0", "Sales proposal generation", { prospect: "Example Ltd" }),
   monthly_report: entry("forge.monthly-report", "1.0.0", "forge.monthly-report-sections", "1.0.0", "Monthly client report generation", { month: "2026-01" }),
+  accessibility_gate: entry("forge.accessibility-gate", "1.0.0", "forge.accessibility-report", "1.0.0", "Generated website DOM state to WCAG-oriented accessibility gate findings", { findings: [], blocking: false }),
+  consistency_evaluator: entry("forge.consistency-evaluator", "1.0.0", "forge.consistency-report", "1.0.0", "Approved project artifacts to cross-artifact consistency findings", { findings: [], blocking: false }),
+  copy_quality_evaluator: entry("forge.copy-quality-evaluator", "1.0.0", "forge.copy-quality-report", "1.0.0", "Approved business facts, research, and copy to anti-generic copy-quality findings", { scores: { specificity: 80 }, findings: [] }),
+  screenshot_visual_qa: entry("forge.screenshot-visual-qa", "1.0.0", "forge.screenshot-visual-report", "1.0.0", "Generated-site screenshots and approved design context to advisory visual findings", { findings: [], proposedRepairs: [] }),
+  review_council: entry("forge.review-council", "1.0.0", "forge.review-council-report", "1.0.0", "Canonical approved project state to remit-bound multi-perspective reviews", { reviews: [] }),
+  review_council_synthesis: entry("forge.review-council-synthesis", "1.0.0", "forge.review-council-synthesis", "1.0.0", "Validated reviewer reports to deduplicated prioritised synthesis", { actionPlan: [], conflicts: [] }),
+  originality_evaluator: entry("forge.originality-evaluator", "1.0.0", "forge.originality-report", "1.0.0", "Privacy-safe generated-site structure fingerprints to cross-project originality findings", { similarityScore: 32, findings: [] }),
+  site_inventory: entry("forge.site-inventory", "1.0.0", "forge.site-inventory", "1.0.0", "Approved crawl scope to an untrusted existing-site content inventory", { pages: [], failures: [] }),
+  migration_analysis: entry("forge.migration-analysis", "1.0.0", "forge.migration-analysis", "1.0.0", "Approved site inventory to review-only migration, sitemap, content, and redirect recommendations", { proposedNewSitemap: [], redirectPlan: [], rankingRisks: [] }),
+  migration_execution: entry("forge.migration-execution", "1.0.0", "forge.migration-candidate", "1.0.0", "Approved migration inputs to an immutable validated deployment candidate", { mappings: [], checklist: [], approvals: {} }),
 } as const
 
 export type ForgeAgentRegistryKey = keyof typeof FORGE_AGENT_REGISTRY

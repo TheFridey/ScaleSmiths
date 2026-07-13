@@ -34,8 +34,9 @@ export interface ForgeDockerRunOptions {
 const DEFAULT_DOCKER_IMAGE = "node:22-bookworm-slim"
 
 export function resolveForgeSandboxConfig(env: Partial<Record<string, string | undefined>> = process.env): ForgeSandboxConfig {
+  const defaultRunner: ForgeSandboxRunner = env.NODE_ENV === "production" ? "docker" : "local"
   return {
-    runner: env.FORGE_SANDBOX_RUNNER === "docker" ? "docker" : "local",
+    runner: env.FORGE_SANDBOX_RUNNER === "docker" || env.FORGE_SANDBOX_RUNNER === "local" ? env.FORGE_SANDBOX_RUNNER : defaultRunner,
     dockerImage: env.FORGE_SANDBOX_DOCKER_IMAGE?.trim() || DEFAULT_DOCKER_IMAGE,
     cpus: normalizeCpus(env.FORGE_SANDBOX_CPUS),
     memory: normalizeMemory(env.FORGE_SANDBOX_MEMORY),

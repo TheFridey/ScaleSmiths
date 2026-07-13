@@ -153,7 +153,10 @@ export function ClientsTable({ clients, salesProposals }: { clients: ClientRow[]
                     <div className="font-dm text-[11px]" style={{ color:T.t2 }}>{client.contactName ?? "No contact set"}</div>
                   </div>
                 </div>
-                <div className="font-dm text-sm" style={{ color:T.t2 }}>{client.tier ?? "No tier set"}</div>
+                <div className="font-dm text-sm" style={{ color:T.t2 }}>
+                  <div>{client.tier ?? "No tier set"}</div>
+                  <Link href={`/clients/${client.id}/analytics`} className="text-[11px] text-cyan-300">Analytics</Link>
+                </div>
                 <div className="font-syne text-sm font-bold" style={{ color:client.mrr > 0 ? T.grn : T.t3 }}>
                   {client.mrr > 0 ? `GBP ${client.mrr}` : "Build"}
                 </div>

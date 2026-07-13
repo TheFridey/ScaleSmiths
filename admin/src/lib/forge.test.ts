@@ -197,6 +197,7 @@ import {
   parseForgeDesignDirectionPayload,
   readForgeDesignDirectionArtifact,
 } from "./forge-design"
+import { createMockDesignSystemSpecification } from "./forge-design-system"
 import {
   FORGE_RESEARCH_REPORT_SCHEMA,
   buildForgeResearchArtifactContent,
@@ -258,6 +259,11 @@ describe("forge shell", () => {
     expect(FORGE_PROJECT_STATUSES).toContain("archived")
     expect(FORGE_TASK_AGENT_TYPES).toContain("repair")
     expect(FORGE_TASK_STATUSES).toEqual(["queued", "running", "completed", "failed", "cancelled"])
+    expect(FORGE_ARTIFACT_TYPES).toContain("design_system")
+    expect(FORGE_ARTIFACT_TYPES).toContain("originality_report")
+    expect(FORGE_ARTIFACT_TYPES).toContain("site_inventory")
+    expect(FORGE_ARTIFACT_TYPES).toContain("migration_analysis")
+    expect(FORGE_ARTIFACT_TYPES).toContain("migration_candidate")
     expect(FORGE_ARTIFACT_TYPES).toContain("visual_critique")
     expect(FORGE_ARTIFACT_TYPES).toContain("deployment_notes")
     expect(FORGE_INTEGRATION_PROVIDERS).toEqual(["resend", "whatsapp", "analytics", "calendly", "stripe", "cloudinary", "custom"])
@@ -1299,6 +1305,7 @@ describe("forge shell", () => {
     const sitemap = createMockSitemapStrategy(project, intake, null)
     const copy = createMockCopyDocument(project, sitemap, intake, null)
     const design = createMockDesignDirection({ project, intake, approvedSitemap: sitemap, approvedCopy: copy })
+    const designSystem = createMockDesignSystemSpecification({ project, intake, researchReport: null, approvedSitemap: sitemap, approvedCopy: copy, approvedDesign: design })
     const spec = createMockComponentSpec(sitemap, copy, design)
     const workspace = {
       projectId: 42,
@@ -1315,6 +1322,7 @@ describe("forge shell", () => {
       approvedSitemap: sitemap,
       approvedCopy: copy,
       approvedDesign: design,
+      approvedDesignSystem: designSystem,
       approvedComponentSpec: spec,
       integrationPlaceholders: ["Resend API route placeholder", "WhatsApp CTA placeholder"],
       resendConfig: {
@@ -1342,6 +1350,8 @@ describe("forge shell", () => {
     expect(files.map((file) => file.path)).toContain("src/app/sitemap.ts")
     expect(files.map((file) => file.path)).toContain("src/app/robots.ts")
     expect(files.map((file) => file.path)).toContain("src/lib/seo.ts")
+    expect(files.map((file) => file.path)).toContain("src/lib/design-tokens.ts")
+    expect(files.map((file) => file.path)).toContain("src/app/style-guide/page.tsx")
     const seoLib = files.find((file) => file.path === "src/lib/seo.ts")?.content ?? ""
     expect(seoLib).toContain("BreadcrumbList")
     expect(seoLib).toContain("FAQPage")
@@ -1359,6 +1369,9 @@ describe("forge shell", () => {
     expect(files.find((file) => file.path === "src/lib/animation-config.ts")?.content).toContain("Industrial Precision")
     expect(files.find((file) => file.path === "src/app/globals.css")?.content).toContain("prefers-reduced-motion")
     expect(files.find((file) => file.path === "src/app/globals.css")?.content).toContain("motion-safe-card")
+    expect(files.find((file) => file.path === "src/app/globals.css")?.content).toContain("--space-4:")
+    expect(files.find((file) => file.path === "src/lib/design-tokens.ts")?.content).toContain("DesignTokenId")
+    expect(files.find((file) => file.path === "src/app/style-guide/page.tsx")?.content).toContain("Generated design-token implementation")
     expect(files.find((file) => file.path === "src/components/MotionSection.tsx")?.content).toContain("useReducedMotion")
     expect(files.find((file) => file.path === "src/app/api/contact/route.ts")?.content).toContain("new Resend")
     expect(files.find((file) => file.path === "src/lib/resend-config.ts")?.content).not.toContain("RESEND_API_KEY=")
@@ -1399,6 +1412,7 @@ describe("forge shell", () => {
     const sitemap = createMockSitemapStrategy(project, intake, null)
     const copy = createMockCopyDocument(project, sitemap, intake, null)
     const design = createMockDesignDirection({ project, intake, approvedSitemap: sitemap, approvedCopy: copy })
+    const designSystem = createMockDesignSystemSpecification({ project, intake, researchReport: null, approvedSitemap: sitemap, approvedCopy: copy, approvedDesign: design })
     const spec = createMockComponentSpec(sitemap, copy, design)
     const workspace = {
       projectId: 77,
@@ -1416,6 +1430,7 @@ describe("forge shell", () => {
       approvedSitemap: sitemap,
       approvedCopy: copy,
       approvedDesign: design,
+      approvedDesignSystem: designSystem,
       approvedComponentSpec: spec,
       integrationPlaceholders: [],
     })
@@ -1429,8 +1444,9 @@ describe("forge shell", () => {
     expect(globalsCss).toContain("--surface: #05070f")
     expect(globalsCss).toContain("--brand: #22d3ee")
     expect(globalsCss).toContain("--hero-bg:")
-    expect(tailwindConfig).toContain("Orbitron")
-    expect(tailwindConfig).toContain("#22d3ee")
+    expect(tailwindConfig).toContain("var(--font-display)")
+    expect(tailwindConfig).toContain("var(--brand)")
+    expect(tailwindConfig).not.toContain("#22d3ee")
     expect(`${globalsCss}\n${tailwindConfig}`).not.toMatch(/Georgia|#f7f4ef/i)
     expect(heroComponent).toContain("hero-brand-surface")
     expect(heroComponent).toContain("bg-brand")
@@ -1569,6 +1585,7 @@ describe("forge shell", () => {
     expect(read.status).toBe("generated")
     expect(read.summary?.workspacePath).toBe("generated-sites/42-acme-ltd")
     expect(content).toContain("# Generated Site Code Summary")
+    expect(summary.routes).toContain("/style-guide")
     expect(content).toContain("framer-motion")
     expect(content).toContain("Industrial Precision")
   })

@@ -48,6 +48,33 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Public site Playwright
+        run: npm run test:e2e:chromium
+
+      - name: Public performance budgets
+        run: npm run check:performance-budgets
+
+      - name: Upload Playwright artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-playwright-artifacts
+          path: |
+            web/test-results
+            web/playwright-report
+          if-no-files-found: ignore
+
+      - name: Upload performance reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-performance-reports
+          path: web/performance-reports
+          if-no-files-found: ignore
+
   admin:
     name: Admin
     runs-on: ubuntu-latest
@@ -86,8 +113,19 @@ jobs:
             echo "Skipping admin tests: no test script."
           fi
 
+      - name: Forge benchmark suite
+        run: npm run test:forge-benchmark
+
       - name: Build
         run: npm run build
+
+      - name: Upload Forge benchmark report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: forge-benchmark-report
+          path: admin/benchmark-results/forge
+          if-no-files-found: ignore
 
   root-hygiene:
     name: Root Hygiene
@@ -117,3 +155,6 @@ jobs:
 
       - name: Check architecture documentation
         run: npm run check:architecture-docs
+
+      - name: Simulate canary release and rollback
+        run: npm run test:release-simulation

@@ -176,6 +176,7 @@ function disposeObject(object: THREE.Object3D) {
 
 export function ForgeHeroScene() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const disableE2eCanvas = typeof window !== "undefined" && window.localStorage.getItem("scalesmiths.e2e.disableCanvas") === "true"
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -359,6 +360,10 @@ export function ForgeHeroScene() {
       renderer.dispose()
     }
   }, [])
+
+  if (disableE2eCanvas) {
+    return null
+  }
 
   return (
     <div className="absolute inset-0 overflow-hidden" aria-hidden="true">

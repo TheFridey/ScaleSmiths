@@ -4,6 +4,9 @@
   "scripts": {
     "check:architecture-docs": "node scripts/check-architecture-docs.mjs",
     "check:env-hygiene": "node scripts/check-env-hygiene.mjs",
-    "update:cloudflare-ranges": "node scripts/update-cloudflare-nginx-ranges.mjs"
+    "update:cloudflare-ranges": "node scripts/update-cloudflare-nginx-ranges.mjs",
+    "test:integration": "node scripts/run-admin-integration-tests.mjs",
+    "test:forge-e2e": "node scripts/run-forge-e2e-tests.mjs",
+    "test:release-simulation": "node --test scripts/release-manager.test.mjs"
   }
 }

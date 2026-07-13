@@ -1,0 +1,31 @@
+# Blue/green application containers only. PostgreSQL remains owned by the existing
+# docker-compose.host-nginx.yml stack and is reached through its existing network.
+services:
+  web:
+    image: scalesmiths-web:${SS_RELEASE_ID:?SS_RELEASE_ID is required}
+    restart: unless-stopped
+    env_file: ${SS_ENV_FILE:-.env}
+    environment:
+      NODE_ENV: production
+      ERROR_MONITORING_RELEASE: ${SS_RELEASE_ID}
+    ports:
+      - "127.0.0.1:${SS_WEB_PORT:?SS_WEB_PORT is required}:3000"
+    networks: [production]
+
+  admin:
+    image: scalesmiths-admin:${SS_RELEASE_ID:?SS_RELEASE_ID is required}
+    restart: unless-stopped
+    env_file: ${SS_ENV_FILE:-.env}
+    environment:
+      NODE_ENV: production
+      ERROR_MONITORING_RELEASE: ${SS_RELEASE_ID}
+    ports:
+      - "127.0.0.1:${SS_ADMIN_PORT:?SS_ADMIN_PORT is required}:3001"
+    volumes:
+      - ${SS_GENERATED_SITES_DIR:?SS_GENERATED_SITES_DIR is required}:/app/generated-sites
+    networks: [production]
+
+networks:
+  production:
+    external: true
+    name: ${SS_PRODUCTION_NETWORK:?SS_PRODUCTION_NETWORK is required}

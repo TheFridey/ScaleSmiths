@@ -47,6 +47,7 @@ export function ForgeVisualQaPanel({
   }, [initialGeneratedCode.status, initialWorkspace])
 
   const status = report?.status ?? "skipped"
+  const screenshotQa = report?.screenshotQa ?? { screenshots: [], findings: [] }
   const canRun = !disabled && !busy && readiness.length === 0
 
   async function run() {
@@ -159,6 +160,12 @@ export function ForgeVisualQaPanel({
           <div className="grid gap-3 md:grid-cols-2">
             <Detail label="Mobile viewport" value={`${report.mobile.status} — ${report.mobile.detail}`} />
             <Detail label="Console errors" value={`${report.consoleErrors.status} — ${report.consoleErrors.count}/${report.consoleErrors.threshold} allowed`} />
+          </div>
+
+          <div className="rounded-lg border p-4" style={{ background:T.s2, borderColor:T.b1 }}>
+            <div className="mb-2 font-dm text-[11px] uppercase tracking-[.08em]" style={{ color:T.t3 }}>Screenshot evaluation (advisory)</div>
+            <p className="font-dm text-xs" style={{ color:T.t2 }}>{screenshotQa.screenshots.length} screenshot(s) captured across desktop, tablet, and mobile; {screenshotQa.findings.length} finding(s). Repairs remain proposed until explicitly approved and are never deployed automatically.</p>
+            {screenshotQa.findings.length > 0 && <div className="mt-3 space-y-2">{screenshotQa.findings.slice(0, 12).map((finding, index) => <div key={`${finding.category}-${index}`} className="rounded border p-3" style={{ borderColor:T.b2 }}><div className="font-dm text-xs font-semibold">{finding.category.replaceAll("_", " ")} · {finding.severity}</div><p className="mt-1 font-dm text-[11px]" style={{ color:T.t2 }}>{finding.evidence.join(" ")} {finding.recommendedCorrection}</p></div>)}</div>}
           </div>
 
           {report.recommendations.length > 0 && (

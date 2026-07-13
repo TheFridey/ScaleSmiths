@@ -1,6 +1,7 @@
 import type { ForgeJsonSchema, JsonValue } from "./forge-ai"
 import type { ForgeCopyDocument } from "./forge-copy"
 import type { ForgeDesignDirection } from "./forge-design"
+import type { ForgeDesignSystemSpecification } from "./forge-design-system"
 import type { ForgeSitemapStrategy } from "./forge-sitemap"
 import { validateJsonSchemaValue } from "./forge-ai"
 
@@ -183,10 +184,12 @@ export function buildForgeComponentSpecPrompt({
   approvedSitemap,
   approvedCopy,
   approvedDesign,
+  approvedDesignSystem,
 }: {
   approvedSitemap: ForgeSitemapStrategy
   approvedCopy: ForgeCopyDocument
   approvedDesign: ForgeDesignDirection
+  approvedDesignSystem?: ForgeDesignSystemSpecification | null
 }) {
   return [
     "Create a detailed component and page specification before code generation.",
@@ -195,6 +198,7 @@ export function buildForgeComponentSpecPrompt({
     "For every page, specify page template, section order, metadata/schema requirements, and responsive behaviour.",
     "For every component, specify purpose, where used, props, data requirements, animation requirements, integration placeholders, and responsive behaviour.",
     "Keep animation instructions aligned with the approved design direction and avoid over-animation.",
+    "Use the approved design-system token ids and implementation guidance. Do not introduce arbitrary colours, spacing, radii, shadows, widths, or typography values.",
     "",
     "Approved sitemap:",
     JSON.stringify(approvedSitemap, null, 2),
@@ -204,6 +208,9 @@ export function buildForgeComponentSpecPrompt({
     "",
     "Approved design direction:",
     JSON.stringify(approvedDesign, null, 2),
+    "",
+    "Approved design system:",
+    approvedDesignSystem ? JSON.stringify(approvedDesignSystem, null, 2) : "No approved design-system artifact supplied. This is allowed only for legacy tests; production generation requires approval first.",
   ].join("\n")
 }
 

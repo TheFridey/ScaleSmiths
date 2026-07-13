@@ -1,4 +1,4 @@
-import { boolean, index, integer, jsonb, pgEnum, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core"
+import { boolean, index, integer, jsonb, pgEnum, pgTable, serial, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core"
 
 export const quoteStatus = pgEnum("quote_status", ["new", "read", "replied", "reviewed", "contacted", "qualified", "won", "lost"])
 export const clientRequestCategory = pgEnum("client_request_category", [
@@ -17,6 +17,23 @@ export const requestMessageSenderType = pgEnum("request_message_sender_type", ["
 export const requestMessageVisibility = pgEnum("request_message_visibility", ["client_visible", "internal"])
 export const monthlyReportStatus = pgEnum("monthly_report_status", ["draft", "published"])
 export const monthlyReportGeneratedBy = pgEnum("monthly_report_generated_by", ["forge", "manual"])
+export const experienceEventName = pgEnum("experience_event_name", [
+  "experience_choice_displayed",
+  "experience_normal_selected",
+  "experience_interactive_selected",
+  "experience_choice_abandoned",
+  "experience_returning_preference",
+  "experience_switched",
+  "quote_cta_clicked",
+  "quote_form_started",
+  "quote_form_submitted",
+  "navigation_exit",
+  "interactive_completion_depth",
+  "experience_fallback_activated",
+  "experience_error",
+])
+export const experienceDeviceClass = pgEnum("experience_device_class", ["mobile", "tablet", "desktop", "unknown"])
+export const experiencePreference = pgEnum("experience_preference", ["normal", "interactive", "none", "unknown"])
 
 export const quoteRequests = pgTable("quote_requests", {
   id: serial("id").primaryKey(),
@@ -129,6 +146,33 @@ export const monthlyReports = pgTable("monthly_reports", {
   index("monthly_reports_period_idx").on(table.clientId, table.year, table.month),
   index("monthly_reports_status_idx").on(table.status),
   index("monthly_reports_published_at_idx").on(table.publishedAt),
+])
+
+export const experienceEvents = pgTable("experience_events", {
+  id: serial("id").primaryKey(),
+  eventName: experienceEventName("event_name").notNull(),
+  eventKey: text("event_key").notNull(),
+  sessionId: text("session_id").notNull(),
+  path: text("path").notNull(),
+  deviceClass: experienceDeviceClass("device_class").default("unknown").notNull(),
+  preference: experiencePreference("preference").default("unknown").notNull(),
+  returningPreference: boolean("returning_preference").default(false).notNull(),
+  fromExperience: experiencePreference("from_experience"),
+  toExperience: experiencePreference("to_experience"),
+  interactiveStep: text("interactive_step"),
+  completionDepth: integer("completion_depth"),
+  referrerHost: text("referrer_host"),
+  campaignSource: text("campaign_source"),
+  campaignMedium: text("campaign_medium"),
+  campaignName: text("campaign_name"),
+  errorCategory: text("error_category"),
+  metadata: jsonb("metadata").$type<Record<string, unknown>>().default({}).notNull(),
+  occurredAt: timestamp("occurred_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("experience_events_event_key_idx").on(table.eventKey),
+  index("experience_events_name_time_idx").on(table.eventName, table.occurredAt),
+  index("experience_events_preference_time_idx").on(table.preference, table.occurredAt),
+  index("experience_events_session_idx").on(table.sessionId),
 ])
 
 export const quoteRateLimits = pgTable("quote_rate_limits", {

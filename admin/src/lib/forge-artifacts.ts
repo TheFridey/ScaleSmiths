@@ -15,7 +15,9 @@ export interface ForgeArtifactProvenanceInput {
   sourceTaskId?: number | null
   provider?: string | null
   model?: string | null
+  promptIdentifier?: string
   promptVersion: string
+  schemaIdentifier?: string
   schemaVersion: string
   sourceVersion?: string | null
   upstreamArtifacts?: Array<{ id: number; outputHash: string }>

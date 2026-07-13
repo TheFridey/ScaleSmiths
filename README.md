@@ -10,7 +10,12 @@ The audited implementation map is maintained in `docs/architecture/`:
 - [Deployment topology](docs/architecture/deployment-topology.md)
 - [Data model](docs/architecture/data-model.md)
 - [Admin RBAC policy](docs/architecture/rbac-policy.md)
+- [Monorepo workspace assessment](docs/architecture/monorepo-workspace-assessment.md)
 - [Admin MFA operations](docs/operations/admin-mfa.md)
+
+Architecture decision records are maintained in [docs/adr](docs/adr/README.md).
+
+Contribution standards, pull request expectations, conventional commit guidance, and security reporting are documented in [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
 
 | App | Local | Production |
 |-----|-------|-----------|

@@ -1,5 +1,7 @@
 import { relations, sql } from "drizzle-orm"
 import { boolean, index, integer, jsonb, numeric, pgEnum, pgTable, serial, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core"
+import type { LeadScoreFactor, LeadScoreResult } from "./lead-scoring"
+import type { ProjectEstimateResult } from "./project-estimator"
 
 export const kanbanColumn = pgEnum("kanban_column", ["backlog", "progress", "review", "done"])
 export const messageDirection = pgEnum("message_direction", ["inbound", "outbound"])
@@ -11,12 +13,14 @@ export const outreachActivityType = pgEnum("outreach_activity_type", ["linkedin_
 export const outreachDirection = pgEnum("outreach_direction", ["outbound", "inbound", "internal"])
 export const proposalPackageType = pgEnum("proposal_package_type", ["foundation", "growth", "forge", "retainer", "custom"])
 export const proposalStatus = pgEnum("proposal_status", ["draft", "sent", "viewed", "follow_up_due", "accepted", "rejected"])
+export const leadScoreOutcome = pgEnum("lead_score_outcome", ["won", "lost", "no_decision", "disqualified"])
+export const projectEstimateComplexity = pgEnum("project_estimate_complexity", ["low", "medium", "high", "enterprise"])
 export const forgeProjectStatus = pgEnum("forge_project_status", ["intake", "research", "strategy", "sitemap", "copy", "design", "build", "qa", "integrations", "preview", "client_review", "ready_to_deploy", "deployed", "archived"])
 export const forgePriority = pgEnum("forge_priority", ["low", "medium", "high"])
 export const forgeTaskAgentType = pgEnum("forge_task_agent_type", ["intake", "research", "strategy", "sitemap", "copy", "design", "frontend", "integration", "seo", "qa", "deploy", "repair"])
 export const forgeTaskStatus = pgEnum("forge_task_status", ["queued", "running", "completed", "failed", "cancelled"])
 export const forgeTaskResultQuality = pgEnum("forge_task_result_quality", ["validated", "degraded", "fallback", "requires_review", "failed"])
-export const forgeArtifactType = pgEnum("forge_artifact_type", ["research_report", "sitemap", "copy_doc", "design_direction", "component_spec", "generated_code", "visual_critique", "qa_report", "seo_pack", "visual_qa", "proposal", "handover_doc", "deployment_notes", "export_record"])
+export const forgeArtifactType = pgEnum("forge_artifact_type", ["research_report", "sitemap", "copy_doc", "design_direction", "design_system", "component_spec", "generated_code", "visual_critique", "qa_report", "seo_pack", "visual_qa", "accessibility_report", "proposal", "handover_doc", "deployment_notes", "export_record", "consistency_report", "copy_quality_report", "council_review", "originality_report", "site_inventory", "migration_analysis", "migration_candidate"])
 export const forgeIntegrationProvider = pgEnum("forge_integration_provider", ["resend", "whatsapp", "analytics", "calendly", "stripe", "cloudinary", "custom"])
 export const clientRequestCategory = pgEnum("client_request_category", ["website_update", "website_issue", "form_issue", "seo_request", "new_page", "content_assets", "urgent_support", "general_support"])
 export const clientRequestPriority = pgEnum("client_request_priority", ["low", "medium", "high", "critical"])
@@ -27,6 +31,28 @@ export const monthlyReportStatus = pgEnum("monthly_report_status", ["draft", "pu
 export const monthlyReportGeneratedBy = pgEnum("monthly_report_generated_by", ["forge", "manual"])
 export const salesProposalGeneratedBy = pgEnum("sales_proposal_generated_by", ["forge", "manual"])
 export const adminUserRole = pgEnum("admin_user_role", ["owner", "administrator", "sales", "project_manager", "developer", "finance", "viewer"])
+export const deliveryCapacityAdjustmentType = pgEnum("delivery_capacity_adjustment_type", ["capacity_override", "time_off", "contractor_capacity", "sales_commitment", "actual_delivery"])
+export const operatingBriefActionStatus = pgEnum("operating_brief_action_status", ["dismissed", "completed", "snoozed"])
+export const analyticsProvider = pgEnum("analytics_provider", ["manual", "google_search_console", "google_analytics", "plausible", "uptime", "core_web_vitals", "custom"])
+export const analyticsMetricSource = pgEnum("analytics_metric_source", ["analytics", "search_console", "forms", "phone", "performance", "errors", "uptime", "manual", "custom"])
+export const optimisationProposalStatus = pgEnum("optimisation_proposal_status", ["proposed", "accepted", "rejected", "completed", "measured"])
+export const experienceEventName = pgEnum("experience_event_name", [
+  "experience_choice_displayed",
+  "experience_normal_selected",
+  "experience_interactive_selected",
+  "experience_choice_abandoned",
+  "experience_returning_preference",
+  "experience_switched",
+  "quote_cta_clicked",
+  "quote_form_started",
+  "quote_form_submitted",
+  "navigation_exit",
+  "interactive_completion_depth",
+  "experience_fallback_activated",
+  "experience_error",
+])
+export const experienceDeviceClass = pgEnum("experience_device_class", ["mobile", "tablet", "desktop", "unknown"])
+export const experiencePreference = pgEnum("experience_preference", ["normal", "interactive", "none", "unknown"])
 
 export const adminUsers = pgTable("admin_users", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -266,6 +292,37 @@ export const proposalTrackings = pgTable("proposal_trackings", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 })
 
+export const leadScoreSnapshots = pgTable("lead_score_snapshots", {
+  id: serial("id").primaryKey(),
+  prospectId: integer("prospect_id").references(() => prospects.id, { onDelete: "cascade" }).notNull(),
+  score: integer("score").notNull(),
+  confidence: text("confidence").notNull(),
+  probabilityOfClosing: integer("probability_of_closing").notNull(),
+  estimatedProjectValue: integer("estimated_project_value").default(0).notNull(),
+  estimatedRetainerPotential: integer("estimated_retainer_potential").default(0).notNull(),
+  recommendedNextAction: text("recommended_next_action").notNull(),
+  positiveFactors: jsonb("positive_factors").$type<LeadScoreFactor[]>().default(sql`'[]'::jsonb`).notNull(),
+  negativeFactors: jsonb("negative_factors").$type<LeadScoreFactor[]>().default(sql`'[]'::jsonb`).notNull(),
+  neutralFactors: jsonb("neutral_factors").$type<LeadScoreFactor[]>().default(sql`'[]'::jsonb`).notNull(),
+  missingInformation: jsonb("missing_information").$type<string[]>().default(sql`'[]'::jsonb`).notNull(),
+  affectedData: jsonb("affected_data").$type<LeadScoreResult["affectedData"]>().default(sql`'[]'::jsonb`).notNull(),
+  modelVersion: text("model_version").notNull(),
+  overrideScore: integer("override_score"),
+  overrideReason: text("override_reason"),
+  overrideBy: text("override_by"),
+  overrideAt: timestamp("override_at", { withTimezone: true }),
+  outcome: leadScoreOutcome("outcome"),
+  outcomeValue: integer("outcome_value"),
+  outcomeRetainer: integer("outcome_retainer"),
+  outcomeNotes: text("outcome_notes"),
+  outcomeRecordedAt: timestamp("outcome_recorded_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("lead_score_snapshots_prospect_id_idx").on(table.prospectId, table.createdAt),
+  index("lead_score_snapshots_score_idx").on(table.score),
+  index("lead_score_snapshots_outcome_idx").on(table.outcome, table.outcomeRecordedAt),
+])
+
 export const salesProposals = pgTable("sales_proposals", {
   id: serial("id").primaryKey(),
   prospectId: integer("prospect_id").references(() => prospects.id, { onDelete: "cascade" }),
@@ -391,6 +448,262 @@ export const forgeArtifacts = pgTable("forge_artifacts", {
   index("forge_artifacts_source_task_idx").on(table.sourceTaskId),
 ])
 
+export const forgeDeploymentCandidateState = pgEnum("forge_deployment_candidate_state", ["draft", "submitted", "approved", "rejected", "superseded"])
+
+export const forgeDeploymentCandidates = pgTable("forge_deployment_candidates", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => forgeProjects.id, { onDelete: "cascade" }).notNull(),
+  candidateNumber: integer("candidate_number").notNull(),
+  parentCandidateId: integer("parent_candidate_id"),
+  state: forgeDeploymentCandidateState("state").default("draft").notNull(),
+  workspaceVersion: text("workspace_version").notNull(),
+  workspacePath: text("workspace_path").notNull(),
+  workspaceHash: text("workspace_hash").notNull(),
+  repositoryCommit: text("repository_commit"),
+  approvedArtifactsJson: jsonb("approved_artifacts_json").$type<Array<Record<string, unknown>>>().default([]).notNull(),
+  evidenceJson: jsonb("evidence_json").$type<Record<string, unknown>>().notNull(),
+  fallbackDependenciesJson: jsonb("fallback_dependencies_json").$type<Array<Record<string, unknown>>>().default([]).notNull(),
+  environmentRequirementsJson: jsonb("environment_requirements_json").$type<string[]>().default([]).notNull(),
+  migrationRequirementsJson: jsonb("migration_requirements_json").$type<string[]>().default([]).notNull(),
+  releaseNotes: text("release_notes").notNull(),
+  rollbackPlan: text("rollback_plan").notNull(),
+  createdBy: text("created_by").notNull(),
+  submittedBy: text("submitted_by"),
+  submittedAt: timestamp("submitted_at", { withTimezone: true }),
+  approvedBy: text("approved_by"),
+  approvedAt: timestamp("approved_at", { withTimezone: true }),
+  approvalReason: text("approval_reason"),
+  rejectedBy: text("rejected_by"),
+  rejectedAt: timestamp("rejected_at", { withTimezone: true }),
+  rejectionReason: text("rejection_reason"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("forge_deployment_candidates_project_number_idx").on(table.projectId, table.candidateNumber),
+  index("forge_deployment_candidates_project_state_idx").on(table.projectId, table.state),
+  index("forge_deployment_candidates_parent_idx").on(table.parentCandidateId),
+])
+
+export const forgeReleaseGateDecisionKind = pgEnum("forge_release_gate_decision_kind", ["approved", "override", "revoked"])
+
+export const forgeReleaseGateDecisions = pgTable("forge_release_gate_decisions", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => forgeProjects.id, { onDelete: "cascade" }).notNull(),
+  candidateId: integer("candidate_id").references(() => forgeDeploymentCandidates.id, { onDelete: "cascade" }).notNull(),
+  candidateWorkspaceHash: text("candidate_workspace_hash").notNull(),
+  gateKey: text("gate_key").notNull(),
+  decision: forgeReleaseGateDecisionKind("decision").notNull(),
+  actorId: text("actor_id").notNull(),
+  actorRole: text("actor_role").notNull(),
+  reason: text("reason").notNull(),
+  decidedAt: timestamp("decided_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("forge_release_gate_decisions_candidate_gate_idx").on(table.candidateId, table.gateKey),
+  index("forge_release_gate_decisions_project_idx").on(table.projectId, table.candidateId),
+])
+
+export const projectEstimateSnapshots = pgTable("project_estimate_snapshots", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => forgeProjects.id, { onDelete: "cascade" }).notNull(),
+  estimatedHours: integer("estimated_hours").notNull(),
+  confidence: text("confidence").notNull(),
+  confidenceRange: jsonb("confidence_range").$type<ProjectEstimateResult["confidenceRange"]>().notNull(),
+  complexityRating: projectEstimateComplexity("complexity_rating").notNull(),
+  riskFactors: jsonb("risk_factors").$type<ProjectEstimateResult["riskFactors"]>().default(sql`'[]'::jsonb`).notNull(),
+  suggestedBuildPrice: integer("suggested_build_price").notNull(),
+  suggestedRetainer: integer("suggested_retainer").notNull(),
+  minimumViableScope: jsonb("minimum_viable_scope").$type<string[]>().default(sql`'[]'::jsonb`).notNull(),
+  optionalEnhancements: jsonb("optional_enhancements").$type<string[]>().default(sql`'[]'::jsonb`).notNull(),
+  estimatedDeliveryRange: jsonb("estimated_delivery_range").$type<ProjectEstimateResult["estimatedDeliveryRange"]>().notNull(),
+  marginEstimate: jsonb("margin_estimate").$type<ProjectEstimateResult["marginEstimate"]>().notNull(),
+  knownInputs: jsonb("known_inputs").$type<ProjectEstimateResult["knownInputs"]>().default(sql`'[]'::jsonb`).notNull(),
+  assumptions: jsonb("assumptions").$type<ProjectEstimateResult["assumptions"]>().default(sql`'[]'::jsonb`).notNull(),
+  underpricingRisks: jsonb("underpricing_risks").$type<string[]>().default(sql`'[]'::jsonb`).notNull(),
+  disclaimer: text("disclaimer").notNull(),
+  modelVersion: text("model_version").notNull(),
+  manualHours: integer("manual_hours"),
+  manualBuildPrice: integer("manual_build_price"),
+  manualRetainer: integer("manual_retainer"),
+  manualReason: text("manual_reason"),
+  manualBy: text("manual_by"),
+  manualAt: timestamp("manual_at", { withTimezone: true }),
+  actualHours: integer("actual_hours"),
+  actualBuildPrice: integer("actual_build_price"),
+  actualRetainer: integer("actual_retainer"),
+  actualNotes: text("actual_notes"),
+  actualRecordedAt: timestamp("actual_recorded_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("project_estimate_snapshots_project_id_idx").on(table.projectId, table.createdAt),
+  index("project_estimate_snapshots_complexity_idx").on(table.complexityRating),
+])
+
+export const deliveryCapacityAdjustments = pgTable("delivery_capacity_adjustments", {
+  id: serial("id").primaryKey(),
+  weekStart: timestamp("week_start", { withTimezone: true }).notNull(),
+  adjustmentType: deliveryCapacityAdjustmentType("adjustment_type").notNull(),
+  staffName: text("staff_name"),
+  role: text("role"),
+  hours: integer("hours").notNull(),
+  reason: text("reason").notNull(),
+  confidence: text("confidence").default("medium").notNull(),
+  createdBy: text("created_by").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("delivery_capacity_adjustments_week_idx").on(table.weekStart),
+  index("delivery_capacity_adjustments_type_idx").on(table.adjustmentType, table.weekStart),
+])
+
+export const deliveryForecastActuals = pgTable("delivery_forecast_actuals", {
+  id: serial("id").primaryKey(),
+  periodStart: timestamp("period_start", { withTimezone: true }).notNull(),
+  periodType: text("period_type").default("week").notNull(),
+  forecastHours: integer("forecast_hours").notNull(),
+  actualHours: integer("actual_hours").notNull(),
+  notes: text("notes"),
+  recordedBy: text("recorded_by").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("delivery_forecast_actuals_period_idx").on(table.periodType, table.periodStart),
+])
+
+export const operatingBriefActions = pgTable("operating_brief_actions", {
+  id: serial("id").primaryKey(),
+  recommendationKey: text("recommendation_key").notNull(),
+  evidenceHash: text("evidence_hash").notNull(),
+  status: operatingBriefActionStatus("status").notNull(),
+  reason: text("reason"),
+  snoozedUntil: timestamp("snoozed_until", { withTimezone: true }),
+  actor: text("actor").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("operating_brief_actions_key_idx").on(table.recommendationKey, table.evidenceHash),
+  index("operating_brief_actions_status_idx").on(table.status, table.snoozedUntil),
+])
+
+export const clientAnalyticsConfigs = pgTable("client_analytics_configs", {
+  id: serial("id").primaryKey(),
+  clientId: integer("client_id").references(() => clients.id, { onDelete: "cascade" }).notNull(),
+  provider: analyticsProvider("provider").notNull(),
+  displayName: text("display_name").notNull(),
+  propertyId: text("property_id"),
+  consentGranted: boolean("consent_granted").default(false).notNull(),
+  consentNotes: text("consent_notes"),
+  retentionDays: integer("retention_days").default(395).notNull(),
+  enabled: boolean("enabled").default(false).notNull(),
+  credentialsEncrypted: text("credentials_encrypted"),
+  scopes: jsonb("scopes").$type<string[]>().default(sql`'[]'::jsonb`).notNull(),
+  sourceAttribution: text("source_attribution").notNull(),
+  lastIngestedAt: timestamp("last_ingested_at", { withTimezone: true }),
+  createdBy: text("created_by").notNull(),
+  updatedBy: text("updated_by"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("client_analytics_configs_client_idx").on(table.clientId),
+  index("client_analytics_configs_provider_idx").on(table.provider, table.enabled),
+])
+
+export const clientAnalyticsDailyMetrics = pgTable("client_analytics_daily_metrics", {
+  id: serial("id").primaryKey(),
+  clientId: integer("client_id").references(() => clients.id, { onDelete: "cascade" }).notNull(),
+  configId: integer("config_id").references(() => clientAnalyticsConfigs.id, { onDelete: "set null" }),
+  metricDate: timestamp("metric_date", { withTimezone: true }).notNull(),
+  source: analyticsMetricSource("source").notNull(),
+  sourceAttribution: text("source_attribution").notNull(),
+  sessions: integer("sessions"),
+  conversionEvents: integer("conversion_events"),
+  formSubmissions: integer("form_submissions"),
+  phoneClicks: integer("phone_clicks"),
+  ctaClicks: integer("cta_clicks"),
+  searchImpressions: integer("search_impressions"),
+  searchClicks: integer("search_clicks"),
+  errorCount: integer("error_count"),
+  uptimeChecks: integer("uptime_checks"),
+  uptimeFailures: integer("uptime_failures"),
+  lcpP75Ms: integer("lcp_p75_ms"),
+  inpP75Ms: integer("inp_p75_ms"),
+  clsP75: numeric("cls_p75", { precision: 6, scale: 4 }),
+  rawSummary: jsonb("raw_summary").$type<Record<string, unknown>>().default({}).notNull(),
+  ingestedAt: timestamp("ingested_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("client_analytics_daily_client_date_idx").on(table.clientId, table.metricDate),
+  index("client_analytics_daily_source_idx").on(table.source, table.metricDate),
+])
+
+export const clientAnalyticsAuditLogs = pgTable("client_analytics_audit_logs", {
+  id: serial("id").primaryKey(),
+  clientId: integer("client_id").references(() => clients.id, { onDelete: "cascade" }).notNull(),
+  configId: integer("config_id").references(() => clientAnalyticsConfigs.id, { onDelete: "set null" }),
+  actor: text("actor").notNull(),
+  action: text("action").notNull(),
+  message: text("message").notNull(),
+  metadataJson: jsonb("metadata_json").$type<Record<string, unknown>>().default({}).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("client_analytics_audit_client_idx").on(table.clientId, table.createdAt),
+  index("client_analytics_audit_config_idx").on(table.configId, table.createdAt),
+])
+
+export const clientOptimisationProposals = pgTable("client_optimisation_proposals", {
+  id: serial("id").primaryKey(),
+  clientId: integer("client_id").references(() => clients.id, { onDelete: "cascade" }).notNull(),
+  proposalKey: text("proposal_key").notNull(),
+  status: optimisationProposalStatus("status").default("proposed").notNull(),
+  title: text("title").notNull(),
+  evidenceJson: jsonb("evidence_json").$type<Array<Record<string, unknown>>>().default([]).notNull(),
+  expectedImpact: text("expected_impact").notNull(),
+  confidence: text("confidence").notNull(),
+  estimatedEffort: text("estimated_effort").notNull(),
+  risk: text("risk").notNull(),
+  proposedChange: text("proposed_change").notNull(),
+  validationMethod: text("validation_method").notNull(),
+  rollbackPlan: text("rollback_plan").notNull(),
+  requiredApproval: text("required_approval").notNull(),
+  relevantPages: jsonb("relevant_pages").$type<string[]>().default(sql`'[]'::jsonb`).notNull(),
+  relevantArtifacts: jsonb("relevant_artifacts").$type<Array<Record<string, unknown>>>().default([]).notNull(),
+  targetMetric: text("target_metric").notNull(),
+  baselineValue: numeric("baseline_value", { precision: 12, scale: 4 }),
+  measuredValue: numeric("measured_value", { precision: 12, scale: 4 }),
+  improved: boolean("improved"),
+  outcomeNotes: text("outcome_notes"),
+  decidedBy: text("decided_by"),
+  decidedAt: timestamp("decided_at", { withTimezone: true }),
+  measuredAt: timestamp("measured_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("client_optimisation_proposals_client_idx").on(table.clientId, table.status),
+  uniqueIndex("client_optimisation_proposals_key_idx").on(table.clientId, table.proposalKey),
+])
+
+export const experienceEvents = pgTable("experience_events", {
+  id: serial("id").primaryKey(),
+  eventName: experienceEventName("event_name").notNull(),
+  eventKey: text("event_key").notNull(),
+  sessionId: text("session_id").notNull(),
+  path: text("path").notNull(),
+  deviceClass: experienceDeviceClass("device_class").default("unknown").notNull(),
+  preference: experiencePreference("preference").default("unknown").notNull(),
+  returningPreference: boolean("returning_preference").default(false).notNull(),
+  fromExperience: experiencePreference("from_experience"),
+  toExperience: experiencePreference("to_experience"),
+  interactiveStep: text("interactive_step"),
+  completionDepth: integer("completion_depth"),
+  referrerHost: text("referrer_host"),
+  campaignSource: text("campaign_source"),
+  campaignMedium: text("campaign_medium"),
+  campaignName: text("campaign_name"),
+  errorCategory: text("error_category"),
+  metadata: jsonb("metadata").$type<Record<string, unknown>>().default({}).notNull(),
+  occurredAt: timestamp("occurred_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("experience_events_event_key_idx").on(table.eventKey),
+  index("experience_events_name_time_idx").on(table.eventName, table.occurredAt),
+  index("experience_events_preference_time_idx").on(table.preference, table.occurredAt),
+  index("experience_events_session_idx").on(table.sessionId),
+])
+
 export const forgeIntegrationConfigs = pgTable("forge_integration_configs", {
   id: serial("id").primaryKey(),
   projectId: integer("project_id").references(() => forgeProjects.id, { onDelete: "cascade" }).notNull(),
@@ -430,6 +743,65 @@ export const forgeMemories = pgTable("forge_memories", {
 }, (table) => [
   index("forge_memories_project_id_idx").on(table.projectId),
   index("forge_memories_project_key_idx").on(table.projectId, table.key),
+])
+
+export const forgeClarificationQuestions = pgTable("forge_clarification_questions", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => forgeProjects.id, { onDelete: "cascade" }).notNull(),
+  taskId: integer("task_id").references(() => forgeTasks.id, { onDelete: "set null" }),
+  artifactId: integer("artifact_id").references(() => forgeArtifacts.id, { onDelete: "set null" }),
+  factKey: text("fact_key").notNull(),
+  question: text("question").notNull(),
+  category: text("category").notNull(),
+  urgency: text("urgency").default("medium").notNull(),
+  assignee: text("assignee"),
+  status: text("status").default("open").notNull(),
+  groupKey: text("group_key").notNull(),
+  duplicateKey: text("duplicate_key").notNull(),
+  evidenceJson: jsonb("evidence_json").$type<string[]>().default([]).notNull(),
+  sourceType: text("source_type").notNull(),
+  sourceDetail: text("source_detail"),
+  answer: text("answer"),
+  answeredBy: text("answered_by"),
+  answeredAt: timestamp("answered_at", { withTimezone: true }),
+  approvedBy: text("approved_by"),
+  approvedAt: timestamp("approved_at", { withTimezone: true }),
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+  revalidateAfter: timestamp("revalidate_after", { withTimezone: true }),
+  metadataJson: jsonb("metadata_json").$type<Record<string, unknown>>(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("forge_clarification_questions_project_duplicate_idx").on(table.projectId, table.duplicateKey),
+  index("forge_clarification_questions_project_status_idx").on(table.projectId, table.status),
+  index("forge_clarification_questions_task_idx").on(table.taskId),
+  index("forge_clarification_questions_fact_key_idx").on(table.projectId, table.factKey),
+])
+
+export const forgeProjectFacts = pgTable("forge_project_facts", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => forgeProjects.id, { onDelete: "cascade" }).notNull(),
+  key: text("key").notNull(),
+  value: text("value").notNull(),
+  category: text("category").notNull(),
+  sourceType: text("source_type").notNull(),
+  sourceQuestionId: integer("source_question_id").references(() => forgeClarificationQuestions.id, { onDelete: "set null" }),
+  sourceArtifactId: integer("source_artifact_id").references(() => forgeArtifacts.id, { onDelete: "set null" }),
+  sourceTaskId: integer("source_task_id").references(() => forgeTasks.id, { onDelete: "set null" }),
+  answeredBy: text("answered_by"),
+  approvedBy: text("approved_by"),
+  approvedAt: timestamp("approved_at", { withTimezone: true }),
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+  revalidateAfter: timestamp("revalidate_after", { withTimezone: true }),
+  supersededAt: timestamp("superseded_at", { withTimezone: true }),
+  confidence: numeric("confidence", { precision: 5, scale: 2 }),
+  provenanceJson: jsonb("provenance_json").$type<Record<string, unknown>>(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("forge_project_facts_project_key_idx").on(table.projectId, table.key),
+  index("forge_project_facts_project_category_idx").on(table.projectId, table.category),
+  index("forge_project_facts_revalidate_idx").on(table.revalidateAfter),
 ])
 
 // Lightweight job queue for long-running Forge actions. The API enqueues a row and returns
@@ -542,6 +914,7 @@ export const prospectRelations = relations(prospects, ({ many, one }) => ({
   outreachActivities: many(outreachActivities),
   proposals: many(proposalTrackings),
   salesProposals: many(salesProposals),
+  leadScoreSnapshots: many(leadScoreSnapshots),
   forgeProjects: many(forgeProjects),
   convertedClient: one(clients, {
     fields: [prospects.convertedClientId],
@@ -559,6 +932,13 @@ export const outreachActivityRelations = relations(outreachActivities, ({ one })
 export const proposalTrackingRelations = relations(proposalTrackings, ({ one }) => ({
   prospect: one(prospects, {
     fields: [proposalTrackings.prospectId],
+    references: [prospects.id],
+  }),
+}))
+
+export const leadScoreSnapshotRelations = relations(leadScoreSnapshots, ({ one }) => ({
+  prospect: one(prospects, {
+    fields: [leadScoreSnapshots.prospectId],
     references: [prospects.id],
   }),
 }))
@@ -585,6 +965,7 @@ export const forgeProjectRelations = relations(forgeProjects, ({ many, one }) =>
   }),
   tasks: many(forgeTasks),
   artifacts: many(forgeArtifacts),
+  estimateSnapshots: many(projectEstimateSnapshots),
   integrationConfigs: many(forgeIntegrationConfigs),
   activityLogs: many(forgeActivityLogs),
   memories: many(forgeMemories),
@@ -621,6 +1002,13 @@ export const forgeAiUsageRelations = relations(forgeAiUsage, ({ one }) => ({
 export const forgeArtifactRelations = relations(forgeArtifacts, ({ one }) => ({
   project: one(forgeProjects, {
     fields: [forgeArtifacts.projectId],
+    references: [forgeProjects.id],
+  }),
+}))
+
+export const projectEstimateSnapshotRelations = relations(projectEstimateSnapshots, ({ one }) => ({
+  project: one(forgeProjects, {
+    fields: [projectEstimateSnapshots.projectId],
     references: [forgeProjects.id],
   }),
 }))

@@ -1,0 +1,173 @@
+name: Security
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  schedule:
+    - cron: "41 3 * * 2"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dependency-review:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+          comment-summary-in-pr: never
+
+  secrets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Scan repository history for verified secrets
+        uses: trufflesecurity/trufflehog@v3.90.8
+        with:
+          extra_args: --results=verified --fail
+
+  npm-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [web, admin]
+    defaults:
+      run:
+        working-directory: ${{ matrix.app }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ${{ matrix.app }}/package-lock.json
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Fail on high or critical production vulnerabilities
+        run: npm audit --omit=dev --audit-level=high
+      - name: Retain complete audit report
+        if: always()
+        run: npm audit --json > npm-audit-${{ matrix.app }}.json || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: npm-audit-${{ matrix.app }}
+          path: ${{ matrix.app }}/npm-audit-${{ matrix.app }}.json
+          retention-days: 14
+
+  dockerfile-lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Hadolint application Dockerfiles
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: Dockerfile
+          recursive: true
+          failure-threshold: error
+
+  images:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [web, admin]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image without runtime secrets
+        run: docker build --tag scalesmiths-${{ matrix.app }}:security ./${{ matrix.app }}
+      - name: Scan high and critical image vulnerabilities
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: scalesmiths-${{ matrix.app }}:security
+          format: sarif
+          output: trivy-${{ matrix.app }}.sarif
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+      - name: Generate SPDX SBOM
+        uses: anchore/sbom-action@v0.17.9
+        if: always()
+        with:
+          image: scalesmiths-${{ matrix.app }}:security
+          format: spdx-json
+          output-file: sbom-${{ matrix.app }}.spdx.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: container-security-${{ matrix.app }}
+          path: |
+            trivy-${{ matrix.app }}.sarif
+            sbom-${{ matrix.app }}.spdx.json
+          retention-days: 30
+
+  migrations:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: scalesmiths_integration_test
+          POSTGRES_USER: scalesmiths_ci
+          POSTGRES_PASSWORD: local_ci_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U scalesmiths_ci -d scalesmiths_integration_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    defaults:
+      run:
+        working-directory: admin
+    env:
+      DATABASE_URL: postgresql://scalesmiths_ci:local_ci_only@127.0.0.1:5432/scalesmiths_integration_test
+      TEST_DATABASE_URL: postgresql://scalesmiths_ci:local_ci_only@127.0.0.1:5432/scalesmiths_integration_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: admin/package-lock.json
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Verify migration journal and filenames
+        run: node ../scripts/check-migrations.mjs
+      - name: Apply migrations to clean PostgreSQL
+        run: npm run db:migrate
+      - name: Run real PostgreSQL integration suite
+        run: npm run test:integration
+
+  repository-security-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: admin/package-lock.json
+      - name: Environment-file hygiene
+        run: npm run check:env-hygiene
+      - name: Install admin dependencies
+        working-directory: admin
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Generated-site sandbox security fixtures
+        working-directory: admin
+        run: npx vitest run src/lib/forge-sandbox-security.test.ts

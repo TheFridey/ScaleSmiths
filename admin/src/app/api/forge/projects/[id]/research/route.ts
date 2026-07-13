@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "../../../../../../../auth"
 import { ForgeAiError } from "@/lib/server/forge-ai"
-import { ForgeResearchAgentError } from "@/lib/server/forge-research-agent"
+import { approveForgeResearchReport, ForgeResearchAgentError } from "@/lib/server/forge-research-agent"
 import { enqueueForgeJob, forgeJobResponseBody } from "@/lib/server/forge-job-runner"
 
 export const dynamic = "force-dynamic"
@@ -9,6 +9,19 @@ export const runtime = "nodejs"
 
 function sessionActor(session: { user?: { email?: string | null; name?: string | null } } | null) {
   return session?.user?.email ?? session?.user?.name ?? "admin"
+}
+
+export async function PATCH(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const session = await auth()
+  if (!session) return NextResponse.json({ error: "Unauthorized." }, { status: 401 })
+  const projectId = parseId((await params).id)
+  if (!projectId) return NextResponse.json({ error: "Invalid Forge project id." }, { status: 400 })
+  try {
+    return NextResponse.json(await approveForgeResearchReport(projectId, sessionActor(session)))
+  } catch (error) {
+    if (error instanceof ForgeResearchAgentError) return NextResponse.json({ error: error.safeMessage }, { status: error.status })
+    return NextResponse.json({ error: "Unable to approve Forge research." }, { status: 500 })
+  }
 }
 
 function parseId(value: string) {

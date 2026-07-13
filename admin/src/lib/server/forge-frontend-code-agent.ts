@@ -1,5 +1,5 @@
 import "server-only"
-import { and, eq } from "drizzle-orm"
+import { and, desc, eq } from "drizzle-orm"
 import { db } from "@/lib/db"
 import {
   FORGE_COMPONENT_SPEC_ARTIFACT_TITLE,
@@ -7,6 +7,7 @@ import {
 } from "@/lib/forge-component-spec"
 import { FORGE_COPY_ARTIFACT_TITLE, readForgeCopyDocumentArtifact } from "@/lib/forge-copy"
 import { FORGE_DESIGN_ARTIFACT_TITLE, readForgeDesignDirectionArtifact } from "@/lib/forge-design"
+import { FORGE_DESIGN_SYSTEM_ARTIFACT_TITLE, readForgeDesignSystemArtifact } from "@/lib/forge-design-system"
 import {
   FORGE_GENERATED_CODE_ARTIFACT_KIND,
   FORGE_GENERATED_CODE_ARTIFACT_TITLE,
@@ -46,6 +47,7 @@ export async function runForgeFrontendCodeAgent(projectId: number, actor: string
     approvedSitemap,
     approvedCopy,
     approvedDesign,
+    approvedDesignSystem,
     approvedComponentSpec,
     integrationPlaceholders,
     resendConfig,
@@ -62,6 +64,7 @@ export async function runForgeFrontendCodeAgent(projectId: number, actor: string
   if (!approvedSitemap) throw new ForgeFrontendCodeAgentError("Approve the sitemap before generating code.", 400)
   if (!approvedCopy) throw new ForgeFrontendCodeAgentError("Approve copy before generating code.", 400)
   if (!approvedDesign) throw new ForgeFrontendCodeAgentError("Approve design direction before generating code.", 400)
+  if (!approvedDesignSystem) throw new ForgeFrontendCodeAgentError("Approve the design-system specification before generating code.", 400)
   if (!approvedComponentSpec) throw new ForgeFrontendCodeAgentError("Approve the component specification before generating code.", 400)
 
   const now = new Date()
@@ -71,6 +74,7 @@ export async function runForgeFrontendCodeAgent(projectId: number, actor: string
     approvedSitemap,
     approvedCopy,
     approvedDesign,
+    approvedDesignSystem,
     approvedComponentSpec,
     integrationPlaceholders,
     resendConfig,
@@ -96,6 +100,8 @@ export async function runForgeFrontendCodeAgent(projectId: number, actor: string
           sitemapPages: approvedSitemap.sitemap.map((page) => page.path),
           copyPages: approvedCopy.pages.map((page) => page.path),
           designStyle: approvedDesign.designStyleName,
+          designSystemVersion: approvedDesignSystem.version,
+          designSystemRequiredTokens: approvedDesignSystem.requiredTokenIds,
           componentCount: approvedComponentSpec.components.length,
           integrationPlaceholders,
         },
@@ -303,6 +309,7 @@ export async function regenerateForgeGeneratedFiles(projectId: number): Promise<
     !context.approvedSitemap ||
     !context.approvedCopy ||
     !context.approvedDesign ||
+    !context.approvedDesignSystem ||
     !context.approvedComponentSpec
   ) {
     return null
@@ -314,6 +321,7 @@ export async function regenerateForgeGeneratedFiles(projectId: number): Promise<
     approvedSitemap: context.approvedSitemap,
     approvedCopy: context.approvedCopy,
     approvedDesign: context.approvedDesign,
+    approvedDesignSystem: context.approvedDesignSystem,
     approvedComponentSpec: context.approvedComponentSpec,
     integrationPlaceholders: context.integrationPlaceholders,
     resendConfig: context.resendConfig,
@@ -330,36 +338,23 @@ async function loadFrontendCodeContext(projectId: number) {
   const [project] = await db.select().from(forgeProjects).where(eq(forgeProjects.id, projectId)).limit(1)
   if (!project) throw new ForgeFrontendCodeAgentError("Forge project not found.", 404)
 
-  const [intakeArtifacts, workspaceMemories, sitemapArtifacts, copyArtifacts, designArtifacts, componentSpecArtifacts, integrations] = await Promise.all([
-    db.select({ metadataJson: forgeArtifacts.metadataJson }).from(forgeArtifacts).where(and(
-      eq(forgeArtifacts.projectId, projectId),
-      eq(forgeArtifacts.type, "handover_doc"),
-      eq(forgeArtifacts.title, FORGE_INTAKE_ARTIFACT_TITLE),
-    )).limit(1),
+  const latestArtifact = (type: "handover_doc" | "sitemap" | "copy_doc" | "design_direction" | "design_system" | "component_spec", title: string) => db
+    .select({ metadataJson: forgeArtifacts.metadataJson })
+    .from(forgeArtifacts)
+    .where(and(eq(forgeArtifacts.projectId, projectId), eq(forgeArtifacts.type, type), eq(forgeArtifacts.title, title)))
+    .orderBy(desc(forgeArtifacts.version), desc(forgeArtifacts.updatedAt))
+    .limit(1)
+  const [intakeArtifacts, workspaceMemories, sitemapArtifacts, copyArtifacts, designArtifacts, designSystemArtifacts, componentSpecArtifacts, integrations] = await Promise.all([
+    latestArtifact("handover_doc", FORGE_INTAKE_ARTIFACT_TITLE),
     db.select({ value: forgeMemories.value }).from(forgeMemories).where(and(
       eq(forgeMemories.projectId, projectId),
       eq(forgeMemories.key, FORGE_WORKSPACE_MEMORY_KEY),
     )).limit(1),
-    db.select({ metadataJson: forgeArtifacts.metadataJson }).from(forgeArtifacts).where(and(
-      eq(forgeArtifacts.projectId, projectId),
-      eq(forgeArtifacts.type, "sitemap"),
-      eq(forgeArtifacts.title, FORGE_SITEMAP_ARTIFACT_TITLE),
-    )).limit(1),
-    db.select({ metadataJson: forgeArtifacts.metadataJson }).from(forgeArtifacts).where(and(
-      eq(forgeArtifacts.projectId, projectId),
-      eq(forgeArtifacts.type, "copy_doc"),
-      eq(forgeArtifacts.title, FORGE_COPY_ARTIFACT_TITLE),
-    )).limit(1),
-    db.select({ metadataJson: forgeArtifacts.metadataJson }).from(forgeArtifacts).where(and(
-      eq(forgeArtifacts.projectId, projectId),
-      eq(forgeArtifacts.type, "design_direction"),
-      eq(forgeArtifacts.title, FORGE_DESIGN_ARTIFACT_TITLE),
-    )).limit(1),
-    db.select({ metadataJson: forgeArtifacts.metadataJson }).from(forgeArtifacts).where(and(
-      eq(forgeArtifacts.projectId, projectId),
-      eq(forgeArtifacts.type, "component_spec"),
-      eq(forgeArtifacts.title, FORGE_COMPONENT_SPEC_ARTIFACT_TITLE),
-    )).limit(1),
+    latestArtifact("sitemap", FORGE_SITEMAP_ARTIFACT_TITLE),
+    latestArtifact("copy_doc", FORGE_COPY_ARTIFACT_TITLE),
+    latestArtifact("design_direction", FORGE_DESIGN_ARTIFACT_TITLE),
+    latestArtifact("design_system", FORGE_DESIGN_SYSTEM_ARTIFACT_TITLE),
+    latestArtifact("component_spec", FORGE_COMPONENT_SPEC_ARTIFACT_TITLE),
     db.select({
       provider: forgeIntegrationConfigs.provider,
       configJson: forgeIntegrationConfigs.configJson,
@@ -372,6 +367,7 @@ async function loadFrontendCodeContext(projectId: number) {
   const sitemap = readForgeSitemapStrategyArtifact(sitemapArtifacts[0]?.metadataJson)
   const copy = readForgeCopyDocumentArtifact(copyArtifacts[0]?.metadataJson)
   const design = readForgeDesignDirectionArtifact(designArtifacts[0]?.metadataJson)
+  const designSystem = readForgeDesignSystemArtifact(designSystemArtifacts[0]?.metadataJson)
   const componentSpec = readForgeComponentSpecArtifact(componentSpecArtifacts[0]?.metadataJson)
   const workspace = readForgeWorkspaceMemory(workspaceMemories[0]?.value)
   const integrationPlaceholders = integrations
@@ -388,6 +384,7 @@ async function loadFrontendCodeContext(projectId: number) {
     approvedSitemap: sitemap.approvedStrategy,
     approvedCopy: copy.approvedCopy,
     approvedDesign: design.approvedDirection,
+    approvedDesignSystem: designSystem.approvedSpecification,
     approvedComponentSpec: componentSpec.approvedSpec,
     integrationPlaceholders: [
       ...(componentSpec.approvedSpec?.integrationPlaceholders ?? []),

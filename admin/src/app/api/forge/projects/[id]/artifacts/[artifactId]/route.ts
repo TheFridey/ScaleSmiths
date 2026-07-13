@@ -5,6 +5,7 @@ import { db } from "@/lib/db"
 import { diffArtifactText } from "@/lib/forge-artifacts"
 import { forgeActivityLogs, forgeArtifacts } from "@/lib/schema"
 import { saveVersionedForgeArtifact } from "@/lib/server/forge-artifacts"
+import { buildForgeHumanEditTracking, mergeHumanEditTracking } from "@/lib/forge-human-edits"
 
 function ids(values: { id: string; artifactId: string }) {
   const projectId = Number(values.id), artifactId = Number(values.artifactId)
@@ -35,12 +36,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const [source] = await db.select().from(forgeArtifacts).where(and(eq(forgeArtifacts.id, parsed.artifactId), eq(forgeArtifacts.projectId, parsed.projectId))).limit(1)
   if (!source) return NextResponse.json({ error: "Historical artifact not found." }, { status: 404 })
   const actor = session.user?.email ?? session.user?.name ?? "admin"
+  const editTracking = buildForgeHumanEditTracking({ artifact: source, approvedContent: source.content ?? "", editor: actor, reason, now: new Date() })
   const created = await saveVersionedForgeArtifact({
-    projectId: parsed.projectId, type: source.type, title: source.title, content: source.content ?? "", metadataJson: { ...(source.metadataJson ?? {}), rollback: { sourceArtifactId: source.id, sourceVersion: source.version, reason } }, actor,
+    projectId: parsed.projectId, type: source.type, title: source.title, content: source.content ?? "", metadataJson: mergeHumanEditTracking({ ...(source.metadataJson ?? {}), rollback: { sourceArtifactId: source.id, sourceVersion: source.version, reason } }, editTracking), actor,
     action: "artifact_rollback_created", message: `Created a new ${source.title} version from historical version ${source.version}.`,
     retentionPolicy: source.retentionPolicy === "qa-log" ? "qa-log" : "standard",
     provenance: { sourceTaskId: source.sourceTaskId, provider: source.provider, model: source.model, promptVersion: source.promptVersion, schemaVersion: source.schemaVersion, sourceVersion: source.sourceVersion, upstreamArtifacts: [{ id: source.id, outputHash: source.outputHash }], inputContext: { rollbackSourceId: source.id, rollbackSourceHash: source.outputHash, reason }, actor, validationResult: source.validationResult, qualityState: source.qualityState, approvalState: "unapproved", approvalHistory: [] },
   })
-  await db.insert(forgeActivityLogs).values({ projectId: parsed.projectId, actor, action: "artifact_rollback_lineage", message: `Rolled back by creating artifact version ${created.version}.`, metadataJson: { sourceArtifactId: source.id, sourceVersion: source.version, newArtifactId: created.id, newVersion: created.version, reason } })
+  await db.insert(forgeActivityLogs).values({ projectId: parsed.projectId, actor, action: "artifact_rollback_lineage", message: `Rolled back by creating artifact version ${created.version}.`, metadataJson: { sourceArtifactId: source.id, sourceVersion: source.version, newArtifactId: created.id, newVersion: created.version, reason, humanEditTracking: editTracking } })
   return NextResponse.json({ artifact: created }, { status: 201 })
 }

@@ -23,6 +23,8 @@ import { FORGE_INTAKE_ARTIFACT_TITLE, readForgeIntakeArtifact } from "@/lib/forg
 import { FORGE_RESEARCH_ARTIFACT_KIND, FORGE_RESEARCH_ARTIFACT_TITLE, type ForgeResearchReport } from "@/lib/forge-research"
 import { FORGE_SITEMAP_ARTIFACT_TITLE, readForgeSitemapStrategyArtifact } from "@/lib/forge-sitemap"
 import { forgeActivityLogs, forgeArtifacts, forgeProjects, forgeTasks } from "@/lib/schema"
+import { buildForgeHumanEditTracking, mergeHumanEditTracking } from "@/lib/forge-human-edits"
+import { appendArtifactDecision, parseForgeArtifactDecision } from "@/lib/forge-approval-intelligence"
 
 export class ForgeDesignAgentError extends Error {
   safeMessage: string
@@ -298,7 +300,14 @@ export async function approveForgeDesignDirection(
       ))
       .limit(1)
 
-    const metadataJson = {
+    const editTracking = existing ? buildForgeHumanEditTracking({
+      artifact: existing,
+      approvedContent: content,
+      editor: actor,
+      reason: "Design direction reviewed and approved.",
+      now,
+    }) : null
+    const baseMetadataJson = {
       ...(existing?.metadataJson ?? {}),
       kind: FORGE_DESIGN_ARTIFACT_KIND,
       status: "approved",
@@ -307,6 +316,9 @@ export async function approveForgeDesignDirection(
       approvedAt: now.toISOString(),
       approvedBy: actor,
     }
+    const approvalDecision = parseForgeArtifactDecision({ decision: "approved", primaryReason: "Design direction reviewed and approved.", category: "design_preference", severity: "low", affectsFutureRegeneration: false, acceptanceScope: "partial_acceptance" }, actor, now)
+    const decisionState = appendArtifactDecision(baseMetadataJson, existing?.approvalHistory, approvalDecision)
+    const metadataJson = editTracking ? mergeHumanEditTracking(decisionState.metadataJson, editTracking) : decisionState.metadataJson
 
     const [saved] = existing
       ? await tx
@@ -314,6 +326,8 @@ export async function approveForgeDesignDirection(
         .set({
           content,
           metadataJson,
+          approvalState: "approved",
+          approvalHistory: decisionState.approvalHistory,
           updatedAt: now,
         })
         .where(eq(forgeArtifacts.id, existing.id))
@@ -326,6 +340,8 @@ export async function approveForgeDesignDirection(
           title: FORGE_DESIGN_ARTIFACT_TITLE,
           content,
           metadataJson,
+          approvalState: "approved",
+          approvalHistory: decisionState.approvalHistory,
           updatedAt: now,
         })
         .returning()
@@ -340,6 +356,8 @@ export async function approveForgeDesignDirection(
         selectedStylePack: direction.selectedStylePack,
         selectedAnimationPack: direction.selectedAnimationPack,
         approvedAt: now.toISOString(),
+        humanEditTracking: editTracking,
+        approvalDecision,
       },
     })
 

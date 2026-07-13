@@ -28,6 +28,7 @@ import { forgeActivityLogs, forgeArtifacts, forgeIntegrationConfigs, forgeMemori
 import { forgeTasks } from "@/lib/schema"
 import { taskBlocksDeployment } from "@/lib/forge-task-quality"
 import { evaluatePersistedProjectTransition, workflowAuditMetadata } from "./forge-workflow"
+import { requireVerifiedApprovedDeploymentCandidate } from "./forge-deployment-candidates"
 
 export class ForgeDeployError extends Error {
   safeMessage: string
@@ -87,6 +88,7 @@ async function updateChecklist(context: DeployContext, actor: string, request: F
 }
 
 async function markReady(context: DeployContext, actor: string) {
+  await requireVerifiedApprovedDeploymentCandidate(context.project.id)
   const transition = await evaluatePersistedProjectTransition({ projectId: context.project.id, to: "ready_to_deploy" })
   if (!context.signals.hasGeneratedSite) throw new ForgeDeployError("Generate the site before marking it ready to deploy.", 400)
   if (context.qualityBlockers.length) throw new ForgeDeployError(`Deployment blocked by unapproved task quality: ${context.qualityBlockers.join(", ")}.`, 400)
@@ -128,6 +130,7 @@ async function markReady(context: DeployContext, actor: string) {
 }
 
 async function markDeployed(context: DeployContext, actor: string) {
+  await requireVerifiedApprovedDeploymentCandidate(context.project.id)
   const transition = await evaluatePersistedProjectTransition({ projectId: context.project.id, to: "deployed" })
   if (context.qualityBlockers.length) throw new ForgeDeployError(`Deployment blocked by unapproved task quality: ${context.qualityBlockers.join(", ")}.`, 400)
   if (context.project.status !== "ready_to_deploy" && context.existing.lifecycle !== "ready") {

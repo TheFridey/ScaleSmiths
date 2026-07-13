@@ -36,6 +36,8 @@ Thumbs.db
 .playwright-mcp/
 playwright-report/
 test-results/
+performance-reports/
+benchmark-results/
 
 # Forge generated client sites (workspaces are local only)
 generated-sites/*

@@ -8,6 +8,7 @@ import dynamic from "next/dynamic"
 import { AnimatePresence, MotionConfig, motion, useReducedMotion } from "framer-motion"
 import { ArrowRight, Building2, CalendarCheck, ChefHat, Dumbbell, Hammer, Package, Sparkles, Telescope, Users } from "lucide-react"
 import { ResetExperiencePreferenceButton, rememberInteractiveExperience, rememberNormalExperience } from "@/components/ExperiencePreference"
+import { trackExperienceEvent } from "@/lib/experience-analytics-client"
 import { BusinessSimulationLayer } from "@/components/v2/BusinessSimulationLayer"
 import { V2ConversionLayer } from "@/components/v2/V2ConversionLayer"
 import {
@@ -63,6 +64,14 @@ function readStoredIndustry() {
   }
 }
 
+function shouldDisableE2eCanvas() {
+  try {
+    return window.localStorage.getItem("scalesmiths.e2e.disableCanvas") === "true"
+  } catch {
+    return false
+  }
+}
+
 function storeIndustry(industryId: V2Industry) {
   try {
     window.localStorage.setItem(INDUSTRY_STORAGE_KEY, industryId)
@@ -83,10 +92,17 @@ function SceneBackdrop({
   onPanelFocus: (panelId: string | null) => void
 }) {
   const [loaded, setLoaded] = useState(false)
+  const disableCanvas = typeof window !== "undefined" && shouldDisableE2eCanvas()
 
   useEffect(() => {
     setLoaded(false)
   }, [scene.id])
+
+  useEffect(() => {
+    if (disableCanvas) {
+      trackExperienceEvent("experience_fallback_activated", { preference: "interactive", metadata: { source: "canvas_disabled" } })
+    }
+  }, [disableCanvas])
 
   const objectPosition = {
     "--scene-position": scene.objectPosition,
@@ -127,14 +143,16 @@ function SceneBackdrop({
 
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.026)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.026)_1px,transparent_1px)] bg-[size:64px_64px] opacity-55" />
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_48%_26%,rgba(34,211,238,0.10),transparent_26%),linear-gradient(90deg,rgba(4,12,23,0.95),rgba(4,12,23,0.62)_43%,rgba(4,12,23,0.78)),linear-gradient(180deg,rgba(4,12,23,0.70),rgba(4,12,23,0.20)_42%,rgba(4,12,23,0.88))]" />
-      <div aria-hidden="true" className="absolute inset-0 hidden opacity-55 md:block">
-        <ClientSceneCanvas
-          className="h-full w-full"
-          isForgeStep={scene.journeyStep === "forge"}
-          activePanelId={activePanelId}
-          onPanelFocus={onPanelFocus}
-        />
-      </div>
+      {!disableCanvas && (
+        <div aria-hidden="true" className="absolute inset-0 hidden opacity-55 md:block">
+          <ClientSceneCanvas
+            className="h-full w-full"
+            isForgeStep={scene.journeyStep === "forge"}
+            activePanelId={activePanelId}
+            onPanelFocus={onPanelFocus}
+          />
+        </div>
+      )}
       <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-bg to-transparent md:hidden" />
     </div>
   )
@@ -267,6 +285,15 @@ export function V2InteractiveExperience() {
     setSelectedIndustry(readStoredIndustry())
   }, [])
 
+  useEffect(() => {
+    const currentIndex = journeyMarkers.findIndex((marker) => marker.step === step)
+    trackExperienceEvent("interactive_completion_depth", {
+      preference: "interactive",
+      interactiveStep: step,
+      completionDepth: Math.round(((currentIndex + 1) / journeyMarkers.length) * 100),
+    })
+  }, [step])
+
   function chooseIndustry(industryId: V2Industry) {
     setSelectedIndustry(industryId)
     storeIndustry(industryId)
@@ -299,6 +326,7 @@ export function V2InteractiveExperience() {
 
   function exitToNormalSite() {
     rememberNormalExperience()
+    trackExperienceEvent("navigation_exit", { preference: "normal", fromExperience: "interactive", toExperience: "normal", metadata: { target: "/" } })
   }
 
   const activeScene =

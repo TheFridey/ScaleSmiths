@@ -29,6 +29,7 @@ services:
     env_file: .env
     environment:
       NODE_ENV: development
+      FORGE_SANDBOX_RUNNER: local
     volumes:
       - ./admin/src:/app/src
       - ./admin/public:/app/public

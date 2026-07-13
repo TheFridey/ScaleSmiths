@@ -263,7 +263,7 @@ export function createMockResearchReport(project: ForgeResearchProjectContext, i
       "Add structured, reusable summaries that future AI assistants can cite accurately.",
     ],
     contentOpportunities: [
-      "Service comparison guide",
+      `How to choose the right ${project.industry ?? "service"} option for your property`,
       "Before/after or result-led case study",
       "Buyer FAQ",
       "Process explainer",

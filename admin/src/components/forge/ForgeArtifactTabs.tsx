@@ -12,6 +12,7 @@ interface ForgeArtifactRow {
   type: ForgeArtifactType
   title: string
   content: string | null
+  metadataJson: Record<string, unknown> | null
   version: number
   parentArtifactId: number | null
   sourceTaskId: number | null
@@ -97,6 +98,7 @@ export function ForgeArtifactTabs({ artifacts }: { artifacts: ForgeArtifactRow[]
               <div className="mt-1 font-dm text-[11px] uppercase tracking-[.06em]" style={{ color:T.t3 }}>{labelize(row.type)}</div>
               <div className="mt-2 flex flex-wrap gap-2 font-dm text-[11px]" style={{ color:T.t2 }}><span>{row.qualityState}</span><span>{row.approvalState}</span><span>{row.supersededAt ? "superseded" : "current"}</span><span>Task {row.sourceTaskId ? `#${row.sourceTaskId}` : "unknown"}</span><span>{row.provider ?? "provider unknown"}{row.model ? ` / ${row.model}` : ""}</span></div>
               {(row.qualityState === "fallback" || row.qualityState === "degraded") && <div className="mt-2 rounded border border-amber-500/30 bg-amber-500/10 p-2 text-xs text-amber-200">This version contains {row.qualityState} output and must not be treated as validated.</div>}
+              {humanEdit(row) && <HumanEditSummary value={humanEdit(row)!} />}
               <details className="mt-2 text-xs" style={{ color:T.t2 }}><summary>Lineage and approval history</summary><div className="mt-2 space-y-1"><p>Parent: {row.parentArtifactId ? `#${row.parentArtifactId}` : "root"}</p><p>Upstream: {row.upstreamArtifactIds.length ? row.upstreamArtifactIds.map((id) => `#${id}`).join(", ") : "none recorded"}</p><p>Prompt/schema: {row.promptVersion} / {row.schemaVersion}</p><p>SHA-256: {row.outputHash}</p><p>Approvals: {row.approvalHistory.length ? JSON.stringify(row.approvalHistory) : "none recorded"}</p>{index < rows.length - 1 && <Diff previous={rows[index + 1].content} current={row.content} />}</div></details>
               {row.content && (
                 <pre className="mt-3 max-h-72 overflow-auto whitespace-pre-wrap rounded border p-3 font-mono text-[11px] leading-relaxed" style={{ background:T.s3, borderColor:T.b1, color:T.t2 }}>
@@ -109,6 +111,23 @@ export function ForgeArtifactTabs({ artifacts }: { artifacts: ForgeArtifactRow[]
       )}
     </section>
   )
+}
+
+function HumanEditSummary({ value }: { value: Record<string, unknown> }) {
+  const categories = Array.isArray(value.categories) ? value.categories.join(", ") : "uncategorised"
+  return (
+    <div className="mt-2 rounded border p-2 font-dm text-[11px] leading-relaxed" style={{ background:T.s3, borderColor:T.b1, color:T.t2 }}>
+      <div style={{ color:T.t1 }}>Human edit: generated v{String(value.generatedVersion ?? "?")} → approved v{String(value.finalApprovedVersion ?? "?")}</div>
+      <div>Editor: {String(value.editor ?? "unknown")} · Distance: {String(value.approximateEditDistance ?? 0)} · Categories: {categories}</div>
+      <div>Reason: {String(value.reason ?? "No reason recorded.")}</div>
+      <div>Corrected factual issue: {value.correctedFactualProblem ? "yes" : "no"} · Corrected quality issue: {value.correctedQualityProblem ? "yes" : "no"}</div>
+    </div>
+  )
+}
+
+function humanEdit(row: ForgeArtifactRow): Record<string, unknown> | null {
+  const value = row.metadataJson?.humanEditTracking
+  return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : null
 }
 
 function Diff({ previous, current }: { previous: string | null; current: string | null }) {

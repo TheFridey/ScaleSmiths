@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { FormEvent, useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Check, Copy, Download, FileSignature, FileText, ScrollText } from "lucide-react"
 import {
@@ -29,6 +29,7 @@ export function ForgeProposalPanel({
   const [bundle, setBundle] = useState<ForgeProposalBundle | null>(initialProposal.bundle)
   const [busy, setBusy] = useState<"proposal" | "audit" | null>(null)
   const [error, setError] = useState("")
+  const [statusBusy, setStatusBusy] = useState("")
   const [activeDoc, setActiveDoc] = useState<ForgeProposalDocumentKey>("proposal")
   const [copied, setCopied] = useState(false)
 
@@ -69,6 +70,23 @@ export function ForgeProposalPanel({
       setTimeout(() => setCopied(false), 1500)
     } catch {
       setError("Unable to copy to clipboard.")
+    }
+  }
+
+  async function updateProposalStatus(event: FormEvent<HTMLFormElement>, action: "approval" | "client_response") {
+    event.preventDefault()
+    setStatusBusy(action)
+    setError("")
+    try {
+      const body = { action, ...Object.fromEntries(new FormData(event.currentTarget)) }
+      const response = await fetch(`/api/forge/projects/${projectId}/proposal`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
+      const json = await response.json().catch(() => ({}))
+      if (!response.ok || json.ok === false) throw new Error(json.error || "Unable to update proposal.")
+      router.refresh()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to update proposal.")
+    } finally {
+      setStatusBusy("")
     }
   }
 
@@ -136,6 +154,35 @@ export function ForgeProposalPanel({
         </div>
       ) : (
         <div className="space-y-4">
+          <div className="grid gap-3 lg:grid-cols-2">
+            <form onSubmit={(event) => void updateProposalStatus(event, "approval")} className="rounded-lg border p-3" style={{ background:T.s2, borderColor:T.b1 }}>
+              <div className="mb-2 font-syne text-sm font-bold">Internal approval</div>
+              <div className="grid grid-cols-[140px_1fr] gap-2">
+                <select name="state" defaultValue={bundle.approval?.state === "approved" ? "approved" : bundle.approval?.state === "rejected" ? "rejected" : "approved"} className="font-dm text-sm">
+                  <option value="approved">Approved</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+                <input name="reason" placeholder="Approval/rejection reason" defaultValue={bundle.approval?.reason ?? ""} />
+              </div>
+              {bundle.approval?.state !== "draft" && <p className="mt-2 font-dm text-xs" style={{ color:T.t2 }}>{bundle.approval.state} by {bundle.approval.actor ?? "admin"}</p>}
+              <button disabled={disabled || statusBusy === "approval"} className="mt-2 rounded-lg px-3 py-2 font-dm text-xs font-semibold text-white disabled:opacity-60" style={{ background:T.acc }}>{statusBusy === "approval" ? "Saving..." : "Save approval"}</button>
+            </form>
+            <form onSubmit={(event) => void updateProposalStatus(event, "client_response")} className="rounded-lg border p-3" style={{ background:T.s2, borderColor:T.b1 }}>
+              <div className="mb-2 font-syne text-sm font-bold">Client response</div>
+              <div className="grid gap-2 sm:grid-cols-3">
+                <select name="response" defaultValue={bundle.clientResponse?.response ?? "no_response"} className="font-dm text-sm">
+                  <option value="no_response">No response</option>
+                  <option value="accepted">Accepted</option>
+                  <option value="changes_requested">Changes requested</option>
+                  <option value="declined">Declined</option>
+                </select>
+                <input name="contact" placeholder="Client/contact" defaultValue={bundle.clientResponse?.contact ?? ""} />
+                <input name="notes" placeholder="Notes" defaultValue={bundle.clientResponse?.notes ?? ""} />
+              </div>
+              <button disabled={disabled || statusBusy === "client_response"} className="mt-2 rounded-lg px-3 py-2 font-dm text-xs font-semibold text-white disabled:opacity-60" style={{ background:T.grn }}>{statusBusy === "client_response" ? "Saving..." : "Record response"}</button>
+            </form>
+          </div>
+
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap gap-1.5">
               {documents.map((doc) => (

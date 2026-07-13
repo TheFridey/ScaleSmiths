@@ -1,6 +1,8 @@
 import type { ForgeComponentSpecification } from "./forge-component-spec"
 import type { ForgeCopyDocument, ForgePageCopy } from "./forge-copy"
 import { designTokensForPack, type ForgeDesignDirection } from "./forge-design"
+import { createMockDesignSystemSpecification, type ForgeDesignSystemSpecification, type ForgeDesignTokenId } from "./forge-design-system"
+import { emptyForgeIntakeData } from "./forge"
 import { buildForgeAnimationConfigForSite, getForgeAnimationPack } from "./forge-animation"
 import { defaultForgeResendConfig, generatedResendConfigForSite, type ForgeResendConfig } from "./forge-resend"
 import { defaultForgeWhatsAppConfig, generatedWhatsAppConfigForSite, type ForgeWhatsAppConfig } from "./forge-whatsapp"
@@ -115,6 +117,7 @@ export function createForgeFrontendCodeFiles({
   approvedSitemap,
   approvedCopy,
   approvedDesign,
+  approvedDesignSystem,
   approvedComponentSpec,
   integrationPlaceholders,
   resendConfig = defaultForgeResendConfig(),
@@ -126,6 +129,7 @@ export function createForgeFrontendCodeFiles({
   approvedSitemap: ForgeSitemapStrategy
   approvedCopy: ForgeCopyDocument
   approvedDesign: ForgeDesignDirection
+  approvedDesignSystem?: ForgeDesignSystemSpecification | null
   approvedComponentSpec: ForgeComponentSpecification
   integrationPlaceholders: string[]
   resendConfig?: ForgeResendConfig
@@ -135,6 +139,7 @@ export function createForgeFrontendCodeFiles({
   const pages = buildGeneratedSitePages(project, approvedSitemap, approvedCopy)
   const components = approvedComponentSpec.components.map((component) => component.name)
   const animationPack = getForgeAnimationPack(approvedDesign.selectedAnimationPack)
+  const designSystem = approvedDesignSystem ?? createMockDesignSystemSpecification({ project, intake: emptyForgeIntakeData(), researchReport: null, approvedSitemap, approvedCopy, approvedDesign })
   const seoBusiness = buildSeoBusiness(project, workspace, seoContext, approvedSitemap)
   const seoMetadata = pages.map((page) => buildForgePageMetadata(toSeoPageInput(page), seoBusiness))
   const files: ForgeGeneratedSiteFile[] = [
@@ -142,16 +147,18 @@ export function createForgeFrontendCodeFiles({
     { path: "next.config.mjs", purpose: "Next.js config", content: "const nextConfig = {}\n\nexport default nextConfig\n" },
     { path: "tsconfig.json", purpose: "TypeScript config", content: buildTsConfig() },
     { path: "postcss.config.mjs", purpose: "PostCSS and Tailwind config", content: "export default { plugins: { tailwindcss: {}, autoprefixer: {} } }\n" },
-    { path: "tailwind.config.ts", purpose: "Tailwind content config", content: buildTailwindConfig(approvedDesign) },
-    { path: "README.md", purpose: "Generated workspace notes and client handover", content: buildGeneratedReadme(project, workspace, approvedDesign, resendConfig, whatsappConfig) },
-    { path: "src/app/globals.css", purpose: "Global Tailwind and brand styling", content: buildGlobalsCss(approvedDesign) },
+    { path: "tailwind.config.ts", purpose: "Tailwind content config generated from approved design-system tokens", content: buildTailwindConfig(approvedDesign, designSystem) },
+    { path: "README.md", purpose: "Generated workspace notes and client handover", content: buildGeneratedReadme(project, workspace, approvedDesign, designSystem, resendConfig, whatsappConfig) },
+    { path: "src/app/globals.css", purpose: "Global Tailwind and design-system token styling", content: buildGlobalsCss(approvedDesign, designSystem) },
     { path: "src/app/layout.tsx", purpose: "Root layout, navigation, footer, and metadata", content: buildLayoutFile(project, pages) },
+    { path: "src/app/style-guide/page.tsx", purpose: "Internal generated style-guide for token, component, responsive, and motion QA", content: buildStyleGuidePageFile() },
     { path: "src/app/api/contact/route.ts", purpose: "Production-ready contact API route with Resend support", content: buildContactRouteFile() },
     { path: "src/lib/contact-validation.ts", purpose: "Contact form validation, honeypot, and rate limit helpers", content: buildContactValidationFile() },
     { path: "src/lib/email-template.ts", purpose: "Resend lead email template", content: buildEmailTemplateFile() },
     { path: "src/lib/animation-config.ts", purpose: "Generated controlled animation pack configuration", content: buildAnimationConfigFile(approvedDesign) },
     { path: "src/lib/resend-config.ts", purpose: "Generated Resend form configuration without API keys", content: buildResendConfigFile(resendConfig) },
     { path: "src/lib/whatsapp-config.ts", purpose: "Generated WhatsApp CTA configuration", content: buildWhatsAppConfigFile(whatsappConfig) },
+    { path: "src/lib/design-tokens.ts", purpose: "Type-safe approved design-system token access", content: buildDesignTokensFile(designSystem) },
     { path: "src/lib/site-data.ts", purpose: "Typed site data generated from approved Forge artifacts", content: buildSiteDataFile(project, pages, approvedDesign, approvedComponentSpec, integrationPlaceholders, resendConfig, whatsappConfig) },
     { path: "src/lib/seo.ts", purpose: "Precomputed SEO/AEO/GEO metadata and JSON-LD per page", content: buildSeoDataFile(seoBusiness, seoMetadata) },
     { path: "src/lib/schema.ts", purpose: "JSON-LD schema helpers", content: buildSchemaFile() },
@@ -224,12 +231,13 @@ export function buildForgeGeneratedCodeSummary({
   warnings: string[]
 }): ForgeGeneratedCodeSummary {
   const animation = buildForgeAnimationConfigForSite(approvedDesign.selectedAnimationPack)
+  const routes = [...new Set([...approvedSitemap.sitemap.map((page) => page.path), "/style-guide"])]
   return {
     kind: FORGE_GENERATED_CODE_ARTIFACT_KIND,
     workspacePath: workspace.relativePath,
     fileCount: files.length,
-    routeCount: approvedSitemap.sitemap.length,
-    routes: approvedSitemap.sitemap.map((page) => page.path),
+    routeCount: routes.length,
+    routes,
     components: approvedComponentSpec.components.map((component) => component.name),
     integrationPlaceholders,
     animationStack: [
@@ -283,6 +291,7 @@ export function validateForgeGeneratedFileSet(files: ForgeGeneratedSiteFile[]) {
     "package.json",
     "src/app/layout.tsx",
     "src/app/page.tsx",
+    "src/app/style-guide/page.tsx",
     ...(hasGamingSupportRoute ? [] : ["src/app/contact/page.tsx"]),
     "src/lib/animation-config.ts",
     "src/lib/site-data.ts",
@@ -542,29 +551,49 @@ function buildTsConfig() {
   }, null, 2)
 }
 
-function buildTailwindConfig(design: ForgeDesignDirection) {
-  const tokens = design.designTokens ?? designTokensForPack(design.selectedStylePack)
+function buildTailwindConfig(design: ForgeDesignDirection, designSystem: ForgeDesignSystemSpecification) {
   return [
     "import type { Config } from 'tailwindcss'",
     "",
-    `// Locked Forge design tokens for ${design.selectedStylePack}.`,
+    `// Locked Forge design tokens for ${design.selectedStylePack}; generated from the approved design-system artifact.`,
     "const config: Config = {",
     "  content: ['./src/**/*.{ts,tsx}'],",
     "  theme: {",
     "    extend: {",
     "      fontFamily: {",
-    `        display: ['var(--font-display)', ${JSON.stringify(tokens.fontDisplay)}, 'ui-sans-serif', 'system-ui', 'sans-serif'],`,
-    `        body: ['var(--font-body)', ${JSON.stringify(tokens.fontBody)}, 'ui-sans-serif', 'system-ui', 'sans-serif'],`,
+    "        display: ['var(--font-display)', 'ui-sans-serif', 'system-ui', 'sans-serif'],",
+    "        body: ['var(--font-body)', 'ui-sans-serif', 'system-ui', 'sans-serif'],",
     "      },",
     "      colors: {",
-    `        ink: ${JSON.stringify(tokens.ink)},`,
-    `        paper: ${JSON.stringify(tokens.surface)},`,
-    `        panel: ${JSON.stringify(tokens.surfaceAlt)},`,
-    `        muted: ${JSON.stringify(tokens.muted)},`,
-    `        brand: ${JSON.stringify(tokens.brand)},`,
-    `        accent: ${JSON.stringify(tokens.accent)},`,
-    `        accent2: ${JSON.stringify(tokens.accentAlt)},`,
-    `        cta: ${JSON.stringify(tokens.ctaText)},`,
+    "        ink: 'var(--ink)',",
+    "        paper: 'var(--surface)',",
+    "        panel: 'var(--surface-alt)',",
+    "        muted: 'var(--muted)',",
+    "        brand: 'var(--brand)',",
+    "        accent: 'var(--accent)',",
+    "        accent2: 'var(--accent-alt)',",
+    "        cta: 'var(--cta-text)',",
+    "      },",
+    "      spacing: {",
+    "        token1: 'var(--space-1)',",
+    "        token2: 'var(--space-2)',",
+    "        token3: 'var(--space-3)',",
+    "        token4: 'var(--space-4)',",
+    "        token5: 'var(--space-5)',",
+    "      },",
+    "      maxWidth: {",
+    "        tokenSm: 'var(--container-sm)',",
+    "        tokenMd: 'var(--container-md)',",
+    "        tokenLg: 'var(--container-lg)',",
+    "      },",
+    "      borderRadius: {",
+    "        tokenSm: 'var(--radius-sm)',",
+    "        tokenMd: 'var(--radius-md)',",
+    "        tokenLg: 'var(--radius-lg)',",
+    "      },",
+    "      boxShadow: {",
+    "        tokenNone: 'var(--shadow-none)',",
+    "        tokenSoft: 'var(--shadow-soft)',",
     "      },",
     "    },",
     "  },",
@@ -573,6 +602,8 @@ function buildTailwindConfig(design: ForgeDesignDirection) {
     "",
     "export default config",
     "",
+    `// Required token ids: ${designSystem.requiredTokenIds.join(", ")}`,
+    "",
   ].join("\n")
 }
 
@@ -580,6 +611,7 @@ function buildGeneratedReadme(
   project: ForgeFrontendCodeProject,
   workspace: ForgeWorkspaceMetadata,
   design: ForgeDesignDirection,
+  designSystem: ForgeDesignSystemSpecification,
   resendConfig: ForgeResendConfig,
   whatsappConfig: ForgeWhatsAppConfig,
 ) {
@@ -592,6 +624,14 @@ function buildGeneratedReadme(
     `Workspace: \`${workspace.relativePath}\``,
     "",
     "This site is isolated under `generated-sites/`. Do not move generated files into the ScaleSmiths admin or public web apps without review.",
+    "",
+    "## Design-token handover",
+    "",
+    `- Design-system version: ${designSystem.version}`,
+    "- CSS custom properties are emitted in `src/app/globals.css`.",
+    "- Type-safe token metadata is emitted in `src/lib/design-tokens.ts`.",
+    "- Tailwind aliases resolve to CSS custom properties; avoid adding arbitrary values where a token exists.",
+    "- `/style-guide` is an internal generated QA route for screenshots and visual review.",
     "",
     "## Contact form handover",
     "",
@@ -635,27 +675,52 @@ function buildGeneratedReadme(
   ].join("\n")
 }
 
-function buildGlobalsCss(design: ForgeDesignDirection) {
+function buildGlobalsCss(design: ForgeDesignDirection, designSystem: ForgeDesignSystemSpecification) {
   const animation = getForgeAnimationPack(design.selectedAnimationPack)
-  const tokens = design.designTokens ?? designTokensForPack(design.selectedStylePack)
+  const tokens = designSystemTokenMap(designSystem)
   return [
     "@tailwind base;",
     "@tailwind components;",
     "@tailwind utilities;",
     "",
     ":root {",
-    `  --font-display: ${cssFontFamily(tokens.fontDisplay)};`,
-    `  --font-body: ${cssFontFamily(tokens.fontBody)};`,
-    `  --surface: ${tokens.surface};`,
-    `  --surface-alt: ${tokens.surfaceAlt};`,
-    `  --ink: ${tokens.ink};`,
-    `  --muted: ${tokens.muted};`,
-    `  --line: ${tokens.line};`,
-    `  --brand: ${tokens.brand};`,
-    `  --accent: ${tokens.accent};`,
-    `  --accent-alt: ${tokens.accentAlt};`,
-    `  --cta-text: ${tokens.ctaText};`,
-    `  --hero-bg: ${tokens.heroBackground};`,
+    `  --font-display: ${cssFontFamily(tokenValue(tokens, "typography.display"))};`,
+    `  --typography-display: ${cssFontFamily(tokenValue(tokens, "typography.display"))};`,
+    `  --font-body: ${cssFontFamily(tokenValue(tokens, "typography.body"))};`,
+    `  --typography-body: ${cssFontFamily(tokenValue(tokens, "typography.body"))};`,
+    `  --surface: ${tokenValue(tokens, "color.surface")};`,
+    `  --color-surface: ${tokenValue(tokens, "color.surface")};`,
+    `  --surface-alt: ${tokenValue(tokens, "color.surfaceAlt")};`,
+    `  --color-surfaceAlt: ${tokenValue(tokens, "color.surfaceAlt")};`,
+    `  --ink: ${tokenValue(tokens, "color.ink")};`,
+    `  --color-ink: ${tokenValue(tokens, "color.ink")};`,
+    `  --muted: ${tokenValue(tokens, "color.muted")};`,
+    `  --color-muted: ${tokenValue(tokens, "color.muted")};`,
+    `  --line: ${tokenValue(tokens, "color.line")};`,
+    `  --color-line: ${tokenValue(tokens, "color.line")};`,
+    `  --brand: ${tokenValue(tokens, "color.brand")};`,
+    `  --color-brand: ${tokenValue(tokens, "color.brand")};`,
+    `  --accent: ${tokenValue(tokens, "color.accent")};`,
+    `  --color-accent: ${tokenValue(tokens, "color.accent")};`,
+    `  --accent-alt: ${tokenValue(tokens, "color.accentAlt")};`,
+    `  --color-accentAlt: ${tokenValue(tokens, "color.accentAlt")};`,
+    `  --cta-text: ${tokenValue(tokens, "color.ctaText")};`,
+    `  --color-ctaText: ${tokenValue(tokens, "color.ctaText")};`,
+    `  --space-1: ${tokenValue(tokens, "space.1")};`,
+    `  --space-2: ${tokenValue(tokens, "space.2")};`,
+    `  --space-3: ${tokenValue(tokens, "space.3")};`,
+    `  --space-4: ${tokenValue(tokens, "space.4")};`,
+    `  --space-5: ${tokenValue(tokens, "space.5")};`,
+    `  --container-sm: ${tokenValue(tokens, "container.sm")};`,
+    `  --container-md: ${tokenValue(tokens, "container.md")};`,
+    `  --container-lg: ${tokenValue(tokens, "container.lg")};`,
+    `  --radius-sm: ${tokenValue(tokens, "radius.sm")};`,
+    `  --radius-md: ${tokenValue(tokens, "radius.md")};`,
+    `  --radius-lg: ${tokenValue(tokens, "radius.lg")};`,
+    `  --shadow-none: ${tokenValue(tokens, "shadow.none")};`,
+    `  --shadow-soft: ${tokenValue(tokens, "shadow.soft")};`,
+    `  --border-default: ${tokenValue(tokens, "border.default")};`,
+    `  --hero-bg: ${design.designTokens?.heroBackground ?? "linear-gradient(135deg, var(--surface), var(--surface-alt))"};`,
     "}",
     "",
     "* { box-sizing: border-box; }",
@@ -667,16 +732,27 @@ function buildGlobalsCss(design: ForgeDesignDirection) {
     "  font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;",
     "}",
     "a { color: inherit; text-decoration: none; }",
-    "button, input, textarea { font: inherit; }",
+    "button, input, textarea, select { font: inherit; }",
+    "h1, h2, h3, h4 { text-wrap: balance; }",
+    "p, li { text-wrap: pretty; }",
     ".focus-ring:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent); outline-offset: 3px; }",
     ".hero-brand-surface { background: var(--hero-bg); }",
-    ".token-panel { background: var(--surface-alt); border-color: var(--line); color: var(--ink); }",
+    ".token-panel { background: var(--surface-alt); border: var(--border-default); color: var(--ink); box-shadow: var(--shadow-none); }",
     ".token-section-alt { background: color-mix(in srgb, var(--surface-alt) 88%, var(--surface) 12%); }",
     ".token-muted { color: var(--muted); }",
     ".token-divide > :not([hidden]) ~ :not([hidden]) { border-color: var(--line); }",
     ".token-glow-cta { box-shadow: 0 0 24px color-mix(in srgb, var(--brand) 28%, transparent); }",
+    ".token-container { width: min(100% - calc(var(--space-4) * 2), var(--container-lg)); margin-inline: auto; }",
+    ".token-container-narrow { width: min(100% - calc(var(--space-4) * 2), var(--container-sm)); margin-inline: auto; }",
+    ".type-display-xl { font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif; font-size: clamp(2.5rem, 6vw, 4.5rem); line-height: 0.98; }",
+    ".type-display-lg { font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif; font-size: clamp(2rem, 4vw, 3rem); line-height: 1.05; }",
+    ".type-body-lg { font-size: clamp(1rem, 2vw, 1.125rem); line-height: 1.75; }",
+    ".token-button-primary { min-height: 44px; border-radius: var(--radius-sm); background: var(--brand); color: var(--cta-text); padding: var(--space-2) var(--space-4); font-weight: 700; }",
+    ".token-button-secondary { min-height: 44px; border-radius: var(--radius-sm); border: var(--border-default); color: var(--ink); padding: var(--space-2) var(--space-4); font-weight: 700; }",
+    ".token-field { min-height: 44px; border-radius: var(--radius-sm); border: var(--border-default); background: var(--surface); color: var(--ink); padding: var(--space-2) var(--space-3); }",
+    ".token-alert { border-radius: var(--radius-md); border: var(--border-default); background: color-mix(in srgb, var(--accent-alt) 14%, var(--surface-alt)); padding: var(--space-3); }",
     ".motion-safe-card { will-change: transform, box-shadow; transform: translateZ(0); }",
-    ".motion-safe-card:hover { transform: translateY(-2px); }",
+    ".motion-safe-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-soft); }",
     ".motion-safe-cta { transition: background-color 160ms ease, color 160ms ease, box-shadow 160ms ease, transform 160ms ease; }",
     ".motion-safe-cta:hover { transform: translateY(-1px); }",
     "",
@@ -925,6 +1001,123 @@ function buildAnimationConfigFile(design: ForgeDesignDirection) {
     "} as const",
     "",
     "// Motion is intentionally controlled. Do not add layout-shifting transforms, scroll-jacking, or ambient loops without approval.",
+    "",
+  ].join("\n")
+}
+
+function buildDesignTokensFile(designSystem: ForgeDesignSystemSpecification) {
+  return [
+    "export const designTokens = [",
+    ...designSystem.tokens.map((token) => `  ${JSON.stringify(token)},`),
+    "] as const",
+    "",
+    "export type DesignToken = (typeof designTokens)[number]",
+    "export type DesignTokenId = DesignToken['id']",
+    "export type DesignTokenCategory = DesignToken['category']",
+    "",
+    "export const requiredDesignTokenIds = [",
+    ...designSystem.requiredTokenIds.map((id) => `  ${JSON.stringify(id)},`),
+    "] as const satisfies readonly DesignTokenId[]",
+    "",
+    "export const designSystemGuidance = {",
+    `  version: ${JSON.stringify(designSystem.version)},`,
+    `  brandAttributes: ${JSON.stringify(designSystem.brandAttributes)},`,
+    `  visualDirection: ${JSON.stringify(designSystem.visualDirection)},`,
+    `  optionalCreativeGuidance: ${JSON.stringify(designSystem.optionalCreativeGuidance)},`,
+    `  prohibitedStyleValues: ${JSON.stringify(designSystem.prohibitedStyleValues)},`,
+    "} as const",
+    "",
+    "export function getDesignToken(id: DesignTokenId) {",
+    "  return designTokens.find((token) => token.id === id)!",
+    "}",
+    "",
+    "export function tokenCssVar(id: DesignTokenId) {",
+    "  return `var(--${id.replaceAll('.', '-')})`",
+    "}",
+    "",
+  ].join("\n")
+}
+
+function buildStyleGuidePageFile() {
+  return [
+    "import type React from 'react'",
+    "import { designSystemGuidance, designTokens, getDesignToken, requiredDesignTokenIds } from '@/lib/design-tokens'",
+    "",
+    "const colourTokens = designTokens.filter((token) => token.category === 'colour')",
+    "const spacingTokens = designTokens.filter((token) => token.category === 'spacing')",
+    "",
+    "export default function StyleGuidePage() {",
+    "  return (",
+    "    <main className=\"token-section-alt min-h-screen\">",
+    "      <section className=\"hero-brand-surface border-b border-[color:var(--line)]\">",
+    "        <div className=\"token-container py-16 md:py-20\">",
+    "          <p className=\"text-sm font-semibold uppercase text-brand\">Internal style guide</p>",
+    "          <h1 className=\"type-display-xl mt-4 text-ink\">Generated design-token implementation</h1>",
+    "          <p className=\"type-body-lg mt-5 max-w-3xl token-muted\">This internal page demonstrates the approved tokens, components, responsive rules, focus states, reduced-motion behaviour and interaction states used by generated pages.</p>",
+    "        </div>",
+    "      </section>",
+    "",
+    "      <section className=\"token-container grid gap-8 py-12\">",
+    "        <StyleBlock title=\"Typography\">",
+    "          <p className=\"text-sm uppercase text-brand\">Display</p>",
+    "          <h2 className=\"type-display-lg text-ink\">Readable hierarchy from approved type tokens</h2>",
+    "          <p className=\"type-body-lg max-w-3xl token-muted\">Body copy uses responsive but bounded rem-based sizing. Text wraps without overlapping compact panels, buttons or forms.</p>",
+    "        </StyleBlock>",
+    "",
+    "        <StyleBlock title=\"Colour roles\">",
+    "          <div className=\"grid gap-3 md:grid-cols-3\">",
+    "            {colourTokens.map((token) => <div key={token.id} className=\"token-panel rounded-tokenMd p-4\"><div className=\"h-14 rounded-tokenSm border border-[color:var(--line)]\" style={{ background: `var(--${token.id.replaceAll('.', '-')})` }} /><p className=\"mt-3 text-sm font-semibold text-ink\">{token.id}</p><p className=\"text-xs token-muted\">{token.usage}</p></div>)}",
+    "          </div>",
+    "        </StyleBlock>",
+    "",
+    "        <StyleBlock title=\"Buttons and states\">",
+    "          <div className=\"flex flex-wrap gap-3\">",
+    "            <button className=\"focus-ring motion-safe-cta token-button-primary hover:bg-accent\">Primary action</button>",
+    "            <button className=\"focus-ring motion-safe-cta token-button-secondary hover:border-brand hover:text-brand\">Secondary action</button>",
+    "            <button className=\"token-button-primary opacity-60\" disabled>Disabled action</button>",
+    "          </div>",
+    "        </StyleBlock>",
+    "",
+    "        <StyleBlock title=\"Forms\">",
+    "          <form className=\"grid max-w-tokenSm gap-3\">",
+    "            <label className=\"grid gap-2 text-sm font-semibold text-ink\">Name<input className=\"focus-ring token-field\" placeholder=\"Jane Smith\" /></label>",
+    "            <label className=\"grid gap-2 text-sm font-semibold text-ink\">Message<textarea className=\"focus-ring token-field min-h-28\" placeholder=\"What should the team know?\" /></label>",
+    "            <p className=\"text-sm text-accent\">Inline success, error and helper text use approved roles and visible contrast.</p>",
+    "          </form>",
+    "        </StyleBlock>",
+    "",
+    "        <StyleBlock title=\"Cards, alerts and content sections\">",
+    "          <div className=\"grid gap-4 md:grid-cols-3\">",
+    "            {['Service card', 'Proof card', 'Process card'].map((item) => <article key={item} className=\"motion-safe-card token-panel rounded-tokenMd p-5 transition\"><h3 className=\"text-lg font-semibold text-ink\">{item}</h3><p className=\"mt-2 text-sm token-muted\">Cards use the approved panel, border, radius and shadow tokens.</p></article>)}",
+    "          </div>",
+    "          <div className=\"token-alert mt-5 text-sm text-ink\">Alert surfaces use tokenised colour mixing and border roles.</div>",
+    "        </StyleBlock>",
+    "",
+    "        <StyleBlock title=\"Navigation, icons and motion\">",
+    "          <nav className=\"token-panel flex flex-wrap items-center justify-between gap-3 rounded-tokenMd p-4\" aria-label=\"Style-guide sample\"><span className=\"font-display text-lg font-semibold text-ink\">Brand</span><div className=\"flex gap-2 text-sm token-muted\"><span>Home</span><span>Services</span><span>Contact</span></div></nav>",
+    "          <div className=\"mt-4 flex flex-wrap gap-3\">",
+    "            {['Icon role', 'Responsive rule', 'Motion example'].map((item) => <div key={item} className=\"motion-safe-card token-panel rounded-tokenMd px-4 py-3 text-sm text-ink transition\"><span aria-hidden=\"true\" className=\"mr-2 text-brand\">●</span>{item}</div>)}",
+    "          </div>",
+    "          <p className=\"mt-4 text-sm token-muted\">Reduced-motion users receive no transform movement; this route is captured by visual QA across desktop, tablet and mobile.</p>",
+    "        </StyleBlock>",
+    "",
+    "        <StyleBlock title=\"Spacing and required tokens\">",
+    "          <div className=\"grid gap-3 md:grid-cols-5\">",
+    "            {spacingTokens.map((token) => <div key={token.id} className=\"token-panel rounded-tokenMd p-3\"><div className=\"rounded-tokenSm bg-brand\" style={{ height: token.value }} /><p className=\"mt-2 text-xs token-muted\">{token.id}</p></div>)}",
+    "          </div>",
+    "          <p className=\"mt-4 text-xs token-muted\">Required tokens: {requiredDesignTokenIds.join(', ')}</p>",
+    "          <p className=\"mt-2 text-xs token-muted\">Visual direction: {designSystemGuidance.visualDirection}</p>",
+    "        </StyleBlock>",
+    "      </section>",
+    "    </main>",
+    "  )",
+    "}",
+    "",
+    "function StyleBlock({ title, children }: { title: string; children: React.ReactNode }) {",
+    "  return <section className=\"token-panel rounded-tokenLg p-5 md:p-7\"><h2 className=\"mb-5 font-display text-2xl font-semibold text-ink\">{title}</h2>{children}</section>",
+    "}",
+    "",
+    "void getDesignToken",
     "",
   ].join("\n")
 }
@@ -1700,4 +1893,14 @@ function cssComment(value: string) {
 
 function cssFontFamily(value: string) {
   return `'${value.replace(/\\/g, "\\\\").replace(/'/g, "\\'")}'`
+}
+
+function designSystemTokenMap(designSystem: ForgeDesignSystemSpecification) {
+  return new Map(designSystem.tokens.map((token) => [token.id, token.value] as const))
+}
+
+function tokenValue(tokens: Map<ForgeDesignTokenId, string>, id: ForgeDesignTokenId) {
+  const value = tokens.get(id)
+  if (!value) throw new Error(`Approved design system is missing token ${id}.`)
+  return value
 }

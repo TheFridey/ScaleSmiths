@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { CheckCircle2, Circle, MinusCircle, Rocket, ShieldCheck, XCircle } from "lucide-react"
 import {
@@ -95,6 +95,8 @@ export function ForgeDeployPanel({
       {disabled && <Notice text="Archived projects are locked from deployment." />}
       {!disabled && !siteReady && <Notice text="Generate the site before preparing a deployment." />}
 
+      <DeploymentCandidates projectId={projectId} disabled={disabled || !siteReady} />
+
       <div className="mb-4">
         <div className="mb-2 font-dm text-[11px] uppercase tracking-[.08em]" style={{ color:T.t3 }}>Deployment method</div>
         <div className="grid gap-2 md:grid-cols-3">
@@ -176,6 +178,35 @@ export function ForgeDeployPanel({
       )}
     </section>
   )
+}
+
+type CandidateRow = { id: number; candidateNumber: number; state: string; workspaceHash: string; repositoryCommit: string | null; approvedArtifactsJson: Array<{ id: number }>; fallbackDependenciesJson: Array<{ id: number; qualityState: string }>; releaseNotes: string; rollbackPlan: string; createdBy: string; createdAt: string; comparisonFromPrevious: null | { workspaceChanged: boolean; artifactsAdded: Array<{ id: number }>; artifactsRemoved: Array<{ id: number }>; artifactsChanged: Array<{ id: number }>; evidenceChanged: boolean } }
+type GateResult = { allowed: boolean; summary: string; gates: Array<{ key: string; label: string; status: "passed" | "blocked" | "overridden" | "not_applicable"; reason: string; overridable: boolean; approvalActor?: string; approvalTime?: string; approvalReason?: string }> }
+
+function DeploymentCandidates({ projectId, disabled }: { projectId: number; disabled: boolean }) {
+  const [rows, setRows] = useState<CandidateRow[]>([])
+  const [releaseNotes, setReleaseNotes] = useState("")
+  const [rollbackPlan, setRollbackPlan] = useState("")
+  const [reason, setReason] = useState("")
+  const [error, setError] = useState("")
+  const [busy, setBusy] = useState(false)
+  const [gates, setGates] = useState<GateResult | null>(null)
+  const load = useCallback(async () => { const response = await fetch(`/api/forge/projects/${projectId}/deployment-candidates`); const json = await response.json(); if (response.ok) { setRows(json.candidates ?? []); setGates(json.gates ?? null) } }, [projectId])
+  useEffect(() => { void load() }, [load])
+  async function act(action: string, candidateId?: number, gateKey?: string) { setBusy(true); setError(""); try { const response = await fetch(`/api/forge/projects/${projectId}/deployment-candidates`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action, candidateId, gateKey, releaseNotes, rollbackPlan, reason }) }); const json = await response.json(); if (!response.ok) throw new Error(json.error || "Candidate action failed."); setReleaseNotes(""); setRollbackPlan(""); setReason(""); await load() } catch (caught) { setError(caught instanceof Error ? caught.message : "Candidate action failed.") } finally { setBusy(false) } }
+  const latest = rows[0]
+  return <div className="mb-5 rounded-lg border p-4" style={{ background:T.s2, borderColor:T.b1 }}>
+    <div className="mb-2 flex items-center justify-between gap-2"><div className="font-dm text-[11px] uppercase tracking-[.08em]" style={{ color:T.t3 }}>Immutable deployment candidates</div>{latest && <Badge value={`#${latest.candidateNumber} ${latest.state}`} tone={latest.state === "approved" ? "good" : "muted"} />}</div>
+    <p className="mb-3 font-dm text-xs" style={{ color:T.t2 }}>A submitted candidate freezes the workspace hash, approved artifacts, QA/security/accessibility/performance evidence, screenshots, dependencies, SBOM and release requirements. Changes require a new candidate.</p>
+    {error && <p className="mb-2 font-dm text-xs" style={{ color:T.red }}>{error}</p>}
+    <div className="grid gap-2 md:grid-cols-2"><textarea aria-label="Candidate release notes" value={releaseNotes} onChange={(event) => setReleaseNotes(event.target.value)} placeholder="Release notes" className="min-h-20 rounded border p-2 text-sm" style={{ background:T.s1, borderColor:T.b1 }} /><textarea aria-label="Candidate rollback plan" value={rollbackPlan} onChange={(event) => setRollbackPlan(event.target.value)} placeholder="Rollback plan" className="min-h-20 rounded border p-2 text-sm" style={{ background:T.s1, borderColor:T.b1 }} /></div>
+    <button type="button" disabled={disabled || busy || !releaseNotes.trim() || !rollbackPlan.trim()} onClick={() => void act("create")} className="mt-2 rounded border px-3 py-2 font-dm text-xs disabled:opacity-50" style={{ borderColor:T.b2 }}>Create candidate snapshot</button>
+    {latest && <div className="mt-3 rounded border p-3" style={{ borderColor:T.b1, background:T.s1 }}><div className="flex flex-wrap gap-3 font-dm text-xs" style={{ color:T.t2 }}><span>Workspace {latest.workspaceHash.slice(0, 12)}</span><span>{latest.approvedArtifactsJson.length} approved artifacts</span><span>{latest.fallbackDependenciesJson.length} degraded/fallback dependencies</span>{latest.repositoryCommit && <span>Commit {latest.repositoryCommit.slice(0, 12)}</span>}</div><p className="mt-2 font-dm text-xs">{latest.releaseNotes}</p>{latest.comparisonFromPrevious && <p className="mt-2 font-dm text-[11px]" style={{ color:T.t3 }}>Previous comparison: workspace {latest.comparisonFromPrevious.workspaceChanged ? "changed" : "unchanged"}; artifacts +{latest.comparisonFromPrevious.artifactsAdded.length} / −{latest.comparisonFromPrevious.artifactsRemoved.length} / changed {latest.comparisonFromPrevious.artifactsChanged.length}; evidence {latest.comparisonFromPrevious.evidenceChanged ? "changed" : "unchanged"}.</p>}
+      <textarea aria-label="Candidate decision reason" value={reason} onChange={(event) => setReason(event.target.value)} placeholder="Required approval/rejection reason" className="mt-2 min-h-14 w-full rounded border p-2 text-sm" style={{ background:T.s2, borderColor:T.b1 }} />
+      <div className="mt-2 flex gap-2">{latest.state === "draft" && <button type="button" disabled={busy} onClick={() => void act("submit", latest.id)} className="rounded border px-3 py-2 font-dm text-xs" style={{ borderColor:T.b2 }}>Submit for approval</button>}{latest.state === "submitted" && <><button type="button" disabled={busy || !reason.trim()} onClick={() => void act("approve", latest.id)} className="rounded border px-3 py-2 font-dm text-xs" style={{ borderColor:T.grn }}>Approve</button><button type="button" disabled={busy || !reason.trim()} onClick={() => void act("reject", latest.id)} className="rounded border px-3 py-2 font-dm text-xs" style={{ borderColor:T.red }}>Reject</button></>}</div>
+      {gates && <div className="mt-4"><div className="mb-2 font-dm text-xs font-semibold" style={{ color:gates.allowed ? T.grn : T.red }}>{gates.summary}</div><div className="grid gap-2 md:grid-cols-2">{gates.gates.map((gate) => <div key={gate.key} className="rounded border p-2" style={{ borderColor:gate.status === "blocked" ? T.red : gate.status === "overridden" ? T.amb : T.b1 }}><div className="flex items-center justify-between gap-2"><span className="font-dm text-xs font-semibold">{gate.label}</span><span className="font-dm text-[10px] uppercase" style={{ color:gate.status === "blocked" ? T.red : gate.status === "overridden" ? T.amb : T.grn }}>{gate.status}</span></div><p className="mt-1 font-dm text-[11px]" style={{ color:T.t2 }}>{gate.reason}</p>{gate.approvalActor && <p className="mt-1 font-dm text-[10px]" style={{ color:T.t3 }}>{gate.approvalActor} · {gate.approvalTime ? new Date(gate.approvalTime).toLocaleString() : ""} · {gate.approvalReason}</p>}{gate.status === "blocked" && latest.state !== "draft" && <div className="mt-2 flex gap-1">{(gate.key === "client_approval" || gate.key === "migration_plan") && <button type="button" disabled={busy || !reason.trim()} onClick={() => void act("gate_approve", latest.id, gate.key)} className="rounded border px-2 py-1 font-dm text-[10px]" style={{ borderColor:T.grn }}>Record approval</button>}{gate.overridable && <button type="button" disabled={busy || !reason.trim()} onClick={() => void act("gate_override", latest.id, gate.key)} className="rounded border px-2 py-1 font-dm text-[10px]" style={{ borderColor:T.amb }}>Owner override</button>}</div>}</div>)}</div></div>}
+    </div>}
+  </div>
 }
 
 function ChecklistRow({ item, disabled, onToggle }: { item: ForgeDeployChecklistItem; disabled: boolean; onToggle?: () => void }) {

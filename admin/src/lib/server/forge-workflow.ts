@@ -1,5 +1,5 @@
 import "server-only"
-import { and, desc, eq, isNull } from "drizzle-orm"
+import { and, desc, eq, isNull, notInArray } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { readForgeGeneratedCodeArtifact, FORGE_GENERATED_CODE_ARTIFACT_TITLE } from "@/lib/forge-frontend-code"
 import { readForgeQaArtifact, FORGE_QA_ARTIFACT_TITLE } from "@/lib/forge-qa"
@@ -19,7 +19,11 @@ export async function evaluatePersistedProjectTransition(input: { projectId: num
     currentArtifact(input.projectId, "sitemap", FORGE_SITEMAP_ARTIFACT_TITLE),
     currentArtifact(input.projectId, "generated_code", FORGE_GENERATED_CODE_ARTIFACT_TITLE),
     currentArtifact(input.projectId, "qa_report", FORGE_QA_ARTIFACT_TITLE),
-    db.select({ id: forgeTasks.id }).from(forgeTasks).where(and(eq(forgeTasks.projectId, input.projectId), eq(forgeTasks.status, "failed"))).limit(1),
+    db.select({ id: forgeTasks.id }).from(forgeTasks).where(and(
+      eq(forgeTasks.projectId, input.projectId),
+      eq(forgeTasks.status, "failed"),
+      ...(input.to === "qa" ? [notInArray(forgeTasks.agentType, ["qa", "repair"])] : []),
+    )).limit(1),
   ])
   const facts = {
     sitemapApproved: readForgeSitemapStrategyArtifact(sitemapRows[0]?.metadataJson).status === "approved",

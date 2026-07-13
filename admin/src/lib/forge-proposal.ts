@@ -5,6 +5,7 @@ import type { ForgeSitemapStrategy } from "./forge-sitemap"
 import type { ForgeSeoPack } from "./forge-seo"
 import type { ForgeGeneratedCodeSummary } from "./forge-frontend-code"
 import type { ForgeQaReport } from "./forge-qa"
+import type { ProjectEstimateResult } from "./project-estimator"
 
 export const FORGE_PROPOSAL_ARTIFACT_TITLE = "Proposal & Audit Pack"
 export const FORGE_PROPOSAL_ARTIFACT_KIND = "forge_proposal_pack"
@@ -56,6 +57,14 @@ export interface ForgeProposalInputs {
   generatedSite: ForgeGeneratedCodeSummary | null
   qa: ForgeQaReport | null
   integrations: ForgeProposalIntegration[]
+  estimate?: ProjectEstimateResult | null
+  leadEvidence?: ForgeProposalLeadEvidence | null
+}
+
+export interface ForgeProposalLeadEvidence extends Record<string, JsonValue> {
+  painPoints: string[]
+  discoveryNotes: string[]
+  sourceRecords: Array<{ label: string; recordType: string; recordId: string | number | null }>
 }
 
 export interface ForgeWebsiteAudit extends Record<string, JsonValue> {
@@ -78,7 +87,28 @@ export interface ForgeProposal extends Record<string, JsonValue> {
   seoAeoGeoBenefits: string[]
   buildPricePlaceholder: string
   monthlyRetainerRecommendation: string
+  goodBetterBest: ForgeProposalOption[]
+  assumptionsRequiringConfirmation: string[]
+  risks: string[]
+  optionalEnhancements: string[]
+  supportingRecords: ForgeProposalSupportingRecord[]
   nextSteps: string[]
+}
+
+export interface ForgeProposalOption extends Record<string, JsonValue> {
+  tier: "good" | "better" | "best"
+  label: string
+  price: string
+  retainer: string
+  scope: string[]
+  bestFor: string
+}
+
+export interface ForgeProposalSupportingRecord extends Record<string, JsonValue> {
+  section: string
+  recordType: string
+  recordId: string | number | null
+  evidence: string
 }
 
 export interface ForgeRetainerRecommendation extends Record<string, JsonValue> {
@@ -120,8 +150,25 @@ export interface ForgeProposalBundle extends Record<string, JsonValue> {
   retainer: ForgeRetainerRecommendation
   roadmap: ForgeImplementationRoadmap
   handover: ForgeHandoverNotes
+  evidenceMap: ForgeProposalSupportingRecord[]
+  approval: ForgeProposalApprovalState
+  clientResponse: ForgeProposalClientResponse | null
   complianceNote: string
   generatedAt: string
+}
+
+export interface ForgeProposalApprovalState extends Record<string, JsonValue> {
+  state: "draft" | "approved" | "rejected"
+  actor: string | null
+  reason: string | null
+  decidedAt: string | null
+}
+
+export interface ForgeProposalClientResponse extends Record<string, JsonValue> {
+  response: "accepted" | "changes_requested" | "declined" | "no_response"
+  contact: string | null
+  notes: string | null
+  receivedAt: string
 }
 
 export interface ForgeProposalArtifactState {
@@ -273,11 +320,17 @@ export function buildForgeProposal(inputs: ForgeProposalInputs, retainer: ForgeR
     pagesIncluded,
     integrationsIncluded,
     seoAeoGeoBenefits,
-    buildPricePlaceholder: resolveBuildPricePlaceholder(project.budgetRange),
-    monthlyRetainerRecommendation: `${retainer.recommendedTier} — ${retainer.monthlyRangePlaceholder}. ${retainer.rationale}`,
+    buildPricePlaceholder: resolveBuildPricePlaceholder(project.budgetRange, inputs.estimate),
+    monthlyRetainerRecommendation: `${retainer.recommendedTier} - ${resolveRetainerPrice(retainer, inputs.estimate)}. ${retainer.rationale}`,
+    goodBetterBest: buildGoodBetterBestOptions(inputs, pagesIncluded, integrationsIncluded),
+    assumptionsRequiringConfirmation: buildAssumptions(inputs),
+    risks: buildProposalRisks(inputs),
+    optionalEnhancements: inputs.estimate?.optionalEnhancements?.slice(0, 8) ?? defaultOptionalEnhancements(inputs),
+    supportingRecords: buildSupportingRecords(inputs),
     nextSteps: [
       "Review this proposal and confirm the pages, integrations, and priorities.",
       "Approve the build scope and confirm pricing.",
+      "Confirm the assumptions and any optional enhancements before they are treated as included scope.",
       "Provide outstanding assets (logo, photography, copy approvals) noted in the handover.",
       "ScaleSmiths schedules the build and shares a preview for your review.",
       "Launch, then move into the recommended care/retainer plan.",
@@ -299,8 +352,10 @@ export function buildForgeImplementationRoadmap(inputs: ForgeProposalInputs): Fo
     phases,
     assumptions: unique([
       "Timelines assume timely feedback and asset delivery from the client.",
+      ...(inputs.estimate ? [`Internal estimate range: ${inputs.estimate.estimatedDeliveryRange.minWeeks}-${inputs.estimate.estimatedDeliveryRange.maxWeeks} weeks, subject to confirmed scope.`] : []),
       hasBuild ? "An initial generated build already exists, which accelerates the build phase." : "Build estimates assume a standard service-business website scope.",
       "Pricing is confirmed before the build phase begins.",
+      ...buildAssumptions(inputs).slice(0, 6),
     ]),
   }
 }
@@ -351,6 +406,9 @@ export function buildForgeProposalBundle(inputs: ForgeProposalInputs, generatedA
     retainer,
     roadmap: buildForgeImplementationRoadmap(inputs),
     handover: buildForgeHandoverNotes(inputs),
+    evidenceMap: buildSupportingRecords(inputs),
+    approval: { state: "draft", actor: null, reason: null, decidedAt: null },
+    clientResponse: null,
     complianceNote: FORGE_PROPOSAL_COMPLIANCE_NOTE,
     generatedAt,
   }
@@ -419,6 +477,27 @@ export function buildForgeProposalMarkdown(bundle: ForgeProposalBundle): string 
     "## Investment",
     `- Build: ${p.buildPricePlaceholder}`,
     `- Ongoing: ${p.monthlyRetainerRecommendation}`,
+    "",
+    "## Good / better / best options",
+    ...(p.goodBetterBest ?? []).flatMap((option) => [
+      `### ${titleCase(option.tier)} - ${option.label}`,
+      `- Build: ${option.price}`,
+      `- Retainer: ${option.retainer}`,
+      `- Best for: ${option.bestFor}`,
+      ...bullets(option.scope),
+      "",
+    ]),
+    "## Assumptions to confirm",
+    ...bullets(p.assumptionsRequiringConfirmation ?? []),
+    "",
+    "## Risks and dependencies",
+    ...bullets(p.risks ?? []),
+    "",
+    "## Optional enhancements",
+    ...bullets(p.optionalEnhancements ?? []),
+    "",
+    "## Supporting records",
+    ...bullets((p.supportingRecords ?? []).map((record) => `${record.section}: ${record.evidence} (${record.recordType}${record.recordId ? ` #${record.recordId}` : ""})`)),
     "",
     "## Next steps",
     ...numbered(p.nextSteps),
@@ -570,9 +649,100 @@ function listIntegrations(inputs: ForgeProposalInputs): string[] {
   return unique(enabled.length ? enabled : fromIntake.length ? fromIntake : ["Contact form with email delivery"]).slice(0, 10)
 }
 
-function resolveBuildPricePlaceholder(budgetRange: string | null): string {
-  if (budgetRange && budgetRange.trim()) return `£[BUILD] (to be confirmed; indicated budget: ${budgetRange.trim()})`
-  return "£[BUILD] (to be confirmed)"
+function resolveBuildPricePlaceholder(budgetRange: string | null, estimate?: ProjectEstimateResult | null): string {
+  const estimated = estimate ? `£${estimate.suggestedBuildPrice.toLocaleString("en-GB")} suggested from internal estimate` : "£[BUILD] (to be confirmed)"
+  if (budgetRange && budgetRange.trim()) return `${estimated}; indicated budget: ${budgetRange.trim()}`
+  return estimated
+}
+
+function resolveRetainerPrice(retainer: ForgeRetainerRecommendation, estimate?: ProjectEstimateResult | null): string {
+  return estimate ? `£${estimate.suggestedRetainer.toLocaleString("en-GB")}/month suggested from internal estimate` : retainer.monthlyRangePlaceholder
+}
+
+function buildGoodBetterBestOptions(inputs: ForgeProposalInputs, pages: string[], integrations: string[]): ForgeProposalOption[] {
+  const estimate = inputs.estimate
+  const build = estimate?.suggestedBuildPrice ?? 0
+  const retainer = estimate?.suggestedRetainer ?? 0
+  const basePrice = build > 0 ? build : null
+  const baseRetainer = retainer > 0 ? retainer : null
+  const core = pages.slice(0, Math.min(5, pages.length))
+  const optional = inputs.estimate?.optionalEnhancements?.slice(0, 4) ?? defaultOptionalEnhancements(inputs).slice(0, 4)
+  return [
+    {
+      tier: "good",
+      label: "Focused launch",
+      price: basePrice ? money(Math.max(1500, Math.round(basePrice * 0.72 / 250) * 250)) : "To be confirmed",
+      retainer: baseRetainer ? money(Math.max(150, Math.round(baseRetainer * 0.65 / 50) * 50)) + "/month" : "To be confirmed",
+      scope: unique(["Core conversion pages", ...core, integrations[0] ? `Primary integration: ${integrations[0]}` : "Lead form and handover"]),
+      bestFor: "Launching the approved essentials without absorbing optional scope.",
+    },
+    {
+      tier: "better",
+      label: "Recommended build",
+      price: basePrice ? money(basePrice) : "To be confirmed",
+      retainer: baseRetainer ? `${money(baseRetainer)}/month` : "To be confirmed",
+      scope: unique([...pages, ...integrations, "Technical SEO foundations", "Responsive and accessibility QA"]),
+      bestFor: "Delivering the approved sitemap, integrations and quality gates.",
+    },
+    {
+      tier: "best",
+      label: "Growth-ready launch",
+      price: basePrice ? money(Math.round(basePrice * 1.28 / 250) * 250) : "To be confirmed",
+      retainer: baseRetainer ? `${money(Math.round(baseRetainer * 1.35 / 50) * 50)}/month` : "To be confirmed",
+      scope: unique([...pages, ...integrations, ...optional, "Post-launch optimisation roadmap"]),
+      bestFor: "Reducing future rework by including high-value enhancements from the start.",
+    },
+  ]
+}
+
+function buildAssumptions(inputs: ForgeProposalInputs): string[] {
+  return unique([
+    ...(inputs.estimate?.assumptions.map((item) => `${item.label}: ${String(item.value)} (${item.evidence})`) ?? []),
+    "Client feedback, source materials, legal/policy content and final approvals are provided on time.",
+    "Only the pages, integrations and enhancements listed in the approved scope are included.",
+    ...(inputs.leadEvidence?.discoveryNotes.slice(0, 3).map((note) => `Discovery note to confirm: ${note}`) ?? []),
+  ]).slice(0, 12)
+}
+
+function buildProposalRisks(inputs: ForgeProposalInputs): string[] {
+  return unique([
+    ...(inputs.estimate?.riskFactors.map((risk) => `${risk.severity}: ${risk.explanation}`) ?? []),
+    ...(inputs.qa && inputs.qa.status !== "passed" ? ["Build QA must pass before launch."] : []),
+    ...(inputs.research?.trustGaps?.slice(0, 3).map((gap) => `Trust gap: ${gap}`) ?? []),
+  ]).slice(0, 10)
+}
+
+function defaultOptionalEnhancements(inputs: ForgeProposalInputs): string[] {
+  return unique([
+    "Professional photography or refined image sourcing.",
+    "Ongoing SEO content programme.",
+    "Conversion experiments after launch.",
+    ...(inputs.integrations.some((integration) => integration.provider === "analytics" && integration.enabled) ? ["Analytics review and reporting setup."] : []),
+  ])
+}
+
+function buildSupportingRecords(inputs: ForgeProposalInputs): ForgeProposalSupportingRecord[] {
+  const records: ForgeProposalSupportingRecord[] = []
+  const add = (section: string, recordType: string, recordId: string | number | null, evidence: string | null | undefined) => {
+    if (evidence?.trim()) records.push({ section, recordType, recordId, evidence: evidence.trim().slice(0, 240) })
+  }
+  add("Business problem", "intake", "customerProblems", inputs.intake?.customerProblems)
+  add("Business goals", "project", "primaryGoal", inputs.project.primaryGoal)
+  add("Lead pain points", "prospect", null, inputs.leadEvidence?.painPoints.join("; "))
+  add("Existing website weaknesses", "research", "conversionGaps", inputs.research?.conversionGaps?.slice(0, 3).join("; "))
+  add("Scope", "sitemap", "approved", inputs.sitemap?.sitemap.map((page) => page.path).join(", "))
+  add("Price", "estimate", inputs.estimate?.modelVersion ?? null, inputs.estimate ? `${inputs.estimate.estimatedHours}h estimate, ${money(inputs.estimate.suggestedBuildPrice)} build, ${money(inputs.estimate.suggestedRetainer)}/month retainer.` : null)
+  add("Risks", "estimate", inputs.estimate?.modelVersion ?? null, inputs.estimate?.riskFactors.map((risk) => risk.explanation).join("; "))
+  for (const record of inputs.leadEvidence?.sourceRecords ?? []) add("Lead source", record.recordType, record.recordId, record.label)
+  return records.slice(0, 14)
+}
+
+function money(value: number): string {
+  return `£${value.toLocaleString("en-GB")}`
+}
+
+function titleCase(value: string): string {
+  return value.charAt(0).toUpperCase() + value.slice(1)
 }
 
 function intakeStrengths(intake: ForgeIntakeData | null): string[] {

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "../../../../../../../auth"
 import { ForgeAiError } from "@/lib/server/forge-ai"
-import { ForgeCopyAgentError, approveForgeCopyDocument } from "@/lib/server/forge-copy-agent"
+import { ForgeCopyAgentError, approveForgeCopyDocument, rejectForgeCopyDocument } from "@/lib/server/forge-copy-agent"
 import { enqueueForgeJob, forgeJobResponseBody } from "@/lib/server/forge-job-runner"
 
 export const dynamic = "force-dynamic"
@@ -67,12 +67,15 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   const body = await request.json().catch(() => null)
 
-  if (!body || typeof body !== "object" || Array.isArray(body) || !("copy" in body)) {
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
     return NextResponse.json({ error: "A copy document payload is required." }, { status: 400 })
   }
 
   try {
-    const result = await approveForgeCopyDocument(projectId, sessionActor(session), (body as Record<string, unknown>).copy)
+    const input = body as Record<string, unknown>
+    const result = input.action === "reject"
+      ? await rejectForgeCopyDocument(projectId, sessionActor(session), input)
+      : await approveForgeCopyDocument(projectId, sessionActor(session), input.copy)
     return NextResponse.json(result)
   } catch (error) {
     if (error instanceof ForgeCopyAgentError) {

@@ -17,6 +17,8 @@ import {
 import { FORGE_INTAKE_ARTIFACT_TITLE, readForgeIntakeArtifact } from "@/lib/forge"
 import { FORGE_RESEARCH_ARTIFACT_KIND, FORGE_RESEARCH_ARTIFACT_TITLE, type ForgeResearchReport } from "@/lib/forge-research"
 import { forgeActivityLogs, forgeArtifacts, forgeProjects, forgeTasks } from "@/lib/schema"
+import { buildForgeHumanEditTracking, mergeHumanEditTracking } from "@/lib/forge-human-edits"
+import { appendArtifactDecision, parseForgeArtifactDecision } from "@/lib/forge-approval-intelligence"
 
 export class ForgeSitemapAgentError extends Error {
   safeMessage: string
@@ -283,7 +285,14 @@ export async function approveForgeSitemapStrategy(projectId: number, actor: stri
       ))
       .limit(1)
 
-    const metadataJson = {
+    const editTracking = existing ? buildForgeHumanEditTracking({
+      artifact: existing,
+      approvedContent: content,
+      editor: actor,
+      reason: "Sitemap reviewed and approved.",
+      now,
+    }) : null
+    const baseMetadataJson = {
       ...(existing?.metadataJson ?? {}),
       kind: FORGE_SITEMAP_ARTIFACT_KIND,
       status: "approved",
@@ -292,6 +301,9 @@ export async function approveForgeSitemapStrategy(projectId: number, actor: stri
       approvedAt: now.toISOString(),
       approvedBy: actor,
     }
+    const approvalDecision = parseForgeArtifactDecision({ decision: "approved", primaryReason: "Sitemap reviewed and approved.", category: "client_request", severity: "low", affectsFutureRegeneration: false, acceptanceScope: "partial_acceptance" }, actor, now)
+    const decisionState = appendArtifactDecision(baseMetadataJson, existing?.approvalHistory, approvalDecision)
+    const metadataJson = editTracking ? mergeHumanEditTracking(decisionState.metadataJson, editTracking) : decisionState.metadataJson
 
     const [saved] = existing
       ? await tx
@@ -299,6 +311,8 @@ export async function approveForgeSitemapStrategy(projectId: number, actor: stri
         .set({
           content,
           metadataJson,
+          approvalState: "approved",
+          approvalHistory: decisionState.approvalHistory,
           updatedAt: now,
         })
         .where(eq(forgeArtifacts.id, existing.id))
@@ -311,6 +325,8 @@ export async function approveForgeSitemapStrategy(projectId: number, actor: stri
           title: FORGE_SITEMAP_ARTIFACT_TITLE,
           content,
           metadataJson,
+          approvalState: "approved",
+          approvalHistory: decisionState.approvalHistory,
           updatedAt: now,
         })
         .returning()
@@ -324,6 +340,8 @@ export async function approveForgeSitemapStrategy(projectId: number, actor: stri
         artifactId: saved.id,
         pageCount: parsed.data.sitemap.length,
         approvedAt: now.toISOString(),
+        humanEditTracking: editTracking,
+        approvalDecision,
       },
     })
 

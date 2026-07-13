@@ -7,11 +7,11 @@ import { CAPABILITIES, ROLE_CAPABILITIES, authorizeRequest, databaseQueryScope, 
 const expected: Record<(typeof ADMIN_ROLES)[number], Capability[]> = {
   owner: [...CAPABILITIES],
   administrator: CAPABILITIES.filter((capability) => capability !== "users.reset_password" && capability !== "users.assign_owner"),
-  sales: ["leads.read", "leads.write", "clients.read", "projects.read", "finance.read"],
-  project_manager: ["leads.read", "clients.read", "clients.write", "projects.read", "projects.write", "forge.read", "forge.execute", "forge.approve", "forge.configure", "finance.read", "audit.read"],
-  developer: ["clients.read", "projects.read", "projects.write", "forge.read", "forge.execute", "forge.approve", "forge.configure", "audit.read", "deployments.execute"],
-  finance: ["leads.read", "clients.read", "projects.read", "finance.read", "finance.write", "audit.read"],
-  viewer: ["leads.read", "clients.read", "projects.read", "forge.read", "finance.read"],
+  sales: ["leads.read", "leads.write", "clients.read", "projects.read", "finance.read", "analytics.read"],
+  project_manager: ["leads.read", "clients.read", "clients.write", "projects.read", "projects.write", "forge.read", "forge.execute", "forge.approve", "forge.configure", "finance.read", "audit.read", "analytics.read", "analytics.write"],
+  developer: ["clients.read", "projects.read", "projects.write", "forge.read", "forge.execute", "forge.approve", "forge.configure", "audit.read", "deployments.execute", "analytics.read"],
+  finance: ["leads.read", "clients.read", "projects.read", "finance.read", "finance.write", "audit.read", "analytics.read"],
+  viewer: ["leads.read", "clients.read", "projects.read", "forge.read", "finance.read", "analytics.read"],
 }
 
 describe("RBAC role/capability matrix", () => {

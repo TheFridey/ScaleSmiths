@@ -22,6 +22,8 @@ flowchart TB
 
 The host-Nginx topology is the documented current VPS choice when another service already owns ports 80/443. `nginx/host-scalesmiths.conf` terminates TLS and proxies by hostname. The default Compose topology instead runs `nginx/nginx.conf` inside the Compose network.
 
+Manual blue/green releases use `docker-compose.release.yml` and the two loopback port pairs documented in `docs/operations/canary-release-and-rollback.md`. Host Nginx resolves named web/admin upstreams from `/etc/nginx/scalesmiths/upstreams.conf`; the release manager changes that include atomically only after inactive containers pass health checks. PostgreSQL, generated workspaces and TLS remain owned by the existing topology.
+
 ## Images and migrations
 
 Both production Dockerfiles build Next.js standalone runners on Node 22 Alpine and run as UID/GID 1001. Admin explicitly enables standalone output during its Linux builder stage. The host-Nginx Compose file also exposes builder-target `web-migrate` and `admin-migrate` services under the `tools` profile.

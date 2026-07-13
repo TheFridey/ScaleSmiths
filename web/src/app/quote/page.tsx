@@ -4,6 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, ArrowRight } from "lucide-react"
+import { trackExperienceEvent } from "@/lib/experience-analytics-client"
 
 const STEPS = [
   {
@@ -165,8 +166,10 @@ export default function QuotePage() {
         throw new Error(json.error || "Unable to submit your brief.")
       }
 
+      trackExperienceEvent("quote_form_submitted", { metadata: { source: "standard_quote" } })
       router.push("/quote/thanks")
     } catch (err) {
+      trackExperienceEvent("experience_error", { errorCategory: "quote_submission", metadata: { source: "standard_quote" } })
       setError(err instanceof Error ? err.message : "Unable to submit your brief.")
     } finally {
       setSubmitting(false)
@@ -267,6 +270,7 @@ export default function QuotePage() {
                   value={data[field.key] ?? ""}
                   onChange={(e) => {
                     setError("")
+                    trackExperienceEvent("quote_form_started", { metadata: { source: "standard_quote", step: field.key } })
                     setData((d) => ({ ...d, [field.key]: e.target.value }))
                   }}
                   placeholder={field.placeholder}
@@ -281,6 +285,7 @@ export default function QuotePage() {
                   value={data[field.key] ?? ""}
                   onChange={(e) => {
                     setError("")
+                    trackExperienceEvent("quote_form_started", { metadata: { source: "standard_quote", step: field.key } })
                     setData((d) => ({ ...d, [field.key]: e.target.value }))
                   }}
                   placeholder={field.placeholder}
@@ -312,6 +317,7 @@ export default function QuotePage() {
                 aria-checked={selected}
                 onClick={() => {
                   setError("")
+                  trackExperienceEvent("quote_form_started", { metadata: { source: "standard_quote", step: curr.field } })
                   if (isMultiple) {
                     setData((d) => {
                       const selectedNeeds = needsValue(d)

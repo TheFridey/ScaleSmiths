@@ -7,6 +7,7 @@ import { FORGE_COMPONENT_SPEC_ARTIFACT_TITLE, readForgeComponentSpecArtifact } f
 import { FORGE_COPY_ARTIFACT_TITLE, readForgeCopyDocumentArtifact } from "@/lib/forge-copy"
 import { FORGE_DEPLOY_ARTIFACT_TITLE, readForgeDeploymentArtifact } from "@/lib/forge-deploy"
 import { FORGE_DESIGN_ARTIFACT_TITLE, readForgeDesignDirectionArtifact } from "@/lib/forge-design"
+import { FORGE_DESIGN_SYSTEM_ARTIFACT_TITLE, readForgeDesignSystemArtifact } from "@/lib/forge-design-system"
 import { FORGE_EXPORT_ARTIFACT_TITLE, readForgeExportArtifact } from "@/lib/forge-export"
 import { FORGE_GENERATED_CODE_ARTIFACT_TITLE, readForgeGeneratedCodeArtifact } from "@/lib/forge-frontend-code"
 import { FORGE_PREVIEW_MEMORY_KEY, readForgePreviewMemory } from "@/lib/forge-preview"
@@ -92,11 +93,12 @@ export async function loadForgeProjectPageData(id: number) {
 
   const { db } = await import("@/lib/db")
   const { loadForgeAiProjectMetrics, loadForgeCostQualityModel } = await import("./forge-ai-usage")
+  const { getLatestProjectEstimateSnapshot } = await import("./project-estimator")
   const [project] = await db.select().from(forgeProjects).where(eq(forgeProjects.id, id)).limit(1)
 
   if (!project) return null
 
-  const [projectSummaries, tasks, artifacts, integrations, activityLogs, memories, aiUsage, intakeArtifacts, sitemapArtifacts, copyArtifacts, designArtifacts, componentSpecArtifacts, generatedCodeArtifacts, visualCritiqueArtifacts, qaArtifacts, seoArtifacts, visualQaArtifacts, proposalArtifacts, exportArtifacts, deployArtifacts] = await Promise.all([
+  const [projectSummaries, tasks, artifacts, integrations, activityLogs, memories, aiUsage, latestEstimate, intakeArtifacts, sitemapArtifacts, copyArtifacts, designArtifacts, designSystemArtifacts, componentSpecArtifacts, generatedCodeArtifacts, visualCritiqueArtifacts, qaArtifacts, seoArtifacts, visualQaArtifacts, proposalArtifacts, exportArtifacts, deployArtifacts] = await Promise.all([
     db
       .select({
         id: forgeProjects.id,
@@ -139,6 +141,7 @@ export async function loadForgeProjectPageData(id: number) {
         type: forgeArtifacts.type,
         title: forgeArtifacts.title,
         content: forgeArtifacts.content,
+        metadataJson: forgeArtifacts.metadataJson,
         version: forgeArtifacts.version,
         parentArtifactId: forgeArtifacts.parentArtifactId,
         sourceTaskId: forgeArtifacts.sourceTaskId,
@@ -191,10 +194,12 @@ export async function loadForgeProjectPageData(id: number) {
       .where(eq(forgeMemories.projectId, id))
       .orderBy(desc(forgeMemories.updatedAt)),
     loadForgeAiProjectMetrics(id),
+    getLatestProjectEstimateSnapshot(id),
     selectArtifactMetadata(id, "handover_doc", FORGE_INTAKE_ARTIFACT_TITLE),
     selectArtifactMetadata(id, "sitemap", FORGE_SITEMAP_ARTIFACT_TITLE),
     selectArtifactMetadata(id, "copy_doc", FORGE_COPY_ARTIFACT_TITLE),
     selectArtifactMetadata(id, "design_direction", FORGE_DESIGN_ARTIFACT_TITLE),
+    selectArtifactMetadata(id, "design_system", FORGE_DESIGN_SYSTEM_ARTIFACT_TITLE),
     selectArtifactMetadata(id, "component_spec", FORGE_COMPONENT_SPEC_ARTIFACT_TITLE),
     selectArtifactMetadata(id, "generated_code", FORGE_GENERATED_CODE_ARTIFACT_TITLE),
     selectArtifactMetadata(id, "visual_critique", FORGE_VISUAL_CRITIQUE_ARTIFACT_TITLE),
@@ -226,10 +231,12 @@ export async function loadForgeProjectPageData(id: number) {
     activityLogs,
     memories,
     aiUsage,
+    latestEstimate,
     initialIntake: { ...intakeState, buildBrief: readForgeBuildBriefState(intakeMetadata) },
     initialSitemap: readForgeSitemapStrategyArtifact(sitemapArtifacts[0]?.metadataJson),
     initialCopy: readForgeCopyDocumentArtifact(copyArtifacts[0]?.metadataJson),
     initialDesign: readForgeDesignDirectionArtifact(designArtifacts[0]?.metadataJson),
+    initialDesignSystem: readForgeDesignSystemArtifact(designSystemArtifacts[0]?.metadataJson),
     initialComponentSpec: readForgeComponentSpecArtifact(componentSpecArtifacts[0]?.metadataJson),
     initialWorkspace: readForgeWorkspaceMemory(workspaceMemory?.value),
     initialGeneratedCode: readForgeGeneratedCodeArtifact(generatedCodeArtifacts[0]?.metadataJson),

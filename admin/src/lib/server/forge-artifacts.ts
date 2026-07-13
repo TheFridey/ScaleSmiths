@@ -71,6 +71,12 @@ export async function saveVersionedForgeArtifact({
       metadataJson: {
         ...metadataJson,
         artifactVersion: versionMetadata,
+        artifactLifecycle: {
+          ...(typeof metadataJson.artifactLifecycle === "object" && metadataJson.artifactLifecycle !== null ? metadataJson.artifactLifecycle : {}),
+          generatedVersion: version,
+          generatedAt: now.toISOString(),
+          generatedBy: provenance.provider ?? "system",
+        },
       },
       version,
       retentionPolicy,
@@ -79,7 +85,9 @@ export async function saveVersionedForgeArtifact({
       sourceTaskId: provenance.sourceTaskId ?? null,
       provider: provenance.provider ?? null,
       model: provenance.model ?? null,
+      promptIdentifier: provenance.promptIdentifier ?? "forge.legacy",
       promptVersion: provenance.promptVersion,
+      schemaIdentifier: provenance.schemaIdentifier ?? "forge.legacy",
       schemaVersion: provenance.schemaVersion,
       sourceVersion: provenance.sourceVersion ?? process.env.ERROR_MONITORING_RELEASE ?? process.env.GIT_COMMIT_SHA ?? null,
       upstreamArtifactIds: (provenance.upstreamArtifacts ?? []).map((item) => item.id),

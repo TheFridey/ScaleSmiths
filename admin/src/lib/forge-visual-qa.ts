@@ -1,13 +1,15 @@
 import type { JsonValue } from "./forge-ai"
 import type { ForgeQaCommandStatus } from "./forge-qa"
+import type { ForgeLayoutSignal, ForgeProposedVisualRepair, ForgeScreenshotFinding, ForgeScreenshotRecord } from "./forge-screenshot-qa"
 
 export const FORGE_VISUAL_QA_ARTIFACT_TITLE = "Lighthouse & Visual QA"
 export const FORGE_VISUAL_QA_ARTIFACT_KIND = "forge_visual_qa"
 
 // Lighthouse category scores are normalised to a 0–100 integer scale.
-export const FORGE_DEFAULT_MIN_LIGHTHOUSE_PERFORMANCE = 50
-export const FORGE_DEFAULT_MIN_LIGHTHOUSE_ACCESSIBILITY = 90
+export const FORGE_DEFAULT_MIN_LIGHTHOUSE_PERFORMANCE = 70
+export const FORGE_DEFAULT_MIN_LIGHTHOUSE_ACCESSIBILITY = 92
 export const FORGE_DEFAULT_MIN_LIGHTHOUSE_SEO = 90
+export const FORGE_DEFAULT_MIN_LIGHTHOUSE_BEST_PRACTICES = 85
 export const FORGE_DEFAULT_MAX_CONSOLE_ERRORS = 0
 
 export type ForgeVisualQaStatus = "passed" | "failed" | "skipped"
@@ -24,6 +26,7 @@ export interface ForgeLighthouseScores extends Record<string, JsonValue> {
 export interface ForgeLighthouseThresholds extends Record<string, JsonValue> {
   performance: number
   accessibility: number
+  bestPractices: number
   seo: number
 }
 
@@ -79,6 +82,7 @@ export interface ForgeVisualQaReport extends Record<string, JsonValue> {
   summary: string
   generatedAt: string
   completedAt: string
+  screenshotQa: { evaluatorVersion: string; screenshots: ForgeScreenshotRecord[]; layoutSignals: ForgeLayoutSignal[]; findings: ForgeScreenshotFinding[]; proposedRepairs: ForgeProposedVisualRepair[]; evaluator: { provider: string; model: string; responseId: string | null; advisory: true } | null; comparison: Record<string, JsonValue> | null }
 }
 
 export interface ForgeVisualQaArtifactState {
@@ -94,6 +98,7 @@ export function resolveForgeLighthouseThresholds(env: Partial<Record<string, str
   return {
     performance: clampScore(env.FORGE_MIN_LIGHTHOUSE_PERFORMANCE, FORGE_DEFAULT_MIN_LIGHTHOUSE_PERFORMANCE),
     accessibility: clampScore(env.FORGE_MIN_LIGHTHOUSE_ACCESSIBILITY, FORGE_DEFAULT_MIN_LIGHTHOUSE_ACCESSIBILITY),
+    bestPractices: clampScore(env.FORGE_MIN_LIGHTHOUSE_BEST_PRACTICES, FORGE_DEFAULT_MIN_LIGHTHOUSE_BEST_PRACTICES),
     seo: clampScore(env.FORGE_MIN_LIGHTHOUSE_SEO, FORGE_DEFAULT_MIN_LIGHTHOUSE_SEO),
   }
 }
@@ -132,6 +137,7 @@ export function evaluateForgeLighthouse(
   const failing: string[] = []
   if (isBelow(scores.performance, thresholds.performance)) failing.push(`performance ${scores.performance} < ${thresholds.performance}`)
   if (isBelow(scores.accessibility, thresholds.accessibility)) failing.push(`accessibility ${scores.accessibility} < ${thresholds.accessibility}`)
+  if (isBelow(scores.bestPractices, thresholds.bestPractices)) failing.push(`best practices ${scores.bestPractices} < ${thresholds.bestPractices}`)
   if (isBelow(scores.seo, thresholds.seo)) failing.push(`seo ${scores.seo} < ${thresholds.seo}`)
 
   return {
@@ -164,6 +170,7 @@ export function buildForgeQualityBadges(input: {
     badge("typecheck", "Typecheck", fromCommandStatus(input.typecheck), commandValue(input.typecheck)),
     badge("seo", "SEO", fromScore(seoValue, input.seoThreshold), scoreValue(seoValue)),
     badge("accessibility", "Accessibility", input.lighthouse.available ? fromScore(accessibility, input.lighthouse.thresholds.accessibility) : "skipped", input.lighthouse.available ? scoreValue(accessibility) : "n/a"),
+    badge("best-practices", "Best Practices", input.lighthouse.available ? fromScore(input.lighthouse.scores.bestPractices, input.lighthouse.thresholds.bestPractices) : "skipped", input.lighthouse.available ? scoreValue(input.lighthouse.scores.bestPractices) : "n/a"),
     badge("performance", "Performance", input.lighthouse.available ? fromScore(performance, input.lighthouse.thresholds.performance) : "skipped", input.lighthouse.available ? scoreValue(performance) : "n/a"),
     badge("mobile", "Mobile", fromCheckStatus(input.mobile.status), checkValue(input.mobile.status)),
   ]
@@ -184,6 +191,7 @@ export function buildForgeVisualQaReport(input: {
   seoThreshold: number
   logs: string[]
   generatedAt?: string
+  screenshotQa?: ForgeVisualQaReport["screenshotQa"]
 }): ForgeVisualQaReport {
   const completedAt = new Date().toISOString()
   const badges = buildForgeQualityBadges({
@@ -232,6 +240,7 @@ export function buildForgeVisualQaReport(input: {
         : "Visual QA passed: smoke tests, mobile viewport, console errors, and Lighthouse thresholds are within limits where available.",
     generatedAt: input.generatedAt ?? completedAt,
     completedAt,
+    screenshotQa: input.screenshotQa ?? { evaluatorVersion: "unavailable", screenshots: [], layoutSignals: [], findings: [], proposedRepairs: [], evaluator: null, comparison: null },
   }
 }
 
@@ -277,7 +286,7 @@ export function buildForgeVisualQaArtifactContent(report: ForgeVisualQaReport): 
       : `- Skipped: ${report.lighthouse.unavailableReason ?? "unavailable"}`,
     ...(report.lighthouse.available ? [
       `- Accessibility: ${fmt(report.lighthouse.scores.accessibility)} (min ${report.lighthouse.thresholds.accessibility})`,
-      `- Best practices: ${fmt(report.lighthouse.scores.bestPractices)}`,
+      `- Best practices: ${fmt(report.lighthouse.scores.bestPractices)} (min ${report.lighthouse.thresholds.bestPractices})`,
       `- SEO: ${fmt(report.lighthouse.scores.seo)} (min ${report.lighthouse.thresholds.seo})`,
     ] : []),
     "",

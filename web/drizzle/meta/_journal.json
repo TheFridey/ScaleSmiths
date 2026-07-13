@@ -64,6 +64,13 @@
       "when": 1782302200000,
       "tag": "0008_monthly_reports",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1783900800000,
+      "tag": "0009_experience_choice_analytics",
+      "breakpoints": true
     }
   ]
 }

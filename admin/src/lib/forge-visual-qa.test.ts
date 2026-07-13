@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 import {
   FORGE_DEFAULT_MIN_LIGHTHOUSE_ACCESSIBILITY,
+  FORGE_DEFAULT_MIN_LIGHTHOUSE_BEST_PRACTICES,
   FORGE_DEFAULT_MIN_LIGHTHOUSE_PERFORMANCE,
   FORGE_DEFAULT_MIN_LIGHTHOUSE_SEO,
   FORGE_VISUAL_QA_ARTIFACT_KIND,
@@ -26,7 +27,7 @@ import {
   safeForgeVisualCritiqueRecommendations,
 } from "./forge-visual-critique"
 
-const thresholds = { performance: 50, accessibility: 90, seo: 90 }
+const thresholds = { performance: 50, accessibility: 90, bestPractices: 85, seo: 90 }
 
 function mobile(status: ForgeMobileCheck["status"]): ForgeMobileCheck {
   return { status, viewport: { width: 390, height: 844 }, detail: "mobile" }
@@ -45,13 +46,15 @@ describe("forge visual QA engine", () => {
     expect(resolveForgeLighthouseThresholds({})).toEqual({
       performance: FORGE_DEFAULT_MIN_LIGHTHOUSE_PERFORMANCE,
       accessibility: FORGE_DEFAULT_MIN_LIGHTHOUSE_ACCESSIBILITY,
+      bestPractices: FORGE_DEFAULT_MIN_LIGHTHOUSE_BEST_PRACTICES,
       seo: FORGE_DEFAULT_MIN_LIGHTHOUSE_SEO,
     })
     expect(resolveForgeLighthouseThresholds({
       FORGE_MIN_LIGHTHOUSE_PERFORMANCE: "70",
       FORGE_MIN_LIGHTHOUSE_ACCESSIBILITY: "95",
+      FORGE_MIN_LIGHTHOUSE_BEST_PRACTICES: "93",
       FORGE_MIN_LIGHTHOUSE_SEO: "85",
-    })).toEqual({ performance: 70, accessibility: 95, seo: 85 })
+    })).toEqual({ performance: 70, accessibility: 95, bestPractices: 93, seo: 85 })
     expect(resolveForgeLighthouseThresholds({ FORGE_MIN_LIGHTHOUSE_PERFORMANCE: "999" }).performance).toBe(100)
     expect(resolveForgeMaxConsoleErrors({})).toBe(0)
     expect(resolveForgeMaxConsoleErrors({ FORGE_MAX_CONSOLE_ERRORS: "3" })).toBe(3)
@@ -91,7 +94,7 @@ describe("forge visual QA engine", () => {
       lighthouse,
       mobile: mobile("passed"),
     })
-    expect(badges.map((badge) => badge.key)).toEqual(["build", "typecheck", "seo", "accessibility", "performance", "mobile"])
+    expect(badges.map((badge) => badge.key)).toEqual(["build", "typecheck", "seo", "accessibility", "best-practices", "performance", "mobile"])
     expect(badges.find((badge) => badge.key === "build")?.status).toBe("pass")
     expect(badges.find((badge) => badge.key === "seo")?.value).toBe("91") // lighthouse SEO preferred
     expect(badges.find((badge) => badge.key === "performance")?.status).toBe("pass")
@@ -131,11 +134,11 @@ describe("forge visual QA engine", () => {
     })
 
     expect(report.status).toBe("passed")
-    expect(report.badges.length).toBe(6)
+    expect(report.badges.length).toBe(7)
 
     const state = readForgeVisualQaArtifact({ kind: FORGE_VISUAL_QA_ARTIFACT_KIND, report })
     expect(state.status).toBe("passed")
-    expect(state.badges.length).toBe(6)
+    expect(state.badges.length).toBe(7)
     expect(readForgeVisualQaArtifact(null).status).toBe("skipped")
 
     const content = buildForgeVisualQaArtifactContent(report)

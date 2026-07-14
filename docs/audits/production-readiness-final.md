@@ -1,5 +1,7 @@
 # Final production-readiness and security audit
 
+> **Historical report (superseded):** This audit records the repository state on 2026-07-13 and is retained as evidence. It is not the current release decision or production runbook. Use the [release evidence index](../releases/README.md) and its latest report for current status.
+
 Audit date: 2026-07-13  
 Scope: repository state in this checkout, including uncommitted programme work  
 Verdict: **No-go for production until the unresolved High findings are closed or explicitly accepted by the owner with compensating controls.**
@@ -159,7 +161,7 @@ Configuration documents trusted forwarding and origin restriction, but CI does n
 | Providers/budgets | Adapter contracts, safe diagnostics, retries/circuit health and transactional reservations exist | provider, usage and reservation modules/tests |
 | Sandbox/dependencies | Sandbox is strong and now production-fail-safe; dependency admission/SBOM is missing | sandbox modules/tests; release gates |
 | CI/tests | Broad CI/security coverage and 475 passing unit tests; E2E repair remains failed locally | workflows and validation section |
-| Performance/accessibility | Public route budgets, Chromium journeys/visual baselines and Forge accessibility/visual gates exist; cross-browser and live Lighthouse evidence remains CI-owned | web test/config docs; Forge gate modules |
+| Performance/accessibility | Public route budgets, Chromium journeys/visual baselines, focused Firefox/WebKit smoke, and Forge accessibility/visual gates exist; production-origin measurement remains operational evidence | web test/config docs; Forge gate modules |
 | Logging/monitoring/error handling | Structured/redacted logs and safe errors exist; production monitoring/log retention not configured | logging/monitoring modules and docs |
 | Deployment/rollback/backups | Atomic blue-green simulation and fail-closed release gates exist; backup restoration lacks evidence | release manager/tests and runbooks |
 | Client isolation/privacy | Query-level scoping and analytics minimisation exist; shared DB credential/RLS gap remains | portal/admin query modules and privacy docs |
@@ -172,11 +174,12 @@ Passed:
 
 - `npm run check:env-hygiene`
 - `npm run check:architecture-docs`
-- `node scripts/check-migrations.mjs` — 42 journal entries / 42 SQL files
+- `node scripts/check-migrations.mjs` — web 10 journal entries / 10 SQL files; admin 42 journal entries / 42 SQL files
 - web `npm run lint`
 - web `npm run test` — 61 tests
 - web `npm run build`
-- web `npm run test:e2e:chromium` — 17 Chromium journey and visual-regression tests
+- web `npm run test:e2e:chromium` — 23 Chromium journey and desktop/tablet/mobile visual-regression tests
+- web `npm run test:e2e:cross-browser` — 4 focused Firefox/WebKit functional and hydration checks
 - web `npm run check:performance-budgets` — 2 route budgets
 - admin `npm run lint`
 - admin `npm run test` — 414 tests
@@ -189,8 +192,8 @@ Passed:
 Failed/incomplete:
 
 - `npm run test:forge-e2e` — mandatory stages and artifact-version bugs were repaired, but the final local repair cycle timed out during dependency installation and Docker Desktop became unavailable during cleanup.
-- Chromium passed, but its analytics requests logged `ENOTFOUND postgres` because the browser configuration did not provision the database hostname. The journeys mock their submission boundaries, so this is not evidence that analytics persistence passed end to end.
-- A live Lighthouse run and selective Firefox/WebKit coverage were not executed locally; those remain CI-hosted checks.
+- Browser journeys deliberately mock analytics and form submission boundaries, so browser success is not evidence that analytics persistence passed end to end; database persistence remains covered separately.
+- Lighthouse route budgets and focused Firefox/WebKit coverage passed in the local Linux test containers. A production-origin Lighthouse run remains post-deployment evidence.
 - CI-hosted CodeQL, TruffleHog, Trivy, Hadolint, SBOM and dependency-review jobs were inspected only.
 
 ## Deployment decision

@@ -92,7 +92,11 @@ function SceneBackdrop({
   onPanelFocus: (panelId: string | null) => void
 }) {
   const [loaded, setLoaded] = useState(false)
-  const disableCanvas = typeof window !== "undefined" && shouldDisableE2eCanvas()
+  const [disableCanvas, setDisableCanvas] = useState(false)
+
+  useEffect(() => {
+    setDisableCanvas(shouldDisableE2eCanvas())
+  }, [])
 
   useEffect(() => {
     setLoaded(false)

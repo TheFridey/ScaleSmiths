@@ -15,7 +15,11 @@ The audited implementation map is maintained in `docs/architecture/`:
 
 Architecture decision records are maintained in [docs/adr](docs/adr/README.md).
 
+The current production-readiness and release evidence is indexed in [docs/releases](docs/releases/README.md). Superseded audit reports are retained as historical evidence and must not be used as current deployment instructions.
+
 Contribution standards, pull request expectations, conventional commit guidance, and security reporting are documented in [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
+
+Dependency pinning, Dependabot review, audit acceptance and framework/authentication upgrade requirements are documented in [Dependency governance](docs/operations/dependency-governance.md).
 
 | App | Local | Production |
 |-----|-------|-----------|
@@ -66,7 +70,7 @@ docker-compose up --build -d
 
 1. **Copy files to VPS**
    ```bash
-   rsync -avz --exclude node_modules --exclude .next . user@yourserver:/srv/scalesmiths
+   rsync -avz --exclude node_modules --exclude .next . user@yourserver:/var/www/scalesmiths/ScaleSmiths
    ```
 
 2. **SSL certs** (if not already set up with Let's Encrypt)
@@ -79,15 +83,15 @@ docker-compose up --build -d
 
 3. **Prepare Forge workspace storage**
    ```bash
-   cd /srv/scalesmiths
-   mkdir -p generated-sites
-   sudo chown -R 1001:1001 generated-sites
-   chmod 750 generated-sites
+   cd /var/www/scalesmiths/ScaleSmiths
+   mkdir -p /var/www/scalesmiths/ScaleSmiths/generated-sites
+   sudo chown -R 1001:1001 /var/www/scalesmiths/ScaleSmiths/generated-sites
+   chmod 750 /var/www/scalesmiths/ScaleSmiths/generated-sites
    ```
 
 4. **Start**
    ```bash
-   cd /srv/scalesmiths
+   cd /var/www/scalesmiths/ScaleSmiths
    cp .env.example .env && nano .env
    docker-compose up --build -d
    ```
@@ -110,12 +114,12 @@ database, while the existing host Nginx routes requests by `server_name`.
 
 1. **Copy files to VPS**
    ```bash
-   rsync -avz --exclude node_modules --exclude .next --exclude .env . user@yourserver:/srv/scalesmiths
+   rsync -avz --exclude node_modules --exclude .next --exclude .env . user@yourserver:/var/www/scalesmiths/ScaleSmiths
    ```
 
 2. **Create production env on the VPS**
    ```bash
-   cd /srv/scalesmiths
+   cd /var/www/scalesmiths/ScaleSmiths
    cp .env.example .env
    nano .env
    ```
@@ -123,6 +127,8 @@ database, while the existing host Nginx routes requests by `server_name`.
    Required production differences from local dev:
    - `NEXT_PUBLIC_SITE_URL=https://scalesmiths.co.uk`
    - `NEXT_PUBLIC_ADMIN_URL=https://admin.scalesmiths.co.uk`
+   - Auth.js callbacks must use `https://admin.scalesmiths.co.uk`; when an explicit `AUTH_URL` is configured in production, set it to that origin
+   - `ADMIN_PORTAL_URL=https://admin.scalesmiths.co.uk`; portal notification links must never use a path under the public origin
    - `DEMO_PORTAL_ENABLED=false`
    - `ADMIN_PASSWORD` should be a bcrypt hash
    - `POSTGRES_PASSWORD`, `AUTH_SECRET`, and `PORTAL_SECRET` should be fresh production secrets
@@ -196,7 +202,8 @@ Forge production env is configured in the root `.env` used by Docker Compose:
 - `FORGE_MAX_REPAIR_ATTEMPTS=3` unless a tighter repair loop is desired
 - `RESEND_API_KEY` is needed for generated client-site contact forms
 - `FORGE_MIN_LIGHTHOUSE_PERFORMANCE`, `FORGE_MIN_LIGHTHOUSE_ACCESSIBILITY`, and `FORGE_MIN_LIGHTHOUSE_SEO` control generated-site QA thresholds
-- `FORGE_SANDBOX_RUNNER=local` by default; set `FORGE_SANDBOX_RUNNER=docker` on a VPS once Docker is available for generated-site preview/QA isolation
+- Local development may use `FORGE_SANDBOX_RUNNER=local`, as selected by `docker-compose.dev.yml`, for fast developer feedback.
+- Production must set `FORGE_SANDBOX_RUNNER=docker`. Production execution must fail closed if Docker is unavailable and must never silently fall back to the local runner.
 - `FORGE_SANDBOX_CPUS`, `FORGE_SANDBOX_MEMORY`, `FORGE_SANDBOX_NETWORK`, `FORGE_SANDBOX_INSTALL_NETWORK`, and `FORGE_SANDBOX_PREVIEW_NETWORK` control generated-site sandbox limits
 - `FORGE_ARTIFACT_MAX_VERSIONS`, `FORGE_ARTIFACT_MAX_CONTENT_BYTES`, and `FORGE_QA_LOG_MAX_CHARS` control retained artifact history and large QA log size
 
@@ -219,7 +226,7 @@ Workspace storage:
 - Keep permissions restrictive, for example `chmod 750 generated-sites`.
 - Do not point Nginx at `generated-sites/`; previews must stay behind the admin Forge UI.
 - Include `generated-sites/` in VPS backup planning if generated project work should survive a server rebuild.
-- For production Forge QA/preview, prefer `FORGE_SANDBOX_RUNNER=docker`. Docker commands run with a secret-free environment, CPU/memory limits, dropped Linux capabilities, `no-new-privileges`, and restricted network mode.
+- Production Forge QA/preview must use `FORGE_SANDBOX_RUNNER=docker`. Docker commands run with a secret-free environment, CPU/memory limits, dropped Linux capabilities, `no-new-privileges`, and restricted network mode. The local runner is development-only and is not a production fallback.
 - Keep `FORGE_SANDBOX_NETWORK=none` for typecheck/lint/build. `FORGE_SANDBOX_INSTALL_NETWORK=none` is safest and requires dependencies to be preinstalled or cached; set it to `bridge` only for a controlled install window.
 - Docker previews publish only to the configured preview host, which should stay `127.0.0.1` unless a private preview network has been reviewed.
 
@@ -248,8 +255,8 @@ Private access recommendations:
 Forge deploy checklist:
 
 1. Confirm DNS for `admin.scalesmiths.co.uk`; optionally confirm `forge.scalesmiths.co.uk`.
-2. Create and permission `/srv/scalesmiths/generated-sites` for UID/GID `1001`.
-3. Fill Forge env vars in `/srv/scalesmiths/.env`.
+2. Create and permission `/var/www/scalesmiths/ScaleSmiths/generated-sites` for UID/GID `1001`.
+3. Fill Forge env vars in `/var/www/scalesmiths/ScaleSmiths/.env`.
 4. Keep `FORGE_ENABLE_AI=false` for first boot unless provider keys are ready.
 5. Confirm AI budgets are set before enabling live providers.
 6. Run web migrations, then admin migrations.
@@ -573,7 +580,7 @@ npm exec tsc -- --noEmit
 npm run build
 ```
 
-`npm audit` currently reports known issues in the dependency tree. Do not run forced audit fixes during routine deploys; use a planned dependency upgrade pass so unrelated breaking changes are reviewed.
+`npm audit` currently reports the reviewed Moderate PostCSS advisory recorded by the dependency-governance policy. High and Critical production advisories remain blocking. Do not run forced audit fixes during routine deploys; follow [Dependency governance](docs/operations/dependency-governance.md) so unsafe downgrades and unrelated breaking changes are rejected.
 
 ---
 

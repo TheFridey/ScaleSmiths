@@ -4,14 +4,13 @@ This repository has a CODEOWNERS file at `.github/CODEOWNERS`. It is a review-ro
 
 ## CODEOWNERS setup
 
-The current CODEOWNERS file uses `@TheFridey/scalesmiths-maintainers` as a placeholder owner. Before enabling required CODEOWNER review, replace that placeholder with an actual GitHub username or team that exists in the repository.
+The current CODEOWNERS file uses the proven repository owner `@TheFridey`. Confirm GitHub recognises this owner on a test pull request before enabling required CODEOWNER review.
 
 Examples:
 
 ```text
 * @TheFridey
 * @TheFridey @trusted-maintainer
-* @TheFridey/scalesmiths-maintainers
 ```
 
 Use a team only if the repository belongs to an organisation with teams available. For a personal repository or small team, one or two usernames are enough.
@@ -57,17 +56,21 @@ Do not enable settings that depend on unavailable GitHub plan or organisation fe
 Use the exact check names shown by GitHub after the workflows have run at least once. Based on the current workflows, the useful required checks are:
 
 - `CI / Web`
+- `CI / Cross-browser Smoke`
 - `CI / Admin`
+- `CI / Database and Migrations`
 - `CI / Root Hygiene`
-- `Security / secrets`
-- `Security / npm-audit`
-- `Security / dockerfile-lint`
-- `Security / container-scan`
-- `Security / migrations`
-- `Security / hygiene-and-sandbox`
+- `Security / TruffleHog`
+- `Security / npm Audit (web)`
+- `Security / npm Audit (admin)`
+- `Security / Hadolint (web)`
+- `Security / Hadolint (admin)`
+- `Security / Image Security (web)`
+- `Security / Image Security (admin)`
+- `Security / Generated-site Sandbox`
 - `CodeQL / Analyze JavaScript and TypeScript`
 
-If the full security suite is too slow for routine PRs, keep `CI / Web`, `CI / Admin`, `CI / Root Hygiene`, `Security / secrets`, `Security / migrations`, and `Security / hygiene-and-sandbox` as hard gates, then run heavier image/CodeQL checks on merge or schedule. Do not weaken checks for changes touching CODEOWNERS sensitive areas without recording the reason in the PR.
+The cross-browser suite is deliberately limited to four functional tests (two paths in each browser), so it remains a pull-request gate. If image scans or CodeQL later prove too slow for routine pull requests, changing their trigger requires a documented review; never move web/admin builds, database integration, Chromium journeys/visual regression, root hygiene, npm audits, secret scanning or sandbox security off the pull-request path. Do not weaken checks for changes touching CODEOWNERS sensitive areas without recording the reason in the PR.
 
 ## Review policy for sensitive areas
 
@@ -83,7 +86,7 @@ For urgent production fixes, use the smallest possible PR, keep required checks 
 
 ## Manual setup checklist
 
-1. Replace the placeholder owner in `.github/CODEOWNERS`.
+1. Confirm every owner named in `.github/CODEOWNERS` exists and has repository access.
 2. Commit and merge CODEOWNERS.
 3. Confirm GitHub recognises the CODEOWNERS file on a test PR.
 4. Configure `master` branch protection.

@@ -77,12 +77,12 @@ Vitest is used in both applications. Web tests concentrate on portal authenticat
 
 Important gaps:
 
-- no end-to-end browser tests are run by CI;
+- Chromium journeys and visual baselines plus focused Firefox/WebKit smoke tests run in CI, but live browser/provider integrations remain out of scope;
 - route-handler authorization and middleware behaviour have little direct integration coverage;
-- no migration compatibility test proves that web and admin migration histories remain safe against the same database;
+- migration compatibility is exercised from an empty shared PostgreSQL database, but upgrades from every historical production snapshot are not continuously reproduced;
 - no real provider contract test runs against OpenAI, Anthropic, or Resend;
-- Docker sandbox, preview process lifecycle, Nginx routing, and Compose topology are not exercised in CI;
-- interactive Three.js behaviour and accessibility are documented/performance-tested manually but not covered by automated browser CI;
+- harmless Docker sandbox fixtures and application images are exercised in CI; preview lifecycle, Nginx routing, and full Compose topology still lack request-level CI coverage;
+- interactive experience routing, fallback behaviour and key accessibility behaviours have browser coverage, but real GPU rendering quality still requires visual/manual review;
 - most admin React screens have no component tests.
 
 ## Audit findings

@@ -13,8 +13,10 @@ Run the full browser matrix when changing browser-specific behaviour:
 
 ```bash
 cd web
-npm run test:e2e
+npm run test:e2e:cross-browser
 ```
+
+`npm run test:e2e` remains available for an intentionally broad local run of every configured project.
 
 The Playwright config starts the web app on `127.0.0.1:3210` by default. Override with:
 
@@ -57,6 +59,6 @@ Keep meaningful motion coverage in behavioural tests instead of screenshot basel
 
 ## CI
 
-CI runs the Chromium project with traces, videos and screenshots retained on failure. The workflow uploads `web/test-results` and `web/playwright-report` when the Playwright step fails.
+CI runs the Chromium functional journeys plus desktop, tablet and mobile visual projects. Visual snapshots remain Chromium-only. Traces, videos, screenshots and the HTML report are retained when Playwright fails.
 
-Selective Firefox and WebKit smoke projects are configured locally for the first-time chooser and stored interactive preference paths. They are not part of the default CI gate to keep runtime and browser dependency cost modest.
+A separate pull-request job runs the focused first-time chooser and stored interactive-preference paths in Firefox and WebKit. It does not execute visual regression, which avoids browser-specific snapshot noise and keeps the cross-browser gate small.

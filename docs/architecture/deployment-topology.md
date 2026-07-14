@@ -1,5 +1,7 @@
 # Deployment topology
 
+The authoritative production checkout is `/var/www/scalesmiths/ScaleSmiths`. Production commands, `.env`, release tooling and the private generated-workspace bind mount are resolved from this checkout unless an explicitly documented host-state path such as `/var/lib/scalesmiths-release` or `/etc/nginx` is involved.
+
 ## Supported Compose variants
 
 | File | Purpose | Published ports |
@@ -50,7 +52,7 @@ This order is operationally significant because both migration histories target 
 | State | Persistence |
 | --- | --- |
 | Business/Forge data | named PostgreSQL volume |
-| Generated workspaces | host `generated-sites/`, bind-mounted to admin |
+| Generated workspaces | host `/var/www/scalesmiths/ScaleSmiths/generated-sites`, bind-mounted to `/app/generated-sites` in admin |
 | Preview processes/containers | runtime state; metadata persisted in `forge_memories` |
 | Application images | rebuilt from `web/` and `admin/` contexts |
 | Secrets | root `.env`, excluded from source control and supplied to services |
@@ -65,7 +67,7 @@ The root `.env` is supplied wholesale to Compose services. Ownership below descr
 | --- | --- |
 | PostgreSQL/Drizzle | `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `DATABASE_URL` |
 | Public web | `NEXT_PUBLIC_SITE_URL`, `PORTAL_SECRET`, `DEMO_PORTAL_ENABLED`, `DEMO_PORTAL_EMAIL`, `DEMO_PORTAL_PASSWORD`, `DEMO_PORTAL_CLIENT_ID` |
-| Admin/Auth.js | `NEXT_PUBLIC_ADMIN_URL`, `AUTH_SECRET` (or compatibility `NEXTAUTH_SECRET`), `ADMIN_EMAIL`, `ADMIN_PASSWORD` |
+| Admin/Auth.js | `NEXT_PUBLIC_ADMIN_URL=https://admin.scalesmiths.co.uk`, optional server-only `AUTH_URL=https://admin.scalesmiths.co.uk`, `AUTH_SECRET` (or compatibility `NEXTAUTH_SECRET`), `ADMIN_EMAIL`, `ADMIN_PASSWORD` |
 | Web email | `RESEND_API_KEY`, `RESEND_FROM`, `SUPPORT_EMAIL`, `ADMIN_PORTAL_URL`; Forge-generated server routes may also reference `RESEND_API_KEY` at their eventual deployment target |
 | Server error monitoring | `ERROR_MONITORING_PROVIDER`, `ERROR_MONITORING_DSN`, `ERROR_MONITORING_RELEASE`, `ERROR_MONITORING_ENVIRONMENT`, `ERROR_MONITORING_SAMPLE_RATE` |
 | Forge provider routing | `FORGE_ENABLE_AI`, `FORGE_DEFAULT_AI_PROVIDER`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` |
@@ -82,10 +84,13 @@ Only `NEXT_PUBLIC_SITE_URL` and `NEXT_PUBLIC_ADMIN_URL` are intended for client 
 GitHub Actions runs on pushes and pull requests to `master`:
 
 - web: Node 22, `npm ci`, lint, Vitest, production build;
-- admin: Node 22, `npm ci`, conditional lint/test scripts, production build;
-- root hygiene: checks tracked and unignored files for real `.env*` files.
+- web browser gates: Chromium journeys and desktop/tablet/mobile visual baselines, plus focused Firefox/WebKit functional smoke coverage;
+- admin: Node 22, `npm ci`, lint, Vitest, deterministic Forge benchmark, production build;
+- database: both migration journals and a real empty-PostgreSQL integration suite;
+- root hygiene: environment, architecture, dependency, topology and workflow-policy checks plus release/rollback simulation;
+- security: dependency review, TruffleHog, npm production audits, Hadolint, Trivy, application-image SBOMs, sandbox fixtures and CodeQL.
 
-CI does not build Docker images, start PostgreSQL, run migrations, validate Compose, or exercise Nginx/browser flows. Builds therefore prove compilation but not the deployed topology.
+CI builds and scans both application images, starts disposable PostgreSQL, applies both migration histories through the integration suite, and exercises public browser flows. The harmless release simulation covers atomic switching and rollback logic without deploying. Compose/Nginx request routing and a real production release remain operational checks rather than claims made by CI.
 
 ## Operational risks and documentation drift
 

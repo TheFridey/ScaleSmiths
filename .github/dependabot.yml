@@ -1,0 +1,117 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /web
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/London
+    open-pull-requests-limit: 10
+    groups:
+      framework-patches:
+        patterns:
+          - next
+          - eslint-config-next
+          - "@next/*"
+          - react
+          - react-dom
+        update-types:
+          - patch
+      authentication-security-patches:
+        patterns:
+          - bcryptjs
+          - jose
+        update-types:
+          - patch
+      routine-patches:
+        patterns:
+          - "*"
+        exclude-patterns:
+          - next
+          - eslint-config-next
+          - "@next/*"
+          - react
+          - react-dom
+          - bcryptjs
+          - jose
+        update-types:
+          - patch
+    ignore:
+      - dependency-name: next
+        update-types:
+          - version-update:semver-major
+      - dependency-name: react
+        update-types:
+          - version-update:semver-major
+      - dependency-name: react-dom
+        update-types:
+          - version-update:semver-major
+
+  - package-ecosystem: npm
+    directory: /admin
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:15"
+      timezone: Europe/London
+    open-pull-requests-limit: 10
+    groups:
+      framework-patches:
+        patterns:
+          - next
+          - eslint-config-next
+          - "@next/*"
+          - react
+          - react-dom
+        update-types:
+          - patch
+      authentication-patches:
+        patterns:
+          - next-auth
+          - "@auth/*"
+          - bcryptjs
+        update-types:
+          - patch
+      routine-patches:
+        patterns:
+          - "*"
+        exclude-patterns:
+          - next
+          - eslint-config-next
+          - "@next/*"
+          - react
+          - react-dom
+          - next-auth
+          - "@auth/*"
+          - bcryptjs
+        update-types:
+          - patch
+    ignore:
+      - dependency-name: next
+        update-types:
+          - version-update:semver-major
+      - dependency-name: react
+        update-types:
+          - version-update:semver-major
+      - dependency-name: react-dom
+        update-types:
+          - version-update:semver-major
+
+  - package-ecosystem: docker
+    directory: /web
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:30"
+      timezone: Europe/London
+    open-pull-requests-limit: 3
+
+  - package-ecosystem: docker
+    directory: /admin
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:45"
+      timezone: Europe/London
+    open-pull-requests-limit: 3

@@ -4,6 +4,8 @@
 
 The public site (`scalesmiths.co.uk` -> `127.0.0.1:3100`) remains public. Only `admin.scalesmiths.co.uk` and any optional Forge hostname are Access applications. Docker publishes both applications on loopback, and PostgreSQL is not published by the host-Nginx Compose variant.
 
+`https://admin.scalesmiths.co.uk` is the canonical Auth.js and admin origin. Cloudflare Access, Nginx, portal links and production environment values must preserve that hostname; the public origin does not host an admin path.
+
 The baseline host configuration previously accepted direct admin traffic and appended inbound `X-Forwarded-For`. The admin block now overwrites that header. For production, replace only its two admin server blocks with `nginx/cloudflare-access-admin.example.conf`.
 
 ## Cloudflare setup

@@ -1,6 +1,6 @@
 # PostgreSQL integration tests
 
-The admin integration suite uses PostgreSQL 16 and the repository's real `admin/drizzle` migration history. It does not mock the database module.
+The admin integration suite uses PostgreSQL 16 and the repository's real `web/drizzle` and `admin/drizzle` migration histories. It does not mock the database module.
 
 ## Local one-command run
 
@@ -38,4 +38,4 @@ The schema is recreated before the suite and application tables are truncated wi
 
 ## GitHub Actions
 
-The Security workflow provisions a PostgreSQL 16 service named `scalesmiths_integration_test`, checks migration journal consistency, applies migrations, and runs `npm run test:integration` from `admin`. Fork pull requests receive no production database URL or repository secret.
+The required `CI / Database and Migrations` job provisions a PostgreSQL 16 service named `scalesmiths_integration_test`, tests the migration-consistency policy, checks both journal/file histories, and runs `npm run test:integration` from `admin`. The suite recreates the schema and applies both migration histories itself, avoiding a redundant pre-application step. Migration and integration output is retained as the `database-migration-logs` artifact. Fork pull requests receive no production database URL or repository secret.

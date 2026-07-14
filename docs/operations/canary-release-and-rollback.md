@@ -1,5 +1,7 @@
 # Canary release and rollback
 
+Run every repository-relative command in this runbook from `/var/www/scalesmiths/ScaleSmiths`, the authoritative production checkout.
+
 This runbook keeps the supported VPS topology: Dockerized `web` and `admin`, the existing PostgreSQL service and generated-sites bind mount, and host Nginx terminating TLS. It adds two loopback application slots:
 
 | Slot | Web | Admin |

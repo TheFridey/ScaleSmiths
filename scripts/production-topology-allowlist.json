@@ -1,0 +1,11 @@
+{
+  "exceptions": {
+    "scripts/check-production-topology.test.mjs": [
+      "stale-production-root",
+      "incomplete-production-root",
+      "deprecated-admin-route",
+      "placeholder-codeowner",
+      "noncanonical-admin-environment"
+    ]
+  }
+}

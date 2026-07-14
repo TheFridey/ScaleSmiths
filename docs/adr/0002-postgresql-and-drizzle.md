@@ -9,7 +9,7 @@ Both applications use PostgreSQL through one `DATABASE_URL`. Drizzle ORM schema 
 
 ## Decision
 
-Continue using PostgreSQL with Drizzle ORM and per-application migration directories. Maintain the operational convention that production migrations run web first, then admin, unless a stage-specific migration note says otherwise.
+Continue using PostgreSQL with Drizzle ORM and per-application migration directories. Production migrations run web first, then admin. Treat committed migration SQL and historical journal entries as immutable; record checksums and make schema corrections in new forward migrations.
 
 ## Alternatives Considered
 
@@ -28,7 +28,7 @@ Both apps currently share database credentials, so isolation is application-leve
 
 ## Operational Implications
 
-Migrations must be reviewed carefully, especially for rollback compatibility. Integration tests should apply real migrations rather than recreating schema manually.
+Migrations must be reviewed carefully, especially for rollback compatibility. Integration tests apply real migrations through both clean-install and historical-upgrade paths rather than recreating schema manually. A guarded operator script records before/after schema and journal evidence against an isolated production-backup restore; it never replaces the human backup-restore exercise.
 
 ## Related Code or Documentation
 
@@ -38,4 +38,5 @@ Migrations must be reviewed carefully, especially for rollback compatibility. In
 - `admin/drizzle`
 - `docs/architecture/data-model.md`
 - `docs/operations/postgres-integration-tests.md`
+- `docs/operations/migration-history-and-backup-verification.md`
 - `README.md#database-migrations`

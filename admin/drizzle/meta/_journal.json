@@ -295,6 +295,13 @@
       "when": 1785657600000,
       "tag": "0041_forge_release_gates",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1785744000000,
+      "tag": "0042_historical_schema_reconciliation",
+      "breakpoints": true
     }
   ]
 }

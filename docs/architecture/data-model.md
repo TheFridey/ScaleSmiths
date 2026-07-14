@@ -75,10 +75,12 @@ Important enums define quote status, request category/priority/status, message v
 
 ## Migration inventory
 
-- Web migrations `0000`-`0008` build quote capture, portal accounts/rate limits, request threads/timeline, and reports.
-- Admin migrations `0000`-`0017` build operational CRM, login limits, Forge/runtime hardening, request threads/timeline, reports, proposals, persistent admin identity, and MFA security auditing.
+- Web migrations `0000`-`0009` build quote capture, portal accounts/rate limits, request threads/timeline, reports, and public experience analytics.
+- Admin migrations `0000`-`0042` build operational CRM, identity/security, Forge workflow/provenance/economics, client operations, analytics, release gates, and the forward-only historical-schema reconciliation.
 
 The histories are independent. Their Drizzle journals do not provide a single global order, despite targeting the same database. Deployment compensates by always running web then admin migrations.
+
+Every migration is SHA-256 locked in `scripts/migration-checksums.json`. Historical journal prefixes are verified against proven Git commits, while new forward migrations and journal appends are recorded separately. The clean and historical-upgrade PostgreSQL paths are exercised independently. See `docs/operations/migration-history-and-backup-verification.md`.
 
 ## Integrity and lifecycle gaps
 
@@ -87,4 +89,4 @@ The histories are independent. Their Drizzle journals do not provide a single gl
 - Forge memories are flexible strings with application-validated JSON; the database cannot enforce value schemas or unique semantic keys unless migrations add constraints not represented as relations.
 - Artifact consumers depend on title/type/metadata conventions and can read stale or incompatible records if those conventions drift.
 - HTML report/proposal content is persisted; safe rendering depends on trusted generator/admin inputs and rendering discipline.
-- No automated cross-app migration test or schema-diff gate exists.
+- Production-backup compatibility remains an operational evidence requirement: the guarded verifier exists, but an authorised operator must run it against an isolated restore of the latest verified backup.

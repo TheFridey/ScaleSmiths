@@ -544,6 +544,8 @@ The web app owns quote and portal tables. The admin app owns admin dashboard/cli
 
 The admin app reads `quote_requests` for lead review, but the web app owns the quote table migrations.
 
+Committed migration files and historical journal entries are checksum-locked. Run `npm run check:migration-history` and `npm run test:migration-consistency` before proposing a migration change; all corrections must be new forward migrations. The two disposable PostgreSQL paths and guarded isolated-backup procedure are documented in [migration history and backup verification](docs/operations/migration-history-and-backup-verification.md).
+
 The admin app owns the prospect pipeline tables:
 - `prospects`
 - `outreach_activities`

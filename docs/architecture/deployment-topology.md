@@ -40,6 +40,8 @@ Required production order:
 
 This order is operationally significant because both migration histories target one database and overlap on shared tables/enums.
 
+Committed SQL and each journal's historical prefix are immutable under `scripts/migration-checksums.json`; corrective work is forward-only. Before a production migration, use `docs/operations/migration-history-and-backup-verification.md` to test an isolated restore of the latest verified production backup. The verifier never selects a database from the environment and does not authorise deployment.
+
 ## Nginx routing
 
 - `scalesmiths.co.uk` and `www.scalesmiths.co.uk` redirect/terminate at the public host and proxy to web.

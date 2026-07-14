@@ -175,6 +175,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -193,6 +195,8 @@ jobs:
           set -o pipefail
           npm run test:migration-consistency 2>&1 | tee ci-artifacts/migration-policy-tests.log
           node scripts/check-migrations.mjs 2>&1 | tee ci-artifacts/migration-consistency.log
+          npm run check:migration-history 2>&1 | tee ci-artifacts/migration-history-integrity.log
+          npm run test:migration-history 2>&1 | tee ci-artifacts/migration-history-tests.log
 
       - name: Run real PostgreSQL integration suite
         working-directory: admin
@@ -240,6 +244,9 @@ jobs:
 
       - name: Test production topology consistency rules
         run: npm run test:production-topology
+
+      - name: Test backup migration verifier safeguards
+        run: npm run test:backup-migration-safety
 
       - name: Check GitHub Actions policy
         run: npm run check:github-actions

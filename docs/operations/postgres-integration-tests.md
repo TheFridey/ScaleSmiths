@@ -32,10 +32,12 @@ The suite destroys and recreates the target database's `public` schema. The safe
 
 ## Coverage and isolation
 
-The sequential suite verifies empty-database migration, critical schema consistency, idempotent owner bootstrap, password authentication persistence, persisted RBAC roles, Forge project creation, task execution/quality separation, activity metadata, artifact parent/version/supersession lineage, approval history, budget reservation/reconciliation, a real concurrent budget race, and transaction rollback.
+The sequential suite has distinct clean-install and historical-upgrade paths. The clean path applies every current migration from zero. The upgrade path applies locked web/admin fixture prefixes, represents the known `0012` journal variant and compatibility gaps, then proves that only the forward reconciliation is added without losing existing client-request data. The remaining cases verify critical schema consistency, idempotent owner bootstrap, password authentication persistence, persisted RBAC roles, Forge project creation, task execution/quality separation, activity metadata, artifact parent/version/supersession lineage, approval history, budget reservation/reconciliation, a real concurrent budget race, and transaction rollback.
 
 The schema is recreated before the suite and application tables are truncated with identity reset before every test. Connections close in `afterAll`; the root runner removes the disposable service even when tests fail. Test credentials are fixed local-only values and are not application secrets.
 
 ## GitHub Actions
 
-The required `CI / Database and Migrations` job provisions a PostgreSQL 16 service named `scalesmiths_integration_test`, tests the migration-consistency policy, checks both journal/file histories, and runs `npm run test:integration` from `admin`. The suite recreates the schema and applies both migration histories itself, avoiding a redundant pre-application step. Migration and integration output is retained as the `database-migration-logs` artifact. Fork pull requests receive no production database URL or repository secret.
+The required `CI / Database and Migrations` job provisions a PostgreSQL 16 service named `scalesmiths_integration_test`, checks immutable migration hashes and both journal/file histories, and runs `npm run test:integration` from `admin`. The suite recreates the schema and applies both migration histories itself, avoiding a redundant pre-application step. Migration and integration output is retained as the `database-migration-logs` artifact. Fork pull requests receive no production database URL or repository secret.
+
+See [migration history integrity and backup verification](migration-history-and-backup-verification.md) for the checksum policy and the separate, manual isolated-backup exercise.

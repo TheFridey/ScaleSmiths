@@ -21,7 +21,7 @@
   "dependencies": {
     "@auth/core": "0.41.2",
     "@sentry/nextjs": "10.65.0",
-    "bcryptjs": "2.4.3",
+    "bcryptjs": "3.0.3",
     "clsx": "^2.1.1",
     "drizzle-orm": "0.45.2",
     "lucide-react": "^0.383.0",
@@ -35,7 +35,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.5",
-    "@types/bcryptjs": "^2.4.6",
+    "@types/bcryptjs": "^3.0.0",
     "@types/node": "^22",
     "@types/pg": "^8.20.0",
     "@types/react": "^18",

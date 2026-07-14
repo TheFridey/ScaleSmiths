@@ -16,7 +16,9 @@ This checklist is a release gate for the supported Docker Compose and host-Nginx
 - [ ] Forge AI hard limits, database reservations, provider keys and fallback behavior are configured and tested without live client data.
 - [ ] Immutable deployment candidate hashes and all server-side release gates pass. No dependency-policy, security, accessibility or fallback override is implicit.
 - [ ] The complete [backup scope](backup-and-restore.md) has an encrypted off-host recovery point within the RPO; the latest isolated restore evidence matches both journals, meets RTO, and has human approval.
-- [ ] A server-side monitoring adapter is registered and a staging synthetic event includes release/request context without secrets or prompts.
+- [ ] Both Sentry server adapters report ready and a staging self-test event includes approved release SHA/request context without secrets, prompts, forms, headers or source context.
+- [ ] Source maps were uploaded with a BuildKit secret and deleted from public build output; the upload token is absent from runtime containers.
+- [ ] Durable log shipping, destination retention, ingestion-failure alerting and access ownership are verified.
 - [ ] Release notes, backward-compatible migration plan, rollback plan, actor and observation window are approved.
 
 ## Deployment and verification

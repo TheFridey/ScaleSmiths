@@ -31,8 +31,8 @@ export class ReleaseManager {
     await this.action(`create release record ${recordPath}`, async () => { await mkdir(path.dirname(recordPath), { recursive: true }); await writeJsonAtomic(recordPath, release) })
     const env = this.releaseEnvironment(release)
     await this.command("validate Compose configuration", ["docker", "compose", "-f", "docker-compose.release.yml", "config", "--quiet"], env)
-    await this.command("build versioned web image", ["docker", "build", "--pull", "-t", `scalesmiths-web:${releaseId}`, "web"], env)
-    await this.command("build versioned admin image", ["docker", "build", "--pull", "-t", `scalesmiths-admin:${releaseId}`, "admin"], env)
+    await this.command("build versioned web image", dockerBuildCommand("web", releaseId, env), env)
+    await this.command("build versioned admin image", dockerBuildCommand("admin", releaseId, env), env)
     await this.command("start inactive release containers", ["docker", "compose", "-p", composeProject(releaseId), "-f", "docker-compose.release.yml", "up", "-d", "--no-build", "web", "admin"], env)
     await this.healthCheck(release)
     release.status = "ready"; release.readyAt = this.now().toISOString()
@@ -128,6 +128,15 @@ export function renderUpstreams(ports) { return `# Managed atomically by ScaleSm
 function validateReleaseInput({ releaseId, actor, notes, slot }) { if (!RELEASE_ID.test(releaseId)) throw new ReleaseError("Release ID must contain only letters, numbers, dot, underscore or hyphen."); if (!actor?.trim()) throw new ReleaseError("Release actor is required."); if (!notes?.trim()) throw new ReleaseError("Release notes are required."); if (!(slot in SLOT_PORTS)) throw new ReleaseError("Slot must be blue or green.") }
 function requireActor(actor) { if (!actor?.trim()) throw new ReleaseError("Release actor is required.") }
 function composeProject(id) { return `scalesmiths-${id.toLowerCase().replace(/[^a-z0-9_-]/g, "-")}` }
+function dockerBuildCommand(app, releaseId, env) {
+  const args = ["docker", "build", "--pull", "-t", `scalesmiths-${app}:${releaseId}`]
+  if (env.ERROR_MONITORING_RELEASE) args.push("--build-arg", `ERROR_MONITORING_RELEASE=${env.ERROR_MONITORING_RELEASE}`)
+  if (env.SENTRY_ORG) args.push("--build-arg", `SENTRY_ORG=${env.SENTRY_ORG}`)
+  const projectKey = app === "web" ? "SENTRY_WEB_PROJECT" : "SENTRY_ADMIN_PROJECT"
+  if (env[projectKey]) args.push("--build-arg", `${projectKey}=${env[projectKey]}`)
+  if (env.SENTRY_AUTH_TOKEN) args.push("--secret", "id=sentry_auth_token,env=SENTRY_AUTH_TOKEN")
+  return [...args, app]
+}
 function assertHealth(raw, service, releaseId) { let data; try { data = JSON.parse(raw) } catch { throw new ReleaseError(`${service} returned invalid health JSON.`) } if (data.status !== "ok" || data.service !== service || (releaseId !== null && data.release !== releaseId)) throw new ReleaseError(`${service} health check did not confirm ${releaseId ? `release ${releaseId}` : "service readiness"}.`) }
 function redactArg(arg) { return arg.toLowerCase().startsWith("x-health-check-token:") ? "x-health-check-token: [redacted]" : arg }
 async function writeJsonAtomic(file, value) { const temporary = `${file}.tmp-${process.pid}`; await mkdir(path.dirname(file), { recursive: true }); await writeFile(temporary, `${JSON.stringify(value, null, 2)}\n`, "utf8"); await rename(temporary, file) }

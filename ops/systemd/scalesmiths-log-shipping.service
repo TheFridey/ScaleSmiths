@@ -1,0 +1,31 @@
+[Unit]
+Description=ScaleSmiths durable structured log shipping
+Documentation=https://vector.dev/docs/
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/scalesmiths/log-shipping.env
+ExecStartPre=/usr/bin/vector validate /etc/scalesmiths/vector.yaml
+ExecStart=/usr/bin/vector --config /etc/scalesmiths/vector.yaml
+Restart=on-failure
+RestartSec=10s
+User=root
+Group=root
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+ReadOnlyPaths=/var/lib/docker/containers /etc/scalesmiths/vector.yaml /etc/scalesmiths/log-shipping.env
+ReadWritePaths=/var/lib/scalesmiths-vector
+
+[Install]
+WantedBy=multi-user.target

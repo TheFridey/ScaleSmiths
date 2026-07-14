@@ -1,5 +1,7 @@
 # Final production-readiness and security audit
 
+> Historical audit snapshot. The Sentry adapter and durable log-shipping gaps recorded below were remediated by the later monitoring implementation; verify the current code, `docs/operations/error-monitoring.md`, and fresh CI/staging evidence rather than treating this dated finding count as current.
+
 > **Historical report (superseded):** This audit records the repository state on 2026-07-13 and is retained as evidence. It is not the current release decision or production runbook. Use the [release evidence index](../releases/README.md) and its latest report for current status.
 >
 > **Follow-up on 2026-07-14:** Migration SQL and journal baselines are now checksum-locked, the proven original `0012` was restored, compatibility moved to forward migration `0042`, and clean/upgrade database paths were added. The backup-restore evidence requirement remains open until an operator runs the guarded verifier against an isolated restore of the latest verified production backup. See [migration history and backup verification](../operations/migration-history-and-backup-verification.md).

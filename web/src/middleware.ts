@@ -8,18 +8,25 @@ import {
   normalizeStoredPreference,
   resolveExperienceExperimentConfig,
 } from "@/lib/experience-experiment"
+import { normalizeRequestId, REQUEST_ID_HEADER } from "@/lib/request-correlation"
 
 export function middleware(request: NextRequest) {
   const headers = new Headers(request.headers)
+  const requestId = normalizeRequestId(request.headers.get(REQUEST_ID_HEADER))
+  headers.set(REQUEST_ID_HEADER, requestId)
   headers.set("x-pathname", request.nextUrl.pathname)
   let experimentId: string | null = null
   let variantToPersist: string | null = null
+  const correlated = <T extends NextResponse>(response: T) => {
+    response.headers.set(REQUEST_ID_HEADER, requestId)
+    return response
+  }
 
   if (request.nextUrl.pathname === "/") {
     const config = resolveExperienceExperimentConfig()
     if (isLikelyCrawler(request.headers.get("user-agent"))) {
       headers.set(EXPERIENCE_EXPERIMENT_HEADER, config.defaultVariant)
-      return NextResponse.next({ request: { headers } })
+      return correlated(NextResponse.next({ request: { headers } }))
     }
 
     experimentId = request.cookies.get(EXPERIENCE_EXPERIMENT_ID_COOKIE)?.value ?? crypto.randomUUID()
@@ -37,7 +44,7 @@ export function middleware(request: NextRequest) {
     variantToPersist = variant
   }
 
-  const response = NextResponse.next({ request: { headers } })
+  const response = correlated(NextResponse.next({ request: { headers } }))
 
   if (experimentId && variantToPersist) {
     response.cookies.set(EXPERIENCE_EXPERIMENT_ID_COOKIE, experimentId, experimentCookieOptions())
@@ -53,7 +60,7 @@ function isLikelyCrawler(userAgent: string | null) {
 }
 
 export const config = {
-  matcher: ["/", "/portal/:path*"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 }
 
 function experimentCookieOptions() {

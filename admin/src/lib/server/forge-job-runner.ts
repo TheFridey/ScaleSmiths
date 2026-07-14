@@ -19,7 +19,7 @@ import type { ForgeExportKind } from "@/lib/forge-export"
 import { ForgeAiBudgetExceededError, assertForgeAiBudgetAllowsJob } from "./forge-ai-usage"
 import { normalizeUnknownError } from "./logging"
 import { requestLogger } from "./request-context"
-import { addMonitoringBreadcrumb, captureMonitoringException, withMonitoringScope } from "./monitoring"
+import { addMonitoringBreadcrumb, captureMonitoringException, captureMonitoringMessage, withMonitoringScope } from "./monitoring"
 
 export class ForgeJobError extends Error {
   safeMessage: string
@@ -174,7 +174,14 @@ export async function enqueueForgeJob(input: EnqueueForgeJobInput): Promise<Enqu
     try {
       await assertForgeAiBudgetAllowsJob(input.projectId)
     } catch (error) {
-      if (error instanceof ForgeAiBudgetExceededError) throw new ForgeJobError(error.safeMessage, 402)
+      if (error instanceof ForgeAiBudgetExceededError) {
+        captureMonitoringMessage("Forge AI budget exhausted", "warning", {
+          projectId: input.projectId,
+          forgeStage: input.kind,
+          errorCategory: "budget_exceeded",
+        })
+        throw new ForgeJobError(error.safeMessage, 402)
+      }
       throw error
     }
   }

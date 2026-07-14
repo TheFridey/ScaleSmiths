@@ -8,6 +8,8 @@ services:
     env_file: .env
     environment:
       NODE_ENV: production
+      SENTRY_AUTH_TOKEN: ""
+      LOG_SHIPPING_TOKEN: ""
     depends_on:
       postgres:
         condition: service_healthy
@@ -22,6 +24,8 @@ services:
     env_file: .env
     environment:
       NODE_ENV: production
+      SENTRY_AUTH_TOKEN: ""
+      LOG_SHIPPING_TOKEN: ""
     depends_on:
       postgres:
         condition: service_healthy

@@ -105,7 +105,7 @@ This switches to `previousReleaseId`, tests Nginx before reload, verifies health
 - [ ] Confirm the previous applications are compatible with the current database. If not, stop and restore an isolated backup first; never improvise a down migration in production.
 - [ ] Run `rollback` and retain its deployment-log entry; do not edit the Nginx upstream file manually unless the release manager itself is unavailable.
 - [ ] Verify Nginx, public routes, admin login/MFA, portal scoping, quote flow and Forge read-only views.
-- [ ] Confirm monitoring release metadata and error rates have returned to the expected version.
+- [ ] Confirm monitoring release metadata and error rates have returned to the expected approved commit SHA.
 - [ ] Preserve the failed containers, workspace hashes and bounded logs until incident evidence is captured.
 - [ ] Follow [Production incident response](incident-response.md) and document the decision to resume or abandon the release.
 
@@ -114,7 +114,7 @@ This switches to `previousReleaseId`, tests Nginx before reload, verifies health
 - Confirm public and admin HTTPS routes.
 - Exercise login, public experience choice, quote submission and critical Forge views.
 - Inspect `docker compose ... logs` and host Nginx logs.
-- Confirm monitoring release metadata matches the release ID.
+- Confirm health metadata matches the release slot ID and monitoring metadata matches the separately approved full commit SHA.
 - Confirm migrations and background jobs are healthy.
 - Keep the previous slot until the observation window closes.
 

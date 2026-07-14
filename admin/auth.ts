@@ -24,14 +24,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const allowed = await checkLoginRateLimit(loginRateLimitKeys("admin-login", getAuthRequestIp(request), email))
 
         if (!allowed) {
-          captureMonitoringMessage("Admin authentication rate limit exceeded", "warning", { actorId: email || "unknown", errorCategory: "authentication_rate_limit" })
+          captureMonitoringMessage("Admin authentication rate limit exceeded", "warning", { errorCategory: "authentication_rate_limit" })
           return null
         }
 
         try {
           const user = await authenticateAdminUser(email, password)
           if (!user) {
-            captureMonitoringMessage("Admin authentication rejected", "warning", { actorId: email || "unknown", errorCategory: "authentication_credentials" })
+            captureMonitoringMessage("Admin authentication rejected", "warning", { errorCategory: "authentication_credentials" })
             return null
           }
           const mfaValid = await verifyAdminMfaChallenge(user, { totp, recoveryCode })
@@ -42,7 +42,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           await recordSuccessfulAdminLogin(user.id)
           return { id: user.id, email: user.email, name: user.displayName, role: user.role, sessionVersion: user.sessionVersion, active: user.active }
         } catch (error) {
-          captureMonitoringException(error, { actorId: email, errorCategory: "authentication_internal" })
+          captureMonitoringException(error, { errorCategory: "authentication_internal" })
           return null
         }
       },

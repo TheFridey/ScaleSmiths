@@ -15,7 +15,7 @@ import {
 import { recordForgeAiUsage } from "./forge-ai-usage"
 import { normalizeUnknownError } from "./logging"
 import { requestLogger } from "./request-context"
-import { addMonitoringBreadcrumb, captureMonitoringException, setMonitoringContext } from "./monitoring"
+import { addMonitoringBreadcrumb, captureMonitoringException, captureMonitoringMessage, setMonitoringContext } from "./monitoring"
 import { getForgeProviderAdapter, ProviderAdapterError } from "./forge-provider-adapters"
 import { ForgeBudgetReservationError, reconcileForgeAiBudget, reserveForgeAiBudget } from "./forge-budget-reservations"
 import { classifyRetryability, nextRetryDecision, resolveRetryPolicyConfig } from "@/lib/forge-retry-policy"
@@ -170,7 +170,17 @@ export async function runForgeAiJson<TData extends JsonValue = JsonValue>(reques
   try {
     reservation = await reserveForgeAiBudget({ projectId:request.projectId, taskId:request.taskId, provider, model, estimatedMaxCost, env, idempotencyKey:budgetIdempotencyKey(request, provider, model) })
   } catch (error) {
-    if (error instanceof ForgeBudgetReservationError) throw new ForgeAiError(error.safeMessage, false, { code:error.code, cause:error })
+    if (error instanceof ForgeBudgetReservationError) {
+      captureMonitoringMessage("Forge AI budget reservation rejected", "warning", {
+        projectId: request.projectId ?? undefined,
+        taskId: request.taskId ?? undefined,
+        forgeStage: request.taskType,
+        provider,
+        model,
+        errorCategory: error.code,
+      })
+      throw new ForgeAiError(error.safeMessage, false, { code:error.code, cause:error })
+    }
     throw error
   }
 

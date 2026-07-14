@@ -8,6 +8,8 @@ services:
     env_file: .env
     environment:
       NODE_ENV: production
+      SENTRY_AUTH_TOKEN: ""
+      LOG_SHIPPING_TOKEN: ""
     ports:
       - "127.0.0.1:3100:3000"
     depends_on:
@@ -24,6 +26,8 @@ services:
     env_file: .env
     environment:
       NODE_ENV: production
+      SENTRY_AUTH_TOKEN: ""
+      LOG_SHIPPING_TOKEN: ""
     ports:
       - "127.0.0.1:3101:3001"
     depends_on:
@@ -43,6 +47,8 @@ services:
     env_file: .env
     environment:
       NODE_ENV: production
+      SENTRY_AUTH_TOKEN: ""
+      LOG_SHIPPING_TOKEN: ""
     command: npm run db:migrate
     depends_on:
       postgres:
@@ -59,6 +65,8 @@ services:
     env_file: .env
     environment:
       NODE_ENV: production
+      SENTRY_AUTH_TOKEN: ""
+      LOG_SHIPPING_TOKEN: ""
     command: npm run db:migrate
     depends_on:
       postgres:
@@ -75,6 +83,8 @@ services:
     env_file: .env
     environment:
       NODE_ENV: production
+      SENTRY_AUTH_TOKEN: ""
+      LOG_SHIPPING_TOKEN: ""
     command: npm run admin:bootstrap
     depends_on:
       postgres:

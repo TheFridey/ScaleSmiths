@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@auth/core": "0.41.2",
+    "@sentry/nextjs": "10.65.0",
     "bcryptjs": "2.4.3",
     "clsx": "^2.1.1",
     "drizzle-orm": "0.45.2",

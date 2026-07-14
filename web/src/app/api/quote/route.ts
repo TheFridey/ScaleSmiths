@@ -74,6 +74,7 @@ async function checkQuoteRateLimit(keys: string[]) {
 }
 
 export async function POST(request: NextRequest) {
+  const correlationId = request.headers.get("x-request-id") ?? crypto.randomUUID()
   try {
     const parsed = await parseJsonWithLimit<QuotePayload>(request)
     if (!parsed.ok) {
@@ -123,7 +124,7 @@ export async function POST(request: NextRequest) {
 
     if (!apiKey || !from) {
       await markQuoteEmailStatus(quote.id, "failed", "configuration").catch(() => undefined)
-      captureWebMessage("Quote email configuration is incomplete", "warning", { quoteId: quote.id, emailOperation: "quote_notification", errorCategory: "email_configuration" })
+      captureWebMessage("Quote email configuration is incomplete", "warning", { correlationId, quoteId: quote.id, emailOperation: "quote_notification", errorCategory: "email_configuration" })
       return NextResponse.json({ ok: true })
     }
 
@@ -195,19 +196,20 @@ export async function POST(request: NextRequest) {
 
       if (internal.error || reply.error) {
         await markQuoteEmailStatus(quote.id, "failed", "delivery").catch(() => undefined)
-        captureWebMessage("Quote email provider returned a delivery error", "error", { quoteId: quote.id, emailOperation: "quote_notification", errorCategory: "email_delivery" })
+        captureWebMessage("Quote email provider returned a delivery error", "error", { correlationId, quoteId: quote.id, emailOperation: "quote_notification", errorCategory: "email_delivery" })
         return NextResponse.json({ ok: true })
       }
 
       await markQuoteEmailStatus(quote.id, "sent").catch(() => undefined)
     } catch (error) {
       await markQuoteEmailStatus(quote.id, "failed", "delivery").catch(() => undefined)
-      captureWebException(error, { quoteId: quote.id, emailOperation: "quote_notification", errorCategory: "email_delivery" })
+      captureWebException(error, { correlationId, quoteId: quote.id, emailOperation: "quote_notification", errorCategory: "email_delivery" })
       return NextResponse.json({ ok: true })
     }
 
     return NextResponse.json({ ok: true })
-  } catch {
+  } catch (error) {
+    captureWebException(error, { correlationId, routePath: "/api/quote", method: "POST", errorCategory: "quote_request" })
     return NextResponse.json({ error: genericQuoteError() }, { status: 500 })
   }
 }

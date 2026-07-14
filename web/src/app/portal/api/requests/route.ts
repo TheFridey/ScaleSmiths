@@ -176,6 +176,8 @@ export async function POST(request: NextRequest) {
     try {
       await sendClientRequestNotifications({
         requestId: created.id,
+        correlationId: request.headers.get("x-request-id") ?? undefined,
+        actorId: session.clientId,
         clientId: session.clientId,
         clientName,
         clientEmail,

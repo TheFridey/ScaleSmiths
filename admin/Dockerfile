@@ -21,10 +21,18 @@ RUN --mount=type=cache,target=/root/.npm \
       --fetch-retry-maxtimeout=120000 \
       --fetch-timeout=300000
 COPY . .
+ARG ERROR_MONITORING_RELEASE
+ARG SENTRY_ORG
+ARG SENTRY_ADMIN_PROJECT
+ENV ERROR_MONITORING_RELEASE=${ERROR_MONITORING_RELEASE} \
+    SENTRY_ORG=${SENTRY_ORG} \
+    SENTRY_ADMIN_PROJECT=${SENTRY_ADMIN_PROJECT}
 # Produce the standalone server bundle that the runner stage copies below. This Linux build
 # does the node_modules copy quickly; local dev builds skip it (see next.config.mjs).
 ENV NEXT_OUTPUT_STANDALONE 1
-RUN npm run build
+RUN --mount=type=secret,id=sentry_auth_token \
+    if [ -f /run/secrets/sentry_auth_token ]; then export SENTRY_AUTH_TOKEN="$(cat /run/secrets/sentry_auth_token)"; fi; \
+    npm run build
 
 FROM node:22-alpine@sha256:16e22a550f3863206a3f701448c45f7912c6896a62de43add43bb9c86130c3e2 AS runner
 WORKDIR /app

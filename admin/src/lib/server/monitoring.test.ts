@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { addMonitoringBreadcrumb, captureMonitoringException, captureMonitoringMessage, registerErrorMonitoringProvider, setMonitoringActor, withMonitoringScope, type ErrorMonitoringProvider, type MonitoringEvent } from "./monitoring"
+import { withRequestLogContext } from "./request-context"
 
 afterEach(() => { registerErrorMonitoringProvider(null); vi.unstubAllEnvs() })
 
@@ -15,13 +16,13 @@ describe("error monitoring abstraction", () => {
     vi.stubEnv("ERROR_MONITORING_ENVIRONMENT", "staging")
     const events: Array<{ error: unknown; event: MonitoringEvent }> = []
     const adapter: ErrorMonitoringProvider = {
-      captureException: (error, event) => events.push({ error, event }),
+      captureException: (error, event) => { events.push({ error, event }) },
       captureMessage: () => undefined,
     }
     registerErrorMonitoringProvider(adapter)
 
     withMonitoringScope({ projectId: 12, taskId: 34, forgeStage: "build", prompt: "private prompt" }, () => {
-      setMonitoringActor({ id: "admin-1", email: "admin@example.com" })
+      setMonitoringActor({ id: "admin-1" })
       addMonitoringBreadcrumb({ category: "forge", message: "Task started", data: { apiKey: "secret", artifactId: 9 } })
       captureMonitoringException(new Error("failed with sk_1234567890abcdefghijkl"), { generatedSource: "full source", retryCount: 2 })
     })
@@ -29,6 +30,21 @@ describe("error monitoring abstraction", () => {
     expect(events[0].event).toMatchObject({ release: "release-123", environment: "staging", actor: { id: "admin-1" }, context: { projectId: 12, taskId: 34, forgeStage: "build", prompt: "[redacted]", generatedSource: "[redacted]", retryCount: 2 } })
     expect(events[0].event.breadcrumbs[0]).toMatchObject({ data: { apiKey: "[redacted]", artifactId: 9 } })
     expect(JSON.stringify(events[0].error)).not.toContain("sk_1234567890")
+  })
+
+  it("attaches the current request correlation and authenticated actor IDs", () => {
+    vi.stubEnv("ERROR_MONITORING_PROVIDER", "test")
+    const events: MonitoringEvent[] = []
+    registerErrorMonitoringProvider({ captureException: (_error, event) => { events.push(event) }, captureMessage: () => undefined })
+
+    withRequestLogContext({ requestId: "request-123", actorId: "admin-user-id" }, () => {
+      captureMonitoringException(new Error("failed"), { projectId: 17, taskId: 19, forgeStage: "copy" })
+    })
+
+    expect(events[0]).toMatchObject({
+      actor: { id: "admin-user-id" },
+      context: { requestId: "request-123", actorId: "admin-user-id", projectId: 17, taskId: 19, forgeStage: "copy" },
+    })
   })
 
   it("contains provider failures and never changes the application control flow", () => {

@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 })
   }
 
-  const actorId = session.user?.email ?? "admin"
+  const actorId = session.user?.id ?? "admin"
 
   return withRequestLogContext({ requestId: requestIdFromRequest(request), actorId }, async () => {
     const health = await loadProviderHealthSnapshot()

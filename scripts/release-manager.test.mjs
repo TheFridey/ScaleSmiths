@@ -19,7 +19,7 @@ async function fixture(options = {}) {
     }
     return ""
   }
-  const manager = new ReleaseManager({ root, repo: process.cwd(), upstreamPath: path.join(root, "nginx", "upstreams.conf"), runner, env: { SS_ENV_FILE: "/safe/.env", SS_GENERATED_SITES_DIR: "/safe/generated-sites", SS_PRODUCTION_NETWORK: "ss_ss-net", ADMIN_HEALTH_CHECK_TOKEN: "x".repeat(32) }, now: () => new Date("2026-07-13T12:00:00.000Z"), output: () => {} })
+  const manager = new ReleaseManager({ root, repo: process.cwd(), upstreamPath: path.join(root, "nginx", "upstreams.conf"), runner, env: { SS_ENV_FILE: "/safe/.env", SS_GENERATED_SITES_DIR: "/safe/generated-sites", SS_PRODUCTION_NETWORK: "ss_ss-net", ADMIN_HEALTH_CHECK_TOKEN: "x".repeat(32), ...(options.env ?? {}) }, now: () => new Date("2026-07-13T12:00:00.000Z"), output: () => {} })
   return { root, commands, manager, cleanup: () => rm(root, { recursive: true, force: true }) }
 }
 
@@ -32,6 +32,20 @@ test("prepares a versioned inactive release only after validation and health", a
     assert.ok(item.commands.some((command) => command.includes("--no-build web admin")))
     const record = JSON.parse(await readFile(path.join(item.root, "releases", "release-blue.json"), "utf8"))
     assert.equal(record.readyAt, "2026-07-13T12:00:00.000Z")
+  } finally { await item.cleanup() }
+})
+
+test("passes source-map credentials to Docker as a secret without logging the token", async () => {
+  const token = "private-sentry-auth-token"
+  const item = await fixture({ env: { ERROR_MONITORING_RELEASE: "0".repeat(40), SENTRY_ORG: "scalesmiths", SENTRY_WEB_PROJECT: "web", SENTRY_ADMIN_PROJECT: "admin", SENTRY_AUTH_TOKEN: token } })
+  try {
+    await item.manager.prepare({ releaseId: "release-blue", actor: "owner@example.test", notes: "Blue release", slot: "blue" })
+    const buildCommands = item.commands.filter((command) => command.startsWith("docker build"))
+    assert.equal(buildCommands.length, 2)
+    assert.ok(buildCommands.every((command) => command.includes("--secret id=sentry_auth_token,env=SENTRY_AUTH_TOKEN")))
+    assert.ok(buildCommands.every((command) => !command.includes(token)))
+    assert.ok(buildCommands.some((command) => command.includes("SENTRY_WEB_PROJECT=web")))
+    assert.ok(buildCommands.some((command) => command.includes("SENTRY_ADMIN_PROJECT=admin")))
   } finally { await item.cleanup() }
 })
 

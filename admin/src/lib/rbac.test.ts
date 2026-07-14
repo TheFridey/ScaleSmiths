@@ -64,8 +64,8 @@ describe("server request enforcement", () => {
     const apiRoot = path.resolve("src", "app", "api")
     const routeFiles = walk(apiRoot).filter((file) => file.endsWith("route.ts"))
     const unmapped = routeFiles.map((file) => `/${path.relative(path.resolve("src", "app"), path.dirname(file)).replaceAll("\\", "/").replace(/\[[^/]+\]/g, "resource")}`)
-      // Auth and health authenticate with dedicated protocol-specific controls.
-      .filter((pathname) => !pathname.startsWith("/api/auth") && pathname !== "/api/health" && requiredCapabilityForRequest({ pathname, method: "GET" }) === null && requiredCapabilityForRequest({ pathname, method: "POST" }) === null)
+      // Auth, health and monitoring self-test authenticate with dedicated protocol-specific controls.
+      .filter((pathname) => !pathname.startsWith("/api/auth") && pathname !== "/api/health" && pathname !== "/api/monitoring/self-test" && requiredCapabilityForRequest({ pathname, method: "GET" }) === null && requiredCapabilityForRequest({ pathname, method: "POST" }) === null)
     expect(unmapped).toEqual([])
   })
 })

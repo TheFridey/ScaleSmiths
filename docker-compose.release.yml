@@ -7,7 +7,10 @@ services:
     env_file: ${SS_ENV_FILE:-.env}
     environment:
       NODE_ENV: production
-      ERROR_MONITORING_RELEASE: ${SS_RELEASE_ID}
+      SS_RELEASE_ID: ${SS_RELEASE_ID}
+      ERROR_MONITORING_RELEASE: ${ERROR_MONITORING_RELEASE:-}
+      SENTRY_AUTH_TOKEN: ""
+      LOG_SHIPPING_TOKEN: ""
     ports:
       - "127.0.0.1:${SS_WEB_PORT:?SS_WEB_PORT is required}:3000"
     networks: [production]
@@ -18,7 +21,10 @@ services:
     env_file: ${SS_ENV_FILE:-.env}
     environment:
       NODE_ENV: production
-      ERROR_MONITORING_RELEASE: ${SS_RELEASE_ID}
+      SS_RELEASE_ID: ${SS_RELEASE_ID}
+      ERROR_MONITORING_RELEASE: ${ERROR_MONITORING_RELEASE:-}
+      SENTRY_AUTH_TOKEN: ""
+      LOG_SHIPPING_TOKEN: ""
     ports:
       - "127.0.0.1:${SS_ADMIN_PORT:?SS_ADMIN_PORT is required}:3001"
     volumes:

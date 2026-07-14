@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 })
   }
 
-  const actorId = session.user?.email ?? "admin"
+  const actorId = session.user?.id ?? "admin"
 
   return withRequestLogContext({ requestId: requestIdFromRequest(request), actorId }, async () => {
     const body = await request.json().catch(() => ({}))

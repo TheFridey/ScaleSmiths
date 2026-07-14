@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { captureWebException, registerWebErrorMonitoringProvider, sanitizeWebMonitoringContext, type WebMonitoringEvent } from "./server-monitoring"
+import { captureWebException, registerWebErrorMonitoringProvider, sanitizeWebMonitoringContext, webErrorMonitoringHealth, type WebMonitoringEvent } from "./server-monitoring"
 
 afterEach(() => { registerWebErrorMonitoringProvider(null); vi.unstubAllEnvs() })
 
@@ -11,8 +11,21 @@ describe("web error monitoring", () => {
   it("captures safe email failure metadata when configured", () => {
     vi.stubEnv("ERROR_MONITORING_PROVIDER", "test")
     const events: WebMonitoringEvent[] = []
-    registerWebErrorMonitoringProvider({ captureException: (_error, event) => events.push(event), captureMessage: () => undefined })
+    registerWebErrorMonitoringProvider({ captureException: (_error, event) => { events.push(event) }, captureMessage: () => undefined })
     captureWebException(new Error("Resend failed with re_1234567890abcdefghijkl"), { emailOperation: "quote_confirmation", quoteId: 9 })
     expect(events[0]).toMatchObject({ level: "error", context: { emailOperation: "quote_confirmation", quoteId: 9 } })
+  })
+
+  it("is a safe no-op when disabled and reports disabled health", () => {
+    vi.stubEnv("ERROR_MONITORING_PROVIDER", "none")
+    registerWebErrorMonitoringProvider({ captureException: () => { throw new Error("must not run") }, captureMessage: () => undefined })
+    expect(() => captureWebException(new Error("application error"))).not.toThrow()
+    expect(webErrorMonitoringHealth()).toMatchObject({ application: "scalesmiths-web", configured: false, status: "disabled" })
+  })
+
+  it("contains provider failures without breaking the request", () => {
+    vi.stubEnv("ERROR_MONITORING_PROVIDER", "test")
+    registerWebErrorMonitoringProvider({ captureException: () => { throw new Error("adapter failed") }, captureMessage: () => Promise.reject(new Error("adapter failed")) })
+    expect(() => captureWebException(new Error("application failed"))).not.toThrow()
   })
 })

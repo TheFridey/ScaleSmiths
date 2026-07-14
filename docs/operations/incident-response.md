@@ -13,7 +13,7 @@ Use this runbook for authentication compromise, client-data exposure, Forge/sand
 
 ## Diagnose
 
-1. Record `ERROR_MONITORING_RELEASE`/Git commit, active and previous release IDs, image digests and Nginx upstream state.
+1. Record the approved `ERROR_MONITORING_RELEASE` Git SHA, active and previous `SS_RELEASE_ID` values, image digests and Nginx upstream state.
 2. Capture bounded application, Nginx, PostgreSQL and release-manager logs. Redact secrets and client form bodies before sharing.
 3. Verify public and token-protected admin health endpoints from the host.
 4. Check migration history, failed transactions, Forge activity logs, deployment-candidate hashes, release-gate decisions and AI budget reservations.
@@ -31,7 +31,7 @@ Use this runbook for authentication compromise, client-data exposure, Forge/sand
 ## Verify and close
 
 - Exercise admin authentication/MFA, RBAC denial, portal client scoping, quote submission, Forge read-only views and health endpoints.
-- Confirm monitoring, structured logs, backups and alerting are receiving current-release signals without sensitive payloads.
+- Confirm both monitoring self-tests and durable structured-log ingestion are receiving the approved release SHA/request correlations without sensitive payloads.
 - Document impact, root cause, containment, data/client scope, credential rotations, recovery evidence and follow-up owners.
 - Notify affected clients or regulators only through the approved legal/incident process; do not infer reporting obligations from this technical runbook.
 - Add a regression test or operational check for the failure mode and set a dated review for every deferred action.

@@ -1,3 +1,5 @@
+import { withSentryConfig } from "@sentry/nextjs"
+
 /** @type {import('next').NextConfig} */
 const isDev = process.env.NODE_ENV !== "production"
 
@@ -46,4 +48,22 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+const sentrySourceMapUploadConfigured = Boolean(
+  process.env.SENTRY_AUTH_TOKEN
+  && process.env.SENTRY_ORG
+  && process.env.SENTRY_WEB_PROJECT
+  && process.env.ERROR_MONITORING_RELEASE,
+)
+
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_WEB_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  release: process.env.ERROR_MONITORING_RELEASE ? { name: process.env.ERROR_MONITORING_RELEASE } : undefined,
+  telemetry: false,
+  silent: !process.env.CI,
+  sourcemaps: sentrySourceMapUploadConfigured
+    ? { deleteSourcemapsAfterUpload: true }
+    : { disable: true },
+  webpack: { treeshake: { removeDebugLogging: true } },
+});

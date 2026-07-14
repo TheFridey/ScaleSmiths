@@ -1,0 +1,47 @@
+data_dir: /var/lib/scalesmiths-vector
+
+sources:
+  scalesmiths_docker_json:
+    type: file
+    include:
+      - /var/lib/docker/containers/*/*-json.log
+    read_from: beginning
+    ignore_older_secs: 86400
+    fingerprint:
+      strategy: device_and_inode
+
+transforms:
+  parse_container_and_application_json:
+    type: remap
+    inputs: [scalesmiths_docker_json]
+    source: |
+      container = parse_json(.message) ?? {}
+      .container_stream = container.stream ?? "unknown"
+      .container_timestamp = container.time ?? null
+      application = parse_json(string(container.log ?? "")) ?? { "message": string(container.log ?? "") }
+      . = merge(., application)
+      del(.message)
+      del(.file)
+      del(.source_type)
+
+sinks:
+  durable_https_archive:
+    type: http
+    inputs: [parse_container_and_application_json]
+    uri: ${LOG_SHIPPING_ENDPOINT}
+    method: post
+    auth:
+      strategy: bearer
+      token: ${LOG_SHIPPING_TOKEN}
+    encoding:
+      codec: json
+    compression: gzip
+    healthcheck:
+      enabled: true
+    batch:
+      max_bytes: 1048576
+      timeout_secs: 5
+    buffer:
+      type: disk
+      max_size: 1073741824
+      when_full: block

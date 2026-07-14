@@ -42,7 +42,7 @@ export default auth(async (req) => {
 
   // The endpoint performs its own constant-time token check. Keep it outside
   // interactive authentication so infrastructure can check the container.
-  if (pathname === "/api/health") {
+  if (pathname === "/api/health" || pathname === "/api/monitoring/self-test") {
     return next()
   }
 

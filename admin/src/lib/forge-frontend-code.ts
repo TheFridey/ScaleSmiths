@@ -1364,7 +1364,7 @@ function buildMotionSectionComponent() {
     "",
     "export function MotionSection({ children, className = '' }: { children: React.ReactNode; className?: string }) {",
     "  const reduceMotion = useReducedMotion()",
-    "  const offset = animationConfig.name === 'Industrial Precision' ? 10 : animationConfig.name === 'Minimal Premium' ? 8 : 18",
+    "  const offset = animationConfig.revealOffset",
     "  const duration = animationConfig.heavy ? 0.55 : 0.38",
     "  return (",
     "    <motion.section",

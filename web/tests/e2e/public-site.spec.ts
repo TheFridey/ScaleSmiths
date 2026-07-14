@@ -6,12 +6,14 @@ import {
   installConsoleGuards,
   gotoReady,
   mockQuoteApi,
+  mockExperienceAnalytics,
   openInteractivePlan,
   setExperience,
   submitQuoteWizard,
 } from "./helpers"
 
 test.beforeEach(async ({ page }) => {
+  await mockExperienceAnalytics(page)
   await page.addInitScript(() => {
     window.localStorage.setItem("scalesmiths.e2e.disableCanvas", "true")
   })

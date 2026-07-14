@@ -134,6 +134,7 @@ export function buildForgeAnimationConfigForSite(packName: ForgeAnimationPackNam
   const pack = getForgeAnimationPack(packName)
   return {
     name: pack.name,
+    revealOffset: pack.name === "Industrial Precision" ? 10 : pack.name === "Minimal Premium" ? 8 : 18,
     pageTransition: pack.pageTransition,
     heroAnimation: pack.heroAnimation,
     sectionReveal: pack.sectionReveal,

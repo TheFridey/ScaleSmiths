@@ -85,6 +85,12 @@ export async function mockQuoteApi(page: Page, options: { ok: boolean; status?: 
   })
 }
 
+export async function mockExperienceAnalytics(page: Page) {
+  await page.route("**/api/experience-events", async (route) => {
+    await route.fulfill({ status: 202, contentType: "application/json", body: JSON.stringify({ ok: true }) })
+  })
+}
+
 export async function chooseNormalExperience(page: Page) {
   await page.getByRole("button", { name: /open website/i }).click()
   await expect(page.getByRole("heading", { name: /forge your digital edge/i })).toBeVisible()

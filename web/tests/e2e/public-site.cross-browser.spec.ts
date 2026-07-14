@@ -1,7 +1,8 @@
 import { expect, test } from "@playwright/test"
-import { clearV2State, gotoReady, setExperience } from "./helpers"
+import { clearV2State, gotoReady, mockExperienceAnalytics, setExperience } from "./helpers"
 
 test.beforeEach(async ({ page }) => {
+  await mockExperienceAnalytics(page)
   await page.addInitScript(() => {
     window.localStorage.setItem("scalesmiths.e2e.disableCanvas", "true")
   })

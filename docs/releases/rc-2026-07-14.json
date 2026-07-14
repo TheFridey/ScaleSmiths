@@ -1,0 +1,56 @@
+{
+  "candidateId": "rc-2026-07-14-e94e14f",
+  "createdAt": "2026-07-14T10:25:00+01:00",
+  "state": "validated_blocked",
+  "ready": false,
+  "automaticDeployment": false,
+  "repository": {
+    "branch": "master",
+    "baseCommit": "e94e14fe9727d4a275b538f75fd2f271e888d5b1",
+    "dirty": true,
+    "reason": "Validated fixes and evidence must be committed before an immutable candidate can be approved."
+  },
+  "versions": {
+    "web": "0.1.0",
+    "admin": "0.1.0",
+    "next": "15.5.20",
+    "nodeRuntime": "22.22.3",
+    "postgres": "16"
+  },
+  "hashes": {
+    "nodeBaseDigest": "sha256:16e22a550f3863206a3f701448c45f7912c6896a62de43add43bb9c86130c3e2",
+    "webImage": "sha256:f5c061f61acf16282f67eb69a41e5d3884a136e5c2e26ff820dd707282b53f24",
+    "adminImage": "sha256:7bcd93aa784ddb86be515353d33881a3dc7bf882636a9a1e1614a394039ca305",
+    "webPackageLock": "d33384c273fef1a9f2d2ef2ab498e07266454446f36284107d1fd25c60b2acaf",
+    "adminPackageLock": "3c39846787355abf6d395c70e14969031fae2f72c0a2e9c9494f12578851ef10",
+    "webDockerfile": "2d61d96e8bfef04fda92c145694187d074b9f43029aa598d3b705395ec070f35",
+    "adminDockerfile": "3bce5e9415f465b25e9d7ed835f672dc85433213b94929e593dbd6460fa07ebc",
+    "webSbom": "577d09bdc6bad1226789f24154808f67e2af8a36fe307b7f084288ecada857b6",
+    "adminSbom": "4c0c8c51fea5a7d030c31c82d1d7986f9abaa533258b63f3549abf650f2fd5a0",
+    "environmentExample": "16bfcf3c8d9d2c3dddd35d648a6744053ce154b0532b14df5197263c807d28d9"
+  },
+  "passed": [
+    "clean Linux dependency installation for web and admin",
+    "web lint, 61 tests, production build, performance budgets and 23 Chromium browser/visual checks",
+    "admin lint, 414 tests, production build, benchmark and deterministic demo",
+    "PostgreSQL empty migration and 7 integration tests",
+    "complete Forge workflow E2E",
+    "environment, architecture and migration consistency checks",
+    "7 release and rollback simulations",
+    "npm production audits with zero high or critical findings",
+    "Trivy final-image scans with zero high or critical findings",
+    "Hadolint for both Dockerfiles",
+    "TruffleHog history scan with zero findings",
+    "SPDX SBOM generation for both final images"
+  ],
+  "blockers": [
+    "commit and review the exact validated payload",
+    "test migrations against an isolated restore of the latest verified production backup",
+    "pass required GitHub-native CodeQL and dependency-review checks for the final commit",
+    "record human approval after production secrets, backups and monitoring are verified"
+  ],
+  "acceptedRisks": [
+    "moderate PostCSS advisory inherited through Next.js; npm proposes an invalid breaking downgrade and no high or critical runtime finding remains",
+    "live-provider and wider cross-browser evaluations remain scheduled evidence and are not substitutes for hard release gates"
+  ]
+}

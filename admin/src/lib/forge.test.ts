@@ -1373,6 +1373,8 @@ describe("forge shell", () => {
     expect(files.find((file) => file.path === "src/lib/design-tokens.ts")?.content).toContain("DesignTokenId")
     expect(files.find((file) => file.path === "src/app/style-guide/page.tsx")?.content).toContain("Generated design-token implementation")
     expect(files.find((file) => file.path === "src/components/MotionSection.tsx")?.content).toContain("useReducedMotion")
+    expect(files.find((file) => file.path === "src/components/MotionSection.tsx")?.content).toContain("animationConfig.revealOffset")
+    expect(files.find((file) => file.path === "src/components/MotionSection.tsx")?.content).not.toContain("animationConfig.name ===")
     expect(files.find((file) => file.path === "src/app/api/contact/route.ts")?.content).toContain("new Resend")
     expect(files.find((file) => file.path === "src/lib/resend-config.ts")?.content).not.toContain("RESEND_API_KEY=")
     expect(files.find((file) => file.path === "src/lib/whatsapp-config.ts")?.content).toContain("447700900123")

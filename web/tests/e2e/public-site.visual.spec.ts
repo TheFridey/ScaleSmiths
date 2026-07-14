@@ -1,8 +1,9 @@
 import { expect, test } from "@playwright/test"
-import { chooseNormalExperience, clearV2State, disableVisualNoise, gotoReady, openInteractivePlan, setExperience } from "./helpers"
+import { chooseNormalExperience, clearV2State, disableVisualNoise, gotoReady, mockExperienceAnalytics, openInteractivePlan, setExperience } from "./helpers"
 
 test.beforeEach(async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" })
+  await mockExperienceAnalytics(page)
   await page.addInitScript(() => {
     window.localStorage.setItem("scalesmiths.e2e.disableCanvas", "true")
   })
@@ -27,8 +28,8 @@ test("normal homepage visual baseline", async ({ page }, testInfo) => {
 })
 
 test("interactive plan visual baseline", async ({ page }, testInfo) => {
-  await disableVisualNoise(page)
   await openInteractivePlan(page)
+  await disableVisualNoise(page)
 
   await expect(page).toHaveScreenshot(`interactive-plan-${testInfo.project.name}.png`)
 })

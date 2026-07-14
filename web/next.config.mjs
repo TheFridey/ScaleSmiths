@@ -31,6 +31,7 @@ const nextConfig = {
   transpilePackages: ["@react-three/fiber", "@react-three/drei", "three"],
   images: {
     formats: ["image/avif", "image/webp"],
+    qualities: [75, 90],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920],
     minimumCacheTTL: 60 * 60 * 24 * 365,
     remotePatterns: [],

@@ -25,7 +25,7 @@ export const TOPOLOGY_RULES = [
     description: `Production paths must include the complete ${CANONICAL_ROOT} checkout root.`,
     find(content) {
       const rootPrefix = "/var/www/scalesmiths"
-      return regexMatches(content, new RegExp(`${escapeRegex(rootPrefix)}(?!/ScaleSmiths(?:[/\\\\\\s\"'\\x60.,:;)]|$))`, "g"))
+      return regexMatches(content, new RegExp(`${escapeRegex(rootPrefix)}(?!/ScaleSmiths(?:[/\\\\\\s\"'\\x60.,:;)}]|$))`, "g"))
     },
   },
   {

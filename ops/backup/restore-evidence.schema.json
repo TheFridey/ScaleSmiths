@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://scalesmiths.co.uk/schemas/restore-evidence-v1.json",
+  "title": "ScaleSmiths restore evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "formatVersion",
+    "backupIdentifier",
+    "sourceRelease",
+    "startedAt",
+    "completedAt",
+    "durationSeconds",
+    "target",
+    "checksums",
+    "postgresql",
+    "migrationState",
+    "restoreOutcome",
+    "validationCommands",
+    "operator"
+  ],
+  "properties": {
+    "formatVersion": { "const": 1 },
+    "backupIdentifier": { "type": "string", "minLength": 1 },
+    "sourceRelease": { "type": "string", "minLength": 1 },
+    "startedAt": { "type": "string", "format": "date-time" },
+    "completedAt": { "type": "string", "format": "date-time" },
+    "durationSeconds": { "type": "integer", "minimum": 0 },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["host", "database", "root"],
+      "properties": {
+        "host": { "type": "string" },
+        "database": { "type": "string" },
+        "root": { "type": "string" }
+      }
+    },
+    "checksums": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "bundleSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "manifestSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+      },
+      "required": ["bundleSha256", "manifestSha256"]
+    },
+    "postgresql": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "sourceVersion": { "type": "string" },
+        "targetVersion": { "type": "string" }
+      },
+      "required": ["sourceVersion", "targetVersion"]
+    },
+    "migrationState": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "web": { "type": "array" },
+        "admin": { "type": "array" }
+      },
+      "required": ["web", "admin"]
+    },
+    "restoreOutcome": {
+      "type": "object",
+      "required": ["status"],
+      "properties": {
+        "status": { "enum": ["passed", "failed"] },
+        "category": { "type": "string" },
+        "rtoMinutes": { "type": "integer", "minimum": 1 },
+        "rtoMet": { "type": "boolean" },
+        "migrationVerification": { "type": "object" }
+      }
+    },
+    "validationCommands": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "operator": { "type": "string", "minLength": 1 }
+  }
+}

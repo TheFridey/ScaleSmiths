@@ -1,0 +1,12 @@
+[Unit]
+Description=Daily ScaleSmiths encrypted backup
+
+[Timer]
+OnCalendar=*-*-* 02:15:00
+RandomizedDelaySec=20m
+Persistent=true
+AccuracySec=1m
+Unit=scalesmiths-backup.service
+
+[Install]
+WantedBy=timers.target

@@ -13,7 +13,7 @@ Only Nginx's small upstream include changes during a release. The release manage
 
 ## One-time setup
 
-1. Back up PostgreSQL, `.env`, host Nginx configuration, and `generated-sites`.
+1. Create and validate the complete encrypted recovery bundle from [Production backup and restore](backup-and-restore.md), confirm its off-host marker, and ensure recent isolated restore evidence exists.
 2. Install [scalesmiths-upstreams.conf](../../nginx/scalesmiths-upstreams.conf) as `/etc/nginx/scalesmiths/upstreams.conf`.
 3. Install the reviewed `host-scalesmiths.conf`, then run `sudo nginx -t && sudo systemctl reload nginx`.
 4. Ensure the existing production Docker network name is known (`docker network ls`). Set it as `SS_PRODUCTION_NETWORK`; a typical Compose-created name is `ss_ss-net`, but it must be verified on the host.
@@ -54,7 +54,7 @@ sudo -E node scripts/release-manager.mjs prepare \
 
 Then run the same command without `--dry-run`. Preparation fails closed if Compose validation, either version-tagged Docker build, container startup, or either health check fails. A release becomes switchable only after both health responses report the expected release identifier. Partially built or unhealthy releases remain recorded as `preparing` and cannot be switched.
 
-Before preparing production, complete the immutable Forge deployment-candidate and release gates. Review migration compatibility separately. Database migrations must be backward-compatible with the retained previous application version; take a database backup and run the existing `web-migrate` and `admin-migrate` tools manually only after review. The release manager intentionally does not run migrations.
+Before preparing production, complete the immutable Forge deployment-candidate and release gates. Review migration compatibility separately. Database migrations must be backward-compatible with the retained previous application version; create an encrypted recovery bundle and run the existing `web-migrate` and `admin-migrate` tools manually only after review. The release manager intentionally does not run migrations or restore backups.
 
 ## Manual traffic switch
 

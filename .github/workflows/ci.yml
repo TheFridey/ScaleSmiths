@@ -214,6 +214,59 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+  backup-recovery:
+    name: Backup and Restore
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: scalesmiths_backup_source_test
+          POSTGRES_USER: scalesmiths_backup_test
+          POSTGRES_PASSWORD: local_ci_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U scalesmiths_backup_test -d scalesmiths_backup_source_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGPASSWORD: local_ci_only
+      TEST_SOURCE_DATABASE_URL: postgresql://scalesmiths_backup_test:local_ci_only@127.0.0.1:5432/scalesmiths_backup_source_test
+      TEST_RESTORE_DATABASE_URL: postgresql://scalesmiths_backup_test:local_ci_only@127.0.0.1:5432/scalesmiths_restore_drill_test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install recovery test tools
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends postgresql-client-16 jq gnupg shellcheck
+
+      - name: Create isolated restore database
+        run: createdb --host=127.0.0.1 --username=scalesmiths_backup_test scalesmiths_restore_drill_test
+
+      - name: Shell safety analysis
+        run: shellcheck -x scripts/backup/*.sh
+
+      - name: Disposable backup and restore drill
+        run: |
+          mkdir -p ci-artifacts
+          set -o pipefail
+          npm run test:backup-framework 2>&1 | tee ci-artifacts/backup-framework.log
+
+      - name: Upload backup framework test log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backup-framework-test-log
+          path: ci-artifacts/backup-framework.log
+          if-no-files-found: error
+          retention-days: 14
+
   root-hygiene:
     name: Root Hygiene
     runs-on: ubuntu-latest

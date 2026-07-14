@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { createHash, randomUUID } from "node:crypto"
 import { createRequire } from "node:module"
-import { mkdir, writeFile } from "node:fs/promises"
+import { lstat, mkdir, readFile, writeFile } from "node:fs/promises"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 
@@ -11,7 +11,7 @@ const isolatedDatabaseName = /(?:^|[_-])(backup|restore|snapshot|clone|staging|m
 
 export function parseArguments(argv) {
   const options = {}
-  const valueArguments = new Set(["--database-url", "--confirm-target", "--report"])
+  const valueArguments = new Set(["--database-url", "--database-url-file", "--confirm-target", "--report"])
   const flagArguments = new Set(["--confirm-isolated-backup", "--confirm-localhost-isolated"])
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -28,6 +28,30 @@ export function parseArguments(argv) {
     }
   }
   return options
+}
+
+export async function resolveDatabaseUrl(options) {
+  if (options["database-url"] && options["database-url-file"]) {
+    throw new Error("Use only one of --database-url or --database-url-file.")
+  }
+  if (options["database-url"]) return options
+  if (!options["database-url-file"]) {
+    throw new Error("--database-url or --database-url-file is required; environment database URLs are never used.")
+  }
+
+  const urlFile = path.resolve(options["database-url-file"])
+  const metadata = await lstat(urlFile)
+  if (!metadata.isFile() || metadata.isSymbolicLink()) {
+    throw new Error("--database-url-file must be a regular, non-symlink file.")
+  }
+  if (process.platform !== "win32" && (metadata.mode & 0o077) !== 0) {
+    throw new Error("--database-url-file must not be group/world accessible.")
+  }
+  const databaseUrl = (await readFile(urlFile, "utf8")).replace(/\r?\n$/, "")
+  if (!databaseUrl || /[\r\n\0]/.test(databaseUrl)) {
+    throw new Error("--database-url-file must contain exactly one PostgreSQL URL.")
+  }
+  return { ...options, "database-url": databaseUrl }
 }
 
 export function validateTarget(options) {
@@ -206,7 +230,8 @@ async function writeReport(reportPath, report, exclusive = false) {
 }
 
 async function main() {
-  await runVerification(parseArguments(process.argv.slice(2)))
+  const options = await resolveDatabaseUrl(parseArguments(process.argv.slice(2)))
+  await runVerification(options)
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

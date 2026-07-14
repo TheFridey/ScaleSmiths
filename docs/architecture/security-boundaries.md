@@ -62,6 +62,12 @@ Both apps use the same database credential and therefore have database-level acc
 
 The public app sends quote and client-request notifications through server-only Resend credentials. Forge stores non-secret Resend project configuration and represents the key as environment-owned/redacted. Generated sites refer to `RESEND_API_KEY` only from generated server routes. WhatsApp V1 produces `wa.me` integration behaviour; future Cloud API variables are documented but not a current browser credential path.
 
+## Backup and recovery boundary
+
+The host backup process can read PostgreSQL, the production environment, Nginx, generated workspaces, Docker image metadata, and release state, so it is a privileged root-controlled boundary. Plaintext staging is private and temporary; completed bundles require age-recipient or GPG symmetric encryption outside explicit tests. Logs contain identifiers and outcomes only. Recovery keys/database URL files are separate mode-`0600` inputs, while bundle metadata records ownership, identifiers, UID/GID, and modes without plaintext key material.
+
+Restore commands reject the production repository, require isolation words in both target database and filesystem names, require exact repeated target confirmations, and require a fixed database-level isolated-restore guard comment before resetting only the confirmed database schemas. Evidence must remain outside both production and the disposable restore root. Automated drill evidence never authorises production replacement.
+
 ## Residual controls and gaps
 
 - CI now runs dependency review, verified-secret scanning, npm audit thresholds, Dockerfile linting, container scanning, SBOM generation, migration/integration checks, CodeQL and sandbox fixtures;

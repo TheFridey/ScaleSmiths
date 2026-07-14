@@ -50,7 +50,7 @@ This is a manual operational exercise, not a CI connection to production. Restor
 
 The verifier:
 
-- accepts a URL only through `--database-url` and never falls back to `DATABASE_URL`;
+- accepts a URL only through `--database-url` or a restricted `--database-url-file` and never falls back to `DATABASE_URL`;
 - requires a database name containing `backup`, `restore`, `snapshot`, `clone`, `staging`, `migration`, or `test`;
 - requires `--confirm-isolated-backup` and an exact repeated `--confirm-target host/database`;
 - requires `--confirm-localhost-isolated` because localhost may be a production tunnel or proxy;
@@ -63,7 +63,7 @@ Example for an isolated local restore:
 
 ```bash
 node scripts/verify-production-backup-migrations.mjs \
-  --database-url 'postgresql://operator:password@127.0.0.1:55433/scalesmiths_backup_restore' \
+  --database-url-file '/secure/operator-inputs/scalesmiths-backup-database-url' \
   --confirm-isolated-backup \
   --confirm-localhost-isolated \
   --confirm-target '127.0.0.1/scalesmiths_backup_restore' \

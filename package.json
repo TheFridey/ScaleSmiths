@@ -14,6 +14,7 @@
     "test:migration-consistency": "node --test scripts/check-migrations.test.mjs",
     "test:migration-history": "node --test scripts/check-migration-history.test.mjs",
     "test:backup-migration-safety": "node --test scripts/verify-production-backup-migrations.test.mjs",
+    "test:backup-framework": "bash scripts/backup/test-backup-framework.sh",
     "test:dependency-governance": "node --test scripts/check-dependency-governance.test.mjs",
     "test:github-actions": "node --test scripts/check-github-actions.test.mjs",
     "test:forge-e2e": "node scripts/run-forge-e2e-tests.mjs",

@@ -1,0 +1,31 @@
+[Unit]
+Description=Verify the latest ScaleSmiths backup in isolated infrastructure
+Documentation=file:///var/www/scalesmiths/ScaleSmiths/docs/operations/backup-and-restore.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+EnvironmentFile=/etc/scalesmiths/backup.env
+WorkingDirectory=/var/www/scalesmiths/ScaleSmiths
+ExecStart=/usr/bin/bash /var/www/scalesmiths/ScaleSmiths/scripts/backup/restore-drill.sh --latest-dir ${BACKUP_OUTPUT_DIR} --target-root-base ${BACKUP_RESTORE_DRILL_ROOT} --confirm-root-base ${BACKUP_RESTORE_CONFIRM_ROOT_BASE} --database-url-file ${BACKUP_RESTORE_DATABASE_URL_FILE} --confirm-target ${BACKUP_RESTORE_CONFIRM_TARGET} --confirm-localhost-isolated --operator ${BACKUP_RESTORE_OPERATOR} --evidence-dir ${BACKUP_RESTORE_EVIDENCE_DIR}
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+ReadOnlyPaths=/var/www/scalesmiths/ScaleSmiths /etc/scalesmiths
+ReadWritePaths=/var/backups/scalesmiths /var/lib/scalesmiths-restore-drill /var/lib/scalesmiths-backup-evidence /var/lib/scalesmiths-backup-tmp
+TimeoutStartSec=3h
+
+[Install]
+WantedBy=multi-user.target

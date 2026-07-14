@@ -59,7 +59,7 @@ Committed SQL and each journal's historical prefix are immutable under `scripts/
 | Application images | rebuilt from `web/` and `admin/` contexts |
 | Secrets | root `.env`, excluded from source control and supplied to services |
 
-Backups must include PostgreSQL and, if generated source must survive rebuilds, `generated-sites`. Nginx must not serve the workspace directory.
+Encrypted recovery bundles include PostgreSQL, production environment configuration, reviewed host Nginx paths, `generated-sites`, release metadata, both migration journals, image digests, and key-ownership metadata without plaintext keys. Creation and retention run under example systemd timers; restoration is restricted to explicitly confirmed isolated targets and produces human-reviewed evidence. See `docs/operations/backup-and-restore.md`. Nginx must not serve the workspace directory.
 
 ## Environment variable ownership
 

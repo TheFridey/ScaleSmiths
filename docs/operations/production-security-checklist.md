@@ -15,7 +15,7 @@ This checklist is a release gate for the supported Docker Compose and host-Nginx
 - [ ] `FORGE_SANDBOX_RUNNER=docker`; Docker socket is not mounted; generated sites are private; network/resource limits match the threat model.
 - [ ] Forge AI hard limits, database reservations, provider keys and fallback behavior are configured and tested without live client data.
 - [ ] Immutable deployment candidate hashes and all server-side release gates pass. No dependency-policy, security, accessibility or fallback override is implicit.
-- [ ] PostgreSQL and `generated-sites` backups completed, are encrypted/restricted, and have a recent restore test with recorded RPO/RTO.
+- [ ] The complete [backup scope](backup-and-restore.md) has an encrypted off-host recovery point within the RPO; the latest isolated restore evidence matches both journals, meets RTO, and has human approval.
 - [ ] A server-side monitoring adapter is registered and a staging synthetic event includes release/request context without secrets or prompts.
 - [ ] Release notes, backward-compatible migration plan, rollback plan, actor and observation window are approved.
 
@@ -33,3 +33,4 @@ This checklist is a release gate for the supported Docker Compose and host-Nginx
 - [ ] Operators can access [Production incident response](incident-response.md) and [Canary release and rollback](canary-release-and-rollback.md) without relying on the failing application.
 - [ ] Provider/VPS/Cloudflare/database account ownership and escalation contacts are current in the private operations vault.
 - [ ] Audit and release logs have retention and backup appropriate to the incident policy.
+- [ ] The backup failure hook, daily timer, monthly restore timer, off-host object lock/lifecycle, recovery-key owner, and drill database owner have been tested without exposing secrets.

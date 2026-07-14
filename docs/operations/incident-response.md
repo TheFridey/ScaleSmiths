@@ -22,8 +22,9 @@ Use this runbook for authentication compromise, client-data exposure, Forge/sand
 ## Recover
 
 - Prefer the atomic application rollback in [Canary release and rollback](canary-release-and-rollback.md). Validate the previous slot before switching.
-- Restore PostgreSQL only when application rollback cannot safely read the migrated schema. Take a fresh forensic backup first, restore into an isolated database, validate migrations and record the exact recovery point before production replacement.
+- Restore PostgreSQL only when application rollback cannot safely read the migrated schema. Follow [Production backup and restore](backup-and-restore.md): take a fresh forensic bundle first where safe, restore into an explicitly confirmed isolated database, compare both journals, review the evidence/RTO, and record the exact recovery point before any production replacement.
 - Restore `generated-sites` separately from its backup and verify ownership, canonical paths and candidate hashes before allowing Forge access.
+- Never install the bundle's `.env`, Nginx archive, release state, or image selection directly from the automated drill root. Promotion is a separate incident-lead decision with checksum and ownership verification.
 - Rotate `AUTH_SECRET` only with an explicit all-session revocation plan. Preserve `MFA_ENCRYPTION_KEY` and `ANALYTICS_CREDENTIAL_ENCRYPTION_KEY` unless compromise requires rotation; losing them makes stored ciphertext unreadable.
 - Re-enable Forge/provider calls only after budget reservations, sandbox runner, dependency/release gates and provider credentials are verified.
 

@@ -1,0 +1,32 @@
+[Unit]
+Description=Create and prune an encrypted ScaleSmiths recovery bundle
+Documentation=file:///var/www/scalesmiths/ScaleSmiths/docs/operations/backup-and-restore.md
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+EnvironmentFile=/etc/scalesmiths/backup.env
+WorkingDirectory=/var/www/scalesmiths/ScaleSmiths
+ExecStart=/usr/bin/bash /var/www/scalesmiths/ScaleSmiths/scripts/backup/create-backup-bundle.sh
+ExecStartPost=/usr/bin/bash /var/www/scalesmiths/ScaleSmiths/scripts/backup/prune-backups.sh
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+ReadOnlyPaths=/var/www/scalesmiths/ScaleSmiths /etc/nginx /var/lib/scalesmiths-release /etc/scalesmiths
+ReadWritePaths=/var/backups/scalesmiths /var/lib/scalesmiths-backup-tmp
+TimeoutStartSec=3h
+
+[Install]
+WantedBy=multi-user.target

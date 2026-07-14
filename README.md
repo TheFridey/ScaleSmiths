@@ -21,6 +21,8 @@ Contribution standards, pull request expectations, conventional commit guidance,
 
 Dependency pinning, Dependabot review, audit acceptance and framework/authentication upgrade requirements are documented in [Dependency governance](docs/operations/dependency-governance.md).
 
+Encrypted recovery bundles, retention, off-host storage, systemd scheduling, and isolated restore drills are documented in [Production backup and restore](docs/operations/backup-and-restore.md).
+
 | App | Local | Production |
 |-----|-------|-----------|
 | Public site | `localhost:3000` | `scalesmiths.co.uk` |

@@ -1,0 +1,12 @@
+[Unit]
+Description=Monthly ScaleSmiths isolated restore verification
+
+[Timer]
+OnCalendar=Sun *-*-01..07 04:00:00
+RandomizedDelaySec=45m
+Persistent=true
+AccuracySec=5m
+Unit=scalesmiths-restore-drill.service
+
+[Install]
+WantedBy=timers.target

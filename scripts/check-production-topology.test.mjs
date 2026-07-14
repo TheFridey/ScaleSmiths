@@ -7,6 +7,7 @@ test("accepts the authoritative production topology and local development origin
     path: "README.md",
     content: [
       "/var/www/scalesmiths/ScaleSmiths",
+      'BACKUP_PRODUCTION_ROOT="${BACKUP_PRODUCTION_ROOT:-/var/www/scalesmiths/ScaleSmiths}"',
       "NEXT_PUBLIC_ADMIN_URL=https://admin.scalesmiths.co.uk",
       "AUTH_URL=http://localhost:3001",
       "generated-sites is relative to the Compose checkout",

@@ -1,10 +1,12 @@
 # Final production-readiness and security audit
 
-> Historical audit snapshot. The Sentry adapter and durable log-shipping gaps recorded below were remediated by the later monitoring implementation; verify the current code, `docs/operations/error-monitoring.md`, and fresh CI/staging evidence rather than treating this dated finding count as current.
+> Historical audit snapshot. The Sentry/log-shipping and generated-site dependency-admission/SBOM gaps recorded below were remediated by later implementations; verify the current code, current operations documentation, and fresh CI/staging evidence rather than treating this dated finding count as current.
 
 > **Historical report (superseded):** This audit records the repository state on 2026-07-13 and is retained as evidence. It is not the current release decision or production runbook. Use the [release evidence index](../releases/README.md) and its latest report for current status.
 >
 > **Follow-up on 2026-07-14:** Migration SQL and journal baselines are now checksum-locked, the proven original `0012` was restored, compatibility moved to forward migration `0042`, and clean/upgrade database paths were added. The backup-restore evidence requirement remains open until an operator runs the guarded verifier against an isolated restore of the latest verified production backup. See [migration history and backup verification](../operations/migration-history-and-backup-verification.md).
+>
+> **Dependency-admission follow-up on 2026-07-14:** Forward migration `0043` and the Forge dependency-admission implementation now generate candidate-bound policy reports and per-site SPDX SBOMs from exact lockfiles. Missing, blocked, vulnerable, expired or hash-mismatched evidence fails closed and the dependency gate no longer permits routine owner override. See [Forge generated-site dependency admission](../architecture/forge-dependency-admission.md). This follow-up does not rewrite the historical finding or constitute production deployment approval.
 
 Audit date: 2026-07-13  
 Scope: repository state in this checkout, including uncommitted programme work  

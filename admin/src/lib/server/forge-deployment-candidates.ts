@@ -7,7 +7,9 @@ import { FORGE_WORKSPACE_MEMORY_KEY, readForgeWorkspaceMemory } from "@/lib/forg
 import { forgeActivityLogs, forgeArtifacts, forgeDeploymentCandidates, forgeMemories, forgeProjects } from "@/lib/schema"
 import { forgeReleaseGateDecisions } from "@/lib/schema"
 import { evaluateReleaseGates, releaseGateDecisionAllowed, type ReleaseGateDecision, type ReleaseGateKey } from "@/lib/forge-release-gates"
+import { verifyForgeDependencyEvidence, type ForgeDependencyAdmissionReport } from "@/lib/forge-dependency-admission"
 import { assertForgeWorkspaceExecutionSafe, listForgeWorkspaceFiles, readForgeWorkspaceFile } from "./forge-workspace"
+import { collectForgeDependencyEvidence } from "./forge-dependency-admission"
 
 export class ForgeDeploymentCandidateError extends Error {
   constructor(public safeMessage: string, public status = 400) { super(safeMessage); this.name = "ForgeDeploymentCandidateError" }
@@ -30,9 +32,13 @@ export async function listDeploymentCandidates(projectId: number) {
   const rows = await db.select().from(forgeDeploymentCandidates).where(eq(forgeDeploymentCandidates.projectId, projectId)).orderBy(desc(forgeDeploymentCandidates.candidateNumber))
   return rows.map((candidate, index) => {
     const previous = rows[index + 1]
-    return { ...candidate, comparisonFromPrevious: previous ? compareDeploymentCandidates(previous as typeof previous & { approvedArtifactsJson: CandidateArtifact[] }, candidate as typeof candidate & { approvedArtifactsJson: CandidateArtifact[] }) : null }
+    const { dependencySbomJson, dependencyReportJson, ...safeCandidate } = candidate
+    const dependencyReportSummary = dependencyReportJson ? summarizeDependencyReport(dependencyReportJson) : null
+    return { ...safeCandidate, dependencyReportJson: dependencyReportSummary, dependencySbomAvailable: Boolean(dependencySbomJson), comparisonFromPrevious: previous ? compareDeploymentCandidates(previous as typeof previous & { approvedArtifactsJson: CandidateArtifact[] }, candidate as typeof candidate & { approvedArtifactsJson: CandidateArtifact[] }) : null }
   })
 }
+
+function summarizeDependencyReport(report: ForgeDependencyAdmissionReport) { const { dependencies, ...summary } = report; void dependencies; return summary }
 
 export async function createDeploymentCandidate(input: { projectId: number; actor: string; releaseNotes: string; rollbackPlan: string; environmentRequirements?: string[]; migrationRequirements?: string[]; parentCandidateId?: number }) {
   if (!input.releaseNotes.trim() || !input.rollbackPlan.trim()) throw new ForgeDeploymentCandidateError("Release notes and a rollback plan are required.")
@@ -43,19 +49,24 @@ export async function createDeploymentCandidate(input: { projectId: number; acto
   if (!workspace.files.length) throw new ForgeDeploymentCandidateError("The tracked Forge workspace is empty.")
   const artifacts = snapshot.artifacts.filter((artifact) => artifact.approvalState === "approved")
   if (!artifacts.length) throw new ForgeDeploymentCandidateError("Approve the required Forge artifacts before creating a deployment candidate.")
+  const dependencyEvidence = await collectForgeDependencyEvidence(trackedWorkspace, workspace.hash)
   const [numberResult] = await db.select({ value: max(forgeDeploymentCandidates.candidateNumber) }).from(forgeDeploymentCandidates).where(eq(forgeDeploymentCandidates.projectId, input.projectId))
   const candidateNumber = (numberResult?.value ?? 0) + 1
-  const evidence = categorizeEvidence(snapshot.allArtifacts)
+  const evidence = { ...categorizeEvidence(snapshot.allArtifacts), dependencyAdmission: { reportHash: dependencyEvidence.reportHash, sbomHash: dependencyEvidence.sbomHash, packageJsonHash: dependencyEvidence.packageJsonHash, lockfileHash: dependencyEvidence.lockfileHash, workspaceHash: workspace.hash, policyVersion: dependencyEvidence.report.policyVersion, evidenceTimestamp: dependencyEvidence.report.evidenceTimestamp } }
   const now = new Date()
   const [candidate] = await db.transaction(async (tx) => {
     const [created] = await tx.insert(forgeDeploymentCandidates).values({
       projectId: input.projectId, candidateNumber, parentCandidateId: input.parentCandidateId ?? null, workspaceVersion: trackedWorkspace.updatedAt,
       workspacePath: trackedWorkspace.relativePath, workspaceHash: workspace.hash, repositoryCommit: process.env.GIT_COMMIT_SHA ?? process.env.ERROR_MONITORING_RELEASE ?? null,
       approvedArtifactsJson: artifacts, evidenceJson: evidence, fallbackDependenciesJson: degradedCandidateDependencies(artifacts),
+      dependencyReportJson: dependencyEvidence.report, dependencyReportHash: dependencyEvidence.reportHash,
+      dependencySbomJson: dependencyEvidence.sbom, dependencySbomHash: dependencyEvidence.sbomHash,
+      dependencyPackageJsonHash: dependencyEvidence.packageJsonHash, dependencyLockfileHash: dependencyEvidence.lockfileHash,
+      dependencyPolicyVersion: dependencyEvidence.report.policyVersion, dependencyEvidenceCreatedAt: new Date(dependencyEvidence.report.evidenceTimestamp),
       environmentRequirementsJson: cleanList(input.environmentRequirements), migrationRequirementsJson: cleanList(input.migrationRequirements),
       releaseNotes: input.releaseNotes.trim(), rollbackPlan: input.rollbackPlan.trim(), createdBy: input.actor, updatedAt: now,
     }).returning()
-    await tx.insert(forgeActivityLogs).values({ projectId: input.projectId, actor: input.actor, action: "deployment_candidate_created", message: `Created deployment candidate #${candidateNumber}.`, metadataJson: { candidateId: created.id, candidateNumber, workspaceHash: workspace.hash, approvedArtifactIds: artifacts.map((item) => item.id), automaticDeployment: false } })
+    await tx.insert(forgeActivityLogs).values({ projectId: input.projectId, actor: input.actor, action: "deployment_candidate_created", message: `Created deployment candidate #${candidateNumber}.`, metadataJson: { candidateId: created.id, candidateNumber, workspaceHash: workspace.hash, dependencyReportHash: dependencyEvidence.reportHash, dependencySbomHash: dependencyEvidence.sbomHash, dependencyPolicyVersion: dependencyEvidence.report.policyVersion, dependencyStatus: dependencyEvidence.report.status, approvedArtifactIds: artifacts.map((item) => item.id), automaticDeployment: false } })
     return [created]
   })
   return candidate
@@ -127,9 +138,18 @@ export async function recordReleaseGateDecision(input: { projectId: number; cand
 
 export async function verifyPersistedCandidate(candidate: typeof forgeDeploymentCandidates.$inferSelect) {
   const snapshot = await loadCurrentSnapshot(candidate.projectId)
-  if (!snapshot.workspace || snapshot.workspace.relativePath !== candidate.workspacePath) return { valid: false, errors: ["Tracked workspace path does not match the candidate."] }
+  if (!snapshot.workspace || snapshot.workspace.relativePath !== candidate.workspacePath) return failedCandidateVerification("Tracked workspace path does not match the candidate.")
   const workspace = await hashForgeWorkspace(snapshot.workspace)
-  return verifyCandidateSnapshot({ workspaceHash: candidate.workspaceHash, approvedArtifactsJson: candidate.approvedArtifactsJson as CandidateArtifact[] }, { workspaceHash: workspace.hash, artifacts: snapshot.artifacts })
+  const snapshotVerification = verifyCandidateSnapshot({ workspaceHash: candidate.workspaceHash, approvedArtifactsJson: candidate.approvedArtifactsJson as CandidateArtifact[] }, { workspaceHash: workspace.hash, artifacts: snapshot.artifacts })
+  let dependencyVerification: ReturnType<typeof verifyForgeDependencyEvidence>
+  try {
+    const [packageJson, packageLock] = await Promise.all([readForgeWorkspaceFile(snapshot.workspace, "package.json"), readForgeWorkspaceFile(snapshot.workspace, "package-lock.json")])
+    dependencyVerification = verifyForgeDependencyEvidence({ report: candidate.dependencyReportJson, reportHash: candidate.dependencyReportHash, sbom: candidate.dependencySbomJson, sbomHash: candidate.dependencySbomHash, packageJson, packageLock, workspaceHash: candidate.workspaceHash, storedPackageJsonHash: candidate.dependencyPackageJsonHash, storedLockfileHash: candidate.dependencyLockfileHash, storedPolicyVersion: candidate.dependencyPolicyVersion, storedEvidenceTimestamp: candidate.dependencyEvidenceCreatedAt?.toISOString() ?? null })
+  } catch {
+    dependencyVerification = { valid: false, errors: ["Generated dependency manifest or lockfile evidence is missing."], report: {} as ForgeDependencyAdmissionReport }
+  }
+  const errors = [...snapshotVerification.errors, ...dependencyVerification.errors]
+  return { valid: errors.length === 0, errors, snapshotValid: snapshotVerification.valid, snapshotErrors: snapshotVerification.errors, dependency: dependencyVerification }
 }
 
 async function evaluateCandidateReleaseGates(candidate: typeof forgeDeploymentCandidates.$inferSelect, verification: Awaited<ReturnType<typeof verifyPersistedCandidate>>) {
@@ -145,18 +165,19 @@ async function evaluateCandidateReleaseGates(candidate: typeof forgeDeploymentCa
   const visualReport = objectValue(objectValue(visual?.metadata).report)
   const security = artifactMetadataList(evidence.securityScan)[0]
   const securityMetadata = objectValue(security?.metadata)
-  const dependency = objectValue(securityMetadata.dependencyPolicy ?? securityMetadata.dependencies)
   const securityFindings = Array.isArray(securityMetadata.securityFindings) ? securityMetadata.securityFindings : []
   return evaluateReleaseGates({
-    integrityValid: verification.valid, integrityErrors: verification.errors, qaCommands,
+    integrityValid: verification.snapshotValid, integrityErrors: verification.snapshotErrors, qaCommands,
     accessibilityPassed: accessibilityReport?.status === "passed" && accessibilityReport.blocking !== true, accessibilityReason: accessibilityReport ? `Accessibility status is ${String(accessibilityReport.status)} with ${String(accessibilityReport.criticalCount ?? 0)} critical finding(s).` : "Accessibility evidence is missing.",
     securityPassed: securityFindings.length === 0 && securityMetadata.securityStatus === "passed", securityReason: securityMetadata.securityStatus ? `Security scan status is ${String(securityMetadata.securityStatus)} with ${securityFindings.length} finding(s).` : "Security scan evidence is missing.",
     approvedArtifactTypes: (candidate.approvedArtifactsJson as CandidateArtifact[]).map((item) => item.type), fallbackDependencies: candidate.fallbackDependenciesJson.length,
     visualQaPassed: visualReport?.status === "passed", visualQaReason: visualReport ? `Visual QA status is ${String(visualReport.status)}.` : "Visual QA evidence is missing.",
-    dependencyPolicyPassed: dependency?.status === "passed", dependencyPolicyReason: dependency?.status ? `Dependency policy status is ${String(dependency.status)}.` : "Dependency-policy evidence is missing.",
+    dependencyPolicyPassed: verification.dependency.valid, dependencyPolicyReason: verification.dependency.valid ? `Dependency admission passed under policy ${verification.dependency.report.policyVersion}; report and SPDX SBOM hashes match this candidate.` : verification.dependency.errors.join(" "),
     migrationRequired: candidate.migrationRequirementsJson.length > 0, candidateApproved: candidate.state === "approved",
   }, validDecisions)
 }
+
+function failedCandidateVerification(error: string) { return { valid: false, errors: [error], snapshotValid: false, snapshotErrors: [error], dependency: { valid: false, errors: ["Dependency evidence cannot be verified without the tracked workspace."], report: {} as ForgeDependencyAdmissionReport } } }
 
 function artifactMetadataList(value: unknown) { return Array.isArray(value) ? value.map(objectValue).filter((item): item is Record<string, unknown> => Boolean(item)) : [] }
 function objectValue(value: unknown): Record<string, unknown> { return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {} }

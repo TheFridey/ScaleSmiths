@@ -66,6 +66,8 @@ Shared tables are duplicated in TypeScript rather than imported from one package
 | `forge_activity_logs` | Append-oriented actor/action/message audit trail |
 | `forge_memories` | Key/value JSON-like state for workspace, preview, command chat and stage context |
 | `forge_ai_usage` | Provider/model/token/cost/timing record linked to project/task where available |
+| `forge_deployment_candidates` | Immutable workspace/artifact snapshot with generated-site dependency report, SPDX SBOM, policy/version/timestamp and manifest/lock/report/SBOM hashes |
+| `forge_release_gate_decisions` | Candidate-specific manual approvals, revocations and only the explicitly permitted owner overrides |
 
 Project deletion cascades to these Forge children. Client/prospect links are set null. Most cross-artifact dependencies are logical conventions in JSON metadata, not relational constraints.
 
@@ -76,7 +78,7 @@ Important enums define quote status, request category/priority/status, message v
 ## Migration inventory
 
 - Web migrations `0000`-`0009` build quote capture, portal accounts/rate limits, request threads/timeline, reports, and public experience analytics.
-- Admin migrations `0000`-`0042` build operational CRM, identity/security, Forge workflow/provenance/economics, client operations, analytics, release gates, and the forward-only historical-schema reconciliation.
+- Admin migrations `0000`-`0043` build operational CRM, identity/security, Forge workflow/provenance/economics, client operations, analytics, release gates, the forward-only historical-schema reconciliation, and generated-site dependency/SBOM evidence binding.
 
 The histories are independent. Their Drizzle journals do not provide a single global order, despite targeting the same database. Deployment compensates by always running web then admin migrations.
 

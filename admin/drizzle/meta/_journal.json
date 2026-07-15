@@ -302,6 +302,13 @@
       "when": 1785744000000,
       "tag": "0042_historical_schema_reconciliation",
       "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1785830400000,
+      "tag": "0043_generated_dependency_admission",
+      "breakpoints": true
     }
   ]
 }

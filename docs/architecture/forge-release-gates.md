@@ -15,14 +15,14 @@ Release gates are evaluated centrally on the server against one immutable deploy
 | Visual QA | Frozen visual QA result | Owner only |
 | Client approval | Candidate-specific manual approval | Never treated as an override |
 | Release authorisation | Approved candidate, approved through `deployments.execute` | Never |
-| Dependency policy | Frozen dependency-policy evidence | Owner only |
+| Dependency policy | Recomputed binding for the exact manifest, lockfile, admission report, active policy, recent vulnerability audit and generated-site SPDX SBOM | Never |
 | Migration plan | Required only when migration requirements exist | Explicit approval or owner override |
 
 Missing automated evidence blocks the corresponding gate. The result names every blocked gate and its evidence-derived reason.
 
 ## Decisions and revocation
 
-`forge_release_gate_decisions` records candidate, workspace hash, gate, decision, actor, role, timestamp and mandatory reason. Only the `owner` role may create an override, and only for the allowlisted categories above. Fundamental integrity, build, typecheck, lint, content, design and release-authorisation checks reject override attempts server-side.
+`forge_release_gate_decisions` records candidate, workspace hash, gate, decision, actor, role, timestamp and mandatory reason. Only the `owner` role may create an override, and only for the allowlisted categories above. Fundamental integrity, build, typecheck, lint, content, design, dependency admission and release-authorisation checks reject override attempts server-side. Dependency failures require a corrected workspace, a fresh audit and a new candidate; routine owner override is intentionally unavailable.
 
 Approvals are candidate-specific. Creating a new candidate does not inherit decisions. Decisions are also ignored if their stored candidate workspace hash differs from the candidate hash. Submitted candidates are immutable, so any relevant workspace or artifact change fails integrity verification and requires a new candidate and fresh approvals.
 
@@ -30,6 +30,6 @@ Revocation writes a replacement `revoked` decision and an activity-log entry. Al
 
 ## Migration
 
-Apply `admin/drizzle/0041_forge_release_gates.sql` after `0040_forge_deployment_candidates.sql` using the repository migration process.
+Apply `admin/drizzle/0041_forge_release_gates.sql` after `0040_forge_deployment_candidates.sql`, then forward migration `0043_generated_dependency_admission.sql`, using the repository migration process.
 
-Until security and dependency-policy evidence is present in a candidate snapshot, those gates deliberately remain blocked. An owner can record a reasoned, audited override, but ordinary administrators and developers cannot.
+Candidates created before `0043_generated_dependency_admission.sql` have no generated-site dependency report or SBOM and deliberately remain blocked. Create a fresh candidate after QA rather than modifying or overriding historical evidence.

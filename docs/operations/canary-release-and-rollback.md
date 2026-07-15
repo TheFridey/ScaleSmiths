@@ -11,6 +11,8 @@ This runbook keeps the supported VPS topology: Dockerized `web` and `admin`, the
 
 Only Nginx's small upstream include changes during a release. The release manager never deploys production by itself; an authorised operator must run `prepare`, inspect the result, and separately run `switch`.
 
+Before preparing a generated client site, confirm its selected Forge deployment candidate has current dependency-admission evidence and a generated-site SPDX SBOM bound to the same workspace and lockfile hashes. This is a server-enforced gate and cannot be replaced with a manual checkbox or routine owner override.
+
 ## One-time setup
 
 1. Create and validate the complete encrypted recovery bundle from [Production backup and restore](backup-and-restore.md), confirm its off-host marker, and ensure recent isolated restore evidence exists.

@@ -7,6 +7,8 @@ This checklist is a release gate for the supported Docker Compose and host-Nginx
 - [ ] CI, security workflows, migration verification, web/admin lint, tests and production builds pass for the exact commit.
 - [ ] The real PostgreSQL integration suite passes with web then admin migrations against a disposable empty database.
 - [ ] `npm audit --omit=dev --audit-level=high` reports no high or critical production vulnerabilities; reviewed lower findings are recorded.
+- [ ] Every generated-site deployment candidate shows a passing, unexpired dependency-admission report and its own SPDX 2.3 SBOM; report, SBOM, lockfile and workspace hashes agree.
+- [ ] No generated-site dependency gate override is present. Correct and recreate any candidate with a missing lockfile, prohibited package/source/licence, unreviewed native package, audit failure, or High/Critical finding.
 - [ ] `npm run check:dependency-governance` passes; critical pins, lockfile changes, accepted advisories and Docker digest updates follow the [dependency-governance process](dependency-governance.md).
 - [ ] `AUTH_SECRET`, `PORTAL_SECRET`, `MFA_ENCRYPTION_KEY`, `ANALYTICS_CREDENTIAL_ENCRYPTION_KEY`, database, email and provider credentials are generated values in the secret store—not example values.
 - [ ] Bootstrap/recovery passwords have been removed from long-lived environment configuration after use.

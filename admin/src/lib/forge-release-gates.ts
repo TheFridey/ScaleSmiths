@@ -3,7 +3,7 @@ export type ReleaseGateStatus = "passed" | "blocked" | "overridden" | "not_appli
 export type ReleaseGateDecision = { gateKey: string; decision: "approved" | "override" | "revoked"; actorId: string; actorRole: string; reason: string; decidedAt: string; candidateWorkspaceHash: string }
 export type ReleaseGate = { key: ReleaseGateKey; label: string; status: ReleaseGateStatus; reason: string; overridable: boolean; approvalActor?: string; approvalTime?: string; approvalReason?: string }
 
-export const OVERRIDABLE_RELEASE_GATES = new Set<ReleaseGateKey>(["accessibility", "security", "fallback_warning", "visual_qa", "dependency_policy", "migration_plan"])
+export const OVERRIDABLE_RELEASE_GATES = new Set<ReleaseGateKey>(["accessibility", "security", "fallback_warning", "visual_qa", "migration_plan"])
 export const MANUAL_APPROVAL_GATES = new Set<ReleaseGateKey>(["client_approval", "migration_plan"])
 export const RELEASE_GATE_KEYS: ReleaseGateKey[] = ["workspace_integrity", "build", "typecheck", "lint", "accessibility", "security", "content_approval", "design_approval", "fallback_warning", "visual_qa", "client_approval", "release_authorisation", "dependency_policy", "migration_plan"]
 export function isReleaseGateKey(value: unknown): value is ReleaseGateKey { return typeof value === "string" && RELEASE_GATE_KEYS.includes(value as ReleaseGateKey) }

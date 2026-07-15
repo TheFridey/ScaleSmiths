@@ -16,7 +16,8 @@ Forge-generated source and dependency content is untrusted. Production must set 
 | CPU/memory exhaustion | Docker CPU and memory hard limits; bounded tmpfs. |
 | Infinite commands | Parent-side build, install, QA, and preview readiness timeouts terminate work. |
 | Log flooding | QA stdout/stderr is bounded while streaming and retained logs are truncated; preview logs cap entries and bytes. |
-| Dependency scripts | `npm install --ignore-scripts` prevents dependency lifecycle scripts in QA and preview setup. Auditing/lockfile policy remains a separate supply-chain control. |
+| Dependency scripts | `npm install --ignore-scripts` prevents dependency lifecycle scripts in QA and preview setup. Candidate admission also rejects unreviewed lifecycle/native packages, prohibited sources, unapproved direct packages and missing lockfiles. |
+| Vulnerable or substituted dependencies | Every candidate receives a lockfile-derived admission report and SPDX 2.3 SBOM. High/Critical findings, audit failure, prohibited registries/licences/sources, extraneous lock entries, or hash mismatch block approval and deployment without a routine override. |
 | Privilege escalation | Numeric non-root user, all capabilities dropped, `no-new-privileges`, read-only root filesystem, no privileged mode. |
 | Public preview | Default preview host is loopback; public binding requires the explicit existing opt-in. Docker publishing uses the resolved host. Generated workspaces remain outside public app roots. |
 
@@ -45,7 +46,11 @@ Cloud metadata endpoints are unreachable with network `none`. When bridge networ
 - The workspace must be writable, so generated code can corrupt its own project. Lineage/versioning and regeneration provide recovery, not prevention.
 - Timeouts terminate the launched process/container, but host failure during cleanup can leave a container until operational cleanup runs.
 - Static outbound/secret scanning is defense in depth and cannot recognize every obfuscated behavior.
+- Registry metadata and vulnerability results change over time. Dependency evidence expires and must be recreated; an audit cannot prove that an undisclosed vulnerability does not exist.
+- Approved transitive packages still execute during builds. Admission, integrity hashes, no-script installation and the Docker boundary reduce risk but do not establish package trust.
 
 ## Automated fixtures
 
 `forge-sandbox-security.test.ts` harmlessly simulates traversal, environment-secret access, outbound code, package scripts, log flooding, unsafe Docker flags, socket exposure, and public binding. Existing Forge tests cover preview host defaults, file allowlists, destructive commands, and resource configuration.
+
+`forge-dependency-admission.test.ts` uses deterministic safe, blocked, vulnerable, licence-failure, mutated-lock and stale-SBOM fixtures. It proves that unapproved dependencies and stale evidence cannot satisfy the deployment gate.

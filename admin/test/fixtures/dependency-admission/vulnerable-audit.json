@@ -1,0 +1,33 @@
+{
+  "auditReportVersion": 2,
+  "vulnerabilities": {
+    "react": {
+      "name": "react",
+      "severity": "high",
+      "isDirect": true,
+      "via": [
+        {
+          "source": 999999,
+          "name": "react",
+          "title": "Deterministic high-severity test advisory",
+          "severity": "high",
+          "range": "18.3.1"
+        }
+      ],
+      "effects": [],
+      "range": "18.3.1",
+      "nodes": ["node_modules/react"],
+      "fixAvailable": false
+    }
+  },
+  "metadata": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 1,
+      "critical": 0,
+      "total": 1
+    }
+  }
+}

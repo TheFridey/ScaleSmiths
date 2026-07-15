@@ -2,6 +2,7 @@ import { relations, sql } from "drizzle-orm"
 import { boolean, index, integer, jsonb, numeric, pgEnum, pgTable, serial, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core"
 import type { LeadScoreFactor, LeadScoreResult } from "./lead-scoring"
 import type { ProjectEstimateResult } from "./project-estimator"
+import type { ForgeDependencyAdmissionReport } from "./forge-dependency-admission"
 
 export const kanbanColumn = pgEnum("kanban_column", ["backlog", "progress", "review", "done"])
 export const messageDirection = pgEnum("message_direction", ["inbound", "outbound"])
@@ -462,6 +463,14 @@ export const forgeDeploymentCandidates = pgTable("forge_deployment_candidates", 
   repositoryCommit: text("repository_commit"),
   approvedArtifactsJson: jsonb("approved_artifacts_json").$type<Array<Record<string, unknown>>>().default([]).notNull(),
   evidenceJson: jsonb("evidence_json").$type<Record<string, unknown>>().notNull(),
+  dependencyReportJson: jsonb("dependency_report_json").$type<ForgeDependencyAdmissionReport>(),
+  dependencyReportHash: text("dependency_report_hash"),
+  dependencySbomJson: jsonb("dependency_sbom_json").$type<Record<string, unknown>>(),
+  dependencySbomHash: text("dependency_sbom_hash"),
+  dependencyPackageJsonHash: text("dependency_package_json_hash"),
+  dependencyLockfileHash: text("dependency_lockfile_hash"),
+  dependencyPolicyVersion: text("dependency_policy_version"),
+  dependencyEvidenceCreatedAt: timestamp("dependency_evidence_created_at", { withTimezone: true }),
   fallbackDependenciesJson: jsonb("fallback_dependencies_json").$type<Array<Record<string, unknown>>>().default([]).notNull(),
   environmentRequirementsJson: jsonb("environment_requirements_json").$type<string[]>().default([]).notNull(),
   migrationRequirementsJson: jsonb("migration_requirements_json").$type<string[]>().default([]).notNull(),

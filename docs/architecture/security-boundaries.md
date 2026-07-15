@@ -71,7 +71,7 @@ Restore commands reject the production repository, require isolation words in bo
 ## Residual controls and gaps
 
 - CI now runs dependency review, verified-secret scanning, npm audit thresholds, Dockerfile linting, container scanning, SBOM generation, migration/integration checks, CodeQL and sandbox fixtures;
-- generated-site dependency admission, vulnerability/licence evaluation and per-site SBOM production are not implemented, so the dependency release gate has no normal evidence producer;
+- generated-site candidate creation now evaluates exact lockfile packages, source, licence, reviewed native/lifecycle risk and npm vulnerability evidence, then binds a per-site SPDX SBOM and admission report to the immutable workspace hash;
 - no integration test for host-Nginx headers/TLS/routing;
 - no database role separation or row-level security;
 - no distributed admin/Forge rate limiter;

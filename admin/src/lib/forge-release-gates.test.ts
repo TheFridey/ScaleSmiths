@@ -42,6 +42,13 @@ describe("Forge release-gate policy", () => {
     expect(result.blockers.map((item) => item.key)).toContain("workspace_integrity")
   })
 
+  it("never permits an owner override to admit blocked dependency evidence", () => {
+    expect(releaseGateDecisionAllowed("dependency_policy", "override", "owner")).toBe(false)
+    const result = evaluateReleaseGates(passingEvidence({ dependencyPolicyPassed: false, dependencyPolicyReason: "High vulnerability detected." }), [decision("client_approval"), decision("dependency_policy", "override")])
+    expect(result.allowed).toBe(false)
+    expect(result.blockers.map((item) => item.key)).toContain("dependency_policy")
+  })
+
   it("records override actor, time and reason in the evaluated gate", () => {
     const result = evaluateReleaseGates(passingEvidence({ accessibilityPassed: false }), [decision("client_approval"), decision("accessibility", "override")])
     const gate = result.gates.find((item) => item.key === "accessibility")

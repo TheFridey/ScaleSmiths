@@ -1,0 +1,4 @@
+{
+  "workspaceHash": "a-different-workspace-hash",
+  "reason": "Fixture used to prove an otherwise internally hashed SBOM cannot be reused for another deployment candidate."
+}

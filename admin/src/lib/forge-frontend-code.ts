@@ -496,10 +496,10 @@ function buildPackageJson(slug: string, design: ForgeDesignDirection) {
   const animation = buildForgeAnimationConfigForSite(design.selectedAnimationPack)
   const dependencies: Record<string, string> = {
     "framer-motion": "^12.0.0",
-    "next": "^15.5.13",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "resend": "latest",
+    "next": "15.5.20",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "resend": "6.17.2",
   }
   if (animation.useLenis) dependencies.lenis = "^1.3.8"
   if (animation.useGsap) dependencies.gsap = "^3.13.0"

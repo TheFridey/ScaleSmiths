@@ -374,6 +374,12 @@
                                   "sha256":  "0f0644d5c55fff5589cb0b7b0a506d62f0886d6dbd551c34edf85d6cadfb301a",
                                   "lifecycle":  "forward-correction",
                                   "reason":  "Reconciles either known 0009/0012 history without assuming which form production applied."
+                              },
+                              {
+                                  "path":  "admin/drizzle/0043_generated_dependency_admission.sql",
+                                  "sha256":  "cc0695aaf04c83c540314e6d47362b3f85552c38a4a6608787a208848e540d0a",
+                                  "lifecycle":  "forward",
+                                  "reason":  "Adds immutable generated-site dependency admission and SPDX evidence to deployment candidates."
                               }
                           ],
     "journals":  {
@@ -395,6 +401,13 @@
                                                                "version":  "7",
                                                                "when":  1785744000000,
                                                                "tag":  "0042_historical_schema_reconciliation",
+                                                               "breakpoints":  true
+                                                           },
+                                                           {
+                                                               "idx":  43,
+                                                               "version":  "7",
+                                                               "when":  1785830400000,
+                                                               "tag":  "0043_generated_dependency_admission",
                                                                "breakpoints":  true
                                                            }
                                                        ]

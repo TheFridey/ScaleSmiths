@@ -370,6 +370,12 @@
                              ],
     "forwardMigrations":  [
                               {
+                                  "path":  "web/drizzle/0010_public_claims_registry.sql",
+                                  "sha256":  "34d4f79d069f4b9b0569d9f5e6bc5f3a6739058d1af05f4cb5f77e7e345df8c5",
+                                  "lifecycle":  "forward",
+                                  "reason":  "Adds the evidence-backed public claims registry, restricted verified view and immutable review audit trail."
+                              },
+                              {
                                   "path":  "admin/drizzle/0042_historical_schema_reconciliation.sql",
                                   "sha256":  "0f0644d5c55fff5589cb0b7b0a506d62f0886d6dbd551c34edf85d6cadfb301a",
                                   "lifecycle":  "forward-correction",
@@ -394,7 +400,13 @@
                                  "baselineSourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
                                  "baselineEntryCount":  10,
                                  "appendedEntries":  [
-
+                                                         {
+                                                             "idx":  10,
+                                                             "version":  "7",
+                                                             "when":  1786003200000,
+                                                             "tag":  "0010_public_claims_registry",
+                                                             "breakpoints":  true
+                                                         }
                                                      ]
                              },
                      "admin":  {

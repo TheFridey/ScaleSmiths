@@ -122,7 +122,6 @@ export function LandingPage({ page }: { page: LandingPageData }) {
                 <article key={log.slug} className="rounded-2xl border border-b1 bg-s1 p-5">
                   <h3 className="font-syne text-lg font-bold">{log.title}</h3>
                   <p className="mt-2 font-dm text-sm leading-relaxed text-t2">{log.summary}</p>
-                  <p className="mt-3 font-dm text-sm leading-relaxed text-t3">{log.businessValue}</p>
                 </article>
               ))}
             </div>

@@ -71,6 +71,13 @@
       "when": 1783900800000,
       "tag": "0009_experience_choice_analytics",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1786003200000,
+      "tag": "0010_public_claims_registry",
+      "breakpoints": true
     }
   ]
 }

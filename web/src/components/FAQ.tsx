@@ -2,9 +2,8 @@
 import { useState } from "react"
 import { ChevronRight } from "lucide-react"
 import { AnimateIn } from "./AnimateIn"
-import { faqs } from "@/lib/data"
 
-export function FAQ() {
+export function FAQ({ items }: { items: Array<{ q: string; a: string }> }) {
   const [open, setOpen] = useState<number | null>(null)
   return (
     <section aria-label="Frequently asked questions" className="px-6 md:px-12 py-20">
@@ -16,8 +15,8 @@ export function FAQ() {
           </h2>
         </AnimateIn>
         <AnimateIn delay={0.1} className="bg-s1 border border-b1 rounded-2xl overflow-hidden">
-          {faqs.map((faq, i) => (
-            <div key={i} className={i < faqs.length - 1 ? "border-b border-b1" : ""}>
+          {items.map((faq, i) => (
+            <div key={faq.q} className={i < items.length - 1 ? "border-b border-b1" : ""}>
               <button
                 className="faq-btn w-full text-left px-7 py-[22px] flex justify-between items-center gap-4 rounded-none transition-colors"
                 onClick={() => setOpen(open === i ? null : i)}

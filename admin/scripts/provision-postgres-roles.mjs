@@ -15,6 +15,7 @@ const WEB_TABLE_GRANTS = new Map([
   ["client_timeline_events", ["SELECT", "INSERT"]],
   ["monthly_reports", ["SELECT"]],
   ["experience_events", ["INSERT"]],
+  ["public_verified_claims", ["SELECT"]],
 ])
 
 const provisioningUrl = requiredUrl("POSTGRES_PROVISIONING_DATABASE_URL")

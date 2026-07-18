@@ -1,8 +1,15 @@
 import { Star } from "lucide-react"
 import { AnimateIn, StaggerIn } from "./AnimateIn"
-import { testimonials } from "@/lib/data"
 
-export function Testimonials() {
+export interface VerifiedTestimonial {
+  id: string
+  quote: string
+  name: string
+  business: string
+}
+
+export function Testimonials({ testimonials }: { testimonials: VerifiedTestimonial[] }) {
+  if (testimonials.length === 0) return null
   return (
     <section aria-label="Client testimonials" className="px-6 md:px-12 py-20">
       <div className="max-w-[1240px] mx-auto">
@@ -15,7 +22,7 @@ export function Testimonials() {
         <StaggerIn className="grid md:grid-cols-3 gap-3">
           {testimonials.map((t) => (
             <blockquote
-              key={t.name}
+              key={t.id}
               className="bg-s1 border border-b1 rounded-2xl p-7 m-0"
             >
               <div className="flex gap-0.5 mb-5" aria-label="5 stars">
@@ -28,7 +35,7 @@ export function Testimonials() {
               </p>
               <footer>
                 <div className="font-syne text-sm font-bold">{t.name}</div>
-                <div className="font-dm text-xs text-t2 mt-0.5">{t.biz}</div>
+                <div className="font-dm text-xs text-t2 mt-0.5">{t.business}</div>
               </footer>
             </blockquote>
           ))}

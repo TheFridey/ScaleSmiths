@@ -184,7 +184,7 @@ export function PortalOperatingHub({
             note="Based on portal request activity"
           />
           <InfoCard Icon={LifeBuoy} label="Support route" value="Log all work in Requests" note={`Critical issues: also email ${supportEmail}`} />
-          <InfoCard Icon={MessageSquare} label="Response guidance" value="One working day" note="Critical issues are prioritised first" />
+          <InfoCard Icon={MessageSquare} label="Response guidance" value="See support agreement" note="Urgency is triaged against the agreed support scope" />
         </div>
       </section>
 

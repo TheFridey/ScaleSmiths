@@ -25,6 +25,8 @@ erDiagram
   FORGE_TASKS ||--o{ FORGE_AI_USAGE : consumes
   CLIENT_REQUESTS ||--o{ CLIENT_REQUEST_MESSAGES : contains
   CLIENT_REQUESTS ||--o{ CLIENT_TIMELINE_EVENTS : emits
+  PUBLIC_CLAIMS ||--o| PUBLIC_CLAIM_EVIDENCE : supported_by
+  PUBLIC_CLAIMS ||--o{ PUBLIC_CLAIM_AUDIT_LOGS : reviewed_through
 ```
 
 ## Public/shared operational tables
@@ -39,6 +41,10 @@ erDiagram
 | `client_request_messages` | Client/admin/system thread, with visibility | Written/read by both apps |
 | `client_timeline_events` | Client-visible/internal operational timeline | Written/read by both apps; `project_id` is not a foreign key |
 | `monthly_reports` | Draft/published HTML reports and period metadata | Managed by admin; published records read by portal |
+| `public_claims` | Exact commercial/testimonial wording, review state, attribution, expiry and placement permissions | Managed by admin; never granted to web runtime |
+| `public_claim_evidence` | Private evidence description/reference separated from public wording | Admin-only; never selected into the public view |
+| `public_claim_audit_logs` | Actor/status/reason history for claim reviews | Admin-only append activity |
+| `public_verified_claims` | Restricted public-safe view of evidenced, verified and unexpired claims | Web receives `SELECT`; contains no evidence reference or verifier ID |
 
 Shared tables are duplicated in TypeScript rather than imported from one package. Schema compatibility depends on manual coordination of migrations.
 
@@ -77,7 +83,7 @@ Important enums define quote status, request category/priority/status, message v
 
 ## Migration inventory
 
-- Web migrations `0000`-`0009` build quote capture, portal accounts/rate limits, request threads/timeline, reports, and public experience analytics.
+- Web migrations `0000`-`0010` build quote capture, portal accounts/rate limits, request threads/timeline, reports, public experience analytics, and the public claims registry/restricted view.
 - Admin migrations `0000`-`0043` build operational CRM, identity/security, Forge workflow/provenance/economics, client operations, analytics, release gates, the forward-only historical-schema reconciliation, and generated-site dependency/SBOM evidence binding.
 
 The histories are independent. Their Drizzle journals do not provide a single global order, despite targeting the same database. Deployment compensates by always running web then admin migrations.

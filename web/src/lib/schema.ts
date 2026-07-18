@@ -1,4 +1,4 @@
-import { boolean, index, integer, jsonb, pgEnum, pgTable, serial, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core"
+import { boolean, index, integer, jsonb, pgEnum, pgTable, pgView, serial, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core"
 
 export const quoteStatus = pgEnum("quote_status", ["new", "read", "replied", "reviewed", "contacted", "qualified", "won", "lost"])
 export const clientRequestCategory = pgEnum("client_request_category", [
@@ -34,6 +34,18 @@ export const experienceEventName = pgEnum("experience_event_name", [
 ])
 export const experienceDeviceClass = pgEnum("experience_device_class", ["mobile", "tablet", "desktop", "unknown"])
 export const experiencePreference = pgEnum("experience_preference", ["normal", "interactive", "none", "unknown"])
+
+export const publicVerifiedClaims = pgView("public_verified_claims", {
+  id: text("id").notNull(),
+  approvedWording: text("approved_wording").notNull(),
+  claimType: text("claim_type").notNull(),
+  attributionName: text("attribution_name"),
+  attributionBusiness: text("attribution_business"),
+  permittedRoutes: text("permitted_routes").array().notNull(),
+  permittedComponents: text("permitted_components").array().notNull(),
+  verifiedAt: timestamp("verified_at", { withTimezone: true }).notNull(),
+  reviewExpiresAt: timestamp("review_expires_at", { withTimezone: true }).notNull(),
+}).existing()
 
 export const quoteRequests = pgTable("quote_requests", {
   id: serial("id").primaryKey(),

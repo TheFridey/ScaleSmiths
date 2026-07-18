@@ -4,7 +4,7 @@ export const CAPABILITIES = [
   "users.manage", "users.reset_password", "users.assign_owner", "leads.read", "leads.write", "clients.read", "clients.write",
   "projects.read", "projects.write", "forge.read", "forge.execute", "forge.approve",
   "forge.configure", "finance.read", "finance.write", "settings.manage", "audit.read",
-  "deployments.execute", "analytics.read", "analytics.write",
+  "deployments.execute", "analytics.read", "analytics.write", "claims.read", "claims.manage",
 ] as const
 export type Capability = (typeof CAPABILITIES)[number]
 
@@ -36,6 +36,7 @@ export function requiredCapabilityForRequest({ pathname, method }: RbacRequest):
   if (pathname.startsWith("/api/auth") || pathname.startsWith("/login")) return null
   if (pathname === "/security" || pathname.startsWith("/security/") || pathname.startsWith("/api/security")) return "settings.manage"
   if (pathname === "/users" || pathname.startsWith("/users/") || pathname.startsWith("/api/admin-users")) return "users.manage"
+  if (pathname === "/claims" || pathname.startsWith("/claims/") || pathname.startsWith("/api/claims")) return write ? "claims.manage" : "claims.read"
   if (pathname === "/prospects" || pathname.startsWith("/prospects/") || pathname.startsWith("/api/prospects")) return write ? "leads.write" : "leads.read"
   if (pathname === "/clients/new") return "clients.write"
   if (/^\/clients\/[^/]+\/analytics/.test(pathname) || /^\/api\/clients\/[^/]+\/analytics/.test(pathname)) return write ? "analytics.write" : "analytics.read"

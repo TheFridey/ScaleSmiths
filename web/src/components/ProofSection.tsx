@@ -2,11 +2,12 @@ import Image from "next/image"
 import Link from "next/link"
 import { ArrowRight, CheckCircle2 } from "lucide-react"
 import { projects } from "@/lib/data"
+import type { PublicClaim } from "@/lib/public-claims"
 import { AnimateIn, GSAPReveal } from "./AnimateIn"
 
 const proofProjects = projects.slice(0, 3)
 
-export function ProofSection() {
+export function ProofSection({ claims }: { claims: ReadonlyMap<string, PublicClaim> }) {
   return (
     <section aria-label="Project proof" className="px-6 md:px-12 py-24">
       <div className="mx-auto max-w-[1240px]">
@@ -17,7 +18,7 @@ export function ProofSection() {
           </h2>
           <p className="mt-4 font-dm text-base leading-relaxed text-t2">
             Pretty pages are only useful when they change the way a business sells, operates, or scales.
-            These builds pair interface polish with measurable workflow and revenue impact.
+            These build records show the implemented interface, workflow and infrastructure decisions. Commercial results appear only when supporting evidence has been reviewed.
           </p>
         </AnimateIn>
 
@@ -60,8 +61,11 @@ export function ProofSection() {
                 </div>
               </div>
 
-              <ul className="mt-5 flex flex-col gap-2" aria-label={`${project.name} business outcomes`}>
-                {project.outcomes.slice(0, 2).map((outcome) => (
+              <ul className="mt-5 flex flex-col gap-2" aria-label={`${project.name} verified outcomes or delivered capabilities`}>
+                {(project.outcomeClaimIds.map((id) => claims.get(id)?.approvedWording).filter((value): value is string => Boolean(value)).slice(0, 2).length
+                  ? project.outcomeClaimIds.map((id) => claims.get(id)?.approvedWording).filter((value): value is string => Boolean(value)).slice(0, 2)
+                  : project.features.slice(0, 2)
+                ).map((outcome) => (
                   <li key={outcome} className="flex gap-2.5 font-dm text-sm leading-relaxed text-t2">
                     <CheckCircle2 size={15} className="mt-0.5 shrink-0 text-grn" aria-hidden="true" />
                     {outcome}

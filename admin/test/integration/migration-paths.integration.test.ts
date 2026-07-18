@@ -42,7 +42,7 @@ describe("migration installation paths", () => {
   it("applies every migration from zero in production order with separate journals", async () => {
     await applyMigrations(WEB_MIGRATIONS, ADMIN_MIGRATIONS)
 
-    expect(await migrationCount("__drizzle_web_migrations")).toBe(10)
+    expect(await migrationCount("__drizzle_web_migrations")).toBe(11)
     expect(await migrationCount("__drizzle_migrations")).toBe(45)
     expect(await columnExists("forge_artifacts", "content_bytes")).toBe(true)
     expect(await columnExists("forge_deployment_candidates", "dependency_report_json")).toBe(true)
@@ -50,6 +50,8 @@ describe("migration installation paths", () => {
     expect(await constraintExists("forge_deployment_candidates_dependency_evidence_complete")).toBe(true)
     expect(await functionContains("prevent_submitted_deployment_candidate_mutation", "dependency_report_json")).toBe(true)
     expect(await tableExists("client_request_messages")).toBe(true)
+    expect(await tableExists("public_claims")).toBe(true)
+    expect(await viewExists("public_verified_claims")).toBe(true)
     expect(await indexExists("forge_artifacts_version_idx")).toBe(true)
   })
 
@@ -75,7 +77,7 @@ describe("migration installation paths", () => {
 
     await applyMigrations(WEB_MIGRATIONS, ADMIN_MIGRATIONS)
 
-    expect(await migrationCount("__drizzle_web_migrations")).toBe(10)
+    expect(await migrationCount("__drizzle_web_migrations")).toBe(11)
     expect(await migrationCount("__drizzle_migrations")).toBe(45)
     expect(await columnExists("forge_artifacts", "content_bytes")).toBe(true)
     expect(await columnExists("forge_deployment_candidates", "dependency_report_json")).toBe(true)
@@ -156,6 +158,14 @@ async function tableExists(table: string) {
   const result = await pool.query<{ exists: boolean }>(
     "SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = $1) AS exists",
     [table],
+  )
+  return result.rows[0].exists
+}
+
+async function viewExists(view: string) {
+  const result = await pool.query<{ exists: boolean }>(
+    "SELECT EXISTS (SELECT 1 FROM information_schema.views WHERE table_schema = 'public' AND table_name = $1) AS exists",
+    [view],
   )
   return result.rows[0].exists
 }

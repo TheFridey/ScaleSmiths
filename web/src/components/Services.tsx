@@ -3,10 +3,11 @@ import { CheckCircle2, Globe, TrendingUp, Layers, ChevronRight } from "lucide-re
 import { AnimateIn, GSAPReveal } from "./AnimateIn"
 import { services, retainers } from "@/lib/data"
 import { cn } from "@/lib/utils"
+import { claimWording, type PublicClaim } from "@/lib/public-claims"
 
 const ICONS = { globe: Globe, "trending-up": TrendingUp, layers: Layers }
 
-export function Services() {
+export function Services({ claims }: { claims: ReadonlyMap<string, PublicClaim> }) {
   return (
     <section aria-label="Services and pricing" className="px-6 md:px-12 py-24">
       <div className="max-w-[1240px] mx-auto">
@@ -18,8 +19,7 @@ export function Services() {
             Built for the way<br />you actually work.
           </h2>
           <p className="font-dm text-t2 max-w-[520px] leading-relaxed text-base">
-            We&apos;ve delivered projects for local businesses, e-commerce brands and SaaS founders
-            across the UK. Every engagement starts with strategy — not a template.
+            {claimWording(claims, "service.projects-across-uk", "We work with local businesses, e-commerce brands and software teams. Every engagement starts with strategy — not a template.")}
           </p>
         </AnimateIn>
 
@@ -38,14 +38,14 @@ export function Services() {
               >
                 {s.featured && (
                   <div className="absolute top-4 right-4 bg-acc text-white text-[11px] font-dm font-semibold px-[10px] py-[3px] rounded-full tracking-[.04em]">
-                    POPULAR
+                    FEATURED
                   </div>
                 )}
                 <div className="w-11 h-11 bg-s3 rounded-[10px] flex items-center justify-center mb-6" aria-hidden="true">
                   <Icon size={20} className={s.featured ? "text-acc" : "text-silver"} />
                 </div>
                 <h3 className="font-syne text-xl font-bold mb-1">{s.tier}</h3>
-                <div className="font-syne text-[17px] font-semibold text-acc mb-3">{s.range}</div>
+                <div className="font-syne text-[17px] font-semibold text-acc mb-3">{claimWording(claims, s.priceClaimId, s.range)}</div>
                 <p className="font-dm text-sm text-t2 leading-relaxed mb-5">{s.pitch}</p>
                 <ul aria-label={`${s.tier} tier includes`} className="flex flex-col gap-1.5 mb-6">
                   {s.features.map((f) => (
@@ -76,13 +76,13 @@ export function Services() {
         <AnimateIn className="mt-10 bg-s1 border border-b1 rounded-2xl p-7" delay={0.2}>
           <h3 className="font-syne text-lg font-bold mb-1">Monthly Retainers</h3>
           <p className="font-dm text-sm text-t2 mb-6">
-            Every project is built to convert into a long-term partnership. Most clients retain within 30 days of launch.
+            {claimWording(claims, "service.most-clients-retain-30-days", "Post-launch support is optional and scoped separately around maintenance, monitoring and measured improvements.")}
           </p>
           <div className="grid md:grid-cols-3 gap-3">
             {retainers.map((r) => (
               <div key={r.name} className="bg-s2 border border-b2 rounded-xl p-5">
                 <div className="font-syne text-[15px] font-bold mb-1">{r.name}</div>
-                <div className="font-syne text-sm font-semibold text-acc mb-2">{r.price}</div>
+                <div className="font-syne text-sm font-semibold text-acc mb-2">{claimWording(claims, r.priceClaimId, r.price)}</div>
                 <div className="font-dm text-[13px] text-t2 leading-relaxed">{r.desc}</div>
               </div>
             ))}

@@ -55,6 +55,55 @@ export const experienceEventName = pgEnum("experience_event_name", [
 export const experienceDeviceClass = pgEnum("experience_device_class", ["mobile", "tablet", "desktop", "unknown"])
 export const experiencePreference = pgEnum("experience_preference", ["normal", "interactive", "none", "unknown"])
 
+export type PublicClaimStatus = "draft" | "verified" | "expired" | "rejected"
+export type PublicClaimApprovalStatus = "pending" | "approved" | "declined" | "not_required"
+
+export const publicClaims = pgTable("public_claims", {
+  id: text("id").primaryKey(),
+  approvedWording: text("approved_wording").notNull(),
+  claimType: text("claim_type").notNull(),
+  sourceName: text("source_name"),
+  attributionName: text("attribution_name"),
+  attributionBusiness: text("attribution_business"),
+  clientApprovalStatus: text("client_approval_status").$type<PublicClaimApprovalStatus>().default("pending").notNull(),
+  status: text("status").$type<PublicClaimStatus>().default("draft").notNull(),
+  verifiedBy: text("verified_by"),
+  verifiedAt: timestamp("verified_at", { withTimezone: true }),
+  reviewExpiresAt: timestamp("review_expires_at", { withTimezone: true }),
+  permittedRoutes: text("permitted_routes").array().default([]).notNull(),
+  permittedComponents: text("permitted_components").array().default([]).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("public_claims_status_review_idx").on(table.status, table.reviewExpiresAt),
+  index("public_claims_type_idx").on(table.claimType),
+])
+
+export const publicClaimEvidence = pgTable("public_claim_evidence", {
+  id: serial("id").primaryKey(),
+  claimId: text("claim_id").references(() => publicClaims.id, { onDelete: "cascade" }).notNull(),
+  evidenceDescription: text("evidence_description").notNull(),
+  evidenceReference: text("evidence_reference").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("public_claim_evidence_claim_idx").on(table.claimId),
+])
+
+export const publicClaimAuditLogs = pgTable("public_claim_audit_logs", {
+  id: serial("id").primaryKey(),
+  claimId: text("claim_id").references(() => publicClaims.id, { onDelete: "cascade" }).notNull(),
+  actorUserId: text("actor_user_id").notNull(),
+  action: text("action").notNull(),
+  previousStatus: text("previous_status"),
+  newStatus: text("new_status"),
+  metadataJson: jsonb("metadata_json").$type<Record<string, unknown>>().default({}).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("public_claim_audit_claim_idx").on(table.claimId, table.createdAt),
+  index("public_claim_audit_actor_idx").on(table.actorUserId, table.createdAt),
+])
+
 export const adminUsers = pgTable("admin_users", {
   id: uuid("id").defaultRandom().primaryKey(),
   email: text("email").notNull(),

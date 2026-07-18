@@ -16,7 +16,7 @@ export default function QuoteThanksPage() {
           Brief received.
         </h1>
         <p className="mx-auto mt-5 max-w-[620px] font-dm text-base leading-relaxed text-t2">
-          We will review the scope, budget, timing, and commercial goal before replying. Expect a response within one working day.
+          We will review the scope, budget, timing, and commercial goal before replying through the contact route supplied with the enquiry.
         </p>
 
         <div className="mt-10 grid gap-3 text-left md:grid-cols-3">

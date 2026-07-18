@@ -22,7 +22,7 @@ const features = [
 
 const checks = ["Private client sign-in", "Milestone timeline", "Review requests", "Launch checklist"]
 
-export function ClientPortalSection() {
+export function ClientPortalSection({ verifiedAvailabilityClaim }: { verifiedAvailabilityClaim?: string }) {
   return (
     <section aria-label="Client portal" className="px-6 py-24 md:px-12">
       <div className="mx-auto grid max-w-[1240px] gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
@@ -31,10 +31,10 @@ export function ClientPortalSection() {
             Client Portal
           </span>
           <h2 className="mt-2 font-syne text-[clamp(30px,5vw,52px)] font-extrabold tracking-[-0.025em]">
-            Your project, visible from day one.
+            A private workspace for organised delivery.
           </h2>
           <p className="mt-4 max-w-[540px] font-dm text-base leading-relaxed text-t2">
-            Every active client gets a private workspace for progress, decisions, files, questions, and launch information. No mystery status updates. No digging through old threads.
+            {verifiedAvailabilityClaim ?? "Where included in the agreed scope, the client portal keeps progress, decisions, files, questions, and launch information in one protected workspace."}
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
             <Link href="/portal/login" prefetch={false} className="btn-primary font-dm text-sm">

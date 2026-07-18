@@ -87,6 +87,28 @@ test.describe("public experience SEO routing", () => {
     expect(new Set(locations).size).toBe(locations.length)
     expect(xml).toContain("2026-07-18T00:00:00.000Z")
   })
+
+  test("fails closed when commercial claims have no verified public evidence", async ({ page }) => {
+    await setExperience(page, "normal")
+    await gotoReady(page, "/")
+
+    for (const unsupported of [
+      "12+ Projects Delivered",
+      "GBP 300k+ Revenue Generated",
+      "100% Retainer Retention Rate",
+      "paid for itself twice over",
+    ]) {
+      await expect(page.getByText(unsupported, { exact: false })).toHaveCount(0)
+    }
+    await expect(page.locator('section[aria-label="Client testimonials"]')).toHaveCount(0)
+    await expect(page.getByText("Conversion websites", { exact: true })).toBeVisible()
+
+    await gotoReady(page, "/pricing")
+    await expect(page.getByText("GBP 4,500-6,500", { exact: false })).toHaveCount(0)
+    await expect(page.getByText("Scoped after discovery", { exact: true }).first()).toBeVisible()
+    await expect(page.locator("body")).not.toContainText("evidence_reference")
+    await expect(page.locator("body")).not.toContainText("verified_by")
+  })
 })
 
 test.describe("public experience preference", () => {

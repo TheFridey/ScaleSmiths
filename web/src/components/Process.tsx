@@ -9,17 +9,22 @@ const steps = [
   },
   {
     n: "02", title: "Build & Forge",
-    desc: "Your site, system or platform built to spec, on time. Full transparency via your client portal throughout.",
+    desc: "Your site, system or platform is built to the agreed scope, with delivery progress visible through the client portal.",
     Icon: Code2,
   },
   {
     n: "03", title: "Launch & Scale",
-    desc: "Deploy. Monitor. Iterate. Most clients convert to a retainer here — because the real work is just beginning.",
+    desc: "Deploy, monitor and iterate. Ongoing support is optional and scoped around the work the business needs after launch.",
     Icon: TrendingUp,
   },
 ]
 
-export function Process() {
+export function Process({ verifiedDeliveryClaim, verifiedRetentionClaim }: { verifiedDeliveryClaim?: string; verifiedRetentionClaim?: string }) {
+  const publicSteps = steps.map((step) => step.n === "03"
+    ? { ...step, desc: verifiedRetentionClaim ?? "Deploy, monitor and iterate. Ongoing support is optional and scoped around the work the business needs after launch." }
+    : step.n === "02"
+      ? { ...step, desc: verifiedDeliveryClaim ?? step.desc }
+      : step)
   return (
     <section
       aria-label="Our process"
@@ -35,7 +40,7 @@ export function Process() {
           </h2>
         </AnimateIn>
         <StaggerIn className="grid md:grid-cols-3 gap-8">
-          {steps.map((step) => (
+          {publicSteps.map((step) => (
             <div key={step.n} className="text-center px-4">
               <div className="font-dm text-[11px] text-t3 tracking-[.14em] mb-4" aria-hidden="true">
                 STEP {step.n}

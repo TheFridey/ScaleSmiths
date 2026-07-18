@@ -3,7 +3,7 @@ import { AnimateIn } from "./AnimateIn"
 
 const BLOCKS = [
   {
-    title: "Fast builds",
+    title: "Lean delivery",
     copy: "Lean scopes, direct founder communication, and production-ready defaults keep momentum high without cutting corners.",
     Icon: Gauge,
   },

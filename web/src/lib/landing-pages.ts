@@ -25,7 +25,7 @@ export const landingPages: Record<string, LandingPage> = {
     slug: "web-design-hucknall",
     title: "Web Design Hucknall",
     metaTitle: "Web Design Hucknall | ScaleSmiths",
-    description: "Premium web design in Hucknall for businesses that need a faster, sharper, conversion-focused website.",
+    description: "Purposeful web design in Hucknall for businesses that need a sharp, conversion-focused website.",
     eyebrow: "Local web design",
     h1: "Web design Hucknall businesses can build growth on.",
     intro: "ScaleSmiths designs and builds custom websites for Hucknall businesses that need more than a generic template: credibility, enquiries, speed, and a site they can keep improving.",
@@ -39,8 +39,8 @@ export const landingPages: Record<string, LandingPage> = {
     buildLogLinks: ["seo-aeo-page-architecture", "quote-system-hardening", "scalesmiths-platform-build"],
     relatedPages: ["web-development-nottingham", "e-commerce-development-nottingham"],
     faqs: [
-      { q: "Do you work with Hucknall businesses in person?", a: "Yes. We are based in Hucknall and can combine local discovery with remote delivery, weekly updates, and structured review calls." },
-      { q: "How much does web design in Hucknall cost?", a: "Foundation websites start at £4,500. More complex booking, e-commerce, or portal work is scoped after discovery." },
+      { q: "Do you work with Hucknall businesses in person?", a: "Yes. We are based in Hucknall and can combine local discovery with remote delivery and a review cadence agreed in the project scope." },
+      { q: "How much does web design in Hucknall cost?", a: "Pricing depends on scope, content, integrations and delivery risk. Current verified guidance is maintained on the pricing page, followed by a project-specific proposal." },
       { q: "Can you redesign an existing local business website?", a: "Yes. We audit the current site, identify conversion and SEO gaps, then rebuild around the outcomes the business needs." },
       { q: "Will the site be built for local SEO?", a: "Yes. We structure pages, metadata, headings, schema, internal links, and buyer FAQs around real local search intent rather than repeating place names." },
     ],
@@ -87,7 +87,7 @@ export const landingPages: Record<string, LandingPage> = {
     buildLogLinks: ["quote-system-hardening", "admin-dashboard-foundation", "scalesmiths-platform-build"],
     relatedPages: ["web-development-nottingham", "custom-web-app-development-uk"],
     faqs: [
-      { q: "Can you move us away from Shopify?", a: "Yes. We can assess whether a custom build is justified and plan migration around zero or minimal downtime." },
+      { q: "Can you move us away from Shopify?", a: "Yes. We can assess whether a custom build is justified and plan a controlled migration with rollback and validation requirements defined before cutover." },
       { q: "Do you build custom product management tools?", a: "Yes. Admin workflows are often where custom e-commerce delivers the biggest operational gain." },
       { q: "Can you integrate payments and fulfilment?", a: "Yes. We plan payment, order, email, and fulfilment integrations as part of the commerce architecture." },
       { q: "Do we need a fully custom e-commerce platform?", a: "Not always. We will say when Shopify, WooCommerce, or another platform is the better commercial move, and reserve custom work for the parts that genuinely need it." },
@@ -137,7 +137,7 @@ export const landingPages: Record<string, LandingPage> = {
     faqs: [
       { q: "What counts as a custom web app?", a: "Client portals, dashboards, SaaS platforms, internal systems, booking tools, and any browser-based workflow software built around your process." },
       { q: "How do you scope complex web apps?", a: "We start with discovery, define core workflows and roles, then split the build into phases that reduce risk." },
-      { q: "Can you maintain the app after launch?", a: "Yes. Most custom app clients continue on a retainer for support, improvements, monitoring, and roadmap delivery." },
+      { q: "Can you maintain the app after launch?", a: "Yes. Optional post-launch support can cover maintenance, improvements, monitoring and roadmap delivery." },
       { q: "Can you start with an MVP?", a: "Yes. We define the smallest useful product surface, prove the core workflow, and avoid committing budget to untested extras too early." },
     ],
   },

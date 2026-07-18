@@ -39,6 +39,7 @@ describe("server request enforcement", () => {
     expect(authorizeRequest("viewer", { pathname: "/api/prospects", method: "POST" })).toMatchObject({ allowed: false, capability: "leads.write" })
     expect(authorizeRequest("sales", { pathname: "/api/forge/projects/12/research", method: "POST" })).toMatchObject({ allowed: false, capability: "forge.execute" })
     expect(authorizeRequest("viewer", { pathname: "/api/admin-users/user-id", method: "PATCH" })).toMatchObject({ allowed: false, capability: "users.manage" })
+    expect(authorizeRequest("viewer", { pathname: "/api/claims/testimonial.glow-tanning.tom", method: "PATCH" })).toMatchObject({ allowed: false, capability: "claims.manage" })
   })
 
   it("allows reviewed direct route operations", () => {
@@ -53,6 +54,8 @@ describe("server request enforcement", () => {
     expect(requiredCapabilityForRequest({ pathname: "/api/forge/projects/1/integrations/resend", method: "PATCH" })).toBe("forge.configure")
     expect(requiredCapabilityForRequest({ pathname: "/api/forge/projects/1/deploy", method: "POST" })).toBe("deployments.execute")
     expect(requiredCapabilityForRequest({ pathname: "/api/forge/projects/1/sitemap", method: "PATCH" })).toBe("forge.approve")
+    expect(requiredCapabilityForRequest({ pathname: "/claims", method: "GET" })).toBe("claims.read")
+    expect(requiredCapabilityForRequest({ pathname: "/api/claims/hero.revenue-generated", method: "PATCH" })).toBe("claims.manage")
   })
 
   it("fails database query scoping closed without the read capability", () => {

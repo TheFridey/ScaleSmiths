@@ -7,9 +7,12 @@ import { ArrowLeft, CheckCircle2, ExternalLink } from "lucide-react"
 import { AnimateIn } from "@/components/AnimateIn"
 import { CTA }       from "@/components/CTA"
 import { Project, projects }  from "@/lib/data"
-import { buildLogs, getBuildLog, type BuildLog } from "@/lib/build-logs"
+import { getBuildLog, type BuildLog } from "@/lib/build-logs"
+import { publicClaimMap, type PublicClaim } from "@/lib/public-claims"
+import { getVerifiedPublicClaims } from "@/lib/public-claims.server"
 
 interface Props { params: Promise<{ slug: string }> }
+export const dynamic = "force-dynamic"
 
 function ProjectShowcase({ project }: { project: Project }) {
   const hasScreenshots = Boolean(project.screenshots?.length)
@@ -112,8 +115,8 @@ function ProjectShowcase({ project }: { project: Project }) {
               <div className="flex flex-col gap-4">
                 <div className="rounded-xl border border-white/10 bg-black/25 p-5 shadow-xl backdrop-blur">
                   <div className="mb-4 h-2 w-20 rounded-full bg-white/15" />
-                  <div className="font-syne text-3xl font-extrabold" style={{ color: project.accentColor }}>
-                    {project.year}
+                  <div className="font-syne text-xl font-extrabold" style={{ color: project.accentColor }}>
+                    Case study
                   </div>
                   <div className="mt-2 h-2 w-full rounded-full bg-white/10" />
                   <div className="mt-2 h-2 w-2/3 rounded-full bg-white/10" />
@@ -152,10 +155,6 @@ function ProjectShowcase({ project }: { project: Project }) {
   )
 }
 
-export function generateStaticParams() {
-  return [...buildLogs.map((log) => ({ slug: log.slug })), ...projects.map((p) => ({ slug: p.slug }))]
-}
-
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
   const log = getBuildLog(slug)
@@ -183,7 +182,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
-function BuildLogPage({ log }: { log: BuildLog }) {
+function BuildLogPage({ log, verifiedBusinessValue, verifiedOutcome }: { log: BuildLog; verifiedBusinessValue?: string; verifiedOutcome?: string }) {
   const schema = {
     "@context": "https://schema.org",
     "@type": "TechArticle",
@@ -217,8 +216,8 @@ function BuildLogPage({ log }: { log: BuildLog }) {
           {[
             ["Problem", log.problem],
             ["Solution", log.solution],
-            ["Business value", log.businessValue],
-            ["Verifiable outcome", log.outcome],
+            ...(verifiedBusinessValue ? [["Verified business value", verifiedBusinessValue]] : []),
+            ...(verifiedOutcome ? [["Verified outcome", verifiedOutcome]] : []),
           ].map(([title, copy]) => (
             <AnimateIn key={title} className="rounded-2xl border border-b1 bg-s1 p-6">
               <h2 className="font-syne text-xl font-bold">{title}</h2>
@@ -247,10 +246,17 @@ function BuildLogPage({ log }: { log: BuildLog }) {
 export default async function ProjectPage({ params }: Props) {
   const { slug } = await params
   const log = getBuildLog(slug)
-  if (log) return <BuildLogPage log={log} />
+  if (log) {
+    const claims = publicClaimMap(await getVerifiedPublicClaims({ route: `/work/${slug}`, component: "build_log_claims" }))
+    return <BuildLogPage log={log} verifiedBusinessValue={claims.get(`build-log.${slug}.business-value`)?.approvedWording} verifiedOutcome={claims.get(`build-log.${slug}.outcome`)?.approvedWording} />
+  }
 
   const p = projects.find((x) => x.slug === slug)
   if (!p) notFound()
+  const claims: ReadonlyMap<string, PublicClaim> = publicClaimMap(await getVerifiedPublicClaims({ route: `/work/${slug}`, component: "project_outcomes" }))
+  const verifiedOutcomes = p.outcomeClaimIds
+    .map((id) => claims.get(id)?.approvedWording)
+    .filter((value): value is string => Boolean(value))
 
   return (
     <>
@@ -275,7 +281,7 @@ export default async function ProjectPage({ params }: Props) {
                 {p.name}
               </h1>
               <div className="font-dm text-t2 text-lg mt-2">
-                {p.type} · {p.location} · {p.year}
+                {p.type} · {p.location}
               </div>
             </div>
           </div>
@@ -311,9 +317,9 @@ export default async function ProjectPage({ params }: Props) {
             </AnimateIn>
 
             <AnimateIn delay={0.1}>
-              <h2 className="font-syne text-2xl font-bold mb-5 text-t1">Outcomes</h2>
+              <h2 className="font-syne text-2xl font-bold mb-5 text-t1">{verifiedOutcomes.length ? "Verified outcomes" : "Delivered capabilities"}</h2>
               <ul className="flex flex-col gap-3">
-                {p.outcomes.map((o) => (
+                {(verifiedOutcomes.length ? verifiedOutcomes : p.features.slice(0, 3)).map((o) => (
                   <li key={o} className="flex items-start gap-3">
                     <CheckCircle2 size={16} className="text-success shrink-0 mt-0.5" aria-hidden="true" />
                     <span className="font-dm text-base text-t1">{o}</span>
@@ -346,10 +352,6 @@ export default async function ProjectPage({ params }: Props) {
               <div className="mt-4">
                 <div className="font-dm text-xs text-t2 mb-1">Location</div>
                 <div className="font-syne text-sm font-semibold">{p.location}</div>
-              </div>
-              <div className="mt-4">
-                <div className="font-dm text-xs text-t2 mb-1">Year</div>
-                <div className="font-syne text-sm font-semibold">{p.year}</div>
               </div>
               <Link
                 href="/quote"

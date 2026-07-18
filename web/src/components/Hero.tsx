@@ -28,7 +28,7 @@ function renderHeroLine(text: string) {
   ))
 }
 
-export function Hero() {
+export function Hero({ verifiedStats = [] }: { verifiedStats?: string[] }) {
   const heroRef = useRef<HTMLElement>(null)
 
   useLayoutEffect(() => {
@@ -110,7 +110,7 @@ export function Hero() {
       <div className="relative z-10 flex w-full flex-col items-center">
         <div className="hero-badge font-dm" role="status">
           <span className="hero-badge-dot" aria-hidden="true" />
-          Available for new projects
+          Plan your next digital project
         </div>
 
         <h1 className="mb-6 w-full">
@@ -159,14 +159,15 @@ export function Hero() {
         </div>
 
         <div className="hero-stats flex flex-wrap gap-14 justify-center mt-20">
-          {[
-            { n: "12+", l: "Projects Delivered" },
-            { n: "\u00a3300k+", l: "Revenue Generated" },
-            { n: "100%", l: "Retainer Retention Rate" },
-          ].map((s) => (
-            <div key={s.n} className="text-center">
-              <div className="font-syne text-[28px] font-extrabold text-t1">{s.n}</div>
-              <div className="font-dm text-xs text-t2 mt-1 tracking-wider">{s.l}</div>
+          {(verifiedStats.length > 0
+            ? verifiedStats
+            : ["Conversion websites", "E-commerce systems", "Custom web applications"]
+          ).map((statement) => (
+            <div key={statement} className="max-w-[220px] text-center">
+              <div className="font-syne text-[19px] font-extrabold text-t1">{statement}</div>
+              <div className="font-dm text-xs text-t2 mt-1 tracking-wider">
+                {verifiedStats.length > 0 ? "Verified public claim" : "ScaleSmiths capability"}
+              </div>
             </div>
           ))}
         </div>

@@ -51,12 +51,12 @@ export const serviceHubItems = [
 ]
 
 export const pricingItems = [
-  { name: "One-page business site", range: "Starting from GBP 2,500", note: "Focused single-page presence for a clear offer or campaign." },
-  { name: "Local business growth site", range: "Typical range GBP 4,500-6,500", note: "Multi-page local site with conversion and SEO foundations." },
-  { name: "E-commerce site", range: "Typical range GBP 8,000-15,000", note: "Commerce UX, product structure, payments, and admin workflows." },
-  { name: "Custom web app", range: "Typical range GBP 18,000-35,000+", note: "Database-backed product, portal, dashboard, or SaaS surface." },
-  { name: "Ongoing care plans", range: "From GBP 450/month", note: "Maintenance, monitoring, improvements, and retained technical support." },
-  { name: "Hosting / maintenance", range: "Scoped to stack", note: "Deployment, SSL, backups, monitoring, and infrastructure support." },
+  { name: "One-page business site", range: "Scoped after discovery", priceClaimId: "price.one-page", note: "Focused single-page presence for a clear offer or campaign." },
+  { name: "Local business growth site", range: "Scoped after discovery", priceClaimId: "price.foundation", note: "Multi-page local site with conversion and SEO foundations." },
+  { name: "E-commerce site", range: "Scoped after discovery", priceClaimId: "price.growth", note: "Commerce UX, product structure, payments, and admin workflows." },
+  { name: "Custom web app", range: "Scoped after discovery", priceClaimId: "price.forge", note: "Database-backed product, portal, dashboard, or SaaS surface." },
+  { name: "Ongoing care plans", range: "Scoped separately", priceClaimId: "price.care-plan", note: "Maintenance, monitoring, improvements, and retained technical support." },
+  { name: "Hosting / maintenance", range: "Scoped to stack", priceClaimId: null, note: "Deployment, SSL, backups, monitoring, and infrastructure support." },
 ]
 
 export function buildServiceHubSchema(baseUrl = "https://scalesmiths.co.uk") {
@@ -82,12 +82,12 @@ export function buildPricingSchema(baseUrl = "https://scalesmiths.co.uk") {
       {
         "@type": "Question",
         name: "How much does a ScaleSmiths project cost?",
-        acceptedAnswer: { "@type": "Answer", text: "Projects are scoped by business outcome and complexity. Local growth sites typically start from GBP 4,500, while custom web apps are usually GBP 18,000+." },
+        acceptedAnswer: { "@type": "Answer", text: "Projects are scoped by business outcome and complexity. Any current verified guidance appears in the pricing cards; the final price follows a project-specific proposal." },
       },
       {
         "@type": "Question",
         name: "Do you offer ongoing care plans?",
-        acceptedAnswer: { "@type": "Answer", text: "Yes. Care plans start from GBP 450/month and cover maintenance, monitoring, improvements, and retained technical support." },
+        acceptedAnswer: { "@type": "Answer", text: "Yes. Care plans can cover maintenance, monitoring, improvements, and retained technical support. Scope and any current verified guidance appear on this page." },
       },
     ],
     url: `${baseUrl}/pricing`,

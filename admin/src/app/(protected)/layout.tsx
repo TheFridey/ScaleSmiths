@@ -19,6 +19,7 @@ import {
   Users,
   UserCog,
   ShieldCheck,
+  BadgeCheck,
 } from "lucide-react"
 import { Logo } from "@/components/Logo"
 import { isNavigationVisible, type Capability } from "@/lib/rbac"
@@ -37,6 +38,7 @@ const NAV: Array<{ href: string; label: string; Icon: typeof LayoutDashboard; ca
   { href: "/messages", label: "Messages", Icon: MessageSquare, capability: "clients.read" },
   { href: "/users", label: "Admin users", Icon: UserCog, capability: "users.manage" },
   { href: "/security", label: "Security", Icon: ShieldCheck, capability: "settings.manage" },
+  { href: "/claims", label: "Claims", Icon: BadgeCheck, capability: "claims.read" },
 ]
 
 export default function ProtectedLayout({ children }: { children: React.ReactNode }) {

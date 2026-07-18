@@ -21,6 +21,8 @@ flowchart LR
 
 The marketing site is public. Quote submission is untrusted input and is protected by body limits, validation, honeypot/rate-limit logic, normalized fields, database persistence, and fail-aware Resend delivery status. The public production container receives only its web runtime database URL; server/client separation in Next.js remains important and only `NEXT_PUBLIC_*` variables may enter browser bundles.
 
+Commercial claims and testimonials fail closed. Admin stores proposed wording, private evidence references and review audit data in base tables; the web role cannot read those tables and can only select the restricted `public_verified_claims` view. The view requires an evidence row, verified/client-approved state and a future review date, while components additionally enforce route/component permissions. Missing database access produces neutral capability copy or no testimonial, not an unverified fallback.
+
 Portal login accepts untrusted credentials, uses bcrypt for stored accounts, database-backed login limits, and an HTTP-only, SameSite=Lax, production-secure JWT cookie. Every portal resource is filtered by the session client ID. Internal request messages are excluded from client-visible queries. Demo authentication is an explicit environment override and must remain disabled in production.
 
 ## Admin boundary
@@ -58,10 +60,6 @@ Pattern scanning is not a complete code-security proof. Obfuscated code, dynamic
 
 Preview defaults to `127.0.0.1`, and non-loopback configuration is ignored unless public previews are explicitly enabled. Host Nginx exposes only web/admin services. `generated-sites` is bind-mounted into admin and is never configured as an Nginx document root. Forge export returns reviewed archives; deploy readiness does not imply public exposure.
 
-## Database boundary
-
-Both apps use the same database credential and therefore have database-level access beyond their logical ownership. Isolation is implemented in application queries, not PostgreSQL roles or row-level security. Admin and web independently declare shared tables and run separate migration histories. A migration collision or schema drift can affect both applications.
-
 ## Email and integration boundaries
 
 The public app sends quote and client-request notifications through server-only Resend credentials. Forge stores non-secret Resend project configuration and represents the key as environment-owned/redacted. Generated sites refer to `RESEND_API_KEY` only from generated server routes. WhatsApp V1 produces `wa.me` integration behaviour; future Cloud API variables are documented but not a current browser credential path.
@@ -77,7 +75,7 @@ Restore commands reject the production repository, require isolation words in bo
 - CI now runs dependency review, verified-secret scanning, npm audit thresholds, Dockerfile linting, container scanning, SBOM generation, migration/integration checks, CodeQL and sandbox fixtures;
 - generated-site candidate creation now evaluates exact lockfile packages, source, licence, reviewed native/lifecycle risk and npm vulnerability evidence, then binds a per-site SPDX SBOM and admission report to the immutable workspace hash;
 - no integration test for host-Nginx headers/TLS/routing;
-- no database role separation or row-level security;
+- PostgreSQL role provisioning and selected analytics RLS are implemented, but schema ownership/grants still require production rollout verification against an isolated backup restore;
 - no distributed admin/Forge rate limiter;
 - no automated restoration/reconciliation of orphaned preview processes or containers;
 - RBAC matrix and direct-route tests exist, but there is no exhaustive end-to-end authorization matrix across every admin and portal API.

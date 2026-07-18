@@ -153,7 +153,7 @@ export function Hero({ verifiedStats = [] }: { verifiedStats?: string[] }) {
           </Link>
           <DiscoveryCallLink className="btn-ghost gap-2 font-dm" source="homepage_hero" />
           <Link href="/services" prefetch={false} className="btn-ghost font-dm" data-magnetic>
-            View Services <ArrowUpRight size={16} aria-hidden="true" />
+            Choose Your Route <ArrowUpRight size={16} aria-hidden="true" />
           </Link>
         </div>
 

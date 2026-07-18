@@ -31,3 +31,15 @@ test("stored interactive preference reaches the interactive shell outside Chromi
   await expect(page.getByRole("link", { name: /exit to normal site/i })).toBeVisible()
   await consoleGuard.expectClean()
 })
+
+test("service buyers can reach both differentiated journeys outside Chromium", async ({ page }) => {
+  await gotoReady(page, "/services")
+  await expect(page.getByRole("link", { name: /explore local growth/i }).first()).toHaveAttribute("href", "/local-growth")
+  await expect(page.getByRole("link", { name: /explore custom systems/i }).first()).toHaveAttribute("href", "/custom-systems")
+
+  await gotoReady(page, "/local-growth")
+  await expect(page.getByRole("heading", { level: 1, name: /trusted enquiries and bookings/i })).toBeVisible()
+
+  await gotoReady(page, "/custom-systems")
+  await expect(page.getByRole("heading", { level: 1, name: /workflow actually needs/i })).toBeVisible()
+})

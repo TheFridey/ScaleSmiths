@@ -10,7 +10,8 @@ import { cn } from "@/lib/utils"
 const links = [
   { href: "/work", label: "Our Work" },
   { href: "/services", label: "Services" },
-  { href: "/quote", label: "Get a Quote" },
+  { href: "/local-growth", label: "Local Growth" },
+  { href: "/custom-systems", label: "Custom Systems" },
 ]
 
 export function Nav() {
@@ -57,7 +58,7 @@ export function Nav() {
         <Logo showName={false} size={38} />
 
         {/* Desktop links */}
-        <div className="hidden md:flex items-center gap-8 ml-auto">
+        <div className="hidden md:flex items-center gap-6 ml-auto">
           {links.map((lk) => (
             <NavLink key={lk.href} lk={lk} />
           ))}

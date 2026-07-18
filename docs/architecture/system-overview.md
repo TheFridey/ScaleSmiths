@@ -33,7 +33,7 @@ flowchart LR
 
 - `/`: canonical conventional marketing homepage, with a human-only first-visit choice or interactive CTA selected by the controlled experience experiment. The legacy `/traditional` path permanently redirects to `/?experience=normal` and is not indexable or listed in the sitemap.
 - `/interactive`: V2 interactive experience, including `V2InteractiveExperience`, `BusinessSimulationLayer`, conversion UI, and the dynamically loaded Three.js `ClientSceneCanvas`.
-- `/services`, `/pricing`, `/work`, `/quote`, `/local-growth-check`, and SEO landing pages: conventional public acquisition routes. The local growth check is a short funnel over the same secured quote persistence path; the premium quote wizard remains separate and unchanged.
+- `/services`, `/local-growth`, `/custom-systems`, `/pricing`, `/work`, `/quote`, `/local-growth-check`, and SEO landing pages: conventional public acquisition routes. The two service journeys separate local growth from custom systems without changing the ScaleSmiths brand or retiring search-intent pages. The local growth check remains a short funnel over the same secured quote persistence path; the premium quote wizard remains separate and unchanged. See `docs/architecture/public-service-routing.md`.
 - `/api/quote`: validates, rate-limits, persists, scores, and sends lead notifications through Resend.
 - `/portal`: authenticated client operating hub, requests, threaded messages, timeline, and published monthly reports.
 

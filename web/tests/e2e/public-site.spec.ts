@@ -85,7 +85,7 @@ test.describe("public experience SEO routing", () => {
     expect(locations).not.toContain("https://scalesmiths.co.uk/traditional")
     expect(locations.filter((location) => location === "https://scalesmiths.co.uk")).toHaveLength(1)
     expect(new Set(locations).size).toBe(locations.length)
-    expect(xml).toContain("2026-07-18T00:00:00.000Z")
+    expect(xml).toContain("2026-07-19T00:00:00.000Z")
   })
 
   test("fails closed when commercial claims have no verified public evidence", async ({ page }) => {
@@ -192,6 +192,46 @@ test.describe("public experience preference", () => {
 })
 
 test.describe("public navigation and accessibility behaviours", () => {
+  test("routes buyers into distinct local-growth and custom-systems journeys", async ({ page }) => {
+    await setExperience(page, "normal")
+    await gotoReady(page, "/services")
+
+    const mainNavigation = page.getByRole("navigation", { name: /main navigation/i })
+    await expect(mainNavigation.getByRole("link", { name: "Local Growth", exact: true })).toHaveAttribute("href", "/local-growth")
+    await expect(mainNavigation.getByRole("link", { name: "Custom Systems", exact: true })).toHaveAttribute("href", "/custom-systems")
+    await expect(page.getByRole("heading", { name: /different problems need different buying journeys/i })).toBeVisible()
+
+    await gotoReady(page, "/local-growth")
+    await expect(page.getByRole("heading", { level: 1, name: /trusted enquiries and bookings/i })).toBeVisible()
+    await expect(page.getByText("Trades and home services", { exact: true })).toBeVisible()
+    await expect(page.getByRole("link", { name: /request a local growth check/i }).first()).toHaveAttribute("href", "/local-growth-check")
+    await expect(page.getByRole("link", { name: /glow tanning/i })).toHaveAttribute("href", "/work/glow-tanning")
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", /\/local-growth$/)
+    expect((await page.locator('script[type="application/ld+json"]').allTextContents()).join(" ")).toContain("BreadcrumbList")
+
+    await gotoReady(page, "/custom-systems")
+    await expect(page.getByRole("heading", { level: 1, name: /workflow actually needs/i })).toBeVisible()
+    await expect(page.getByText("SaaS and product founders", { exact: true })).toBeVisible()
+    await expect(page.getByRole("link", { name: /start a project brief/i }).first()).toHaveAttribute("href", "/quote")
+    await expect(page.getByRole("link", { name: /request a strategy call/i }).first()).toHaveAttribute("href", "/quote?intent=strategy_call")
+    await expect(page.getByRole("link", { name: /the business circle/i })).toHaveAttribute("href", "/work/the-business-circle")
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", /\/custom-systems$/)
+  })
+
+  test("keeps both service journeys usable without horizontal overflow on mobile", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+
+    for (const path of ["/local-growth", "/custom-systems"] as const) {
+      await gotoReady(page, path)
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true)
+    }
+
+    await page.getByRole("button", { name: /open menu/i }).click()
+    const mobileHeader = page.getByRole("banner")
+    await expect(mobileHeader.getByRole("link", { name: "Local Growth", exact: true }).last()).toBeVisible()
+    await expect(mobileHeader.getByRole("link", { name: "Custom Systems", exact: true }).last()).toBeVisible()
+  })
+
   test("supports keyboard navigation and visible focus states", async ({ page }) => {
     await setExperience(page, "normal")
     await gotoReady(page, "/")
@@ -211,6 +251,8 @@ test.describe("public navigation and accessibility behaviours", () => {
     await setExperience(page, "normal")
     await gotoReady(page, "/")
 
+    await expect(page.getByRole("link", { name: /explore local growth/i })).toHaveAttribute("href", "/local-growth")
+    await expect(page.getByRole("link", { name: /explore custom systems/i })).toHaveAttribute("href", "/custom-systems")
     const servicesLink = page.getByRole("navigation", { name: /main navigation/i }).getByRole("link", { name: /services/i })
     await expect(servicesLink).toHaveAttribute("href", "/services")
     await servicesLink.click({ noWaitAfter: true })

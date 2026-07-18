@@ -5,6 +5,8 @@ const links = [
   { href: "/", label: "Home" },
   { href: "/work", label: "Our Work" },
   { href: "/services", label: "Services" },
+  { href: "/local-growth", label: "Local Growth" },
+  { href: "/custom-systems", label: "Custom Systems" },
   { href: "/quote", label: "Get a Quote" },
   ...LEGAL_LINKS,
 ]

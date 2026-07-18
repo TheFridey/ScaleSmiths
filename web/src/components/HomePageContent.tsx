@@ -9,6 +9,7 @@ import { Portfolio } from "@/components/Portfolio"
 import { Process } from "@/components/Process"
 import { ProofSection } from "@/components/ProofSection"
 import { Services } from "@/components/Services"
+import { ServiceRouteChooser } from "@/components/ServiceRouteChooser"
 import { TechStack } from "@/components/TechStack"
 import { Testimonials } from "@/components/Testimonials"
 import { Ticker } from "@/components/Ticker"
@@ -35,11 +36,7 @@ export async function HomePageContent() {
   return (
     <>
       <Hero verifiedStats={heroStats} />
-      <InlineCTA
-        label="Start smart"
-        title="Know what to build before you spend."
-        body="Send the brief and we will map the highest-leverage route: site, store, portal, app, or infrastructure."
-      />
+      <ServiceRouteChooser compact />
       <Ticker />
       <BuildProofBlocks />
       <Services claims={serviceClaims} />

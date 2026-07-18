@@ -4,7 +4,7 @@ import { projects } from "./data"
 import { landingPages } from "./landing-pages"
 import { legalSitemapEntries } from "./legal"
 
-export const PUBLIC_CONTENT_LAST_MODIFIED_ISO = "2026-07-18T00:00:00.000Z"
+export const PUBLIC_CONTENT_LAST_MODIFIED_ISO = "2026-07-19T00:00:00.000Z"
 
 export function buildPublicSitemap(siteUrl = "https://scalesmiths.co.uk"): MetadataRoute.Sitemap {
   const base = siteUrl.replace(/\/$/, "")
@@ -14,6 +14,8 @@ export function buildPublicSitemap(siteUrl = "https://scalesmiths.co.uk"): Metad
     { url: `${base}/interactive`, lastModified: lastModified(), changeFrequency: "monthly", priority: 0.7 },
     { url: `${base}/work`,        lastModified: lastModified(), changeFrequency: "monthly", priority: 0.9 },
     { url: `${base}/services`,    lastModified: lastModified(), changeFrequency: "monthly", priority: 0.9 },
+    { url: `${base}/local-growth`, lastModified: lastModified(), changeFrequency: "monthly", priority: 0.9 },
+    { url: `${base}/custom-systems`, lastModified: lastModified(), changeFrequency: "monthly", priority: 0.9 },
     { url: `${base}/pricing`,     lastModified: lastModified(), changeFrequency: "monthly", priority: 0.8 },
     { url: `${base}/quote`,       lastModified: lastModified(), changeFrequency: "yearly", priority: 0.7 },
     { url: `${base}/local-growth-check`, lastModified: lastModified(), changeFrequency: "monthly", priority: 0.8 },

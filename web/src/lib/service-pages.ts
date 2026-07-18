@@ -1,5 +1,6 @@
 export const serviceHubItems = [
   {
+    journey: "local-growth" as const,
     title: "Conversion-focused websites",
     for: "Founder-led businesses that need the website to create qualified enquiries, not just exist.",
     includes: "Messaging, UX, responsive build, analytics foundations, quote CTA paths, and launch support.",
@@ -7,6 +8,7 @@ export const serviceHubItems = [
     links: ["/web-design-hucknall", "/web-development-nottingham"],
   },
   {
+    journey: "local-growth" as const,
     title: "Local business websites",
     for: "Service businesses in Hucknall, Nottingham, and across the UK that need local trust and visibility.",
     includes: "Local SEO structure, service pages, conversion copy, fast pages, and Google-ready metadata.",
@@ -14,6 +16,7 @@ export const serviceHubItems = [
     links: ["/web-design-hucknall", "/web-development-nottingham"],
   },
   {
+    journey: "custom-systems" as const,
     title: "E-commerce builds",
     for: "Brands that have outgrown generic store templates or need custom product workflows.",
     includes: "Product UX, variant strategy, payment planning, admin workflows, and migration support.",
@@ -21,6 +24,7 @@ export const serviceHubItems = [
     links: ["/e-commerce-development-nottingham"],
   },
   {
+    journey: "custom-systems" as const,
     title: "Custom web apps",
     for: "Teams with workflows that off-the-shelf tools cannot handle cleanly.",
     includes: "User roles, database-backed features, dashboards, portals, integrations, and deployment.",
@@ -28,6 +32,7 @@ export const serviceHubItems = [
     links: ["/custom-web-app-development-uk", "/next-js-agency-uk"],
   },
   {
+    journey: "local-growth" as const,
     title: "SEO/AEO landing pages",
     for: "Businesses that need service/location pages that answer buyer questions with depth.",
     includes: "Canonical metadata, FAQ schema, service schema, internal links, and direct buyer FAQs.",
@@ -35,6 +40,7 @@ export const serviceHubItems = [
     links: ["/web-design-hucknall", "/next-js-agency-uk"],
   },
   {
+    journey: "local-growth" as const,
     title: "Ongoing care plans",
     for: "Businesses that want the site maintained, improved, and kept technically healthy after launch.",
     includes: "Updates, monitoring, small improvements, content support, and roadmap advice.",
@@ -42,6 +48,7 @@ export const serviceHubItems = [
     links: ["/pricing"],
   },
   {
+    journey: "local-growth" as const,
     title: "Hosting and maintenance",
     for: "Clients who want production hosting, deployment support, backups, and someone accountable.",
     includes: "VPS or managed deployment, uptime checks, SSL, dependency updates, and incident support.",

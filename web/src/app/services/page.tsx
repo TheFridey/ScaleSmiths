@@ -3,6 +3,7 @@ import Link from "next/link"
 import { ArrowRight, CheckCircle2 } from "lucide-react"
 import { AnimateIn } from "@/components/AnimateIn"
 import { CTA } from "@/components/CTA"
+import { ServiceRouteChooser } from "@/components/ServiceRouteChooser"
 import { buildServiceHubSchema, serviceHubItems } from "@/lib/service-pages"
 
 export const metadata: Metadata = {
@@ -24,20 +25,30 @@ export default function ServicesPage() {
             Commercial web builds, not template theatre.
           </h1>
           <p className="mt-5 font-dm text-lg leading-relaxed text-t2">
-            ScaleSmiths builds the public site, sales funnel, technical system, and care plan around the business outcome.
+            Choose between a local growth journey and a custom systems journey, then explore the detailed capabilities that support it.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="/quote" prefetch={false} className="btn-primary font-dm">Request a Quote <ArrowRight size={16} aria-hidden="true" /></Link>
+            <Link href="/local-growth" prefetch={false} className="btn-primary font-dm">Explore Local Growth <ArrowRight size={16} aria-hidden="true" /></Link>
+            <Link href="/custom-systems" prefetch={false} className="btn-ghost font-dm">Explore Custom Systems</Link>
             <Link href="/pricing" prefetch={false} className="btn-ghost font-dm">View Pricing Guidance</Link>
           </div>
         </AnimateIn>
       </section>
 
+      <ServiceRouteChooser />
+
       <section className="px-6 pb-20 md:px-12">
-        <div className="mx-auto grid max-w-[1240px] gap-3 md:grid-cols-2">
+        <div className="mx-auto max-w-[1240px]">
+          <span className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">Detailed capabilities</span>
+          <h2 className="mt-2 font-syne text-3xl font-extrabold">The work inside each route.</h2>
+        </div>
+        <div className="mx-auto mt-8 grid max-w-[1240px] gap-3 md:grid-cols-2">
           {serviceHubItems.map((service) => (
             <article key={service.title} className="rounded-2xl border border-b1 bg-s1 p-6">
               <h2 className="font-syne text-2xl font-bold">{service.title}</h2>
+              <Link href={`/${service.journey}`} prefetch={false} className="mt-2 inline-flex font-dm text-xs font-semibold uppercase tracking-[.09em] text-acc">
+                {service.journey.replace("-", " ")} route
+              </Link>
               <div className="mt-5 grid gap-4">
                 {[
                   ["Who it is for", service.for],
@@ -54,7 +65,9 @@ export default function ServicesPage() {
                 ))}
               </div>
               <div className="mt-6 flex flex-wrap gap-2">
-                <Link href="/quote" prefetch={false} className="btn-primary font-dm text-sm">Request a Quote</Link>
+                <Link href={service.journey === "local-growth" ? "/local-growth-check" : "/quote"} prefetch={false} className="btn-primary font-dm text-sm">
+                  {service.journey === "local-growth" ? "Request a Local Growth Check" : "Start a Project Brief"}
+                </Link>
                 {service.links.map((href) => (
                   <Link key={href} href={href} prefetch={false} className="btn-ghost font-dm text-sm">{href.replace("/", "").replaceAll("-", " ")}</Link>
                 ))}

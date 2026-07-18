@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { ArrowRight } from "lucide-react"
+import { DiscoveryCallLink } from "./DiscoveryCallLink"
 
 interface InlineCTAProps {
   label: string
@@ -20,9 +21,7 @@ export function InlineCTA({ label, title, body }: InlineCTAProps) {
           <Link href="/quote" prefetch={false} className="btn-primary font-dm text-sm">
             Request a Quote <ArrowRight size={15} aria-hidden="true" />
           </Link>
-          <Link href="/quote" prefetch={false} className="btn-ghost font-dm text-sm">
-            Book a Discovery Call
-          </Link>
+          <DiscoveryCallLink className="btn-ghost gap-2 font-dm text-sm" source={`inline_cta:${label}`} />
           <Link href="/services" prefetch={false} className="btn-ghost font-dm text-sm">
             View Services
           </Link>

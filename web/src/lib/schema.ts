@@ -61,6 +61,7 @@ export const quoteRequests = pgTable("quote_requests", {
   needs: text("needs"),
   carePlanInterest: text("care_plan_interest"),
   preferredContactMethod: text("preferred_contact_method"),
+  enquiryIntent: text("enquiry_intent").default("quote").notNull(),
   consent: boolean("consent").default(false).notNull(),
   leadQuality: text("lead_quality").default("medium").notNull(),
   emailDeliveryStatus: text("email_delivery_status").default("pending").notNull(),

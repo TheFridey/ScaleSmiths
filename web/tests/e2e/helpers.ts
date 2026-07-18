@@ -108,8 +108,8 @@ export async function openInteractivePlan(page: Page) {
   await expect(page.getByRole("heading", { name: /system summary/i })).toBeVisible()
 }
 
-export async function submitQuoteWizard(page: Page) {
-  await gotoReady(page, "/quote")
+export async function submitQuoteWizard(page: Page, quotePath = "/quote") {
+  await gotoReady(page, quotePath)
   await page.getByLabel(/full name/i).fill("Pat Test")
   await page.getByLabel(/email address/i).fill("pat@example.com")
   await page.getByLabel(/company name/i).fill("Pat Test Studio")

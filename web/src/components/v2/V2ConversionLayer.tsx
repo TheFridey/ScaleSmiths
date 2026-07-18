@@ -26,7 +26,17 @@ interface ConversionFormData {
   consent: boolean
 }
 
-type ConversionIntent = "Book a Strategy Call" | "Request a V2 Demo" | "Send Me This Plan"
+const conversionOptions = [
+  { id: "strategy_call", label: "Request a Strategy Call", Icon: ClipboardList },
+  { id: "v2_demo", label: "Request a V2 Demo", Icon: Sparkles },
+  { id: "email_plan", label: "Email This Plan", Icon: MailCheck },
+] as const
+
+type ConversionIntent = (typeof conversionOptions)[number]["id"]
+
+function conversionIntentLabel(intent: ConversionIntent) {
+  return conversionOptions.find((option) => option.id === intent)?.label ?? "Request a Strategy Call"
+}
 
 const recommendedSystem = [
   "Website",
@@ -86,7 +96,7 @@ function buildBrief({
   return [
     "ScaleSmiths V2 interactive journey enquiry",
     "",
-    `Requested next step: ${intent}`,
+    `Requested next step: ${conversionIntentLabel(intent)}`,
     `Journey industry: ${journeyIndustry}`,
     `Form industry: ${formIndustry}`,
     `Selected summary: ${contentName}`,
@@ -121,7 +131,7 @@ export function V2ConversionLayer({ industry }: V2ConversionLayerProps) {
     website: "",
     consent: false,
   })
-  const [intent, setIntent] = useState<ConversionIntent>("Book a Strategy Call")
+  const [intent, setIntent] = useState<ConversionIntent>("strategy_call")
   const [error, setError] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
@@ -140,7 +150,7 @@ export function V2ConversionLayer({ industry }: V2ConversionLayerProps) {
 
   function chooseIntent(nextIntent: ConversionIntent) {
     setIntent(nextIntent)
-    trackExperienceEvent("quote_cta_clicked", { preference: "interactive", metadata: { target: nextIntent } })
+    trackExperienceEvent("quote_cta_clicked", { preference: "interactive", metadata: { source: "interactive_conversion", intent: nextIntent, target: nextIntent } })
     formRef.current?.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "center" })
   }
 
@@ -178,13 +188,14 @@ export function V2ConversionLayer({ industry }: V2ConversionLayerProps) {
           biz: formData.businessName,
           websiteUrl: "",
           businessType: formContent.name,
-          type: `ScaleSmiths V2 interactive journey - ${intent}`,
+          type: `ScaleSmiths V2 interactive journey - ${conversionIntentLabel(intent)}`,
           budget: formData.budget,
           timeframe: formData.timeline,
           goal: formData.goal,
           needs: recommendedSystem.slice(0, 8),
           carePlanInterest: "Maybe",
           preferredContactMethod: formData.phone ? `Email and phone: ${formData.phone}` : "Email",
+          intent,
           consent: formData.consent,
           brief: buildBrief({
             contentName: formContent.name,
@@ -206,10 +217,10 @@ export function V2ConversionLayer({ industry }: V2ConversionLayerProps) {
         throw new Error(json.error || "Unable to send this plan right now.")
       }
 
-      trackExperienceEvent("quote_form_submitted", { preference: "interactive", metadata: { source: "interactive_conversion" } })
+      trackExperienceEvent("quote_form_submitted", { preference: "interactive", metadata: { source: "interactive_conversion", intent } })
       setSubmitted(true)
     } catch (err) {
-      trackExperienceEvent("experience_error", { preference: "interactive", errorCategory: "quote_submission", metadata: { source: "interactive_conversion" } })
+      trackExperienceEvent("experience_error", { preference: "interactive", errorCategory: "quote_submission", metadata: { source: "interactive_conversion", intent } })
       setError(err instanceof Error ? err.message : "Unable to send this plan right now.")
     } finally {
       setSubmitting(false)
@@ -260,18 +271,16 @@ export function V2ConversionLayer({ industry }: V2ConversionLayerProps) {
       <div className="mt-5">
         <p className="mb-2 font-dm text-xs font-semibold uppercase tracking-[0.14em] text-t3">Choose how to continue</p>
       <div className="grid gap-2 sm:grid-cols-3" aria-label="Conversion options">
-        {(["Book a Strategy Call", "Request a V2 Demo", "Send Me This Plan"] as ConversionIntent[]).map((option) => (
+        {conversionOptions.map(({ id, label, Icon }) => (
           <button
-            key={option}
+            key={id}
             type="button"
-            onClick={() => chooseIntent(option)}
+            onClick={() => chooseIntent(id)}
             className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-3 font-dm text-sm font-semibold text-t2 transition hover:-translate-y-0.5 hover:border-acc/40 hover:text-t1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-acc data-[active=true]:border-acc/50 data-[active=true]:bg-acc/10 data-[active=true]:text-acc motion-reduce:transform-none"
-            data-active={intent === option}
+            data-active={intent === id}
           >
-            {option === "Book a Strategy Call" && <ClipboardList size={15} aria-hidden="true" />}
-            {option === "Request a V2 Demo" && <Sparkles size={15} aria-hidden="true" />}
-            {option === "Send Me This Plan" && <MailCheck size={15} aria-hidden="true" />}
-            {option}
+            <Icon size={15} aria-hidden="true" />
+            {label}
           </button>
         ))}
       </div>
@@ -419,7 +428,7 @@ export function V2ConversionLayer({ industry }: V2ConversionLayerProps) {
             disabled={submitting}
             className="mt-1 inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-acc px-5 py-3 font-dm text-sm font-semibold text-bg shadow-[0_0_42px_rgba(34,211,238,0.22)] transition hover:bg-[#67e8f9] disabled:cursor-not-allowed disabled:opacity-65 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-acc sm:justify-self-start"
           >
-            {submitting ? "Sending..." : intent}
+            {submitting ? "Sending..." : conversionIntentLabel(intent)}
             <Send size={15} aria-hidden="true" />
           </button>
         </form>

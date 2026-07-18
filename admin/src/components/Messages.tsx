@@ -19,6 +19,7 @@ interface Lead {
   needs: string | null
   carePlanInterest: string | null
   preferredContactMethod: string | null
+  enquiryIntent: string
   leadQuality: string
   emailDeliveryStatus: string
   emailFailureReason: string | null
@@ -88,6 +89,7 @@ export function Messages({ leads }: { leads: Lead[] }) {
                       ["Website", lead.websiteUrl ?? "Not provided"],
                       ["Care plan", lead.carePlanInterest ?? "Not provided"],
                       ["Preferred contact", lead.preferredContactMethod ?? "Not provided"],
+                      ["Requested next step", lead.enquiryIntent.replaceAll("_", " ")],
                       ["Required features", lead.needs ?? "Not provided"],
                       ["Email delivery", lead.emailDeliveryStatus === "failed" ? `Failed (${lead.emailFailureReason ?? "delivery"})` : lead.emailDeliveryStatus],
                     ].map(([label, value]) => (

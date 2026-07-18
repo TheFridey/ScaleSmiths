@@ -78,6 +78,13 @@
       "when": 1786003200000,
       "tag": "0010_public_claims_registry",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1786089600000,
+      "tag": "0011_quote_enquiry_intent",
+      "breakpoints": true
     }
   ]
 }

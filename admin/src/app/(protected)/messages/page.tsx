@@ -23,6 +23,7 @@ export default async function MessagesPage() {
       needs: quoteRequests.needs,
       carePlanInterest: quoteRequests.carePlanInterest,
       preferredContactMethod: quoteRequests.preferredContactMethod,
+      enquiryIntent: quoteRequests.enquiryIntent,
       leadQuality: quoteRequests.leadQuality,
       emailDeliveryStatus: quoteRequests.emailDeliveryStatus,
       emailFailureReason: quoteRequests.emailFailureReason,

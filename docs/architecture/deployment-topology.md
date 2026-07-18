@@ -68,7 +68,7 @@ The root `.env` is supplied wholesale to Compose services. Ownership below descr
 | Owner | Variables |
 | --- | --- |
 | PostgreSQL/Drizzle | `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`; production-only `WEB_DATABASE_URL`, `ADMIN_DATABASE_URL`, `MIGRATION_DATABASE_URL`; operator-only `POSTGRES_PROVISIONING_DATABASE_URL`; local/test fallback `DATABASE_URL` |
-| Public web | `NEXT_PUBLIC_SITE_URL`, `PORTAL_SECRET`, `DEMO_PORTAL_ENABLED`, `DEMO_PORTAL_EMAIL`, `DEMO_PORTAL_PASSWORD`, `DEMO_PORTAL_CLIENT_ID` |
+| Public web | `NEXT_PUBLIC_SITE_URL`, optional `NEXT_PUBLIC_DISCOVERY_BOOKING_URL`, `PORTAL_SECRET`, `DEMO_PORTAL_ENABLED`, `DEMO_PORTAL_EMAIL`, `DEMO_PORTAL_PASSWORD`, `DEMO_PORTAL_CLIENT_ID` |
 | Admin/Auth.js | `NEXT_PUBLIC_ADMIN_URL=https://admin.scalesmiths.co.uk`, optional server-only `AUTH_URL=https://admin.scalesmiths.co.uk`, `AUTH_SECRET` (or compatibility `NEXTAUTH_SECRET`), `ADMIN_EMAIL`, `ADMIN_PASSWORD` |
 | Web email | `RESEND_API_KEY`, `RESEND_FROM`, `SUPPORT_EMAIL`, `ADMIN_PORTAL_URL`; Forge-generated server routes may also reference `RESEND_API_KEY` at their eventual deployment target |
 | Server error monitoring | Runtime: `ERROR_MONITORING_PROVIDER=sentry`, `ERROR_MONITORING_DSN`, approved-SHA `ERROR_MONITORING_RELEASE`, `ERROR_MONITORING_ENVIRONMENT`, `ERROR_MONITORING_SAMPLE_RATE`, `MONITORING_SELF_TEST_TOKEN`; build-only: `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_WEB_PROJECT`, `SENTRY_ADMIN_PROJECT` |
@@ -79,7 +79,7 @@ The root `.env` is supplied wholesale to Compose services. Ownership below descr
 | Forge preview/sandbox | `FORGE_PREVIEW_HOST`, `FORGE_PREVIEW_PORT_BASE`, `FORGE_ALLOW_PUBLIC_PREVIEWS`, all `FORGE_SANDBOX_*` variables |
 | Future/external integrations | `WHATSAPP_*`, `R2_*`; these are documented/configurable but are not general browser credentials |
 
-Only `NEXT_PUBLIC_SITE_URL` and `NEXT_PUBLIC_ADMIN_URL` are intended for client bundles. Provider, authentication, database, email, WhatsApp, and storage credentials are server-only. The environment hygiene check prevents real `.env*` files from entering the Git/archive surface, but does not validate secret strength or runtime completeness.
+Only `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_DISCOVERY_BOOKING_URL`, and `NEXT_PUBLIC_ADMIN_URL` are intended for client bundles. The booking value must be an HTTPS scheduling URL without embedded credentials; an invalid or empty value fails safely to the enquiry form. Provider, authentication, database, email, WhatsApp, and storage credentials are server-only. The environment hygiene check prevents real `.env*` files from entering the Git/archive surface, but does not validate secret strength or runtime completeness.
 
 ## CI topology
 

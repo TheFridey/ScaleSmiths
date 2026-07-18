@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, ArrowRight } from "lucide-react"
 import { trackExperienceEvent } from "@/lib/experience-analytics-client"
+import { enquiryIntentFromLocation } from "@/lib/enquiry-intents"
 import { EnquiryConsent } from "@/components/EnquiryConsent"
 
 const STEPS = [
@@ -139,6 +140,8 @@ export default function QuotePage() {
     setSubmitting(true)
     setError("")
 
+    const intent = enquiryIntentFromLocation(typeof window === "undefined" ? "" : window.location.search)
+
     try {
       const res = await fetch("/api/quote", {
         method: "POST",
@@ -156,6 +159,7 @@ export default function QuotePage() {
           needs: needsValue(data),
           carePlanInterest: data.carePlanInterest ?? "",
           preferredContactMethod: data.preferredContactMethod ?? "",
+          intent,
           consent: data.consent === "true",
           brief: data.brief ?? "",
           website: data.website ?? "",
@@ -167,10 +171,10 @@ export default function QuotePage() {
         throw new Error(json.error || "Unable to submit your brief.")
       }
 
-      trackExperienceEvent("quote_form_submitted", { metadata: { source: "standard_quote" } })
-      router.push("/quote/thanks")
+      trackExperienceEvent("quote_form_submitted", { metadata: { source: "standard_quote", intent } })
+      router.push(`/quote/thanks?intent=${encodeURIComponent(intent)}`)
     } catch (err) {
-      trackExperienceEvent("experience_error", { errorCategory: "quote_submission", metadata: { source: "standard_quote" } })
+      trackExperienceEvent("experience_error", { errorCategory: "quote_submission", metadata: { source: "standard_quote", intent } })
       setError(err instanceof Error ? err.message : "Unable to submit your brief.")
     } finally {
       setSubmitting(false)

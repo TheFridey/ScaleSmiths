@@ -5,6 +5,7 @@ import dynamic from "next/dynamic"
 import { Fragment, useLayoutEffect, useRef } from "react"
 import gsap from "gsap"
 import { ArrowRight, ArrowUpRight, MapPin } from "lucide-react"
+import { DiscoveryCallLink } from "./DiscoveryCallLink"
 
 const HERO_LINES = ["FORGE YOUR", "DIGITAL EDGE"] as const
 
@@ -150,9 +151,7 @@ export function Hero({ verifiedStats = [] }: { verifiedStats?: string[] }) {
           <Link href="/quote" prefetch={false} className="btn-primary font-dm" data-magnetic>
             Request a Quote <ArrowRight size={16} aria-hidden="true" />
           </Link>
-          <Link href="/quote" prefetch={false} className="btn-ghost font-dm" data-magnetic>
-            Book a Discovery Call <ArrowUpRight size={16} aria-hidden="true" />
-          </Link>
+          <DiscoveryCallLink className="btn-ghost gap-2 font-dm" source="homepage_hero" />
           <Link href="/services" prefetch={false} className="btn-ghost font-dm" data-magnetic>
             View Services <ArrowUpRight size={16} aria-hidden="true" />
           </Link>

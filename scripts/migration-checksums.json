@@ -376,6 +376,12 @@
                                   "reason":  "Adds the evidence-backed public claims registry, restricted verified view and immutable review audit trail."
                               },
                               {
+                                  "path":  "web/drizzle/0011_quote_enquiry_intent.sql",
+                                  "sha256":  "989d5a220937b240b1682cf414362f639b2220f8ce1e41cc3a1c8d98d75841c1",
+                                  "lifecycle":  "forward",
+                                  "reason":  "Persists the validated requested next step for public and interactive enquiries."
+                              },
+                              {
                                   "path":  "admin/drizzle/0042_historical_schema_reconciliation.sql",
                                   "sha256":  "0f0644d5c55fff5589cb0b7b0a506d62f0886d6dbd551c34edf85d6cadfb301a",
                                   "lifecycle":  "forward-correction",
@@ -405,6 +411,13 @@
                                                              "version":  "7",
                                                              "when":  1786003200000,
                                                              "tag":  "0010_public_claims_registry",
+                                                             "breakpoints":  true
+                                                         },
+                                                         {
+                                                             "idx":  11,
+                                                             "version":  "7",
+                                                             "when":  1786089600000,
+                                                             "tag":  "0011_quote_enquiry_intent",
                                                              "breakpoints":  true
                                                          }
                                                      ]

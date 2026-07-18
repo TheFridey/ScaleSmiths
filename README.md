@@ -128,6 +128,7 @@ database, while the existing host Nginx routes requests by `server_name`.
 
    Required production differences from local dev:
    - `NEXT_PUBLIC_SITE_URL=https://scalesmiths.co.uk`
+   - optional `NEXT_PUBLIC_DISCOVERY_BOOKING_URL=https://your-approved-scheduler.example/path`; leave empty to use the enquiry form with Request wording
    - `NEXT_PUBLIC_ADMIN_URL=https://admin.scalesmiths.co.uk`
    - Auth.js callbacks must use `https://admin.scalesmiths.co.uk`; when an explicit `AUTH_URL` is configured in production, set it to that origin
    - `ADMIN_PORTAL_URL=https://admin.scalesmiths.co.uk`; portal notification links must never use a path under the public origin
@@ -316,6 +317,7 @@ ignored and should stay on the machine or secret manager that needs them.
 - Production: distinct `WEB_DATABASE_URL`, `ADMIN_DATABASE_URL`, and `MIGRATION_DATABASE_URL`; operator-only `POSTGRES_PROVISIONING_DATABASE_URL`
 - Local development and tests only: `DATABASE_URL` compatibility fallback
 - `NEXT_PUBLIC_SITE_URL`
+- `NEXT_PUBLIC_DISCOVERY_BOOKING_URL` (optional public HTTPS scheduling destination; see `docs/operations/discovery-booking.md`)
 - `PORTAL_SECRET`
 - `DEMO_PORTAL_ENABLED`
 - `DEMO_PORTAL_EMAIL`, `DEMO_PORTAL_PASSWORD`, `DEMO_PORTAL_CLIENT_ID` only if demo mode is intentionally enabled

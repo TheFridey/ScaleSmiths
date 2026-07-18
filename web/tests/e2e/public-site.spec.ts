@@ -230,7 +230,7 @@ test.describe("public navigation and accessibility behaviours", () => {
     await openInteractivePlan(page)
 
     await expect(page.getByRole("heading", { name: /system summary/i })).toBeVisible()
-    await expect(page.locator("form").getByRole("button", { name: /book a strategy call/i })).toBeVisible()
+    await expect(page.locator("form").getByRole("button", { name: /request a strategy call/i })).toBeVisible()
   })
 
   test("uses the mobile fallback instead of the desktop canvas layer", async ({ page }) => {
@@ -257,8 +257,18 @@ test.describe("quote and contact forms", () => {
 
     await submitQuoteWizard(page)
 
-    await expect(page).toHaveURL(/\/quote\/thanks$/)
+    await expect(page).toHaveURL(/\/quote\/thanks\?intent=quote$/)
     await expect(page.getByRole("heading", { name: /brief received/i })).toBeVisible()
+  })
+
+  test("retains a discovery-call request intent in the enquiry payload", async ({ page }) => {
+    let submittedPayload: Record<string, unknown> | undefined
+    await mockQuoteApi(page, { ok: true, onRequest: (payload) => { submittedPayload = payload } })
+
+    await submitQuoteWizard(page, "/quote?intent=discovery_call")
+
+    await expect(page).toHaveURL(/\/quote\/thanks\?intent=discovery_call$/)
+    expect(submittedPayload?.intent).toBe("discovery_call")
   })
 
   test("surfaces quote submission failures safely", async ({ page }) => {
@@ -281,10 +291,12 @@ test.describe("quote and contact forms", () => {
     await page.getByLabel(/budget range/i).selectOption({ label: "GBP 8,000-15,000" })
     await page.getByLabel(/timeline/i).selectOption({ label: "4-6 weeks" })
     await page.getByLabel(/store the information i submit/i).check()
-    await page.locator("form").getByRole("button", { name: /book a strategy call/i }).click()
+    await page.locator("form").getByRole("button", { name: /request a strategy call/i }).click()
 
     await expect(page.getByRole("status")).toContainText(/plan sent/i)
     expect(submittedPayload?.consent).toBe(true)
+    expect(submittedPayload?.intent).toBe("strategy_call")
+    expect(submittedPayload?.type).toContain("Request a Strategy Call")
     expect(submittedPayload).not.toHaveProperty("marketingConsent")
   })
 
@@ -299,7 +311,7 @@ test.describe("quote and contact forms", () => {
     await page.getByLabel(/what do you want the website to do/i).fill("Win better enquiries and reduce manual follow-up.")
     await page.getByLabel(/budget range/i).selectOption({ label: "GBP 8,000-15,000" })
     await page.getByLabel(/timeline/i).selectOption({ label: "4-6 weeks" })
-    await page.locator("form").getByRole("button", { name: /book a strategy call/i }).click()
+    await page.locator("form").getByRole("button", { name: /request a strategy call/i }).click()
 
     await expect(page.locator("form").getByRole("alert")).toContainText(/confirm that we may store your information/i)
     expect(requestCount).toBe(0)

@@ -5,7 +5,8 @@ import { usePathname } from "next/navigation"
 import { Nav } from "@/components/Nav"
 import { Footer } from "@/components/Footer"
 import { PageTransition } from "@/components/PageTransition"
-import { trackExperienceEvent, trackQuoteCta } from "@/lib/experience-analytics-client"
+import { trackExperienceEvent } from "@/lib/experience-analytics-client"
+import { parseEnquiryIntent } from "@/lib/enquiry-intents"
 
 interface SiteChromeProps {
   children: ReactNode
@@ -27,7 +28,10 @@ export function SiteChrome({ children }: SiteChromeProps) {
       const anchor = (event.target as Element | null)?.closest?.("a")
       const href = anchor?.getAttribute("href")
       if (!href) return
-      if (href.startsWith("/quote")) trackQuoteCta(`link:${pathname}`)
+      if (href.startsWith("/quote")) {
+        const intent = parseEnquiryIntent(new URL(href, window.location.origin).searchParams.get("intent"))
+        trackExperienceEvent("quote_cta_clicked", { metadata: { source: `link:${pathname}`, target: href, intent } })
+      }
       if (/^https?:\/\//.test(href) && !href.includes(window.location.hostname)) {
         trackExperienceEvent("navigation_exit", { metadata: { target: new URL(href).hostname } })
       }

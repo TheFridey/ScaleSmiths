@@ -75,6 +75,7 @@ describe("quote security", () => {
       needs: ["SEO", "Hosting", "Custom Functionality"],
       carePlanInterest: "Maybe",
       preferredContactMethod: "Email",
+      intent: "strategy_call",
       consent: true,
       brief: "We need a portal.",
     })
@@ -85,8 +86,28 @@ describe("quote security", () => {
       expect(result.data.needs).toEqual(["SEO", "Hosting", "Custom Functionality"])
       const record = quoteInsertValues(result.data)
       expect(record.consent).toBe(true)
+      expect(record.enquiryIntent).toBe("strategy_call")
       expect(record).not.toHaveProperty("marketingConsent")
     }
+  })
+
+  it("defaults unknown enquiry intent instead of persisting arbitrary values", () => {
+    const result = validateQuotePayload({
+      name: "Rhys",
+      email: "lead@example.com",
+      businessType: "Local service business",
+      type: "Conversion Website",
+      budget: "GBP 4,500-6,500",
+      timeframe: "4-6 weeks",
+      goal: "Generate qualified enquiries",
+      preferredContactMethod: "Email",
+      consent: true,
+      intent: "book_me_without_a_scheduler",
+      brief: "We need a clearer website and enquiry route.",
+    })
+
+    expect(result.ok).toBe(true)
+    if (result.ok) expect(result.data.intent).toBe("quote")
   })
 
   it("scores high-intent leads server-side", () => {

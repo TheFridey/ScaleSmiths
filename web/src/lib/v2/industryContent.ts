@@ -64,7 +64,7 @@ export const industryContent: Record<V2Industry, V2IndustryContent> = {
     ],
     finalPitch: "ScaleSmiths can turn a trade website into a 24/7 quoting and lead qualification system.",
     ctaWording: {
-      primary: "Book a Trade Strategy Call",
+      primary: "Request a Trade Strategy Call",
       secondary: "View Normal Website",
       simulationNext: "Forge the trade system",
     },
@@ -100,7 +100,7 @@ export const industryContent: Record<V2Industry, V2IndustryContent> = {
     ],
     finalPitch: "ScaleSmiths can turn a restaurant website into a booking, menu and guest follow-up system.",
     ctaWording: {
-      primary: "Book a Hospitality Strategy Call",
+      primary: "Request a Hospitality Strategy Call",
       secondary: "View Normal Website",
       simulationNext: "Forge the restaurant system",
     },
@@ -136,7 +136,7 @@ export const industryContent: Record<V2Industry, V2IndustryContent> = {
     ],
     finalPitch: "ScaleSmiths can turn a gym website into a member acquisition, booking and retention system.",
     ctaWording: {
-      primary: "Book a Fitness Strategy Call",
+      primary: "Request a Fitness Strategy Call",
       secondary: "View Normal Website",
       simulationNext: "Forge the gym system",
     },
@@ -172,7 +172,7 @@ export const industryContent: Record<V2Industry, V2IndustryContent> = {
     ],
     finalPitch: "ScaleSmiths can turn a professional services website into a qualification, booking and client pipeline system.",
     ctaWording: {
-      primary: "Book a Services Strategy Call",
+      primary: "Request a Services Strategy Call",
       secondary: "View Normal Website",
       simulationNext: "Forge the services system",
     },
@@ -208,7 +208,7 @@ export const industryContent: Record<V2Industry, V2IndustryContent> = {
     ],
     finalPitch: "ScaleSmiths can turn an ecommerce website into a guided product discovery and follow-up system.",
     ctaWording: {
-      primary: "Book an Ecommerce Strategy Call",
+      primary: "Request an Ecommerce Strategy Call",
       secondary: "View Normal Website",
       simulationNext: "Forge the ecommerce system",
     },
@@ -244,7 +244,7 @@ export const industryContent: Record<V2Industry, V2IndustryContent> = {
     ],
     finalPitch: "ScaleSmiths can turn a website into a tailored operating layer for the way your business actually works.",
     ctaWording: {
-      primary: "Book a Strategy Call",
+      primary: "Request a Strategy Call",
       secondary: "View Normal Website",
       simulationNext: "Forge the custom system",
     },

@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: validation.error }, { status: validation.status })
     }
 
-    const { name, email, biz, websiteUrl, businessType, type, budget, timeframe, goal, needs, carePlanInterest, preferredContactMethod, brief, website } = validation.data
+    const { name, email, biz, websiteUrl, businessType, type, budget, timeframe, goal, needs, carePlanInterest, preferredContactMethod, intent, brief, website } = validation.data
     if (isHoneypotSubmission({ website })) {
       return NextResponse.json({ ok: true })
     }
@@ -133,6 +133,7 @@ export async function POST(request: NextRequest) {
             ${field("Needs", needs.join(", "))}
             ${field("Care Plan Interest", carePlanInterest)}
             ${field("Preferred Contact", preferredContactMethod)}
+            ${field("Requested Next Step", intent.replaceAll("_", " "))}
           </table>
           <div style="padding:24px 26px;">
             <div style="color:#8f8f8f;font-size:12px;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;">Brief</div>
@@ -148,7 +149,7 @@ export async function POST(request: NextRequest) {
           <div style="color:#2563eb;font-size:12px;letter-spacing:0.12em;text-transform:uppercase;font-weight:700;">ScaleSmiths</div>
           <h1 style="font-size:32px;line-height:1.1;margin:12px 0 16px;">You're on our radar.</h1>
           <p style="color:#b6b6b6;font-size:16px;line-height:1.65;margin:0 0 16px;">
-            Thanks for sending your brief, ${escapeHtml(name)}. We'll review the details and come back to you within 24 hours to book a strategy call.
+            Thanks for sending your brief, ${escapeHtml(name)}. We&apos;ll review the details and reply about the next step you requested.
           </p>
           <p style="color:#b6b6b6;font-size:16px;line-height:1.65;margin:0;">
             No pitch. No pressure. Just an honest conversation about what your business actually needs.

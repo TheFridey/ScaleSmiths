@@ -1,5 +1,6 @@
 import { createHash } from "crypto"
 import type { NextRequest } from "next/server"
+import { parseEnquiryIntent, type EnquiryIntent } from "./enquiry-intents"
 
 export const QUOTE_BODY_LIMIT_BYTES = 16 * 1024
 export const QUOTE_RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000
@@ -18,6 +19,7 @@ export interface QuotePayload {
   needs?: unknown
   carePlanInterest?: unknown
   preferredContactMethod?: unknown
+  intent?: unknown
   consent?: unknown
   brief?: unknown
   website?: unknown
@@ -36,6 +38,7 @@ export interface ValidQuotePayload {
   needs: string[]
   carePlanInterest: string
   preferredContactMethod: string
+  intent: EnquiryIntent
   consent: boolean
   brief: string
   website: string
@@ -55,6 +58,7 @@ export function quoteInsertValues(data: ValidQuotePayload) {
     needs: data.needs.length ? data.needs.join(", ") : null,
     carePlanInterest: data.carePlanInterest || null,
     preferredContactMethod: data.preferredContactMethod || null,
+    enquiryIntent: data.intent,
     consent: data.consent,
     leadQuality: scoreLeadQuality(data),
     brief: data.brief,
@@ -119,6 +123,7 @@ export function validateQuotePayload(payload: QuotePayload): QuoteValidationResu
       : [],
     carePlanInterest: cleanString(payload.carePlanInterest, 80),
     preferredContactMethod: cleanString(payload.preferredContactMethod, 80),
+    intent: parseEnquiryIntent(payload.intent),
     consent: payload.consent === true,
     brief: cleanString(payload.brief, 5000),
     website: cleanString(payload.website, 200),

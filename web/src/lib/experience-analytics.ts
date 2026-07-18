@@ -12,6 +12,11 @@ export const EXPERIENCE_EVENT_NAMES = [
   "interactive_completion_depth",
   "experience_fallback_activated",
   "experience_error",
+  "local_growth_check_viewed",
+  "local_growth_check_form_started",
+  "local_growth_check_form_submitted",
+  "local_growth_check_full_quote_selected",
+  "local_growth_check_strategy_call_requested",
 ] as const
 
 export const ANALYTICS_OPT_OUT_COOKIE = "ss_analytics_opt_out"
@@ -191,7 +196,7 @@ function referrerHost(value: unknown) {
 
 function safeMetadata(value: unknown) {
   if (!value || typeof value !== "object") return {}
-  const allowed = new Set(["source", "reason", "step", "target", "variant", "recommendation"])
+  const allowed = new Set(["source", "reason", "step", "target", "variant", "recommendation", "funnelType"])
   const output: Record<string, string | number | boolean> = {}
   for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
     if (!allowed.has(key)) continue

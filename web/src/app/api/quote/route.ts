@@ -4,6 +4,7 @@ import { captureWebException, captureWebMessage } from "@/lib/server-monitoring"
 import { eq, sql } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { quoteRateLimits, quoteRequests } from "@/lib/schema"
+import { quoteEmailContent } from "@/lib/quote-email-content"
 import {
   QUOTE_RATE_LIMIT_MAX,
   QUOTE_RATE_LIMIT_WINDOW_MS,
@@ -86,7 +87,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: validation.error }, { status: validation.status })
     }
 
-    const { name, email, biz, websiteUrl, businessType, type, budget, timeframe, goal, needs, carePlanInterest, preferredContactMethod, intent, brief, website } = validation.data
+    const { name, email, biz, websiteUrl, businessType, type, budget, timeframe, goal, needs, carePlanInterest, preferredContactMethod, intent, leadSource, funnelType, phone, brief, website } = validation.data
     if (isHoneypotSubmission({ website })) {
       return NextResponse.json({ ok: true })
     }
@@ -113,11 +114,12 @@ export async function POST(request: NextRequest) {
     }
 
     const resend = new Resend(apiKey)
+    const emailContent = quoteEmailContent(funnelType, escapeHtml(name))
     const internalHtml = `
       <div style="background:#080808;padding:28px;font-family:Arial,sans-serif;">
         <div style="max-width:680px;margin:0 auto;background:#0f0f0f;border:1px solid #242424;border-radius:16px;overflow:hidden;">
           <div style="padding:24px 26px;border-bottom:1px solid #242424;">
-            <div style="color:#2563eb;font-size:12px;letter-spacing:0.12em;text-transform:uppercase;font-weight:700;">New quote request</div>
+            <div style="color:#2563eb;font-size:12px;letter-spacing:0.12em;text-transform:uppercase;font-weight:700;">${emailContent.internalLabel}</div>
             <h1 style="color:#f4f4f4;margin:8px 0 0;font-size:28px;">${escapeHtml(name)}</h1>
           </div>
           <table role="presentation" style="width:100%;border-collapse:collapse;font-size:14px;">
@@ -133,7 +135,10 @@ export async function POST(request: NextRequest) {
             ${field("Needs", needs.join(", "))}
             ${field("Care Plan Interest", carePlanInterest)}
             ${field("Preferred Contact", preferredContactMethod)}
+            ${field("Phone", phone)}
             ${field("Requested Next Step", intent.replaceAll("_", " "))}
+            ${field("Lead Source", leadSource)}
+            ${field("Funnel Type", funnelType)}
           </table>
           <div style="padding:24px 26px;">
             <div style="color:#8f8f8f;font-size:12px;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;">Brief</div>
@@ -147,9 +152,9 @@ export async function POST(request: NextRequest) {
       <div style="background:#080808;padding:28px;font-family:Arial,sans-serif;color:#f4f4f4;">
         <div style="max-width:620px;margin:0 auto;background:#0f0f0f;border:1px solid #242424;border-radius:16px;padding:30px;">
           <div style="color:#2563eb;font-size:12px;letter-spacing:0.12em;text-transform:uppercase;font-weight:700;">ScaleSmiths</div>
-          <h1 style="font-size:32px;line-height:1.1;margin:12px 0 16px;">You're on our radar.</h1>
+          <h1 style="font-size:32px;line-height:1.1;margin:12px 0 16px;">${emailContent.confirmationHeading}</h1>
           <p style="color:#b6b6b6;font-size:16px;line-height:1.65;margin:0 0 16px;">
-            Thanks for sending your brief, ${escapeHtml(name)}. We&apos;ll review the details and reply about the next step you requested.
+            ${emailContent.confirmationBody}
           </p>
           <p style="color:#b6b6b6;font-size:16px;line-height:1.65;margin:0;">
             No pitch. No pressure. Just an honest conversation about what your business actually needs.
@@ -168,13 +173,13 @@ export async function POST(request: NextRequest) {
           from,
           to: from,
           replyTo: email,
-          subject: `New quote request from ${name}`,
+          subject: emailContent.internalSubject,
           html: internalHtml,
         }),
         resend.emails.send({
           from,
           to: email,
-          subject: "You're on our radar",
+          subject: emailContent.confirmationSubject,
           html: replyHtml,
         }),
       ])

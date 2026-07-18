@@ -87,8 +87,10 @@ export async function mockQuoteApi(page: Page, options: { ok: boolean; status?: 
   })
 }
 
-export async function mockExperienceAnalytics(page: Page) {
+export async function mockExperienceAnalytics(page: Page, onRequest?: (payload: Record<string, unknown>) => void) {
   await page.route("**/api/experience-events", async (route) => {
+    const payload = route.request().postDataJSON() as Record<string, unknown>
+    onRequest?.(payload)
     await route.fulfill({ status: 202, contentType: "application/json", body: JSON.stringify({ ok: true }) })
   })
 }

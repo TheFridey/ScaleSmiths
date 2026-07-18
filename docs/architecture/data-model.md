@@ -33,7 +33,7 @@ erDiagram
 
 | Table | Purpose | Ownership notes |
 | --- | --- | --- |
-| `quote_requests` | Quote lead, qualification fields, consent, delivery state, status | Written by web; read/managed by admin |
+| `quote_requests` | Quote and local-growth leads, source/funnel, requested intent, optional phone, qualification fields, consent, delivery state, status | Written by web; read/managed by admin |
 | `quote_rate_limits` | Persistent quote throttle | Declared only by web |
 | `portal_client_accounts` | Portal client ID, email, bcrypt hash, active state | Declared only by web |
 | `login_rate_limits` | Persistent login throttles | Declared by both apps |
@@ -83,7 +83,7 @@ Important enums define quote status, request category/priority/status, message v
 
 ## Migration inventory
 
-- Web migrations `0000`-`0010` build quote capture, portal accounts/rate limits, request threads/timeline, reports, public experience analytics, and the public claims registry/restricted view.
+- Web migrations `0000`-`0012` build quote capture, portal accounts/rate limits, request threads/timeline, reports, public experience analytics, the public claims registry/restricted view, enquiry intent, and the local-growth funnel classification.
 - Admin migrations `0000`-`0043` build operational CRM, identity/security, Forge workflow/provenance/economics, client operations, analytics, release gates, the forward-only historical-schema reconciliation, and generated-site dependency/SBOM evidence binding.
 
 The histories are independent. Their Drizzle journals do not provide a single global order, despite targeting the same database. Deployment compensates by always running web then admin migrations.

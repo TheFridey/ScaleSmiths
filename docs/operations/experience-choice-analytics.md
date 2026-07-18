@@ -26,6 +26,11 @@ ScaleSmiths records first-party, privacy-minimised events for the public normal-
 | `quote_cta_clicked` | A quote/start-project CTA was clicked. |
 | `quote_form_started` | A quote form field or option was first interacted with. |
 | `quote_form_submitted` | A quote form submission completed successfully. |
+| `local_growth_check_viewed` | The short local-growth acquisition page was viewed. |
+| `local_growth_check_form_started` | A visitor first interacted with the local-growth form. |
+| `local_growth_check_form_submitted` | The local-growth form was persisted successfully. |
+| `local_growth_check_full_quote_selected` | A visitor chose to continue into the full quote wizard. |
+| `local_growth_check_strategy_call_requested` | A visitor selected the strategy-call request route. |
 | `navigation_exit` | Visitor left the interactive journey or clicked an external navigation target. |
 | `interactive_completion_depth` | Visitor reached a tracked interactive journey step. |
 | `experience_fallback_activated` | Interactive fallback was activated, such as disabled canvas. |

@@ -6,6 +6,9 @@ export const QUOTE_BODY_LIMIT_BYTES = 16 * 1024
 export const QUOTE_RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000
 export const QUOTE_RATE_LIMIT_MAX = 3
 
+export type LeadSource = "public_quote" | "interactive_v2" | "local_growth_check"
+export type FunnelType = "full_quote" | "interactive_v2" | "local_growth_check"
+
 export interface QuotePayload {
   name?: unknown
   email?: unknown
@@ -19,6 +22,9 @@ export interface QuotePayload {
   needs?: unknown
   carePlanInterest?: unknown
   preferredContactMethod?: unknown
+  phone?: unknown
+  leadSource?: unknown
+  funnelType?: unknown
   intent?: unknown
   consent?: unknown
   brief?: unknown
@@ -38,6 +44,9 @@ export interface ValidQuotePayload {
   needs: string[]
   carePlanInterest: string
   preferredContactMethod: string
+  phone: string
+  leadSource: LeadSource
+  funnelType: FunnelType
   intent: EnquiryIntent
   consent: boolean
   brief: string
@@ -59,6 +68,9 @@ export function quoteInsertValues(data: ValidQuotePayload) {
     carePlanInterest: data.carePlanInterest || null,
     preferredContactMethod: data.preferredContactMethod || null,
     enquiryIntent: data.intent,
+    leadSource: data.leadSource,
+    funnelType: data.funnelType,
+    phone: data.phone || null,
     consent: data.consent,
     leadQuality: scoreLeadQuality(data),
     brief: data.brief,
@@ -108,28 +120,44 @@ export function cleanString(value: unknown, maxLength = 2000) {
 }
 
 export function validateQuotePayload(payload: QuotePayload): QuoteValidationResult {
-  const data = {
+  const requestedFunnel = cleanString(payload.funnelType, 40)
+  const localGrowthCheck = requestedFunnel === "local_growth_check"
+  const rawType = cleanString(payload.type, 120)
+  const inferredInteractive = rawType.startsWith("ScaleSmiths V2 interactive journey")
+  const funnelType: FunnelType = localGrowthCheck ? "local_growth_check" : inferredInteractive ? "interactive_v2" : "full_quote"
+  const leadSource: LeadSource = localGrowthCheck ? "local_growth_check" : inferredInteractive ? "interactive_v2" : "public_quote"
+  const goal = cleanString(payload.goal, localGrowthCheck ? 1000 : 240)
+  const phone = cleanString(payload.phone, 40)
+
+  const data: ValidQuotePayload = {
     name: cleanString(payload.name, 120),
     email: cleanString(payload.email, 254).toLowerCase(),
     biz: cleanString(payload.biz, 160),
     websiteUrl: cleanString(payload.websiteUrl, 240),
-    businessType: cleanString(payload.businessType, 120),
-    type: cleanString(payload.type, 120),
-    budget: cleanString(payload.budget, 80),
-    timeframe: cleanString(payload.timeframe, 120),
-    goal: cleanString(payload.goal, 240),
-    needs: Array.isArray(payload.needs)
+    businessType: localGrowthCheck ? "Local business" : cleanString(payload.businessType, 120),
+    type: localGrowthCheck ? "Local Growth Check" : rawType,
+    budget: localGrowthCheck ? "Not discussed" : cleanString(payload.budget, 80),
+    timeframe: localGrowthCheck ? "Initial review" : cleanString(payload.timeframe, 120),
+    goal,
+    needs: localGrowthCheck ? ["Local growth review"] : Array.isArray(payload.needs)
       ? payload.needs.map((item) => cleanString(item, 80)).filter(Boolean).slice(0, 8)
       : [],
-    carePlanInterest: cleanString(payload.carePlanInterest, 80),
-    preferredContactMethod: cleanString(payload.preferredContactMethod, 80),
-    intent: parseEnquiryIntent(payload.intent),
+    carePlanInterest: localGrowthCheck ? "Not discussed" : cleanString(payload.carePlanInterest, 80),
+    preferredContactMethod: localGrowthCheck ? phone ? "Email and phone" : "Email" : cleanString(payload.preferredContactMethod, 80),
+    phone,
+    leadSource,
+    funnelType,
+    intent: localGrowthCheck ? "local_growth_check" : parseEnquiryIntent(payload.intent),
     consent: payload.consent === true,
-    brief: cleanString(payload.brief, 5000),
+    brief: localGrowthCheck ? goal : cleanString(payload.brief, 5000),
     website: cleanString(payload.website, 200),
   }
 
-  if (!data.name || !data.email || !data.brief || !data.type || !data.budget || !data.timeframe || !data.goal || !data.businessType || !data.preferredContactMethod || !data.consent) {
+  const missingRequired = localGrowthCheck
+    ? !data.name || !data.email || !data.biz || !data.goal || !data.consent
+    : !data.name || !data.email || !data.brief || !data.type || !data.budget || !data.timeframe || !data.goal || !data.businessType || !data.preferredContactMethod || !data.consent
+
+  if (missingRequired) {
     return { ok: false, status: 400, error: "Please check the required fields and try again." }
   }
 
@@ -137,7 +165,24 @@ export function validateQuotePayload(payload: QuotePayload): QuoteValidationResu
     return { ok: false, status: 400, error: "Please check the required fields and try again." }
   }
 
+  if (localGrowthCheck && data.websiteUrl && !isSafePublicUrl(data.websiteUrl)) {
+    return { ok: false, status: 400, error: "Please add a valid public website or social-page URL." }
+  }
+
+  if (localGrowthCheck && data.phone && !/^[+()\d\s.-]{7,40}$/.test(data.phone)) {
+    return { ok: false, status: 400, error: "Please add a valid phone number or leave it blank." }
+  }
+
   return { ok: true, data }
+}
+
+function isSafePublicUrl(value: string) {
+  try {
+    const url = new URL(value)
+    return ["http:", "https:"].includes(url.protocol) && !url.username && !url.password
+  } catch {
+    return false
+  }
 }
 
 export function scoreLeadQuality(payload: ValidQuotePayload): LeadQuality {

@@ -244,6 +244,79 @@ test.describe("public navigation and accessibility behaviours", () => {
 })
 
 test.describe("quote and contact forms", () => {
+  test("offers the short local growth route without changing the full quote wizard", async ({ page }) => {
+    await gotoReady(page, "/quote")
+
+    await expect(page.getByText(/not ready to write a full brief/i)).toBeVisible()
+    await expect(page.getByRole("link", { name: /request a local growth check/i })).toHaveAttribute("href", "/local-growth-check")
+    await expect(page.getByRole("progressbar")).toHaveAttribute("aria-valuemax", "10")
+  })
+
+  test("submits the accessible local growth check with its source and analytics", async ({ page }) => {
+    let submittedPayload: Record<string, unknown> | undefined
+    let requestCount = 0
+    const analyticsEvents: string[] = []
+    await mockQuoteApi(page, { ok: true, onRequest: (payload) => { submittedPayload = payload; requestCount += 1 } })
+    await mockExperienceAnalytics(page, (payload) => analyticsEvents.push(String(payload.eventName)))
+
+    await gotoReady(page, "/local-growth-check")
+    await expect(page.getByRole("heading", { level: 1, name: /useful first look/i })).toBeVisible()
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", /\/local-growth-check$/)
+    const structuredData = await page.locator('script[type="application/ld+json"]').allTextContents()
+    expect(structuredData.join(" ")).toContain("Local Growth Check")
+
+    await page.getByLabel(/^name/i).fill("Alex Local")
+    await page.getByLabel(/business name/i).fill("Alex Plumbing")
+    await page.getByLabel(/website or social-page/i).fill("https://example.com")
+    await page.getByLabel(/^email/i).fill("alex@example.com")
+    await page.getByLabel(/^phone/i).fill("+44 7700 900123")
+    await page.getByLabel(/primary problem or goal/i).fill("People cannot tell which areas we cover or which service to choose.")
+    await page.getByRole("button", { name: /request my local growth check/i }).click()
+
+    await expect(page.getByText(/complete the required fields and confirm consent/i)).toBeVisible()
+    expect(requestCount).toBe(0)
+
+    await page.getByLabel(/store the information i submit/i).check()
+    await page.getByRole("button", { name: /request my local growth check/i }).click()
+
+    await expect(page.getByRole("status")).toContainText(/founder will review/i)
+    expect(submittedPayload).toMatchObject({
+      funnelType: "local_growth_check",
+      leadSource: "local_growth_check",
+      intent: "local_growth_check",
+      consent: true,
+    })
+    expect(submittedPayload).not.toHaveProperty("marketingConsent")
+    await expect.poll(() => analyticsEvents).toEqual(expect.arrayContaining([
+      "local_growth_check_viewed",
+      "local_growth_check_form_started",
+      "local_growth_check_form_submitted",
+    ]))
+  })
+
+  test("keeps local growth actions keyboard-accessible and tracks both onward routes", async ({ page }) => {
+    const analyticsEvents: string[] = []
+    await mockExperienceAnalytics(page, (payload) => analyticsEvents.push(String(payload.eventName)))
+    await gotoReady(page, "/local-growth-check")
+
+    const fullQuote = page.getByRole("link", { name: /use the full quote route/i })
+    const strategyCall = page.getByRole("link", { name: /request a strategy call/i })
+    await expect(fullQuote).toHaveAttribute("href", "/quote")
+    await expect(strategyCall).toHaveAttribute("href", "/quote?intent=strategy_call")
+
+    await fullQuote.focus()
+    await expect(fullQuote).toBeFocused()
+    await fullQuote.click()
+    await page.waitForURL(/\/quote$/)
+    await gotoReady(page, "/local-growth-check")
+    await page.getByRole("link", { name: /request a strategy call/i }).click()
+    await page.waitForURL(/\/quote\?intent=strategy_call$/)
+    await expect.poll(() => analyticsEvents).toEqual(expect.arrayContaining([
+      "local_growth_check_full_quote_selected",
+      "local_growth_check_strategy_call_requested",
+    ]))
+  })
+
   test("shows validation errors before submission", async ({ page }) => {
     await gotoReady(page, "/quote")
 

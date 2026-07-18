@@ -12,6 +12,11 @@ export type ExperienceEventName =
   | "interactive_completion_depth"
   | "experience_fallback_activated"
   | "experience_error"
+  | "local_growth_check_viewed"
+  | "local_growth_check_form_started"
+  | "local_growth_check_form_submitted"
+  | "local_growth_check_full_quote_selected"
+  | "local_growth_check_strategy_call_requested"
 
 export interface ExperienceAnalyticsRow {
   eventName: ExperienceEventName
@@ -52,6 +57,11 @@ export function summarizeExperienceAnalytics(rows: ExperienceAnalyticsRow[]) {
     interactiveFormSubmitted: count("quote_form_submitted", "interactive"),
     navigationExit: count("navigation_exit"),
     fallbackOrError: count("experience_fallback_activated") + count("experience_error"),
+    localGrowthViewed: count("local_growth_check_viewed"),
+    localGrowthStarted: count("local_growth_check_form_started"),
+    localGrowthSubmitted: count("local_growth_check_form_submitted"),
+    localGrowthFullQuoteSelected: count("local_growth_check_full_quote_selected"),
+    localGrowthStrategyCallRequested: count("local_growth_check_strategy_call_requested"),
     normalSelectionRate: percentage(normalSelected, choiceDisplayed),
     interactiveSelectionRate: percentage(interactiveSelected, choiceDisplayed),
     quoteSubmissionRate: percentage(formSubmitted, formStarted),

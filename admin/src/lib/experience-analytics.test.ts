@@ -12,6 +12,9 @@ describe("experience analytics dashboard summary", () => {
       row("interactive_completion_depth", "interactive", now, 100),
       row("quote_form_submitted", "interactive", now),
       { ...row("experience_returning_preference", "interactive", now), returningPreference: true },
+      row("local_growth_check_viewed", "normal", now),
+      row("local_growth_check_form_started", "normal", now),
+      row("local_growth_check_form_submitted", "normal", now),
     ]
 
     const summary = summarizeExperienceAnalytics(rows)
@@ -22,6 +25,9 @@ describe("experience analytics dashboard summary", () => {
     expect(summary.interactiveFormSubmitted).toBe(1)
     expect(summary.returningPreference).toBe(1)
     expect(summary.averageInteractiveDepth).toBe(100)
+    expect(summary.localGrowthViewed).toBe(1)
+    expect(summary.localGrowthStarted).toBe(1)
+    expect(summary.localGrowthSubmitted).toBe(1)
   })
 })
 

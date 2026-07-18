@@ -16,6 +16,7 @@ export function buildPublicSitemap(siteUrl = "https://scalesmiths.co.uk"): Metad
     { url: `${base}/services`,    lastModified: lastModified(), changeFrequency: "monthly", priority: 0.9 },
     { url: `${base}/pricing`,     lastModified: lastModified(), changeFrequency: "monthly", priority: 0.8 },
     { url: `${base}/quote`,       lastModified: lastModified(), changeFrequency: "yearly", priority: 0.7 },
+    { url: `${base}/local-growth-check`, lastModified: lastModified(), changeFrequency: "monthly", priority: 0.8 },
     ...legalSitemapEntries(base),
     ...Object.values(landingPages).map((page) => ({
       url: `${base}/${page.slug}`,

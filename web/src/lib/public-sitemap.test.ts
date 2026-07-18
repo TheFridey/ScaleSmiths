@@ -9,6 +9,7 @@ describe("public sitemap", () => {
     expect(urls.filter((url) => url === "https://scalesmiths.co.uk")).toHaveLength(1)
     expect(urls).not.toContain("https://scalesmiths.co.uk/traditional")
     expect(urls).toContain("https://scalesmiths.co.uk/interactive")
+    expect(urls).toContain("https://scalesmiths.co.uk/local-growth-check")
     expect(new Set(urls).size).toBe(urls.length)
   })
 

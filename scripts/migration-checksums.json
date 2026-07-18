@@ -382,6 +382,12 @@
                                   "reason":  "Persists the validated requested next step for public and interactive enquiries."
                               },
                               {
+                                  "path":  "web/drizzle/0012_local_growth_check.sql",
+                                  "sha256":  "ac4db0e3ee2edd2da975b02f7d51fff095228ad28a293ae460a764d8d1ee2012",
+                                  "lifecycle":  "forward",
+                                  "reason":  "Adds the short local-growth funnel classification, optional phone context and privacy-minimised analytics taxonomy."
+                              },
+                              {
                                   "path":  "admin/drizzle/0042_historical_schema_reconciliation.sql",
                                   "sha256":  "0f0644d5c55fff5589cb0b7b0a506d62f0886d6dbd551c34edf85d6cadfb301a",
                                   "lifecycle":  "forward-correction",
@@ -418,6 +424,13 @@
                                                              "version":  "7",
                                                              "when":  1786089600000,
                                                              "tag":  "0011_quote_enquiry_intent",
+                                                             "breakpoints":  true
+                                                         },
+                                                         {
+                                                             "idx":  12,
+                                                             "version":  "7",
+                                                             "when":  1786176000000,
+                                                             "tag":  "0012_local_growth_check",
                                                              "breakpoints":  true
                                                          }
                                                      ]

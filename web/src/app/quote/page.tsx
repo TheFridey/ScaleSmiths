@@ -192,6 +192,16 @@ export default function QuotePage() {
         {step === 0 ? "Back" : "Previous"}
       </button>
 
+      {step === 0 && (
+        <aside className="mb-8 rounded-xl border border-acc/20 bg-acc/[.06] p-4 font-dm text-sm" aria-label="Short enquiry alternative">
+          <div className="font-semibold text-t1">Not ready to write a full brief?</div>
+          <p className="mt-1 leading-relaxed text-t2">Start with a short, founder-led review of your main local growth problem.</p>
+          <Link href="/local-growth-check" prefetch={false} className="mt-3 inline-flex items-center gap-1 font-semibold text-acc hover:text-t1">
+            Request a Local Growth Check <ArrowRight size={14} aria-hidden="true" />
+          </Link>
+        </aside>
+      )}
+
       <div
         role="progressbar"
         aria-valuenow={step + 1}

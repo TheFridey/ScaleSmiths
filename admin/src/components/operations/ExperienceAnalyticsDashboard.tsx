@@ -27,6 +27,17 @@ export function ExperienceAnalyticsDashboard({ summary }: { summary: Summary }) 
         <Metric label="Fallbacks / errors" value={summary.fallbackOrError} />
       </section>
 
+      <section aria-labelledby="local-growth-funnel-heading" className="space-y-3">
+        <h2 id="local-growth-funnel-heading" className="font-syne text-xl font-bold">Local growth check funnel</h2>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+          <Metric label="Page viewed" value={summary.localGrowthViewed} />
+          <Metric label="Form started" value={summary.localGrowthStarted} />
+          <Metric label="Form submitted" value={summary.localGrowthSubmitted} />
+          <Metric label="Moved to full quote" value={summary.localGrowthFullQuoteSelected} />
+          <Metric label="Strategy call requested" value={summary.localGrowthStrategyCallRequested} />
+        </div>
+      </section>
+
       <section className="grid gap-4 lg:grid-cols-2">
         <Breakdown title="Device class" rows={summary.byDevice} />
         <Breakdown title="Campaign attribution" rows={summary.byCampaign} />

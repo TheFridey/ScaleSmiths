@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer components {
+  .growth-check-field {
+    @apply w-full rounded-[10px] border border-b2 bg-s2 px-4 py-3 font-dm text-sm text-t1 outline-none transition-colors placeholder:text-t3 focus:border-acc focus-visible:ring-2 focus-visible:ring-acc;
+  }
+}
+
 /* ── Design Tokens ─────────────────────────────────────────── */
 :root {
   --bg:     #07111f;

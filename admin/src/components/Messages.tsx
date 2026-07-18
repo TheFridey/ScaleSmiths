@@ -20,6 +20,9 @@ interface Lead {
   carePlanInterest: string | null
   preferredContactMethod: string | null
   enquiryIntent: string
+  leadSource: string
+  funnelType: string
+  phone: string | null
   leadQuality: string
   emailDeliveryStatus: string
   emailFailureReason: string | null
@@ -69,6 +72,9 @@ export function Messages({ leads }: { leads: Lead[] }) {
                     <span className="rounded px-2 py-0.5 font-dm text-[10px] font-semibold uppercase tracking-[.06em]" style={{ background:T.s2, color:T.t2, border:`1px solid ${T.b2}` }}>
                       {lead.status}
                     </span>
+                    <span className="rounded px-2 py-0.5 font-dm text-[10px] font-semibold uppercase tracking-[.06em]" style={{ background:lead.leadSource === "local_growth_check" ? "rgba(34,211,238,.1)" : T.s2, color:lead.leadSource === "local_growth_check" ? T.acc : T.t2, border:`1px solid ${lead.leadSource === "local_growth_check" ? "rgba(34,211,238,.28)" : T.b2}` }}>
+                      {lead.leadSource.replaceAll("_", " ")}
+                    </span>
                     <span className="rounded px-2 py-0.5 font-dm text-[10px] font-semibold uppercase tracking-[.06em]" style={{ background:T.s2, color:lead.emailDeliveryStatus === "failed" ? T.red : lead.emailDeliveryStatus === "sent" ? T.grn : T.amb, border:`1px solid ${T.b2}` }}>
                       email {lead.emailDeliveryStatus}
                     </span>
@@ -86,6 +92,9 @@ export function Messages({ leads }: { leads: Lead[] }) {
                     {[
                       ["Contact", `${lead.name} · ${lead.email}`],
                       ["Business type", lead.businessType ?? "Not provided"],
+                      ["Phone", lead.phone ?? "Not provided"],
+                      ["Lead source", lead.leadSource.replaceAll("_", " ")],
+                      ["Funnel", lead.funnelType.replaceAll("_", " ")],
                       ["Website", lead.websiteUrl ?? "Not provided"],
                       ["Care plan", lead.carePlanInterest ?? "Not provided"],
                       ["Preferred contact", lead.preferredContactMethod ?? "Not provided"],

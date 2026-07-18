@@ -31,6 +31,11 @@ export const experienceEventName = pgEnum("experience_event_name", [
   "interactive_completion_depth",
   "experience_fallback_activated",
   "experience_error",
+  "local_growth_check_viewed",
+  "local_growth_check_form_started",
+  "local_growth_check_form_submitted",
+  "local_growth_check_full_quote_selected",
+  "local_growth_check_strategy_call_requested",
 ])
 export const experienceDeviceClass = pgEnum("experience_device_class", ["mobile", "tablet", "desktop", "unknown"])
 export const experiencePreference = pgEnum("experience_preference", ["normal", "interactive", "none", "unknown"])
@@ -62,6 +67,9 @@ export const quoteRequests = pgTable("quote_requests", {
   carePlanInterest: text("care_plan_interest"),
   preferredContactMethod: text("preferred_contact_method"),
   enquiryIntent: text("enquiry_intent").default("quote").notNull(),
+  leadSource: text("lead_source").default("public_quote").notNull(),
+  funnelType: text("funnel_type").default("full_quote").notNull(),
+  phone: text("phone"),
   consent: boolean("consent").default(false).notNull(),
   leadQuality: text("lead_quality").default("medium").notNull(),
   emailDeliveryStatus: text("email_delivery_status").default("pending").notNull(),

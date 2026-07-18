@@ -87,8 +87,73 @@ describe("quote security", () => {
       const record = quoteInsertValues(result.data)
       expect(record.consent).toBe(true)
       expect(record.enquiryIntent).toBe("strategy_call")
+      expect(record.leadSource).toBe("public_quote")
+      expect(record.funnelType).toBe("full_quote")
       expect(record).not.toHaveProperty("marketingConsent")
     }
+  })
+
+  it("accepts and normalises the short local growth check without weakening full quote validation", () => {
+    const result = validateQuotePayload({
+      name: "Alex Local",
+      email: "alex@example.com",
+      biz: "Alex Plumbing",
+      websiteUrl: "https://www.facebook.com/alexplumbing",
+      phone: "+44 7700 900123",
+      goal: "We rely on referrals and people struggle to find the right service page.",
+      consent: true,
+      funnelType: "local_growth_check",
+      leadSource: "forged-by-the-browser",
+      intent: "strategy_call",
+      website: "",
+    })
+
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.data).toMatchObject({
+        businessType: "Local business",
+        type: "Local Growth Check",
+        budget: "Not discussed",
+        timeframe: "Initial review",
+        preferredContactMethod: "Email and phone",
+        intent: "local_growth_check",
+        leadSource: "local_growth_check",
+        funnelType: "local_growth_check",
+      })
+      expect(quoteInsertValues(result.data)).toMatchObject({
+        leadSource: "local_growth_check",
+        funnelType: "local_growth_check",
+        phone: "+44 7700 900123",
+      })
+    }
+  })
+
+  it("requires local growth check consent and rejects unsafe URLs", () => {
+    const base = {
+      name: "Alex Local",
+      email: "alex@example.com",
+      biz: "Alex Plumbing",
+      goal: "We need clearer local enquiries.",
+      funnelType: "local_growth_check",
+    }
+
+    expect(validateQuotePayload({ ...base, consent: false }).ok).toBe(false)
+    const unsafe = validateQuotePayload({ ...base, consent: true, websiteUrl: "file:///etc/passwd" })
+    expect(unsafe.ok).toBe(false)
+    if (!unsafe.ok) expect(unsafe.error).toMatch(/valid public website/i)
+  })
+
+  it("does not let a lead-source field bypass the full quote requirements", () => {
+    const result = validateQuotePayload({
+      name: "Alex Local",
+      email: "alex@example.com",
+      biz: "Alex Plumbing",
+      goal: "We need clearer local enquiries.",
+      consent: true,
+      leadSource: "local_growth_check",
+    })
+
+    expect(result.ok).toBe(false)
   })
 
   it("defaults unknown enquiry intent instead of persisting arbitrary values", () => {

@@ -9,6 +9,7 @@ Make the homepage experience preference feel intentional instead of showing the 
 ## Behaviour
 
 - First-time visitors to `/` now see only the experience choice gate.
+- Recognised crawlers receive the fully server-rendered normal homepage with a non-blocking interactive CTA instead of the choice gate.
 - Choosing `Explore ScaleSmiths`:
   - stores `scalesmiths.experience = normal`
   - reveals the normal homepage
@@ -27,6 +28,7 @@ Make the homepage experience preference feel intentional instead of showing the 
   - clear `scalesmiths.experience`
   - return the user to `/`
   - show the first-time choice gate again
+- `/traditional` is a compatibility-only permanent redirect to `/?experience=normal`. The query selects and remembers the normal experience while all canonical signals remain on `/`.
 
 ## Hydration Handling
 

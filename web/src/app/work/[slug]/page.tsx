@@ -163,8 +163,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return {
       title: log.title,
       description: log.summary,
-      alternates: { canonical: `https://scalesmiths.co.uk/work/${log.slug}` },
-      openGraph: { title: log.title, description: log.summary },
+      alternates: { canonical: `/work/${log.slug}` },
+      openGraph: { title: log.title, description: log.summary, url: `/work/${log.slug}` },
     }
   }
 
@@ -173,10 +173,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: p.name,
     description: p.headline,
-    alternates: { canonical: `https://scalesmiths.co.uk/work/${p.slug}` },
+    alternates: { canonical: `/work/${p.slug}` },
     openGraph: {
       title: p.name,
       description: p.headline,
+      url: `/work/${p.slug}`,
       images: p.heroImage ? [{ url: p.heroImage }] : undefined,
     },
   }

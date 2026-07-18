@@ -31,6 +31,10 @@ The suite covers:
 - First-time experience chooser
 - Normal and interactive preference selection
 - Returning normal and interactive preferences
+- Googlebot and Bingbot server-rendered homepage responses
+- Legacy `/traditional` redirect and explicit normal-preference handling
+- Canonical metadata for homepage, interactive, service, location and work routes
+- Sitemap canonical uniqueness, exclusions and stable modification dates
 - Preference reset and experience switching
 - Keyboard navigation and focus-visible behaviour
 - Reduced-motion behaviour

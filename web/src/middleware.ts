@@ -4,10 +4,18 @@ import {
   EXPERIENCE_EXPERIMENT_HEADER,
   EXPERIENCE_EXPERIMENT_ID_COOKIE,
   EXPERIENCE_PREFERENCE_COOKIE,
+  EXPERIENCE_PREFERENCE_HEADER,
   assignExperienceVariant,
   normalizeStoredPreference,
   resolveExperienceExperimentConfig,
 } from "@/lib/experience-experiment"
+import {
+  CRAWLER_HOMEPAGE_VARIANT,
+  EXPERIENCE_QUERY_PARAMETER,
+  isRecognizedCrawler,
+  normalizeExperienceQuery,
+  traditionalHomepageRedirectUrl,
+} from "@/lib/experience-routing"
 import { shouldRespectPrivacyOptOut } from "@/lib/experience-analytics"
 import { normalizeRequestId, REQUEST_ID_HEADER } from "@/lib/request-correlation"
 
@@ -24,16 +32,27 @@ export function middleware(request: NextRequest) {
     return response
   }
 
+  if (request.nextUrl.pathname === "/traditional") {
+    return correlated(NextResponse.redirect(traditionalHomepageRedirectUrl(request.nextUrl), 308))
+  }
+
   if (request.nextUrl.pathname === "/") {
     const config = resolveExperienceExperimentConfig()
-    if (isLikelyCrawler(request.headers.get("user-agent"))) {
-      headers.set(EXPERIENCE_EXPERIMENT_HEADER, config.defaultVariant)
-      return correlated(NextResponse.next({ request: { headers } }))
+    if (isRecognizedCrawler(request.headers.get("user-agent"))) {
+      headers.set(EXPERIENCE_EXPERIMENT_HEADER, CRAWLER_HOMEPAGE_VARIANT)
+      return homeResponse(correlated(NextResponse.next({ request: { headers } })))
     }
 
     const preference = normalizeStoredPreference(request.cookies.get(EXPERIENCE_PREFERENCE_COOKIE)?.value)
+    const requestedPreference = normalizeExperienceQuery(request.nextUrl.searchParams.get(EXPERIENCE_QUERY_PARAMETER))
+    const effectivePreference = requestedPreference ?? preference
+    if (effectivePreference) headers.set(EXPERIENCE_PREFERENCE_HEADER, effectivePreference)
     const privacyOptOut = shouldRespectPrivacyOptOut(request.headers)
-    let variant = preference ? "returning_preference" : config.defaultVariant
+    let variant = requestedPreference
+      ? CRAWLER_HOMEPAGE_VARIANT
+      : effectivePreference
+        ? "returning_preference"
+        : config.defaultVariant
 
     clearExperimentCookies = (!config.enabled || privacyOptOut) && Boolean(
       request.cookies.get(EXPERIENCE_EXPERIMENT_ID_COOKIE) || request.cookies.get(EXPERIENCE_EXPERIMENT_COOKIE),
@@ -44,7 +63,7 @@ export function middleware(request: NextRequest) {
       variant = assignExperienceVariant({
         experimentId,
         existingVariant: request.cookies.get(EXPERIENCE_EXPERIMENT_COOKIE)?.value,
-        preference,
+        preference: effectivePreference,
         enabled: true,
         defaultVariant: config.defaultVariant,
         weights: config.weights,
@@ -69,11 +88,11 @@ export function middleware(request: NextRequest) {
     response.headers.set("Vary", appendVary(response.headers.get("Vary"), "Cookie"))
   }
 
-  return response
-}
+  if (request.nextUrl.pathname === "/" && normalizeExperienceQuery(request.nextUrl.searchParams.get(EXPERIENCE_QUERY_PARAMETER))) {
+    response.cookies.set(EXPERIENCE_PREFERENCE_COOKIE, "normal", preferenceCookieOptions())
+  }
 
-function isLikelyCrawler(userAgent: string | null) {
-  return /\b(bot|crawler|spider|slurp|duckduckbot|bingpreview|facebookexternalhit|linkedinbot|whatsapp|telegrambot)\b/i.test(userAgent ?? "")
+  return request.nextUrl.pathname === "/" ? homeResponse(response) : response
 }
 
 export const config = {
@@ -88,6 +107,22 @@ function experimentCookieOptions() {
     maxAge: 60 * 60 * 24 * 90,
     path: "/",
   }
+}
+
+function preferenceCookieOptions() {
+  return {
+    httpOnly: false,
+    sameSite: "lax" as const,
+    secure: process.env.NODE_ENV === "production",
+    maxAge: 60 * 60 * 24 * 365,
+    path: "/",
+  }
+}
+
+function homeResponse<T extends NextResponse>(response: T) {
+  response.headers.set("Vary", appendVary(appendVary(response.headers.get("Vary"), "User-Agent"), "Cookie"))
+  response.headers.set("Cache-Control", "private, no-store")
+  return response
 }
 
 function appendVary(current: string | null, value: string) {

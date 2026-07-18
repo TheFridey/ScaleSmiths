@@ -10,7 +10,8 @@ export const metadata: Metadata = {
   title: "Our Work",
   description:
     "Portfolio of projects built by the ScaleSmiths team - local businesses, e-commerce, SaaS platforms and more.",
-  alternates: { canonical: "https://scalesmiths.co.uk/work" },
+  alternates: { canonical: "/work" },
+  openGraph: { url: "/work" },
 }
 
 export default function WorkPage() {

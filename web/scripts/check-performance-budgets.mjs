@@ -17,9 +17,9 @@ const hardOnly = process.env.PERFORMANCE_BUDGET_HARD_ONLY === "1"
 const routes = [
   {
     id: "normal",
-    route: "/traditional",
-    manifestKey: "/traditional/page",
-    description: "Normal public website route",
+    route: "/?experience=normal",
+    manifestKey: "/page",
+    description: "Canonical normal public homepage",
     hard: {
       routeJsGzipKb: 260,
       initialJsGzipKb: 320,

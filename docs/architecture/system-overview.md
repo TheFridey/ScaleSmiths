@@ -31,7 +31,7 @@ flowchart LR
 
 `web/src/app` uses the App Router. The root experience is selected by `ExperiencePreference` and preserves two explicit entry routes:
 
-- `/traditional`: conventional marketing experience.
+- `/`: canonical conventional marketing homepage, with a human-only first-visit choice or interactive CTA selected by the controlled experience experiment. The legacy `/traditional` path permanently redirects to `/?experience=normal` and is not indexable or listed in the sitemap.
 - `/interactive`: V2 interactive experience, including `V2InteractiveExperience`, `BusinessSimulationLayer`, conversion UI, and the dynamically loaded Three.js `ClientSceneCanvas`.
 - `/services`, `/pricing`, `/work`, `/quote`, and SEO landing pages: conventional public acquisition routes.
 - `/api/quote`: validates, rate-limits, persists, scores, and sends lead notifications through Resend.

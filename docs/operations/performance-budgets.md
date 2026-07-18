@@ -20,7 +20,7 @@ CI uploads `web-performance-reports` on every run.
 
 The public site has separate budgets for:
 
-- `/traditional` as the normal website experience
+- `/?experience=normal` as the explicit normal rendering of the canonical `/` homepage
 - `/interactive` as the V2 interactive experience
 
 Each route is checked for:
@@ -50,7 +50,7 @@ These checks protect the existing fallbacks without requiring CI to assert exact
 
 ## Threshold Choice
 
-Hard limits were set above the current measured output with enough headroom for CI variance, browser updates and small copy/layout changes. The initial baseline on this Windows workstation measured `/traditional` at roughly 199 KB route JS gzip, 1.1-1.3s LCP, 0 CLS, variable Lighthouse TBT from roughly 217-672ms and 75-88 Lighthouse performance, while `/interactive` measured roughly 165 KB route JS gzip, 1.3-1.6s LCP, 0 CLS, roughly 296-454ms TBT and 77-82 Lighthouse performance. Hard limits are intentionally looser than those numbers; advisory targets carry the stricter performance pressure.
+Hard limits were set above the current measured output with enough headroom for CI variance, browser updates and small copy/layout changes. The original normal-experience baseline was measured on the former `/traditional` alias at roughly 199 KB route JS gzip, 1.1-1.3s LCP, 0 CLS, variable Lighthouse TBT from roughly 217-672ms and 75-88 Lighthouse performance. The equivalent budget now runs against the canonical homepage with `?experience=normal`. The `/interactive` baseline measured roughly 165 KB route JS gzip, 1.3-1.6s LCP, 0 CLS, roughly 296-454ms TBT and 77-82 Lighthouse performance. Hard limits are intentionally looser than those numbers; advisory targets carry the stricter performance pressure.
 
 Advisory targets are stricter. They are printed in the report but do not fail CI. This keeps useful pressure on LCP, blocking time and performance score without making every low-confidence Lighthouse fluctuation block development.
 

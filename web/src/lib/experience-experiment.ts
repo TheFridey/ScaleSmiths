@@ -2,6 +2,7 @@ export const EXPERIENCE_EXPERIMENT_COOKIE = "ss_exp_variant"
 export const EXPERIENCE_EXPERIMENT_ID_COOKIE = "ss_exp_id"
 export const EXPERIENCE_PREFERENCE_COOKIE = "ss_experience_preference"
 export const EXPERIENCE_EXPERIMENT_HEADER = "x-scalesmiths-experience-variant"
+export const EXPERIENCE_PREFERENCE_HEADER = "x-scalesmiths-experience-preference"
 
 export const EXPERIENCE_EXPERIMENT_VARIANTS = [
   "fullscreen_choice",

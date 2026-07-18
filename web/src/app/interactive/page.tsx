@@ -9,6 +9,8 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "/interactive",
   },
+  openGraph: { url: "/interactive" },
+  robots: { index: true, follow: true },
 }
 
 export default function InteractivePage() {

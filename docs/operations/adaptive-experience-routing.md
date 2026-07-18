@@ -36,10 +36,19 @@ Then redeploy the web app. Existing variant cookies are ignored while the experi
 - The homepage server component renders from the same header used by the client gate, preventing hydration mismatch.
 - Explicit visitor preference is preserved through local storage and the first-party `ss_experience_preference` cookie.
 - Reduced-motion, coarse pointer, low memory and low hardware concurrency only influence the recommendation label; they never force an interactive redirect.
-- The interactive route remains at `/interactive`; canonical metadata and sitemap entries are unchanged.
-- The default homepage remains canonical `/`, so crawlers do not receive unstable redirect tests.
+- `/` is the only canonical normal homepage. The legacy `/traditional` route returns a permanent redirect to `/?experience=normal`; the explicit query makes the normal choice durable without creating another indexable page, and the canonical remains `/`.
+- Recognised search crawlers and generic crawler user agents always receive the server-rendered normal homepage with the non-blocking interactive CTA. Crawler requests ignore stored experience and experiment assignments, never receive the fullscreen choice, and do not create experiment cookies.
+- `/interactive` remains separately indexable because it contains a useful standalone journey, a no-JavaScript explanation and direct links to the normal site and project enquiry. Its canonical is `/interactive`. Revisit this policy if the route ceases to expose meaningful standalone content.
+- Homepage responses are marked `no-store, must-revalidate` so a shared cache cannot serve a human chooser to a crawler or leak one visitor's preference to another. Next.js retains its own `Vary` fields for router payload negotiation; cache safety does not depend on a CDN correctly keying the homepage by user agent or preference cookie. The stable `/traditional` redirect does not depend on a cookie.
 - Analytics events include the assigned variant in safe metadata for attribution.
 - No personal data, user-agent storage or fingerprinting is introduced.
+
+## Search and sitemap policy
+
+- The sitemap contains `/` once and excludes `/traditional`.
+- Sitemap `lastModified` values are source-controlled dates and change only when the associated public content baseline is deliberately updated.
+- Service, location and work routes use route-specific canonicals. Query-string variants of `/` canonicalise to `/`.
+- `robots.txt` allows the public content and points to the single sitemap; indexing decisions for redirect-only or thank-you routes remain in route metadata.
 
 ## Analysis
 

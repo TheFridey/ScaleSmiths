@@ -19,6 +19,76 @@ test.beforeEach(async ({ page }) => {
   })
 })
 
+test.describe("public experience SEO routing", () => {
+  test("serves the server-rendered normal homepage to Googlebot and Bingbot without the chooser", async ({ request }) => {
+    for (const userAgent of [
+      "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+      "Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)",
+    ]) {
+      const response = await request.get("/", { headers: { "user-agent": userAgent } })
+      const html = await response.text()
+
+      expect(response.status()).toBe(200)
+      expect(html).toContain('aria-label="FORGE YOUR"')
+      expect(html).toContain("Conversion-focused websites")
+      expect(html).not.toContain("What experience would you like today?")
+      expect(response.headers()["cache-control"]).toMatch(/no-store/i)
+      expect(response.headers()["cache-control"]).toMatch(/must-revalidate/i)
+    }
+
+    const humanResponse = await request.get("/", {
+      headers: { "user-agent": "Mozilla/5.0 Chrome/126.0 Safari/537.36" },
+    })
+    expect(await humanResponse.text()).toContain("What experience would you like today?")
+    expect(humanResponse.headers()["cache-control"]).toMatch(/no-store/i)
+  })
+
+  test("permanently redirects the legacy normal route and honours it over an interactive preference", async ({ page, request }) => {
+    const redirect = await request.get("/traditional", { maxRedirects: 0 })
+    expect(redirect.status()).toBe(308)
+    expect(new URL(redirect.headers().location).pathname).toBe("/")
+    expect(new URL(redirect.headers().location).searchParams.get("experience")).toBe("normal")
+
+    await setExperience(page, "interactive")
+    await gotoReady(page, "/traditional")
+
+    await expect(page).toHaveURL(/\/?experience=normal$/)
+    await expect(page.getByRole("heading", { name: /forge your digital edge/i })).toBeVisible()
+    await expect(page.getByRole("heading", { name: /what experience would you like today/i })).toBeHidden()
+    await expect.poll(() => page.evaluate((key) => localStorage.getItem(key), EXPERIENCE_KEY)).toBe("normal")
+  })
+
+  test("publishes route-specific canonical metadata and intentional interactive indexing", async ({ page }) => {
+    for (const [path, canonicalPath] of [
+      ["/?experience=normal", "/"],
+      ["/interactive", "/interactive"],
+      ["/services", "/services"],
+      ["/web-design-hucknall", "/web-design-hucknall"],
+      ["/work", "/work"],
+      ["/work/scalesmiths-platform-build", "/work/scalesmiths-platform-build"],
+    ] as const) {
+      await gotoReady(page, path)
+      const canonical = await page.locator('link[rel="canonical"]').getAttribute("href")
+      expect(new URL(canonical ?? "", "https://scalesmiths.co.uk").pathname).toBe(canonicalPath)
+    }
+
+    await gotoReady(page, "/interactive")
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /index, follow/i)
+  })
+
+  test("excludes the redirect-only route and duplicate URLs from the sitemap", async ({ request }) => {
+    const response = await request.get("/sitemap.xml")
+    const xml = await response.text()
+    const locations = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1])
+
+    expect(response.status()).toBe(200)
+    expect(locations).not.toContain("https://scalesmiths.co.uk/traditional")
+    expect(locations.filter((location) => location === "https://scalesmiths.co.uk")).toHaveLength(1)
+    expect(new Set(locations).size).toBe(locations.length)
+    expect(xml).toContain("2026-07-18T00:00:00.000Z")
+  })
+})
+
 test.describe("public experience preference", () => {
   test("shows the first-time chooser and saves the normal-site selection", async ({ page }) => {
     const consoleGuard = await installConsoleGuards(page)

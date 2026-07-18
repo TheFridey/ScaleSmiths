@@ -1,6 +1,7 @@
 import type { Metadata, MetadataRoute } from "next"
 
 export const LEGAL_LAST_UPDATED = "18 July 2026"
+export const LEGAL_LAST_MODIFIED_ISO = "2026-07-18T00:00:00.000Z"
 export const LEGAL_VERSION = "1.0"
 export const PRIVACY_CONTACT_EMAIL = "hello@scalesmiths.co.uk"
 
@@ -28,7 +29,7 @@ export const termsMetadata: Metadata = {
 
 export function legalSitemapEntries(base: string): MetadataRoute.Sitemap {
   return [
-    { url: `${base}/privacy`, lastModified: new Date(), changeFrequency: "yearly", priority: 0.4 },
-    { url: `${base}/terms`, lastModified: new Date(), changeFrequency: "yearly", priority: 0.4 },
+    { url: `${base}/privacy`, lastModified: new Date(LEGAL_LAST_MODIFIED_ISO), changeFrequency: "yearly", priority: 0.4 },
+    { url: `${base}/terms`, lastModified: new Date(LEGAL_LAST_MODIFIED_ISO), changeFrequency: "yearly", priority: 0.4 },
   ]
 }

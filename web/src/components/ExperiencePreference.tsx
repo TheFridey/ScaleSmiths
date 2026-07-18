@@ -58,9 +58,10 @@ function useReducedMotion() {
 interface HomeExperienceGateProps {
   children: ReactNode
   initialVariant: ExperienceExperimentVariant
+  initialPreference?: ExperiencePreference | null
 }
 
-export function HomeExperienceGate({ children, initialVariant }: HomeExperienceGateProps) {
+export function HomeExperienceGate({ children, initialVariant, initialPreference = null }: HomeExperienceGateProps) {
   const [preference, setPreference] = useState<ExperiencePreference | null>(null)
   const [mounted, setMounted] = useState(false)
   const [lowCapability, setLowCapability] = useState(false)
@@ -70,6 +71,27 @@ export function HomeExperienceGate({ children, initialVariant }: HomeExperienceG
 
   useEffect(() => {
     const savedPreference = readPreference()
+
+    if (initialPreference === "normal") {
+      rememberPreference("normal")
+      if (savedPreference !== "normal") {
+        trackExperienceEvent("experience_normal_selected", {
+          preference: "normal",
+          toExperience: "normal",
+          metadata: { variant: initialVariant, reason: "explicit_normal_route" },
+        })
+      }
+      setPreference("normal")
+      setMounted(true)
+      return
+    }
+
+    if (initialPreference === "interactive") {
+      setPreference("interactive")
+      setMounted(true)
+      window.location.replace("/interactive")
+      return
+    }
 
     if (savedPreference === "interactive") {
       trackExperienceEvent("experience_returning_preference", { preference: "interactive", returningPreference: true })
@@ -84,7 +106,7 @@ export function HomeExperienceGate({ children, initialVariant }: HomeExperienceG
     }
     setPreference(savedPreference)
     setMounted(true)
-  }, [router])
+  }, [initialPreference, initialVariant, router])
 
   useEffect(() => {
     const nav = navigator as Navigator & { deviceMemory?: number }
@@ -126,6 +148,15 @@ export function HomeExperienceGate({ children, initialVariant }: HomeExperienceG
   }
 
   if (!mounted) {
+    if (initialPreference === "normal") {
+      return (
+        <>
+          <ExperienceSwitchControl current="normal" />
+          {children}
+        </>
+      )
+    }
+    if (initialPreference === "interactive") return <ExperienceRedirectShell />
     return <InitialExperienceVariant variant={initialVariant} lowCapability={false} onChooseNormal={chooseNormal} onChooseInteractive={chooseInteractive}>{children}</InitialExperienceVariant>
   }
 

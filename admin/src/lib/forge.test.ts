@@ -488,6 +488,10 @@ describe("forge shell", () => {
     expect(isBuildPhaseWithoutDatabase({
       NODE_ENV: "production",
       DATABASE_URL: "postgres://example",
+    })).toBe(true)
+    expect(isBuildPhaseWithoutDatabase({
+      NODE_ENV: "production",
+      ADMIN_DATABASE_URL: "postgres://admin-runtime",
     })).toBe(false)
     expect(isBuildPhaseWithoutDatabase({
       NODE_ENV: "production",

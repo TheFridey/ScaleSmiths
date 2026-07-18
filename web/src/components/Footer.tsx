@@ -1,10 +1,12 @@
 import { Logo } from "./Logo"
+import { LEGAL_LINKS } from "@/lib/legal"
 
 const links = [
   { href: "/", label: "Home" },
   { href: "/work", label: "Our Work" },
   { href: "/services", label: "Services" },
   { href: "/quote", label: "Get a Quote" },
+  ...LEGAL_LINKS,
 ]
 
 export function Footer() {
@@ -15,7 +17,7 @@ export function Footer() {
           <Logo size={22} />
           <span className="ml-1 font-dm text-xs text-t3">Strategy. Systems. Scale.</span>
         </div>
-        <nav aria-label="Footer navigation" className="flex gap-6">
+        <nav aria-label="Footer navigation" className="flex flex-wrap gap-x-6 gap-y-3">
           {links.map((lk) => (
             <a key={lk.href} href={lk.href} className="text-sm text-t2 transition-colors hover:text-t1">
               {lk.label}

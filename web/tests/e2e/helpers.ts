@@ -75,8 +75,10 @@ export async function disableVisualNoise(page: Page) {
   })
 }
 
-export async function mockQuoteApi(page: Page, options: { ok: boolean; status?: number; error?: string }) {
+export async function mockQuoteApi(page: Page, options: { ok: boolean; status?: number; error?: string; onRequest?: (payload: Record<string, unknown>) => void }) {
   await page.route("**/api/quote", async (route) => {
+    const payload = route.request().postDataJSON() as Record<string, unknown>
+    options.onRequest?.(payload)
     await route.fulfill({
       status: options.status ?? (options.ok ? 200 : 500),
       contentType: "application/json",
@@ -122,7 +124,7 @@ export async function submitQuoteWizard(page: Page) {
   await page.getByRole("button", { name: /continue/i }).click()
   await page.getByRole("radio", { name: /^maybe$/i }).click()
   await page.getByRole("radio", { name: /^email$/i }).click()
-  await page.getByLabel(/consent/i).check()
+  await page.getByLabel(/store the information i submit/i).check()
   await page.getByLabel(/project brief/i).fill("We need a clearer site, quote journey, and local growth plan.")
   await page.getByRole("button", { name: /submit brief/i }).click()
 }

@@ -1,5 +1,5 @@
 import * as Sentry from "@sentry/nextjs"
-import type { Event } from "@sentry/nextjs"
+import type { ErrorEvent } from "@sentry/nextjs"
 import { registerWebErrorMonitoringProvider } from "./server-monitoring"
 import { createWebSentryMonitoringProvider, sanitizeSentryEvent, type WebSentryFacade } from "./sentry-monitoring-adapter"
 
@@ -32,7 +32,7 @@ export function initializeWebMonitoring(env: NodeJS.ProcessEnv = process.env) {
       sendDefaultPii: false,
       sampleRate: errorSampleRate(env.ERROR_MONITORING_SAMPLE_RATE),
       tracesSampleRate: 0,
-      beforeSend(event: Event) {
+      beforeSend(event: ErrorEvent) {
         sanitizeSentryEvent(event)
         return event
       },

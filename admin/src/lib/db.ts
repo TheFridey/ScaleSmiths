@@ -1,6 +1,8 @@
 import { Pool } from "pg"
-import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres"
+import { sql, type ExtractTablesWithRelations } from "drizzle-orm"
+import { drizzle, type NodePgDatabase, type NodePgTransaction } from "drizzle-orm/node-postgres"
 import * as schema from "./schema"
+import { resolveAdminDatabaseUrl } from "./database-url"
 
 /*
  * A single shared pg Pool + Drizzle instance.
@@ -21,12 +23,13 @@ const globalForDb = globalThis as unknown as {
 }
 
 function createPool() {
-  if (!process.env.DATABASE_URL) {
-    throw new Error("DATABASE_URL is required for database access.")
+  const connectionString = resolveAdminDatabaseUrl()
+  if (!connectionString) {
+    throw new Error("ADMIN_DATABASE_URL is required for admin database access.")
   }
 
   return new Pool({
-    connectionString: process.env.DATABASE_URL,
+    connectionString,
     allowExitOnIdle: true,
     connectionTimeoutMillis: 10_000,
     idleTimeoutMillis: 10_000,
@@ -36,16 +39,26 @@ function createPool() {
 function createUnavailableDb(): NodePgDatabase<typeof schema> {
   return new Proxy({}, {
     get() {
-      throw new Error("DATABASE_URL is required for database access.")
+      throw new Error("ADMIN_DATABASE_URL is required for admin database access.")
     },
   }) as NodePgDatabase<typeof schema>
 }
 
-const hasDatabaseUrl = Boolean(process.env.DATABASE_URL)
+const hasDatabaseUrl = Boolean(resolveAdminDatabaseUrl())
 const pool = hasDatabaseUrl ? globalForDb.__scalesmithsPool ?? createPool() : undefined
 export const db: NodePgDatabase<typeof schema> = hasDatabaseUrl
   ? globalForDb.__scalesmithsDb ?? drizzle(pool as Pool, { schema })
   : createUnavailableDb()
+
+export type AdminDatabaseTransaction = NodePgTransaction<typeof schema, ExtractTablesWithRelations<typeof schema>>
+
+export async function withClientTenant<T>(clientId: number, operation: (tx: AdminDatabaseTransaction) => Promise<T>) {
+  if (!Number.isInteger(clientId) || clientId <= 0) throw new Error("A positive client tenant id is required.")
+  return db.transaction(async (tx) => {
+    await tx.execute(sql`select set_config('app.current_client_id', ${String(clientId)}, true)`)
+    return operation(tx)
+  })
+}
 
 if (process.env.NODE_ENV !== "production" && pool) {
   globalForDb.__scalesmithsPool = pool

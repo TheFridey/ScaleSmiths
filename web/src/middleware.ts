@@ -8,6 +8,7 @@ import {
   normalizeStoredPreference,
   resolveExperienceExperimentConfig,
 } from "@/lib/experience-experiment"
+import { shouldRespectPrivacyOptOut } from "@/lib/experience-analytics"
 import { normalizeRequestId, REQUEST_ID_HEADER } from "@/lib/request-correlation"
 
 export function middleware(request: NextRequest) {
@@ -17,6 +18,7 @@ export function middleware(request: NextRequest) {
   headers.set("x-pathname", request.nextUrl.pathname)
   let experimentId: string | null = null
   let variantToPersist: string | null = null
+  let clearExperimentCookies = false
   const correlated = <T extends NextResponse>(response: T) => {
     response.headers.set(REQUEST_ID_HEADER, requestId)
     return response
@@ -29,19 +31,28 @@ export function middleware(request: NextRequest) {
       return correlated(NextResponse.next({ request: { headers } }))
     }
 
-    experimentId = request.cookies.get(EXPERIENCE_EXPERIMENT_ID_COOKIE)?.value ?? crypto.randomUUID()
     const preference = normalizeStoredPreference(request.cookies.get(EXPERIENCE_PREFERENCE_COOKIE)?.value)
-    const variant = assignExperienceVariant({
-      experimentId,
-      existingVariant: request.cookies.get(EXPERIENCE_EXPERIMENT_COOKIE)?.value,
-      preference,
-      enabled: config.enabled,
-      defaultVariant: config.defaultVariant,
-      weights: config.weights,
-    })
+    const privacyOptOut = shouldRespectPrivacyOptOut(request.headers)
+    let variant = preference ? "returning_preference" : config.defaultVariant
+
+    clearExperimentCookies = (!config.enabled || privacyOptOut) && Boolean(
+      request.cookies.get(EXPERIENCE_EXPERIMENT_ID_COOKIE) || request.cookies.get(EXPERIENCE_EXPERIMENT_COOKIE),
+    )
+
+    if (config.enabled && !privacyOptOut) {
+      experimentId = request.cookies.get(EXPERIENCE_EXPERIMENT_ID_COOKIE)?.value ?? crypto.randomUUID()
+      variant = assignExperienceVariant({
+        experimentId,
+        existingVariant: request.cookies.get(EXPERIENCE_EXPERIMENT_COOKIE)?.value,
+        preference,
+        enabled: true,
+        defaultVariant: config.defaultVariant,
+        weights: config.weights,
+      })
+      variantToPersist = variant
+    }
 
     headers.set(EXPERIENCE_EXPERIMENT_HEADER, variant)
-    variantToPersist = variant
   }
 
   const response = correlated(NextResponse.next({ request: { headers } }))
@@ -49,6 +60,12 @@ export function middleware(request: NextRequest) {
   if (experimentId && variantToPersist) {
     response.cookies.set(EXPERIENCE_EXPERIMENT_ID_COOKIE, experimentId, experimentCookieOptions())
     response.cookies.set(EXPERIENCE_EXPERIMENT_COOKIE, variantToPersist, experimentCookieOptions())
+    response.headers.set("Vary", appendVary(response.headers.get("Vary"), "Cookie"))
+  }
+
+  if (clearExperimentCookies) {
+    response.cookies.set(EXPERIENCE_EXPERIMENT_ID_COOKIE, "", { ...experimentCookieOptions(), maxAge: 0 })
+    response.cookies.set(EXPERIENCE_EXPERIMENT_COOKIE, "", { ...experimentCookieOptions(), maxAge: 0 })
     response.headers.set("Vary", appendVary(response.headers.get("Vary"), "Cookie"))
   }
 

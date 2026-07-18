@@ -3,8 +3,9 @@
 import type { ExperienceDeviceClass, ExperienceEventName, ExperiencePreferenceValue } from "./experience-analytics"
 import { EXPERIENCE_EXPERIMENT_COOKIE } from "./experience-experiment"
 
-const SESSION_KEY = "scalesmiths.analytics.session"
-const SENT_KEY = "scalesmiths.analytics.sent"
+export const ANALYTICS_SESSION_KEY = "scalesmiths.analytics.session"
+export const ANALYTICS_SENT_KEY = "scalesmiths.analytics.sent"
+export const ANALYTICS_OPT_OUT_COOKIE = "ss_analytics_opt_out"
 
 type TrackInput = {
   preference?: ExperiencePreferenceValue
@@ -61,17 +62,21 @@ export function trackQuoteCta(target = "/quote") {
   trackExperienceEvent("quote_cta_clicked", { metadata: { target } })
 }
 
-function shouldSkipAnalytics() {
+export function hasAnalyticsOptOut() {
   const nav = navigator as Navigator & { globalPrivacyControl?: boolean; doNotTrack?: string }
-  return nav.globalPrivacyControl === true || nav.doNotTrack === "1"
+  return nav.globalPrivacyControl === true || nav.doNotTrack === "1" || readCookie(ANALYTICS_OPT_OUT_COOKIE) === "1"
+}
+
+function shouldSkipAnalytics() {
+  return hasAnalyticsOptOut()
 }
 
 function getSessionId() {
   try {
-    const existing = window.sessionStorage.getItem(SESSION_KEY)
+    const existing = window.sessionStorage.getItem(ANALYTICS_SESSION_KEY)
     if (existing) return existing
     const next = `sess_${crypto.randomUUID()}`
-    window.sessionStorage.setItem(SESSION_KEY, next)
+    window.sessionStorage.setItem(ANALYTICS_SESSION_KEY, next)
     return next
   } catch {
     return `sess_${Math.random().toString(36).slice(2)}_${Date.now()}`
@@ -80,10 +85,10 @@ function getSessionId() {
 
 function alreadySent(eventKey: string) {
   try {
-    const sent = new Set(JSON.parse(window.sessionStorage.getItem(SENT_KEY) ?? "[]") as string[])
+    const sent = new Set(JSON.parse(window.sessionStorage.getItem(ANALYTICS_SENT_KEY) ?? "[]") as string[])
     if (sent.has(eventKey)) return true
     sent.add(eventKey)
-    window.sessionStorage.setItem(SENT_KEY, JSON.stringify(Array.from(sent).slice(-80)))
+    window.sessionStorage.setItem(ANALYTICS_SENT_KEY, JSON.stringify(Array.from(sent).slice(-80)))
     return false
   } catch {
     return false

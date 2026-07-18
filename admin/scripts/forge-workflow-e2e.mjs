@@ -3,6 +3,7 @@ import { readFile, rm, writeFile } from "node:fs/promises"
 import path from "node:path"
 import process from "node:process"
 import { Client } from "pg"
+import { adminDatabaseUrl } from "./database-url.mjs"
 
 const baseUrl = process.env.FORGE_E2E_BASE_URL ?? "http://127.0.0.1:3301"
 const email = process.env.ADMIN_EMAIL ?? "forge-e2e@scalesmiths.test"
@@ -58,7 +59,7 @@ try {
   const blocked = await callRaw(`/api/forge/projects/${id}/deploy`, { action: "mark_ready" })
   assert.ok(blocked.status >= 400, "deployment must remain blocked while required fallback approvals are absent")
 
-  const db = new Client({ connectionString: process.env.DATABASE_URL })
+  const db = new Client({ connectionString: adminDatabaseUrl() })
   await db.connect()
   try {
     const { rows: tasks } = await db.query("select id, project_id, status, result_quality, provider_attempted from forge_tasks where project_id=$1 order by id", [id])

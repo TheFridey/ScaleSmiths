@@ -8,6 +8,10 @@ services:
     env_file: .env
     environment:
       NODE_ENV: production
+      WEB_DATABASE_URL: ${WEB_DATABASE_URL:?WEB_DATABASE_URL is required in production}
+      ADMIN_DATABASE_URL: ""
+      MIGRATION_DATABASE_URL: ""
+      DATABASE_URL: ""
       SENTRY_AUTH_TOKEN: ""
       LOG_SHIPPING_TOKEN: ""
     ports:
@@ -26,6 +30,10 @@ services:
     env_file: .env
     environment:
       NODE_ENV: production
+      WEB_DATABASE_URL: ""
+      ADMIN_DATABASE_URL: ${ADMIN_DATABASE_URL:?ADMIN_DATABASE_URL is required in production}
+      MIGRATION_DATABASE_URL: ""
+      DATABASE_URL: ""
       SENTRY_AUTH_TOKEN: ""
       LOG_SHIPPING_TOKEN: ""
     ports:
@@ -47,6 +55,10 @@ services:
     env_file: .env
     environment:
       NODE_ENV: production
+      WEB_DATABASE_URL: ""
+      ADMIN_DATABASE_URL: ""
+      MIGRATION_DATABASE_URL: ${MIGRATION_DATABASE_URL:?MIGRATION_DATABASE_URL is required in production}
+      DATABASE_URL: ""
       SENTRY_AUTH_TOKEN: ""
       LOG_SHIPPING_TOKEN: ""
     command: npm run db:migrate
@@ -65,6 +77,10 @@ services:
     env_file: .env
     environment:
       NODE_ENV: production
+      WEB_DATABASE_URL: ""
+      ADMIN_DATABASE_URL: ""
+      MIGRATION_DATABASE_URL: ${MIGRATION_DATABASE_URL:?MIGRATION_DATABASE_URL is required in production}
+      DATABASE_URL: ""
       SENTRY_AUTH_TOKEN: ""
       LOG_SHIPPING_TOKEN: ""
     command: npm run db:migrate
@@ -83,9 +99,32 @@ services:
     env_file: .env
     environment:
       NODE_ENV: production
+      WEB_DATABASE_URL: ""
+      ADMIN_DATABASE_URL: ${ADMIN_DATABASE_URL:?ADMIN_DATABASE_URL is required in production}
+      MIGRATION_DATABASE_URL: ""
+      DATABASE_URL: ""
       SENTRY_AUTH_TOKEN: ""
       LOG_SHIPPING_TOKEN: ""
     command: npm run admin:bootstrap
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [ss-net]
+
+  postgres-provision:
+    image: ss-admin-postgres-provision
+    build:
+      context: ./admin
+      dockerfile: Dockerfile
+      target: builder
+    profiles: ["tools"]
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ""
+      SENTRY_AUTH_TOKEN: ""
+      LOG_SHIPPING_TOKEN: ""
+    command: npm run db:provision-roles -- --confirm-provision
     depends_on:
       postgres:
         condition: service_healthy
@@ -95,6 +134,14 @@ services:
     image: postgres:16-alpine
     restart: unless-stopped
     env_file: .env
+    environment:
+      WEB_DATABASE_URL: ""
+      ADMIN_DATABASE_URL: ""
+      MIGRATION_DATABASE_URL: ""
+      POSTGRES_PROVISIONING_DATABASE_URL: ""
+      READONLY_DATABASE_URL: ""
+      BACKUP_DATABASE_URL: ""
+      DATABASE_URL: ""
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:

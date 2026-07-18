@@ -41,6 +41,26 @@ export interface ValidQuotePayload {
   website: string
 }
 
+export function quoteInsertValues(data: ValidQuotePayload) {
+  return {
+    name: data.name,
+    email: data.email,
+    business: data.biz || null,
+    websiteUrl: data.websiteUrl || null,
+    businessType: data.businessType || null,
+    projectType: data.type || null,
+    budget: data.budget || null,
+    launchTimeframe: data.timeframe || null,
+    mainGoal: data.goal || null,
+    needs: data.needs.length ? data.needs.join(", ") : null,
+    carePlanInterest: data.carePlanInterest || null,
+    preferredContactMethod: data.preferredContactMethod || null,
+    consent: data.consent,
+    leadQuality: scoreLeadQuality(data),
+    brief: data.brief,
+  }
+}
+
 export type LeadQuality = "high" | "medium" | "low"
 
 export type QuoteValidationResult =

@@ -67,7 +67,7 @@ The root `.env` is supplied wholesale to Compose services. Ownership below descr
 
 | Owner | Variables |
 | --- | --- |
-| PostgreSQL/Drizzle | `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `DATABASE_URL` |
+| PostgreSQL/Drizzle | `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`; production-only `WEB_DATABASE_URL`, `ADMIN_DATABASE_URL`, `MIGRATION_DATABASE_URL`; operator-only `POSTGRES_PROVISIONING_DATABASE_URL`; local/test fallback `DATABASE_URL` |
 | Public web | `NEXT_PUBLIC_SITE_URL`, `PORTAL_SECRET`, `DEMO_PORTAL_ENABLED`, `DEMO_PORTAL_EMAIL`, `DEMO_PORTAL_PASSWORD`, `DEMO_PORTAL_CLIENT_ID` |
 | Admin/Auth.js | `NEXT_PUBLIC_ADMIN_URL=https://admin.scalesmiths.co.uk`, optional server-only `AUTH_URL=https://admin.scalesmiths.co.uk`, `AUTH_SECRET` (or compatibility `NEXTAUTH_SECRET`), `ADMIN_EMAIL`, `ADMIN_PASSWORD` |
 | Web email | `RESEND_API_KEY`, `RESEND_FROM`, `SUPPORT_EMAIL`, `ADMIN_PORTAL_URL`; Forge-generated server routes may also reference `RESEND_API_KEY` at their eventual deployment target |

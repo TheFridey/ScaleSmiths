@@ -16,7 +16,8 @@
     "lint": "eslint .",
     "db:generate": "node --env-file-if-exists=../.env ./node_modules/drizzle-kit/bin.cjs generate",
     "db:migrate": "node --env-file-if-exists=../.env ./node_modules/drizzle-kit/bin.cjs migrate",
-    "db:studio": "node --env-file-if-exists=../.env ./node_modules/drizzle-kit/bin.cjs studio"
+    "db:studio": "node --env-file-if-exists=../.env ./node_modules/drizzle-kit/bin.cjs studio",
+    "db:provision-roles": "node --env-file-if-exists=../.env scripts/provision-postgres-roles.mjs"
   },
   "dependencies": {
     "@auth/core": "0.41.2",

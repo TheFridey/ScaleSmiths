@@ -13,6 +13,9 @@ This checklist is a release gate for the supported Docker Compose and host-Nginx
 - [ ] `AUTH_SECRET`, `PORTAL_SECRET`, `MFA_ENCRYPTION_KEY`, `ANALYTICS_CREDENTIAL_ENCRYPTION_KEY`, database, email and provider credentials are generated values in the secret store—not example values.
 - [ ] Bootstrap/recovery passwords have been removed from long-lived environment configuration after use.
 - [ ] Owner and administrator MFA enforcement is active; any bootstrap grace deadline is short, documented and scheduled for removal.
+- [ ] Web, admin and migration PostgreSQL URLs use distinct login roles; `DATABASE_URL` is absent from production runtime configuration.
+- [ ] The migration role owns `public`, `drizzle`, application objects and both journals; runtime roles have no schema `CREATE` privilege.
+- [ ] Analytics RLS isolation and a backup made with the dedicated backup role were verified against an isolated production restore.
 - [ ] Cloudflare Access protects admin, origin firewall rules are active, forwarding headers are overwritten by trusted Nginx, and the public site remains reachable.
 - [ ] `FORGE_SANDBOX_RUNNER=docker`; Docker socket is not mounted; generated sites are private; network/resource limits match the threat model.
 - [ ] Forge AI hard limits, database reservations, provider keys and fallback behavior are configured and tested without live client data.

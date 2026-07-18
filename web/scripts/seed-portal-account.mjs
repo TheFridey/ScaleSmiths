@@ -3,8 +3,10 @@ import pg from "pg"
 
 const { Pool } = pg
 
-const required = ["DATABASE_URL", "DEMO_PORTAL_EMAIL", "DEMO_PORTAL_PASSWORD", "DEMO_PORTAL_CLIENT_ID"]
+const databaseUrl = process.env.MIGRATION_DATABASE_URL ?? (process.env.NODE_ENV === "production" ? "" : process.env.DATABASE_URL)
+const required = ["DEMO_PORTAL_EMAIL", "DEMO_PORTAL_PASSWORD", "DEMO_PORTAL_CLIENT_ID"]
 const missing = required.filter((key) => !process.env[key]?.trim())
+if (!databaseUrl) missing.unshift(process.env.NODE_ENV === "production" ? "MIGRATION_DATABASE_URL" : "MIGRATION_DATABASE_URL or DATABASE_URL")
 
 if (missing.length) {
   console.error(`Missing required env: ${missing.join(", ")}`)
@@ -16,7 +18,7 @@ const password = process.env.DEMO_PORTAL_PASSWORD
 const clientId = process.env.DEMO_PORTAL_CLIENT_ID.trim()
 const passwordHash = await bcrypt.hash(password, 12)
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL })
+const pool = new Pool({ connectionString: databaseUrl })
 
 try {
   await pool.query(

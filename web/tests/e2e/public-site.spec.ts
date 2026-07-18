@@ -178,7 +178,27 @@ test.describe("quote and contact forms", () => {
   })
 
   test("submits the interactive plan form successfully", async ({ page }) => {
-    await mockQuoteApi(page, { ok: true })
+    let submittedPayload: Record<string, unknown> | undefined
+    await mockQuoteApi(page, { ok: true, onRequest: (payload) => { submittedPayload = payload } })
+    await openInteractivePlan(page)
+
+    await page.getByLabel(/^name/i).fill("Riley Client")
+    await page.getByLabel(/business name/i).fill("Riley Builds")
+    await page.getByLabel(/^email/i).fill("riley@example.com")
+    await page.getByLabel(/what do you want the website to do/i).fill("Win better enquiries and reduce manual follow-up.")
+    await page.getByLabel(/budget range/i).selectOption({ label: "GBP 8,000-15,000" })
+    await page.getByLabel(/timeline/i).selectOption({ label: "4-6 weeks" })
+    await page.getByLabel(/store the information i submit/i).check()
+    await page.locator("form").getByRole("button", { name: /book a strategy call/i }).click()
+
+    await expect(page.getByRole("status")).toContainText(/plan sent/i)
+    expect(submittedPayload?.consent).toBe(true)
+    expect(submittedPayload).not.toHaveProperty("marketingConsent")
+  })
+
+  test("blocks the interactive enquiry until specific consent is given", async ({ page }) => {
+    let requestCount = 0
+    await mockQuoteApi(page, { ok: true, onRequest: () => { requestCount += 1 } })
     await openInteractivePlan(page)
 
     await page.getByLabel(/^name/i).fill("Riley Client")
@@ -189,7 +209,23 @@ test.describe("quote and contact forms", () => {
     await page.getByLabel(/timeline/i).selectOption({ label: "4-6 weeks" })
     await page.locator("form").getByRole("button", { name: /book a strategy call/i }).click()
 
-    await expect(page.getByRole("status")).toContainText(/plan sent/i)
+    await expect(page.locator("form").getByRole("alert")).toContainText(/confirm that we may store your information/i)
+    expect(requestCount).toBe(0)
+  })
+
+  test("publishes indexable privacy and terms pages with navigation links", async ({ page }) => {
+    await gotoReady(page, "/privacy")
+    await expect(page.getByRole("heading", { name: "Privacy notice" })).toBeVisible()
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /index, follow/i)
+    await page.getByRole("button", { name: /turn off experience analytics/i }).click()
+    await expect(page.getByRole("status")).toContainText(/analytics is now off/i)
+    await expect.poll(async () => (await page.context().cookies()).find((cookie) => cookie.name === "ss_analytics_opt_out")?.value).toBe("1")
+    await expect(page.getByRole("link", { name: "Terms" }).last()).toHaveAttribute("href", "/terms")
+
+    await page.getByRole("link", { name: "Terms" }).last().click()
+    await expect(page.getByRole("heading", { name: "Website terms" })).toBeVisible()
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /index, follow/i)
+    await expect(page.getByRole("link", { name: "Privacy" }).last()).toHaveAttribute("href", "/privacy")
   })
 
   test("exits the interactive route back to the normal site", async ({ page }) => {

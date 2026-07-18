@@ -6,6 +6,7 @@ import {
   genericQuoteError,
   isHoneypotSubmission,
   quoteRateLimitKeys,
+  quoteInsertValues,
   resolveQuoteSubmissionResult,
   scoreLeadQuality,
   validateQuotePayload,
@@ -42,6 +43,24 @@ describe("quote security", () => {
     expect(result.ok).toBe(false)
   })
 
+  it("rejects a complete submission without explicit enquiry consent", () => {
+    const result = validateQuotePayload({
+      name: "Rhys",
+      email: "lead@example.com",
+      businessType: "Local service business",
+      type: "Conversion Website",
+      budget: "GBP 4,500-6,500",
+      timeframe: "4-6 weeks",
+      goal: "Generate qualified enquiries",
+      preferredContactMethod: "Email",
+      consent: false,
+      brief: "We need a clearer website and enquiry route.",
+    })
+
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.status).toBe(400)
+  })
+
   it("accepts complete quote payloads with selected needs", () => {
     const result = validateQuotePayload({
       name: "Rhys",
@@ -64,6 +83,9 @@ describe("quote security", () => {
     if (result.ok) {
       expect(result.data.email).toBe("lead@example.com")
       expect(result.data.needs).toEqual(["SEO", "Hosting", "Custom Functionality"])
+      const record = quoteInsertValues(result.data)
+      expect(record.consent).toBe(true)
+      expect(record).not.toHaveProperty("marketingConsent")
     }
   })
 

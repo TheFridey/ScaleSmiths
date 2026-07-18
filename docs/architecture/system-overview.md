@@ -8,7 +8,7 @@ This document describes the repository on `master` as audited on 10 July 2026. I
 | --- | --- | --- |
 | Public application | `web/` | Marketing site, traditional and interactive experiences, quote capture, client portal |
 | Internal application | `admin/` | Admin CRM, client operations, proposals, reports, and Forge |
-| Shared database | PostgreSQL | Both applications connect through `DATABASE_URL`; each owns a Drizzle schema and migration directory |
+| Shared database | PostgreSQL | Separate least-privilege production runtime roles; one migration owner applies the independent web then admin Drizzle histories |
 | Generated workspaces | `generated-sites/` | Per-Forge-project Next.js workspaces; bind-mounted only into admin in production |
 | Edge routing | `nginx/` | Container-owned and host-Nginx variants |
 | Deployment | `docker-compose*.yml` | Development, container-Nginx production, and host-Nginx production variants |

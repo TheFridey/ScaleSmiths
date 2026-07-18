@@ -19,7 +19,7 @@ flowchart LR
 
 ## Public application boundary
 
-The marketing site is public. Quote submission is untrusted input and is protected by body limits, validation, honeypot/rate-limit logic, normalized fields, database persistence, and fail-aware Resend delivery status. The public app receives the shared root environment, so server/client separation in Next.js remains important; only `NEXT_PUBLIC_*` variables may enter browser bundles.
+The marketing site is public. Quote submission is untrusted input and is protected by body limits, validation, honeypot/rate-limit logic, normalized fields, database persistence, and fail-aware Resend delivery status. The public production container receives only its web runtime database URL; server/client separation in Next.js remains important and only `NEXT_PUBLIC_*` variables may enter browser bundles.
 
 Portal login accepts untrusted credentials, uses bcrypt for stored accounts, database-backed login limits, and an HTTP-only, SameSite=Lax, production-secure JWT cookie. Every portal resource is filtered by the session client ID. Internal request messages are excluded from client-visible queries. Demo authentication is an explicit environment override and must remain disabled in production.
 
@@ -30,6 +30,10 @@ Admin has no signup. Persistent internal identities are authenticated by Auth.js
 Privileged production identities require TOTP MFA after a bounded bootstrap grace deadline. TOTP secrets use AES-256-GCM server-side encryption, recovery codes use salted scrypt hashes and single-use transactional consumption, and setup/failure/disablement events are persisted without secret material.
 
 Forge mutation/task rate limiting is an in-memory map in middleware. It is per process, resets on restart, and is not globally effective across replicas. It is a safety throttle, not a durable abuse-control boundary.
+
+## Database boundary
+
+Production database access is separated between web runtime, admin runtime and migration-owner credentials. Runtime containers do not receive the migration URL, cannot create schema objects and do not own either migration journal. Client analytics and optimisation rows additionally enforce transaction-scoped PostgreSQL RLS. See [PostgreSQL access boundaries](database-access-boundaries.md).
 
 ## AI boundary
 

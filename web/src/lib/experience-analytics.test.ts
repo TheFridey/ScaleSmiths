@@ -32,6 +32,7 @@ describe("experience analytics privacy and taxonomy", () => {
   it("respects browser privacy opt-out headers", () => {
     expect(shouldRespectPrivacyOptOut(new Headers({ "sec-gpc": "1" }))).toBe(true)
     expect(shouldRespectPrivacyOptOut(new Headers({ dnt: "1" }))).toBe(true)
+    expect(shouldRespectPrivacyOptOut(new Headers({ cookie: "other=value; ss_analytics_opt_out=1" }))).toBe(true)
     expect(shouldRespectPrivacyOptOut(new Headers())).toBe(false)
   })
 

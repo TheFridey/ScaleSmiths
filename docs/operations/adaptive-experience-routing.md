@@ -19,7 +19,7 @@ NEXT_PUBLIC_EXPERIENCE_EXPERIMENT_DEFAULT_VARIANT=fullscreen_choice
 NEXT_PUBLIC_EXPERIENCE_EXPERIMENT_WEIGHTS=fullscreen_choice:100,normal_with_interactive_cta:0,device_recommendation:0,returning_preference:0
 ```
 
-Set `NEXT_PUBLIC_EXPERIENCE_EXPERIMENT_ENABLED=true` to enable weighted assignment. Assignment is deterministic from a first-party anonymous experiment ID cookie. Existing variant cookies remain stable. An explicit normal or interactive preference forces the `returning_preference` path.
+Set `NEXT_PUBLIC_EXPERIENCE_EXPERIMENT_ENABLED=true` to enable weighted assignment. Assignment is deterministic from a first-party anonymous experiment ID cookie. Existing variant cookies remain stable. An explicit normal or interactive preference forces the `returning_preference` path. No experiment ID or variant cookie is written while the experiment is disabled, or when GPC, DNT, or the public analytics objection cookie is present.
 
 To roll back, set:
 

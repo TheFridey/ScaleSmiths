@@ -380,6 +380,12 @@
                                   "sha256":  "cc0695aaf04c83c540314e6d47362b3f85552c38a4a6608787a208848e540d0a",
                                   "lifecycle":  "forward",
                                   "reason":  "Adds immutable generated-site dependency admission and SPDX evidence to deployment candidates."
+                              },
+                              {
+                                  "path":  "admin/drizzle/0044_client_analytics_tenant_rls.sql",
+                                  "sha256":  "523242c2e52aa911c7a99c1f3351c9cd76b7c4ceb1d0ea63a444dac617fd807d",
+                                  "lifecycle":  "forward",
+                                  "reason":  "Enforces transaction-scoped row-level tenant isolation for client analytics and optimisation data."
                               }
                           ],
     "journals":  {
@@ -408,6 +414,13 @@
                                                                "version":  "7",
                                                                "when":  1785830400000,
                                                                "tag":  "0043_generated_dependency_admission",
+                                                               "breakpoints":  true
+                                                           },
+                                                           {
+                                                               "idx":  44,
+                                                               "version":  "7",
+                                                               "when":  1785916800000,
+                                                               "tag":  "0044_client_analytics_tenant_rls",
                                                                "breakpoints":  true
                                                            }
                                                        ]

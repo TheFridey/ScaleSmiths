@@ -5,6 +5,7 @@ import { useMemo, useRef, useState } from "react"
 import { motion, useReducedMotion } from "framer-motion"
 import { CheckCircle2, ClipboardList, MailCheck, Send, Sparkles } from "lucide-react"
 import { trackExperienceEvent } from "@/lib/experience-analytics-client"
+import { EnquiryConsent } from "@/components/EnquiryConsent"
 import type { V2Industry } from "@/lib/v2/scenes"
 import { getIndustryContent, industryContent } from "@/lib/v2/industryContent"
 
@@ -22,6 +23,7 @@ interface ConversionFormData {
   budget: string
   timeline: string
   website: string
+  consent: boolean
 }
 
 type ConversionIntent = "Book a Strategy Call" | "Request a V2 Demo" | "Send Me This Plan"
@@ -117,6 +119,7 @@ export function V2ConversionLayer({ industry }: V2ConversionLayerProps) {
     budget: "",
     timeline: "",
     website: "",
+    consent: false,
   })
   const [intent, setIntent] = useState<ConversionIntent>("Book a Strategy Call")
   const [error, setError] = useState("")
@@ -149,6 +152,7 @@ export function V2ConversionLayer({ industry }: V2ConversionLayerProps) {
     if (!formData.goal.trim()) return "Please tell us what you want the website to do."
     if (!formData.budget) return "Please choose a budget range."
     if (!formData.timeline) return "Please choose a timeline."
+    if (!formData.consent) return "Please confirm that we may store your information and contact you about this enquiry."
     return ""
   }
 
@@ -181,7 +185,7 @@ export function V2ConversionLayer({ industry }: V2ConversionLayerProps) {
           needs: recommendedSystem.slice(0, 8),
           carePlanInterest: "Maybe",
           preferredContactMethod: formData.phone ? `Email and phone: ${formData.phone}` : "Email",
-          consent: true,
+          consent: formData.consent,
           brief: buildBrief({
             contentName: formContent.name,
             finalPitch: formContent.finalPitch,
@@ -402,6 +406,13 @@ export function V2ConversionLayer({ industry }: V2ConversionLayerProps) {
               </select>
             </Field>
           </div>
+
+          <EnquiryConsent
+            id="v2-enquiry-consent"
+            checked={formData.consent}
+            onChange={(checked) => updateField("consent", checked)}
+            tone="interactive"
+          />
 
           <button
             type="submit"

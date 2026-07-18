@@ -10,6 +10,7 @@ ScaleSmiths records first-party, privacy-minimised events for the public normal-
 - Referrers are reduced to hostname only.
 - Campaign attribution is limited to lawful `utm_source`, `utm_medium` and `utm_campaign` values already present in the URL.
 - Browser privacy signals `Sec-GPC: 1` and `DNT: 1` skip ingestion.
+- The public privacy page provides a free browser-specific objection control. It writes `ss_analytics_opt_out=1`, clears analytics session/experiment identifiers, and is enforced by both the client tracker and ingestion route.
 - Events are sent to the first-party `/api/experience-events` route only.
 
 ## Event taxonomy
@@ -46,6 +47,12 @@ The internal dashboard is available at `/operations/experience-analytics`. It sh
 - device and campaign breakdowns.
 
 The dashboard intentionally does not expose visitor-level records.
+
+## Browser storage and objection
+
+The tracker uses `scalesmiths.analytics.session` and `scalesmiths.analytics.sent` in `sessionStorage` to group a tab session and suppress duplicate events. The controlled routing experiment uses `ss_exp_id` and `ss_exp_variant` only while the experiment is enabled. Disabled experiments, GPC/DNT requests, and explicit analytics objections do not receive experiment assignment cookies. Functional experience and portal-session storage is documented separately on the public privacy page.
+
+The implementation is intended to stay within the narrow UK statistical-purpose exception: first-party improvement only, no advertising, no cross-site tracking, no visitor profiling, transparent fields, and a simple objection route. Event-level retention and the production deletion process still require professional legal review and an owned operational schedule before final publication.
 
 ## Migration
 

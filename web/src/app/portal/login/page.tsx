@@ -4,6 +4,7 @@ import { FormEvent, useState } from "react"
 import { useRouter } from "next/navigation"
 import { ArrowRight, LockKeyhole } from "lucide-react"
 import { Logo } from "@/components/Logo"
+import Link from "next/link"
 
 export default function PortalLoginPage() {
   const router = useRouter()
@@ -103,6 +104,12 @@ export default function PortalLoginPage() {
               {loading ? "Signing in..." : "Enter Portal"} <ArrowRight size={15} aria-hidden="true" />
             </button>
           </form>
+          <p className="mt-5 text-center font-dm text-xs leading-relaxed text-t3">
+            Portal use is covered by our{" "}
+            <Link href="/privacy" className="underline underline-offset-2 hover:text-t1">privacy notice</Link>
+            {" "}and{" "}
+            <Link href="/terms" className="underline underline-offset-2 hover:text-t1">website terms</Link>.
+          </p>
         </div>
       </div>
     </section>

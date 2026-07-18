@@ -2,6 +2,7 @@ import { mkdir, rm, writeFile } from "node:fs/promises"
 import path from "node:path"
 import process from "node:process"
 import { Client } from "pg"
+import { adminDatabaseUrl } from "./database-url.mjs"
 
 const DEMO_PROJECT_NAME = "Forge Demo - Nottingham HomeCare Repairs"
 const ACTOR = process.env.ADMIN_EMAIL || "forge-demo@scalesmiths.co.uk"
@@ -399,11 +400,7 @@ async function main() {
     return
   }
 
-  if (!process.env.DATABASE_URL) {
-    throw new Error("DATABASE_URL is required. Use --dry-run to verify the mock demo without a database.")
-  }
-
-  const client = new Client({ connectionString: process.env.DATABASE_URL })
+  const client = new Client({ connectionString: adminDatabaseUrl() })
   await client.connect()
 
   try {

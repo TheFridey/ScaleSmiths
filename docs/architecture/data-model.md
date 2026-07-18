@@ -1,6 +1,6 @@
 # Data model
 
-PostgreSQL is shared by web and admin through one `DATABASE_URL`. Drizzle definitions live in `web/src/lib/schema.ts` and `admin/src/lib/schema.ts`; migrations live in `web/drizzle` and `admin/drizzle`. There is no common schema package.
+PostgreSQL is shared by web and admin, but production uses separate `WEB_DATABASE_URL`, `ADMIN_DATABASE_URL`, and `MIGRATION_DATABASE_URL` principals. `DATABASE_URL` is a local/test compatibility fallback only. Drizzle definitions live in `web/src/lib/schema.ts` and `admin/src/lib/schema.ts`; migrations live in `web/drizzle` and `admin/drizzle`. There is no common schema package. See [PostgreSQL access boundaries](database-access-boundaries.md).
 
 ## Domain map
 

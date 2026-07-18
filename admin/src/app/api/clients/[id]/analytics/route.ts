@@ -27,7 +27,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (input.action === "ingest") {
     const configId = idOf(input.configId)
     if (!configId) return NextResponse.json({ error: "Config id is required." }, { status: 400 })
-    return NextResponse.json({ ok: true, ...(await ingestClientAnalytics(configId, actor(session))) })
+    return NextResponse.json({ ok: true, ...(await ingestClientAnalytics(clientId, configId, actor(session))) })
   }
   if (input.action === "store_optimisation") {
     const key = text(input.key)

@@ -2,20 +2,21 @@ import process from "node:process"
 import bcrypt from "bcryptjs"
 import { Client } from "pg"
 import { decideBootstrapAction, prepareBootstrapPasswordHash } from "./bootstrap-admin-logic.mjs"
+import { adminDatabaseUrl } from "./database-url.mjs"
 
 const recovery = process.argv.includes("--recover-owner")
 const email = String(recovery ? process.env.ADMIN_RECOVERY_EMAIL : process.env.ADMIN_EMAIL || "").trim().toLowerCase()
 const password = String(recovery ? process.env.ADMIN_RECOVERY_PASSWORD : process.env.ADMIN_PASSWORD || "")
 const displayName = String(recovery ? process.env.ADMIN_RECOVERY_NAME : process.env.ADMIN_DISPLAY_NAME || "ScaleSmiths Owner").trim()
 
-if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is required.")
+const databaseUrl = adminDatabaseUrl()
 if (!email || !/^\S+@\S+\.\S+$/.test(email)) throw new Error(`${recovery ? "ADMIN_RECOVERY_EMAIL" : "ADMIN_EMAIL"} must be a valid email.`)
 if (displayName.length < 2) throw new Error("Admin display name is required.")
 
 const preparedPassword = await prepareBootstrapPasswordHash(password, recovery, bcrypt)
 const passwordHash = preparedPassword.hash
 if (preparedPassword.legacyWarning) console.warn("Bootstrap is preserving the existing configured password, but it is shorter than the 12-character policy. Reset it immediately after first login.")
-const client = new Client({ connectionString: process.env.DATABASE_URL })
+const client = new Client({ connectionString: databaseUrl })
 await client.connect()
 
 try {

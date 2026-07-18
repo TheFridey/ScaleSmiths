@@ -5,7 +5,7 @@
 
 ## Context
 
-Both applications use PostgreSQL through one `DATABASE_URL`. Drizzle ORM schema definitions and migrations live independently in `web/` and `admin/`. The public app owns quote and portal tables; admin owns CRM, identity, Forge, economics, approvals, and deployment data, while some operational tables are shared.
+Both applications use one PostgreSQL database. Drizzle ORM schema definitions and migrations live independently in `web/` and `admin/`. The public app owns quote and portal tables; admin owns CRM, identity, Forge, economics, approvals, and deployment data, while some operational tables are shared. Production connections are split between least-privilege web/admin runtime roles and a migration owner; `DATABASE_URL` remains a local/test fallback.
 
 ## Decision
 

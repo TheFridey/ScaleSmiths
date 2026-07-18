@@ -1,4 +1,5 @@
 import type { Config } from "drizzle-kit"
+import { resolveMigrationDatabaseUrl } from "./src/lib/database-url"
 
 export default {
   schema: "./src/lib/schema.ts",
@@ -9,6 +10,6 @@ export default {
     schema: "drizzle",
   },
   dbCredentials: {
-    url: process.env.DATABASE_URL ?? "",
+    url: resolveMigrationDatabaseUrl() ?? "",
   },
 } satisfies Config

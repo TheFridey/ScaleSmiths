@@ -14,6 +14,8 @@ export const EXPERIENCE_EVENT_NAMES = [
   "experience_error",
 ] as const
 
+export const ANALYTICS_OPT_OUT_COOKIE = "ss_analytics_opt_out"
+
 export type ExperienceEventName = (typeof EXPERIENCE_EVENT_NAMES)[number]
 export type ExperiencePreferenceValue = "normal" | "interactive" | "none" | "unknown"
 export type ExperienceDeviceClass = "mobile" | "tablet" | "desktop" | "unknown"
@@ -65,7 +67,19 @@ const PREFERENCE_SET = new Set(["normal", "interactive", "none", "unknown"])
 const DEVICE_SET = new Set(["mobile", "tablet", "desktop", "unknown"])
 
 export function shouldRespectPrivacyOptOut(headers: Headers) {
-  return headers.get("sec-gpc") === "1" || headers.get("dnt") === "1"
+  return headers.get("sec-gpc") === "1" || headers.get("dnt") === "1" || hasCookie(headers.get("cookie"), ANALYTICS_OPT_OUT_COOKIE, "1")
+}
+
+function hasCookie(header: string | null, name: string, value: string) {
+  return (header ?? "").split(";").some((part) => {
+    const [key, rawValue] = part.trim().split("=", 2)
+    if (key !== name) return false
+    try {
+      return decodeURIComponent(rawValue ?? "") === value
+    } catch {
+      return false
+    }
+  })
 }
 
 export function sanitizeExperienceEvent(input: unknown): SanitizedExperienceEvent | null {

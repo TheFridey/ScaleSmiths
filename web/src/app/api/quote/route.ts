@@ -12,7 +12,7 @@ import {
   isHoneypotSubmission,
   parseJsonWithLimit,
   quoteRateLimitKeys,
-  scoreLeadQuality,
+  quoteInsertValues,
   validateQuotePayload,
   type QuotePayload,
 } from "@/lib/quote-security"
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: validation.error }, { status: validation.status })
     }
 
-    const { name, email, biz, websiteUrl, businessType, type, budget, timeframe, goal, needs, carePlanInterest, preferredContactMethod, consent, brief, website } = validation.data
+    const { name, email, biz, websiteUrl, businessType, type, budget, timeframe, goal, needs, carePlanInterest, preferredContactMethod, brief, website } = validation.data
     if (isHoneypotSubmission({ website })) {
       return NextResponse.json({ ok: true })
     }
@@ -101,23 +101,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const [quote] = await db.insert(quoteRequests).values({
-      name,
-      email,
-      business: biz || null,
-      websiteUrl: websiteUrl || null,
-      businessType: businessType || null,
-      projectType: type || null,
-      budget: budget || null,
-      launchTimeframe: timeframe || null,
-      mainGoal: goal || null,
-      needs: needs.length ? needs.join(", ") : null,
-      carePlanInterest: carePlanInterest || null,
-      preferredContactMethod: preferredContactMethod || null,
-      consent,
-      leadQuality: scoreLeadQuality(validation.data),
-      brief,
-    }).returning({ id: quoteRequests.id })
+    const [quote] = await db.insert(quoteRequests).values(quoteInsertValues(validation.data)).returning({ id: quoteRequests.id })
 
     const apiKey = process.env.RESEND_API_KEY
     const from = process.env.RESEND_FROM

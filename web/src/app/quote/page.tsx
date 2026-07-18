@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, ArrowRight } from "lucide-react"
 import { trackExperienceEvent } from "@/lib/experience-analytics-client"
+import { EnquiryConsent } from "@/components/EnquiryConsent"
 
 const STEPS = [
   {
@@ -244,18 +245,14 @@ export default function QuotePage() {
                 className="hidden"
                 aria-hidden="true"
               />
-              <label className="mb-2 flex items-start gap-3 rounded-xl border border-b1 bg-s1 p-4 font-dm text-sm leading-relaxed text-t2">
-                <input
-                  type="checkbox"
-                  checked={data.consent === "true"}
-                  onChange={(e) => {
-                    setError("")
-                    setData((d) => ({ ...d, consent: e.target.checked ? "true" : "" }))
-                  }}
-                  className="mt-1 h-4 w-4 shrink-0"
-                />
-                I consent to ScaleSmiths storing this enquiry and contacting me about the project.
-              </label>
+              <EnquiryConsent
+                id="quote-enquiry-consent"
+                checked={data.consent === "true"}
+                onChange={(checked) => {
+                  setError("")
+                  setData((d) => ({ ...d, consent: checked ? "true" : "" }))
+                }}
+              />
             </>
           )}
           {curr.fields.map((field) => (

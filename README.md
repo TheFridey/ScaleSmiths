@@ -313,7 +313,8 @@ Only `.env.example` files should live in the repo. Real files such as `.env`,
 ignored and should stay on the machine or secret manager that needs them.
 
 - `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`
-- `DATABASE_URL`
+- Production: distinct `WEB_DATABASE_URL`, `ADMIN_DATABASE_URL`, and `MIGRATION_DATABASE_URL`; operator-only `POSTGRES_PROVISIONING_DATABASE_URL`
+- Local development and tests only: `DATABASE_URL` compatibility fallback
 - `NEXT_PUBLIC_SITE_URL`
 - `PORTAL_SECRET`
 - `DEMO_PORTAL_ENABLED`
@@ -328,6 +329,8 @@ ignored and should stay on the machine or secret manager that needs them.
 - `FORGE_SANDBOX_RUNNER`, `FORGE_SANDBOX_DOCKER_IMAGE`, `FORGE_SANDBOX_CPUS`, `FORGE_SANDBOX_MEMORY`, `FORGE_SANDBOX_NETWORK`, `FORGE_SANDBOX_INSTALL_NETWORK`, `FORGE_SANDBOX_PREVIEW_NETWORK`, `FORGE_SANDBOX_PREVIEW_INTERNAL_PORT` optionally enable Dockerized generated-site preview/QA
 - `FORGE_ARTIFACT_MAX_VERSIONS`, `FORGE_ARTIFACT_MAX_CONTENT_BYTES`, `FORGE_QA_LOG_MAX_CHARS` optionally tune Forge artifact/version retention
 - `FORGE_RATE_LIMIT_WINDOW_MS`, `FORGE_MUTATION_RATE_LIMIT`, `FORGE_TASK_RATE_LIMIT` optionally tune admin-only Forge mutation/task throttles; defaults are 60 seconds, 30 mutations, and 10 task/AI actions per actor/route
+
+See [PostgreSQL least-privilege rollout](docs/operations/postgresql-least-privilege-rollout.md) before changing production database credentials.
 
 Before committing or packaging a release, run the env hygiene check from the
 repo root:

@@ -12,6 +12,8 @@
     "update:cloudflare-ranges": "node scripts/update-cloudflare-nginx-ranges.mjs",
     "test:integration": "node scripts/run-admin-integration-tests.mjs",
     "test:migration-consistency": "node --test scripts/check-migrations.test.mjs",
+    "test:nginx-config": "docker build -f tests/nginx/Dockerfile.config-check -t ss-nginx-config-check .",
+    "test:nginx": "node scripts/run-nginx-tests.mjs",
     "test:migration-history": "node --test scripts/check-migration-history.test.mjs",
     "test:backup-migration-safety": "node --test scripts/verify-production-backup-migrations.test.mjs",
     "test:backup-framework": "bash scripts/backup/test-backup-framework.sh",

@@ -309,3 +309,22 @@ jobs:
 
       - name: Simulate canary release and rollback
         run: npm run test:release-simulation
+
+  nginx:
+    name: Nginx Topology
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Validate production Nginx config syntax
+        run: npm run test:nginx-config
+
+      - name: Host-Nginx topology integration tests
+        run: npm run test:nginx

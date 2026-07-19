@@ -1,0 +1,98 @@
+# Disposable host-Nginx topology harness. Everything runs inside one bridge
+# network with fixed addresses so source-IP trust (Cloudflare) is deterministic
+# on both Windows dev machines and Linux CI. No host ports, no real certs, no
+# production network. Drive it with `npm run test:nginx` (scripts/run-nginx-tests.mjs).
+services:
+  web-mock:
+    image: node:22-alpine
+    command: node /app/server.mjs
+    environment:
+      APP_NAME: web
+      PORT: "80"
+    volumes:
+      - ./tests/nginx/mock-upstream:/app:ro
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:80/api/health"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+    networks:
+      ss-nginx-test:
+        ipv4_address: 172.31.240.20
+
+  admin-mock:
+    image: node:22-alpine
+    command: node /app/server.mjs
+    environment:
+      APP_NAME: admin
+      PORT: "80"
+    volumes:
+      - ./tests/nginx/mock-upstream:/app:ro
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:80/api/health"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+    networks:
+      ss-nginx-test:
+        ipv4_address: 172.31.240.21
+
+  nginx:
+    build:
+      context: .
+      dockerfile: tests/nginx/Dockerfile.nginx
+    depends_on:
+      web-mock:
+        condition: service_healthy
+      admin-mock:
+        condition: service_healthy
+    healthcheck:
+      # Exercises real routing end to end: the public host over TLS to the web
+      # mock's health endpoint. Also fails fast if the config is invalid.
+      test: ["CMD", "curl", "-fsk", "-H", "Host: scalesmiths.co.uk", "https://127.0.0.1/api/health"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+    networks:
+      ss-nginx-test:
+        ipv4_address: 172.31.240.10
+
+  edge:
+    image: nginx:1.27-alpine
+    depends_on:
+      nginx:
+        condition: service_healthy
+    volumes:
+      - ./tests/nginx/edge-cloudflare/edge.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      ss-nginx-test:
+        # Must match the trusted CIDR in cloudflare-admin.test.conf.
+        ipv4_address: 172.31.240.30
+
+  tester:
+    image: node:22-alpine
+    profiles: ["tester"]
+    depends_on:
+      nginx:
+        condition: service_healthy
+      edge:
+        condition: service_started
+    environment:
+      # Disposable client trusting the self-signed harness cert.
+      NODE_TLS_REJECT_UNAUTHORIZED: "0"
+      NGINX_HOST: nginx
+      EDGE_HOST: edge
+    working_dir: /work
+    volumes:
+      - ./tests/nginx:/work:ro
+    command: ["node", "--test", "nginx-request.test.mjs"]
+    networks:
+      ss-nginx-test:
+        ipv4_address: 172.31.240.40
+
+networks:
+  ss-nginx-test:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.31.240.0/24

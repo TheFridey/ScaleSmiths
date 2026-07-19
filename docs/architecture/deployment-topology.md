@@ -48,6 +48,7 @@ Committed SQL and each journal's historical prefix are immutable under `scripts/
 - `admin.scalesmiths.co.uk` proxies to admin; optional IP allowlist directives are present but commented.
 - An optional Forge hostname example proxies to the same authenticated admin service, never to a workspace.
 - Host configuration forwards client IP and protocol headers; the container configuration is simpler and does not currently forward the full equivalent header set.
+- The proxy, header, security-header and hardening directives are shared snippets (`nginx/snippets/*`) included by both `nginx/host-scalesmiths.conf` and the disposable test harness, so production and its tests cannot drift. Routing, headers, body-size limits, error pages, generated-site refusal, unknown-host rejection and Cloudflare source-IP trust are exercised as executable tests — see `docs/operations/nginx-testing.md`.
 
 ## Persistent state
 
@@ -90,6 +91,7 @@ GitHub Actions runs on pushes and pull requests to `master`:
 - admin: Node 22, `npm ci`, lint, Vitest, deterministic Forge benchmark, production build;
 - database: both migration journals and a real empty-PostgreSQL integration suite;
 - root hygiene: environment, architecture, dependency, topology and workflow-policy checks plus release/rollback simulation;
+- nginx topology: production config syntax (`nginx -t`) and a disposable Docker harness asserting host-Nginx routing, headers and Cloudflare source-IP trust with mock upstreams (no real certs or network);
 - security: dependency review, TruffleHog, npm production audits, Hadolint, Trivy, application-image SBOMs, sandbox fixtures and CodeQL.
 
 CI builds and scans both application images, starts disposable PostgreSQL, applies both migration histories through the integration suite, and exercises public browser flows. The harmless release simulation covers atomic switching and rollback logic without deploying. Compose/Nginx request routing and a real production release remain operational checks rather than claims made by CI.

@@ -1,0 +1,26 @@
+# Disposable Nginx image for the host-topology integration harness.
+# Build context is the repository root so the SAME nginx/snippets used in
+# production are copied in verbatim. A self-signed certificate is generated at
+# build time; no real Let's Encrypt certificate is ever required.
+FROM nginx:1.27-alpine
+
+RUN apk add --no-cache openssl curl \
+  && mkdir -p /etc/nginx/scalesmiths/snippets /etc/nginx/certs
+
+# Shared production snippets — the whole point of the harness is to exercise these.
+COPY nginx/snippets/ /etc/nginx/scalesmiths/snippets/
+
+# Test-only edges installed at the same paths production uses.
+COPY tests/nginx/test-config/test-upstreams.conf /etc/nginx/scalesmiths/upstreams.conf
+COPY tests/nginx/test-config/host-scalesmiths.test.conf /etc/nginx/conf.d/default.conf
+COPY tests/nginx/test-config/cloudflare-admin.test.conf /etc/nginx/conf.d/cloudflare-admin.conf
+
+# Self-signed wildcard-style cert covering every ScaleSmiths hostname under test.
+# Config syntax is validated at runtime (via `nginx -t` in the running compose
+# network) rather than here: `upstream { server web-mock; }` only resolves once
+# the mock services exist, so a build-time `nginx -t` would fail on DNS.
+RUN openssl req -x509 -nodes -newkey rsa:2048 -days 3650 \
+      -keyout /etc/nginx/certs/test.key \
+      -out /etc/nginx/certs/test.crt \
+      -subj "/CN=scalesmiths.co.uk" \
+      -addext "subjectAltName=DNS:scalesmiths.co.uk,DNS:www.scalesmiths.co.uk,DNS:admin.scalesmiths.co.uk,DNS:forge.scalesmiths.co.uk"

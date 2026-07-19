@@ -1,0 +1,28 @@
+# Validates the REAL production Nginx config (nginx/host-scalesmiths.conf) with
+# `nginx -t`, using stub self-signed certs at the Let's Encrypt paths and the
+# committed example upstreams (which use loopback IPs, so no DNS is needed). The
+# final `nginx -t` runs at build time: if the production syntax is broken, or a
+# shared snippet is missing/malformed, the image build fails. This is the
+# `test:nginx-config` gate and needs neither real certs nor the app network.
+FROM nginx:1.27-alpine
+
+RUN apk add --no-cache openssl \
+  && mkdir -p /etc/nginx/scalesmiths/snippets \
+             /etc/letsencrypt/live/scalesmiths.co.uk \
+             /etc/letsencrypt/live/admin.scalesmiths.co.uk
+
+# Real production snippets and the committed example upstreams.
+COPY nginx/snippets/ /etc/nginx/scalesmiths/snippets/
+COPY nginx/scalesmiths-upstreams.conf /etc/nginx/scalesmiths/upstreams.conf
+
+# The real production config, loaded at http context like a sites-enabled file.
+COPY nginx/host-scalesmiths.conf /etc/nginx/conf.d/default.conf
+
+# Stub certificates at the exact Let's Encrypt paths the production config names.
+RUN for host in scalesmiths.co.uk admin.scalesmiths.co.uk; do \
+      openssl req -x509 -nodes -newkey rsa:2048 -days 3650 \
+        -keyout "/etc/letsencrypt/live/$host/privkey.pem" \
+        -out "/etc/letsencrypt/live/$host/fullchain.pem" \
+        -subj "/CN=$host"; \
+    done \
+  && nginx -t

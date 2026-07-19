@@ -1,14 +1,19 @@
 import "server-only"
 import { getForgeAgentRegistryReference } from "@/lib/forge-prompt-registry"
-import { lookup } from "node:dns/promises"
-import { isIP } from "node:net"
 import { runForgeAiJson } from "@/lib/server/forge-ai"
+import { createSafeOutboundClient, SafeOutboundError } from "@/lib/server/safe-outbound"
 import { FORGE_INTAKE_SECTIONS, emptyForgeIntakeData, type ForgeIntakeData } from "@/lib/forge"
 import type { ForgeJsonSchema, JsonValue } from "@/lib/forge-ai"
 
 const MAX_PAGES = 4
 const MAX_PAGE_CHARS = 18000
 const REQUEST_TIMEOUT_MS = 12000
+const MAX_PAGE_BYTES = 2_000_000
+
+// Every outbound request shares the SSRF-hardened client: validated address
+// pinned to the connection, redirects revalidated, TLS preserved. See
+// docs/operations/forge-egress-policy.md.
+const safeRequest = createSafeOutboundClient()
 
 export interface ForgeUrlAutofillResult extends Record<string, JsonValue> {
   project: {
@@ -114,13 +119,23 @@ async function crawlWebsite(rootUrl: URL) {
 }
 
 async function fetchCrawlPage(url: URL): Promise<CrawledPage | null> {
-  await assertPublicUrl(url)
-
-  const response = await fetchWithRedirects(url)
+  let response
+  try {
+    response = await safeRequest(url, {
+      headers: { Accept: "text/html,text/plain;q=0.9,*/*;q=0.4", "User-Agent": "ScaleSmiths Forge URL Autofill" },
+      timeoutMs: REQUEST_TIMEOUT_MS,
+      maxResponseBytes: MAX_PAGE_BYTES,
+      maxRedirects: 3,
+    })
+  } catch (error) {
+    logCrawlFailure(url, error)
+    return null
+  }
   const contentType = response.headers.get("content-type") ?? ""
-  if (!response.ok || (!contentType.includes("text/html") && !contentType.includes("text/plain"))) return null
+  const ok = response.status >= 200 && response.status < 300
+  if (!ok || (!contentType.includes("text/html") && !contentType.includes("text/plain"))) return null
 
-  const html = (await response.text()).slice(0, 450000)
+  const html = response.body.slice(0, 450000)
   const title = firstMatch(html, /<title[^>]*>([\s\S]*?)<\/title>/i)
   const description = firstMatch(html, /<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["'][^>]*>/i)
     || firstMatch(html, /<meta[^>]+content=["']([^"']+)["'][^>]+name=["']description["'][^>]*>/i)
@@ -147,34 +162,6 @@ async function fetchCrawlPage(url: URL): Promise<CrawledPage | null> {
   }
 }
 
-async function fetchWithRedirects(url: URL, remaining = 3): Promise<Response> {
-  const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
-
-  try {
-    const response = await fetch(url, {
-      headers: {
-        "Accept": "text/html,text/plain;q=0.9,*/*;q=0.4",
-        "User-Agent": "ScaleSmiths Forge URL Autofill",
-      },
-      redirect: "manual",
-      signal: controller.signal,
-    })
-
-    if ([301, 302, 303, 307, 308].includes(response.status) && remaining > 0) {
-      const location = response.headers.get("location")
-      if (!location) return response
-      const next = new URL(location, url)
-      await assertPublicUrl(next)
-      return fetchWithRedirects(next, remaining - 1)
-    }
-
-    return response
-  } finally {
-    clearTimeout(timeout)
-  }
-}
-
 function normalizePublicWebsiteUrl(value: string) {
   const trimmed = value.trim()
   const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`
@@ -185,35 +172,11 @@ function normalizePublicWebsiteUrl(value: string) {
   return url
 }
 
-async function assertPublicUrl(url: URL) {
-  if (url.protocol !== "http:" && url.protocol !== "https:") throw new Error("Website URL must use http or https.")
-  if (!url.hostname || url.username || url.password) throw new Error("Website URL is not valid for crawling.")
-  if (["localhost", "127.0.0.1", "::1"].includes(url.hostname.toLowerCase())) throw new Error("Local URLs cannot be crawled.")
-
-  const directIp = isIP(url.hostname)
-  if (directIp && isPrivateIp(url.hostname)) throw new Error("Private network URLs cannot be crawled.")
-
-  if (!directIp) {
-    const records = await lookup(url.hostname, { all: true, verbatim: true })
-    if (records.length === 0 || records.some((record) => isPrivateIp(record.address))) {
-      throw new Error("That URL resolves to a private or unavailable network address.")
-    }
-  }
-}
-
-function isPrivateIp(address: string) {
-  if (address.startsWith("::ffff:")) return isPrivateIp(address.slice(7))
-  const version = isIP(address)
-  if (version === 4) {
-    const parts = address.split(".").map((part) => Number.parseInt(part, 10))
-    const [a, b] = parts
-    return a === 0 || a === 10 || a === 127 || a === 169 && b === 254 || a === 172 && b >= 16 && b <= 31 || a === 192 && b === 168 || a === 100 && b >= 64 && b <= 127
-  }
-  if (version === 6) {
-    const normalized = address.toLowerCase()
-    return normalized === "::1" || normalized.startsWith("fc") || normalized.startsWith("fd") || normalized.startsWith("fe80:")
-  }
-  return false
+// Server-side visibility for Forge without leaking internal network detail: only
+// the requested host and a stable reason code are logged, never a resolved IP.
+function logCrawlFailure(url: URL, error: unknown) {
+  const reason = error instanceof SafeOutboundError ? error.code : "fetch_error"
+  console.warn(`[forge-url-autofill] skipped ${url.host}: ${reason}`)
 }
 
 function extractLinks(html: string, baseUrl: string) {

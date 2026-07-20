@@ -1,8 +1,9 @@
 import "server-only"
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process"
 import net from "node:net"
-import { and, eq } from "drizzle-orm"
+import { and, eq, or } from "drizzle-orm"
 import { db } from "@/lib/db"
+import { getAdminInstanceId } from "./instance-id"
 import {
   FORGE_GENERATED_CODE_ARTIFACT_TITLE,
 } from "@/lib/forge-frontend-code"
@@ -15,11 +16,9 @@ import {
   type ForgeSandboxNetworkMode,
 } from "@/lib/forge-sandbox"
 import {
-  FORGE_PREVIEW_MEMORY_KEY,
   buildForgePreviewUrl,
   canExposeForgePreviewHost,
   defaultForgePreviewState,
-  readForgePreviewMemory,
   resolveForgePreviewHost,
   resolveForgePreviewPortBase,
   type ForgePreviewEnv,
@@ -27,8 +26,12 @@ import {
 } from "@/lib/forge-preview"
 import { FORGE_WORKSPACE_MEMORY_KEY, readForgeWorkspaceMemory, type ForgeWorkspaceMetadata } from "@/lib/forge-workspace"
 import { captureMonitoringException } from "./monitoring"
-import { forgeActivityLogs, forgeArtifacts, forgeMemories, forgeProjects } from "@/lib/schema"
+import { forgeActivityLogs, forgeArtifacts, forgeMemories, forgePreviews, forgeProjects } from "@/lib/schema"
 import { assertForgeWorkspaceExecutionSafe, readForgeWorkspaceFile } from "./forge-workspace"
+
+// A generous lease: previews are long-lived and refreshed on state reads. If this
+// instance dies, the lease expires and another replica reconciles the row.
+const PREVIEW_LEASE_MS = 10 * 60_000
 
 export class ForgePreviewError extends Error {
   safeMessage: string
@@ -154,7 +157,7 @@ export async function startForgePreview(projectId: number, actor: string) {
 
       previewProcesses.set(projectId, { projectId, containerId, state: runningState, logs })
       await waitForPreview(url, logs)
-      await savePreviewState(projectId, runningState)
+      await savePreviewState(projectId, runningState, { containerId })
       await logPreviewActivity(projectId, actor, "preview_started", `Started Docker preview for ${project.name}.`, runningState)
       return runningState
     }
@@ -247,15 +250,12 @@ async function loadPreviewContext(projectId: number) {
   const [project] = await db.select().from(forgeProjects).where(eq(forgeProjects.id, projectId)).limit(1)
   if (!project) throw new ForgePreviewError("Forge project not found.", 404)
 
-  const [workspaceMemories, previewMemories, generatedCodeArtifacts] = await Promise.all([
+  const [workspaceMemories, previewRow, generatedCodeArtifacts] = await Promise.all([
     db.select({ value: forgeMemories.value }).from(forgeMemories).where(and(
       eq(forgeMemories.projectId, projectId),
       eq(forgeMemories.key, FORGE_WORKSPACE_MEMORY_KEY),
     )).limit(1),
-    db.select({ value: forgeMemories.value }).from(forgeMemories).where(and(
-      eq(forgeMemories.projectId, projectId),
-      eq(forgeMemories.key, FORGE_PREVIEW_MEMORY_KEY),
-    )).limit(1),
+    db.select().from(forgePreviews).where(eq(forgePreviews.projectId, projectId)).limit(1),
     db.select({ id: forgeArtifacts.id }).from(forgeArtifacts).where(and(
       eq(forgeArtifacts.projectId, projectId),
       eq(forgeArtifacts.type, "generated_code"),
@@ -266,37 +266,61 @@ async function loadPreviewContext(projectId: number) {
   return {
     project,
     workspace: readForgeWorkspaceMemory(workspaceMemories[0]?.value),
-    previewState: readForgePreviewMemory(previewMemories[0]?.value),
+    previewState: previewRow[0] ? previewRowToState(previewRow[0]) : null,
     hasGeneratedCode: generatedCodeArtifacts.length > 0,
   }
 }
 
-async function savePreviewState(projectId: number, state: ForgePreviewState) {
-  const now = new Date()
-  const existing = await db
-    .select({ id: forgeMemories.id })
-    .from(forgeMemories)
-    .where(and(eq(forgeMemories.projectId, projectId), eq(forgeMemories.key, FORGE_PREVIEW_MEMORY_KEY)))
-    .limit(1)
-
-  if (existing[0]) {
-    await db
-      .update(forgeMemories)
-      .set({
-        value: JSON.stringify(state),
-        source: "forge_preview",
-        updatedAt: now,
-      })
-      .where(eq(forgeMemories.id, existing[0].id))
-  } else {
-    await db.insert(forgeMemories).values({
-      projectId,
-      key: FORGE_PREVIEW_MEMORY_KEY,
-      value: JSON.stringify(state),
-      source: "forge_preview",
-      updatedAt: now,
-    })
+function previewRowToState(row: typeof forgePreviews.$inferSelect): ForgePreviewState {
+  return {
+    projectId: row.projectId,
+    status: row.status as ForgePreviewState["status"],
+    method: (row.method as ForgePreviewState["method"]) ?? "local-next-dev",
+    url: row.url ?? "",
+    host: row.host ?? "127.0.0.1",
+    port: row.port ?? 0,
+    pid: row.pid ?? null,
+    workspacePath: row.workspacePath ?? null,
+    startedAt: row.startedAt ? row.startedAt.toISOString() : null,
+    stoppedAt: row.stoppedAt ? row.stoppedAt.toISOString() : null,
+    updatedAt: (row.updatedAt ?? new Date()).toISOString(),
+    error: row.error ?? null,
   }
+}
+
+// Persists preview lifecycle to the durable ownership table. Active states record
+// this instance as owner and stamp a lease; terminal states clear ownership.
+async function savePreviewState(
+  projectId: number,
+  state: ForgePreviewState,
+  extra: { containerId?: string | null } = {},
+) {
+  const now = new Date()
+  const isActive = state.status === "running" || state.status === "starting"
+  const owner = isActive ? getAdminInstanceId() : null
+  const leaseExpiresAt = isActive ? new Date(now.getTime() + PREVIEW_LEASE_MS) : null
+  const row = {
+    projectId,
+    status: state.status,
+    owner,
+    leaseExpiresAt,
+    heartbeatAt: isActive ? now : null,
+    method: state.method,
+    url: state.url,
+    host: state.host,
+    port: state.port,
+    pid: state.pid ?? null,
+    containerId: extra.containerId ?? null,
+    workspacePath: state.workspacePath,
+    startedAt: state.startedAt ? new Date(state.startedAt) : null,
+    stoppedAt: state.stoppedAt ? new Date(state.stoppedAt) : null,
+    error: state.error,
+    updatedAt: now,
+  }
+  await db
+    .insert(forgePreviews)
+    .values(row)
+    .onConflictDoUpdate({ target: forgePreviews.projectId, set: row })
 }
 
 async function logPreviewActivity(projectId: number, actor: string, action: string, message: string, state: ForgePreviewState) {
@@ -556,4 +580,59 @@ function stopDockerContainer(containerId: string) {
     stopper.once("exit", () => resolve())
     stopper.once("error", () => resolve())
   })
+}
+
+/**
+ * Reconciles durable preview rows after restarts / across replicas:
+ *  - previews this instance still holds live → refresh the lease;
+ *  - previews this instance owns but whose handle is gone → mark stopped;
+ *  - previews whose owning instance is gone (lease expired) → mark stopped and
+ *    best-effort stop the recorded container so it is not orphaned.
+ * An active preview owned by a different, still-leased instance is left alone.
+ * Called on startup and periodically by the worker.
+ */
+export async function reconcileForgePreviews(): Promise<{ reconciled: number; refreshed: number }> {
+  const instanceId = getAdminInstanceId()
+  const now = new Date()
+  const active = await db
+    .select()
+    .from(forgePreviews)
+    .where(or(eq(forgePreviews.status, "running"), eq(forgePreviews.status, "starting")))
+
+  let reconciled = 0
+  let refreshed = 0
+  for (const row of active) {
+    const handle = previewProcesses.get(row.projectId)
+    const attached = handle ? isRunningPreviewAttached(handle) : false
+
+    if (attached && row.owner === instanceId) {
+      await db
+        .update(forgePreviews)
+        .set({ leaseExpiresAt: new Date(now.getTime() + PREVIEW_LEASE_MS), heartbeatAt: now, updatedAt: now })
+        .where(eq(forgePreviews.projectId, row.projectId))
+      refreshed += 1
+      continue
+    }
+
+    if (row.owner === instanceId) {
+      await markPreviewReconciled(row.projectId, "Preview process is no longer attached to this admin runtime.")
+      reconciled += 1
+      continue
+    }
+
+    if (!row.leaseExpiresAt || row.leaseExpiresAt < now) {
+      if (row.containerId) await stopDockerContainer(row.containerId).catch(() => undefined)
+      await markPreviewReconciled(row.projectId, "Preview owner is no longer available; reconciled by another instance.")
+      reconciled += 1
+    }
+  }
+  return { reconciled, refreshed }
+}
+
+async function markPreviewReconciled(projectId: number, message: string) {
+  const now = new Date()
+  await db
+    .update(forgePreviews)
+    .set({ status: "stopped", owner: null, leaseExpiresAt: null, heartbeatAt: null, pid: null, stoppedAt: now, error: message, updatedAt: now })
+    .where(eq(forgePreviews.projectId, projectId))
 }

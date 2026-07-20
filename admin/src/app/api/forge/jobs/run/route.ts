@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { auth } from "../../../../../../auth"
-import { runDueForgeJobs } from "@/lib/server/forge-job-runner"
+import { reapExpiredForgeJobLeases, runDueForgeJobs } from "@/lib/server/forge-job-runner"
 import { normalizeUnknownError } from "@/lib/server/logging"
 import { requestIdFromRequest, requestLogger, withRequestLogContext } from "@/lib/server/request-context"
 
@@ -28,9 +28,11 @@ export async function POST(request: Request) {
     const log = requestLogger({ component: "forge-job-worker" })
 
     try {
+      // Recover jobs abandoned by a dead worker before draining the queue.
+      const recovered = await reapExpiredForgeJobLeases()
       const result = await runDueForgeJobs(limit)
-      log.info("Forge job drain completed", result)
-      return NextResponse.json({ ok: true, ...result })
+      log.info("Forge job drain completed", { ...result, ...recovered })
+      return NextResponse.json({ ok: true, ...result, recovered })
     } catch (error) {
       log.error("Forge job drain failed", {
         error: normalizeUnknownError(error, { safeMessage: "Unable to drain Forge jobs.", category: "forge_job_drain" }),

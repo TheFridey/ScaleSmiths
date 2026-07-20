@@ -3,12 +3,11 @@ import NextAuth from "next-auth"
 import { authConfig } from "../auth.config"
 import {
   buildForgeRateLimitKey,
-  checkForgeRateLimit,
   isForgeMutatingMethod,
   isForgeTaskEndpoint,
   resolveForgeRateLimitConfig,
-  type ForgeRateLimitStore,
 } from "@/lib/forge-security"
+import { checkDurableRateLimit } from "@/lib/server/rate-limit-store"
 import { isAdminSessionCurrent } from "@/lib/admin-users"
 import { findAdminUserById } from "@/lib/server/admin-users"
 import { authorizeRequest } from "@/lib/rbac"
@@ -16,7 +15,6 @@ import { requestLogger } from "@/lib/server/request-context"
 import { captureMonitoringMessage } from "@/lib/server/monitoring"
 
 const { auth } = NextAuth(authConfig)
-const forgeRateLimitStore: ForgeRateLimitStore = new Map()
 const REQUEST_ID_HEADER = "x-request-id"
 const SAFE_REQUEST_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/
 
@@ -97,18 +95,24 @@ export default auth(async (req) => {
       bucket,
     })
     const limit = bucket === "task" ? config.taskLimit : config.mutationLimit
-    const result = checkForgeRateLimit(forgeRateLimitStore, key, limit, config.windowMs)
-
-    if (!result.ok) {
-      return correlated(NextResponse.json(
-        { error: "Forge rate limit exceeded. Try again shortly." },
-        {
-          status: 429,
-          headers: {
-            "Retry-After": String(Math.max(1, Math.ceil(result.retryAfterMs / 1000))),
+    // Durable, shared across replicas. Fail open on any database error so a
+    // transient DB problem cannot lock every admin out of Forge.
+    try {
+      const result = await checkDurableRateLimit(key, limit, config.windowMs)
+      if (!result.ok) {
+        return correlated(NextResponse.json(
+          { error: "Forge rate limit exceeded. Try again shortly." },
+          {
+            status: 429,
+            headers: {
+              "Retry-After": String(Math.max(1, Math.ceil(result.retryAfterMs / 1000))),
+            },
           },
-        },
-      ))
+        ))
+      }
+    } catch (error) {
+      captureMonitoringMessage("Forge rate limit check failed open", "warning", { errorCategory: "rate_limit_unavailable", pathname, requestId })
+      requestLogger({ component: "rate-limit", requestId }).warn("Durable rate limit check failed open", { error: error instanceof Error ? error.message : "unknown" })
     }
   }
 

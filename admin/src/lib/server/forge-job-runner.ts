@@ -1,5 +1,5 @@
 import "server-only"
-import { and, asc, eq, inArray } from "drizzle-orm"
+import { and, eq } from "drizzle-orm"
 import { db } from "@/lib/db"
 import {
   isForgeJobInlineOnly,
@@ -12,7 +12,18 @@ import {
   readForgeCommandChatMemory,
   type ForgeCommandMessageStatus,
 } from "@/lib/forge-command-chat"
-import { forgeActivityLogs, forgeJobs, forgeMemories, forgeTasks } from "@/lib/schema"
+import { forgeActivityLogs, forgeMemories, forgeTasks } from "@/lib/schema"
+import {
+  buildForgeJobOwner,
+  claimForgeJobById,
+  claimNextForgeJob,
+  completeForgeJob,
+  failForgeJob,
+  heartbeatForgeJob,
+  insertForgeJob,
+  FORGE_JOB_LEASE_TTL_MS,
+  type ForgeJobRow,
+} from "./forge-job-queue"
 import { isForgeAnimationPack } from "@/lib/forge-animation"
 import { isForgeDesignStylePack } from "@/lib/forge-design"
 import type { ForgeExportKind } from "@/lib/forge-export"
@@ -129,6 +140,9 @@ const JOB_HANDLERS: Record<ForgeJobKind, JobHandler> = {
   },
 }
 
+// Re-exported so callers keep importing durable-queue operations from the runner.
+export { cancelForgeJob, reapExpiredForgeJobLeases } from "./forge-job-queue"
+
 export interface EnqueueForgeJobInput {
   projectId: number
   kind: ForgeJobKind
@@ -136,6 +150,12 @@ export interface EnqueueForgeJobInput {
   payload?: JobPayload
   mode?: ForgeJobMode
   autoStart?: boolean
+  /** When set, a repeat enqueue with the same key returns the existing job. */
+  idempotencyKey?: string
+  /** Optional Forge task this job belongs to. */
+  taskId?: number
+  /** Override the default retry ceiling. */
+  maxAttempts?: number
 }
 
 export type EnqueueForgeJobOutcome =
@@ -187,16 +207,22 @@ export async function enqueueForgeJob(input: EnqueueForgeJobInput): Promise<Enqu
   }
 
   const mode = input.mode ?? resolveForgeJobModeForKind(input.kind)
-  const now = new Date()
 
-  const [job] = await db.insert(forgeJobs).values({
+  const { job, deduplicated } = await insertForgeJob({
     projectId: input.projectId,
     kind: input.kind,
-    status: "queued",
-    payloadJson: input.payload ?? {},
     actor: input.actor,
-    updatedAt: now,
-  }).returning()
+    payload: input.payload ?? {},
+    taskId: input.taskId ?? (typeof input.payload?.commandTaskId === "number" ? input.payload.commandTaskId : null),
+    idempotencyKey: input.idempotencyKey ?? null,
+    maxAttempts: input.maxAttempts,
+  })
+
+  if (deduplicated) {
+    log.info("Forge job deduplicated by idempotency key", { jobId: job.id, executionMode: mode })
+    if (mode === "inline") return { mode: "inline", jobId: job.id, result: job.resultJson ?? { ok: true, deduplicated: true } }
+    return { mode: "background", jobId: job.id }
+  }
 
   await db.insert(forgeActivityLogs).values({
     projectId: input.projectId,
@@ -213,8 +239,8 @@ export async function enqueueForgeJob(input: EnqueueForgeJobInput): Promise<Enqu
     return { mode: "inline", jobId: job.id, result: result ?? { ok: true } }
   }
 
-  // Fire-and-forget background execution in the persistent server process. The job row is the
-  // source of truth, so a restart can be recovered by draining the queue (runDueForgeJobs).
+  // Fire-and-forget background execution in the persistent server process. The durable job row
+  // is the source of truth, so a restart is recovered by the worker (reaper + queue drain).
   if (input.autoStart !== false) {
     void processForgeJob(job.id, { propagate: false }).catch(() => undefined)
   }
@@ -222,20 +248,24 @@ export async function enqueueForgeJob(input: EnqueueForgeJobInput): Promise<Enqu
 }
 
 /**
- * Claims a queued job and runs its handler. Claiming is atomic (UPDATE ... WHERE status='queued')
- * so concurrent in-process execution and queue draining never run the same job twice.
+ * Claims a specific queued job by id and runs it under a lease. Claiming is atomic and
+ * guarded on status='queued', so concurrent in-process execution and the worker loop never run
+ * the same job twice.
  */
-export async function processForgeJob(jobId: number, options: { propagate?: boolean } = {}): Promise<JobResult | null> {
-  const startedAt = new Date()
-  const [claimed] = await db
-    .update(forgeJobs)
-    .set({ status: "running", startedAt, updatedAt: startedAt })
-    .where(and(eq(forgeJobs.id, jobId), eq(forgeJobs.status, "queued")))
-    .returning()
-
+export async function processForgeJob(jobId: number, options: { propagate?: boolean; owner?: string } = {}): Promise<JobResult | null> {
+  const owner = options.owner ?? buildForgeJobOwner("inline")
+  const claimed = await claimForgeJobById(jobId, owner)
   if (!claimed) return null
+  return runClaimedForgeJob(claimed, owner, options)
+}
 
-  const payload = (claimed.payloadJson as JobPayload) ?? {}
+/**
+ * Runs an already-claimed job's handler under its lease: heartbeats to keep the lease alive,
+ * then completes, or fails (retry with backoff / dead-letter) on error.
+ */
+export async function runClaimedForgeJob(claimed: ForgeJobRow, owner: string, options: { propagate?: boolean } = {}): Promise<JobResult | null> {
+  const startedAt = new Date()
+  const payload = claimed.payloadJson as JobPayload
   const taskId = typeof payload.commandTaskId === "number" ? payload.commandTaskId : undefined
   const log = requestLogger({
     component: "forge-job-runner",
@@ -251,32 +281,35 @@ export async function processForgeJob(jobId: number, options: { propagate?: bool
 
   const handler = JOB_HANDLERS[claimed.kind as ForgeJobKind]
   if (!handler) {
-    await failJob(jobId, claimed.attempts, `Unknown job kind "${claimed.kind}".`)
+    // Unknown kind is permanent: force the dead-letter path rather than retrying.
+    await failForgeJob({ ...claimed, attempts: claimed.maxAttempts }, `Unknown job kind "${claimed.kind}".`)
     if (options.propagate) throw new ForgeJobError(`Unknown job kind "${claimed.kind}".`, 400)
     return null
   }
 
+  const heartbeat = setInterval(() => {
+    void heartbeatForgeJob(claimed.id, owner).catch(() => undefined)
+  }, Math.max(5_000, Math.floor(FORGE_JOB_LEASE_TTL_MS / 3)))
+  if (typeof heartbeat.unref === "function") heartbeat.unref()
+
   try {
     const result = await withMonitoringScope({ projectId: claimed.projectId, taskId, forgeStage: claimed.kind, jobId: claimed.id }, () => handler(claimed.projectId, claimed.actor ?? "system", payload))
-    const completedAt = new Date()
-    await db.update(forgeJobs).set({
-      status: "completed",
-      resultJson: result,
-      error: null,
-      completedAt,
-      updatedAt: completedAt,
-    }).where(eq(forgeJobs.id, jobId))
+    clearInterval(heartbeat)
+    await completeForgeJob(claimed.id, owner, result)
     await markCommandJobProgress(claimed.projectId, claimed.actor ?? "system", claimed.id, payload, "completed", result)
-    log.info("Forge job completed", { durationMs: completedAt.getTime() - startedAt.getTime() })
+    log.info("Forge job completed", { durationMs: Date.now() - startedAt.getTime() })
     return result
   } catch (error) {
+    clearInterval(heartbeat)
     const safeMessage = extractSafeMessage(error)
     const normalizedError = normalizeUnknownError(error, { safeMessage, category: "forge_job" })
-    await failJob(jobId, claimed.attempts, safeMessage)
+    const { retried } = await failForgeJob(claimed, safeMessage)
     await markCommandJobProgress(claimed.projectId, claimed.actor ?? "system", claimed.id, payload, "failed", { error: safeMessage })
     log.error("Forge job failed", {
       durationMs: Date.now() - startedAt.getTime(),
       errorCategory: normalizedError.category,
+      retried,
+      attempts: claimed.attempts,
       error: normalizedError,
     })
     captureMonitoringException(error, { projectId: claimed.projectId, taskId, forgeStage: claimed.kind, jobId: claimed.id, errorCategory: normalizedError.category })
@@ -286,34 +319,19 @@ export async function processForgeJob(jobId: number, options: { propagate?: bool
 }
 
 /**
- * Drains queued jobs. Intended for an external trigger (cron/worker) to recover jobs that were
- * enqueued but never started (e.g. the process restarted before background execution ran).
+ * Drains due jobs by claiming them under a lease. Safe to run concurrently across workers and
+ * replicas (FOR UPDATE SKIP LOCKED). Used by the worker loop and the cron backstop.
  */
-export async function runDueForgeJobs(limit = 5): Promise<{ processed: number; jobIds: number[] }> {
-  const due = await db
-    .select({ id: forgeJobs.id })
-    .from(forgeJobs)
-    .where(inArray(forgeJobs.status, ["queued"]))
-    .orderBy(asc(forgeJobs.createdAt))
-    .limit(Math.max(1, Math.min(limit, 25)))
-
+export async function runDueForgeJobs(limit = 5, owner = buildForgeJobOwner("drain")): Promise<{ processed: number; jobIds: number[] }> {
+  const max = Math.max(1, Math.min(limit, 25))
   const jobIds: number[] = []
-  for (const { id } of due) {
-    const result = await processForgeJob(id, { propagate: false })
-    if (result !== null) jobIds.push(id)
+  for (let index = 0; index < max; index += 1) {
+    const claimed = await claimNextForgeJob(owner)
+    if (!claimed) break
+    await runClaimedForgeJob(claimed, owner, { propagate: false })
+    jobIds.push(claimed.id)
   }
   return { processed: jobIds.length, jobIds }
-}
-
-async function failJob(jobId: number, attempts: number, message: string) {
-  const completedAt = new Date()
-  await db.update(forgeJobs).set({
-    status: "failed",
-    error: message,
-    attempts: attempts + 1,
-    completedAt,
-    updatedAt: completedAt,
-  }).where(eq(forgeJobs.id, jobId))
 }
 
 async function markCommandJobProgress(

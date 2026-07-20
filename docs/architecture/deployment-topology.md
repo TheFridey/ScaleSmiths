@@ -55,6 +55,7 @@ Committed SQL and each journal's historical prefix are immutable under `scripts/
 | State | Persistence |
 | --- | --- |
 | Business/Forge data | named PostgreSQL volume |
+| Operational controls (Forge job queue, rate limits, preview ownership) | PostgreSQL (`forge_jobs` leased queue, `rate_limit_counters`, `forge_previews`); restart- and replica-safe via `FOR UPDATE SKIP LOCKED` leases and a durable worker — see `docs/operations/admin-worker-runbook.md` |
 | Generated workspaces | host `/var/www/scalesmiths/ScaleSmiths/generated-sites`, bind-mounted to `/app/generated-sites` in admin |
 | Preview processes/containers | runtime state; metadata persisted in `forge_memories` |
 | Application images | rebuilt from `web/` and `admin/` contexts |

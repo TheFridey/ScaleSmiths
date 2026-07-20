@@ -1,5 +1,5 @@
 import { relations, sql } from "drizzle-orm"
-import { boolean, index, integer, jsonb, numeric, pgEnum, pgTable, serial, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core"
+import { boolean, index, integer, jsonb, numeric, pgEnum, pgTable, primaryKey, serial, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core"
 import type { LeadScoreFactor, LeadScoreResult } from "./lead-scoring"
 import type { ProjectEstimateResult } from "./project-estimator"
 import type { ForgeDependencyAdmissionReport } from "./forge-dependency-admission"
@@ -875,16 +875,28 @@ export const forgeProjectFacts = pgTable("forge_project_facts", {
 // quickly; the worker (in-process by default, or a drained queue) executes the handler, which
 // updates the detailed forgeTasks/forgeArtifacts/forgeActivityLogs records. `kind` and `status`
 // are text (validated in app code) to avoid enum migrations as new job kinds are added.
+// Durable job states. `dead_letter` holds jobs that exhausted their retries; it
+// is a text column (not an enum) so adding states needs no enum migration.
 export const forgeJobs = pgTable("forge_jobs", {
   id: serial("id").primaryKey(),
   projectId: integer("project_id").references(() => forgeProjects.id, { onDelete: "cascade" }).notNull(),
+  taskId: integer("task_id").references(() => forgeTasks.id, { onDelete: "set null" }),
   kind: text("kind").notNull(),
   status: text("status").default("queued").notNull(),
   payloadJson: jsonb("payload_json").$type<Record<string, unknown>>(),
   resultJson: jsonb("result_json").$type<Record<string, unknown>>(),
   error: text("error"),
+  failureReason: text("failure_reason"),
   actor: text("actor"),
+  idempotencyKey: text("idempotency_key"),
   attempts: integer("attempts").default(0).notNull(),
+  maxAttempts: integer("max_attempts").default(3).notNull(),
+  // Lease coordination: only the worker that holds an unexpired lease may run a
+  // job; an expired lease is reclaimable by any worker.
+  leaseOwner: text("lease_owner"),
+  leaseExpiresAt: timestamp("lease_expires_at", { withTimezone: true }),
+  heartbeatAt: timestamp("heartbeat_at", { withTimezone: true }),
+  scheduledAt: timestamp("scheduled_at", { withTimezone: true }).defaultNow().notNull(),
   startedAt: timestamp("started_at", { withTimezone: true }),
   completedAt: timestamp("completed_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -892,6 +904,45 @@ export const forgeJobs = pgTable("forge_jobs", {
 }, (table) => [
   index("forge_jobs_project_id_idx").on(table.projectId),
   index("forge_jobs_status_created_at_idx").on(table.status, table.createdAt),
+  index("forge_jobs_status_scheduled_at_idx").on(table.status, table.scheduledAt),
+  index("forge_jobs_lease_expires_at_idx").on(table.leaseExpiresAt),
+  uniqueIndex("forge_jobs_idempotency_key_key").on(table.idempotencyKey),
+])
+
+// Durable shared rate-limit counters (fixed window). Incremented atomically via
+// INSERT ... ON CONFLICT DO UPDATE so counts are consistent across replicas.
+export const rateLimitCounters = pgTable("rate_limit_counters", {
+  key: text("key").notNull(),
+  windowStart: timestamp("window_start", { withTimezone: true }).notNull(),
+  count: integer("count").default(0).notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+}, (table) => [
+  primaryKey({ columns: [table.key, table.windowStart] }),
+  index("rate_limit_counters_expires_at_idx").on(table.expiresAt),
+])
+
+// Durable preview ownership + lifecycle. One row per project; `owner` names the
+// admin instance that holds the live process/container so restarts and other
+// replicas can reconcile abandoned previews.
+export const forgePreviews = pgTable("forge_previews", {
+  projectId: integer("project_id").primaryKey().references(() => forgeProjects.id, { onDelete: "cascade" }),
+  status: text("status").default("stopped").notNull(),
+  owner: text("owner"),
+  leaseExpiresAt: timestamp("lease_expires_at", { withTimezone: true }),
+  heartbeatAt: timestamp("heartbeat_at", { withTimezone: true }),
+  method: text("method"),
+  url: text("url"),
+  host: text("host"),
+  port: integer("port"),
+  pid: integer("pid"),
+  containerId: text("container_id"),
+  workspacePath: text("workspace_path"),
+  startedAt: timestamp("started_at", { withTimezone: true }),
+  stoppedAt: timestamp("stopped_at", { withTimezone: true }),
+  error: text("error"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("forge_previews_lease_expires_at_idx").on(table.leaseExpiresAt),
 ])
 
 export const forgeAiUsage = pgTable("forge_ai_usage", {

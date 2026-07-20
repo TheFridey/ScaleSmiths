@@ -1,493 +1,506 @@
 {
-    "version":  1,
-    "algorithm":  "sha256",
-    "baselineSourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-    "historicalMigrations":  [
-                                 {
-                                     "path":  "web/drizzle/0000_large_ironclad.sql",
-                                     "sha256":  "001e6a24a92c9e135dd1952f19995c6bcdfd11fdb6515fa429badd2d91e4066a",
-                                     "lifecycle":  "historical-baseline",
-                                     "sourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-                                     "baselineDisposition":  "committed-baseline"
-                                 },
-                                 {
-                                     "path":  "web/drizzle/0001_tough_jane_foster.sql",
-                                     "sha256":  "d6461710238000c2f0809c39db5ed618bac148f927dbac389e0ee4755238100c",
-                                     "lifecycle":  "historical-baseline",
-                                     "sourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-                                     "baselineDisposition":  "committed-baseline"
-                                 },
-                                 {
-                                     "path":  "web/drizzle/0002_clever_squadron_supreme.sql",
-                                     "sha256":  "d86178e9dc478b5cd3618419ad2ee712c9d97cbf7a84f953182d5ac8cbbc9c85",
-                                     "lifecycle":  "historical-baseline",
-                                     "sourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-                                     "baselineDisposition":  "committed-baseline"
-                                 },
-                                 {
-                                     "path":  "web/drizzle/0003_yummy_blindfold.sql",
-                                     "sha256":  "e7f1a59a92da2246b8c0e6eeac109c848e3783ca2ad5cb8fcb1e0825e24057d3",
-                                     "lifecycle":  "historical-baseline",
-                                     "sourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-                                     "baselineDisposition":  "committed-baseline"
-                                 },
-                                 {
-                                     "path":  "web/drizzle/0004_sleepy_invaders.sql",
-                                     "sha256":  "778078581c00b4810e370d83b37ef050be08101abe67720fafe128d64b4703b8",
-                                     "lifecycle":  "historical-baseline",
-                                     "sourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-                                     "baselineDisposition":  "committed-baseline"
-                                 },
-                                 {
-                                     "path":  "web/drizzle/0005_client_requests.sql",
-                                     "sha256":  "0b91e6762aae32a47d9b2363685899d7adf058983fddf8d18c9302d27a4a0c76",
-                                     "lifecycle":  "historical-baseline",
-                                     "sourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-                                     "baselineDisposition":  "committed-baseline"
-                                 },
-                                 {
-                                     "path":  "web/drizzle/0006_request_threads.sql",
-                                     "sha256":  "d2b9bb3193d58a8030ad9fb9b15685beccb8f08917148c1b107ab668c65c1043",
-                                     "lifecycle":  "historical-baseline",
-                                     "sourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-                                     "baselineDisposition":  "committed-baseline"
-                                 },
-                                 {
-                                     "path":  "web/drizzle/0007_client_timeline_events.sql",
-                                     "sha256":  "e876200a231f6b84546b9d6543354db9b2e0b302833c9d7d4283fa44c7e72c67",
-                                     "lifecycle":  "historical-baseline",
-                                     "sourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-                                     "baselineDisposition":  "committed-baseline"
-                                 },
-                                 {
-                                     "path":  "web/drizzle/0008_monthly_reports.sql",
-                                     "sha256":  "90ba366f4077fac0eea51c5fb558a8b483afb846a7dec39ab6bfa0a7512eb5f1",
-                                     "lifecycle":  "historical-baseline",
-                                     "sourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-                                     "baselineDisposition":  "committed-baseline"
-                                 },
-                                 {
-                                     "path":  "web/drizzle/0009_experience_choice_analytics.sql",
-                                     "sha256":  "c5bef62ad95c01c44bd5849e50c91d63c4f130b63dbc9b19f5b9a10128ff7c43",
-                                     "lifecycle":  "historical-baseline",
-                                     "sourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-                                     "baselineDisposition":  "committed-baseline"
-                                 },
-                                 {
-                                     "path":  "admin/drizzle/0000_hot_ultron.sql",
-                                     "sha256":  "bf23aea93eb969df60aa1ba3c2704d6b38d6ad49a80577f1a374cc3212d16554",
-                                     "lifecycle":  "historical-baseline",
-                                     "sourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-                                     "baselineDisposition":  "committed-baseline"
-                                 },
-                                 {
-                                     "path":  "admin/drizzle/0001_prospect_pipeline.sql",
-                                     "sha256":  "d49f3bb2602acb0a1b71a01d4d870dc6e39ebe9d2f5346794b5600a0153b0693",
-                                     "lifecycle":  "historical-baseline",
-                                     "sourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-                                     "baselineDisposition":  "committed-baseline"
-                                 },
-                                 {
-                                     "path":  "admin/drizzle/0002_admin_login_rate_limits.sql",
-                                     "sha256":  "72e49a67afd7acfc42cd54c2f576c293ee91d044b715435d1bc2ef850523c12c",
-                                     "lifecycle":  "historical-baseline",
-                                     "sourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-                                     "baselineDisposition":  "committed-baseline"
-                                 },
-                                 {
-                                     "path":  "admin/drizzle/0003_fair_hellcat.sql",
-                                     "sha256":  "ad65e7aa5e97111f393585d09ebd3f9021f50c5571b514712b5ffe11c23cfd15",
-                                     "lifecycle":  "historical-baseline",
-                                     "sourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-                                     "baselineDisposition":  "committed-baseline"
-                                 },
-                                 {
-                                     "path":  "admin/drizzle/0004_brief_morg.sql",
-                                     "sha256":  "279daedaa4c4673e7bb8d7bc9a39d42b091815e4780764d0dd7548e00c9bae3c",
-                                     "lifecycle":  "historical-baseline",
-                                     "sourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-                                     "baselineDisposition":  "committed-baseline"
-                                 },
-                                 {
-                                     "path":  "admin/drizzle/0005_lucky_wind_dancer.sql",
-                                     "sha256":  "335bd44cfa76e3545dad562438b601a2f9d182f3adf421bd05c8a3be0b624c01",
-                                     "lifecycle":  "historical-baseline",
-                                     "sourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-                                     "baselineDisposition":  "committed-baseline"
-                                 },
-                                 {
-                                     "path":  "admin/drizzle/0006_brainy_marvex.sql",
-                                     "sha256":  "526523f09ac5fb8d9f7ef2b8a482f4e3fbca895759024a14a0671897fc91a564",
-                                     "lifecycle":  "historical-baseline",
-                                     "sourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-                                     "baselineDisposition":  "committed-baseline"
-                                 },
-                                 {
-                                     "path":  "admin/drizzle/0007_dizzy_ezekiel.sql",
-                                     "sha256":  "baab6037988351c390de320926721bdf3466bf824123335fd55a8df09e75571a",
-                                     "lifecycle":  "historical-baseline",
-                                     "sourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-                                     "baselineDisposition":  "committed-baseline"
-                                 },
-                                 {
-                                     "path":  "admin/drizzle/0008_forge_runtime_hardening.sql",
-                                     "sha256":  "224a4aa5a570f42a8d84c666854c422496a18c8c9603543adc9e180a6ec3636b",
-                                     "lifecycle":  "historical-baseline",
-                                     "sourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-                                     "baselineDisposition":  "committed-baseline"
-                                 },
-                                 {
-                                     "path":  "admin/drizzle/0009_known_iron_monger.sql",
-                                     "sha256":  "bb94fec4eba38487dcfc0d057e73691db6408da3eead8f3d6161433741137b51",
-                                     "lifecycle":  "historical-baseline",
-                                     "sourceCommit":  "e94e14fe9727d4a275b538f75fd2f271e888d5b1",
-                                     "baselineDisposition":  "adopted-compatibility-baseline"
-                                 },
-                                 {
-                                     "path":  "admin/drizzle/0010_magical_pixie.sql",
-                                     "sha256":  "7ed2a3e28e06dfa0c42b1166769ddfba3420849aacbdd70c5f367a5430663d2b",
-                                     "lifecycle":  "historical-baseline",
-                                     "sourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-                                     "baselineDisposition":  "committed-baseline"
-                                 },
-                                 {
-                                     "path":  "admin/drizzle/0011_glorious_masked_marvel.sql",
-                                     "sha256":  "1d08268d3c9fa1d162fa32271f5b0f5e5b06fccaceca3cfe8b372920a0ac50e2",
-                                     "lifecycle":  "historical-baseline",
-                                     "sourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-                                     "baselineDisposition":  "committed-baseline"
-                                 },
-                                 {
-                                     "path":  "admin/drizzle/0012_client_request_threads.sql",
-                                     "sha256":  "d2b9bb3193d58a8030ad9fb9b15685beccb8f08917148c1b107ab668c65c1043",
-                                     "lifecycle":  "historical-baseline",
-                                     "sourceCommit":  "417d54ee2d42306ed88c2ff791369953c6b62e78",
-                                     "baselineDisposition":  "restored-original-baseline"
-                                 },
-                                 {
-                                     "path":  "admin/drizzle/0013_client_timeline_events.sql",
-                                     "sha256":  "e876200a231f6b84546b9d6543354db9b2e0b302833c9d7d4283fa44c7e72c67",
-                                     "lifecycle":  "historical-baseline",
-                                     "sourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-                                     "baselineDisposition":  "committed-baseline"
-                                 },
-                                 {
-                                     "path":  "admin/drizzle/0014_monthly_reports.sql",
-                                     "sha256":  "90ba366f4077fac0eea51c5fb558a8b483afb846a7dec39ab6bfa0a7512eb5f1",
-                                     "lifecycle":  "historical-baseline",
-                                     "sourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-                                     "baselineDisposition":  "committed-baseline"
-                                 },
-                                 {
-                                     "path":  "admin/drizzle/0015_sales_proposals.sql",
-                                     "sha256":  "5e266628cd8386be96127541f8a5d82a5d1005e720127a364d7f29fbc18d4e42",
-                                     "lifecycle":  "historical-baseline",
-                                     "sourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-                                     "baselineDisposition":  "committed-baseline"
-                                 },
-                                 {
-                                     "path":  "admin/drizzle/0016_admin_identity.sql",
-                                     "sha256":  "6c8204c5d5636564f4b370cc86771ffdd8465311b6216f4fc0cbb96858d1ac5c",
-                                     "lifecycle":  "historical-baseline",
-                                     "sourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-                                     "baselineDisposition":  "committed-baseline"
-                                 },
-                                 {
-                                     "path":  "admin/drizzle/0017_admin_mfa_audit.sql",
-                                     "sha256":  "087fa2b01c429dd811ea971c998771488d8100e169b56341959b1c04e20bb288",
-                                     "lifecycle":  "historical-baseline",
-                                     "sourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-                                     "baselineDisposition":  "committed-baseline"
-                                 },
-                                 {
-                                     "path":  "admin/drizzle/0018_forge_task_quality.sql",
-                                     "sha256":  "a14c9f366bfb3a82b0a030eb41cdff33510cd544cd2e63b196cda99b61be3216",
-                                     "lifecycle":  "historical-baseline",
-                                     "sourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-                                     "baselineDisposition":  "committed-baseline"
-                                 },
-                                 {
-                                     "path":  "admin/drizzle/0019_artifact_provenance.sql",
-                                     "sha256":  "eca997c6d267a37bb42dcfc83d10e954844853fe04436aa99adddab5f571fb86",
-                                     "lifecycle":  "historical-baseline",
-                                     "sourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-                                     "baselineDisposition":  "committed-baseline"
-                                 },
-                                 {
-                                     "path":  "admin/drizzle/0020_prompt_schema_registry.sql",
-                                     "sha256":  "812ae8bcd602efb56adb6ceda97aa8ac9f10a070f864a12dcb2fa518fb407fa4",
-                                     "lifecycle":  "historical-baseline",
-                                     "sourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-                                     "baselineDisposition":  "committed-baseline"
-                                 },
-                                 {
-                                     "path":  "admin/drizzle/0021_ai_budget_reservations.sql",
-                                     "sha256":  "df06dbcc4ab7efd4dd3708ccd9db80a59ecffc6558d85ada14b55fe5743b32d5",
-                                     "lifecycle":  "historical-baseline",
-                                     "sourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-                                     "baselineDisposition":  "committed-baseline"
-                                 },
-                                 {
-                                     "path":  "admin/drizzle/0022_provider_health.sql",
-                                     "sha256":  "bbd5df9bf942728ce3e94fcd4f962855a7bcea21498f05f5bc1a804ad68a6b77",
-                                     "lifecycle":  "historical-baseline",
-                                     "sourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-                                     "baselineDisposition":  "committed-baseline"
-                                 },
-                                 {
-                                     "path":  "admin/drizzle/0023_quote_requests_schema_consistency.sql",
-                                     "sha256":  "cf28dfb459fc02d96184e835eeee9ac08f7c2979ec567014a7260f0f93da061e",
-                                     "lifecycle":  "historical-baseline",
-                                     "sourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-                                     "baselineDisposition":  "committed-baseline"
-                                 },
-                                 {
-                                     "path":  "admin/drizzle/0024_cross_artifact_consistency.sql",
-                                     "sha256":  "d08ae0563ede8a66e73da52f2eacc22079406070eb59c8d623879c3bbb5fbc92",
-                                     "lifecycle":  "historical-baseline",
-                                     "sourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-                                     "baselineDisposition":  "committed-baseline"
-                                 },
-                                 {
-                                     "path":  "admin/drizzle/0025_forge_review_council.sql",
-                                     "sha256":  "694078a635070f0724c1767a19223eb2ec4e09c7df70038a867fcc698a410108",
-                                     "lifecycle":  "historical-baseline",
-                                     "sourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-                                     "baselineDisposition":  "committed-baseline"
-                                 },
-                                 {
-                                     "path":  "admin/drizzle/0026_copy_quality_evaluator.sql",
-                                     "sha256":  "3081826ea123b58e22aa357bf0b75f38c492fc9cf7d152d0b7f38965c78ad7de",
-                                     "lifecycle":  "historical-baseline",
-                                     "sourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-                                     "baselineDisposition":  "committed-baseline"
-                                 },
-                                 {
-                                     "path":  "admin/drizzle/0027_accessibility_gate.sql",
-                                     "sha256":  "9271f0931d96484e4edf3caa907907f3f8d55da0fa70eb454cd172a63765c0d1",
-                                     "lifecycle":  "historical-baseline",
-                                     "sourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-                                     "baselineDisposition":  "committed-baseline"
-                                 },
-                                 {
-                                     "path":  "admin/drizzle/0028_forge_clarification_queue.sql",
-                                     "sha256":  "7342d780f0e6ddbde4ec190704a735d6801dd492bcef978ec31f19070206a27f",
-                                     "lifecycle":  "historical-baseline",
-                                     "sourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-                                     "baselineDisposition":  "committed-baseline"
-                                 },
-                                 {
-                                     "path":  "admin/drizzle/0029_design_system_artifact.sql",
-                                     "sha256":  "eac63828f40b9a19381828cf9c9d484ba65da94a4dee7d23eec49a3595cf9828",
-                                     "lifecycle":  "historical-baseline",
-                                     "sourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-                                     "baselineDisposition":  "committed-baseline"
-                                 },
-                                 {
-                                     "path":  "admin/drizzle/0030_originality_report.sql",
-                                     "sha256":  "0200e424193a0c88eeef18436c4090736641b8bad165b9add6c4fe5fce87220d",
-                                     "lifecycle":  "historical-baseline",
-                                     "sourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-                                     "baselineDisposition":  "committed-baseline"
-                                 },
-                                 {
-                                     "path":  "admin/drizzle/0031_site_inventory.sql",
-                                     "sha256":  "2706143ac3efb928e61127c504bdc4b8228c083ca2f5d106c18853bb976f06a9",
-                                     "lifecycle":  "historical-baseline",
-                                     "sourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-                                     "baselineDisposition":  "committed-baseline"
-                                 },
-                                 {
-                                     "path":  "admin/drizzle/0032_migration_analysis.sql",
-                                     "sha256":  "ecb5685d67eb970e266be8bb48f47da7955c7343a5f41ab997396ffed187344a",
-                                     "lifecycle":  "historical-baseline",
-                                     "sourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-                                     "baselineDisposition":  "committed-baseline"
-                                 },
-                                 {
-                                     "path":  "admin/drizzle/0033_migration_candidate.sql",
-                                     "sha256":  "ce7e4e3ebc08358197f74c9ed720fd8c28463855bc3fdba0b4f758f6015969f1",
-                                     "lifecycle":  "historical-baseline",
-                                     "sourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-                                     "baselineDisposition":  "committed-baseline"
-                                 },
-                                 {
-                                     "path":  "admin/drizzle/0034_lead_scoring.sql",
-                                     "sha256":  "ff4c96ebcdb8d2e03067e9ce62474533990e41bc6e84650da0a68c21c678272d",
-                                     "lifecycle":  "historical-baseline",
-                                     "sourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-                                     "baselineDisposition":  "committed-baseline"
-                                 },
-                                 {
-                                     "path":  "admin/drizzle/0035_project_estimator.sql",
-                                     "sha256":  "4ebf869bde6bc1564524676e10ab51a11618012328c6fbd7f4458a34597120c8",
-                                     "lifecycle":  "historical-baseline",
-                                     "sourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-                                     "baselineDisposition":  "committed-baseline"
-                                 },
-                                 {
-                                     "path":  "admin/drizzle/0036_delivery_capacity_forecasting.sql",
-                                     "sha256":  "ed3d69cf7649ac5791c4e6dd09f8eaab2bdda6814d5af44c127947d44270031b",
-                                     "lifecycle":  "historical-baseline",
-                                     "sourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-                                     "baselineDisposition":  "committed-baseline"
-                                 },
-                                 {
-                                     "path":  "admin/drizzle/0037_operating_brief_actions.sql",
-                                     "sha256":  "257866fb39fc7f9e536a1d81a7f04abfdcd4440ee3b331c42c6501126fa87bb6",
-                                     "lifecycle":  "historical-baseline",
-                                     "sourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-                                     "baselineDisposition":  "committed-baseline"
-                                 },
-                                 {
-                                     "path":  "admin/drizzle/0038_client_analytics_ingestion.sql",
-                                     "sha256":  "125febfe4eb466dea8207e2a88ebe806fc985d47c2fa986d008baa2517a5f702",
-                                     "lifecycle":  "historical-baseline",
-                                     "sourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-                                     "baselineDisposition":  "committed-baseline"
-                                 },
-                                 {
-                                     "path":  "admin/drizzle/0039_client_optimisation_proposals.sql",
-                                     "sha256":  "a7c83aa7df5f22012a90d7dc34064d9973aa82037e23e60ddc62b49e4abd721f",
-                                     "lifecycle":  "historical-baseline",
-                                     "sourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-                                     "baselineDisposition":  "committed-baseline"
-                                 },
-                                 {
-                                     "path":  "admin/drizzle/0040_forge_deployment_candidates.sql",
-                                     "sha256":  "151e946a439bdca10bffe5a24a85f279c1412f0060981f589293cd86a585b744",
-                                     "lifecycle":  "historical-baseline",
-                                     "sourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-                                     "baselineDisposition":  "committed-baseline"
-                                 },
-                                 {
-                                     "path":  "admin/drizzle/0041_forge_release_gates.sql",
-                                     "sha256":  "e6dbb7f8820ba879069d6e95c44a2231b306133be6be8ff98bab137212e4c1e2",
-                                     "lifecycle":  "historical-baseline",
-                                     "sourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-                                     "baselineDisposition":  "committed-baseline"
-                                 }
-                             ],
-    "forwardMigrations":  [
-                              {
-                                  "path":  "web/drizzle/0010_public_claims_registry.sql",
-                                  "sha256":  "34d4f79d069f4b9b0569d9f5e6bc5f3a6739058d1af05f4cb5f77e7e345df8c5",
-                                  "lifecycle":  "forward",
-                                  "reason":  "Adds the evidence-backed public claims registry, restricted verified view and immutable review audit trail."
-                              },
-                              {
-                                  "path":  "web/drizzle/0011_quote_enquiry_intent.sql",
-                                  "sha256":  "989d5a220937b240b1682cf414362f639b2220f8ce1e41cc3a1c8d98d75841c1",
-                                  "lifecycle":  "forward",
-                                  "reason":  "Persists the validated requested next step for public and interactive enquiries."
-                              },
-                              {
-                                  "path":  "web/drizzle/0012_local_growth_check.sql",
-                                  "sha256":  "ac4db0e3ee2edd2da975b02f7d51fff095228ad28a293ae460a764d8d1ee2012",
-                                  "lifecycle":  "forward",
-                                  "reason":  "Adds the short local-growth funnel classification, optional phone context and privacy-minimised analytics taxonomy."
-                              },
-                              {
-                                  "path":  "admin/drizzle/0042_historical_schema_reconciliation.sql",
-                                  "sha256":  "0f0644d5c55fff5589cb0b7b0a506d62f0886d6dbd551c34edf85d6cadfb301a",
-                                  "lifecycle":  "forward-correction",
-                                  "reason":  "Reconciles either known 0009/0012 history without assuming which form production applied."
-                              },
-                              {
-                                  "path":  "admin/drizzle/0043_generated_dependency_admission.sql",
-                                  "sha256":  "cc0695aaf04c83c540314e6d47362b3f85552c38a4a6608787a208848e540d0a",
-                                  "lifecycle":  "forward",
-                                  "reason":  "Adds immutable generated-site dependency admission and SPDX evidence to deployment candidates."
-                              },
-                              {
-                                  "path":  "admin/drizzle/0044_client_analytics_tenant_rls.sql",
-                                  "sha256":  "523242c2e52aa911c7a99c1f3351c9cd76b7c4ceb1d0ea63a444dac617fd807d",
-                                  "lifecycle":  "forward",
-                                  "reason":  "Enforces transaction-scoped row-level tenant isolation for client analytics and optimisation data."
-                              }
-                          ],
-    "journals":  {
-                     "web":  {
-                                 "path":  "web/drizzle/meta/_journal.json",
-                                 "baselineSourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-                                 "baselineEntryCount":  10,
-                                 "appendedEntries":  [
-                                                         {
-                                                             "idx":  10,
-                                                             "version":  "7",
-                                                             "when":  1786003200000,
-                                                             "tag":  "0010_public_claims_registry",
-                                                             "breakpoints":  true
-                                                         },
-                                                         {
-                                                             "idx":  11,
-                                                             "version":  "7",
-                                                             "when":  1786089600000,
-                                                             "tag":  "0011_quote_enquiry_intent",
-                                                             "breakpoints":  true
-                                                         },
-                                                         {
-                                                             "idx":  12,
-                                                             "version":  "7",
-                                                             "when":  1786176000000,
-                                                             "tag":  "0012_local_growth_check",
-                                                             "breakpoints":  true
-                                                         }
-                                                     ]
-                             },
-                     "admin":  {
-                                   "path":  "admin/drizzle/meta/_journal.json",
-                                   "baselineSourceCommit":  "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
-                                   "baselineEntryCount":  42,
-                                   "appendedEntries":  [
-                                                           {
-                                                               "idx":  42,
-                                                               "version":  "7",
-                                                               "when":  1785744000000,
-                                                               "tag":  "0042_historical_schema_reconciliation",
-                                                               "breakpoints":  true
-                                                           },
-                                                           {
-                                                               "idx":  43,
-                                                               "version":  "7",
-                                                               "when":  1785830400000,
-                                                               "tag":  "0043_generated_dependency_admission",
-                                                               "breakpoints":  true
-                                                           },
-                                                           {
-                                                               "idx":  44,
-                                                               "version":  "7",
-                                                               "when":  1785916800000,
-                                                               "tag":  "0044_client_analytics_tenant_rls",
-                                                               "breakpoints":  true
-                                                           }
-                                                       ]
-                               }
-                 },
-    "knownHistoricalVariants":  [
-                                    {
-                                        "path":  "admin/drizzle/0009_known_iron_monger.sql",
-                                        "commit":  "bfbabc6930b037c441067336530c2900e6cef749",
-                                        "sha256":  "3ac23ee9550b45a4fe464033276fcc7b59d6997e014a2e0661f141d16c5d134d",
-                                        "disposition":  "superseded-broken-original"
-                                    },
-                                    {
-                                        "path":  "admin/drizzle/0009_known_iron_monger.sql",
-                                        "commit":  "e94e14fe9727d4a275b538f75fd2f271e888d5b1",
-                                        "sha256":  "bb94fec4eba38487dcfc0d057e73691db6408da3eead8f3d6161433741137b51",
-                                        "disposition":  "adopted-compatibility-baseline"
-                                    },
-                                    {
-                                        "path":  "admin/drizzle/0012_client_request_threads.sql",
-                                        "commit":  "417d54ee2d42306ed88c2ff791369953c6b62e78",
-                                        "sha256":  "d2b9bb3193d58a8030ad9fb9b15685beccb8f08917148c1b107ab668c65c1043",
-                                        "disposition":  "restored-original-baseline"
-                                    },
-                                    {
-                                        "path":  "admin/drizzle/0012_client_request_threads.sql",
-                                        "commit":  "e94e14fe9727d4a275b538f75fd2f271e888d5b1",
-                                        "sha256":  "27a492feabbe2e781bc259c1ba64b614b32b8d3388e7844ae5ebbcb0e4e5e93b",
-                                        "disposition":  "known-applied-unknown-forward-reconciled"
-                                    }
-                                ]
+  "version": 1,
+  "algorithm": "sha256",
+  "baselineSourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+  "historicalMigrations": [
+    {
+      "path": "web/drizzle/0000_large_ironclad.sql",
+      "sha256": "001e6a24a92c9e135dd1952f19995c6bcdfd11fdb6515fa429badd2d91e4066a",
+      "lifecycle": "historical-baseline",
+      "sourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+      "baselineDisposition": "committed-baseline"
+    },
+    {
+      "path": "web/drizzle/0001_tough_jane_foster.sql",
+      "sha256": "d6461710238000c2f0809c39db5ed618bac148f927dbac389e0ee4755238100c",
+      "lifecycle": "historical-baseline",
+      "sourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+      "baselineDisposition": "committed-baseline"
+    },
+    {
+      "path": "web/drizzle/0002_clever_squadron_supreme.sql",
+      "sha256": "d86178e9dc478b5cd3618419ad2ee712c9d97cbf7a84f953182d5ac8cbbc9c85",
+      "lifecycle": "historical-baseline",
+      "sourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+      "baselineDisposition": "committed-baseline"
+    },
+    {
+      "path": "web/drizzle/0003_yummy_blindfold.sql",
+      "sha256": "e7f1a59a92da2246b8c0e6eeac109c848e3783ca2ad5cb8fcb1e0825e24057d3",
+      "lifecycle": "historical-baseline",
+      "sourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+      "baselineDisposition": "committed-baseline"
+    },
+    {
+      "path": "web/drizzle/0004_sleepy_invaders.sql",
+      "sha256": "778078581c00b4810e370d83b37ef050be08101abe67720fafe128d64b4703b8",
+      "lifecycle": "historical-baseline",
+      "sourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+      "baselineDisposition": "committed-baseline"
+    },
+    {
+      "path": "web/drizzle/0005_client_requests.sql",
+      "sha256": "0b91e6762aae32a47d9b2363685899d7adf058983fddf8d18c9302d27a4a0c76",
+      "lifecycle": "historical-baseline",
+      "sourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+      "baselineDisposition": "committed-baseline"
+    },
+    {
+      "path": "web/drizzle/0006_request_threads.sql",
+      "sha256": "d2b9bb3193d58a8030ad9fb9b15685beccb8f08917148c1b107ab668c65c1043",
+      "lifecycle": "historical-baseline",
+      "sourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+      "baselineDisposition": "committed-baseline"
+    },
+    {
+      "path": "web/drizzle/0007_client_timeline_events.sql",
+      "sha256": "e876200a231f6b84546b9d6543354db9b2e0b302833c9d7d4283fa44c7e72c67",
+      "lifecycle": "historical-baseline",
+      "sourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+      "baselineDisposition": "committed-baseline"
+    },
+    {
+      "path": "web/drizzle/0008_monthly_reports.sql",
+      "sha256": "90ba366f4077fac0eea51c5fb558a8b483afb846a7dec39ab6bfa0a7512eb5f1",
+      "lifecycle": "historical-baseline",
+      "sourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+      "baselineDisposition": "committed-baseline"
+    },
+    {
+      "path": "web/drizzle/0009_experience_choice_analytics.sql",
+      "sha256": "c5bef62ad95c01c44bd5849e50c91d63c4f130b63dbc9b19f5b9a10128ff7c43",
+      "lifecycle": "historical-baseline",
+      "sourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+      "baselineDisposition": "committed-baseline"
+    },
+    {
+      "path": "admin/drizzle/0000_hot_ultron.sql",
+      "sha256": "bf23aea93eb969df60aa1ba3c2704d6b38d6ad49a80577f1a374cc3212d16554",
+      "lifecycle": "historical-baseline",
+      "sourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+      "baselineDisposition": "committed-baseline"
+    },
+    {
+      "path": "admin/drizzle/0001_prospect_pipeline.sql",
+      "sha256": "d49f3bb2602acb0a1b71a01d4d870dc6e39ebe9d2f5346794b5600a0153b0693",
+      "lifecycle": "historical-baseline",
+      "sourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+      "baselineDisposition": "committed-baseline"
+    },
+    {
+      "path": "admin/drizzle/0002_admin_login_rate_limits.sql",
+      "sha256": "72e49a67afd7acfc42cd54c2f576c293ee91d044b715435d1bc2ef850523c12c",
+      "lifecycle": "historical-baseline",
+      "sourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+      "baselineDisposition": "committed-baseline"
+    },
+    {
+      "path": "admin/drizzle/0003_fair_hellcat.sql",
+      "sha256": "ad65e7aa5e97111f393585d09ebd3f9021f50c5571b514712b5ffe11c23cfd15",
+      "lifecycle": "historical-baseline",
+      "sourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+      "baselineDisposition": "committed-baseline"
+    },
+    {
+      "path": "admin/drizzle/0004_brief_morg.sql",
+      "sha256": "279daedaa4c4673e7bb8d7bc9a39d42b091815e4780764d0dd7548e00c9bae3c",
+      "lifecycle": "historical-baseline",
+      "sourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+      "baselineDisposition": "committed-baseline"
+    },
+    {
+      "path": "admin/drizzle/0005_lucky_wind_dancer.sql",
+      "sha256": "335bd44cfa76e3545dad562438b601a2f9d182f3adf421bd05c8a3be0b624c01",
+      "lifecycle": "historical-baseline",
+      "sourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+      "baselineDisposition": "committed-baseline"
+    },
+    {
+      "path": "admin/drizzle/0006_brainy_marvex.sql",
+      "sha256": "526523f09ac5fb8d9f7ef2b8a482f4e3fbca895759024a14a0671897fc91a564",
+      "lifecycle": "historical-baseline",
+      "sourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+      "baselineDisposition": "committed-baseline"
+    },
+    {
+      "path": "admin/drizzle/0007_dizzy_ezekiel.sql",
+      "sha256": "baab6037988351c390de320926721bdf3466bf824123335fd55a8df09e75571a",
+      "lifecycle": "historical-baseline",
+      "sourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+      "baselineDisposition": "committed-baseline"
+    },
+    {
+      "path": "admin/drizzle/0008_forge_runtime_hardening.sql",
+      "sha256": "224a4aa5a570f42a8d84c666854c422496a18c8c9603543adc9e180a6ec3636b",
+      "lifecycle": "historical-baseline",
+      "sourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+      "baselineDisposition": "committed-baseline"
+    },
+    {
+      "path": "admin/drizzle/0009_known_iron_monger.sql",
+      "sha256": "bb94fec4eba38487dcfc0d057e73691db6408da3eead8f3d6161433741137b51",
+      "lifecycle": "historical-baseline",
+      "sourceCommit": "e94e14fe9727d4a275b538f75fd2f271e888d5b1",
+      "baselineDisposition": "adopted-compatibility-baseline"
+    },
+    {
+      "path": "admin/drizzle/0010_magical_pixie.sql",
+      "sha256": "7ed2a3e28e06dfa0c42b1166769ddfba3420849aacbdd70c5f367a5430663d2b",
+      "lifecycle": "historical-baseline",
+      "sourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+      "baselineDisposition": "committed-baseline"
+    },
+    {
+      "path": "admin/drizzle/0011_glorious_masked_marvel.sql",
+      "sha256": "1d08268d3c9fa1d162fa32271f5b0f5e5b06fccaceca3cfe8b372920a0ac50e2",
+      "lifecycle": "historical-baseline",
+      "sourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+      "baselineDisposition": "committed-baseline"
+    },
+    {
+      "path": "admin/drizzle/0012_client_request_threads.sql",
+      "sha256": "d2b9bb3193d58a8030ad9fb9b15685beccb8f08917148c1b107ab668c65c1043",
+      "lifecycle": "historical-baseline",
+      "sourceCommit": "417d54ee2d42306ed88c2ff791369953c6b62e78",
+      "baselineDisposition": "restored-original-baseline"
+    },
+    {
+      "path": "admin/drizzle/0013_client_timeline_events.sql",
+      "sha256": "e876200a231f6b84546b9d6543354db9b2e0b302833c9d7d4283fa44c7e72c67",
+      "lifecycle": "historical-baseline",
+      "sourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+      "baselineDisposition": "committed-baseline"
+    },
+    {
+      "path": "admin/drizzle/0014_monthly_reports.sql",
+      "sha256": "90ba366f4077fac0eea51c5fb558a8b483afb846a7dec39ab6bfa0a7512eb5f1",
+      "lifecycle": "historical-baseline",
+      "sourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+      "baselineDisposition": "committed-baseline"
+    },
+    {
+      "path": "admin/drizzle/0015_sales_proposals.sql",
+      "sha256": "5e266628cd8386be96127541f8a5d82a5d1005e720127a364d7f29fbc18d4e42",
+      "lifecycle": "historical-baseline",
+      "sourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+      "baselineDisposition": "committed-baseline"
+    },
+    {
+      "path": "admin/drizzle/0016_admin_identity.sql",
+      "sha256": "6c8204c5d5636564f4b370cc86771ffdd8465311b6216f4fc0cbb96858d1ac5c",
+      "lifecycle": "historical-baseline",
+      "sourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+      "baselineDisposition": "committed-baseline"
+    },
+    {
+      "path": "admin/drizzle/0017_admin_mfa_audit.sql",
+      "sha256": "087fa2b01c429dd811ea971c998771488d8100e169b56341959b1c04e20bb288",
+      "lifecycle": "historical-baseline",
+      "sourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+      "baselineDisposition": "committed-baseline"
+    },
+    {
+      "path": "admin/drizzle/0018_forge_task_quality.sql",
+      "sha256": "a14c9f366bfb3a82b0a030eb41cdff33510cd544cd2e63b196cda99b61be3216",
+      "lifecycle": "historical-baseline",
+      "sourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+      "baselineDisposition": "committed-baseline"
+    },
+    {
+      "path": "admin/drizzle/0019_artifact_provenance.sql",
+      "sha256": "eca997c6d267a37bb42dcfc83d10e954844853fe04436aa99adddab5f571fb86",
+      "lifecycle": "historical-baseline",
+      "sourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+      "baselineDisposition": "committed-baseline"
+    },
+    {
+      "path": "admin/drizzle/0020_prompt_schema_registry.sql",
+      "sha256": "812ae8bcd602efb56adb6ceda97aa8ac9f10a070f864a12dcb2fa518fb407fa4",
+      "lifecycle": "historical-baseline",
+      "sourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+      "baselineDisposition": "committed-baseline"
+    },
+    {
+      "path": "admin/drizzle/0021_ai_budget_reservations.sql",
+      "sha256": "df06dbcc4ab7efd4dd3708ccd9db80a59ecffc6558d85ada14b55fe5743b32d5",
+      "lifecycle": "historical-baseline",
+      "sourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+      "baselineDisposition": "committed-baseline"
+    },
+    {
+      "path": "admin/drizzle/0022_provider_health.sql",
+      "sha256": "bbd5df9bf942728ce3e94fcd4f962855a7bcea21498f05f5bc1a804ad68a6b77",
+      "lifecycle": "historical-baseline",
+      "sourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+      "baselineDisposition": "committed-baseline"
+    },
+    {
+      "path": "admin/drizzle/0023_quote_requests_schema_consistency.sql",
+      "sha256": "cf28dfb459fc02d96184e835eeee9ac08f7c2979ec567014a7260f0f93da061e",
+      "lifecycle": "historical-baseline",
+      "sourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+      "baselineDisposition": "committed-baseline"
+    },
+    {
+      "path": "admin/drizzle/0024_cross_artifact_consistency.sql",
+      "sha256": "d08ae0563ede8a66e73da52f2eacc22079406070eb59c8d623879c3bbb5fbc92",
+      "lifecycle": "historical-baseline",
+      "sourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+      "baselineDisposition": "committed-baseline"
+    },
+    {
+      "path": "admin/drizzle/0025_forge_review_council.sql",
+      "sha256": "694078a635070f0724c1767a19223eb2ec4e09c7df70038a867fcc698a410108",
+      "lifecycle": "historical-baseline",
+      "sourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+      "baselineDisposition": "committed-baseline"
+    },
+    {
+      "path": "admin/drizzle/0026_copy_quality_evaluator.sql",
+      "sha256": "3081826ea123b58e22aa357bf0b75f38c492fc9cf7d152d0b7f38965c78ad7de",
+      "lifecycle": "historical-baseline",
+      "sourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+      "baselineDisposition": "committed-baseline"
+    },
+    {
+      "path": "admin/drizzle/0027_accessibility_gate.sql",
+      "sha256": "9271f0931d96484e4edf3caa907907f3f8d55da0fa70eb454cd172a63765c0d1",
+      "lifecycle": "historical-baseline",
+      "sourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+      "baselineDisposition": "committed-baseline"
+    },
+    {
+      "path": "admin/drizzle/0028_forge_clarification_queue.sql",
+      "sha256": "7342d780f0e6ddbde4ec190704a735d6801dd492bcef978ec31f19070206a27f",
+      "lifecycle": "historical-baseline",
+      "sourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+      "baselineDisposition": "committed-baseline"
+    },
+    {
+      "path": "admin/drizzle/0029_design_system_artifact.sql",
+      "sha256": "eac63828f40b9a19381828cf9c9d484ba65da94a4dee7d23eec49a3595cf9828",
+      "lifecycle": "historical-baseline",
+      "sourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+      "baselineDisposition": "committed-baseline"
+    },
+    {
+      "path": "admin/drizzle/0030_originality_report.sql",
+      "sha256": "0200e424193a0c88eeef18436c4090736641b8bad165b9add6c4fe5fce87220d",
+      "lifecycle": "historical-baseline",
+      "sourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+      "baselineDisposition": "committed-baseline"
+    },
+    {
+      "path": "admin/drizzle/0031_site_inventory.sql",
+      "sha256": "2706143ac3efb928e61127c504bdc4b8228c083ca2f5d106c18853bb976f06a9",
+      "lifecycle": "historical-baseline",
+      "sourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+      "baselineDisposition": "committed-baseline"
+    },
+    {
+      "path": "admin/drizzle/0032_migration_analysis.sql",
+      "sha256": "ecb5685d67eb970e266be8bb48f47da7955c7343a5f41ab997396ffed187344a",
+      "lifecycle": "historical-baseline",
+      "sourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+      "baselineDisposition": "committed-baseline"
+    },
+    {
+      "path": "admin/drizzle/0033_migration_candidate.sql",
+      "sha256": "ce7e4e3ebc08358197f74c9ed720fd8c28463855bc3fdba0b4f758f6015969f1",
+      "lifecycle": "historical-baseline",
+      "sourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+      "baselineDisposition": "committed-baseline"
+    },
+    {
+      "path": "admin/drizzle/0034_lead_scoring.sql",
+      "sha256": "ff4c96ebcdb8d2e03067e9ce62474533990e41bc6e84650da0a68c21c678272d",
+      "lifecycle": "historical-baseline",
+      "sourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+      "baselineDisposition": "committed-baseline"
+    },
+    {
+      "path": "admin/drizzle/0035_project_estimator.sql",
+      "sha256": "4ebf869bde6bc1564524676e10ab51a11618012328c6fbd7f4458a34597120c8",
+      "lifecycle": "historical-baseline",
+      "sourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+      "baselineDisposition": "committed-baseline"
+    },
+    {
+      "path": "admin/drizzle/0036_delivery_capacity_forecasting.sql",
+      "sha256": "ed3d69cf7649ac5791c4e6dd09f8eaab2bdda6814d5af44c127947d44270031b",
+      "lifecycle": "historical-baseline",
+      "sourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+      "baselineDisposition": "committed-baseline"
+    },
+    {
+      "path": "admin/drizzle/0037_operating_brief_actions.sql",
+      "sha256": "257866fb39fc7f9e536a1d81a7f04abfdcd4440ee3b331c42c6501126fa87bb6",
+      "lifecycle": "historical-baseline",
+      "sourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+      "baselineDisposition": "committed-baseline"
+    },
+    {
+      "path": "admin/drizzle/0038_client_analytics_ingestion.sql",
+      "sha256": "125febfe4eb466dea8207e2a88ebe806fc985d47c2fa986d008baa2517a5f702",
+      "lifecycle": "historical-baseline",
+      "sourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+      "baselineDisposition": "committed-baseline"
+    },
+    {
+      "path": "admin/drizzle/0039_client_optimisation_proposals.sql",
+      "sha256": "a7c83aa7df5f22012a90d7dc34064d9973aa82037e23e60ddc62b49e4abd721f",
+      "lifecycle": "historical-baseline",
+      "sourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+      "baselineDisposition": "committed-baseline"
+    },
+    {
+      "path": "admin/drizzle/0040_forge_deployment_candidates.sql",
+      "sha256": "151e946a439bdca10bffe5a24a85f279c1412f0060981f589293cd86a585b744",
+      "lifecycle": "historical-baseline",
+      "sourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+      "baselineDisposition": "committed-baseline"
+    },
+    {
+      "path": "admin/drizzle/0041_forge_release_gates.sql",
+      "sha256": "e6dbb7f8820ba879069d6e95c44a2231b306133be6be8ff98bab137212e4c1e2",
+      "lifecycle": "historical-baseline",
+      "sourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+      "baselineDisposition": "committed-baseline"
+    }
+  ],
+  "forwardMigrations": [
+    {
+      "path": "web/drizzle/0010_public_claims_registry.sql",
+      "sha256": "34d4f79d069f4b9b0569d9f5e6bc5f3a6739058d1af05f4cb5f77e7e345df8c5",
+      "lifecycle": "forward",
+      "reason": "Adds the evidence-backed public claims registry, restricted verified view and immutable review audit trail."
+    },
+    {
+      "path": "web/drizzle/0011_quote_enquiry_intent.sql",
+      "sha256": "989d5a220937b240b1682cf414362f639b2220f8ce1e41cc3a1c8d98d75841c1",
+      "lifecycle": "forward",
+      "reason": "Persists the validated requested next step for public and interactive enquiries."
+    },
+    {
+      "path": "web/drizzle/0012_local_growth_check.sql",
+      "sha256": "ac4db0e3ee2edd2da975b02f7d51fff095228ad28a293ae460a764d8d1ee2012",
+      "lifecycle": "forward",
+      "reason": "Adds the short local-growth funnel classification, optional phone context and privacy-minimised analytics taxonomy."
+    },
+    {
+      "path": "admin/drizzle/0042_historical_schema_reconciliation.sql",
+      "sha256": "0f0644d5c55fff5589cb0b7b0a506d62f0886d6dbd551c34edf85d6cadfb301a",
+      "lifecycle": "forward-correction",
+      "reason": "Reconciles either known 0009/0012 history without assuming which form production applied."
+    },
+    {
+      "path": "admin/drizzle/0043_generated_dependency_admission.sql",
+      "sha256": "cc0695aaf04c83c540314e6d47362b3f85552c38a4a6608787a208848e540d0a",
+      "lifecycle": "forward",
+      "reason": "Adds immutable generated-site dependency admission and SPDX evidence to deployment candidates."
+    },
+    {
+      "path": "admin/drizzle/0044_client_analytics_tenant_rls.sql",
+      "sha256": "523242c2e52aa911c7a99c1f3351c9cd76b7c4ceb1d0ea63a444dac617fd807d",
+      "lifecycle": "forward",
+      "reason": "Enforces transaction-scoped row-level tenant isolation for client analytics and optimisation data."
+    },
+    {
+      "path": "admin/drizzle/0045_durable_operational_controls.sql",
+      "sha256": "7ac8f36f8696623c9388e84d007e528b533b1cd7169dc4f51c4cdd5bebe40e9b",
+      "lifecycle": "forward",
+      "reason": "Adds durable Forge job leasing (owner/expiry/heartbeat/retry/idempotency/scheduled-at/dead-letter/task link), shared rate-limit counters, and preview ownership."
+    }
+  ],
+  "journals": {
+    "web": {
+      "path": "web/drizzle/meta/_journal.json",
+      "baselineSourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+      "baselineEntryCount": 10,
+      "appendedEntries": [
+        {
+          "idx": 10,
+          "version": "7",
+          "when": 1786003200000,
+          "tag": "0010_public_claims_registry",
+          "breakpoints": true
+        },
+        {
+          "idx": 11,
+          "version": "7",
+          "when": 1786089600000,
+          "tag": "0011_quote_enquiry_intent",
+          "breakpoints": true
+        },
+        {
+          "idx": 12,
+          "version": "7",
+          "when": 1786176000000,
+          "tag": "0012_local_growth_check",
+          "breakpoints": true
+        }
+      ]
+    },
+    "admin": {
+      "path": "admin/drizzle/meta/_journal.json",
+      "baselineSourceCommit": "ba11b2e669a32c48c8d45d5e77eeeaf9bc1f65f9",
+      "baselineEntryCount": 42,
+      "appendedEntries": [
+        {
+          "idx": 42,
+          "version": "7",
+          "when": 1785744000000,
+          "tag": "0042_historical_schema_reconciliation",
+          "breakpoints": true
+        },
+        {
+          "idx": 43,
+          "version": "7",
+          "when": 1785830400000,
+          "tag": "0043_generated_dependency_admission",
+          "breakpoints": true
+        },
+        {
+          "idx": 44,
+          "version": "7",
+          "when": 1785916800000,
+          "tag": "0044_client_analytics_tenant_rls",
+          "breakpoints": true
+        },
+        {
+          "idx": 45,
+          "version": "7",
+          "when": 1786003200000,
+          "tag": "0045_durable_operational_controls",
+          "breakpoints": true
+        }
+      ]
+    }
+  },
+  "knownHistoricalVariants": [
+    {
+      "path": "admin/drizzle/0009_known_iron_monger.sql",
+      "commit": "bfbabc6930b037c441067336530c2900e6cef749",
+      "sha256": "3ac23ee9550b45a4fe464033276fcc7b59d6997e014a2e0661f141d16c5d134d",
+      "disposition": "superseded-broken-original"
+    },
+    {
+      "path": "admin/drizzle/0009_known_iron_monger.sql",
+      "commit": "e94e14fe9727d4a275b538f75fd2f271e888d5b1",
+      "sha256": "bb94fec4eba38487dcfc0d057e73691db6408da3eead8f3d6161433741137b51",
+      "disposition": "adopted-compatibility-baseline"
+    },
+    {
+      "path": "admin/drizzle/0012_client_request_threads.sql",
+      "commit": "417d54ee2d42306ed88c2ff791369953c6b62e78",
+      "sha256": "d2b9bb3193d58a8030ad9fb9b15685beccb8f08917148c1b107ab668c65c1043",
+      "disposition": "restored-original-baseline"
+    },
+    {
+      "path": "admin/drizzle/0012_client_request_threads.sql",
+      "commit": "e94e14fe9727d4a275b538f75fd2f271e888d5b1",
+      "sha256": "27a492feabbe2e781bc259c1ba64b614b32b8d3388e7844ae5ebbcb0e4e5e93b",
+      "disposition": "known-applied-unknown-forward-reconciled"
+    }
+  ]
 }

@@ -3,11 +3,12 @@ import type { Metadata } from "next"
 import { notFound }  from "next/navigation"
 import Image         from "next/image"
 import Link          from "next/link"
-import { ArrowLeft, CheckCircle2, ExternalLink } from "lucide-react"
+import { ArrowLeft, ArrowRight, CheckCircle2, ExternalLink } from "lucide-react"
 import { AnimateIn } from "@/components/AnimateIn"
 import { CTA }       from "@/components/CTA"
 import { Project, projects }  from "@/lib/data"
 import { getBuildLog, type BuildLog } from "@/lib/build-logs"
+import { founderForProject } from "@/lib/founders"
 import { publicClaimMap, type PublicClaim } from "@/lib/public-claims"
 import { getVerifiedPublicClaims } from "@/lib/public-claims.server"
 
@@ -268,12 +269,21 @@ export default async function ProjectPage({ params }: Props) {
 
         {/* Hero */}
         <AnimateIn>
-          {/* Personal badge */}
-          <div className="inline-flex items-center gap-2 bg-s2 border border-b2 rounded-full px-4 py-1.5 mb-6">
-            <span className="font-dm text-xs text-t2 tracking-wider">
-              {p.credit}
-            </span>
-          </div>
+          {/* Personal badge — links to the founder responsible for this build */}
+          {founderForProject(p.slug) ? (
+            <Link
+              href={`/about#${founderForProject(p.slug)!.slug}`}
+              prefetch={false}
+              className="mb-6 inline-flex items-center gap-2 rounded-full border border-b2 bg-s2 px-4 py-1.5 transition-colors hover:border-b3 hover:text-t1"
+            >
+              <span className="font-dm text-xs tracking-wider text-t2">{p.credit}</span>
+              <ArrowRight size={12} aria-hidden="true" className="text-t3" />
+            </Link>
+          ) : (
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-b2 bg-s2 px-4 py-1.5">
+              <span className="font-dm text-xs tracking-wider text-t2">{p.credit}</span>
+            </div>
+          )}
 
           <div className="flex items-start justify-between gap-8 mb-6">
             <div>

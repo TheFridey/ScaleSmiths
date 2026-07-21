@@ -46,6 +46,8 @@ The suite covers:
 - Interactive plan form success
 - Interactive exit route
 
+`about-founders.spec.ts` covers the `/about` founders route separately: founder identification and role, credited work links, origin/location/approach sections, the absence of unsupported biography claims, the "awaiting founder confirmation" notices, monogram-only presentation, canonical metadata and `Person`/`Organization`/`AboutPage` structured data, navigation and footer entry points, the work-page founder link, the founder-led calls to action, mobile overflow, and heading/landmark/keyboard accessibility.
+
 Quote submissions are mocked at the browser network layer. This keeps the public-site browser suite deterministic and prevents it from needing a database or email provider.
 
 ## Visual Regression
@@ -60,6 +62,11 @@ npm run test:e2e:update -- public-site.visual.spec.ts
 ```
 
 Keep meaningful motion coverage in behavioural tests instead of screenshot baselines.
+
+Baselines are platform-suffixed (`*-linux.png` for CI, `*-win32.png` for local Windows runs). A local
+update refreshes only the current platform's files, so any intentional change to shared chrome — the
+header navigation in particular — also requires the Linux baselines to be regenerated in a Linux
+environment before CI passes.
 
 ## CI
 

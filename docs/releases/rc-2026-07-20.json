@@ -5,6 +5,24 @@
   "ready": false,
   "automaticDeployment": false,
   "summary": "Immutable candidate regenerated from the current clean HEAD. It is BLOCKED: a non-overridable technical gate fails (admin production npm audit reports a High-severity undici advisory), and image, SBOM, backup-restore, GitHub-native and human-approval evidence is not satisfied. Not an approval.",
+  "errata": {
+    "recordedAt": "2026-07-21",
+    "auditCommit": "85a384f0dc674a6a6ee3a337d39c2566a6d0c55b",
+    "note": "An independent audit re-executed this candidate's evidence and found two defects. Original fields are preserved unchanged as historical evidence; these corrections take precedence.",
+    "corrections": [
+      {
+        "field": "evidence.githubNativeRequired[\"full Forge workflow E2E\"]",
+        "defect": "Listed as a required GitHub-native check, but no such job existed in ci.yml, security.yml or codeql.yml, and scripts/check-github-actions.mjs did not require one. The local runner was also inoperable: scripts/run-forge-e2e-tests.mjs applied only the admin migration history, which fails and rolls back because admin migrations reference web-owned tables.",
+        "correction": "There was no Forge workflow E2E evidence, local or remote, at commit ab459cc. Both the runner and the missing CI gate are fixed after this candidate; a replacement candidate must record an executed result, not the existence of a gate."
+      },
+      {
+        "field": "evidence.localExecuted.failed[0].remediation",
+        "defect": "Justified the High undici finding as WebSocket-only ('the SSRF client only uses the HTTP Agent, not the WebSocket client').",
+        "correction": "The undici <= 6.26.0 advisory set also contains HTTP-client defects reachable from the Forge crawler's attacker-supplied-URL path: GHSA-2mjp-6q6p-2qxm (HTTP request/response smuggling), GHSA-35p6-xmwp-9g52 (response queue poisoning via keep-alive socket reuse), GHSA-4992-7rv2-5pvq (CRLF injection via upgrade), GHSA-p88m-4jfj-68fv and GHSA-g8m3-5g58-fq7m. The finding is reachable, not incidental."
+      }
+    ],
+    "stateUnchanged": "This candidate remains blocked and is not an approval."
+  },
   "repository": {
     "branch": "test/host-nginx-integration",
     "baseCommit": "ab459cc5661b6c2e3451c4e5568ee78bb22d0923",

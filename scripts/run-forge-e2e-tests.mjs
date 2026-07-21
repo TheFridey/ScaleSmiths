@@ -4,6 +4,10 @@ import process from "node:process"
 
 const root = process.cwd()
 const admin = path.join(root, "admin")
+// Admin migrations reference web-owned tables (client_requests, quote_requests, monthly_reports),
+// so the web history must be applied first — the same order production uses. Applying admin
+// migrations alone rolls the whole batch back and the suite can never start.
+const web = path.join(root, "web")
 const compose = ["compose", "-p", "scalesmiths-forge-e2e", "-f", "docker-compose.integration-test.yml"]
 const databaseUrl = process.env.TEST_DATABASE_URL ?? "postgresql://scalesmiths_test:scalesmiths_test_only@127.0.0.1:55432/scalesmiths_integration_test"
 assertSafeTestDatabase(databaseUrl)
@@ -30,6 +34,7 @@ const env = {
 let server
 try {
   await command("docker", [...compose, "up", "-d", "--wait"], root, env)
+  await npm(["run", "db:migrate"], web, env)
   await npm(["run", "db:migrate"], admin, env)
   await npm(["run", "admin:bootstrap"], admin, env)
   server = spawn(node(), ["./node_modules/next/dist/bin/next", "dev", "-p", "3301"], { cwd: admin, env, stdio: "inherit", windowsHide: true })

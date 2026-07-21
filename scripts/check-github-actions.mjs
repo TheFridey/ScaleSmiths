@@ -30,6 +30,8 @@ const REQUIRED_CONTENT = {
     "web-playwright-artifacts",
     "web-performance-reports",
     "forge-benchmark-report",
+    "npm run test:forge-e2e",
+    "forge-e2e-logs",
   ],
   "security.yml": [
     "actions/dependency-review-action@",

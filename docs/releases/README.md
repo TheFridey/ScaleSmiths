@@ -6,6 +6,7 @@ This directory indexes immutable or reproducible release evidence. It does not a
 
 - [Release candidate — 2026-07-20](rc-2026-07-20.md) — regenerated from the current clean HEAD (`ab459cc`). **Blocked**: the admin production npm audit fails on a High-severity undici advisory, and image/SBOM/backup/GitHub-native/human evidence is outstanding.
 - [Machine-readable candidate manifest](rc-2026-07-20.json).
+- **Errata (2026-07-21):** an independent audit at `85a384f` found that this candidate listed a Forge E2E gate that did not exist, and understated the undici finding as WebSocket-only. Both files carry an `errata` block that takes precedence over the original text; the candidate remains blocked.
 - SPDX SBOMs are **unavailable** for this candidate (syft not present; images not built) and are intentionally not reused from the previous candidate.
 
 ## Historical reports

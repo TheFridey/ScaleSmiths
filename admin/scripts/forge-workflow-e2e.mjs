@@ -3,9 +3,16 @@ import { readFile, rm, writeFile } from "node:fs/promises"
 import path from "node:path"
 import process from "node:process"
 import { Client } from "pg"
+import { Agent } from "undici"
 import { adminDatabaseUrl } from "./database-url.mjs"
 
 const baseUrl = process.env.FORGE_E2E_BASE_URL ?? "http://127.0.0.1:3301"
+// The QA and repair stages install dependencies and build the generated site inside the
+// sandbox, so a single request can legitimately outlast Node's 300s default headers timeout —
+// which equals the server-side command budget, making the client race the work it is waiting
+// for. Derive the client timeouts from that budget so the two cannot drift apart.
+const qaCommandBudgetMs = Number(process.env.FORGE_QA_COMMAND_TIMEOUT_MS ?? 300_000)
+const e2eDispatcher = new Agent({ headersTimeout: qaCommandBudgetMs * 4, bodyTimeout: qaCommandBudgetMs * 4 })
 const email = process.env.ADMIN_EMAIL ?? "forge-e2e@scalesmiths.test"
 const password = process.env.ADMIN_PASSWORD ?? "Forge-E2E-owner-2026!"
 let cookie = ""
@@ -98,7 +105,7 @@ async function call(label, pathname, body, method = "POST") {
   return result.body
 }
 async function callRaw(pathname, body, method = body === undefined ? "GET" : "POST") {
-  const response = await fetch(`${baseUrl}${pathname}`, { method, headers: { ...(body === undefined ? {} : { "content-type": "application/json" }), cookie }, body: body === undefined ? undefined : JSON.stringify(body), redirect: "manual" })
+  const response = await fetch(`${baseUrl}${pathname}`, { method, headers: { ...(body === undefined ? {} : { "content-type": "application/json" }), cookie }, body: body === undefined ? undefined : JSON.stringify(body), redirect: "manual", dispatcher: e2eDispatcher })
   absorbCookies(response)
   const text = await response.text()
   let parsed

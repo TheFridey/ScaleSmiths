@@ -328,3 +328,43 @@ jobs:
 
       - name: Host-Nginx topology integration tests
         run: npm run test:nginx
+
+  forge-e2e:
+    name: Forge Workflow E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: admin/package-lock.json
+
+      # Admin migrations reference web-owned tables, so the web history is applied
+      # first by scripts/run-forge-e2e-tests.mjs and web dependencies are required.
+      - name: Install web dependencies
+        working-directory: web
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Install admin dependencies
+        working-directory: admin
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Full Forge workflow end-to-end suite
+        run: |
+          mkdir -p ci-artifacts
+          set -o pipefail
+          npm run test:forge-e2e 2>&1 | tee ci-artifacts/forge-workflow-e2e.log
+
+      - name: Upload Forge E2E log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: forge-e2e-logs
+          path: ci-artifacts/forge-workflow-e2e.log
+          if-no-files-found: error
+          retention-days: 14

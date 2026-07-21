@@ -12,6 +12,7 @@ const links = [
   { href: "/services", label: "Services" },
   { href: "/local-growth", label: "Local Growth" },
   { href: "/custom-systems", label: "Custom Systems" },
+  { href: "/about", label: "About" },
 ]
 
 export function Nav() {

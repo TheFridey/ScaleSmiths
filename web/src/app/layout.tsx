@@ -3,6 +3,7 @@ import { SmoothScroll } from "@/components/SmoothScroll"
 import { ScrollProgress } from "@/components/ScrollProgress"
 import { Cursor } from "@/components/Cursor"
 import { SiteChrome } from "@/components/SiteChrome"
+import { founders } from "@/lib/founders"
 import "./globals.css"
 
 export const metadata: Metadata = {
@@ -60,7 +61,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               "url": "https://scalesmiths.co.uk",
               "description": "ScaleSmiths is a web design and web development agency and AI implementation and business automation consultancy based in Hucknall, Nottingham. We build websites, e-commerce platforms and automation systems around enquiry, sales and operational workflows.",
               "slogan": "Forge Your Digital Edge",
-              "founders": [{ "@type": "Person", "name": "Rhys" }, { "@type": "Person", "name": "Trevor Newton-Bradley" }],
+              "founder": founders.map((founder) => ({
+                "@type": "Person",
+                "@id": `https://scalesmiths.co.uk/about#${founder.slug}`,
+                "name": founder.name,
+                "jobTitle": founder.role.text,
+                "url": "https://scalesmiths.co.uk/about",
+              })),
               "address": { "@type": "PostalAddress", "addressLocality": "Hucknall", "addressRegion": "Nottinghamshire", "postalCode": "NG15", "addressCountry": "GB" },
               "geo": { "@type": "GeoCoordinates", "latitude": 53.0386, "longitude": -1.2042 },
               "areaServed": [

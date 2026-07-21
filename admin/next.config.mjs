@@ -1,4 +1,4 @@
-import { dirname } from "node:path"
+import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { withSentryConfig } from "@sentry/nextjs"
 
@@ -58,6 +58,22 @@ const nextConfig = {
   // Optional Forge visual-QA tooling. These are resolved at runtime via createRequire only when
   // installed; marking them external stops webpack from trying to bundle/resolve them at build time.
   serverExternalPackages: ["lighthouse", "chrome-launcher", "playwright"],
+  // Next compiles `instrumentation.ts` once per runtime, including an Edge pass. Both of its
+  // exports return early unless NEXT_RUNTIME is "nodejs", so nothing in it can run on Edge —
+  // but webpack still resolves the graph behind its dynamic imports, and that graph is
+  // Node-only: the durable Forge worker reaches `node:child_process` (previews), `pg` (jobs
+  // and the rate-limit store) and `undici` (safe outbound client), while the monitoring
+  // startup reaches `node:async_hooks` and `node:crypto`. None of those resolve in the Edge
+  // pass. `next build` tolerates the unused-bundle failure, but `next dev` surfaces any
+  // compile error as a 500 on EVERY route, so the admin app is unusable in development.
+  //
+  // Middleware here declares `runtime: "nodejs"` and is loaded through Next's Node middleware
+  // path, so the Edge bundle is not executed. Empty the module for that pass only; the Node
+  // server bundle is untouched and still starts the worker and monitoring normally.
+  webpack: (config, { nextRuntime }) => {
+    if (nextRuntime === "edge") config.resolve.alias[join(appDir, "src/instrumentation.ts")] = false
+    return config
+  },
   async headers() {
     return [
       {

@@ -81,9 +81,13 @@ test.describe("public experience SEO routing", () => {
     const xml = await response.text()
     const locations = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1])
 
+    // The origin comes from NEXT_PUBLIC_SITE_URL, which differs between CI and a developer
+    // .env, so assert on paths rather than hard-coding the production host.
+    const paths = locations.map((location) => new URL(location).pathname.replace(/\/$/, "") || "/")
+
     expect(response.status()).toBe(200)
-    expect(locations).not.toContain("https://scalesmiths.co.uk/traditional")
-    expect(locations.filter((location) => location === "https://scalesmiths.co.uk")).toHaveLength(1)
+    expect(paths).not.toContain("/traditional")
+    expect(paths.filter((path) => path === "/")).toHaveLength(1)
     expect(new Set(locations).size).toBe(locations.length)
     expect(xml).toContain("2026-07-19T00:00:00.000Z")
   })
@@ -259,9 +263,12 @@ test.describe("public navigation and accessibility behaviours", () => {
     await page.waitForURL(/\/services$/, { timeout: 20_000, waitUntil: "domcontentloaded" })
     await expect(page.getByRole("heading", { name: /commercial web builds/i })).toBeVisible()
 
-    const requestQuoteLink = page.getByRole("link", { name: /request a quote/i }).first()
-    await expect(requestQuoteLink).toHaveAttribute("href", "/quote")
-    await requestQuoteLink.click({ noWaitAfter: true })
+    // Each custom-systems service card routes to the full brief; local-growth cards route to
+    // the short check instead, so assert both journeys keep a working commercial next step.
+    await expect(page.getByRole("link", { name: /request a local growth check/i }).first()).toHaveAttribute("href", "/local-growth-check")
+    const projectBriefLink = page.getByRole("link", { name: /start a project brief/i }).first()
+    await expect(projectBriefLink).toHaveAttribute("href", "/quote")
+    await projectBriefLink.click({ noWaitAfter: true })
     await page.waitForURL(/\/quote$/, { timeout: 20_000, waitUntil: "domcontentloaded" })
     await expect(page.getByRole("heading", { name: /contact/i })).toBeVisible()
   })

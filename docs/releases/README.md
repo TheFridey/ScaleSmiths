@@ -4,12 +4,13 @@ This directory indexes immutable or reproducible release evidence. It does not a
 
 ## Current report
 
-- [Release candidate — 2026-07-14](rc-2026-07-14.md) — latest production-readiness decision and manual approval checklist.
-- [Machine-readable candidate manifest](rc-2026-07-14.json).
-- [Web SPDX SBOM](rc-2026-07-14-web.spdx.json) and [admin SPDX SBOM](rc-2026-07-14-admin.spdx.json).
+- [Release candidate — 2026-07-20](rc-2026-07-20.md) — regenerated from the current clean HEAD (`ab459cc`). **Blocked**: the admin production npm audit fails on a High-severity undici advisory, and image/SBOM/backup/GitHub-native/human evidence is outstanding.
+- [Machine-readable candidate manifest](rc-2026-07-20.json).
+- SPDX SBOMs are **unavailable** for this candidate (syft not present; images not built) and are intentionally not reused from the previous candidate.
 
 ## Historical reports
 
-- [Production-readiness and security audit — 2026-07-13](../audits/production-readiness-final.md) — superseded by the release candidate above and retained for its findings and validation evidence.
+- [Release candidate — 2026-07-14](rc-2026-07-14.md) — superseded by the candidate above; retained as historical evidence. Its [manifest](rc-2026-07-14.json) and SBOMs ([web](rc-2026-07-14-web.spdx.json), [admin](rc-2026-07-14-admin.spdx.json)) reflect the earlier dirty-tree candidate at commit `e94e14f` and must not be treated as current.
+- [Production-readiness and security audit — 2026-07-13](../audits/production-readiness-final.md) — retained for its findings and validation evidence.
 
 When a newer report is added, update this index and mark its predecessor as historical. Historical files that must quote obsolete topology can be granted a narrow rule-specific exception in `scripts/production-topology-allowlist.json`; active runbooks and configuration must never be allowlisted.

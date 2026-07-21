@@ -1,0 +1,120 @@
+{
+  "candidateId": "rc-2026-07-20-ab459cc",
+  "createdAt": "2026-07-20T21:20:00+01:00",
+  "state": "blocked",
+  "ready": false,
+  "automaticDeployment": false,
+  "summary": "Immutable candidate regenerated from the current clean HEAD. It is BLOCKED: a non-overridable technical gate fails (admin production npm audit reports a High-severity undici advisory), and image, SBOM, backup-restore, GitHub-native and human-approval evidence is not satisfied. Not an approval.",
+  "repository": {
+    "branch": "test/host-nginx-integration",
+    "baseCommit": "ab459cc5661b6c2e3451c4e5568ee78bb22d0923",
+    "shortCommit": "ab459cc",
+    "dirty": false,
+    "note": "The tracked payload at this commit was clean (verified via `git status --porcelain` before generation, per Task 1); every hash below is anchored to this content-addressed commit. This evidence record is a new output committed alongside the candidate. The commit is not yet merged to master, so protected-branch checks are pending."
+  },
+  "versions": {
+    "web": "0.1.0",
+    "admin": "0.1.0",
+    "next": "15.5.20",
+    "nodeRuntime": "node:22-alpine (exact patch fixed by nodeBaseDigest)",
+    "postgres": "16"
+  },
+  "hashes": {
+    "algorithm": "sha256",
+    "nodeBaseDigest": "sha256:16e22a550f3863206a3f701448c45f7912c6896a62de43add43bb9c86130c3e2",
+    "nodeBaseDigestSource": "read from web/Dockerfile and admin/Dockerfile at this commit (identical pin in both); not reused from the previous candidate",
+    "webPackageLock": "eba3096fa2781efef8b3f17b462fa9a77c498ca530c598d68135b2db09827253",
+    "adminPackageLock": "02bcaaf0180d5da2597d5fa3e0bb2c3fedf0f98f34b08c1b6549c9d9bd7eb0f9",
+    "webDockerfile": "32a7ca42ac2a1cf2edb044d51186154b5e17ca5ec426ca7f91745257505cb7ef",
+    "adminDockerfile": "252edb688970d648618d72823765205dc815f36d01774e02f71d5bca1ad1143e",
+    "environmentExample": "368bb155cdea95d652fe665d4a55fb97b51d3ac74383fbf5271da46b2a43221f",
+    "webImage": "unavailable",
+    "adminImage": "unavailable",
+    "webSbom": "unavailable",
+    "adminSbom": "unavailable"
+  },
+  "sourceAnchor": {
+    "method": "git-content-addressed",
+    "note": "Per-source-file integrity is fixed by the commit SHA above; every tracked file is a git blob under this immutable tree. Payload file hashes recorded separately in `hashes` are freshly computed from this commit and differ from rc-2026-07-14."
+  },
+  "evidence": {
+    "localExecuted": {
+      "note": "Commands run in this checkout at commit ab459cc on 2026-07-20; results are real.",
+      "passed": [
+        { "gate": "admin lint", "command": "cd admin && npm run lint", "result": "pass" },
+        { "gate": "web unit tests", "command": "cd web && npm run test", "result": "108 passed" },
+        { "gate": "admin unit tests", "command": "cd admin && npm run test", "result": "499 passed" },
+        { "gate": "migration verification", "command": "node scripts/check-migrations.mjs", "result": "pass (web 13/13, admin 46/46)" },
+        { "gate": "migration history integrity", "command": "npm run check:migration-history", "result": "pass (52 historical, 7 forward locked)" },
+        { "gate": "migration history tests", "command": "npm run test:migration-history", "result": "4 passed" },
+        { "gate": "migration consistency tests", "command": "npm run test:migration-consistency", "result": "2 passed" },
+        { "gate": "release and rollback simulation", "command": "npm run test:release-simulation", "result": "pass" },
+        { "gate": "dependency governance", "command": "npm run check:dependency-governance && npm run test:dependency-governance", "result": "pass" },
+        { "gate": "production topology", "command": "npm run check:production-topology && npm run test:production-topology", "result": "pass" },
+        { "gate": "environment hygiene", "command": "npm run check:env-hygiene", "result": "pass" },
+        { "gate": "architecture documentation", "command": "npm run check:architecture-docs", "result": "pass" },
+        { "gate": "GitHub Actions policy", "command": "npm run check:github-actions && npm run test:github-actions", "result": "pass" },
+        { "gate": "backup migration verifier safeguards", "command": "npm run test:backup-migration-safety", "result": "pass" },
+        { "gate": "web production npm audit", "command": "cd web && npm audit --omit=dev --audit-level=high", "result": "pass (exit 0; 0 high, 0 critical, 3 moderate)" }
+      ],
+      "failed": [
+        {
+          "gate": "admin production npm audit",
+          "command": "cd admin && npm audit --omit=dev --audit-level=high",
+          "result": "FAIL (exit 1; 1 high, 0 critical, 4 moderate)",
+          "detail": "High-severity advisories in undici <= 6.26.0 (admin pins undici 6.21.3), notably GHSA-f269-vfmq-vjvj, GHSA-vrm6-8vpv-qv8q, GHSA-v9p9-hfj2-hcw8, GHSA-vxpw-j846-p89q (WebSocket parser overflow / unbounded decompression / DoS).",
+          "remediation": "Bump admin undici to a patched release ( > 6.26.0 ) and re-run. The SSRF client only uses the HTTP Agent, not the WebSocket client, but npm audit gates on the package regardless.",
+          "overridable": false
+        }
+      ]
+    },
+    "githubNativeRequired": {
+      "note": "Protected-branch checks that only carry weight when run by GitHub Actions on the final merge commit; local equivalents do not substitute.",
+      "checks": [
+        "CodeQL analysis",
+        "dependency-review",
+        "web lint (not locally executable in this checkout: eslint is not installed under web/node_modules)",
+        "web production build",
+        "admin production build",
+        "web Chromium journeys and visual regression",
+        "cross-browser (Firefox/WebKit) functional smoke",
+        "web public performance budgets",
+        "admin Forge benchmark suite",
+        "full Forge workflow E2E",
+        "PostgreSQL empty-migration and real integration suite (24 tests passed at this HEAD during development; required as the CI database job for the final commit)",
+        "TruffleHog secret-scanning workflow",
+        "Hadolint Dockerfile lint workflow",
+        "Trivy final-image scan workflow",
+        "SBOM (anchore/sbom-action) workflow"
+      ]
+    },
+    "humanProductionChecks": [
+      "verify required production secrets contain no placeholders or bootstrap credentials",
+      "verify backup restore evidence, backup ownership and retention",
+      "verify monitoring delivery connectivity",
+      "name the rollback operator",
+      "confirm the maintenance window",
+      "record authorised owner approval; do not enable automatic deployment"
+    ],
+    "unavailable": [
+      { "item": "final web image digest", "reason": "images were not built in this evidence session; label unavailable rather than infer" },
+      { "item": "final admin image digest", "reason": "images were not built in this evidence session" },
+      { "item": "web SPDX SBOM and hash", "reason": "syft is not available locally and the image was not built; not reused from the previous candidate" },
+      { "item": "admin SPDX SBOM and hash", "reason": "syft is not available locally and the image was not built; not reused from the previous candidate" },
+      { "item": "Trivy final-image scan", "reason": "trivy is not installed locally and images were not built" },
+      { "item": "Hadolint Dockerfile lint", "reason": "hadolint is not installed locally (runs in CI)" },
+      { "item": "TruffleHog secret history scan", "reason": "trufflehog is not installed locally (runs in CI)" },
+      { "item": "restored-production-backup migration verification", "reason": "no production PostgreSQL backup exists in this checkout; this evidence cannot be fabricated locally" }
+    ]
+  },
+  "blockers": [
+    "admin production npm audit fails on a High-severity undici advisory (non-overridable technical gate); remediate before this candidate can be validated",
+    "merge to master and pass required GitHub-native CodeQL and dependency-review checks on the final commit",
+    "generate and record final image digests, SPDX SBOMs, Trivy, Hadolint and TruffleHog evidence for the exact images",
+    "restore the latest verified production backup into isolated PostgreSQL 16 and verify web-then-admin migrations against it",
+    "record human release approval after verifying secrets, backups, monitoring and the maintenance window"
+  ],
+  "acceptedRisks": [
+    "moderate advisories (web 3, admin 4) inherited transitively; none are High or Critical and none independently block the production audit gate except where noted"
+  ]
+}

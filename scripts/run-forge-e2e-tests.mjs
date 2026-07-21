@@ -28,7 +28,11 @@ const env = {
   FORGE_MAX_REPAIR_ATTEMPTS: "10",
   FORGE_E2E_CONTROLLED_QA: "true",
   FORGE_DISABLE_AUTO_REPAIR: "true",
-  FORGE_QA_COMMAND_TIMEOUT_MS: "300000",
+  // A cold `npm install` for a freshly generated Next.js site regularly exceeds five minutes
+  // on a developer machine (Windows filesystem plus on-access scanning), which fails the QA
+  // install check for environment reasons rather than a defect in the generated site. Give the
+  // harness a wider budget than the product default; the E2E client timeout derives from this.
+  FORGE_QA_COMMAND_TIMEOUT_MS: process.env.FORGE_QA_COMMAND_TIMEOUT_MS ?? "900000",
   FORGE_E2E_BASE_URL: "http://127.0.0.1:3301",
 }
 let server

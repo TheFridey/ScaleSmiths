@@ -65,6 +65,12 @@ export function validateWorkflowSet(workflows, repositoryRoot) {
     if (/pull_request_target:|permissions:\s*write-all/.test(content)) {
       failures.push(`[permissions] ${name} uses an unsafe broad or privileged trigger`)
     }
+    if (!/push:\s*\n\s+branches:\s*\[[^\]]*\brelease\/forge-v2-rc\b[^\]]*\]/m.test(content)) {
+      failures.push(`[release-trigger] ${name} must run for pushes to release/forge-v2-rc`)
+    }
+    if (!/pull_request:\s*\n\s+branches:\s*\[[^\]]*\bmaster\b[^\]]*\]/m.test(content) || !/workflow_dispatch:\s*$/m.test(content)) {
+      failures.push(`[release-trigger] ${name} must run for pull requests to master and workflow_dispatch`)
+    }
 
     for (const required of REQUIRED_CONTENT[name]) {
       if (!content.includes(required)) failures.push(`[required-gate] ${name} is missing ${required}`)
@@ -84,6 +90,13 @@ export function validateWorkflowSet(workflows, repositoryRoot) {
     if (/Skipping (?:admin )?(?:lint|tests|root npm ci)|if\s+\[\s+-f\s+package-lock\.json|if npm pkg get/.test(workflow.content)) {
       failures.push(`[silent-skip] ${workflow.name} can silently skip a required gate`)
     }
+    for (const match of workflow.content.matchAll(/^\s+uses:\s*([^@\s]+)@([^\s#]+)/gm)) {
+      const [, action, reference] = match
+      if (!/^[0-9a-f]{40}$/.test(reference)) failures.push(`[action-pin] ${workflow.name} must pin ${action} to an immutable commit SHA`)
+    }
+    const nodeSetups = [...workflow.content.matchAll(/actions\/setup-node@[0-9a-f]{40}/g)].length
+    const npmPins = [...workflow.content.matchAll(/npm install --global npm@10\.9\.2/g)].length
+    if (npmPins !== nodeSetups) failures.push(`[npm-version] ${workflow.name} must install npm 10.9.2 after every Node setup`)
     for (const cachePath of cacheDependencyPaths(workflow.content)) {
       if (cachePath === "${{ matrix.app }}/package-lock.json") {
         for (const app of ["web", "admin"]) ensurePath(failures, repositoryRoot, `${app}/package-lock.json`, workflow.name)
@@ -106,10 +119,6 @@ export function validateWorkflowSet(workflows, repositoryRoot) {
   if (/extra_args:\s*[^\n]*--fail/.test(security)) failures.push("[trufflehog-arguments] TruffleHog must not receive a duplicate --fail argument")
   if (!security.includes("dependency-graph/sbom") || !security.includes("Enable Dependency Graph")) {
     failures.push("[dependency-review-availability] security.yml must fail clearly when GitHub Dependency Graph is unavailable")
-  }
-  for (const match of security.matchAll(/^\s+uses:\s*([^@\s]+)@([^\s#]+)/gm)) {
-    const [, action, reference] = match
-    if (!/^[0-9a-f]{40}$/.test(reference)) failures.push(`[action-pin] security.yml must pin ${action} to an immutable commit SHA`)
   }
   const trivyIndex = security.indexOf("id: trivy")
   const securityUploadIndex = security.indexOf("- name: Upload container scan and SBOM")

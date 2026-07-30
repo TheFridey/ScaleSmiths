@@ -31,6 +31,21 @@ test("rejects required jobs without explicit timeouts", async () => {
   assert(validateWorkflowSet(mutated, root).some((failure) => failure === "[timeout] codeql.yml job analyze has no timeout-minutes"))
 })
 
+test("rejects missing release triggers, mutable actions and unpinned npm", async () => {
+  const workflows = await loadWorkflowSet(root)
+  const mutated = workflows.map((workflow) => workflow.name === "ci.yml" ? {
+    ...workflow,
+    content: workflow.content
+      .replace("branches: [master, release/forge-v2-rc]", "branches: [master]")
+      .replace(/actions\/checkout@[0-9a-f]{40}/, "actions/checkout@v4")
+      .replace("npm install --global npm@10.9.2", "npm --version"),
+  } : workflow)
+  const failures = validateWorkflowSet(mutated, root)
+  assert(failures.some((failure) => failure.startsWith("[release-trigger] ci.yml")))
+  assert(failures.some((failure) => failure.startsWith("[action-pin] ci.yml")))
+  assert(failures.some((failure) => failure.startsWith("[npm-version] ci.yml")))
+})
+
 test("rejects performance budgets after the Playwright development server", async () => {
   const workflows = await loadWorkflowSet(root)
   const mutated = workflows.map((workflow) => workflow.name === "ci.yml" ? {

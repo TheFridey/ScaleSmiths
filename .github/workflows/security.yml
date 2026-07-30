@@ -2,7 +2,7 @@ name: Security
 
 on:
   push:
-    branches: [master]
+    branches: [master, release/forge-v2-rc]
   pull_request:
     branches: [master]
   schedule:
@@ -78,6 +78,8 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: ${{ matrix.app }}/package-lock.json
+      - name: Use supported npm
+        run: npm install --global npm@10.9.2
       - name: Audit production dependencies and retain report
         run: |
           set -o pipefail
@@ -169,6 +171,8 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: admin/package-lock.json
+      - name: Use supported npm
+        run: npm install --global npm@10.9.2
       - name: Install admin dependencies
         working-directory: admin
         run: npm ci --ignore-scripts --no-audit --no-fund

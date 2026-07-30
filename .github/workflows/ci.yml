@@ -19,6 +19,22 @@ jobs:
     name: Web
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: scalesmiths_web_e2e
+          POSTGRES_USER: scalesmiths_web_test
+          POSTGRES_PASSWORD: local_ci_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U scalesmiths_web_test -d scalesmiths_web_e2e"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      WEB_DATABASE_URL: postgresql://scalesmiths_web_test:local_ci_only@127.0.0.1:5432/scalesmiths_web_e2e
+      MIGRATION_DATABASE_URL: postgresql://scalesmiths_web_test:local_ci_only@127.0.0.1:5432/scalesmiths_web_e2e
+      SCALESMITHS_TEST_ENVIRONMENT: forge-v2-e2e
     defaults:
       run:
         working-directory: web
@@ -38,6 +54,13 @@ jobs:
 
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
+
+      - name: Prepare disposable web database
+        run: |
+          npm run test:db:prepare
+          npm run db:migrate
+          npm run test:db:seed
+          npm run test:db:assert
 
       - name: Lint
         run: npm run lint

@@ -109,6 +109,9 @@ async function main() {
       const bundle = await measureBundle(routeFiles, sharedInitialFiles)
       const lighthouse = runLighthouse ? await runLighthouseForRoute(route) : skippedLighthouse()
       const routeReport = { ...route, bundle, lighthouse, checks: [] }
+      if (runLighthouse && !lighthouse.available) {
+        routeReport.failures = [`Lighthouse unavailable: ${lighthouse.unavailableReason}`]
+      }
 
       checkMax(routeReport, "route bundle gzip", bundle.routeJsGzipKb, route.hard.routeJsGzipKb, "KB")
       checkMax(routeReport, "initial JavaScript gzip", bundle.initialJsGzipKb, route.hard.initialJsGzipKb, "KB")

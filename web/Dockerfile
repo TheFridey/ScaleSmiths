@@ -39,6 +39,9 @@ RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nextjs \
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+# Next's file tracer can retain Drizzle Kit's build-only esbuild binary even though
+# no production route imports it. Keep the runtime image free of unused toolchain code.
+RUN rm -rf /app/node_modules/@esbuild /app/node_modules/esbuild
 USER nextjs
 EXPOSE 3000
 ENV PORT 3000

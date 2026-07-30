@@ -181,7 +181,16 @@ capture_target_journal() {
 capture_target_journal "__drizzle_web_migrations" "$work_dir/target-web.json"
 capture_target_journal "__drizzle_migrations" "$work_dir/target-admin.json"
 jq -n --slurpfile web "$work_dir/target-web.json" --slurpfile admin "$work_dir/target-admin.json" '{web: $web[0], admin: $admin[0]}' > "$work_dir/target-migration-state.json"
-jq -e --slurpfile expected "$extracted/metadata/migration-state.json" --slurpfile actual "$work_dir/target-migration-state.json" '$expected[0] == $actual[0]' >/dev/null || backup_die "Restored migration journal state does not match the backup."
+expected_migration_state_sha="$(jq --sort-keys --compact-output . "$extracted/metadata/migration-state.json" | sha256sum | awk '{print $1}')"
+actual_migration_state_sha="$(jq --sort-keys --compact-output . "$work_dir/target-migration-state.json" | sha256sum | awk '{print $1}')"
+if [[ "$expected_migration_state_sha" != "$actual_migration_state_sha" ]]; then
+  expected_web_count="$(jq '.web | length' "$extracted/metadata/migration-state.json")"
+  expected_admin_count="$(jq '.admin | length' "$extracted/metadata/migration-state.json")"
+  actual_web_count="$(jq '.web | length' "$work_dir/target-migration-state.json")"
+  actual_admin_count="$(jq '.admin | length' "$work_dir/target-migration-state.json")"
+  backup_log "Migration journal mismatch: expected sha256=$expected_migration_state_sha web=$expected_web_count admin=$expected_admin_count; restored sha256=$actual_migration_state_sha web=$actual_web_count admin=$actual_admin_count."
+  backup_die "Restored migration journal state does not match the backup."
+fi
 
 env "${target_pg_env[@]}" psql -XAt --set=ON_ERROR_STOP=1 --command='SELECT 1' >/dev/null
 target_postgres_version="$(env "${target_pg_env[@]}" psql -XAt --set=ON_ERROR_STOP=1 --command='SHOW server_version')"

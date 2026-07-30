@@ -1,6 +1,11 @@
 {
   "name": "scalesmiths",
   "private": true,
+  "packageManager": "npm@10.9.2",
+  "engines": {
+    "node": ">=22 <23",
+    "npm": ">=10.9 <11"
+  },
   "scripts": {
     "check:architecture-docs": "node scripts/check-architecture-docs.mjs",
     "check:dependency-governance": "node scripts/check-dependency-governance.mjs",

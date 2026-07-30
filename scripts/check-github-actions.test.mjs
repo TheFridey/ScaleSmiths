@@ -26,7 +26,7 @@ test("rejects required jobs without explicit timeouts", async () => {
   const workflows = await loadWorkflowSet(root)
   const mutated = workflows.map((workflow) => workflow.name === "codeql.yml" ? {
     ...workflow,
-    content: workflow.content.replace(/^    timeout-minutes:.*\n/m, ""),
+    content: workflow.content.replace(/^ {4}timeout-minutes:[^\r\n]*(?:\r?\n)?/m, ""),
   } : workflow)
   assert(validateWorkflowSet(mutated, root).some((failure) => failure === "[timeout] codeql.yml job analyze has no timeout-minutes"))
 })

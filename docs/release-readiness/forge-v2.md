@@ -10,6 +10,54 @@ ScaleSmiths checkout. It is not an approval. The checkout contains extensive unc
 admin, Forge, web, migration, workflow and dependency changes, so a release candidate
 cannot be reproduced from `cabf515`.
 
+## Release-unblocking rerun
+
+The intentional change set was preserved from the original dirty checkout and reapplied
+to an isolated worktree on branch `release/forge-v2-rc`, based on the exact source commit
+`cabf515b9798feb3ff90f7b2d527722b9137d770`. Generated Playwright, audit, build and
+dependency directories were not reapplied. The original checkout was not reset, cleaned
+or otherwise rewritten.
+
+This rerun resolved the local dependency-install blocker. After `npm cache verify`, both
+apps completed two consecutive fresh installs:
+
+- Web: `npm ci` installed 603 packages twice.
+- Admin: `npm ci` installed 612 packages twice.
+
+The lock graph intentionally resolves root esbuild `0.25.12` and isolated esbuild
+`0.28.1` copies for tsx and Vitest. The prior binary mismatch came from the contaminated
+installed dependency tree, not package-lock inconsistency. Root, web and admin manifests
+now declare `packageManager: npm@10.9.2` and support Node `>=22 <23`.
+
+The release decision remains **BLOCKED**. A disposable PostgreSQL/authenticated Forge
+fixture, the 18 required operator journeys, inspected responsive screenshots, Linux
+GitHub Actions security/container evidence and an authorised production-backup restore
+are still unavailable in this environment. No release tag was created.
+
+### Rerun command evidence
+
+| Area | Command | Exact result |
+|---|---|---|
+| Candidate | `git worktree add -b release/forge-v2-rc ... cabf515...` | **PASS** - isolated candidate created from exact base SHA |
+| Cache | `npm cache verify` | **PASS** - 3,204 content objects verified |
+| Web install | `npm ci` twice | **PASS** - 603 packages per run |
+| Admin install | `npm ci` twice | **PASS** - 612 packages per run |
+| Web lint | `npm run lint` | **PASS** - exit 0 |
+| Web unit | `npm test -- --run` | **PASS** - 27 files, 124 tests |
+| Web build | `npm run build` | **PASS** - Next.js 15.5.22 production build |
+| Web bundle/runtime budgets | `PERFORMANCE_BUDGET_SKIP_LIGHTHOUSE=1 npm run check:performance-budgets` | **PASS** - 2 routes; Lighthouse deliberately not counted |
+| Web Lighthouse budgets | `npm run check:performance-budgets` | **BLOCKED** - runtime returned HTTP 500 without `WEB_DATABASE_URL`; timeout handling hardened |
+| Admin lint | `npm run lint` | **PASS WITH WARNINGS** - 0 errors, 9 warnings |
+| Admin unit | `npm test -- --run` | **PASS** - 77 files, 541 tests |
+| Admin build | `npm run build` | **PASS** - Next.js 15.5.22 production build |
+| Workflow policy | `npm run check:github-actions` | **PASS** |
+| Workflow tests | `npm run test:github-actions` | **PASS after observed fixture fix** - 6 tests |
+| Dependency policy | check and tests | **PASS** - 3 tests |
+| Migration integrity | history check and consistency tests | **PASS** - 52 historical, 11 forward; 2 tests |
+| Web production audit | `npm audit --omit=dev` | **PASS** - 0 vulnerabilities |
+| Admin production audit | `npm audit --omit=dev` | **PASS** - 0 vulnerabilities |
+| Full audits | `npm audit` in both apps | **WARN** - 4 Moderate development-only Drizzle Kit/esbuild findings per app |
+
 ## Release blockers
 
 1. Fresh `npm ci` did not complete for either `web` or `admin` within 15 minutes, even

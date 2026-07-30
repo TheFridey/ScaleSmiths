@@ -101,6 +101,15 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     })
   }
 
+  async function handleSignOut() {
+    try {
+      await fetch("/api/security/logout", { method: "POST" })
+    } finally {
+      await signOut({ redirect: false })
+      window.location.assign("/login")
+    }
+  }
+
   return (
     <div
       className="admin-shell"
@@ -114,7 +123,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         pathname={pathname}
         navigation={visibleNav}
         onCollapse={toggleCollapsed}
-        onSignOut={() => void signOut({ redirectTo: "/login" })}
+        onSignOut={() => void handleSignOut()}
       />
 
       <AdminTopBar
@@ -135,7 +144,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           navigation={visibleNav}
           onNavigate={() => setMobileOpen(false)}
         />
-        <button type="button" className="admin-nav-link mt-auto" onClick={() => void signOut({ redirectTo: "/login" })}>
+        <button type="button" className="admin-nav-link mt-auto" onClick={() => void handleSignOut()}>
           <LogOut size={18} aria-hidden="true" />
           <span>Sign out</span>
         </button>

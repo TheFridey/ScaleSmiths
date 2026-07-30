@@ -186,6 +186,89 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+  admin-forge-e2e:
+    name: Admin Forge E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: scalesmiths_admin_e2e
+          POSTGRES_USER: scalesmiths_e2e
+          POSTGRES_PASSWORD: scalesmiths_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U scalesmiths_e2e -d scalesmiths_admin_e2e"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      ADMIN_DATABASE_URL: postgresql://scalesmiths_e2e:scalesmiths_e2e@127.0.0.1:5432/scalesmiths_admin_e2e
+      DATABASE_URL: postgresql://scalesmiths_e2e:scalesmiths_e2e@127.0.0.1:5432/scalesmiths_admin_e2e
+      MIGRATION_DATABASE_URL: postgresql://scalesmiths_e2e:scalesmiths_e2e@127.0.0.1:5432/scalesmiths_admin_e2e
+      SCALESMITHS_TEST_ENVIRONMENT: forge-v2-e2e
+      ADMIN_E2E_PASSWORD: ForgeReleasePass!2026
+      AUTH_SECRET: forge-v2-e2e-auth-secret-32-characters-minimum
+      ADMIN_MFA_BOOTSTRAP_GRACE_UNTIL: 2099-01-01T00:00:00.000Z
+      FORGE_E2E_URL_FIXTURE: enabled
+      ADMIN_FORGE_SERVER_MODE: production
+    defaults:
+      run:
+        working-directory: admin
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: admin/package-lock.json
+
+      - name: Use supported npm
+        run: npm install --global npm@10.9.2
+
+      - name: Install admin and web migration dependencies
+        run: |
+          npm ci --no-audit --no-fund
+          npm ci --prefix ../web --no-audit --no-fund
+
+      - name: Verify guarded disposable fixture
+        run: |
+          npm run test:db:prepare
+          npm run test:db:migrate
+          npm run test:db:seed
+          npm run test:db:assert
+          npm run test:db:seed
+          npm run test:db:assert
+
+      - name: Guard unit tests
+        run: npx vitest run scripts/test-database-guard.test.mjs
+
+      - name: Build production admin server
+        run: npm run build
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Authentication journeys
+        run: npm run test:e2e:forge-auth
+
+      - name: Forge production journeys
+        run: npm run test:e2e:forge-journeys
+
+      - name: Upload Forge E2E failure evidence
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: admin-forge-playwright-artifacts
+          path: |
+            admin/test-results
+            admin/playwright-forge-report
+          if-no-files-found: ignore
+          retention-days: 14
+
   database:
     name: Database and Migrations
     runs-on: ubuntu-latest

@@ -76,6 +76,19 @@ describe("Forge constrained command planner", () => {
     expect(plan.invalidatedArtifacts).not.toContain("research_report")
   })
 
+  it("preserves approved copy when design feedback explicitly excludes copy changes", () => {
+    const plannerContext = context({ run: { ...failedRun, status: "paused" } })
+    const plan = planForgeCommandHeuristic(
+      "Make the homepage layout more premium without changing the approved copy.",
+      plannerContext,
+    )
+
+    expect(plan.intent).toBe("design_update")
+    expect(plan.affectedStages[0]).toBe("design_direction")
+    expect(plan.affectedStages).not.toContain("copy")
+    expect(plan.invalidatedArtifacts).not.toContain("copy_doc")
+  })
+
   it("requires explicit confirmation for guarded multi-stage execution", () => {
     const plannerContext = context({ run: { ...failedRun, status: "paused" } })
     const plan = planForgeCommandHeuristic("Apply client feedback to the homepage design.", plannerContext)

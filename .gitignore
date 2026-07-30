@@ -35,6 +35,7 @@ Thumbs.db
 # Local test / tooling artifacts
 .playwright-mcp/
 playwright-report/
+playwright-forge-report/
 playwright-shell-report/
 test-results/
 performance-reports/

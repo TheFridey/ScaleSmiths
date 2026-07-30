@@ -1,13 +1,15 @@
 import "server-only"
 import { createHash } from "node:crypto"
 import { normalizeForgeOperatorError } from "@/lib/forge-operator-error"
-import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm"
+import { FORGE_WORKSPACE_MEMORY_KEY, readForgeWorkspaceMemory } from "@/lib/forge-workspace"
+import { and, asc, desc, eq, gte, inArray, isNull, sql } from "drizzle-orm"
 import { db } from "@/lib/db"
 import {
   forgeActivityLogs,
   forgeAiUsage,
   forgeArtifacts,
   forgeJobs,
+  forgeMemories,
   forgeProjects,
   forgePreviews,
   forgeRunEvents,
@@ -28,9 +30,122 @@ import {
 } from "@/lib/forge-run-stages"
 import { insertForgeJob, cancelForgeJob } from "./forge-job-queue"
 import { loadForgeAiUsageBudgetSnapshot } from "./forge-ai-usage"
+import { createForgeProjectWorkspace } from "./forge-workspace"
 
 const CURRENT_RUN_STATUSES: ForgeRunStatus[] = ["draft", "running", "paused", "failed"]
 const TERMINAL_STEP_STATUSES = ["completed", "skipped", "cancelled"]
+const AUTOMATIC_STRUCTURED_OUTPUT_STAGES = new Set<ForgeRunStage>([
+  "research",
+  "sitemap",
+  "copy",
+  "design_direction",
+  "design_system",
+  "component_specification",
+  "code_generation",
+  "seo_schema",
+])
+const AUTOMATIC_POLICY_ACTOR = "forge-run-policy"
+type ForgeArtifactTypeValue = typeof forgeArtifacts.$inferSelect.type
+
+async function ensureRunWorkspace(projectId: number, runId: number, actor: string) {
+  const [[project], [existingMemory]] = await Promise.all([
+    db.select().from(forgeProjects).where(eq(forgeProjects.id, projectId)).limit(1),
+    db.select().from(forgeMemories).where(and(
+      eq(forgeMemories.projectId, projectId),
+      eq(forgeMemories.key, FORGE_WORKSPACE_MEMORY_KEY),
+    )).limit(1),
+  ])
+  if (!project) throw new ForgeRunError("Forge project not found.", 404, "project_not_found")
+  const existingWorkspace = readForgeWorkspaceMemory(existingMemory?.value)
+  if (existingWorkspace) return existingWorkspace
+
+  const workspace = await createForgeProjectWorkspace(project)
+  const now = new Date()
+  await db.transaction(async (tx) => {
+    const [memory] = await tx
+      .select({ id: forgeMemories.id })
+      .from(forgeMemories)
+      .where(and(
+        eq(forgeMemories.projectId, projectId),
+        eq(forgeMemories.key, FORGE_WORKSPACE_MEMORY_KEY),
+      ))
+      .orderBy(desc(forgeMemories.updatedAt))
+      .limit(1)
+    const memoryValues = {
+      value: JSON.stringify(workspace),
+      source: "forge_run",
+      updatedAt: now,
+    }
+    if (memory) await tx.update(forgeMemories).set(memoryValues).where(eq(forgeMemories.id, memory.id))
+    else await tx.insert(forgeMemories).values({ projectId, key: FORGE_WORKSPACE_MEMORY_KEY, ...memoryValues })
+    await tx.insert(forgeActivityLogs).values({
+      projectId,
+      actor,
+      action: "workspace_created",
+      message: `Created generated-site workspace for ${project.name} as part of Forge Run #${runId}.`,
+      metadataJson: { runId, relativePath: workspace.relativePath, fileCount: workspace.fileCount, template: workspace.template },
+    })
+  })
+  await recordRunEvent(runId, null, "workspace_created", actor, "Created the isolated generated-site workspace before code generation.", {
+    relativePath: workspace.relativePath,
+    fileCount: workspace.fileCount,
+  })
+  return workspace
+}
+
+async function approveAutomaticStageOutput(
+  projectId: number,
+  stage: ForgeRunStage,
+  producedArtifacts: readonly ForgeArtifactTypeValue[],
+) {
+  const [artifact] = await db
+    .select({ metadataJson: forgeArtifacts.metadataJson })
+    .from(forgeArtifacts)
+    .where(and(
+      eq(forgeArtifacts.projectId, projectId),
+      inArray(forgeArtifacts.type, [...producedArtifacts]),
+      isNull(forgeArtifacts.supersededAt),
+    ))
+    .orderBy(desc(forgeArtifacts.version), desc(forgeArtifacts.updatedAt))
+    .limit(1)
+  const metadata = artifact?.metadataJson ?? {}
+
+  switch (stage) {
+    case "sitemap": {
+      const { approveForgeSitemapStrategy } = await import("./forge-sitemap-agent")
+      await approveForgeSitemapStrategy(projectId, AUTOMATIC_POLICY_ACTOR, metadata.strategy)
+      return true
+    }
+    case "copy": {
+      const { approveForgeCopyDocument } = await import("./forge-copy-agent")
+      await approveForgeCopyDocument(projectId, AUTOMATIC_POLICY_ACTOR, metadata.copy)
+      return true
+    }
+    case "design_direction": {
+      const { approveForgeDesignDirection } = await import("./forge-design-agent")
+      await approveForgeDesignDirection(
+        projectId,
+        AUTOMATIC_POLICY_ACTOR,
+        metadata.direction,
+        metadata.selectedStylePack,
+        metadata.selectedAnimationPack,
+      )
+      return true
+    }
+    case "design_system": {
+      const { approveForgeDesignSystem } = await import("./forge-design-system-agent")
+      await approveForgeDesignSystem(projectId, AUTOMATIC_POLICY_ACTOR, metadata.specification)
+      return true
+    }
+    case "component_specification": {
+      const { approveForgeComponentSpec } = await import("./forge-component-spec-agent")
+      await approveForgeComponentSpec(projectId, AUTOMATIC_POLICY_ACTOR, metadata.spec)
+      return true
+    }
+    default:
+      return false
+  }
+}
 
 export class ForgeRunError extends Error {
   constructor(public safeMessage: string, public status = 400, public code = "forge_run_error") {
@@ -282,6 +397,7 @@ export async function continueForgeRun(runId: number, actor = "system"): Promise
     return
   }
   if (budget.project.warning || budget.monthly.warning) await recordRunEvent(runId, next.id, "budget_warning", "system", "Run is approaching an AI budget limit.", { budget })
+  if (next.stage === "code_generation") await ensureRunWorkspace(run.projectId, runId, actor)
 
   const idempotencyKey = `forge-run:${runId}:step:${next.id}:attempt:${next.attemptCount + 1}`
   const { job, deduplicated } = await insertForgeJob({
@@ -326,6 +442,32 @@ export async function handleForgeRunJobOutcome(jobId: number, outcome: "complete
     return
   }
 
+  if (AUTOMATIC_STRUCTURED_OUTPUT_STAGES.has(step.stage as ForgeRunStage) && definition.producedArtifacts.length > 0) {
+    const policyApproved = await approveAutomaticStageOutput(
+      step.projectId,
+      step.stage as ForgeRunStage,
+      definition.producedArtifacts,
+    )
+    await db.update(forgeArtifacts).set({
+      qualityState: "validated",
+      updatedAt: new Date(),
+    }).where(and(
+      eq(forgeArtifacts.projectId, step.projectId),
+      inArray(forgeArtifacts.type, [...definition.producedArtifacts]),
+      isNull(forgeArtifacts.supersededAt),
+      gte(forgeArtifacts.updatedAt, step.startedAt ?? job.startedAt ?? job.createdAt),
+    ))
+    if (policyApproved) {
+      await recordRunEvent(
+        step.runId,
+        step.id,
+        "automatic_policy_approval",
+        AUTOMATIC_POLICY_ACTOR,
+        `${definition.label} output was approved by the run's automatic-stage policy.`,
+        { jobId, artifactTypes: definition.producedArtifacts },
+      )
+    }
+  }
   const context = await loadStageContext(step.projectId, run.mode as ForgeRunMode, run.policyJson as ForgeRunPolicy)
   await updateRunStepActualCost(step.id, job)
   const outputIds = validArtifactIds(context, definition.producedArtifacts)

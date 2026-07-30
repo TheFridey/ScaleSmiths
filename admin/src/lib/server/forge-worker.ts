@@ -74,6 +74,7 @@ export function startForgeWorker(): ForgeWorkerState | null {
         await cleanupTerminalForgeJobs()
       }
     } catch (error) {
+      log.error("Forge worker tick failed", { error })
       captureMonitoringException(error, { component: "forge-worker", errorCategory: "worker_tick" })
     } finally {
       state.running = false

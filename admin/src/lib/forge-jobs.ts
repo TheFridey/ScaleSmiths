@@ -25,9 +25,12 @@ export const FORGE_JOB_KINDS = [
   "migration_analysis",
   "migration_execution",
   "generate_site",
+  "seo",
+  "quality_review",
   "visual_critique",
   "qa",
   "repair",
+  "visual_qa",
   "preview_start",
   "proposal",
   "export",
@@ -39,7 +42,7 @@ export type ForgeJobKind = (typeof FORGE_JOB_KINDS)[number]
 // Export jobs now return export metadata through the queue; downloads remain in the Export panel.
 export const FORGE_JOB_INLINE_ONLY: readonly ForgeJobKind[] = []
 
-export const FORGE_JOB_STATUSES = ["queued", "running", "completed", "failed", "cancelled"] as const
+export const FORGE_JOB_STATUSES = ["queued", "running", "completed", "failed", "cancelled", "dead_letter"] as const
 export type ForgeJobStatus = (typeof FORGE_JOB_STATUSES)[number]
 
 export type ForgeJobMode = "inline" | "background"
@@ -52,6 +55,10 @@ export interface ForgeJobView {
   error: string | null
   result: Record<string, JsonValue> | null
   attempts: number
+  maxAttempts: number
+  nextRetryAt: string | null
+  retryable: boolean
+  retryUnavailableReason: string | null
   createdAt: string | null
   startedAt: string | null
   completedAt: string | null
@@ -100,6 +107,9 @@ export function toForgeJobView(row: {
   createdAt: Date | string | null
   startedAt: Date | string | null
   completedAt: Date | string | null
+  maxAttempts?: number
+  scheduledAt?: Date | string | null
+  operatorErrorJson?: { retryable?: boolean; recommendedAction?: string } | null
 }): ForgeJobView {
   return {
     id: row.id,
@@ -109,6 +119,14 @@ export function toForgeJobView(row: {
     error: row.error ?? null,
     result: (row.resultJson as Record<string, JsonValue> | null) ?? null,
     attempts: row.attempts,
+    maxAttempts: row.maxAttempts ?? 3,
+    nextRetryAt: row.status === "queued" ? toIso(row.scheduledAt ?? null) : null,
+    retryable: ["failed", "cancelled", "dead_letter"].includes(row.status) && row.operatorErrorJson?.retryable !== false,
+    retryUnavailableReason: ["failed", "cancelled", "dead_letter"].includes(row.status)
+      ? row.operatorErrorJson?.retryable === false
+        ? row.operatorErrorJson.recommendedAction ?? "The recorded failure is not retryable."
+        : null
+      : "Only terminal failed or cancelled jobs can be retried.",
     createdAt: toIso(row.createdAt),
     startedAt: toIso(row.startedAt),
     completedAt: toIso(row.completedAt),

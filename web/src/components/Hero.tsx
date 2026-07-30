@@ -2,16 +2,18 @@
 
 import Link from "next/link"
 import dynamic from "next/dynamic"
-import { Fragment, useLayoutEffect, useRef } from "react"
+import { Fragment, useEffect, useLayoutEffect, useRef, useState } from "react"
 import gsap from "gsap"
 import { ArrowRight, ArrowUpRight, MapPin } from "lucide-react"
-import { DiscoveryCallLink } from "./DiscoveryCallLink"
 
 const HERO_LINES = ["FORGE YOUR", "DIGITAL EDGE"] as const
 
 const ForgeHeroScene = dynamic(
   () => import("./ForgeHeroScene").then((module) => module.ForgeHeroScene),
-  { ssr: false },
+  {
+    ssr: false,
+    loading: () => <div className="hero-scene-fallback absolute inset-0" aria-hidden="true" />,
+  },
 )
 
 function renderHeroLine(text: string) {
@@ -29,6 +31,33 @@ function renderHeroLine(text: string) {
   ))
 }
 
+function DeferredHeroScene() {
+  const [enabled, setEnabled] = useState(false)
+
+  useEffect(() => {
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    const connection = navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }
+    const lowPower = connection.connection?.saveData
+      || ["slow-2g", "2g"].includes(connection.connection?.effectiveType ?? "")
+      || (navigator.hardwareConcurrency > 0 && navigator.hardwareConcurrency <= 4)
+      || window.matchMedia("(max-width: 767px)").matches
+    if (reducedMotion || lowPower) return
+
+    const idleWindow = window as Window & { requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number; cancelIdleCallback?: (id: number) => void }
+    const id = idleWindow.requestIdleCallback
+      ? idleWindow.requestIdleCallback(() => setEnabled(true), { timeout: 1_500 })
+      : window.setTimeout(() => setEnabled(true), 700)
+    return () => {
+      if (idleWindow.cancelIdleCallback) idleWindow.cancelIdleCallback(id)
+      else window.clearTimeout(id)
+    }
+  }, [])
+
+  return enabled
+    ? <ForgeHeroScene />
+    : <div className="hero-scene-fallback absolute inset-0" data-hero-scene="static" aria-hidden="true" />
+}
+
 export function Hero({ verifiedStats = [] }: { verifiedStats?: string[] }) {
   const heroRef = useRef<HTMLElement>(null)
 
@@ -36,6 +65,7 @@ export function Hero({ verifiedStats = [] }: { verifiedStats?: string[] }) {
     const root = heroRef.current
     if (!root) return
 
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
     const lines = Array.from(root.querySelectorAll<HTMLElement>(".hero-h"))
     const magneticCleanups: Array<() => void> = []
 
@@ -46,7 +76,7 @@ export function Hero({ verifiedStats = [] }: { verifiedStats?: string[] }) {
         line.style.setProperty("--hero-scale", String(scale))
       })
 
-      lines.forEach((line, index) => {
+      if (!reducedMotion) lines.forEach((line, index) => {
         const chars = Array.from(line.querySelectorAll<HTMLElement>(".hero-char"))
 
         gsap.from(chars, {
@@ -59,7 +89,7 @@ export function Hero({ verifiedStats = [] }: { verifiedStats?: string[] }) {
         })
       })
 
-      root.querySelectorAll<HTMLElement>("[data-magnetic]").forEach((button) => {
+      if (!reducedMotion) root.querySelectorAll<HTMLElement>("[data-magnetic]").forEach((button) => {
         const onMove = (event: MouseEvent) => {
           const rect = button.getBoundingClientRect()
           const x = ((event.clientX - rect.left) / rect.width - 0.5) * 16
@@ -106,7 +136,7 @@ export function Hero({ verifiedStats = [] }: { verifiedStats?: string[] }) {
       className="hero-grid-bg relative min-h-[91vh] flex flex-col items-center justify-center text-center overflow-hidden px-6 md:px-12 pb-16 pt-20"
       aria-label="ScaleSmiths - forge your digital edge"
     >
-      <ForgeHeroScene />
+      <DeferredHeroScene />
 
       <div className="relative z-10 flex w-full flex-col items-center">
         <div className="hero-badge font-dm" role="status">
@@ -151,9 +181,8 @@ export function Hero({ verifiedStats = [] }: { verifiedStats?: string[] }) {
           <Link href="/quote" prefetch={false} className="btn-primary font-dm" data-magnetic>
             Request a Quote <ArrowRight size={16} aria-hidden="true" />
           </Link>
-          <DiscoveryCallLink className="btn-ghost gap-2 font-dm" source="homepage_hero" />
-          <Link href="/services" prefetch={false} className="btn-ghost font-dm" data-magnetic>
-            Choose Your Route <ArrowUpRight size={16} aria-hidden="true" />
+          <Link href="/work" prefetch={false} className="btn-ghost font-dm" data-magnetic>
+            View Work <ArrowUpRight size={16} aria-hidden="true" />
           </Link>
         </div>
 

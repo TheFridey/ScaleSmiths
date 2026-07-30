@@ -17,6 +17,7 @@ import {
   FORGE_VISUAL_CRITIQUE_ARTIFACT_TITLE,
   FORGE_VISUAL_CRITIQUE_SCHEMA,
   approveForgeVisualCritiqueReport,
+  buildForgeVisualCritiqueApprovalRecord,
   buildForgeVisualCritiqueArtifactContent,
   buildForgeVisualCritiqueReport,
   createMockVisualCritiqueReport,
@@ -110,9 +111,9 @@ export async function runForgeVisualCritiqueAgent(projectId: number, actor: stri
     const parsed = parseForgeVisualCritiquePayload(result.data)
     if (!parsed.ok) throw new ForgeVisualCritiqueAgentError(parsed.error, 500)
 
-    let report = buildForgeVisualCritiqueReport({ data: parsed.data })
+    const report = buildForgeVisualCritiqueReport({ data: parsed.data })
     const completedAt = new Date()
-    let artifact = await saveVisualCritiqueReport(projectId, report, task.id, completedAt)
+    const artifact = await saveVisualCritiqueReport(projectId, report, task.id, completedAt)
     const aiMetadata = buildForgeTaskOutputMetadata({ ...result, data: report })
 
     await db.transaction(async (tx) => {
@@ -137,13 +138,6 @@ export async function runForgeVisualCritiqueAgent(projectId: number, actor: stri
         metadataJson: { taskId: task.id, artifactId: artifact.id, score: report.overallScore, scoresBelow75: forgeVisualCritiqueScoresBelowThreshold(report) },
       })
     })
-
-    const lowScores = forgeVisualCritiqueScoresBelowThreshold(report)
-    if (lowScores.length && safeForgeVisualCritiqueRecommendations(report).length) {
-      const improved = await applyForgeVisualCritiqueSafeFixes(projectId, actor)
-      report = improved.report
-      artifact = { ...artifact, id: improved.artifactId }
-    }
 
     return { ok: true as const, taskId: task.id, artifactId: artifact.id, report }
   } catch (error) {
@@ -173,17 +167,23 @@ export async function runForgeVisualCritiqueAgent(projectId: number, actor: stri
   }
 }
 
-export async function approveForgeVisualCritique(projectId: number, actor: string) {
+export async function approveForgeVisualCritique(projectId: number, actor: string, reason: string, overridePolicy?: string | null) {
   const { project, report, artifactId } = await loadLatestVisualCritique(projectId)
-  const approved = approveForgeVisualCritiqueReport(report, actor)
-  const artifact = await saveVisualCritiqueReport(projectId, approved, null, new Date(), artifactId, actor, "Visual critique reviewed and approved.")
+  let approval: ReturnType<typeof buildForgeVisualCritiqueApprovalRecord>
+  try {
+    approval = buildForgeVisualCritiqueApprovalRecord({ report, actor, reason, relevantArtifacts: [artifactId], overridePolicy })
+  } catch (error) {
+    throw new ForgeVisualCritiqueAgentError(error instanceof Error ? error.message : "Visual critique approval is invalid.", 400)
+  }
+  const approved = approveForgeVisualCritiqueReport(report, actor, approval.timestamp)
+  const artifact = await saveVisualCritiqueReport(projectId, approved, null, new Date(approval.timestamp), artifactId, actor, reason, approval)
 
   await db.insert(forgeActivityLogs).values({
     projectId,
     actor,
     action: "visual_critique_approved",
     message: `Approved visual critique recommendations for ${project.name}.`,
-    metadataJson: { artifactId: artifact.id, score: approved.overallScore },
+    metadataJson: { artifactId: artifact.id, score: approved.overallScore, approval },
   })
 
   return { ok: true as const, artifactId: artifact.id, report: approved }
@@ -216,7 +216,7 @@ export async function applyForgeVisualCritiqueSafeFixes(projectId: number, actor
   return { ok: true as const, artifactId: artifact.id, report: updated, fixes: applied }
 }
 
-async function saveVisualCritiqueReport(projectId: number, report: ForgeVisualCritiqueReport, taskId: number | null, now: Date, existingArtifactId?: number, editor?: string, reason?: string) {
+async function saveVisualCritiqueReport(projectId: number, report: ForgeVisualCritiqueReport, taskId: number | null, now: Date, existingArtifactId?: number, editor?: string, reason?: string, approval?: ReturnType<typeof buildForgeVisualCritiqueApprovalRecord>) {
   const content = buildForgeVisualCritiqueArtifactContent(report)
   const [existing] = existingArtifactId
     ? await db.select().from(forgeArtifacts).where(eq(forgeArtifacts.id, existingArtifactId)).limit(1)
@@ -241,15 +241,20 @@ async function saveVisualCritiqueReport(projectId: number, report: ForgeVisualCr
     taskId: taskId ?? existing?.metadataJson?.taskId ?? null,
   }
   const metadataJson = editTracking ? mergeHumanEditTracking(baseMetadataJson, editTracking) : baseMetadataJson
+  const qualityState = forgeVisualCritiqueScoresBelowThreshold(report).length ? "requires_review" : "validated"
+  const approvalHistory = approval ? [...(existing?.approvalHistory ?? []), approval] : existing?.approvalHistory ?? []
 
   const [saved] = existing
-    ? await db.update(forgeArtifacts).set({ content, metadataJson, updatedAt: now }).where(eq(forgeArtifacts.id, existing.id)).returning()
+    ? await db.update(forgeArtifacts).set({ content, metadataJson, qualityState: approval ? "validated" : qualityState, approvalState: approval ? "approved" : "pending", approvalHistory, updatedAt: now }).where(eq(forgeArtifacts.id, existing.id)).returning()
     : await db.insert(forgeArtifacts).values({
         projectId,
         type: "visual_critique",
         title: FORGE_VISUAL_CRITIQUE_ARTIFACT_TITLE,
         content,
         metadataJson,
+        qualityState,
+        approvalState: "pending",
+        approvalHistory,
         updatedAt: now,
       }).returning()
 

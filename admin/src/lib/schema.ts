@@ -3,6 +3,8 @@ import { boolean, index, integer, jsonb, numeric, pgEnum, pgTable, primaryKey, s
 import type { LeadScoreFactor, LeadScoreResult } from "./lead-scoring"
 import type { ProjectEstimateResult } from "./project-estimator"
 import type { ForgeDependencyAdmissionReport } from "./forge-dependency-admission"
+import type { ForgeRunPolicy } from "./forge-run-stages"
+import type { ForgeOperatorError } from "./forge-operator-error"
 
 export const kanbanColumn = pgEnum("kanban_column", ["backlog", "progress", "review", "done"])
 export const messageDirection = pgEnum("message_direction", ["inbound", "outbound"])
@@ -887,6 +889,7 @@ export const forgeJobs = pgTable("forge_jobs", {
   resultJson: jsonb("result_json").$type<Record<string, unknown>>(),
   error: text("error"),
   failureReason: text("failure_reason"),
+  operatorErrorJson: jsonb("operator_error_json").$type<ForgeOperatorError>(),
   actor: text("actor"),
   idempotencyKey: text("idempotency_key"),
   attempts: integer("attempts").default(0).notNull(),
@@ -907,6 +910,91 @@ export const forgeJobs = pgTable("forge_jobs", {
   index("forge_jobs_status_scheduled_at_idx").on(table.status, table.scheduledAt),
   index("forge_jobs_lease_expires_at_idx").on(table.leaseExpiresAt),
   uniqueIndex("forge_jobs_idempotency_key_key").on(table.idempotencyKey),
+])
+
+export const forgeRuns = pgTable("forge_runs", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => forgeProjects.id, { onDelete: "cascade" }).notNull(),
+  mode: text("mode").default("standard").notNull(),
+  status: text("status").default("draft").notNull(),
+  currentStage: text("current_stage"),
+  policyJson: jsonb("policy_json").$type<ForgeRunPolicy>().default({}).notNull(),
+  startedBy: text("started_by").notNull(),
+  startedAt: timestamp("started_at", { withTimezone: true }),
+  pausedAt: timestamp("paused_at", { withTimezone: true }),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+  pauseReason: text("pause_reason"),
+  estimatedCostUsd: numeric("estimated_cost_usd", { precision: 12, scale: 6 }).default("0").notNull(),
+  actualCostUsd: numeric("actual_cost_usd", { precision: 12, scale: 6 }).default("0").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("forge_runs_project_created_at_idx").on(table.projectId, table.createdAt),
+  index("forge_runs_project_status_idx").on(table.projectId, table.status),
+  index("forge_runs_status_updated_at_idx").on(table.status, table.updatedAt),
+  uniqueIndex("forge_runs_one_active_project_idx").on(table.projectId).where(sql`${table.status} in ('draft','running','paused')`),
+])
+
+export const forgeRunSteps = pgTable("forge_run_steps", {
+  id: serial("id").primaryKey(),
+  runId: integer("run_id").references(() => forgeRuns.id, { onDelete: "cascade" }).notNull(),
+  projectId: integer("project_id").references(() => forgeProjects.id, { onDelete: "cascade" }).notNull(),
+  stage: text("stage").notNull(),
+  status: text("status").default("pending").notNull(),
+  sequence: integer("sequence").notNull(),
+  required: boolean("required").default(true).notNull(),
+  inputHash: text("input_hash"),
+  outputArtifactIds: jsonb("output_artifact_ids").$type<number[]>().default([]).notNull(),
+  jobId: integer("job_id").references(() => forgeJobs.id, { onDelete: "set null" }),
+  taskId: integer("task_id").references(() => forgeTasks.id, { onDelete: "set null" }),
+  attemptCount: integer("attempt_count").default(0).notNull(),
+  maxAttempts: integer("max_attempts").default(3).notNull(),
+  estimatedCostUsd: numeric("estimated_cost_usd", { precision: 12, scale: 6 }).default("0").notNull(),
+  actualCostUsd: numeric("actual_cost_usd", { precision: 12, scale: 6 }).default("0").notNull(),
+  estimatedRetryCostUsd: numeric("estimated_retry_cost_usd", { precision: 12, scale: 6 }).default("0").notNull(),
+  remainingEstimatedCostUsd: numeric("remaining_estimated_cost_usd", { precision: 12, scale: 6 }).default("0").notNull(),
+  approvalRequired: boolean("approval_required").default(false).notNull(),
+  approvedBy: text("approved_by"),
+  approvedAt: timestamp("approved_at", { withTimezone: true }),
+  failureCategory: text("failure_category"),
+  failureMessage: text("failure_message"),
+  operatorErrorJson: jsonb("operator_error_json").$type<ForgeOperatorError>(),
+  startedAt: timestamp("started_at", { withTimezone: true }),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("forge_run_steps_run_stage_idx").on(table.runId, table.stage),
+  uniqueIndex("forge_run_steps_job_idx").on(table.jobId),
+  index("forge_run_steps_run_sequence_idx").on(table.runId, table.sequence),
+  index("forge_run_steps_project_status_idx").on(table.projectId, table.status),
+])
+
+export const forgeRunEvents = pgTable("forge_run_events", {
+  id: serial("id").primaryKey(),
+  runId: integer("run_id").references(() => forgeRuns.id, { onDelete: "cascade" }).notNull(),
+  stepId: integer("step_id").references(() => forgeRunSteps.id, { onDelete: "set null" }),
+  eventType: text("event_type").notNull(),
+  actor: text("actor").notNull(),
+  message: text("message").notNull(),
+  metadataJson: jsonb("metadata_json").$type<Record<string, unknown>>().default({}).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("forge_run_events_run_created_at_idx").on(table.runId, table.createdAt),
+  index("forge_run_events_step_created_at_idx").on(table.stepId, table.createdAt),
+  index("forge_run_events_type_idx").on(table.eventType),
+])
+
+export const forgeWorkerHeartbeats = pgTable("forge_worker_heartbeats", {
+  workerId: text("worker_id").primaryKey(),
+  processId: integer("process_id").notNull(),
+  hostname: text("hostname").notNull(),
+  lastHeartbeatAt: timestamp("last_heartbeat_at", { withTimezone: true }).defaultNow().notNull(),
+  activeJobCount: integer("active_job_count").default(0).notNull(),
+  metadataJson: jsonb("metadata_json").$type<Record<string, unknown>>().default({}).notNull(),
+}, (table) => [
+  index("forge_worker_heartbeats_last_seen_idx").on(table.lastHeartbeatAt),
 ])
 
 // Durable shared rate-limit counters (fixed window). Incremented atomically via
@@ -1089,6 +1177,7 @@ export const forgeProjectRelations = relations(forgeProjects, ({ many, one }) =>
   memories: many(forgeMemories),
   jobs: many(forgeJobs),
   aiUsage: many(forgeAiUsage),
+  runs: many(forgeRuns),
 }))
 
 export const forgeTaskRelations = relations(forgeTasks, ({ many, one }) => ({
@@ -1103,6 +1192,50 @@ export const forgeJobRelations = relations(forgeJobs, ({ one }) => ({
   project: one(forgeProjects, {
     fields: [forgeJobs.projectId],
     references: [forgeProjects.id],
+  }),
+  runStep: one(forgeRunSteps, {
+    fields: [forgeJobs.id],
+    references: [forgeRunSteps.jobId],
+  }),
+}))
+
+export const forgeRunRelations = relations(forgeRuns, ({ many, one }) => ({
+  project: one(forgeProjects, {
+    fields: [forgeRuns.projectId],
+    references: [forgeProjects.id],
+  }),
+  steps: many(forgeRunSteps),
+  events: many(forgeRunEvents),
+}))
+
+export const forgeRunStepRelations = relations(forgeRunSteps, ({ many, one }) => ({
+  run: one(forgeRuns, {
+    fields: [forgeRunSteps.runId],
+    references: [forgeRuns.id],
+  }),
+  project: one(forgeProjects, {
+    fields: [forgeRunSteps.projectId],
+    references: [forgeProjects.id],
+  }),
+  job: one(forgeJobs, {
+    fields: [forgeRunSteps.jobId],
+    references: [forgeJobs.id],
+  }),
+  task: one(forgeTasks, {
+    fields: [forgeRunSteps.taskId],
+    references: [forgeTasks.id],
+  }),
+  events: many(forgeRunEvents),
+}))
+
+export const forgeRunEventRelations = relations(forgeRunEvents, ({ one }) => ({
+  run: one(forgeRuns, {
+    fields: [forgeRunEvents.runId],
+    references: [forgeRuns.id],
+  }),
+  step: one(forgeRunSteps, {
+    fields: [forgeRunEvents.stepId],
+    references: [forgeRunSteps.id],
   }),
 }))
 

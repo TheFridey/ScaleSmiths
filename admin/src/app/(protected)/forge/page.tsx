@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
 
 export default async function ForgePage() {
-  const { projects, recentActivity, aiMetrics, averageDesignScore, providerHealth } = await loadForgeDashboardPageData()
+  const data = await loadForgeDashboardPageData()
 
-  return <ForgeDashboard projects={projects} recentActivity={recentActivity} aiMetrics={aiMetrics} averageDesignScore={averageDesignScore} providerHealth={providerHealth} />
+  return <ForgeDashboard {...data} />
 }

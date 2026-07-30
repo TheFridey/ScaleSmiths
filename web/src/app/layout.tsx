@@ -3,6 +3,7 @@ import { SmoothScroll } from "@/components/SmoothScroll"
 import { ScrollProgress } from "@/components/ScrollProgress"
 import { Cursor } from "@/components/Cursor"
 import { SiteChrome } from "@/components/SiteChrome"
+import { WebVitalsReporter } from "@/components/WebVitalsReporter"
 import { founders } from "@/lib/founders"
 import "./globals.css"
 
@@ -84,6 +85,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="bg-bg text-t1 font-dm">
+        <WebVitalsReporter />
         <Cursor />
         <ScrollProgress />
         <SmoothScroll>

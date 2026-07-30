@@ -12,6 +12,7 @@ export const EXPERIENCE_EVENT_NAMES = [
   "interactive_completion_depth",
   "experience_fallback_activated",
   "experience_error",
+  "web_vital",
   "local_growth_check_viewed",
   "local_growth_check_form_started",
   "local_growth_check_form_submitted",

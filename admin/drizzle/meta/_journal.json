@@ -323,6 +323,27 @@
       "when": 1786003200000,
       "tag": "0045_durable_operational_controls",
       "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1786089600000,
+      "tag": "0046_forge_run_orchestration",
+      "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1786176000000,
+      "tag": "0047_forge_operational_health",
+      "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1786262400000,
+      "tag": "0048_atomic_forge_stage_costs",
+      "breakpoints": true
     }
   ]
 }

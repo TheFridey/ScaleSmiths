@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto"
 import { and, eq, inArray, lt, or, sql } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { forgeJobs } from "@/lib/schema"
+import type { ForgeOperatorError } from "@/lib/forge-operator-error"
 
 /** A unique owner id for a worker/claimer within this process. */
 export function buildForgeJobOwner(role: string): string {
@@ -36,6 +37,7 @@ export interface ForgeJobRow {
   resultJson: Record<string, unknown> | null
   error: string | null
   failureReason: string | null
+  operatorError?: ForgeOperatorError | null
   actor: string | null
   idempotencyKey: string | null
   attempts: number
@@ -60,6 +62,7 @@ interface JobRowShape {
   result_json: Record<string, unknown> | null
   error: string | null
   failure_reason: string | null
+  operator_error_json: ForgeOperatorError | null
   actor: string | null
   idempotency_key: string | null
   attempts: number
@@ -85,6 +88,7 @@ function mapRow(row: JobRowShape): ForgeJobRow {
     resultJson: row.result_json ?? null,
     error: row.error,
     failureReason: row.failure_reason,
+    operatorError: row.operator_error_json ?? null,
     actor: row.actor,
     idempotencyKey: row.idempotency_key,
     attempts: Number(row.attempts),
@@ -157,6 +161,7 @@ function mapForgeJobEntity(entity: typeof forgeJobs.$inferSelect): ForgeJobRow {
     resultJson: (entity.resultJson as Record<string, unknown> | null) ?? null,
     error: entity.error ?? null,
     failureReason: entity.failureReason ?? null,
+    operatorError: entity.operatorErrorJson ?? null,
     actor: entity.actor ?? null,
     idempotencyKey: entity.idempotencyKey ?? null,
     attempts: entity.attempts,
@@ -242,19 +247,19 @@ export async function completeForgeJob(jobId: number, owner: string, result: Rec
  * Fails a job: requeues with exponential backoff while attempts remain, otherwise
  * moves it to the dead-letter state (task: retry policy + dead-letter).
  */
-export async function failForgeJob(job: ForgeJobRow, message: string): Promise<{ retried: boolean }> {
+export async function failForgeJob(job: ForgeJobRow, message: string, operatorError?: ForgeOperatorError): Promise<{ retried: boolean }> {
   const now = new Date()
   if (job.attempts >= job.maxAttempts) {
     await db
       .update(forgeJobs)
-      .set({ status: "dead_letter", error: message, failureReason: message, completedAt: now, leaseOwner: null, leaseExpiresAt: null, updatedAt: now })
+      .set({ status: "dead_letter", error: message, failureReason: message, operatorErrorJson: operatorError, completedAt: now, leaseOwner: null, leaseExpiresAt: null, updatedAt: now })
       .where(eq(forgeJobs.id, job.id))
     return { retried: false }
   }
   const backoffMs = Math.min(FORGE_JOB_MAX_BACKOFF_MS, FORGE_JOB_BASE_BACKOFF_MS * 2 ** Math.max(0, job.attempts - 1))
   await db
     .update(forgeJobs)
-    .set({ status: "queued", error: message, failureReason: message, scheduledAt: new Date(now.getTime() + backoffMs), leaseOwner: null, leaseExpiresAt: null, heartbeatAt: null, updatedAt: now })
+    .set({ status: "queued", error: message, failureReason: message, operatorErrorJson: operatorError, scheduledAt: new Date(now.getTime() + backoffMs), leaseOwner: null, leaseExpiresAt: null, heartbeatAt: null, updatedAt: now })
     .where(eq(forgeJobs.id, job.id))
   return { retried: true }
 }
@@ -268,6 +273,27 @@ export async function cancelForgeJob(jobId: number): Promise<boolean> {
     .where(and(eq(forgeJobs.id, jobId), or(eq(forgeJobs.status, "queued"), eq(forgeJobs.status, "running"))))
     .returning({ id: forgeJobs.id })
   return result.length > 0
+}
+
+/** Requeues one terminal retryable job. The terminal-state guard prevents duplicate retries. */
+export async function retryForgeJob(jobId: number): Promise<{ retried: boolean; reason: string | null }> {
+  const [job] = await db.select().from(forgeJobs).where(eq(forgeJobs.id, jobId)).limit(1)
+  if (!job) return { retried: false, reason: "Job not found." }
+  if (!["failed", "dead_letter", "cancelled"].includes(job.status)) return { retried: false, reason: "The job is not in a retryable terminal state." }
+  if (job.operatorErrorJson && !job.operatorErrorJson.retryable) return { retried: false, reason: job.operatorErrorJson.recommendedAction }
+  const now = new Date()
+  const result = await db.update(forgeJobs).set({
+    status: "queued",
+    attempts: job.attempts >= job.maxAttempts ? 0 : job.attempts,
+    scheduledAt: now,
+    startedAt: null,
+    completedAt: null,
+    leaseOwner: null,
+    leaseExpiresAt: null,
+    heartbeatAt: null,
+    updatedAt: now,
+  }).where(and(eq(forgeJobs.id, jobId), eq(forgeJobs.status, job.status))).returning({ id: forgeJobs.id })
+  return result.length ? { retried: true, reason: null } : { retried: false, reason: "Another operator already changed this job." }
 }
 
 /**

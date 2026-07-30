@@ -1,7 +1,8 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import * as THREE from "three"
+import { trackExperienceEvent } from "@/lib/experience-analytics-client"
 
 type Spark = {
   position: THREE.Vector3
@@ -176,6 +177,7 @@ function disposeObject(object: THREE.Object3D) {
 
 export function ForgeHeroScene() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const [failed, setFailed] = useState(false)
   const disableE2eCanvas = typeof window !== "undefined" && window.localStorage.getItem("scalesmiths.e2e.disableCanvas") === "true"
 
   useEffect(() => {
@@ -183,7 +185,14 @@ export function ForgeHeroScene() {
     if (!canvas) return
 
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, preserveDrawingBuffer: true })
+    let renderer: THREE.WebGLRenderer
+    try {
+      renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: "low-power" })
+    } catch {
+      setFailed(true)
+      trackExperienceEvent("experience_error", { errorCategory: "hero_webgl_unavailable", metadata: { source: "homepage_hero" } })
+      return
+    }
     renderer.setClearColor("#07111f", 1)
     renderer.shadowMap.enabled = true
     renderer.shadowMap.type = THREE.PCFSoftShadowMap
@@ -350,7 +359,8 @@ export function ForgeHeroScene() {
       renderer.render(scene, camera)
     }
 
-    animate()
+    if (reducedMotion) renderer.render(scene, camera)
+    else animate()
 
     return () => {
       cancelAnimationFrame(animationFrame)
@@ -361,8 +371,8 @@ export function ForgeHeroScene() {
     }
   }, [])
 
-  if (disableE2eCanvas) {
-    return null
+  if (disableE2eCanvas || failed) {
+    return <div className="hero-scene-fallback absolute inset-0" data-hero-scene="fallback" aria-hidden="true" />
   }
 
   return (

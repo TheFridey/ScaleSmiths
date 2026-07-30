@@ -102,6 +102,22 @@ export function validateWorkflowSet(workflows, repositoryRoot) {
     failures.push("[build-artifact-order] ci.yml must measure the production build before Playwright's dev server can replace .next output")
   }
 
+  const security = byName.get("security.yml") ?? ""
+  if (/extra_args:\s*[^\n]*--fail/.test(security)) failures.push("[trufflehog-arguments] TruffleHog must not receive a duplicate --fail argument")
+  if (!security.includes("dependency-graph/sbom") || !security.includes("Enable Dependency Graph")) {
+    failures.push("[dependency-review-availability] security.yml must fail clearly when GitHub Dependency Graph is unavailable")
+  }
+  for (const match of security.matchAll(/^\s+uses:\s*([^@\s]+)@([^\s#]+)/gm)) {
+    const [, action, reference] = match
+    if (!/^[0-9a-f]{40}$/.test(reference)) failures.push(`[action-pin] security.yml must pin ${action} to an immutable commit SHA`)
+  }
+  const trivyIndex = security.indexOf("id: trivy")
+  const securityUploadIndex = security.indexOf("- name: Upload container scan and SBOM")
+  const trivyEnforcementIndex = security.indexOf("- name: Enforce HIGH and CRITICAL image vulnerability threshold")
+  if (!(trivyIndex >= 0 && securityUploadIndex > trivyIndex && trivyEnforcementIndex > securityUploadIndex && security.includes("steps.trivy.outcome == 'failure'"))) {
+    failures.push("[trivy-evidence-order] security.yml must upload Trivy/SBOM evidence before enforcing scan failure")
+  }
+
   return failures
 }
 

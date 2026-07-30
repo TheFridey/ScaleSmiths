@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "../../../../../../../auth"
 import { ForgeAiError } from "@/lib/server/forge-ai"
-import { ForgeCommandChatError, getForgeCommandChatState, runForgeCommandChat } from "@/lib/server/forge-command-chat-agent"
+import { ForgeCommandChatError, getForgeCommandChatState, getForgeCommandSuggestions, runForgeCommandChat } from "@/lib/server/forge-command-chat-agent"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -29,8 +29,9 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Invalid Forge project id." }, { status: 400 })
   }
 
-  const chat = await getForgeCommandChatState(projectId)
-  return NextResponse.json({ ok: true, chat })
+  const actor = sessionActor(session)
+  const [chat, suggestions] = await Promise.all([getForgeCommandChatState(projectId), getForgeCommandSuggestions(projectId, actor)])
+  return NextResponse.json({ ok: true, chat, suggestions })
 }
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -53,8 +54,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   }
 
   try {
-    const result = await runForgeCommandChat(projectId, sessionActor(session), body.message, body.confirmed === true)
-    return NextResponse.json(result)
+    const actor = sessionActor(session)
+    const result = await runForgeCommandChat(projectId, actor, body.message, body.confirmed === true)
+    const suggestions = await getForgeCommandSuggestions(projectId, actor)
+    return NextResponse.json({ ...result, suggestions })
   } catch (error) {
     if (error instanceof ForgeCommandChatError) {
       return NextResponse.json({ error: error.safeMessage }, { status: error.status })

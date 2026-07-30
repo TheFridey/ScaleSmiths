@@ -1,149 +1,119 @@
 "use client"
 
-import { useState } from "react"
 import Link from "next/link"
+import { useEffect, useId, useState } from "react"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, ArrowRight } from "lucide-react"
-import { trackExperienceEvent } from "@/lib/experience-analytics-client"
-import { enquiryIntentFromLocation } from "@/lib/enquiry-intents"
+import { ArrowLeft, ArrowRight, Check } from "lucide-react"
 import { EnquiryConsent } from "@/components/EnquiryConsent"
+import { enquiryIntentFromLocation } from "@/lib/enquiry-intents"
+import { trackExperienceEvent } from "@/lib/experience-analytics-client"
 
-const STEPS = [
-  {
-    label: "Contact",
-    fields: [
-      { key: "name", label: "Full Name", placeholder: "Your name", type: "text", auto: "name" },
-      { key: "email", label: "Email Address", placeholder: "you@business.com", type: "email", auto: "email" },
-      { key: "biz", label: "Company Name", placeholder: "Your company name", type: "text", auto: "organization" },
-      { key: "websiteUrl", label: "Current Website", placeholder: "https://yourbusiness.co.uk", type: "url", auto: "url", optional: true },
-    ],
-  },
-  {
-    label: "Business Type",
-    opts: ["Local service business", "E-commerce brand", "SaaS / platform", "Professional services", "Community / membership", "Other"],
-    field: "businessType",
-  },
-  {
-    label: "Project Type",
-    opts: ["Conversion Website", "Website Redesign", "E-Commerce", "Custom Web App", "SEO / Local Growth", "Care Plan"],
-    field: "type",
-  },
-  {
-    label: "Budget",
-    opts: ["GBP 4,500-6,500", "GBP 8,000-15,000", "GBP 18,000-35,000+", "Ongoing care plan", "Not sure yet"],
-    field: "budget",
-  },
-  {
-    label: "Launch Timeframe",
-    opts: ["ASAP, if the fit is right", "4-6 weeks", "8-12 weeks", "This quarter", "Planning ahead"],
-    field: "timeframe",
-  },
-  {
-    label: "What needs to move?",
-    fields: [
-      {
-        key: "goal",
-        label: "Main Business Goal",
-        placeholder: "More qualified enquiries, better local visibility, online sales, operational efficiency...",
-        type: "textarea",
-        auto: "off",
-      },
-    ],
-  },
-  {
-    label: "What do you need?",
-    opts: ["SEO", "Hosting", "Care Plan", "Custom Functionality", "Payments", "Client Portal", "Analytics", "Not sure"],
-    field: "needs",
-    multiple: true,
-  },
-  {
-    label: "Care Plan Interest",
-    opts: ["Yes", "Maybe", "No", "Not sure"],
-    field: "carePlanInterest",
-  },
-  {
-    label: "Preferred Contact",
-    opts: ["Email", "Phone", "Video call", "No preference"],
-    field: "preferredContactMethod",
-  },
-  {
-    label: "Your Brief",
-    fields: [
-      {
-        key: "brief",
-        label: "Project Brief",
-        placeholder: "Tell us what is happening now, what needs to change, and what a successful result looks like.",
-        type: "textarea",
-        auto: "off",
-      },
-    ],
-  },
-] as const
+const STORAGE_KEY = "scalesmiths.quote.draft.v2"
+const STAGES = ["About You", "What Needs Changing", "Commercial Fit", "Brief and Consent"] as const
+const BUSINESS_TYPES = ["Local service business", "E-commerce brand", "SaaS / platform", "Professional services", "Community / membership", "Other"]
+const PROJECT_TYPES = ["Conversion Website", "Website Redesign", "E-Commerce", "Custom Web App", "SEO / Local Growth", "Care Plan"]
+const NEEDS = ["SEO", "Hosting", "Care Plan", "Custom Functionality", "Payments", "Client Portal", "Analytics", "Not sure"]
+const BUDGETS = ["GBP 4,500-6,500", "GBP 8,000-15,000", "GBP 18,000-35,000+", "Ongoing care plan", "Not sure yet"]
+const TIMEFRAMES = ["ASAP, if the fit is right", "4-6 weeks", "8-12 weeks", "This quarter", "Planning ahead"]
+const CARE = ["Yes", "Maybe", "No", "Not sure"]
+const CONTACT = ["Email", "Phone", "Video call", "No preference"]
 
 type FormData = Record<string, string>
-type Step = (typeof STEPS)[number]
-
-function needsValue(data: FormData) {
-  return data.needs ? data.needs.split("|").filter(Boolean) : []
-}
 
 export default function QuotePage() {
-  const [step, setStep] = useState(0)
-  const router = useRouter()
+  const [stage, setStage] = useState(0)
   const [data, setData] = useState<FormData>({})
+  const [restored, setRestored] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState("")
+  const errorId = useId()
+  const router = useRouter()
 
-  const curr = STEPS[step]
-  const isLast = step === STEPS.length - 1
-
-  function validateStep(current: Step) {
-    if ("fields" in current && current.fields) {
-      const missing = current.fields.find((field) => !("optional" in field && field.optional) && !(data[field.key] ?? "").trim())
-      if (missing) {
-        setError(`Please add your ${missing.label.toLowerCase()}.`)
-        return false
-      }
-
-      if (current.fields.some((field) => field.key === "email")) {
-        const email = data.email ?? ""
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-          setError("Please add a valid email address.")
-          return false
-        }
-      }
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(window.sessionStorage.getItem(STORAGE_KEY) ?? "null") as { stage?: number; data?: FormData } | null
+      if (saved?.data) setData(saved.data)
+      if (Number.isInteger(saved?.stage)) setStage(Math.max(0, Math.min(3, saved?.stage ?? 0)))
+    } catch {
+      window.sessionStorage.removeItem(STORAGE_KEY)
+    } finally {
+      setRestored(true)
     }
+  }, [])
 
-    if ("field" in current && current.field && !data[current.field]) {
-      setError("Please choose an option before continuing.")
+  useEffect(() => {
+    if (!restored) return
+    window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ stage, data }))
+  }, [data, restored, stage])
+
+  useEffect(() => {
+    if (!restored) return
+    const onPopState = (event: PopStateEvent) => {
+      const historicStage = Number((event.state as { quoteStage?: number } | null)?.quoteStage)
+      if (Number.isInteger(historicStage)) setStage(Math.max(0, Math.min(3, historicStage)))
+    }
+    window.history.replaceState({ ...window.history.state, quoteStage: stage }, "")
+    window.addEventListener("popstate", onPopState)
+    return () => window.removeEventListener("popstate", onPopState)
+  }, [restored, stage])
+
+  function update(key: string, value: string) {
+    setError("")
+    setData((current) => ({ ...current, [key]: value }))
+    trackExperienceEvent("quote_form_started", { metadata: { source: "standard_quote", step: key } })
+  }
+
+  function selectedNeeds() {
+    return data.needs ? data.needs.split("|").filter(Boolean) : []
+  }
+
+  function toggleNeed(value: string) {
+    const current = selectedNeeds()
+    update("needs", (current.includes(value) ? current.filter((item) => item !== value) : [...current, value]).join("|"))
+  }
+
+  function validate(current: number) {
+    const required: Array<[string, string]> = current === 0
+      ? [["name", "full name"], ["email", "email address"], ["biz", "company name"], ["businessType", "business type"]]
+      : current === 1
+        ? [["type", "project type"], ["goal", "main business goal"], ["needs", "required functionality"]]
+        : current === 2
+          ? [["budget", "budget"], ["timeframe", "timeframe"], ["carePlanInterest", "care-plan preference"], ["preferredContactMethod", "preferred contact method"]]
+          : []
+    const missing = required.find(([key]) => !(data[key] ?? "").trim())
+    if (missing) {
+      setError(`Please add or choose your ${missing[1]}.`)
       return false
     }
-
+    if (current === 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email ?? "")) {
+      setError("Please add a valid email address.")
+      return false
+    }
+    if (current === 3 && data.consent !== "true") {
+      setError("Please confirm consent before submitting.")
+      return false
+    }
     setError("")
     return true
   }
 
-  function continueOrSubmit() {
-    if (!validateStep(curr)) return
-    if (isLast && data.consent !== "true") {
-      setError("Please confirm consent before submitting.")
+  function continueStage() {
+    if (!validate(stage)) return
+    if (stage === 3) {
+      void submitQuote()
       return
     }
-    if (isLast) {
-      submitQuote()
-      return
-    }
-    setStep((s) => s + 1)
+    const nextStage = stage + 1
+    window.history.pushState({ ...window.history.state, quoteStage: nextStage }, "")
+    setStage(nextStage)
+    window.scrollTo({ top: 0, behavior: "smooth" })
   }
 
   async function submitQuote() {
     setSubmitting(true)
-    setError("")
-
-    const intent = enquiryIntentFromLocation(typeof window === "undefined" ? "" : window.location.search)
-
+    const intent = enquiryIntentFromLocation(window.location.search)
     try {
-      const res = await fetch("/api/quote", {
+      const response = await fetch("/api/quote", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -156,7 +126,7 @@ export default function QuotePage() {
           budget: data.budget ?? "",
           timeframe: data.timeframe ?? "",
           goal: data.goal ?? "",
-          needs: needsValue(data),
+          needs: selectedNeeds(),
           carePlanInterest: data.carePlanInterest ?? "",
           preferredContactMethod: data.preferredContactMethod ?? "",
           intent,
@@ -165,202 +135,113 @@ export default function QuotePage() {
           website: data.website ?? "",
         }),
       })
-      const json = await res.json()
-
-      if (!res.ok || !json.ok) {
-        throw new Error(json.error || "Unable to submit your brief.")
-      }
-
+      const result = await response.json()
+      if (!response.ok || !result.ok) throw new Error(result.error || "Unable to submit your brief.")
       trackExperienceEvent("quote_form_submitted", { metadata: { source: "standard_quote", intent } })
+      window.sessionStorage.removeItem(STORAGE_KEY)
       router.push(`/quote/thanks?intent=${encodeURIComponent(intent)}`)
-    } catch (err) {
+    } catch (caught) {
       trackExperienceEvent("experience_error", { errorCategory: "quote_submission", metadata: { source: "standard_quote", intent } })
-      setError(err instanceof Error ? err.message : "Unable to submit your brief.")
+      setError(caught instanceof Error ? caught.message : "Unable to submit your brief.")
     } finally {
       setSubmitting(false)
     }
   }
 
   return (
-    <div className="mx-auto max-w-[680px] px-6 py-16 md:px-12">
+    <main className="mx-auto max-w-[780px] px-6 py-12 md:px-12 md:py-16">
       <button
-        onClick={() => (step === 0 ? window.history.back() : setStep((s) => s - 1))}
-        className="mb-10 inline-flex items-center gap-1.5 font-dm text-sm text-t2 transition-colors hover:text-t1"
-        aria-label={step === 0 ? "Go back" : "Previous step"}
+        type="button"
+        onClick={() => window.history.back()}
+        className="mb-8 inline-flex min-h-10 items-center gap-2 font-dm text-sm text-t2 transition-colors hover:text-t1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-acc"
       >
-        <ArrowLeft size={14} aria-hidden="true" />
-        {step === 0 ? "Back" : "Previous"}
+        <ArrowLeft size={15} aria-hidden="true" /> {stage === 0 ? "Back" : "Previous stage"}
       </button>
 
-      {step === 0 && (
+      {stage === 0 && (
         <aside className="mb-8 rounded-xl border border-acc/20 bg-acc/[.06] p-4 font-dm text-sm" aria-label="Short enquiry alternative">
-          <div className="font-semibold text-t1">Not ready to write a full brief?</div>
-          <p className="mt-1 leading-relaxed text-t2">Start with a short, founder-led review of your main local growth problem.</p>
-          <Link href="/local-growth-check" prefetch={false} className="mt-3 inline-flex items-center gap-1 font-semibold text-acc hover:text-t1">
-            Request a Local Growth Check <ArrowRight size={14} aria-hidden="true" />
-          </Link>
+          <strong className="text-t1">Prefer a shorter first step?</strong>
+          <p className="mt-1 text-t2">Request a focused Local Growth Check instead of completing the full project brief.</p>
+          <Link href="/local-growth-check" prefetch={false} className="mt-3 inline-flex items-center gap-1 font-semibold text-acc">Request a Local Growth Check <ArrowRight size={14} /></Link>
         </aside>
       )}
 
-      <div
-        role="progressbar"
-        aria-valuenow={step + 1}
-        aria-valuemin={1}
-        aria-valuemax={STEPS.length}
-        aria-label={`Step ${step + 1} of ${STEPS.length}`}
-        className="mb-11 flex gap-1.5"
-      >
-        {STEPS.map((_, i) => (
-          <div
-            key={i}
-            className="h-0.5 flex-1 rounded-full transition-colors duration-300"
-            style={{ background: i <= step ? "var(--acc)" : "var(--b1)" }}
-          />
+      <ol className="mb-9 grid grid-cols-2 gap-2 md:grid-cols-4" aria-label="Quote progress">
+        {STAGES.map((label, index) => (
+          <li key={label} aria-current={index === stage ? "step" : undefined} className={`rounded-lg px-3 py-2 font-dm text-xs ${index === stage ? "bg-acc text-bg" : index < stage ? "bg-acc/15 text-t1" : "bg-s1 text-t3"}`}>
+            <span className="flex items-center gap-1.5">{index < stage ? <Check size={13} aria-hidden="true" /> : `${index + 1}.`} {label}</span>
+          </li>
         ))}
-      </div>
-
-      <div className="mb-2 font-dm text-xs font-semibold uppercase tracking-[.12em] text-acc">
-        Step {step + 1} of {STEPS.length}
-      </div>
-      <h1 className="mb-3 font-syne text-3xl font-extrabold tracking-[-0.025em]">{curr.label}</h1>
-      <p className="mb-8 font-dm text-sm leading-relaxed text-t2">
-        This keeps the first call useful. We qualify fit, scope, timeline, and the commercial reason for the work.
+      </ol>
+      <div role="progressbar" aria-valuenow={stage + 1} aria-valuemin={1} aria-valuemax={4} aria-label={`Stage ${stage + 1} of 4: ${STAGES[stage]}`} className="sr-only" />
+      <p className="font-dm text-xs font-semibold uppercase tracking-[.12em] text-acc">Stage {stage + 1} of 4</p>
+      <h1 className="mt-2 font-syne text-3xl font-extrabold tracking-[-0.025em]">{STAGES[stage]}</h1>
+      <p className="mb-8 mt-3 font-dm text-sm leading-relaxed text-t2" aria-live="polite">
+        {stage === 0 && "Tell us who you are and what kind of business we are helping."}
+        {stage === 1 && "Choose the project shape once, then describe the commercial result and functionality."}
+        {stage === 2 && "Share practical budget, timing and contact preferences."}
+        {stage === 3 && "Add any useful detail, confirm consent and send the complete brief."}
       </p>
 
-      <div className="mb-8 flex flex-wrap gap-2">
-        {[
-          ["/services", "View services"],
-          ["/pricing", "Pricing guidance"],
-          ["/work", "Work / build logs"],
-        ].map(([href, label]) => (
-          <Link key={href} href={href} prefetch={false} className="rounded-lg border border-b1 bg-s1 px-3 py-2 font-dm text-xs text-t2 transition-colors hover:text-t1">
-            {label}
-          </Link>
-        ))}
-      </div>
+      {error && <div id={errorId} role="alert" tabIndex={-1} className="mb-6 rounded-lg border border-red/30 bg-red/10 px-4 py-3 font-dm text-sm text-t1">{error}</div>}
 
-      {error && (
-        <div className="mb-5 rounded-[10px] border border-red/30 bg-red/10 px-4 py-3 font-dm text-sm text-t1">
-          {error}
-        </div>
-      )}
-
-      {"fields" in curr && curr.fields && (
-        <div className="flex flex-col gap-4">
-          {isLast && (
-            <>
-              <input
-                type="text"
-                name="website"
-                tabIndex={-1}
-                autoComplete="off"
-                value={data.website ?? ""}
-                onChange={(e) => setData((d) => ({ ...d, website: e.target.value }))}
-                className="hidden"
-                aria-hidden="true"
-              />
-              <EnquiryConsent
-                id="quote-enquiry-consent"
-                checked={data.consent === "true"}
-                onChange={(checked) => {
-                  setError("")
-                  setData((d) => ({ ...d, consent: checked ? "true" : "" }))
-                }}
-              />
-            </>
-          )}
-          {curr.fields.map((field) => (
-            <div key={field.key}>
-              <label htmlFor={`q-${field.key}`} className="mb-1.5 block font-dm text-sm text-t2">
-                {field.label}{"optional" in field && field.optional ? " (optional)" : ""}
-              </label>
-              {field.type === "textarea" ? (
-                <textarea
-                  id={`q-${field.key}`}
-                  rows={5}
-                  value={data[field.key] ?? ""}
-                  onChange={(e) => {
-                    setError("")
-                    trackExperienceEvent("quote_form_started", { metadata: { source: "standard_quote", step: field.key } })
-                    setData((d) => ({ ...d, [field.key]: e.target.value }))
-                  }}
-                  placeholder={field.placeholder}
-                  className="w-full resize-y rounded-[10px] border border-b2 bg-s2 px-4 py-3 font-dm text-sm text-t1 outline-none transition-colors focus:border-acc/50"
-                />
-              ) : (
-                <input
-                  id={`q-${field.key}`}
-                  type={field.type}
-                  autoComplete={field.auto}
-                  required={!("optional" in field && field.optional)}
-                  value={data[field.key] ?? ""}
-                  onChange={(e) => {
-                    setError("")
-                    trackExperienceEvent("quote_form_started", { metadata: { source: "standard_quote", step: field.key } })
-                    setData((d) => ({ ...d, [field.key]: e.target.value }))
-                  }}
-                  placeholder={field.placeholder}
-                  className="w-full rounded-[10px] border border-b2 bg-s2 px-4 py-3 font-dm text-sm text-t1 outline-none transition-colors focus:border-acc/50"
-                />
-              )}
+      <section aria-labelledby={`stage-${stage}`} className="space-y-6">
+        <h2 id={`stage-${stage}`} className="sr-only">{STAGES[stage]} fields</h2>
+        {stage === 0 && <>
+          <TextField id="name" label="Full Name" autoComplete="name" value={data.name} update={update} errorId={error ? errorId : undefined} />
+          <TextField id="email" label="Email Address" type="email" autoComplete="email" value={data.email} update={update} errorId={error ? errorId : undefined} />
+          <TextField id="biz" label="Company Name" autoComplete="organization" value={data.biz} update={update} errorId={error ? errorId : undefined} />
+          <TextField id="websiteUrl" label="Current Website (optional)" type="url" autoComplete="url" value={data.websiteUrl} update={update} />
+          <ChoiceGroup legend="Business Type" name="businessType" options={BUSINESS_TYPES} value={data.businessType} update={update} />
+        </>}
+        {stage === 1 && <>
+          <ChoiceGroup legend="Project Type" name="type" options={PROJECT_TYPES} value={data.type} update={update} />
+          <TextField id="goal" label="Main Business Goal" multiline value={data.goal} update={update} errorId={error ? errorId : undefined} />
+          <fieldset>
+            <legend className="mb-3 font-dm text-sm text-t2">Functionality and needs <span className="text-t3">(choose all that apply)</span></legend>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {NEEDS.map((option) => <Choice key={option} type="checkbox" name="needs" option={option} checked={selectedNeeds().includes(option)} onChange={() => toggleNeed(option)} />)}
             </div>
-          ))}
-          <button
-            onClick={continueOrSubmit}
-            disabled={submitting}
-            className="btn-primary mt-2 self-start font-dm text-sm"
-          >
-            {submitting ? "Sending..." : isLast ? "Submit Brief" : "Continue"} <ArrowRight size={15} aria-hidden="true" />
-          </button>
-        </div>
-      )}
-
-      {"opts" in curr && curr.opts && (
-        <div role="radiogroup" aria-label={curr.label} className="flex flex-wrap gap-2.5">
-          {curr.opts.map((option) => {
-            const isMultiple = "multiple" in curr && curr.multiple
-            const selected = isMultiple ? needsValue(data).includes(option) : data[curr.field] === option
-
-            return (
-              <button
-                key={option}
-                role="radio"
-                aria-checked={selected}
-                onClick={() => {
-                  setError("")
-                  trackExperienceEvent("quote_form_started", { metadata: { source: "standard_quote", step: curr.field } })
-                  if (isMultiple) {
-                    setData((d) => {
-                      const selectedNeeds = needsValue(d)
-                      const next = selectedNeeds.includes(option)
-                        ? selectedNeeds.filter((item) => item !== option)
-                        : [...selectedNeeds, option]
-                      return { ...d, [curr.field]: next.join("|") }
-                    })
-                    return
-                  }
-
-                  setData((d) => ({ ...d, [curr.field]: option }))
-                  setTimeout(() => setStep((s) => s + 1), 180)
-                }}
-                className="rounded-[10px] px-5 py-3 font-dm text-sm font-medium transition-all"
-                style={{
-                  border: `1px solid ${selected ? "var(--acc)" : "var(--b2)"}`,
-                  background: selected ? "var(--acc-dim)" : "none",
-                  color: selected ? "var(--t1)" : "var(--t2)",
-                }}
-              >
-                {option}
-              </button>
-            )
-          })}
-          {"multiple" in curr && curr.multiple && (
-            <button onClick={continueOrSubmit} className="btn-primary mt-4 basis-full justify-center font-dm text-sm md:basis-auto">
-              Continue <ArrowRight size={15} aria-hidden="true" />
-            </button>
-          )}
-        </div>
-      )}
-    </div>
+          </fieldset>
+        </>}
+        {stage === 2 && <>
+          <ChoiceGroup legend="Budget" name="budget" options={BUDGETS} value={data.budget} update={update} />
+          <ChoiceGroup legend="Launch Timeframe" name="timeframe" options={TIMEFRAMES} value={data.timeframe} update={update} />
+          <ChoiceGroup legend="Care Plan Interest" name="carePlanInterest" options={CARE} value={data.carePlanInterest} update={update} />
+          <ChoiceGroup legend="Preferred Contact" name="preferredContactMethod" options={CONTACT} value={data.preferredContactMethod} update={update} />
+        </>}
+        {stage === 3 && <>
+          <details className="rounded-xl bg-s1 p-4">
+            <summary className="cursor-pointer font-dm text-sm font-semibold text-t1">Add an expanded project brief <span className="text-t3">(optional)</span></summary>
+            <div className="mt-4"><TextField id="brief" label="Project Brief" multiline value={data.brief} update={update} /></div>
+          </details>
+          <input type="text" name="website" tabIndex={-1} autoComplete="off" value={data.website ?? ""} onChange={(event) => update("website", event.target.value)} className="hidden" aria-hidden="true" />
+          <EnquiryConsent id="quote-enquiry-consent" checked={data.consent === "true"} onChange={(checked) => update("consent", checked ? "true" : "")} />
+        </>}
+        <button type="button" onClick={continueStage} disabled={submitting} className="btn-primary min-h-11 font-dm text-sm">
+          {submitting ? "Sending..." : stage === 3 ? "Submit Brief" : "Continue"} <ArrowRight size={15} aria-hidden="true" />
+        </button>
+      </section>
+    </main>
   )
+}
+
+function TextField({ id, label, type = "text", autoComplete = "off", value = "", update, multiline = false, errorId }: {
+  id: string; label: string; type?: string; autoComplete?: string; value?: string; update: (key: string, value: string) => void; multiline?: boolean; errorId?: string
+}) {
+  const classes = "w-full rounded-[10px] border border-b2 bg-s2 px-4 py-3 font-dm text-base text-t1 outline-none transition-colors focus:border-acc focus-visible:ring-2 focus-visible:ring-acc"
+  return <div><label htmlFor={`q-${id}`} className="mb-2 block font-dm text-sm text-t2">{label}</label>{multiline
+    ? <textarea id={`q-${id}`} rows={5} value={value} onChange={(event) => update(id, event.target.value)} aria-describedby={errorId} className={`${classes} resize-y`} />
+    : <input id={`q-${id}`} type={type} autoComplete={autoComplete} value={value} onChange={(event) => update(id, event.target.value)} aria-describedby={errorId} className={classes} />}</div>
+}
+
+function ChoiceGroup({ legend, name, options, value, update }: { legend: string; name: string; options: string[]; value?: string; update: (key: string, value: string) => void }) {
+  return <fieldset><legend className="mb-3 font-dm text-sm text-t2">{legend}</legend><div className="grid gap-2 sm:grid-cols-2">{options.map((option) => <Choice key={option} type="radio" name={name} option={option} checked={value === option} onChange={() => update(name, option)} />)}</div></fieldset>
+}
+
+function Choice({ type, name, option, checked, onChange }: { type: "radio" | "checkbox"; name: string; option: string; checked: boolean; onChange: () => void }) {
+  return <label className={`flex min-h-11 cursor-pointer items-center gap-3 rounded-[10px] border px-4 py-3 font-dm text-sm transition-colors ${checked ? "border-acc bg-acc/10 text-t1" : "border-b2 text-t2 hover:border-acc/50"}`}>
+    <input type={type} name={name} value={option} checked={checked} onChange={onChange} className="h-4 w-4 accent-[var(--acc)]" />
+    {option}
+  </label>
 }

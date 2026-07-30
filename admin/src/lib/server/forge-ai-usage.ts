@@ -176,20 +176,23 @@ export async function loadForgeAiDashboardMetrics(): Promise<ForgeAiDashboardMet
       })
       .from(forgeAiUsage)
       .leftJoin(forgeProjects, eq(forgeProjects.id, forgeAiUsage.projectId))
-      .where(gte(forgeAiUsage.completedAt, monthStart))
+      .where(and(gte(forgeAiUsage.completedAt, monthStart), sql`${forgeAiUsage.projectId} is not null`))
       .groupBy(forgeAiUsage.projectId, forgeProjects.name, forgeProjects.businessName)
       .orderBy(desc(sql`sum(${forgeAiUsage.estimatedCost})`))
       .limit(1),
     db
       .select({
         projectCount: sql<string>`count(distinct ${forgeAiUsage.projectId})`,
+        completedSpend: sql<string>`coalesce(sum(${forgeAiUsage.estimatedCost}), 0)`,
       })
       .from(forgeAiUsage)
-      .where(gte(forgeAiUsage.completedAt, monthStart)),
+      .innerJoin(forgeProjects, eq(forgeProjects.id, forgeAiUsage.projectId))
+      .where(and(gte(forgeAiUsage.completedAt, monthStart), eq(forgeProjects.status, "deployed"))),
     loadGlobalMonthlyBudgetSnapshot(),
   ])
 
   const projectCount = Number(siteRows[0]?.projectCount ?? 0)
+  const completedSpend = toCost(siteRows[0]?.completedSpend)
   const mostExpensive = mostExpensiveRows[0]
 
   return {
@@ -203,7 +206,7 @@ export async function loadForgeAiDashboardMetrics(): Promise<ForgeAiDashboardMet
           estimatedCost: toCost(mostExpensive.estimatedCost),
         }
       : null,
-    averageCostPerSite: projectCount > 0 ? roundCost(monthSpend / projectCount) : 0,
+    averageCostPerSite: projectCount > 0 ? roundCost(completedSpend / projectCount) : 0,
     budget,
   }
 }

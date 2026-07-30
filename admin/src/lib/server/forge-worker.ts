@@ -1,4 +1,8 @@
 import "server-only"
+import { hostname } from "node:os"
+import { eq, sql } from "drizzle-orm"
+import { db } from "@/lib/db"
+import { forgeJobs, forgeWorkerHeartbeats } from "@/lib/schema"
 import { buildForgeJobOwner, cleanupTerminalForgeJobs } from "./forge-job-queue"
 import { reapExpiredForgeJobLeases, runDueForgeJobs } from "./forge-job-runner"
 import { reconcileForgePreviews } from "./forge-preview"
@@ -23,6 +27,7 @@ interface ForgeWorkerState {
   running: boolean
   stopping: boolean
   ticks: number
+  recoveredLeases: number
 }
 
 const globalForWorker = globalThis as unknown as {
@@ -46,7 +51,7 @@ export function startForgeWorker(): ForgeWorkerState | null {
   if (!isForgeWorkerEnabled()) return null
   if (globalForWorker.__forgeWorker?.timer) return globalForWorker.__forgeWorker
 
-  const state: ForgeWorkerState = { owner: buildForgeJobOwner("worker"), timer: null, running: false, stopping: false, ticks: 0 }
+  const state: ForgeWorkerState = { owner: buildForgeJobOwner("worker"), timer: null, running: false, stopping: false, ticks: 0, recoveredLeases: 0 }
   globalForWorker.__forgeWorker = state
   const log = requestLogger({ component: "forge-worker" })
   log.info("Forge worker started", { owner: state.owner, tickMs: TICK_MS, batch: BATCH })
@@ -55,9 +60,14 @@ export function startForgeWorker(): ForgeWorkerState | null {
     if (state.running || state.stopping) return
     state.running = true
     try {
-      await reapExpiredForgeJobLeases()
+      const recovered = await reapExpiredForgeJobLeases()
+      state.recoveredLeases += recovered.requeued + recovered.deadLettered
+      if (state.ticks === 0 || state.ticks % PREVIEW_RECONCILE_EVERY_TICKS === 0) {
+        await (await import("./forge-run-orchestrator")).recoverForgeRuns()
+      }
       await runDueForgeJobs(BATCH, state.owner)
       state.ticks += 1
+      await recordWorkerHeartbeat(state)
       if (state.ticks % PREVIEW_RECONCILE_EVERY_TICKS === 0) await reconcileForgePreviews()
       if (state.ticks % CLEANUP_EVERY_TICKS === 0) {
         await cleanupExpiredRateLimitCounters()
@@ -77,6 +87,21 @@ export function startForgeWorker(): ForgeWorkerState | null {
 
   registerShutdownHandlers()
   return state
+}
+
+async function recordWorkerHeartbeat(state: ForgeWorkerState) {
+  const [active] = await db.select({ count: sql<number>`count(*)::int` }).from(forgeJobs).where(eq(forgeJobs.leaseOwner, state.owner))
+  await db.insert(forgeWorkerHeartbeats).values({
+    workerId: state.owner,
+    processId: process.pid,
+    hostname: hostname(),
+    lastHeartbeatAt: new Date(),
+    activeJobCount: Number(active?.count ?? 0),
+    metadataJson: { ticks: state.ticks, stopping: state.stopping, recoveredLeases: state.recoveredLeases },
+  }).onConflictDoUpdate({
+    target: forgeWorkerHeartbeats.workerId,
+    set: { lastHeartbeatAt: new Date(), activeJobCount: Number(active?.count ?? 0), metadataJson: { ticks: state.ticks, stopping: state.stopping, recoveredLeases: state.recoveredLeases } },
+  })
 }
 
 /**

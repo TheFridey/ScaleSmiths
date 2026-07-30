@@ -24,9 +24,22 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Verify GitHub Dependency Graph is available
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          status="$(curl --silent --show-error --output /tmp/dependency-sbom.json --write-out '%{http_code}' \
+            --header "Accept: application/vnd.github+json" \
+            --header "Authorization: Bearer ${GH_TOKEN}" \
+            --header "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/dependency-graph/sbom")"
+          if [ "$status" != "200" ]; then
+            echo "::error::Dependency Review could not run (GitHub API HTTP ${status}). Enable Dependency Graph in Settings > Security > Advanced Security, then rerun this workflow."
+            exit 1
+          fi
       - name: Review dependency changes
-        uses: actions/dependency-review-action@v4
+        uses: actions/dependency-review-action@2031cfc080254a8a887f58cffee85186f0e49e48 # v4.9.0
         with:
           fail-on-severity: high
           comment-summary-in-pr: never
@@ -37,13 +50,13 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout full history
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
       - name: Scan repository history for verified secrets
-        uses: trufflesecurity/trufflehog@v3.90.8
+        uses: trufflesecurity/trufflehog@466da5b0bb161144f6afca9afe5d57975828c410 # v3.90.8
         with:
-          extra_args: --results=verified --fail
+          extra_args: --results=verified
 
   npm-audit:
     name: npm Audit (${{ matrix.app }})
@@ -58,9 +71,9 @@ jobs:
         working-directory: ${{ matrix.app }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
           cache: npm
@@ -71,7 +84,7 @@ jobs:
           npm audit --omit=dev --audit-level=high --json | tee npm-audit-${{ matrix.app }}.json
       - name: Upload npm audit report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: npm-audit-${{ matrix.app }}
           path: ${{ matrix.app }}/npm-audit-${{ matrix.app }}.json
@@ -88,9 +101,9 @@ jobs:
         app: [web, admin]
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Lint application Dockerfile
-        uses: hadolint/hadolint-action@v3.1.0
+        uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
         with:
           dockerfile: ${{ matrix.app }}/Dockerfile
           failure-threshold: error
@@ -105,12 +118,14 @@ jobs:
         app: [web, admin]
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Build application image without runtime secrets
         id: build
         run: docker build --tag scalesmiths-${{ matrix.app }}:security ./${{ matrix.app }}
       - name: Scan high and critical image vulnerabilities
-        uses: aquasecurity/trivy-action@0.28.0
+        id: trivy
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: scalesmiths-${{ matrix.app }}:security
           format: sarif
@@ -120,21 +135,26 @@ jobs:
           exit-code: "1"
       - name: Generate application-image SPDX SBOM
         if: always() && steps.build.outcome == 'success'
-        uses: anchore/sbom-action@v0.17.9
+        uses: anchore/sbom-action@df80a981bc6edbc4e220a492d3cbe9f5547a6e75 # v0.17.9
         with:
           image: scalesmiths-${{ matrix.app }}:security
           format: spdx-json
           output-file: sbom-${{ matrix.app }}.spdx.json
       - name: Upload container scan and SBOM
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: container-security-${{ matrix.app }}
           path: |
             trivy-${{ matrix.app }}.sarif
             sbom-${{ matrix.app }}.spdx.json
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 30
+      - name: Enforce HIGH and CRITICAL image vulnerability threshold
+        if: always() && steps.build.outcome == 'success' && steps.trivy.outcome == 'failure'
+        run: |
+          echo "::error::Trivy found a HIGH or CRITICAL image vulnerability. SARIF and SBOM evidence were uploaded above."
+          exit 1
 
   sandbox-security:
     name: Generated-site Sandbox
@@ -142,9 +162,9 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
           cache: npm

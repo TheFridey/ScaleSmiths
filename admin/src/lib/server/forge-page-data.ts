@@ -27,6 +27,7 @@ import {
   forgeActivityLogs,
   forgeArtifacts,
   forgeIntegrationConfigs,
+  forgeJobs,
   forgeMemories,
   forgeProjects,
   forgeTasks,
@@ -49,12 +50,16 @@ export async function loadForgeDashboardPageData() {
       },
       averageDesignScore: null,
       providerHealth: { providers: [], recentEvents: [] },
+      dashboardTasks: [],
+      dashboardJobs: [],
+      dashboardArtifacts: [],
+      dashboardIntegrations: [],
     }
   }
 
   const { db } = await import("@/lib/db")
   const { loadForgeAiDashboardMetrics } = await import("./forge-ai-usage")
-  const [projects, recentActivity, aiMetrics, averageDesignScore, providerHealth] = await Promise.all([
+  const [projects, recentActivity, aiMetrics, averageDesignScore, providerHealth, dashboardTasks, dashboardJobs, dashboardArtifacts, dashboardIntegrations] = await Promise.all([
     db
       .select({
         id: forgeProjects.id,
@@ -72,6 +77,7 @@ export async function loadForgeDashboardPageData() {
     db
       .select({
         id: forgeActivityLogs.id,
+        projectId: forgeActivityLogs.projectId,
         action: forgeActivityLogs.action,
         message: forgeActivityLogs.message,
         actor: forgeActivityLogs.actor,
@@ -83,9 +89,63 @@ export async function loadForgeDashboardPageData() {
     loadForgeAiDashboardMetrics(),
     loadAverageDesignScore(),
     loadProviderHealthSnapshot(),
+    db
+      .select({
+        id: forgeTasks.id,
+        projectId: forgeTasks.projectId,
+        title: forgeTasks.title,
+        agentType: forgeTasks.agentType,
+        status: forgeTasks.status,
+        resultQuality: forgeTasks.resultQuality,
+        error: forgeTasks.error,
+        providerAttempted: forgeTasks.providerAttempted,
+        humanApprovalRequired: forgeTasks.humanApprovalRequired,
+        publicationBlocked: forgeTasks.publicationBlocked,
+        qualityApprovedAt: forgeTasks.qualityApprovedAt,
+        createdAt: forgeTasks.createdAt,
+        updatedAt: forgeTasks.updatedAt,
+      })
+      .from(forgeTasks)
+      .orderBy(desc(forgeTasks.updatedAt))
+      .limit(250),
+    db
+      .select({
+        id: forgeJobs.id,
+        projectId: forgeJobs.projectId,
+        kind: forgeJobs.kind,
+        status: forgeJobs.status,
+        error: forgeJobs.error,
+        heartbeatAt: forgeJobs.heartbeatAt,
+        scheduledAt: forgeJobs.scheduledAt,
+        updatedAt: forgeJobs.updatedAt,
+      })
+      .from(forgeJobs)
+      .orderBy(desc(forgeJobs.updatedAt))
+      .limit(150),
+    db
+      .select({
+        id: forgeArtifacts.id,
+        projectId: forgeArtifacts.projectId,
+        title: forgeArtifacts.title,
+        type: forgeArtifacts.type,
+        version: forgeArtifacts.version,
+        qualityState: forgeArtifacts.qualityState,
+        approvalState: forgeArtifacts.approvalState,
+        updatedAt: forgeArtifacts.updatedAt,
+      })
+      .from(forgeArtifacts)
+      .orderBy(desc(forgeArtifacts.updatedAt))
+      .limit(250),
+    db
+      .select({
+        projectId: forgeIntegrationConfigs.projectId,
+        provider: forgeIntegrationConfigs.provider,
+        enabled: forgeIntegrationConfigs.enabled,
+      })
+      .from(forgeIntegrationConfigs),
   ])
 
-  return { projects, recentActivity, aiMetrics, averageDesignScore, providerHealth }
+  return { projects, recentActivity, aiMetrics, averageDesignScore, providerHealth, dashboardTasks, dashboardJobs, dashboardArtifacts, dashboardIntegrations }
 }
 
 export async function loadForgeProjectPageData(id: number) {
@@ -98,7 +158,7 @@ export async function loadForgeProjectPageData(id: number) {
 
   if (!project) return null
 
-  const [projectSummaries, tasks, artifacts, integrations, activityLogs, memories, aiUsage, latestEstimate, intakeArtifacts, sitemapArtifacts, copyArtifacts, designArtifacts, designSystemArtifacts, componentSpecArtifacts, generatedCodeArtifacts, visualCritiqueArtifacts, qaArtifacts, seoArtifacts, visualQaArtifacts, proposalArtifacts, exportArtifacts, deployArtifacts] = await Promise.all([
+  const [projectSummaries, tasks, jobs, artifacts, integrations, activityLogs, memories, aiUsage, latestEstimate, intakeArtifacts, sitemapArtifacts, copyArtifacts, designArtifacts, designSystemArtifacts, componentSpecArtifacts, generatedCodeArtifacts, visualCritiqueArtifacts, qaArtifacts, seoArtifacts, visualQaArtifacts, proposalArtifacts, exportArtifacts, deployArtifacts] = await Promise.all([
     db
       .select({
         id: forgeProjects.id,
@@ -135,6 +195,19 @@ export async function loadForgeProjectPageData(id: number) {
       .from(forgeTasks)
       .where(eq(forgeTasks.projectId, id))
       .orderBy(desc(forgeTasks.createdAt)),
+    db
+      .select({
+        id: forgeJobs.id,
+        kind: forgeJobs.kind,
+        status: forgeJobs.status,
+        error: forgeJobs.error,
+        heartbeatAt: forgeJobs.heartbeatAt,
+        scheduledAt: forgeJobs.scheduledAt,
+        updatedAt: forgeJobs.updatedAt,
+      })
+      .from(forgeJobs)
+      .where(eq(forgeJobs.projectId, id))
+      .orderBy(desc(forgeJobs.updatedAt)),
     db
       .select({
         id: forgeArtifacts.id,
@@ -226,6 +299,7 @@ export async function loadForgeProjectPageData(id: number) {
     costQuality,
     projectSummaries,
     tasks,
+    jobs,
     artifacts,
     integrations,
     activityLogs,

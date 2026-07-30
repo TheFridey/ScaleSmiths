@@ -1,8 +1,8 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
-import { useRouter } from "next/navigation"
-import { ExternalLink, Monitor, Play, RefreshCw, Smartphone, StopCircle, Tablet } from "lucide-react"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { ExternalLink, Maximize2, Monitor, Play, RefreshCw, Smartphone, StopCircle, Tablet } from "lucide-react"
 import type { ForgeGeneratedCodeArtifactState } from "@/lib/forge-frontend-code"
 import { FORGE_PREVIEW_VIEWPORTS, type ForgePreviewState, type ForgePreviewViewport } from "@/lib/forge-preview"
 import type { ForgeWorkspaceMetadata } from "@/lib/forge-workspace"
@@ -24,8 +24,12 @@ export function ForgePreviewRail({
   disabled?: boolean
 }) {
   const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const surfaceRef = useRef<HTMLElement>(null)
   const [preview, setPreview] = useState<ForgePreviewState | null>(initialPreview)
-  const [viewport, setViewport] = useState<ForgePreviewViewport>("desktop")
+  const requestedViewport = searchParams.get("viewport")
+  const [viewport, setViewport] = useState<ForgePreviewViewport>(requestedViewport === "tablet" || requestedViewport === "mobile" ? requestedViewport : "desktop")
   const [busy, setBusy] = useState<"start" | "stop" | "refresh" | null>(null)
   const [error, setError] = useState("")
 
@@ -72,8 +76,16 @@ export function ForgePreviewRail({
     if (preview?.url) window.open(preview.url, "_blank", "noopener,noreferrer")
   }
 
+  function selectViewport(value: ForgePreviewViewport) {
+    setViewport(value)
+    const params = new URLSearchParams(searchParams.toString())
+    params.set("view", "preview")
+    params.set("viewport", value)
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+  }
+
   return (
-    <aside className="rounded-xl border p-4 lg:sticky lg:top-4" style={{ background:T.s1, borderColor:T.b1 }}>
+    <aside ref={surfaceRef} className="forge-preview-surface rounded-xl border p-4" style={{ background:T.s1, borderColor:T.b1 }}>
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
           <div className="mb-1 flex items-center gap-2">
@@ -82,7 +94,7 @@ export function ForgePreviewRail({
           </div>
           <Badge value={preview?.status ?? "stopped"} tone={active ? "good" : preview?.status === "failed" ? "bad" : "muted"} />
         </div>
-        <button
+        <div className="flex gap-2"><button
           type="button"
           onClick={() => void requestPreview("GET", "refresh")}
           disabled={busy !== null}
@@ -91,7 +103,7 @@ export function ForgePreviewRail({
           title="Refresh preview state"
         >
           <RefreshCw size={15} className={busy === "refresh" ? "animate-spin" : ""} aria-hidden="true" />
-        </button>
+        </button><button type="button" onClick={() => void surfaceRef.current?.requestFullscreen()} className="inline-flex h-9 w-9 items-center justify-center rounded-lg border" style={{ background:T.s2, borderColor:T.b2, color:T.t1 }} title="Full-screen preview"><Maximize2 size={15} aria-hidden="true" /></button></div>
       </div>
 
       {error && (
@@ -106,9 +118,9 @@ export function ForgePreviewRail({
       )}
 
       <div className="mb-3 grid grid-cols-3 gap-1 rounded-lg border p-1" style={{ background:T.s2, borderColor:T.b1 }}>
-        <ViewportButton value="desktop" active={viewport === "desktop"} setViewport={setViewport} icon={Monitor} />
-        <ViewportButton value="tablet" active={viewport === "tablet"} setViewport={setViewport} icon={Tablet} />
-        <ViewportButton value="mobile" active={viewport === "mobile"} setViewport={setViewport} icon={Smartphone} />
+        <ViewportButton value="desktop" active={viewport === "desktop"} setViewport={selectViewport} icon={Monitor} />
+        <ViewportButton value="tablet" active={viewport === "tablet"} setViewport={selectViewport} icon={Tablet} />
+        <ViewportButton value="mobile" active={viewport === "mobile"} setViewport={selectViewport} icon={Smartphone} />
       </div>
 
       <div className="mb-3 grid grid-cols-3 gap-2">
@@ -127,9 +139,9 @@ export function ForgePreviewRail({
         <div
           className="mx-auto overflow-hidden rounded-lg border shadow-sm transition-[width,height] duration-200"
           style={{
-            width: active ? Math.min(frame.width, viewport === "desktop" ? 560 : frame.width) : "100%",
+            width: active ? frame.width : "100%",
             maxWidth: "100%",
-            height: active ? (viewport === "mobile" ? 560 : viewport === "tablet" ? 620 : 420) : 260,
+            height: active ? (viewport === "mobile" ? 680 : viewport === "tablet" ? 720 : 660) : 360,
             background:T.s1,
             borderColor:T.b2,
           }}

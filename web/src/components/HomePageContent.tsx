@@ -1,18 +1,12 @@
-import { BuildProofBlocks } from "@/components/BuildProofBlocks"
 import { CTA } from "@/components/CTA"
-import { ClientPortalSection } from "@/components/ClientPortalSection"
 import { FAQ } from "@/components/FAQ"
 import { FitSection } from "@/components/FitSection"
 import { Hero } from "@/components/Hero"
-import { InlineCTA } from "@/components/InlineCTA"
 import { Portfolio } from "@/components/Portfolio"
 import { Process } from "@/components/Process"
-import { ProofSection } from "@/components/ProofSection"
 import { Services } from "@/components/Services"
 import { ServiceRouteChooser } from "@/components/ServiceRouteChooser"
-import { TechStack } from "@/components/TechStack"
 import { Testimonials } from "@/components/Testimonials"
-import { Ticker } from "@/components/Ticker"
 import { faqs } from "@/lib/data"
 import { publicClaimMap, selectVerifiedPublicClaims, type PublicClaim } from "@/lib/public-claims"
 import { getVerifiedPublicClaims } from "@/lib/public-claims.server"
@@ -22,8 +16,6 @@ export async function HomePageContent() {
   const heroClaims = mapForComponents(publicClaims, "hero_stats")
   const serviceClaims = mapForComponents(publicClaims, "services_intro", "service_pricing", "retainer_summary", "retainer_pricing")
   const processClaims = mapForComponents(publicClaims, "process")
-  const portalClaims = mapForComponents(publicClaims, "client_portal")
-  const projectClaims = mapForComponents(publicClaims, "project_outcomes")
   const faqClaims = mapForComponents(publicClaims, "faq")
   const heroStats = ["hero.projects-delivered", "hero.revenue-generated", "hero.retainer-retention-rate"]
     .map((id) => heroClaims.get(id)?.approvedWording)
@@ -37,36 +29,16 @@ export async function HomePageContent() {
     <>
       <Hero verifiedStats={heroStats} />
       <ServiceRouteChooser compact />
-      <Ticker />
-      <BuildProofBlocks />
-      <Services claims={serviceClaims} />
-      <InlineCTA
-        label="Scope"
-        title="Not sure which tier fits?"
-        body="We will recommend the smallest build that can still move the business outcome you care about."
-      />
-      <Process verifiedDeliveryClaim={processClaims.get("process.built-on-time")?.approvedWording} verifiedRetentionClaim={processClaims.get("process.most-clients-retain")?.approvedWording} />
-      <ClientPortalSection verifiedAvailabilityClaim={portalClaims.get("portal.every-active-client")?.approvedWording} />
-      <Portfolio limit={2} />
-      <InlineCTA
-        label="Proof to plan"
-        title="Want your version of this?"
-        body="Bring the business problem. We will turn the relevant proof into a practical project shape."
-      />
-      <ProofSection claims={projectClaims} />
-      <FitSection />
       <Testimonials testimonials={testimonials} />
-      <TechStack />
+      <Services claims={serviceClaims} />
+      <Portfolio limit={2} />
+      <FitSection />
+      <Process verifiedDeliveryClaim={processClaims.get("process.built-on-time")?.approvedWording} verifiedRetentionClaim={processClaims.get("process.most-clients-retain")?.approvedWording} />
       <FAQ items={faqs.map((faq) => faq.q === "How much does a website cost?"
         ? { ...faq, a: verifiedPricingAnswer(faqClaims) }
         : faq.q === "How long does a project take?"
           ? { ...faq, a: verifiedTimelineAnswer(faqClaims) }
           : faq)} />
-      <InlineCTA
-        label="Questions answered"
-        title="Ready for the honest version?"
-        body="A strategy call will tell you what to build, what to avoid, and what budget makes sense."
-      />
       <CTA />
     </>
   )

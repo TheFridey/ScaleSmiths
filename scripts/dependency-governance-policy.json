@@ -1,9 +1,9 @@
 {
-  "reviewedFrameworkVersion": "15.5.20",
+  "reviewedFrameworkVersion": "15.5.22",
   "criticalDependencies": {
     "web": {
-      "next": "15.5.20",
-      "eslint-config-next": "15.5.20",
+      "next": "15.5.22",
+      "eslint-config-next": "15.5.22",
       "react": "18.3.1",
       "react-dom": "18.3.1",
       "bcryptjs": "3.0.3",
@@ -12,26 +12,15 @@
       "pg": "8.21.0"
     },
     "admin": {
-      "next": "15.5.20",
-      "eslint-config-next": "15.5.20",
+      "next": "15.5.22",
+      "eslint-config-next": "15.5.22",
       "react": "18.3.1",
       "react-dom": "18.3.1",
-      "next-auth": "5.0.0-beta.31",
-      "@auth/core": "0.41.2",
-      "bcryptjs": "2.4.3",
+      "next-auth": "5.0.0-beta.32",
+      "bcryptjs": "3.0.3",
       "drizzle-orm": "0.45.2",
       "pg": "8.21.0"
     }
   },
-  "acceptedAdvisories": [
-    {
-      "id": "GHSA-qx2v-qp2m-jg93",
-      "severity": "moderate",
-      "package": "postcss",
-      "source": "Next.js embedded transitive dependency",
-      "decision": "temporarily accepted",
-      "reason": "The available npm force fix proposes an unsafe Next.js major downgrade. High and Critical production audit thresholds remain blocking while the reviewed Next.js patch line is monitored for a non-breaking fix.",
-      "reviewBy": "2026-08-14"
-    }
-  ]
+  "acceptedAdvisories": []
 }

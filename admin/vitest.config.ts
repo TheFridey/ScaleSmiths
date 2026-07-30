@@ -19,6 +19,6 @@ export default defineConfig({
     },
   },
   test: {
-    exclude: ["test/integration/**", "node_modules/**", ".next/**"],
+    exclude: ["test/integration/**", "test/visual/**", "node_modules/**", ".next/**"],
   },
 })

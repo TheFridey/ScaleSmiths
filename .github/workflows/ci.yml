@@ -253,17 +253,19 @@ jobs:
         run: shellcheck -x scripts/backup/*.sh
 
       - name: Disposable backup and restore drill
+        env:
+          CI_ARTIFACTS_DIR: ${{ github.workspace }}/ci-artifacts
         run: |
           mkdir -p ci-artifacts
           set -o pipefail
           npm run test:backup-framework 2>&1 | tee ci-artifacts/backup-framework.log
 
-      - name: Upload backup framework test log
+      - name: Upload backup framework diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: backup-framework-test-log
-          path: ci-artifacts/backup-framework.log
+          path: ci-artifacts
           if-no-files-found: error
           retention-days: 14
 

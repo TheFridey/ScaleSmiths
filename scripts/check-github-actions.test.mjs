@@ -41,3 +41,25 @@ test("rejects performance budgets after the Playwright development server", asyn
   } : workflow)
   assert(validateWorkflowSet(mutated, root).some((failure) => failure.startsWith("[build-artifact-order]")))
 })
+
+test("rejects mutable security action references and duplicate TruffleHog failure flags", async () => {
+  const workflows = await loadWorkflowSet(root)
+  const mutated = workflows.map((workflow) => workflow.name === "security.yml" ? {
+    ...workflow,
+    content: workflow.content
+      .replace(/actions\/checkout@[0-9a-f]{40}/, "actions/checkout@v4")
+      .replace("extra_args: --results=verified", "extra_args: --results=verified --fail"),
+  } : workflow)
+  const failures = validateWorkflowSet(mutated, root)
+  assert(failures.some((failure) => failure.startsWith("[action-pin]")))
+  assert(failures.some((failure) => failure.startsWith("[trufflehog-arguments]")))
+})
+
+test("rejects Trivy enforcement before evidence upload", async () => {
+  const workflows = await loadWorkflowSet(root)
+  const mutated = workflows.map((workflow) => workflow.name === "security.yml" ? {
+    ...workflow,
+    content: workflow.content.replace("- name: Enforce HIGH and CRITICAL image vulnerability threshold", "- name: Upload container scan and SBOM duplicate marker"),
+  } : workflow)
+  assert(validateWorkflowSet(mutated, root).some((failure) => failure.startsWith("[trivy-evidence-order]")))
+})

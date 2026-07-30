@@ -3,6 +3,41 @@ set -Eeuo pipefail
 umask 077
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+REPOSITORY_ROOT="$(cd -- "$SCRIPT_DIR/../.." && pwd -P)"
+diagnostics_dir="${CI_ARTIFACTS_DIR:-$REPOSITORY_ROOT/ci-artifacts}"
+work_dir=""
+log_file=""
+
+redact_diagnostics() {
+  sed -E \
+    -e 's#(postgres(ql)?://)[^/@[:space:]]+(:[^@[:space:]]+)?@#\1[REDACTED]@#g' \
+    -e 's#(([A-Za-z_]*(SECRET|PASSWORD|PASSPHRASE|TOKEN)[A-Za-z_]*|DATABASE_URL)=)[^[:space:]]+#\1[REDACTED]#Ig'
+}
+
+preserve_failure_diagnostics() {
+  local status=$?
+  local failed_line="${BASH_LINENO[0]:-unknown}"
+  local failed_command="${BASH_COMMAND:-unknown}"
+  trap - ERR
+  mkdir -p "$diagnostics_dir"
+  chmod 700 "$diagnostics_dir"
+  {
+    printf 'Backup framework failure (exit %s) at line %s\n' "$status" "$failed_line"
+    printf 'Failed command: %s\n' "$failed_command"
+  } | redact_diagnostics | tee "$diagnostics_dir/backup-framework-failure.txt" >&2
+  if [[ -n "$log_file" && -f "$log_file" ]]; then
+    redact_diagnostics < "$log_file" > "$diagnostics_dir/backup-framework-internal.redacted.log"
+    printf '%s\n' '--- redacted internal backup log (last 120 lines) ---' >&2
+    tail -n 120 "$diagnostics_dir/backup-framework-internal.redacted.log" >&2
+  fi
+  if [[ -n "$work_dir" && -d "$work_dir" ]]; then
+    while IFS= read -r -d '' evidence; do
+      cp -- "$evidence" "$diagnostics_dir/$(basename "$evidence")"
+    done < <(find "$work_dir" -type f \( -name '*.json' -o -name '*.verified.json' \) -print0)
+  fi
+  return "$status"
+}
+trap preserve_failure_diagnostics ERR
 
 fail() {
   printf 'TEST FAILURE: %s\n' "$*" >&2

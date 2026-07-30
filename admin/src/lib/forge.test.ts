@@ -1658,7 +1658,9 @@ describe("forge shell", () => {
       status: "classified",
       taskId: 10,
       jobId: 20,
+      runId: null,
       requiresConfirmation: false,
+      plan: null,
     }], "2026-06-21T10:01:00.000Z")
     const read = readForgeCommandChatMemory(JSON.stringify(state))
 
@@ -2128,9 +2130,14 @@ describe("forge shell", () => {
     expect(routeFiles.length).toBeGreaterThanOrEqual(21)
     for (const file of routeFiles) {
       const content = readFileSync(file, "utf8")
-      expect(content, file).toMatch(/auth\(\)/)
-      expect(content, file).toMatch(/Unauthorized\./)
+      const usesSharedRunGuard = content.includes("requireForgeRunActor(")
+      expect(content, file).toMatch(usesSharedRunGuard ? /requireForgeRunActor\(/ : /auth\(\)/)
+      if (!usesSharedRunGuard) expect(content, file).toMatch(/Unauthorized\./)
     }
+    const sharedRunGuard = readFileSync(path.resolve(process.cwd(), "src/lib/server/forge-run-route.ts"), "utf8")
+    expect(sharedRunGuard).toMatch(/auth\(\)/)
+    expect(sharedRunGuard).toMatch(/Unauthorized\./)
+    expect(sharedRunGuard).toMatch(/requireRoleCapability/)
   })
 })
 

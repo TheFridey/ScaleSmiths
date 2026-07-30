@@ -34,6 +34,7 @@ import {
   resolveForgeMaxRepairAttempts,
   truncateForgeQaLog,
   validateForgeRepairPatches,
+  prepareForgeRepairPatches,
   type ForgeQaCommandName,
   type ForgeQaCommandResult,
   type ForgeQaReport,
@@ -108,20 +109,9 @@ export async function runForgeQaAgent(projectId: number, actor: string) {
   await markTaskRunning(projectId, task.id, actor, "qa_running", `Generated-site QA started for ${project.name}.`, startedAt)
 
   try {
-    const initialReport = await runWorkspaceQa(workspace, qaState.report?.repairHistory ?? [], resendConfig, whatsappConfig, seoPack, design)
-    const report = initialReport.status === "failed" && process.env.FORGE_DISABLE_AUTO_REPAIR !== "true"
-      ? await runAutomaticRepairLoop({
-        projectId,
-        actor,
-        projectName: project.name,
-        workspace,
-        initialReport,
-        resendConfig,
-        whatsappConfig,
-        seoPack,
-        design,
-      })
-      : initialReport
+    // Functional QA is atomic. The orchestration registry decides whether the
+    // separate repair stage is required after this report is persisted.
+    const report = await runWorkspaceQa(workspace, qaState.report?.repairHistory ?? [], resendConfig, whatsappConfig, seoPack, design)
     const completedAt = new Date()
     const artifact = await saveQaReport(projectId, report, task.id, completedAt)
 
@@ -138,7 +128,7 @@ export async function runForgeQaAgent(projectId: number, actor: string) {
           status: report.status,
           summary: report.summary,
           failureSummary: report.failureSummary,
-          commandStatuses: report.commands.map((command) => ({ name: command.name, status: command.status, exitCode: command.exitCode })),
+          commandStatuses: report.commands.map((command) => ({ name: command.name, status: command.status, exitCode: command.exitCode, failureCategory: command.failureCategory ?? null, stdout: command.stdout, stderr: command.stderr })),
         },
         completedAt,
         updatedAt: completedAt,
@@ -278,9 +268,9 @@ export async function runForgeRepairAgent(projectId: number, actor: string) {
       }
     }
 
-    const patches = repairData.patches
-    const validated = validateForgeRepairPatches(patches)
-    if (!validated.ok) throw new ForgeQaAgentError(validated.error, 400)
+    const prepared = prepareForgeRepairPatches(repairData.patches, relevantFiles)
+    if (!prepared.ok) throw new ForgeQaAgentError(prepared.error, 400)
+    const patches = prepared.patches
 
     const syntaxValidated = await validateForgeRepairPatchSyntax(patches)
     if (!syntaxValidated.ok) throw new ForgeQaAgentError(syntaxValidated.error, 422)
@@ -318,7 +308,9 @@ export async function runForgeRepairAgent(projectId: number, actor: string) {
           ...repairMetadata,
           repairAttempt: attempt,
           qaStatus: report.status,
-          reranChecks: shouldRerunChecks,
+          reranChecks: prepared.affectedChecks,
+          preRepairVersions: prepared.preRepairVersions,
+          newFiles: prepared.newFiles,
           deterministicFallback,
         },
         completedAt,
@@ -336,6 +328,7 @@ export async function runForgeRepairAgent(projectId: number, actor: string) {
           attempt,
           qaStatus: report.status,
           patches: patches.map((patch) => patch.path),
+          affectedChecks: prepared.affectedChecks,
         },
       })
     })
@@ -365,7 +358,7 @@ export async function runForgeRepairAgent(projectId: number, actor: string) {
   }
 }
 
-async function runAutomaticRepairLoop({
+export async function runAutomaticRepairLoop({
   projectId,
   actor,
   projectName,

@@ -24,6 +24,7 @@ import {
   FORGE_JOB_LEASE_TTL_MS,
   type ForgeJobRow,
 } from "./forge-job-queue"
+import { normalizeForgeOperatorError } from "@/lib/forge-operator-error"
 import { isForgeAnimationPack } from "@/lib/forge-animation"
 import { isForgeDesignStylePack } from "@/lib/forge-design"
 import type { ForgeExportKind } from "@/lib/forge-export"
@@ -47,7 +48,7 @@ export class ForgeJobError extends Error {
 type JobPayload = Record<string, unknown>
 type JobResult = Record<string, unknown>
 type JobHandler = (projectId: number, actor: string, payload: JobPayload) => Promise<JobResult>
-const AI_BACKED_JOB_KINDS = new Set<ForgeJobKind>(["research", "sitemap", "copy", "design", "design_system", "component_spec", "visual_critique", "repair"])
+const AI_BACKED_JOB_KINDS = new Set<ForgeJobKind>(["research", "sitemap", "copy", "design", "design_system", "component_spec", "seo", "quality_review", "visual_critique", "repair", "visual_qa"])
 
 /**
  * The job registry maps each long-running Forge action to a handler. Handlers lazily import the
@@ -89,40 +90,15 @@ const JOB_HANDLERS: Record<ForgeJobKind, JobHandler> = {
   ),
   migration_analysis: async (projectId, actor) => (await import("./forge-migration-analysis-agent")).runForgeMigrationAnalysisAgent(projectId, actor),
   migration_execution: async (projectId, actor) => (await import("./forge-migration-execution-agent")).runForgeMigrationExecutionAgent(projectId, actor),
-  generate_site: async (projectId, actor) => {
-    const generated = await (await import("./forge-frontend-code-agent")).runForgeFrontendCodeAgent(projectId, actor)
-    const seo = await (await import("./forge-seo-agent")).runForgeSeoAgent(projectId, actor)
-    const visualCritiqueAgent = await import("./forge-visual-critique-agent")
-    const critique = await visualCritiqueAgent.runForgeVisualCritiqueAgent(projectId, actor)
-    const approvedCritique = critique.report.status === "approved"
-      ? critique
-      : await visualCritiqueAgent.approveForgeVisualCritique(projectId, actor)
-    const qa = process.env.FORGE_E2E_CONTROLLED_QA === "true"
-      ? { report: { status: "not_run", summary: "QA is controlled by the end-to-end failure fixture.", failureSummary: null, repairHistory: [] } }
-      : await (await import("./forge-qa-agent")).runForgeQaAgent(projectId, actor)
-    return {
-      ...generated,
-      seo: {
-        score: seo.pack.score,
-        pageCount: seo.pack.pages.length,
-      },
-      critique: {
-        score: approvedCritique.report.overallScore,
-        scores: approvedCritique.report.scores,
-        autoFixesApplied: approvedCritique.report.autoFixesApplied,
-      },
-      mandatoryQa: {
-        status: qa.report.status,
-        summary: qa.report.summary,
-        failureSummary: qa.report.failureSummary,
-        repairAttempts: qa.report.repairHistory.length,
-      },
-      report: qa.report,
-    }
-  },
+  // Code generation is deliberately atomic. SEO, critique, QA, repair and preview
+  // are scheduled only by the Forge Run orchestration registry.
+  generate_site: async (projectId, actor) => (await import("./forge-frontend-code-agent")).runForgeFrontendCodeAgent(projectId, actor),
+  seo: async (projectId, actor) => (await import("./forge-seo-agent")).runForgeSeoAgent(projectId, actor),
+  quality_review: async () => ({ ok: true, skipped: true, reason: "Legacy aggregate review is superseded by atomic consistency, copy-quality and originality stages." }),
   visual_critique: async (projectId, actor) => (await import("./forge-visual-critique-agent")).runForgeVisualCritiqueAgent(projectId, actor),
   qa: async (projectId, actor) => (await import("./forge-qa-agent")).runForgeQaAgent(projectId, actor),
   repair: async (projectId, actor) => (await import("./forge-qa-agent")).runForgeRepairAgent(projectId, actor),
+  visual_qa: async (projectId, actor) => (await import("./forge-visual-qa-agent")).runForgeVisualQaAgent(projectId, actor),
   preview_start: async (projectId, actor) => ({ ok: true, preview: await (await import("./forge-preview")).startForgePreview(projectId, actor) }),
   proposal: async (projectId, actor, payload) =>
     (await import("./forge-proposal-agent")).runForgeProposalAgent(projectId, actor, payload.action === "audit" ? "audit" : "proposal"),
@@ -282,7 +258,16 @@ export async function runClaimedForgeJob(claimed: ForgeJobRow, owner: string, op
   const handler = JOB_HANDLERS[claimed.kind as ForgeJobKind]
   if (!handler) {
     // Unknown kind is permanent: force the dead-letter path rather than retrying.
-    await failForgeJob({ ...claimed, attempts: claimed.maxAttempts }, `Unknown job kind "${claimed.kind}".`)
+    const operatorError = normalizeForgeOperatorError(`Unknown job kind "${claimed.kind}".`, {
+      stage: claimed.kind,
+      category: "internal_error",
+      retryable: false,
+      jobId: claimed.id,
+      runId: typeof payload.forgeRunId === "number" ? payload.forgeRunId : null,
+      technicalReference: `forge:job:${claimed.id}:unknown-kind`,
+      metadata: { attemptCount: claimed.attempts, maxAttempts: claimed.maxAttempts },
+    })
+    await failForgeJob({ ...claimed, attempts: claimed.maxAttempts }, operatorError.summary, operatorError)
     if (options.propagate) throw new ForgeJobError(`Unknown job kind "${claimed.kind}".`, 400)
     return null
   }
@@ -296,6 +281,9 @@ export async function runClaimedForgeJob(claimed: ForgeJobRow, owner: string, op
     const result = await withMonitoringScope({ projectId: claimed.projectId, taskId, forgeStage: claimed.kind, jobId: claimed.id }, () => handler(claimed.projectId, claimed.actor ?? "system", payload))
     clearInterval(heartbeat)
     await completeForgeJob(claimed.id, owner, result)
+    await import("./forge-run-orchestrator")
+      .then(({ handleForgeRunJobOutcome }) => handleForgeRunJobOutcome(claimed.id, "completed"))
+      .catch((error) => captureMonitoringException(error, { projectId: claimed.projectId, jobId: claimed.id, errorCategory: "forge_run_callback" }))
     await markCommandJobProgress(claimed.projectId, claimed.actor ?? "system", claimed.id, payload, "completed", result)
     log.info("Forge job completed", { durationMs: Date.now() - startedAt.getTime() })
     return result
@@ -303,7 +291,18 @@ export async function runClaimedForgeJob(claimed: ForgeJobRow, owner: string, op
     clearInterval(heartbeat)
     const safeMessage = extractSafeMessage(error)
     const normalizedError = normalizeUnknownError(error, { safeMessage, category: "forge_job" })
-    const { retried } = await failForgeJob(claimed, safeMessage)
+    const operatorError = normalizeForgeOperatorError(error, {
+      stage: typeof payload.forgeRunStage === "string" ? payload.forgeRunStage : claimed.kind,
+      jobId: claimed.id,
+      runId: typeof payload.forgeRunId === "number" ? payload.forgeRunId : null,
+      technicalReference: `forge:job:${claimed.id}:attempt:${claimed.attempts}`,
+      affectedArtifactIds: Array.isArray(payload.affectedArtifactIds) ? payload.affectedArtifactIds.filter((id): id is number => typeof id === "number") : [],
+      metadata: { attemptCount: claimed.attempts, maxAttempts: claimed.maxAttempts, kind: claimed.kind },
+    })
+    const { retried } = await failForgeJob(claimed, operatorError.summary, operatorError)
+    await import("./forge-run-orchestrator")
+      .then(({ handleForgeRunJobOutcome }) => handleForgeRunJobOutcome(claimed.id, "failed", operatorError.summary))
+      .catch((callbackError) => captureMonitoringException(callbackError, { projectId: claimed.projectId, jobId: claimed.id, errorCategory: "forge_run_callback" }))
     await markCommandJobProgress(claimed.projectId, claimed.actor ?? "system", claimed.id, payload, "failed", { error: safeMessage })
     log.error("Forge job failed", {
       durationMs: Date.now() - startedAt.getTime(),

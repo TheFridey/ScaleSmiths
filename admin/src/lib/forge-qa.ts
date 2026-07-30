@@ -27,6 +27,7 @@ export type ForgeQaCommandName =
   | "seo_score"
   | "forbidden_generic_content"
 export type ForgeQaCommandStatus = "passed" | "failed" | "skipped"
+export type ForgeQaFailureCategory = "missing_optional_feature" | "environment_timeout" | "generated_code_defect" | "integration_missing" | "quality_failure"
 
 export const FORGE_MANDATORY_QA_CHECKS = [
   { name: "typecheck", label: "TypeScript/typecheck" },
@@ -56,7 +57,7 @@ export const FORGE_FORBIDDEN_FINAL_OUTPUT_TERMS = [
   "generic instruction-like copy",
 ] as const
 
-export interface ForgeQaCommandResult extends Record<string, JsonValue> {
+export interface ForgeQaCommandResult {
   name: ForgeQaCommandName
   command: string
   status: ForgeQaCommandStatus
@@ -65,6 +66,7 @@ export interface ForgeQaCommandResult extends Record<string, JsonValue> {
   stdout: string
   stderr: string
   skippedReason: string | null
+  failureCategory?: ForgeQaFailureCategory | null
 }
 
 export interface ForgeQaGeneratedFile {
@@ -89,7 +91,7 @@ export interface ForgeRepairAttempt extends Record<string, JsonValue> {
   error: string | null
 }
 
-export interface ForgeQaReport extends Record<string, JsonValue> {
+export interface ForgeQaReport {
   status: ForgeQaStatus
   workspacePath: string
   generatedAt: string
@@ -284,16 +286,17 @@ export function buildQaReport({
   commands: ForgeQaCommandResult[]
   repairHistory?: ForgeRepairAttempt[]
 }): ForgeQaReport {
-  const failed = commands.find((command) => command.status === "failed")
+  const classifiedCommands = commands.map((command) => ({ ...command, failureCategory: classifyForgeQaFailure(command) }))
+  const failed = classifiedCommands.find((command) => command.status === "failed")
   const completedAt = new Date().toISOString()
-  const readiness = computeForgeReadiness(commands)
+  const readiness = computeForgeReadiness(classifiedCommands)
 
   return {
     status: failed ? "failed" : "passed",
     workspacePath,
     generatedAt: completedAt,
     completedAt,
-    commands,
+    commands: classifiedCommands,
     summary: failed
       ? `QA failed at ${failed.name}. Completion is based on actual command results, not AI claims.`
       : `QA passed. ${readiness.summary}`,
@@ -301,6 +304,16 @@ export function buildQaReport({
     readiness,
     repairHistory,
   }
+}
+
+export function classifyForgeQaFailure(command: ForgeQaCommandResult): ForgeQaFailureCategory | null {
+  if (command.status === "skipped") return "missing_optional_feature"
+  if (command.status !== "failed") return null
+  const detail = `${command.stdout}\n${command.stderr}`.toLowerCase()
+  if (/timed out|timeout|docker daemon|spawn .*enoent|network unavailable/.test(detail)) return "environment_timeout"
+  if (command.name === "resend_form" || command.name === "whatsapp_links") return "integration_missing"
+  if (["typecheck", "lint", "build"].includes(command.name)) return "generated_code_defect"
+  return "quality_failure"
 }
 
 export function getForgeQaCommands(packageJson: string | null | undefined) {
@@ -879,6 +892,45 @@ export function validateForgeRepairPatches(patches: ForgeRepairPatch[]) {
   }
 
   return { ok: true as const }
+}
+
+export function prepareForgeRepairPatches(patches: ForgeRepairPatch[], currentFiles: ForgeQaGeneratedFile[]) {
+  const validated = validateForgeRepairPatches(patches)
+  if (!validated.ok) return validated
+  if (patches.length > 8) return { ok: false as const, error: "Repair plans may change at most 8 files in one atomic attempt." }
+  const current = new Map(currentFiles.map((file) => [file.path, file.content]))
+  const changed = patches.filter((patch) => current.get(patch.path) !== patch.content)
+  if (!changed.length) return { ok: false as const, error: "Repair made no progress because every proposed replacement matches the current workspace." }
+  const missing = changed.filter((patch) => !current.has(patch.path))
+  const preRepairVersions = changed
+    .filter((patch) => current.has(patch.path))
+    .map((patch) => ({ path: patch.path, content: current.get(patch.path)!, reason: `Pre-repair version retained before: ${patch.reason}` }))
+  return {
+    ok: true as const,
+    patches: changed,
+    newFiles: missing.map((patch) => patch.path),
+    preRepairVersions,
+    affectedChecks: affectedForgeQaChecks(changed),
+  }
+}
+
+export function affectedForgeQaChecks(patches: ForgeRepairPatch[]): ForgeQaCommandName[] {
+  const checks = new Set<ForgeQaCommandName>(["typecheck", "lint", "build"])
+  for (const patch of patches) {
+    if (/\.css$|Motion|animation/i.test(patch.path)) checks.add("reduced_motion")
+    if (/components|app\/.*page|site-data/i.test(patch.path)) {
+      checks.add("mobile_responsive")
+      checks.add("design_alignment")
+      checks.add("content_depth")
+      checks.add("cta_relevance")
+      checks.add("placeholder_scan")
+      checks.add("forbidden_generic_content")
+    }
+    if (/seo|sitemap|robots|layout|page/i.test(patch.path)) checks.add("schema_appropriateness")
+    if (/contact|resend/i.test(patch.path)) checks.add("resend_form")
+    if (/whatsapp/i.test(patch.path)) checks.add("whatsapp_links")
+  }
+  return [...checks]
 }
 
 export function buildRepairPrompt({

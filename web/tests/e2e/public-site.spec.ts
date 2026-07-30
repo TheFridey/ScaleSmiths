@@ -298,7 +298,7 @@ test.describe("quote and contact forms", () => {
 
     await expect(page.getByText(/not ready to write a full brief/i)).toBeVisible()
     await expect(page.getByRole("link", { name: /request a local growth check/i })).toHaveAttribute("href", "/local-growth-check")
-    await expect(page.getByRole("progressbar")).toHaveAttribute("aria-valuemax", "10")
+    await expect(page.getByRole("progressbar")).toHaveAttribute("aria-valuemax", "4")
   })
 
   test("submits the accessible local growth check with its source and analytics", async ({ page }) => {
@@ -372,6 +372,27 @@ test.describe("quote and contact forms", () => {
     await page.getByRole("button", { name: /continue/i }).click()
 
     await expect(page.getByText(/please add your full name/i)).toBeVisible()
+  })
+
+  test("restores an incomplete four-stage quote after navigation", async ({ page }) => {
+    await gotoReady(page, "/quote")
+    await page.getByLabel(/full name/i).fill("Restored Lead")
+    await page.getByLabel(/email address/i).fill("restored@example.com")
+    await page.getByLabel(/company name/i).fill("Restored Studio")
+    await page.getByRole("radio", { name: /professional services/i }).check()
+    await page.getByRole("button", { name: /continue/i }).click()
+    await page.getByRole("radio", { name: /website redesign/i }).check()
+    await page.getByLabel(/main business goal/i).fill("Turn more qualified visits into enquiries.")
+    await page.getByRole("checkbox", { name: /^analytics$/i }).check()
+
+    await gotoReady(page, "/work")
+    await gotoReady(page, "/quote")
+
+    await expect(page.getByRole("heading", { name: /what needs changing/i })).toBeVisible()
+    await expect(page.getByLabel(/main business goal/i)).toHaveValue("Turn more qualified visits into enquiries.")
+    await expect(page.getByRole("checkbox", { name: /^analytics$/i })).toBeChecked()
+    await page.getByRole("button", { name: /previous stage/i }).click()
+    await expect(page.getByLabel(/full name/i)).toHaveValue("Restored Lead")
   })
 
   test("submits the quote wizard successfully", async ({ page }) => {

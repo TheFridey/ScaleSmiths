@@ -1,25 +1,29 @@
 "use client"
 
-import { Children, useMemo, useState, type ReactNode } from "react"
+import { Children, useEffect, useMemo, useState, type ReactNode } from "react"
 import Link from "next/link"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import type { LucideIcon } from "lucide-react"
 import {
   Activity,
   Archive,
-  Bot,
   Box,
   Brain,
+  CheckCircle2,
   ChevronLeft,
+  ChevronRight,
   Code2,
   DollarSign,
   Download,
   Eye,
   FileText,
-  Gauge,
   Globe2,
   Link2,
   ListChecks,
   Monitor,
+  MoreHorizontal,
+  PanelLeftOpen,
+  PanelRightOpen,
   Rocket,
   Settings2,
   ShieldCheck,
@@ -69,25 +73,28 @@ import type { ForgeResendConfig } from "@/lib/forge-resend"
 import type { ForgeSitemapArtifactState } from "@/lib/forge-sitemap"
 import type { ForgeWhatsAppConfig } from "@/lib/forge-whatsapp"
 import type { ForgeWorkspaceMetadata } from "@/lib/forge-workspace"
+import { ContextDrawer, DetailDrawer, WorkspaceShell } from "@/components/admin-shell/primitives"
+import { deriveForgeAttentionItems, type ForgeHealthJob } from "@/lib/forge-operational-health"
+import { normalizeForgeOperatorError } from "@/lib/forge-operator-error"
 
 const T = { s1:"var(--s1)", s2:"var(--s2)", s3:"var(--s3)", b1:"var(--b1)", b2:"var(--b2)", t1:"var(--t1)", t2:"var(--t2)", t3:"var(--t3)", acc:"var(--acc)", grn:"var(--grn)", amb:"var(--amb)", red:"var(--red)" }
 
 type ProjectTab = "command" | "intake" | "strategy" | "build" | "qa" | "launch" | "records"
+type WorkspaceView = "overview" | "build" | "preview" | "attention" | "advanced"
+type ProductionStage = "brief" | "research" | "site-plan" | "copy" | "design" | "components" | "build" | "seo" | "quality" | "preview" | "client-review" | "launch"
 type IntakePane = "brief" | "settings"
 type StrategyPane = "research" | "sitemap" | "copy" | "design" | "spec"
 type BuildPane = "workspace" | "integrations" | "generate" | "seo"
 type QaPane = "critique" | "checks" | "visual" | "cost"
 type LaunchPane = "proposal" | "estimate" | "export" | "deploy"
-type RecordsPane = "tasks" | "activity" | "usage" | "memory" | "integrations" | "details"
+type RecordsPane = "tasks" | "activity" | "usage" | "memory" | "integrations" | "artifacts" | "technical" | "settings" | "details"
 
-const TABS: Array<{ key: ProjectTab; label: string; Icon: LucideIcon }> = [
-  { key: "command", label: "Command", Icon: Bot },
-  { key: "intake", label: "Intake", Icon: Target },
-  { key: "strategy", label: "Strategy", Icon: Workflow },
+const WORKSPACE_VIEWS: Array<{ key: WorkspaceView; label: string; Icon: LucideIcon }> = [
+  { key: "overview", label: "Overview", Icon: Target },
   { key: "build", label: "Build", Icon: Code2 },
-  { key: "qa", label: "QA", Icon: ShieldCheck },
-  { key: "launch", label: "Launch", Icon: Rocket },
-  { key: "records", label: "Records", Icon: FileText },
+  { key: "preview", label: "Preview", Icon: Monitor },
+  { key: "attention", label: "Attention", Icon: ShieldCheck },
+  { key: "advanced", label: "Advanced", Icon: Settings2 },
 ]
 
 interface ForgeTaskRow {
@@ -117,6 +124,16 @@ interface ForgeProjectSidebarSummary {
   businessName: string
   status: ForgeProjectFormValue["status"]
   priority: ForgeProjectFormValue["priority"]
+  updatedAt: Date | string
+}
+
+interface ForgeJobRow {
+  id: number
+  kind: string
+  status: string
+  error: string | null
+  heartbeatAt: Date | string | null
+  scheduledAt: Date | string
   updatedAt: Date | string
 }
 
@@ -207,8 +224,8 @@ interface ForgeAiBudgetState {
 
 export function ForgeProjectDetail({
   project,
-  projectSummaries,
   tasks,
+  jobs,
   artifacts,
   integrations,
   activityLogs,
@@ -238,6 +255,7 @@ export function ForgeProjectDetail({
   project: ForgeProjectFormValue
   projectSummaries: ForgeProjectSidebarSummary[]
   tasks: ForgeTaskRow[]
+  jobs: ForgeJobRow[]
   artifacts: ForgeArtifactRow[]
   integrations: ForgeIntegrationRow[]
   activityLogs: ForgeActivityRow[]
@@ -264,10 +282,13 @@ export function ForgeProjectDetail({
   initialResendConfig: ForgeResendConfig
   initialWhatsAppConfig: ForgeWhatsAppConfig
 }) {
-  const [activeTab, setActiveTab] = useState<ProjectTab>("command")
-  const [intakePane, setIntakePane] = useState<IntakePane>("brief")
-  const [strategyPane, setStrategyPane] = useState<StrategyPane>("research")
-  const [buildPane, setBuildPane] = useState<BuildPane>("workspace")
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const requestedView = parseWorkspaceView(searchParams.get("view"))
+  const requestedStage = parseProductionStage(searchParams.get("stage"))
+  const [activeView, setActiveView] = useState<WorkspaceView>(requestedView ?? "overview")
+  const [activeStage, setActiveStage] = useState<ProductionStage>(requestedStage ?? "brief")
   const [qaPane, setQaPane] = useState<QaPane>("critique")
   const [launchPane, setLaunchPane] = useState<LaunchPane>("proposal")
   const [recordsPane, setRecordsPane] = useState<RecordsPane>("tasks")
@@ -287,307 +308,411 @@ export function ForgeProjectDetail({
       deploy: initialDeploy,
       tasks,
       artifacts,
+      projectStatus: project.status,
     }),
-    [artifacts, initialCopy, initialDeploy, initialDesign, initialGeneratedCode, initialIntake, initialPreview, initialQa, initialSeo, initialSitemap, initialVisualCritique, tasks],
+    [artifacts, initialCopy, initialDeploy, initialDesign, initialGeneratedCode, initialIntake, initialPreview, initialQa, initialSeo, initialSitemap, initialVisualCritique, project.status, tasks],
   )
   const completedStages = stages.filter((stage) => stage.status === "approved" || stage.status === "complete").length
   const activeTasks = tasks.filter((task) => task.status === "queued" || task.status === "running")
   const failedTasks = tasks.filter((task) => task.status === "failed")
   const approvedFallbackTasks = tasks.filter((task) => task.resultQuality === "fallback" && task.qualityApprovedAt)
   const currentStep = resolveCurrentStep(stages)
+  const [workflowOpen, setWorkflowOpen] = useState(false)
+  const [contextOpen, setContextOpen] = useState(false)
+  const [overflowOpen, setOverflowOpen] = useState(false)
+  const [previewContextOpen, setPreviewContextOpen] = useState(false)
+  const [previewDecisionBusy, setPreviewDecisionBusy] = useState(false)
+  const [previewDecisionError, setPreviewDecisionError] = useState("")
+  const attentionItems = useMemo(() => buildProjectAttention({ project, tasks, jobs, integrations, stages, aiUsage, preview: initialPreview, deploy: initialDeploy }), [aiUsage, initialDeploy, initialPreview, integrations, jobs, project, stages, tasks])
+  const activeJobs = jobs.filter((job) => job.status === "queued" || job.status === "running")
+  const failedJobs = jobs.filter((job) => job.status === "failed" || job.status === "dead_letter")
+  const runStatus = failedTasks.length || failedJobs.length ? "failed" : activeTasks.some((task) => task.status === "running") || activeJobs.some((job) => job.status === "running") ? "running" : activeTasks.length || activeJobs.length ? "queued" : project.status === "deployed" ? "complete" : "idle"
+  const progress = Math.round((completedStages / stages.length) * 100)
+  const primaryAction = resolvePrimaryProjectAction({ projectStatus: project.status, currentStep, failedTasks, activeTasks, intake: initialIntake, generatedCode: initialGeneratedCode, qa: initialQa, preview: initialPreview, deploy: initialDeploy })
+
+  useEffect(() => {
+    if (!requestedView && !requestedStage) {
+      const current = stages.find((stage) => stage.label === currentStep.label)
+      if (current) setActiveStage(current.key)
+    }
+  }, [currentStep.label, requestedStage, requestedView, stages])
+
+  useEffect(() => {
+    if (requestedView) setActiveView(requestedView)
+    if (requestedStage) {
+      setActiveStage(requestedStage)
+      setStagePane(requestedStage, { setQaPane, setLaunchPane })
+    }
+  }, [requestedStage, requestedView])
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "i") {
+        event.preventDefault()
+        setContextOpen((open) => !open)
+      }
+    }
+    window.addEventListener("keydown", onKeyDown)
+    return () => window.removeEventListener("keydown", onKeyDown)
+  }, [])
+
+  useEffect(() => {
+    const item = searchParams.get("item")
+    if (activeView !== "attention" || !item) return
+    window.requestAnimationFrame(() => document.getElementById(item)?.focus({ preventScroll: false }))
+  }, [activeView, searchParams])
+
+  function navigate(view: WorkspaceView, stage?: ProductionStage, extra?: Record<string, string | null>) {
+    setActiveView(view)
+    if (stage) setActiveStage(stage)
+    const params = new URLSearchParams(searchParams.toString())
+    params.set("view", view)
+    if (stage) params.set("stage", stage)
+    else if (view !== "build") params.delete("stage")
+    for (const [key, value] of Object.entries(extra ?? {})) {
+      if (value === null) params.delete(key)
+      else params.set(key, value)
+    }
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+  }
+
+  function selectStage(stage: CockpitStage) {
+    setStagePane(stage.key, { setQaPane, setLaunchPane })
+    navigate(stage.key === "preview" || stage.key === "client-review" ? "preview" : "build", stage.key)
+    setWorkflowOpen(false)
+  }
+
+  async function approvePreview() {
+    if (previewDecisionBusy) return
+    if (project.status !== "preview" && project.status !== "client_review") {
+      setLaunchPane("deploy")
+      navigate("build", "launch")
+      return
+    }
+    setPreviewDecisionBusy(true)
+    setPreviewDecisionError("")
+    const nextStatus = project.status === "preview" ? "client_review" : "ready_to_deploy"
+    try {
+      const response = await fetch(`/api/forge/projects/${projectId}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ status: nextStatus }),
+      })
+      const json = await response.json().catch(() => ({}))
+      if (!response.ok) throw new Error(json.error || "Unable to record preview approval.")
+      router.refresh()
+      if (nextStatus === "ready_to_deploy") {
+        setLaunchPane("deploy")
+        navigate("build", "launch")
+      } else {
+        navigate("preview", "client-review")
+      }
+    } catch (error) {
+      setPreviewDecisionError(error instanceof Error ? error.message : "Unable to record preview approval.")
+    } finally {
+      setPreviewDecisionBusy(false)
+    }
+  }
 
   return (
-    <div
-      className="mx-auto flex h-[calc(100vh-1rem)] w-full max-w-none flex-col overflow-hidden rounded-[8px] border sm:h-[calc(100vh-1.5rem)] lg:h-[calc(100vh-2.5rem)]"
-      style={{
-        borderColor: "rgba(56,189,248,.18)",
-        background: "linear-gradient(135deg, #070b13 0%, #0b1020 48%, #060b10 100%)",
-        boxShadow: "0 24px 80px rgba(0,0,0,.34)",
-      }}
-    >
-      <header className="flex h-[58px] shrink-0 items-center justify-between gap-3 border-b px-3 sm:px-4" style={{ borderColor:"rgba(148,163,184,.14)" }}>
-        <div className="flex min-w-0 items-center gap-3">
-          <Link href="/forge" className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] border" style={{ background:"rgba(15,23,42,.72)", borderColor:"rgba(148,163,184,.16)", color:"#cbd5e1" }} aria-label="Back to Forge projects">
-            <ChevronLeft size={17} aria-hidden="true" />
-          </Link>
-          <div className="min-w-0">
-            <div className="flex min-w-0 items-center gap-2">
-              <h1 className="truncate font-syne text-base font-extrabold text-white sm:text-lg">{project.name}</h1>
-              <div className="hidden shrink-0 items-center gap-2 sm:flex">
-                <Badge value={labelize(project.status ?? "intake")} tone={archived ? "muted" : project.status === "ready_to_deploy" ? "good" : "accent"} />
-                <Badge value={project.priority} tone={project.priority === "high" ? "warn" : project.priority === "low" ? "good" : "muted"} />
-              </div>
-            </div>
-            <p className="truncate font-dm text-xs" style={{ color:"#94a3b8" }}>{project.businessName} / {project.industry ?? "No industry set"}</p>
+    <WorkspaceShell className="forge-workspace forge-project-workspace">
+      <header className="project-workspace-header">
+        <div className="project-header-identity">
+          <Link href="/forge" className="admin-icon-button" aria-label="Back to Forge"><ChevronLeft size={18} aria-hidden="true" /></Link>
+          <div>
+            <p>Forge project</p>
+            <h1>{project.name}</h1>
+            <span>{project.businessName}{project.industry ? ` · ${project.industry}` : ""}</span>
           </div>
         </div>
-
-        <div className="hidden items-center gap-2 lg:flex">
-          <HeaderSignal icon={Gauge} label={`${completedStages}/${stages.length} ready`} tone={completedStages === stages.length ? "green" : "cyan"} />
-          <HeaderSignal icon={ListChecks} label={`${activeTasks.length} active tasks`} tone="violet" />
-          <HeaderSignal icon={Activity} label={`${failedTasks.length} failed`} tone={failedTasks.length ? "amber" : "green"} />
-          <HeaderSignal icon={DollarSign} label={`${formatCost(costQuality.costSoFarUsd)} / ${costQuality.draft.label}`} tone={costQuality.draft.isDraft ? "amber" : "green"} />
+        <div className="project-header-status" role="group" aria-label="Project status">
+          <button type="button" onClick={() => setContextOpen(true)} className="project-status-summary">
+            <span><strong>{currentStep.label}</strong><small>Current stage</small></span>
+            <Badge value={runStatus} tone={runStatus === "failed" ? "bad" : runStatus === "complete" ? "good" : runStatus === "running" ? "accent" : "muted"} />
+          </button>
+          <div className="project-header-progress"><span style={{ width: `${progress}%` }} /><small>{progress}%</small></div>
+          <span className="project-header-cost">{formatCost(aiUsage.totals.estimatedCost)}</span>
         </div>
-
-        {archived && (
-          <div className="inline-flex h-9 shrink-0 items-center gap-2 rounded-full border px-3 font-dm text-xs font-semibold" style={{ background:T.s2, borderColor:T.b1, color:T.t2 }}>
-            <Archive size={14} aria-hidden="true" />
-            Archived
+        <div className="project-header-actions">
+          <button type="button" className="forge-primary-action" onClick={() => navigate(primaryAction.view, primaryAction.stage)}>
+            {primaryAction.label}<ChevronRight size={16} aria-hidden="true" />
+          </button>
+          <button type="button" className="forge-secondary-action project-focus-button" onClick={() => document.querySelector<HTMLButtonElement>(".admin-focus-toggle")?.click()}>
+            <PanelLeftOpen size={16} aria-hidden="true" />Focus Mode
+          </button>
+          <div className="project-overflow">
+            <button type="button" className="admin-icon-button" aria-label="More project actions" aria-expanded={overflowOpen} onClick={() => setOverflowOpen((open) => !open)}><MoreHorizontal size={19} aria-hidden="true" /></button>
+            {overflowOpen && <div className="project-overflow-menu">
+              <button type="button" onClick={() => { navigate("advanced"); setRecordsPane("settings"); setOverflowOpen(false) }}>Project settings</button>
+              <button type="button" onClick={() => { setContextOpen(true); setOverflowOpen(false) }}>Open context <kbd>Ctrl I</kbd></button>
+              <Link href={`/api/forge/ai-usage/export?projectId=${projectId}`}>Export AI usage</Link>
+            </div>}
           </div>
-        )}
+        </div>
       </header>
-      {approvedFallbackTasks.length > 0 && <div className="shrink-0 border-b border-amber-500/30 bg-amber-500/10 px-4 py-2 font-dm text-xs text-amber-200"><strong>Fallback dependency warning:</strong> this project contains human-approved fallback output. Deployment remains subject to the recorded quality approval{approvedFallbackTasks.length > 1 ? "s" : ""}.</div>}
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[300px_minmax(0,1fr)] xl:grid-cols-[300px_minmax(0,1fr)_380px]">
-        <aside className="hidden min-h-0 flex-col border-r p-4 lg:flex" style={{ borderColor:"rgba(148,163,184,.14)" }}>
-          <WorkspaceSidebar
-            project={project}
-            projects={projectSummaries}
-            tasks={tasks}
-            activityLogs={activityLogs}
-            stages={stages}
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-            completedStages={completedStages}
-          />
+      {approvedFallbackTasks.length > 0 && <div className="project-workspace-warning"><strong>Fallback dependency warning:</strong> deployment remains subject to {approvedFallbackTasks.length} recorded quality approval{approvedFallbackTasks.length === 1 ? "" : "s"}.</div>}
+
+      <nav className="project-view-nav" aria-label="Project workspace">
+        <button type="button" className="project-stage-mobile-trigger" onClick={() => setWorkflowOpen(true)}><Workflow size={16} aria-hidden="true" />Stages</button>
+        {WORKSPACE_VIEWS.map(({ key, label, Icon }) => <button key={key} type="button" className={activeView === key ? "is-active" : ""} onClick={() => navigate(key)}><Icon size={16} aria-hidden="true" />{label}{key === "attention" && attentionItems.length > 0 ? <span>{attentionItems.length}</span> : null}</button>)}
+      </nav>
+
+      <div className="project-workspace-body">
+        <aside className="project-stage-rail" aria-label="Production stages">
+          <button type="button" className="project-stage-rail-heading" onClick={() => setWorkflowOpen(true)}><Workflow size={16} aria-hidden="true" /><span>Production journey</span></button>
+          <StageRail stages={stages} activeStage={activeStage} onSelect={selectStage} />
         </aside>
 
-        <main className="flex min-h-0 flex-col p-3 sm:p-4">
-          <div className="mb-3 flex shrink-0 flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="font-dm text-[11px] font-semibold uppercase tracking-[.22em]" style={{ color:"#7dd3fc" }}>AI Build Workspace</p>
-              <h2 className="font-syne text-xl font-extrabold text-white">{tabTitle(activeTab)}</h2>
+        <main className="project-workspace-main">
+          {activeView === "overview" && <div className="project-overview">
+            <section className="operator-summary">
+              <div><p className="workspace-eyebrow">Current run</p><h2>{currentStep.label}</h2><p>{currentStep.detail}</p></div>
+              <div className="operator-summary-actions"><StageBadge status={currentStep.status} /><button type="button" className="forge-primary-action" onClick={() => navigate(primaryAction.view, primaryAction.stage)}>{primaryAction.label}<ChevronRight size={16} aria-hidden="true" /></button></div>
+            </section>
+            {attentionItems[0] && <button type="button" className="project-intervention" onClick={() => navigate("attention", undefined, { item: attentionItems[0].id })}><ShieldCheck size={19} aria-hidden="true" /><span><strong>Intervention required</strong>{attentionItems[0].reason}<small>{attentionItems[0].action}</small></span><ChevronRight size={18} aria-hidden="true" /></button>}
+            <div className="project-overview-grid">
+              <section className="project-overview-section"><div className="project-section-heading"><div><p>Production journey</p><h2>Run timeline</h2></div><span>{completedStages}/{stages.length} complete</span></div><StageTimeline stages={stages} onSelect={selectStage} /></section>
+              <section className="project-overview-section"><div className="project-section-heading"><div><p>Latest meaningful output</p><h2>{artifacts[0]?.title ?? "No output yet"}</h2></div>{artifacts[0] && <Badge value={`v${artifacts[0].version}`} tone="muted" />}</div><p className="project-section-copy">{artifacts[0] ? `${labelize(artifacts[0].type)} · ${labelize(artifacts[0].qualityState)}` : "The first validated production artifact will appear here."}</p>{initialPreview?.url && <button type="button" className="forge-secondary-action" onClick={() => navigate("preview")}>Open preview<Eye size={16} aria-hidden="true" /></button>}</section>
             </div>
-            <div className="flex max-w-full overflow-x-auto rounded-full border p-1" style={{ background:"rgba(15,23,42,.72)", borderColor:"rgba(148,163,184,.16)" }}>
-              {TABS.map(({ key, label, Icon }) => {
-                const active = activeTab === key
-                return (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => setActiveTab(key)}
-                    className="inline-flex h-9 shrink-0 items-center gap-2 rounded-full px-3 font-dm text-xs font-semibold transition-colors"
-                    style={{ background:active ? "#f8fafc" : "transparent", color:active ? "#06121f" : "#94a3b8" }}
-                  >
-                    <Icon size={14} aria-hidden="true" />
-                    {label}
-                  </button>
-                )
-              })}
+            <ForgeCommandChatPanel projectId={projectId} initialChat={initialCommandChat} disabled={archived} />
+            <div className="project-overview-grid">
+              <section className="project-overview-section"><div className="project-section-heading"><div><p>Recent decisions</p><h2>Operator history</h2></div></div><ActivityList rows={activityLogs.slice(0, 4)} /></section>
+              <section className="project-overview-section project-next-stage"><p className="workspace-eyebrow">Next expected stage</p><h2>{nextStage(stages, currentStep)?.label ?? "Production complete"}</h2><p>{nextStage(stages, currentStep)?.detail ?? "No further production stage is pending."}</p><dl><div><dt>Estimated remaining cost</dt><dd>{estimateRemainingCost(aiUsage, progress)}</dd></div><div><dt>Preview</dt><dd>{initialPreview?.status ? labelize(initialPreview.status) : "Not started"}</dd></div></dl></section>
             </div>
-          </div>
+          </div>}
 
-          <div className="mb-3 grid gap-3 xl:hidden">
-            <MobileContextBar
-              currentStep={currentStep}
-              qaStatus={initialQa.status}
-              cost={aiUsage.totals.estimatedCost}
-              activeTasks={activeTasks.length}
-              failedTasks={failedTasks.length}
-            />
-          </div>
+          {activeView === "build" && <div className="stage-workspace">
+            <header className="stage-workspace-header"><div><p className="workspace-eyebrow">Stage {stages.findIndex((stage) => stage.key === activeStage) + 1} of {stages.length}</p><h2>{stages.find((stage) => stage.key === activeStage)?.label}</h2><p>{stages.find((stage) => stage.key === activeStage)?.detail}</p></div><StageBadge status={stages.find((stage) => stage.key === activeStage)?.status ?? "needs_review"} /></header>
+            {activeStage === "brief" && <ForgeIntakeForm projectId={projectId} initialIntake={initialIntake} websiteUrl={project.websiteUrl} />}
+            {activeStage === "research" && <ForgeResearchActions projectId={projectId} disabled={archived} />}
+            {activeStage === "site-plan" && <ForgeSitemapStrategyPanel projectId={projectId} initialState={initialSitemap} disabled={archived} />}
+            {activeStage === "copy" && <ForgeCopyPanel projectId={projectId} initialState={initialCopy} sitemapState={initialSitemap} disabled={archived} />}
+            {activeStage === "design" && <ForgeDesignDirectionPanel projectId={projectId} initialState={initialDesign} copyState={initialCopy} disabled={archived} />}
+            {activeStage === "components" && <ForgeComponentSpecPanel projectId={projectId} initialState={initialComponentSpec} designState={initialDesign} disabled={archived} />}
+            {activeStage === "build" && <div className="grid gap-4"><ForgeWorkspacePanel projectId={projectId} initialWorkspace={initialWorkspace} disabled={archived} /><ForgeGenerateSitePanel projectId={projectId} initialWorkspace={initialWorkspace} componentSpecState={initialComponentSpec} initialGeneratedCode={initialGeneratedCode} disabled={archived} /></div>}
+            {activeStage === "seo" && <ForgeSeoPanel projectId={projectId} initialSeo={initialSeo} sitemapState={initialSitemap} copyState={initialCopy} disabled={archived} />}
+            {activeStage === "quality" && <SectionDeck options={[{ key:"critique", label:"Critique", Icon:Eye }, { key:"checks", label:"Checks", Icon:ShieldCheck }, { key:"visual", label:"Visual QA", Icon:Monitor }, { key:"cost", label:"Cost / Quality", Icon:DollarSign }]} active={qaPane} onChange={setQaPane}>
+              {qaPane === "critique" && <ForgeVisualCritiquePanel projectId={projectId} initialDesign={initialDesign} initialCopy={initialCopy} initialComponentSpec={initialComponentSpec} initialGeneratedCode={initialGeneratedCode} initialCritique={initialVisualCritique} disabled={archived} />}
+              {qaPane === "checks" && <ForgeQaPanel projectId={projectId} initialWorkspace={initialWorkspace} initialGeneratedCode={initialGeneratedCode} initialVisualCritique={initialVisualCritique} initialQa={initialQa} disabled={archived} />}
+              {qaPane === "visual" && <ForgeVisualQaPanel projectId={projectId} initialWorkspace={initialWorkspace} initialGeneratedCode={initialGeneratedCode} initialVisualQa={initialVisualQa} disabled={archived} />}
+              {qaPane === "cost" && <ForgeCostQualityPanel costQuality={costQuality} />}
+            </SectionDeck>}
+            {(activeStage === "preview" || activeStage === "client-review") && <ForgePreviewRail projectId={projectId} initialWorkspace={initialWorkspace} initialGeneratedCode={initialGeneratedCode} initialPreview={initialPreview} disabled={archived} />}
+            {activeStage === "launch" && <SectionDeck options={[{ key:"proposal", label:"Proposal", Icon:FileText }, { key:"estimate", label:"Estimate", Icon:DollarSign }, { key:"export", label:"Export", Icon:Archive }, { key:"deploy", label:"Deploy", Icon:Rocket }]} active={launchPane} onChange={setLaunchPane}>
+              {launchPane === "proposal" && <ForgeProposalPanel projectId={projectId} initialProposal={initialProposal} intakeReady={(initialIntake.completenessScore ?? 0) > 0} disabled={archived} />}
+              {launchPane === "estimate" && <ForgeEstimatorPanel projectId={projectId} initialEstimate={latestEstimate} disabled={archived} />}
+              {launchPane === "export" && <ForgeExportPanel projectId={projectId} initialExport={initialExport} siteReady={initialGeneratedCode.status === "generated"} proposalReady={initialProposal.status === "generated"} disabled={archived} />}
+              {launchPane === "deploy" && <ForgeDeployPanel projectId={projectId} initialDeploy={initialDeploy} siteReady={initialGeneratedCode.status === "generated"} disabled={archived} />}
+            </SectionDeck>}
+            <details className="stage-technical-details"><summary>Technical details and provenance</summary><TaskList rows={tasks.filter((task) => stageAgentTypes(activeStage).includes(task.agentType))} /></details>
+          </div>}
 
-          <section className="min-h-0 flex-1 overflow-hidden rounded-[8px] border" style={{ background:T.s1, borderColor:T.b1 }}>
-            <div className="h-full overflow-auto p-3 sm:p-4">
-              {activeTab === "command" && (
-                <div className="grid gap-4">
-                  <ForgeCommandChatPanel projectId={projectId} initialChat={initialCommandChat} disabled={archived} />
-                  <ForgeArtifactTabs artifacts={artifacts} />
-                </div>
-              )}
+          {activeView === "preview" && <div className="preview-workspace">
+            <div className="preview-workspace-toolbar"><div><p className="workspace-eyebrow">Generated site</p><h2>Review preview</h2></div><div><button type="button" className="forge-secondary-action" onClick={() => { setQaPane("visual"); navigate("build", "quality") }}><Monitor size={16} aria-hidden="true" />Capture screenshots</button><button type="button" className="forge-secondary-action" onClick={() => setPreviewContextOpen((open) => !open)}><PanelRightOpen size={16} aria-hidden="true" />{previewContextOpen ? "Hide feedback" : "Feedback"}</button></div></div>
+            <div className={previewContextOpen ? "preview-workspace-grid is-split" : "preview-workspace-grid"}><ForgePreviewRail projectId={projectId} initialWorkspace={initialWorkspace} initialGeneratedCode={initialGeneratedCode} initialPreview={initialPreview} disabled={archived} />{previewContextOpen && <aside className="preview-feedback"><h2>Preview feedback</h2><p>Record approval or requested changes through the project command surface.</p><ForgeCommandChatPanel projectId={projectId} initialChat={initialCommandChat} disabled={archived} /></aside>}</div>
+            {previewDecisionError && <div className="inline-alert tone-danger" role="alert">{previewDecisionError}</div>}
+            <div className="preview-decision-bar"><button type="button" className="forge-secondary-action" onClick={() => setPreviewContextOpen(true)}>Request changes</button><button type="button" className="forge-primary-action" disabled={previewDecisionBusy} onClick={() => void approvePreview()}>{project.status === "client_review" ? "Approve for launch" : "Approve preview"}<CheckCircle2 size={16} aria-hidden="true" /></button></div>
+          </div>}
 
-              {activeTab === "intake" && (
-                <SectionDeck
-                  options={[
-                    { key: "brief", label: "Brief", Icon: FileText },
-                    { key: "settings", label: "Settings", Icon: Settings2 },
-                  ]}
-                  active={intakePane}
-                  onChange={setIntakePane}
-                >
-                  {intakePane === "brief" && <ForgeIntakeForm projectId={projectId} initialIntake={initialIntake} websiteUrl={project.websiteUrl} />}
-                  {intakePane === "settings" && (
-                    <Panel title="Project Settings" icon={Settings2}>
-                      <ForgeProjectForm mode="edit" project={project} />
-                    </Panel>
-                  )}
-                </SectionDeck>
-              )}
+          {activeView === "attention" && <div className="project-attention-view"><header><p className="workspace-eyebrow">Interventions</p><h2>Needs attention</h2><p>Failures, approvals and production blockers for this project.</p></header>{attentionItems.length ? attentionItems.map((item) => <article key={item.id} id={item.id} tabIndex={-1} className="project-attention-item"><span className={`tone-${item.severity}`}><ShieldCheck size={18} aria-hidden="true" /></span><div><div><h3>{item.title}</h3><Badge value={item.severity} tone={item.severity === "critical" || item.severity === "high" ? "bad" : "warn"} /></div><p>{item.reason}</p><small>{item.action}</small><details><summary>Technical details</summary><code>{item.technicalReference}</code></details></div><div className="flex flex-wrap gap-2">{item.jobId && item.availableActions.includes("retry") ? <ProjectJobAction jobId={item.jobId} action="retry" /> : null}{item.jobId && item.availableActions.includes("cancel") ? <ProjectJobAction jobId={item.jobId} action="cancel" /> : null}<button type="button" className="forge-row-action" onClick={() => navigate(item.view, item.stage)}>{item.actionLabel}<ChevronRight size={15} aria-hidden="true" /></button></div></article>) : <div className="attention-clear"><CheckCircle2 size={20} aria-hidden="true" />No recorded blocker requires intervention.</div>}</div>}
 
-              {activeTab === "strategy" && (
-                <SectionDeck
-                  options={[
-                    { key: "research", label: "Research", Icon: Brain },
-                    { key: "sitemap", label: "Sitemap", Icon: Workflow },
-                    { key: "copy", label: "Copy", Icon: FileText },
-                    { key: "design", label: "Design", Icon: Monitor },
-                    { key: "spec", label: "Spec", Icon: Box },
-                  ]}
-                  active={strategyPane}
-                  onChange={setStrategyPane}
-                >
-                  {strategyPane === "research" && <ForgeResearchActions projectId={projectId} disabled={archived} />}
-                  {strategyPane === "sitemap" && <ForgeSitemapStrategyPanel projectId={projectId} initialState={initialSitemap} disabled={archived} />}
-                  {strategyPane === "copy" && <ForgeCopyPanel projectId={projectId} initialState={initialCopy} sitemapState={initialSitemap} disabled={archived} />}
-                  {strategyPane === "design" && <ForgeDesignDirectionPanel projectId={projectId} initialState={initialDesign} copyState={initialCopy} disabled={archived} />}
-                  {strategyPane === "spec" && <ForgeComponentSpecPanel projectId={projectId} initialState={initialComponentSpec} designState={initialDesign} disabled={archived} />}
-                </SectionDeck>
-              )}
-
-              {activeTab === "build" && (
-                <SectionDeck
-                  options={[
-                    { key: "workspace", label: "Workspace", Icon: Box },
-                    { key: "integrations", label: "Integrations", Icon: Link2 },
-                    { key: "generate", label: "Generate", Icon: Code2 },
-                    { key: "seo", label: "SEO", Icon: Globe2 },
-                  ]}
-                  active={buildPane}
-                  onChange={setBuildPane}
-                >
-                  {buildPane === "workspace" && <ForgeWorkspacePanel projectId={projectId} initialWorkspace={initialWorkspace} disabled={archived} />}
-                  {buildPane === "integrations" && (
-                    <TabGrid>
-                      <ForgeResendConfigPanel projectId={projectId} initialConfig={initialResendConfig} disabled={archived} />
-                      <ForgeWhatsAppConfigPanel projectId={projectId} initialConfig={initialWhatsAppConfig} disabled={archived} />
-                    </TabGrid>
-                  )}
-                  {buildPane === "generate" && (
-                    <ForgeGenerateSitePanel
-                      projectId={projectId}
-                      initialWorkspace={initialWorkspace}
-                      componentSpecState={initialComponentSpec}
-                      initialGeneratedCode={initialGeneratedCode}
-                      disabled={archived}
-                    />
-                  )}
-                  {buildPane === "seo" && <ForgeSeoPanel projectId={projectId} initialSeo={initialSeo} sitemapState={initialSitemap} copyState={initialCopy} disabled={archived} />}
-                </SectionDeck>
-              )}
-
-              {activeTab === "qa" && (
-                <SectionDeck
-                  options={[
-                    { key: "critique", label: "Critique", Icon: Eye },
-                    { key: "checks", label: "Checks", Icon: ShieldCheck },
-                    { key: "visual", label: "Visual QA", Icon: Monitor },
-                    { key: "cost", label: "Cost / Quality", Icon: DollarSign },
-                  ]}
-                  active={qaPane}
-                  onChange={setQaPane}
-                >
-                  {qaPane === "critique" && (
-                    <ForgeVisualCritiquePanel
-                      projectId={projectId}
-                      initialDesign={initialDesign}
-                      initialCopy={initialCopy}
-                      initialComponentSpec={initialComponentSpec}
-                      initialGeneratedCode={initialGeneratedCode}
-                      initialCritique={initialVisualCritique}
-                      disabled={archived}
-                    />
-                  )}
-                  {qaPane === "checks" && <ForgeQaPanel projectId={projectId} initialWorkspace={initialWorkspace} initialGeneratedCode={initialGeneratedCode} initialVisualCritique={initialVisualCritique} initialQa={initialQa} disabled={archived} />}
-                  {qaPane === "visual" && <ForgeVisualQaPanel projectId={projectId} initialWorkspace={initialWorkspace} initialGeneratedCode={initialGeneratedCode} initialVisualQa={initialVisualQa} disabled={archived} />}
-                  {qaPane === "cost" && <ForgeCostQualityPanel costQuality={costQuality} />}
-                </SectionDeck>
-              )}
-
-              {activeTab === "launch" && (
-                <SectionDeck
-                  options={[
-                    { key: "proposal", label: "Proposal", Icon: FileText },
-                    { key: "estimate", label: "Estimate", Icon: DollarSign },
-                    { key: "export", label: "Export", Icon: Archive },
-                    { key: "deploy", label: "Deploy", Icon: Rocket },
-                  ]}
-                  active={launchPane}
-                  onChange={setLaunchPane}
-                >
-                  {launchPane === "proposal" && <ForgeProposalPanel projectId={projectId} initialProposal={initialProposal} intakeReady={(initialIntake.completenessScore ?? 0) > 0} disabled={archived} />}
-                  {launchPane === "estimate" && <ForgeEstimatorPanel projectId={projectId} initialEstimate={latestEstimate} disabled={archived} />}
-                  {launchPane === "export" && (
-                    <ForgeExportPanel
-                      projectId={projectId}
-                      initialExport={initialExport}
-                      siteReady={initialGeneratedCode.status === "generated"}
-                      proposalReady={initialProposal.status === "generated"}
-                      disabled={archived}
-                    />
-                  )}
-                  {launchPane === "deploy" && <ForgeDeployPanel projectId={projectId} initialDeploy={initialDeploy} siteReady={initialGeneratedCode.status === "generated"} disabled={archived} />}
-                </SectionDeck>
-              )}
-
-              {activeTab === "records" && (
-                <SectionDeck
-                  options={[
-                    { key: "tasks", label: "Tasks", Icon: ListChecks },
-                    { key: "activity", label: "Activity", Icon: Activity },
-                    { key: "usage", label: "AI Usage", Icon: DollarSign },
-                    { key: "memory", label: "Memory", Icon: Brain },
-                    { key: "integrations", label: "Integrations", Icon: Link2 },
-                    { key: "details", label: "Details", Icon: Box },
-                  ]}
-                  active={recordsPane}
-                  onChange={setRecordsPane}
-                >
-                  {recordsPane === "tasks" && <Panel title="Tasks" icon={ListChecks}><TaskList rows={tasks} /></Panel>}
-                  {recordsPane === "activity" && <Panel title="Activity Log" icon={Activity}><ActivityList rows={activityLogs} /></Panel>}
-                  {recordsPane === "usage" && <Panel title="AI Usage" icon={DollarSign}><AiUsagePanel projectId={projectId} usage={aiUsage} /></Panel>}
-                  {recordsPane === "memory" && <Panel title="Project Memory" icon={Brain}><MemoryList rows={memories} /></Panel>}
-                  {recordsPane === "integrations" && <Panel title="Integrations" icon={Link2}><IntegrationList rows={integrations} /></Panel>}
-                  {recordsPane === "details" && <Panel title="Core Details" icon={Box}><DetailGrid project={project} /></Panel>}
-                </SectionDeck>
-              )}
-            </div>
-          </section>
+          {activeView === "advanced" && <SectionDeck options={[{ key:"tasks", label:"Tasks", Icon:ListChecks }, { key:"activity", label:"Activity", Icon:Activity }, { key:"usage", label:"AI Usage", Icon:DollarSign }, { key:"memory", label:"Memory", Icon:Brain }, { key:"integrations", label:"Integrations", Icon:Link2 }, { key:"artifacts", label:"Artifacts", Icon:Archive }, { key:"technical", label:"Technical QA", Icon:ShieldCheck }, { key:"settings", label:"Settings", Icon:Settings2 }, { key:"details", label:"Metadata", Icon:Box }]} active={recordsPane} onChange={setRecordsPane}>
+            {recordsPane === "tasks" && <Panel title="Raw Tasks" icon={ListChecks}><TaskList rows={tasks} /></Panel>}
+            {recordsPane === "activity" && <Panel title="Activity Log" icon={Activity}><ActivityList rows={activityLogs} /></Panel>}
+            {recordsPane === "usage" && <Panel title="AI Usage and Providers" icon={DollarSign}><AiUsagePanel projectId={projectId} usage={aiUsage} /></Panel>}
+            {recordsPane === "memory" && <Panel title="Project Memory" icon={Brain}><MemoryList rows={memories} /></Panel>}
+            {recordsPane === "integrations" && <div className="grid gap-4"><Panel title="Integration Records" icon={Link2}><IntegrationList rows={integrations} /></Panel><TabGrid><ForgeResendConfigPanel projectId={projectId} initialConfig={initialResendConfig} disabled={archived} /><ForgeWhatsAppConfigPanel projectId={projectId} initialConfig={initialWhatsAppConfig} disabled={archived} /></TabGrid></div>}
+            {recordsPane === "artifacts" && <ForgeArtifactTabs artifacts={artifacts} />}
+            {recordsPane === "technical" && <div className="grid gap-4"><ForgeVisualQaPanel projectId={projectId} initialWorkspace={initialWorkspace} initialGeneratedCode={initialGeneratedCode} initialVisualQa={initialVisualQa} disabled={archived} /><ForgeCostQualityPanel costQuality={costQuality} /></div>}
+            {recordsPane === "settings" && <Panel title="Project Settings" icon={Settings2}><ForgeProjectForm mode="edit" project={project} /></Panel>}
+            {recordsPane === "details" && <Panel title="System Metadata" icon={Box}><DetailGrid project={project} /></Panel>}
+          </SectionDeck>}
         </main>
-
-        <aside className="hidden min-h-0 border-l p-4 xl:block" style={{ borderColor:"rgba(148,163,184,.14)" }}>
-          <div className="h-full overflow-auto">
-            <LiveContextRail
-              stages={stages}
-              activeTasks={activeTasks}
-              failedTasks={failedTasks}
-              artifacts={artifacts}
-              design={initialDesign}
-              qa={initialQa}
-              generatedCode={initialGeneratedCode}
-              aiUsage={aiUsage}
-            />
-            <div className="mt-4">
-              <ForgePreviewRail
-              projectId={projectId}
-              initialWorkspace={initialWorkspace}
-              initialGeneratedCode={initialGeneratedCode}
-              initialPreview={initialPreview}
-              disabled={archived}
-              />
-            </div>
-          </div>
-        </aside>
       </div>
 
-      <StatusDock
-        currentStep={currentStep}
-        aiUsage={aiUsage}
-        activeTasks={activeTasks}
-        failedTasks={failedTasks}
-        qa={initialQa}
-        visualCritique={initialVisualCritique}
-      />
-    </div>
+      <ContextDrawer open={workflowOpen} title="Production stages" onClose={() => setWorkflowOpen(false)}><StageRail stages={stages} activeStage={activeStage} onSelect={selectStage} /></ContextDrawer>
+      <DetailDrawer open={contextOpen} title="Project context" onClose={() => setContextOpen(false)}><LiveContextRail stages={stages} activeTasks={activeTasks} failedTasks={failedTasks} artifacts={artifacts} design={initialDesign} qa={initialQa} generatedCode={initialGeneratedCode} aiUsage={aiUsage} /></DetailDrawer>
+      {activeTasks.length + activeJobs.length > 0 && <div className="project-active-run-strip"><span className="system-health-dot tone-success" /><strong>{activeTasks.length + activeJobs.length} active</strong><span>{activeTasks[0]?.title ?? labelize(activeJobs[0]?.kind ?? "Forge job")}</span><button type="button" onClick={() => setContextOpen(true)}>View run</button></div>}
+    </WorkspaceShell>
   )
 }
 
-type CockpitStageStatus = "approved" | "needs_review" | "failed" | "running" | "complete"
+type CockpitStageStatus = "approved" | "needs_review" | "failed" | "running" | "complete" | "pending" | "skipped"
 
 interface CockpitStage {
+  key: ProductionStage
   label: string
   status: CockpitStageStatus
   detail: string
   tab: ProjectTab
+}
+
+interface ProjectAttentionItem {
+  id: string
+  title: string
+  reason: string
+  action: string
+  actionLabel: string
+  severity: "critical" | "high" | "medium"
+  view: WorkspaceView
+  stage?: ProductionStage
+  availableActions: Array<"retry" | "retry_fallback" | "cancel" | "approve" | "configure" | "open">
+  jobId: number | null
+  technicalReference: string
+}
+
+function StageRail({ stages, activeStage, onSelect }: { stages: CockpitStage[]; activeStage: ProductionStage; onSelect: (stage: CockpitStage) => void }) {
+  return <ol className="production-stage-list">{stages.map((stage, index) => <li key={stage.key}><button type="button" className={activeStage === stage.key ? "is-active" : ""} onClick={() => onSelect(stage)} aria-current={activeStage === stage.key ? "step" : undefined}><span className={`stage-state tone-${stage.status}`} aria-hidden="true">{index + 1}</span><span><strong>{stage.label}</strong><small>{labelize(stage.status)}</small></span></button></li>)}</ol>
+}
+
+function StageTimeline({ stages, onSelect }: { stages: CockpitStage[]; onSelect: (stage: CockpitStage) => void }) {
+  return <ol className="project-stage-timeline">{stages.map((stage) => <li key={stage.key}><button type="button" onClick={() => onSelect(stage)}><span className={`stage-state tone-${stage.status}`} /><span><strong>{stage.label}</strong><small>{stage.detail}</small></span><StageBadge status={stage.status} /></button></li>)}</ol>
+}
+
+function parseWorkspaceView(value: string | null): WorkspaceView | null {
+  return value && WORKSPACE_VIEWS.some((item) => item.key === value) ? value as WorkspaceView : null
+}
+
+function parseProductionStage(value: string | null): ProductionStage | null {
+  const stages: ProductionStage[] = ["brief", "research", "site-plan", "copy", "design", "components", "build", "seo", "quality", "preview", "client-review", "launch"]
+  return value && stages.includes(value as ProductionStage) ? value as ProductionStage : null
+}
+
+function setStagePane(stage: ProductionStage, setters: { setQaPane: (value: QaPane) => void; setLaunchPane: (value: LaunchPane) => void }) {
+  if (stage === "quality") setters.setQaPane("checks")
+  if (stage === "launch") setters.setLaunchPane("deploy")
+}
+
+function stageAgentTypes(stage: ProductionStage): ForgeTaskAgentType[] {
+  const mapping: Record<ProductionStage, ForgeTaskAgentType[]> = {
+    brief: ["intake"],
+    research: ["research"],
+    "site-plan": ["strategy", "sitemap"],
+    copy: ["copy"],
+    design: ["design"],
+    components: ["design"],
+    build: ["frontend"],
+    seo: ["seo"],
+    quality: ["qa", "repair"],
+    preview: [],
+    "client-review": [],
+    launch: ["deploy"],
+  }
+  return mapping[stage]
+}
+
+function buildProjectAttention({
+  project,
+  tasks,
+  jobs,
+  integrations,
+  stages,
+  aiUsage,
+  preview,
+  deploy,
+}: {
+  project: ForgeProjectFormValue
+  tasks: ForgeTaskRow[]
+  jobs: ForgeJobRow[]
+  integrations: ForgeIntegrationRow[]
+  stages: CockpitStage[]
+  aiUsage: ForgeAiUsageMetrics
+  preview: ForgePreviewState | null
+  deploy: ForgeDeployArtifactState
+}): ProjectAttentionItem[] {
+  const projectId = project.id
+  if (!projectId) return []
+  const errors: Array<{ projectId: number; error: ReturnType<typeof normalizeForgeOperatorError> }> = []
+  for (const task of tasks) {
+    const stage = stageForAgent(task.agentType)
+    if (task.status === "failed") errors.push({ projectId, error: normalizeForgeOperatorError(task.description ?? `${task.title} failed.`, { stage, category: task.agentType === "qa" ? "quality_failure" : task.agentType === "deploy" ? "deployment_blocked" : undefined, retryable: task.agentType !== "deploy", technicalReference: `forge:task:${task.id}`, timestamp: new Date(task.createdAt), metadata: { taskId: task.id, provider: task.providerAttempted } }) })
+    else if (task.humanApprovalRequired && !task.qualityApprovedAt) errors.push({ projectId, error: normalizeForgeOperatorError(`${task.title} is waiting for a recorded decision.`, { stage, category: "approval_required", retryable: false, technicalReference: `forge:task:${task.id}:approval`, timestamp: new Date(task.createdAt) }) })
+    if (task.publicationBlocked) errors.push({ projectId, error: normalizeForgeOperatorError(`${task.title} currently blocks publication.`, { stage: "quality", category: "deployment_blocked", retryable: false, technicalReference: `forge:task:${task.id}:publication`, timestamp: new Date(task.createdAt) }) })
+  }
+  if (stages.find((stage) => stage.key === "preview")?.status === "failed" || preview?.status === "failed") errors.push({ projectId, error: normalizeForgeOperatorError(preview?.error ?? "The generated-site preview did not start.", { stage: "preview", category: "workspace_error", technicalReference: `forge:project:${projectId}:preview` }) })
+  if (aiUsage.budget.project.blocked || aiUsage.budget.monthly.blocked) errors.push({ projectId, error: normalizeForgeOperatorError("Further AI work is blocked by a configured budget limit.", { stage: "budget", category: "budget_exceeded", retryable: false, technicalReference: `forge:project:${projectId}:budget` }) })
+  if (!integrations.some((integration) => integration.enabled) && stages.find((stage) => stage.key === "launch")?.status !== "pending") errors.push({ projectId, error: normalizeForgeOperatorError("No enabled project integration is recorded.", { stage: "launch", category: "integration_missing", retryable: false, technicalReference: `forge:project:${projectId}:integration` }) })
+  if (deploy.notes && !deploy.ready && deploy.notes.readiness.failed.length) errors.push({ projectId, error: normalizeForgeOperatorError(deploy.notes.readiness.failed.join(" "), { stage: "launch", category: "deployment_blocked", retryable: false, technicalReference: `forge:project:${projectId}:deployment` }) })
+  const healthJobs: ForgeHealthJob[] = jobs.map((job) => ({ id: job.id, projectId, kind: job.kind, stage: job.kind, status: job.status, attempts: 0, maxAttempts: 3, scheduledAt: job.scheduledAt, heartbeatAt: job.heartbeatAt, completedAt: ["failed", "dead_letter"].includes(job.status) ? job.updatedAt : null, failureReason: job.error }))
+  return deriveForgeAttentionItems({ projects: [{ id: projectId, name: project.name, businessName: project.businessName }], jobs: healthJobs, errors }).map((item) => ({
+    id: item.id,
+    title: attentionTitle(item.category),
+    reason: item.explanation,
+    action: item.recommendedAction,
+    actionLabel: item.availableActions.includes("approve") ? "Review output" : item.availableActions.includes("configure") ? "Configure" : item.availableActions.includes("retry") ? "Retry safely" : "Open details",
+    severity: item.severity === "low" ? "medium" : item.severity,
+    view: item.category === "workspace_error" ? "preview" : item.category === "approval_required" || item.category === "quality_failure" || item.category === "deployment_blocked" ? "build" : "advanced",
+    stage: productionStage(item.stage),
+    availableActions: item.availableActions,
+    jobId: item.technicalDetails.jobId,
+    technicalReference: item.technicalDetails.reference,
+  }))
+}
+
+function ProjectJobAction({ jobId, action }: { jobId: number; action: "retry" | "cancel" }) {
+  const [busy, setBusy] = useState(false)
+  const run = async () => {
+    setBusy(true)
+    const response = await fetch(`/api/forge/jobs/${jobId}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action }) })
+    if (response.ok) window.location.reload()
+    setBusy(false)
+  }
+  return <button type="button" disabled={busy} className="forge-row-action" onClick={() => void run()}>{busy ? "Working…" : labelize(action)}</button>
+}
+
+function attentionTitle(category: string) {
+  return labelize(category === "quality_failure" ? "Quality check failed" : category)
+}
+
+function productionStage(stage: string | null): ProductionStage | undefined {
+  return stage && ["brief", "research", "site-plan", "copy", "design", "components", "build", "seo", "quality", "preview", "client-review", "launch"].includes(stage)
+    ? stage as ProductionStage
+    : undefined
+}
+
+function stageForAgent(agent: ForgeTaskAgentType): ProductionStage {
+  if (agent === "intake") return "brief"
+  if (agent === "research") return "research"
+  if (agent === "strategy" || agent === "sitemap") return "site-plan"
+  if (agent === "copy") return "copy"
+  if (agent === "design") return "design"
+  if (agent === "frontend") return "build"
+  if (agent === "seo") return "seo"
+  if (agent === "qa" || agent === "repair") return "quality"
+  if (agent === "deploy") return "launch"
+  return "build"
+}
+
+function resolvePrimaryProjectAction(input: {
+  projectStatus: ForgeProjectFormValue["status"]
+  currentStep: CockpitStage
+  failedTasks: ForgeTaskRow[]
+  activeTasks: ForgeTaskRow[]
+  intake: ForgeIntakeState
+  generatedCode: ForgeGeneratedCodeArtifactState
+  qa: ForgeQaArtifactState
+  preview: ForgePreviewState | null
+  deploy: ForgeDeployArtifactState
+}): { label: string; view: WorkspaceView; stage?: ProductionStage } {
+  if (input.failedTasks.length) return { label:"Resolve Failure", view:"attention" }
+  if (input.activeTasks.length) return { label:"Continue Run", view:"build", stage:input.currentStep.key }
+  if (input.deploy.ready || input.projectStatus === "ready_to_deploy") return { label:"Deploy", view:"build", stage:"launch" }
+  if (input.qa.status === "passed" && input.preview?.status === "running") return { label:"Approve for Launch", view:"preview", stage:"client-review" }
+  if (input.generatedCode.status === "generated") return { label:"Review Preview", view:"preview", stage:"preview" }
+  if (input.intake.status !== "completed") return { label:"Approve Brief", view:"build", stage:"brief" }
+  if (input.projectStatus === "build") return { label:"Continue Run", view:"build", stage:input.currentStep.key }
+  return { label:"Start Build", view:"build", stage:input.currentStep.key }
+}
+
+function nextStage(stages: CockpitStage[], current: CockpitStage) {
+  const index = stages.findIndex((stage) => stage.key === current.key)
+  return stages[index + 1] ?? null
+}
+
+function estimateRemainingCost(usage: ForgeAiUsageMetrics, progress: number) {
+  if (progress <= 0 || usage.totals.estimatedCost <= 0) return "Not enough run data"
+  return formatCost(Math.max(0, usage.totals.estimatedCost * ((100 - progress) / progress)))
 }
 
 function WorkspaceSidebar({
@@ -728,7 +853,7 @@ function ProjectSummary({ project, completedStages, totalStages }: { project: Fo
         <div className="mb-4 flex items-center justify-between gap-3">
           <div>
             <p className="font-dm text-[11px] font-semibold uppercase tracking-[.22em]" style={{ color:"#7dd3fc" }}>Live Run</p>
-            <h2 className="mt-1 truncate font-syne text-2xl font-extrabold leading-none text-white">{project.businessName}</h2>
+            <h2 className="mt-1 font-syne text-2xl font-extrabold leading-tight text-white">{project.businessName}</h2>
           </div>
           <Monitor size={20} style={{ color:"#22d3ee" }} aria-hidden="true" />
         </div>
@@ -1052,6 +1177,7 @@ function buildStageTimeline({
   deploy,
   tasks,
   artifacts,
+  projectStatus,
 }: {
   intake: ForgeIntakeState
   sitemap: ForgeSitemapArtifactState
@@ -1065,6 +1191,7 @@ function buildStageTimeline({
   deploy: ForgeDeployArtifactState
   tasks: ForgeTaskRow[]
   artifacts: ForgeArtifactRow[]
+  projectStatus: ForgeProjectFormValue["status"]
 }): CockpitStage[] {
   const strategyStatus = sitemap.status === "approved" ? "approved" : sitemap.status === "draft" ? "needs_review" : stageTaskStatus(tasks, ["strategy", "sitemap"], "needs_review")
   const copyStatus = copy.status === "approved" ? "approved" : copy.status === "draft" ? "needs_review" : stageTaskStatus(tasks, ["copy"], "needs_review")
@@ -1072,93 +1199,89 @@ function buildStageTimeline({
   const buildStatus = generatedCode.status === "generated" ? "complete" : stageTaskStatus(tasks, ["frontend"], "needs_review")
   const critiqueStatus = visualCritique.status === "approved" ? "approved" : visualCritique.status === "draft" ? "needs_review" : stageTaskStatus(tasks, ["qa"], "needs_review")
   const qaStatus = qa.status === "passed" ? "complete" : qa.status === "failed" ? "failed" : stageTaskStatus(tasks, ["qa", "repair"], "needs_review")
-  const repairStatus = qa.status === "failed"
-    ? stageTaskStatus(tasks, ["repair"], "failed")
-    : qa.report?.repairHistory.length ? "complete" : buildStatus === "complete" ? "needs_review" : stageTaskStatus(tasks, ["repair"], "needs_review")
-
   return [
     {
-      label: "Intake",
+      key: "brief",
+      label: "Brief",
       status: intake.status === "completed" ? "approved" : (intake.completenessScore ?? 0) > 0 ? "needs_review" : stageTaskStatus(tasks, ["intake"], "needs_review"),
       detail: `${intake.completenessScore ?? 0}% complete`,
       tab: "intake",
     },
     {
-      label: "Strategy selection",
+      key: "research",
+      label: "Research",
       status: stageArtifactStatus(tasks, artifacts, ["research"], ["research_report"]),
       detail: "Industry and site-type strategy pack",
       tab: "strategy",
     },
     {
-      label: "Brief confirmation",
-      status: intake.status === "completed" && strategyStatus !== "needs_review" ? "approved" : strategyStatus,
-      detail: "Structured build brief confirmed",
-      tab: "strategy",
-    },
-    {
+      key: "site-plan",
       label: "Site plan",
       status: strategyStatus,
       detail: sitemap.approvedStrategy ? `${sitemap.approvedStrategy.sitemap.length} planned page${sitemap.approvedStrategy.sitemap.length === 1 ? "" : "s"}` : "Sitemap and section plan",
       tab: "strategy",
     },
     {
-      label: "Design tokens",
-      status: designStatus,
-      detail: design.approvedDirection ? design.approvedDirection.selectedStylePack : "Style pack, motion, and locked tokens",
-      tab: "strategy",
-    },
-    {
-      label: "Code generation",
-      status: buildStatus,
-      detail: generatedCode.summary ? `${generatedCode.summary.fileCount} generated files` : "Generated site workspace",
-      tab: "build",
-    },
-    {
-      label: "Copy generation",
+      key: "copy",
+      label: "Copy",
       status: copyStatus,
       detail: copy.approvedCopy ? `${copy.approvedCopy.pages.length} approved page${copy.approvedCopy.pages.length === 1 ? "" : "s"}` : "Page copy and CTA language",
       tab: "strategy",
     },
     {
-      label: "SEO/schema generation",
+      key: "design",
+      label: "Design",
+      status: designStatus,
+      detail: design.approvedDirection ? design.approvedDirection.selectedStylePack : "Direction, tokens and motion",
+      tab: "strategy",
+    },
+    {
+      key: "components",
+      label: "Components",
+      status: stageArtifactStatus(tasks, artifacts, ["design"], ["component_spec"]),
+      detail: "Reusable component specification",
+      tab: "strategy",
+    },
+    {
+      key: "build",
+      label: "Build",
+      status: buildStatus,
+      detail: generatedCode.summary ? `${generatedCode.summary.fileCount} generated files` : "Generated site workspace",
+      tab: "build",
+    },
+    {
+      key: "seo",
+      label: "SEO",
       status: seo.status === "generated" ? "complete" : stageTaskStatus(tasks, ["seo"], "needs_review"),
       detail: seo.score ? `SEO/AEO/GEO ${seo.score.overall}/100` : "Metadata and JSON-LD",
       tab: "build",
     },
     {
-      label: "Internal critique",
-      status: visualCritique.report && forgeCritiqueHasLowScore(visualCritique.report) && !visualCritique.autoFixAppliedAt ? "running" : critiqueStatus,
-      detail: visualCritique.score === null ? "Brand, content, SEO, mobile, and readiness scoring" : `Score ${visualCritique.score}/100`,
+      key: "quality",
+      label: "Quality",
+      status: qaStatus === "needs_review" ? critiqueStatus : qaStatus,
+      detail: qa.report ? `${qa.report.commands.length} mandatory checks` : visualCritique.score === null ? "Critique, QA and repair" : `Critique ${visualCritique.score}/100`,
       tab: "qa",
     },
     {
-      label: "Design critique",
-      status: visualCritique.report && visualCritique.report.scores.visualQuality < 75 && !visualCritique.autoFixAppliedAt ? "running" : critiqueStatus,
-      detail: visualCritique.report ? `Visual quality ${visualCritique.report.scores.visualQuality}/100` : "Visual alignment and design quality",
-      tab: "qa",
+      key: "preview",
+      label: "Preview",
+      status: preview?.status === "running" ? "running" : preview?.status === "failed" ? "failed" : qa.status === "passed" ? "needs_review" : "pending",
+      detail: preview?.url ?? "Generated-site preview",
+      tab: "launch",
     },
     {
-      label: "Copy rewrite",
-      status: copyStatus === "approved" && visualCritique.report && visualCritique.report.scores.contentSpecificity < 75 && !visualCritique.autoFixAppliedAt ? "running" : copyStatus,
-      detail: visualCritique.report?.scores.contentSpecificity !== undefined ? `Specificity ${visualCritique.report.scores.contentSpecificity}/100` : "Rewrite if critique finds generic copy",
-      tab: "strategy",
+      key: "client-review",
+      label: "Client review",
+      status: projectStatus === "client_review" ? "running" : ["ready_to_deploy", "deployed"].includes(projectStatus ?? "") ? "complete" : "pending",
+      detail: "Client feedback and release approval",
+      tab: "launch",
     },
     {
-      label: "Code repair",
-      status: repairStatus,
-      detail: qa.report ? `${qa.report.repairHistory.length} repair attempt${qa.report.repairHistory.length === 1 ? "" : "s"}` : "Repair loop after failed validation",
-      tab: "qa",
-    },
-    {
-      label: "Final validation",
-      status: qaStatus,
-      detail: qa.report ? `${qa.report.commands.length} mandatory checks` : "Typecheck, build, copy, SEO, design, mobile",
-      tab: "qa",
-    },
-    {
-      label: "Export/preview",
-      status: deploy.lifecycle === "deployed" ? "complete" : preview?.status === "running" ? "running" : preview?.status === "failed" ? "failed" : qa.status === "passed" || deploy.ready ? "approved" : "needs_review",
-      detail: preview?.url ?? (deploy.ready ? "Ready to export/deploy" : "Preview and export after validation"),
+      key: "launch",
+      label: "Launch",
+      status: deploy.lifecycle === "deployed" ? "complete" : deploy.ready || projectStatus === "ready_to_deploy" ? "needs_review" : "pending",
+      detail: deploy.lifecycle === "deployed" ? "Production deployment complete" : "Release candidate, export and deploy",
       tab: "launch",
     },
   ]

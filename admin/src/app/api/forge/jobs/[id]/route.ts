@@ -4,6 +4,8 @@ import { auth } from "../../../../../../auth"
 import { db } from "@/lib/db"
 import { forgeJobs } from "@/lib/schema"
 import { toForgeJobView } from "@/lib/forge-jobs"
+import { cancelForgeJob, retryForgeJob } from "@/lib/server/forge-job-queue"
+import { parseJsonObject, requireForgeRunActor, runApiError } from "@/lib/server/forge-run-route"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -42,4 +44,26 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     result: view.result,
     job: view,
   })
+}
+
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { actor } = await requireForgeRunActor("forge.execute")
+    const jobId = parseId((await params).id)
+    if (!jobId) return NextResponse.json({ error: "Invalid job id." }, { status: 400 })
+    const body = await parseJsonObject(request)
+    if (body.action === "retry") {
+      const result = await retryForgeJob(jobId)
+      if (!result.retried) return NextResponse.json({ error: result.reason ?? "Retry is unavailable.", code: "retry_unavailable" }, { status: 409 })
+      return NextResponse.json({ ok: true, action: "retry", jobId, actor })
+    }
+    if (body.action === "cancel") {
+      const cancelled = await cancelForgeJob(jobId)
+      if (!cancelled) return NextResponse.json({ error: "Only queued or running jobs can be cancelled.", code: "cancel_unavailable" }, { status: 409 })
+      return NextResponse.json({ ok: true, action: "cancel", jobId, actor })
+    }
+    return NextResponse.json({ error: "Use retry or cancel.", code: "invalid_action" }, { status: 400 })
+  } catch (error) {
+    return runApiError(error)
+  }
 }

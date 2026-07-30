@@ -58,6 +58,17 @@ export interface ForgeVisualCritiqueReport extends Record<string, JsonValue> {
   autoFixesApplied: string[]
 }
 
+export interface ForgeVisualCritiqueApprovalRecord extends Record<string, JsonValue> {
+  actor: string
+  timestamp: string
+  reason: string
+  previousQualityState: "requires_review" | "validated" | "failed"
+  resultingQualityState: "validated"
+  relevantArtifacts: number[]
+  overridePolicy: string | null
+  downstreamImpact: string
+}
+
 export interface ForgeVisualCritiqueArtifactState {
   report: ForgeVisualCritiqueReport | null
   status: ForgeVisualCritiqueStatus
@@ -184,6 +195,32 @@ export function approveForgeVisualCritiqueReport(report: ForgeVisualCritiqueRepo
     status: "approved",
     approvedAt: now,
     approvedBy: actor,
+  }
+}
+
+export function buildForgeVisualCritiqueApprovalRecord(input: {
+  report: ForgeVisualCritiqueReport
+  actor: string
+  reason: string
+  relevantArtifacts: number[]
+  overridePolicy?: string | null
+  now?: string
+}): ForgeVisualCritiqueApprovalRecord {
+  const reason = input.reason.trim()
+  if (reason.length < 10) throw new Error("Visual critique approval requires a meaningful reason.")
+  const failed = forgeVisualCritiqueScoresBelowThreshold(input.report).length > 0
+  if (failed && !input.overridePolicy?.trim()) throw new Error("A critique below policy thresholds requires an explicit override policy.")
+  return {
+    actor: input.actor,
+    timestamp: input.now ?? new Date().toISOString(),
+    reason,
+    previousQualityState: failed ? "requires_review" : "validated",
+    resultingQualityState: "validated",
+    relevantArtifacts: [...new Set(input.relevantArtifacts)],
+    overridePolicy: input.overridePolicy?.trim() || null,
+    downstreamImpact: failed
+      ? "Downstream QA may continue under the recorded policy override; the original critique findings remain auditable."
+      : "Downstream functional and visual QA may continue without regenerating approved upstream artifacts.",
   }
 }
 

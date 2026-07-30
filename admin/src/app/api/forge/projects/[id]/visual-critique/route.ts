@@ -39,15 +39,30 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const action = body && typeof body === "object" && !Array.isArray(body) && typeof body.action === "string"
     ? body.action
     : "run"
+  const input = body && typeof body === "object" && !Array.isArray(body) ? body as Record<string, unknown> : {}
 
   try {
     if (action === "approve") {
       await guardApiCapability("forge.approve")
-      return NextResponse.json(await approveForgeVisualCritique(projectId, sessionActor(session)))
+      const actor = sessionActor(session)
+      const result = await approveForgeVisualCritique(projectId, actor, String(input.reason ?? ""), typeof input.overridePolicy === "string" ? input.overridePolicy : null)
+      const { getCurrentForgeRun, approveForgeRunStep } = await import("@/lib/server/forge-run-orchestrator")
+      const run = await getCurrentForgeRun(projectId)
+      if (run?.steps.some((step) => step.stage === "visual_critique" && step.status === "awaiting_approval")) await approveForgeRunStep(run.id, "visual_critique", actor, String(input.reason ?? ""))
+      return NextResponse.json(result)
     }
     if (action === "auto_fix") {
       await guardApiCapability("forge.approve")
-      return NextResponse.json(await applyForgeVisualCritiqueSafeFixes(projectId, sessionActor(session)))
+      const actor = sessionActor(session)
+      const fixed = await applyForgeVisualCritiqueSafeFixes(projectId, actor)
+      const { getCurrentForgeRun, retryForgeRunStep } = await import("@/lib/server/forge-run-orchestrator")
+      const run = await getCurrentForgeRun(projectId)
+      if (run?.steps.some((step) => step.stage === "visual_critique" && step.status === "awaiting_approval")) {
+        const rerun = await retryForgeRunStep(run.id, "visual_critique", actor)
+        return NextResponse.json({ ...fixed, rerun })
+      }
+      const rerun = await enqueueForgeJob({ projectId, kind: "visual_critique", actor, payload: { priorArtifactId: fixed.artifactId, safeFixes: fixed.fixes } })
+      return NextResponse.json({ ...fixed, rerun: forgeJobResponseBody(rerun) })
     }
 
     const outcome = await enqueueForgeJob({ projectId, kind: "visual_critique", actor: sessionActor(session) })

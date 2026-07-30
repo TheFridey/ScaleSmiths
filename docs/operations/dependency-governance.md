@@ -19,7 +19,7 @@ For each dependency change:
 3. Never run `npm audit fix --force` without reviewing its complete manifest and lockfile diff. Do not accept a framework downgrade merely to make the report empty.
 4. Record a lower-severity acceptance in `scripts/dependency-governance-policy.json` with advisory ID, severity, dependency source, reason and review date. Acceptance is temporary and must not suppress the audit output.
 
-The currently accepted Moderate `GHSA-qx2v-qp2m-jg93` finding is an embedded PostCSS version in the reviewed Next.js line. npm proposes an unsafe major downgrade rather than a suitable patch. High/Critical thresholds remain clean; review the acceptance when Next.js publishes a compatible fix or by the recorded review date, whichever comes first.
+The July 2026 review resolved the embedded PostCSS advisory with a scoped npm override while retaining the stable Next.js 15 line. The override and its removal condition are recorded in `docs/security/dependency-audit-2026-07.md`; it must not be replaced with npm's unsafe forced framework downgrade.
 
 ## Framework patch process
 
@@ -32,7 +32,7 @@ The currently accepted Moderate `GHSA-qx2v-qp2m-jg93` finding is an embedded Pos
 
 ## Authentication updates
 
-Admin remains on the reviewed `next-auth` `5.0.0-beta.31`. The npm `latest` tag is the older v4 stable line, so changing tags is not a safe stable migration. Any Auth.js update must be a dedicated change and prove credentials login, MFA success/failure and recovery code use, middleware protection, secure cookie settings, role/session-version revocation, disabled-user rejection, logout and rate limiting.
+Admin remains on the reviewed `next-auth` `5.0.0-beta.32`. The npm `latest` tag is the older v4 stable line, so changing tags is not a safe stable migration. Any Auth.js update must be deliberate and prove credentials login, MFA success/failure and recovery code use, middleware protection, secure cookie settings, role/session-version revocation, disabled-user rejection, logout and rate limiting.
 
 ## Lockfiles and Docker digests
 

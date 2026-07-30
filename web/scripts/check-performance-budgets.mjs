@@ -320,16 +320,22 @@ async function startNextServer() {
 
 async function waitForUrl(url) {
   const started = Date.now()
+  let lastFailure = "no response"
   while (Date.now() - started < 60_000) {
     try {
-      const response = await fetch(url, { cache: "no-store" })
+      const response = await fetch(url, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(5_000),
+      })
       if (response.status < 500) return
-    } catch {
+      lastFailure = `HTTP ${response.status}`
+    } catch (error) {
+      lastFailure = error instanceof Error ? error.message : String(error)
       // keep polling
     }
     await new Promise((resolve) => setTimeout(resolve, 1000))
   }
-  throw new Error(`Timed out waiting for ${url}.`)
+  throw new Error(`Timed out waiting for ${url}; last failure: ${lastFailure}.`)
 }
 
 async function stopProcess(child) {

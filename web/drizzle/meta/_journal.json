@@ -92,6 +92,13 @@
       "when": 1786176000000,
       "tag": "0012_local_growth_check",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1786262400000,
+      "tag": "0013_web_vital_experience_event",
+      "breakpoints": true
     }
   ]
 }

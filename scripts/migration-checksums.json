@@ -388,6 +388,12 @@
       "reason": "Adds the short local-growth funnel classification, optional phone context and privacy-minimised analytics taxonomy."
     },
     {
+      "path": "web/drizzle/0013_web_vital_experience_event.sql",
+      "sha256": "5331a1940170d035a4c1edd7ade1f98de18384ed309c84d6bf509568a54435cd",
+      "lifecycle": "forward",
+      "reason": "Adds privacy-minimised real-user Web Vitals telemetry to the existing experience analytics stream."
+    },
+    {
       "path": "admin/drizzle/0042_historical_schema_reconciliation.sql",
       "sha256": "0f0644d5c55fff5589cb0b7b0a506d62f0886d6dbd551c34edf85d6cadfb301a",
       "lifecycle": "forward-correction",
@@ -410,6 +416,24 @@
       "sha256": "7ac8f36f8696623c9388e84d007e528b533b1cd7169dc4f51c4cdd5bebe40e9b",
       "lifecycle": "forward",
       "reason": "Adds durable Forge job leasing (owner/expiry/heartbeat/retry/idempotency/scheduled-at/dead-letter/task link), shared rate-limit counters, and preview ownership."
+    },
+    {
+      "path": "admin/drizzle/0046_forge_run_orchestration.sql",
+      "sha256": "8ccf0e6835fb61554bed58ee4c536b53350a9c59b251ce9a706cb5c89ae19271",
+      "lifecycle": "forward",
+      "reason": "Adds durable Forge runs, declarative run steps and events, and worker heartbeat persistence."
+    },
+    {
+      "path": "admin/drizzle/0047_forge_operational_health.sql",
+      "sha256": "0793fd47505dd1138b22a22d0f333a99512870a2c905742fd68bc5f65ca501d4",
+      "lifecycle": "forward",
+      "reason": "Adds durable redacted operator-error records to Forge jobs and run steps."
+    },
+    {
+      "path": "admin/drizzle/0048_atomic_forge_stage_costs.sql",
+      "sha256": "ec808d8d552b1f39e54d02af2526bfc14708520fed02a92826333c6d19ca02fb",
+      "lifecycle": "forward",
+      "reason": "Adds per-stage estimated, actual, retry, and remaining cost accounting for atomic Forge Run steps."
     }
   ],
   "journals": {
@@ -437,6 +461,13 @@
           "version": "7",
           "when": 1786176000000,
           "tag": "0012_local_growth_check",
+          "breakpoints": true
+        },
+        {
+          "idx": 13,
+          "version": "7",
+          "when": 1786262400000,
+          "tag": "0013_web_vital_experience_event",
           "breakpoints": true
         }
       ]
@@ -472,6 +503,27 @@
           "version": "7",
           "when": 1786003200000,
           "tag": "0045_durable_operational_controls",
+          "breakpoints": true
+        },
+        {
+          "idx": 46,
+          "version": "7",
+          "when": 1786089600000,
+          "tag": "0046_forge_run_orchestration",
+          "breakpoints": true
+        },
+        {
+          "idx": 47,
+          "version": "7",
+          "when": 1786176000000,
+          "tag": "0047_forge_operational_health",
+          "breakpoints": true
+        },
+        {
+          "idx": 48,
+          "version": "7",
+          "when": 1786262400000,
+          "tag": "0048_atomic_forge_stage_costs",
           "breakpoints": true
         }
       ]

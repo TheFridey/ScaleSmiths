@@ -43,7 +43,7 @@ describe("migration installation paths", () => {
     await applyMigrations(WEB_MIGRATIONS, ADMIN_MIGRATIONS)
 
     expect(await migrationCount("__drizzle_web_migrations")).toBe(13)
-    expect(await migrationCount("__drizzle_migrations")).toBe(46)
+    expect(await migrationCount("__drizzle_migrations")).toBe(47)
     expect(await columnExists("forge_artifacts", "content_bytes")).toBe(true)
     expect(await columnExists("forge_deployment_candidates", "dependency_report_json")).toBe(true)
     expect(await columnExists("forge_deployment_candidates", "dependency_sbom_hash")).toBe(true)
@@ -53,6 +53,10 @@ describe("migration installation paths", () => {
     expect(await tableExists("public_claims")).toBe(true)
     expect(await viewExists("public_verified_claims")).toBe(true)
     expect(await indexExists("forge_artifacts_version_idx")).toBe(true)
+    expect(await tableExists("forge_runs")).toBe(true)
+    expect(await tableExists("forge_run_steps")).toBe(true)
+    expect(await tableExists("forge_run_events")).toBe(true)
+    expect(await tableExists("forge_worker_heartbeats")).toBe(true)
   })
 
   it("upgrades a locked historical fixture by applying only the forward reconciliation", async () => {
@@ -78,12 +82,13 @@ describe("migration installation paths", () => {
     await applyMigrations(WEB_MIGRATIONS, ADMIN_MIGRATIONS)
 
     expect(await migrationCount("__drizzle_web_migrations")).toBe(13)
-    expect(await migrationCount("__drizzle_migrations")).toBe(46)
+    expect(await migrationCount("__drizzle_migrations")).toBe(47)
     expect(await columnExists("forge_artifacts", "content_bytes")).toBe(true)
     expect(await columnExists("forge_deployment_candidates", "dependency_report_json")).toBe(true)
     expect(await constraintExists("forge_deployment_candidates_dependency_hashes_sha256")).toBe(true)
     expect(await tableExists("client_request_messages")).toBe(true)
     expect(await indexExists("forge_artifacts_version_idx")).toBe(true)
+    expect(await tableExists("forge_runs")).toBe(true)
     expect(
       (
         await pool.query<{ count: number }>(

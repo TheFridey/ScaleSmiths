@@ -2,6 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+.hero-scene-fallback {
+  background:
+    radial-gradient(circle at 50% 46%, rgb(34 211 238 / 12%), transparent 32%),
+    linear-gradient(180deg, rgb(7 17 31 / 18%), rgb(7 17 31 / 78%) 72%, rgb(7 17 31 / 96%)),
+    linear-gradient(rgb(255 255 255 / 2.6%) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 2.6%) 1px, transparent 1px);
+  background-size: auto, auto, 64px 64px, 64px 64px;
+}
+
 @layer components {
   .growth-check-field {
     @apply w-full rounded-[10px] border border-b2 bg-s2 px-4 py-3 font-dm text-sm text-t1 outline-none transition-colors placeholder:text-t3 focus:border-acc focus-visible:ring-2 focus-visible:ring-acc;

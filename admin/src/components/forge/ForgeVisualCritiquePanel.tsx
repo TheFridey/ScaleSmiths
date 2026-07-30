@@ -8,7 +8,7 @@ import type { ForgeCopyArtifactState } from "@/lib/forge-copy"
 import type { ForgeDesignArtifactState } from "@/lib/forge-design"
 import type { ForgeGeneratedCodeArtifactState } from "@/lib/forge-frontend-code"
 import { submitForgeJob } from "@/lib/forge-job-client"
-import type { ForgeVisualCritiqueArtifactState, ForgeVisualCritiqueReport, ForgeVisualCritiqueRecommendation } from "@/lib/forge-visual-critique"
+import { forgeVisualCritiqueScoresBelowThreshold, type ForgeVisualCritiqueArtifactState, type ForgeVisualCritiqueReport, type ForgeVisualCritiqueRecommendation } from "@/lib/forge-visual-critique"
 
 const T = { s1:"var(--s1)", s2:"var(--s2)", s3:"var(--s3)", b1:"var(--b1)", b2:"var(--b2)", t1:"var(--t1)", t2:"var(--t2)", t3:"var(--t3)", acc:"var(--acc)", grn:"var(--grn)", amb:"var(--amb)", red:"var(--red)" }
 
@@ -33,6 +33,8 @@ export function ForgeVisualCritiquePanel({
   const [report, setReport] = useState<ForgeVisualCritiqueReport | null>(initialCritique.report)
   const [busy, setBusy] = useState<"run" | "approve" | "auto_fix" | null>(null)
   const [error, setError] = useState("")
+  const [approvalReason, setApprovalReason] = useState("")
+  const [overridePolicy, setOverridePolicy] = useState("")
 
   useEffect(() => {
     setReport(initialCritique.report)
@@ -50,7 +52,8 @@ export function ForgeVisualCritiquePanel({
   const safeFixes = report?.recommendations.filter((item) => item.safeAutoFix && item.safeFixType !== "none") ?? []
   const status = report?.status ?? "empty"
   const canRun = !disabled && busy === null && readiness.length === 0
-  const canApprove = canRun && Boolean(report) && report?.status !== "approved"
+  const critiqueFailed = report ? forgeVisualCritiqueScoresBelowThreshold(report).length > 0 : false
+  const canApprove = canRun && Boolean(report) && report?.status !== "approved" && approvalReason.trim().length >= 10 && (!critiqueFailed || overridePolicy.trim().length >= 3)
   const canAutoFix = canRun && Boolean(report) && safeFixes.length > 0
 
   async function runAction(action: "run" | "approve" | "auto_fix") {
@@ -60,7 +63,7 @@ export function ForgeVisualCritiquePanel({
     try {
       const json = await submitForgeJob<{ ok?: boolean; error?: string; report: ForgeVisualCritiqueReport }>(
         `/api/forge/projects/${projectId}/visual-critique`,
-        { action },
+        { action, reason: approvalReason, overridePolicy: overridePolicy || null },
       )
 
       if (!json.ok) {
@@ -105,6 +108,7 @@ export function ForgeVisualCritiquePanel({
       {error && <Notice text={error} tone="bad" />}
       {disabled && <Notice text="Archived projects are locked from visual critique." tone="muted" />}
       {!disabled && readiness.length > 0 && <Notice text={`Ready after: ${readiness.join(", ")}.`} tone="warn" />}
+      {report && report.status !== "approved" ? <div className="mb-4 grid gap-2 md:grid-cols-2"><label className="font-dm text-xs" style={{ color:T.t2 }}>Approval reason<input value={approvalReason} onChange={(event) => setApprovalReason(event.target.value)} className="mt-1 min-h-10 w-full rounded-lg border px-3" style={{ background:T.s2, borderColor:T.b1 }} placeholder="Record why this critique may proceed" /></label>{critiqueFailed ? <label className="font-dm text-xs" style={{ color:T.t2 }}>Override policy<input value={overridePolicy} onChange={(event) => setOverridePolicy(event.target.value)} className="mt-1 min-h-10 w-full rounded-lg border px-3" style={{ background:T.s2, borderColor:T.b1 }} placeholder="Named policy permitting this override" /></label> : null}</div> : null}
 
       {!report ? (
         <div className="rounded-lg border border-dashed p-4" style={{ background:T.s2, borderColor:T.b2 }}>

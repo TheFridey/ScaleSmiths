@@ -142,6 +142,17 @@ jobs:
           image: scalesmiths-${{ matrix.app }}:security
           format: spdx-json
           output-file: sbom-${{ matrix.app }}.spdx.json
+      - name: Render actionable image vulnerability findings
+        if: always() && steps.build.outcome == 'success' && steps.trivy.outcome == 'failure'
+        run: |
+          trivy image \
+            --scanners vuln \
+            --severity HIGH,CRITICAL \
+            --ignore-unfixed \
+            --format table \
+            --output trivy-${{ matrix.app }}.txt \
+            scalesmiths-${{ matrix.app }}:security
+          cat trivy-${{ matrix.app }}.txt
       - name: Upload container scan and SBOM
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -149,6 +160,7 @@ jobs:
           name: container-security-${{ matrix.app }}
           path: |
             trivy-${{ matrix.app }}.sarif
+            trivy-${{ matrix.app }}.txt
             sbom-${{ matrix.app }}.spdx.json
           if-no-files-found: warn
           retention-days: 30

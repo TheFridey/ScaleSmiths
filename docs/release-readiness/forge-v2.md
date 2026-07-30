@@ -5,6 +5,40 @@ Branch: `master`
 Base commit: `cabf515`  
 Decision: **BLOCKED — DO NOT DEPLOY**
 
+## Current release-candidate evidence
+
+This section supersedes the earlier, time-stamped blocker observations retained below
+for audit history. The tested candidate was branch `release/forge-v2-rc` at
+`98210747c134d45ba1a5d646c20c23b42f789988`, based on `cabf515`. The original checkout
+remains untouched.
+
+The July 30 exact-SHA GitHub runs established:
+
+| Workflow | Run | Result |
+|---|---|---|
+| Security | `30587271058` | **PASS** - audits, TruffleHog, sandbox tests, Hadolint, both image builds/scans/SBOM jobs; dependency review correctly skipped on push |
+| CodeQL | `30587270911` | **PASS** - JavaScript/TypeScript analysis |
+| CI | `30587270841` | **PASS EXCEPT INSPECTED BASELINE** - every job except Web passed; Web passed install, disposable PostgreSQL, lint, 127 unit tests, production build, performance budgets and 46/47 Chromium checks |
+
+The sole CI failure was the intentionally unchanged mobile homepage baseline. The new
+390x844 capture was inspected after the experience controls were moved out of the fixed
+mobile overlay; it has no overlapping controls and preserves the verified proof label.
+The inspected desktop, tablet and mobile Linux baselines are now recorded in the
+candidate. A final exact-SHA CI rerun is required after that baseline-only commit.
+
+Local evidence for the current mobile fix:
+
+| Command | Exact result |
+|---|---|
+| `web: npm run lint` | **PASS** - exit 0 |
+| `web: npm run test` | **PASS** - 28 files, 127 tests |
+
+Release blockers that remain regardless of the final automated rerun:
+
+1. No authorised restore of a production-derived encrypted backup has been performed.
+2. Dependency Review must run in its native pull-request context before approval.
+3. Human release approval and the documented manual production checks remain outstanding.
+
 This document records the verification actually performed against the current dirty
 ScaleSmiths checkout. It is not an approval. The checkout contains extensive uncommitted
 admin, Forge, web, migration, workflow and dependency changes, so a release candidate

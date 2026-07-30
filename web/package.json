@@ -19,7 +19,7 @@
     "portal:seed": "node --env-file-if-exists=../.env ./scripts/seed-portal-account.mjs"
   },
   "dependencies": {
-    "@react-three/fiber": "^8.18.0",
+    "@react-three/fiber": "^9.6.1",
     "@sentry/nextjs": "10.65.0",
     "bcryptjs": "3.0.3",
     "clsx": "^2.1.1",

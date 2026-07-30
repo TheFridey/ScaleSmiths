@@ -11,6 +11,7 @@ import {
   setExperience,
   submitQuoteWizard,
 } from "./helpers"
+import { withoutVerifiedPublicClaims } from "./database"
 
 test.beforeEach(async ({ page }) => {
   await mockExperienceAnalytics(page)
@@ -93,25 +94,27 @@ test.describe("public experience SEO routing", () => {
   })
 
   test("fails closed when commercial claims have no verified public evidence", async ({ page }) => {
-    await setExperience(page, "normal")
-    await gotoReady(page, "/")
+    await withoutVerifiedPublicClaims(async () => {
+      await setExperience(page, "normal")
+      await gotoReady(page, "/")
 
-    for (const unsupported of [
-      "12+ Projects Delivered",
-      "GBP 300k+ Revenue Generated",
-      "100% Retainer Retention Rate",
-      "paid for itself twice over",
-    ]) {
-      await expect(page.getByText(unsupported, { exact: false })).toHaveCount(0)
-    }
-    await expect(page.locator('section[aria-label="Client testimonials"]')).toHaveCount(0)
-    await expect(page.getByText("Conversion websites", { exact: true })).toBeVisible()
+      for (const unsupported of [
+        "12+ Projects Delivered",
+        "GBP 300k+ Revenue Generated",
+        "100% Retainer Retention Rate",
+        "paid for itself twice over",
+      ]) {
+        await expect(page.getByText(unsupported, { exact: false })).toHaveCount(0)
+      }
+      await expect(page.locator('section[aria-label="Client testimonials"]')).toHaveCount(0)
+      await expect(page.getByText("Conversion websites", { exact: true })).toBeVisible()
 
-    await gotoReady(page, "/pricing")
-    await expect(page.getByText("GBP 4,500-6,500", { exact: false })).toHaveCount(0)
-    await expect(page.getByText("Scoped after discovery", { exact: true }).first()).toBeVisible()
-    await expect(page.locator("body")).not.toContainText("evidence_reference")
-    await expect(page.locator("body")).not.toContainText("verified_by")
+      await gotoReady(page, "/pricing")
+      await expect(page.getByText("GBP 4,500-6,500", { exact: false })).toHaveCount(0)
+      await expect(page.getByText("Scoped after discovery", { exact: true }).first()).toBeVisible()
+      await expect(page.locator("body")).not.toContainText("evidence_reference")
+      await expect(page.locator("body")).not.toContainText("verified_by")
+    })
   })
 })
 
@@ -270,7 +273,9 @@ test.describe("public navigation and accessibility behaviours", () => {
     await expect(projectBriefLink).toHaveAttribute("href", "/quote")
     await projectBriefLink.click({ noWaitAfter: true })
     await page.waitForURL(/\/quote$/, { timeout: 20_000, waitUntil: "domcontentloaded" })
-    await expect(page.getByRole("heading", { name: /contact/i })).toBeVisible()
+    await expect(page.getByRole("heading", { level: 1, name: "About You", exact: true })).toBeVisible()
+    await expect(page.getByRole("progressbar")).toHaveAttribute("aria-valuemax", "4")
+    await expect(page.getByLabel("Full Name", { exact: true })).toBeVisible()
   })
 
   test("honours reduced-motion preferences while keeping the journey usable", async ({ page }) => {
@@ -296,8 +301,9 @@ test.describe("quote and contact forms", () => {
   test("offers the short local growth route without changing the full quote wizard", async ({ page }) => {
     await gotoReady(page, "/quote")
 
-    await expect(page.getByText(/not ready to write a full brief/i)).toBeVisible()
-    await expect(page.getByRole("link", { name: /request a local growth check/i })).toHaveAttribute("href", "/local-growth-check")
+    const shortAlternative = page.getByRole("complementary", { name: "Short enquiry alternative" })
+    await expect(shortAlternative).toContainText("Prefer a shorter first step?")
+    await expect(shortAlternative.getByRole("link", { name: /request a local growth check/i })).toHaveAttribute("href", "/local-growth-check")
     await expect(page.getByRole("progressbar")).toHaveAttribute("aria-valuemax", "4")
   })
 
@@ -367,11 +373,20 @@ test.describe("quote and contact forms", () => {
   })
 
   test("shows validation errors before submission", async ({ page }) => {
+    let submissionCount = 0
+    page.on("request", (request) => {
+      if (request.url().includes("/api/quote") && request.method() === "POST") submissionCount += 1
+    })
     await gotoReady(page, "/quote")
 
     await page.getByRole("button", { name: /continue/i }).click()
 
-    await expect(page.getByText(/please add your full name/i)).toBeVisible()
+    const alert = page.locator("[role='alert'][tabindex='-1']")
+    await expect(alert).toContainText(/full name/i)
+    await expect(alert).toBeFocused()
+    await expect(page.getByLabel("Full Name", { exact: true })).toHaveAttribute("aria-invalid", "true")
+    await expect(page.getByRole("heading", { level: 1, name: "About You", exact: true })).toBeVisible()
+    expect(submissionCount).toBe(0)
   })
 
   test("restores an incomplete four-stage quote after navigation", async ({ page }) => {
@@ -388,7 +403,7 @@ test.describe("quote and contact forms", () => {
     await gotoReady(page, "/work")
     await gotoReady(page, "/quote")
 
-    await expect(page.getByRole("heading", { name: /what needs changing/i })).toBeVisible()
+    await expect(page.getByRole("heading", { level: 1, name: "What Needs Changing", exact: true })).toBeVisible()
     await expect(page.getByLabel(/main business goal/i)).toHaveValue("Turn more qualified visits into enquiries.")
     await expect(page.getByRole("checkbox", { name: /^analytics$/i })).toBeChecked()
     await page.getByRole("button", { name: /previous stage/i }).click()

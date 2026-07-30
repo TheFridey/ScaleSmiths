@@ -147,6 +147,7 @@ const ESTIMATES: Record<ForgeCommandIntent, number> = {
 
 export function planForgeCommandHeuristic(message: string, context: Pick<ForgeCommandPlannerContext, "run">): ForgeCommandPlan {
   const text = message.toLowerCase()
+  const preservesCopy = /without (?:changing|altering|regenerating)[^.!?]*copy|(?:keep|preserve)[^.!?]*copy/i.test(text)
   let intent: ForgeCommandIntent
   if (/why|explain|what.*failed|what.*approval|still needs.*approval|current state|what.*stopped/.test(text)) intent = "explain_current_state"
   else if (/fix.*failed|resolve.*fail/.test(text)) intent = "resolve_current_failure"
@@ -168,7 +169,7 @@ export function planForgeCommandHeuristic(message: string, context: Pick<ForgeCo
   else if (/estimate|cost this|quote this/.test(text)) intent = "estimate_generate"
   else if (/research|competitor|market|positioning/.test(text)) intent = "research_run"
   else if (/sitemap|site map|navigation|structure/.test(text)) intent = "sitemap_run"
-  else if (/copy|headline|hero text|about page|homepage text/.test(text)) intent = "copy_update"
+  else if (!preservesCopy && /copy|headline|hero text|about page|homepage text/.test(text)) intent = "copy_update"
   else if (/design|premium|style|animation|colour|color|typography|visual/.test(text)) intent = "design_update"
   else if (/improve|change|update|regenerate/.test(text)) intent = "site_generate"
   else intent = context.run?.status === "failed" ? "explain_current_state" : "build_complete_draft"
@@ -261,7 +262,8 @@ export function forgeCommandLabel(intent: ForgeCommandIntent) { return intent.re
 function stagesForIntent(intent: ForgeCommandIntent, text: string, run: ForgeCommandPlannerContext["run"]): ForgeRunStage[] {
   if (intent === "build_complete_draft") return ["research", "sitemap", "copy", "design_direction", "design_system", "component_specification", "code_generation", "seo_schema", "accessibility", "consistency_review", "copy_quality_review", "originality_review", "quality_review", "visual_critique", "functional_qa", "repair", "visual_qa", "preview"]
   if (intent === "apply_feedback") {
-    if (/copy|word|headline|about page|content/i.test(text)) return ["copy", "code_generation", "seo_schema", "quality_review", "functional_qa", "visual_qa", "preview"]
+    const preservesCopy = /without (?:changing|altering|regenerating)[^.!?]*copy|(?:keep|preserve)[^.!?]*copy/i.test(text)
+    if (!preservesCopy && /copy|word|headline|about page|content/i.test(text)) return ["copy", "code_generation", "seo_schema", "quality_review", "functional_qa", "visual_qa", "preview"]
     if (/design|premium|colour|color|layout|visual/i.test(text)) return ["design_direction", "design_system", "component_specification", "code_generation", "visual_critique", "functional_qa", "visual_qa", "preview"]
     return ["copy", "design_direction", "code_generation", "functional_qa", "visual_qa", "preview"]
   }

@@ -33,6 +33,23 @@ export async function recordSuccessfulAdminLogin(userId: string) {
   await db.update(adminUsers).set({ lastLoginAt: now, updatedAt: now }).where(eq(adminUsers.id, userId))
 }
 
+export async function revokeOwnAdminSessions(userId: string) {
+  const now = new Date()
+  const [updated] = await db
+    .update(adminUsers)
+    .set({ sessionVersion: sql`${adminUsers.sessionVersion} + 1`, updatedAt: now })
+    .where(eq(adminUsers.id, userId))
+    .returning({ id: adminUsers.id })
+  if (!updated) throw new AdminIdentityError("Admin user not found.", 404, "user_not_found")
+  await writeAdminSecurityAudit({
+    actorUserId: userId,
+    targetUserId: userId,
+    action: "sessions_revoked",
+    success: true,
+    metadataJson: { reason: "sign_out" },
+  })
+}
+
 export async function listAdminUsers() {
   return db.select({ id: adminUsers.id, email: adminUsers.email, displayName: adminUsers.displayName, role: adminUsers.role, active: adminUsers.active, mfaEnabled: adminUsers.mfaEnabled, sessionVersion: adminUsers.sessionVersion, lastLoginAt: adminUsers.lastLoginAt, passwordChangedAt: adminUsers.passwordChangedAt, createdAt: adminUsers.createdAt, updatedAt: adminUsers.updatedAt }).from(adminUsers).orderBy(asc(adminUsers.displayName))
 }

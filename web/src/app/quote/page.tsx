@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useEffect, useId, useState } from "react"
+import { useEffect, useId, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, ArrowRight, Check } from "lucide-react"
 import { EnquiryConsent } from "@/components/EnquiryConsent"
@@ -26,7 +26,9 @@ export default function QuotePage() {
   const [restored, setRestored] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState("")
+  const [invalidField, setInvalidField] = useState<string | null>(null)
   const errorId = useId()
+  const errorRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -47,6 +49,12 @@ export default function QuotePage() {
   }, [data, restored, stage])
 
   useEffect(() => {
+    if (!error) return
+    const frame = window.requestAnimationFrame(() => errorRef.current?.focus())
+    return () => window.cancelAnimationFrame(frame)
+  }, [error])
+
+  useEffect(() => {
     if (!restored) return
     const onPopState = (event: PopStateEvent) => {
       const historicStage = Number((event.state as { quoteStage?: number } | null)?.quoteStage)
@@ -59,6 +67,7 @@ export default function QuotePage() {
 
   function update(key: string, value: string) {
     setError("")
+    setInvalidField(null)
     setData((current) => ({ ...current, [key]: value }))
     trackExperienceEvent("quote_form_started", { metadata: { source: "standard_quote", step: key } })
   }
@@ -83,17 +92,21 @@ export default function QuotePage() {
     const missing = required.find(([key]) => !(data[key] ?? "").trim())
     if (missing) {
       setError(`Please add or choose your ${missing[1]}.`)
+      setInvalidField(missing[0])
       return false
     }
     if (current === 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email ?? "")) {
       setError("Please add a valid email address.")
+      setInvalidField("email")
       return false
     }
     if (current === 3 && data.consent !== "true") {
       setError("Please confirm consent before submitting.")
+      setInvalidField("consent")
       return false
     }
     setError("")
+    setInvalidField(null)
     return true
   }
 
@@ -106,6 +119,19 @@ export default function QuotePage() {
     const nextStage = stage + 1
     window.history.pushState({ ...window.history.state, quoteStage: nextStage }, "")
     setStage(nextStage)
+    window.scrollTo({ top: 0, behavior: "smooth" })
+  }
+
+  function previousStage() {
+    if (stage === 0) {
+      window.history.back()
+      return
+    }
+    const nextStage = stage - 1
+    window.history.pushState({ ...window.history.state, quoteStage: nextStage }, "")
+    setStage(nextStage)
+    setError("")
+    setInvalidField(null)
     window.scrollTo({ top: 0, behavior: "smooth" })
   }
 
@@ -142,6 +168,7 @@ export default function QuotePage() {
       router.push(`/quote/thanks?intent=${encodeURIComponent(intent)}`)
     } catch (caught) {
       trackExperienceEvent("experience_error", { errorCategory: "quote_submission", metadata: { source: "standard_quote", intent } })
+      setInvalidField(null)
       setError(caught instanceof Error ? caught.message : "Unable to submit your brief.")
     } finally {
       setSubmitting(false)
@@ -152,7 +179,7 @@ export default function QuotePage() {
     <main className="mx-auto max-w-[780px] px-6 py-12 md:px-12 md:py-16">
       <button
         type="button"
-        onClick={() => window.history.back()}
+        onClick={previousStage}
         className="mb-8 inline-flex min-h-10 items-center gap-2 font-dm text-sm text-t2 transition-colors hover:text-t1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-acc"
       >
         <ArrowLeft size={15} aria-hidden="true" /> {stage === 0 ? "Back" : "Previous stage"}
@@ -183,20 +210,20 @@ export default function QuotePage() {
         {stage === 3 && "Add any useful detail, confirm consent and send the complete brief."}
       </p>
 
-      {error && <div id={errorId} role="alert" tabIndex={-1} className="mb-6 rounded-lg border border-red/30 bg-red/10 px-4 py-3 font-dm text-sm text-t1">{error}</div>}
+      {error && <div ref={errorRef} id={errorId} role="alert" tabIndex={-1} className="mb-6 rounded-lg border border-red/30 bg-red/10 px-4 py-3 font-dm text-sm text-t1">{error}</div>}
 
       <section aria-labelledby={`stage-${stage}`} className="space-y-6">
         <h2 id={`stage-${stage}`} className="sr-only">{STAGES[stage]} fields</h2>
         {stage === 0 && <>
-          <TextField id="name" label="Full Name" autoComplete="name" value={data.name} update={update} errorId={error ? errorId : undefined} />
-          <TextField id="email" label="Email Address" type="email" autoComplete="email" value={data.email} update={update} errorId={error ? errorId : undefined} />
-          <TextField id="biz" label="Company Name" autoComplete="organization" value={data.biz} update={update} errorId={error ? errorId : undefined} />
+          <TextField id="name" label="Full Name" autoComplete="name" value={data.name} update={update} errorId={invalidField === "name" ? errorId : undefined} invalid={invalidField === "name"} />
+          <TextField id="email" label="Email Address" type="email" autoComplete="email" value={data.email} update={update} errorId={invalidField === "email" ? errorId : undefined} invalid={invalidField === "email"} />
+          <TextField id="biz" label="Company Name" autoComplete="organization" value={data.biz} update={update} errorId={invalidField === "biz" ? errorId : undefined} invalid={invalidField === "biz"} />
           <TextField id="websiteUrl" label="Current Website (optional)" type="url" autoComplete="url" value={data.websiteUrl} update={update} />
           <ChoiceGroup legend="Business Type" name="businessType" options={BUSINESS_TYPES} value={data.businessType} update={update} />
         </>}
         {stage === 1 && <>
           <ChoiceGroup legend="Project Type" name="type" options={PROJECT_TYPES} value={data.type} update={update} />
-          <TextField id="goal" label="Main Business Goal" multiline value={data.goal} update={update} errorId={error ? errorId : undefined} />
+          <TextField id="goal" label="Main Business Goal" multiline value={data.goal} update={update} errorId={invalidField === "goal" ? errorId : undefined} invalid={invalidField === "goal"} />
           <fieldset>
             <legend className="mb-3 font-dm text-sm text-t2">Functionality and needs <span className="text-t3">(choose all that apply)</span></legend>
             <div className="grid gap-2 sm:grid-cols-2">
@@ -226,13 +253,13 @@ export default function QuotePage() {
   )
 }
 
-function TextField({ id, label, type = "text", autoComplete = "off", value = "", update, multiline = false, errorId }: {
-  id: string; label: string; type?: string; autoComplete?: string; value?: string; update: (key: string, value: string) => void; multiline?: boolean; errorId?: string
+function TextField({ id, label, type = "text", autoComplete = "off", value = "", update, multiline = false, errorId, invalid = false }: {
+  id: string; label: string; type?: string; autoComplete?: string; value?: string; update: (key: string, value: string) => void; multiline?: boolean; errorId?: string; invalid?: boolean
 }) {
   const classes = "w-full rounded-[10px] border border-b2 bg-s2 px-4 py-3 font-dm text-base text-t1 outline-none transition-colors focus:border-acc focus-visible:ring-2 focus-visible:ring-acc"
   return <div><label htmlFor={`q-${id}`} className="mb-2 block font-dm text-sm text-t2">{label}</label>{multiline
-    ? <textarea id={`q-${id}`} rows={5} value={value} onChange={(event) => update(id, event.target.value)} aria-describedby={errorId} className={`${classes} resize-y`} />
-    : <input id={`q-${id}`} type={type} autoComplete={autoComplete} value={value} onChange={(event) => update(id, event.target.value)} aria-describedby={errorId} className={classes} />}</div>
+    ? <textarea id={`q-${id}`} rows={5} value={value} onChange={(event) => update(id, event.target.value)} aria-describedby={errorId} aria-invalid={invalid || undefined} className={`${classes} resize-y`} />
+    : <input id={`q-${id}`} type={type} autoComplete={autoComplete} value={value} onChange={(event) => update(id, event.target.value)} aria-describedby={errorId} aria-invalid={invalid || undefined} className={classes} />}</div>
 }
 
 function ChoiceGroup({ legend, name, options, value, update }: { legend: string; name: string; options: string[]; value?: string; update: (key: string, value: string) => void }) {

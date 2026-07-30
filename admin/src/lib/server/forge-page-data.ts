@@ -30,6 +30,7 @@ import {
   forgeJobs,
   forgeMemories,
   forgeProjects,
+  forgeRunSteps,
   forgeTasks,
 } from "@/lib/schema"
 
@@ -158,7 +159,7 @@ export async function loadForgeProjectPageData(id: number) {
 
   if (!project) return null
 
-  const [projectSummaries, tasks, jobs, artifacts, integrations, activityLogs, memories, aiUsage, latestEstimate, intakeArtifacts, sitemapArtifacts, copyArtifacts, designArtifacts, designSystemArtifacts, componentSpecArtifacts, generatedCodeArtifacts, visualCritiqueArtifacts, qaArtifacts, seoArtifacts, visualQaArtifacts, proposalArtifacts, exportArtifacts, deployArtifacts] = await Promise.all([
+  const [projectSummaries, tasks, jobs, runSteps, artifacts, integrations, activityLogs, memories, aiUsage, latestEstimate, intakeArtifacts, sitemapArtifacts, copyArtifacts, designArtifacts, designSystemArtifacts, componentSpecArtifacts, generatedCodeArtifacts, visualCritiqueArtifacts, qaArtifacts, seoArtifacts, visualQaArtifacts, proposalArtifacts, exportArtifacts, deployArtifacts] = await Promise.all([
     db
       .select({
         id: forgeProjects.id,
@@ -208,6 +209,15 @@ export async function loadForgeProjectPageData(id: number) {
       .from(forgeJobs)
       .where(eq(forgeJobs.projectId, id))
       .orderBy(desc(forgeJobs.updatedAt)),
+    db
+      .select({
+        stage: forgeRunSteps.stage,
+        operatorErrorJson: forgeRunSteps.operatorErrorJson,
+        updatedAt: forgeRunSteps.updatedAt,
+      })
+      .from(forgeRunSteps)
+      .where(eq(forgeRunSteps.projectId, id))
+      .orderBy(desc(forgeRunSteps.updatedAt)),
     db
       .select({
         id: forgeArtifacts.id,
@@ -300,6 +310,7 @@ export async function loadForgeProjectPageData(id: number) {
     projectSummaries,
     tasks,
     jobs,
+    runSteps,
     artifacts,
     integrations,
     activityLogs,

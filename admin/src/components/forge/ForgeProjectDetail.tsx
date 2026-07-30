@@ -137,6 +137,12 @@ interface ForgeJobRow {
   updatedAt: Date | string
 }
 
+interface ForgeRunStepAttentionRow {
+  stage: string
+  operatorErrorJson: ReturnType<typeof normalizeForgeOperatorError> | null
+  updatedAt: Date | string
+}
+
 interface ForgeArtifactRow {
   id: number
   type: ForgeArtifactType
@@ -226,6 +232,7 @@ export function ForgeProjectDetail({
   project,
   tasks,
   jobs,
+  runSteps,
   artifacts,
   integrations,
   activityLogs,
@@ -256,6 +263,7 @@ export function ForgeProjectDetail({
   projectSummaries: ForgeProjectSidebarSummary[]
   tasks: ForgeTaskRow[]
   jobs: ForgeJobRow[]
+  runSteps: ForgeRunStepAttentionRow[]
   artifacts: ForgeArtifactRow[]
   integrations: ForgeIntegrationRow[]
   activityLogs: ForgeActivityRow[]
@@ -323,7 +331,7 @@ export function ForgeProjectDetail({
   const [previewContextOpen, setPreviewContextOpen] = useState(false)
   const [previewDecisionBusy, setPreviewDecisionBusy] = useState(false)
   const [previewDecisionError, setPreviewDecisionError] = useState("")
-  const attentionItems = useMemo(() => buildProjectAttention({ project, tasks, jobs, integrations, stages, aiUsage, preview: initialPreview, deploy: initialDeploy }), [aiUsage, initialDeploy, initialPreview, integrations, jobs, project, stages, tasks])
+  const attentionItems = useMemo(() => buildProjectAttention({ project, tasks, jobs, runSteps, integrations, stages, aiUsage, preview: initialPreview, deploy: initialDeploy }), [aiUsage, initialDeploy, initialPreview, integrations, jobs, project, runSteps, stages, tasks])
   const activeJobs = jobs.filter((job) => job.status === "queued" || job.status === "running")
   const failedJobs = jobs.filter((job) => job.status === "failed" || job.status === "dead_letter")
   const runStatus = failedTasks.length || failedJobs.length ? "failed" : activeTasks.some((task) => task.status === "running") || activeJobs.some((job) => job.status === "running") ? "running" : activeTasks.length || activeJobs.length ? "queued" : project.status === "deployed" ? "complete" : "idle"
@@ -606,6 +614,7 @@ function buildProjectAttention({
   project,
   tasks,
   jobs,
+  runSteps,
   integrations,
   stages,
   aiUsage,
@@ -615,6 +624,7 @@ function buildProjectAttention({
   project: ForgeProjectFormValue
   tasks: ForgeTaskRow[]
   jobs: ForgeJobRow[]
+  runSteps: ForgeRunStepAttentionRow[]
   integrations: ForgeIntegrationRow[]
   stages: CockpitStage[]
   aiUsage: ForgeAiUsageMetrics
@@ -624,6 +634,9 @@ function buildProjectAttention({
   const projectId = project.id
   if (!projectId) return []
   const errors: Array<{ projectId: number; error: ReturnType<typeof normalizeForgeOperatorError> }> = []
+  for (const step of runSteps) {
+    if (step.operatorErrorJson) errors.push({ projectId, error: step.operatorErrorJson })
+  }
   for (const task of tasks) {
     const stage = stageForAgent(task.agentType)
     if (task.status === "failed") errors.push({ projectId, error: normalizeForgeOperatorError(task.description ?? `${task.title} failed.`, { stage, category: task.agentType === "qa" ? "quality_failure" : task.agentType === "deploy" ? "deployment_blocked" : undefined, retryable: task.agentType !== "deploy", technicalReference: `forge:task:${task.id}`, timestamp: new Date(task.createdAt), metadata: { taskId: task.id, provider: task.providerAttempted } }) })

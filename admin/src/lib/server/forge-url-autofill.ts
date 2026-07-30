@@ -4,6 +4,8 @@ import { runForgeAiJson } from "@/lib/server/forge-ai"
 import { createSafeOutboundClient, SafeOutboundError } from "@/lib/server/safe-outbound"
 import { FORGE_INTAKE_SECTIONS, emptyForgeIntakeData, type ForgeIntakeData } from "@/lib/forge"
 import type { ForgeJsonSchema, JsonValue } from "@/lib/forge-ai"
+import { sql } from "drizzle-orm"
+import { db } from "@/lib/db"
 
 const MAX_PAGES = 4
 const MAX_PAGE_CHARS = 18000
@@ -71,6 +73,8 @@ const FORGE_URL_AUTOFILL_SCHEMA = {
 
 export async function generateForgeUrlAutofill(url: string): Promise<ForgeUrlAutofillResult> {
   const rootUrl = normalizePublicWebsiteUrl(url)
+  const fixture = await releaseFixtureAutofill(rootUrl)
+  if (fixture) return fixture
   const pages = await crawlWebsite(rootUrl)
 
   if (pages.length === 0) {
@@ -100,6 +104,38 @@ export async function generateForgeUrlAutofill(url: string): Promise<ForgeUrlAut
   })
 
   return normalizeAutofillResult(result.data, pages)
+}
+
+async function releaseFixtureAutofill(rootUrl: URL): Promise<ForgeUrlAutofillResult | null> {
+  if (process.env.SCALESMITHS_TEST_ENVIRONMENT !== "forge-v2-e2e" || process.env.FORGE_E2E_URL_FIXTURE !== "enabled") return null
+  const marker = await db.execute<{ marker: string }>(sql`
+    select marker
+    from scalesmiths_test_environment
+    where marker = 'scalesmiths-forge-v2-admin-isolated-test-v1'
+  `)
+  if (marker.rows.length !== 1) throw new Error("Forge URL fixture requires the isolated admin test database marker.")
+  const intake = emptyForgeIntakeData()
+  intake.businessOverview = "Fixture Roofing is a Nottingham commercial roofing company serving property managers and growing businesses."
+  intake.coreServices = "Commercial roofing\nRoof surveys\nPlanned maintenance"
+  intake.idealCustomers = "Nottingham property managers and commercial building owners."
+  intake.primaryWebsiteGoal = "Generate qualified commercial roofing enquiries."
+  intake.conversionActions = "Request a survey\nEmail an enquiry\nStart a WhatsApp conversation"
+  intake.requiredPages = "Home\nCommercial Roofing\nMaintenance\nAbout\nContact"
+  intake.requiredIntegrations = "Resend email\nWhatsApp"
+  intake.existingAssets = "Deterministic website copy fixture."
+  return {
+    project: {
+      name: "Fixture Roofing website rebuild",
+      businessName: "Fixture Roofing",
+      industry: "Commercial roofing",
+      targetAudience: intake.idealCustomers,
+      primaryGoal: intake.primaryWebsiteGoal,
+      brandNotes: "Premium, credible and direct.",
+    },
+    intake,
+    confidenceNotes: ["Deterministic release-only URL fixture protected by environment and database markers."],
+    sourcePages: [rootUrl.toString()],
+  }
 }
 
 async function crawlWebsite(rootUrl: URL) {

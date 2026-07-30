@@ -35,6 +35,10 @@ describe("RBAC role/capability matrix", () => {
 })
 
 describe("server request enforcement", () => {
+  it("allows every authenticated role to revoke its own session", () => {
+    expect(authorizeRequest("viewer", { pathname: "/api/security/logout", method: "POST" }).allowed).toBe(true)
+  })
+
   it("prevents viewer and sales roles bypassing UI with direct write calls", () => {
     expect(authorizeRequest("viewer", { pathname: "/api/prospects", method: "POST" })).toMatchObject({ allowed: false, capability: "leads.write" })
     expect(authorizeRequest("sales", { pathname: "/api/forge/projects/12/research", method: "POST" })).toMatchObject({ allowed: false, capability: "forge.execute" })
@@ -67,8 +71,8 @@ describe("server request enforcement", () => {
     const apiRoot = path.resolve("src", "app", "api")
     const routeFiles = walk(apiRoot).filter((file) => file.endsWith("route.ts"))
     const unmapped = routeFiles.map((file) => `/${path.relative(path.resolve("src", "app"), path.dirname(file)).replaceAll("\\", "/").replace(/\[[^/]+\]/g, "resource")}`)
-      // Auth, health and monitoring self-test authenticate with dedicated protocol-specific controls.
-      .filter((pathname) => !pathname.startsWith("/api/auth") && pathname !== "/api/health" && pathname !== "/api/monitoring/self-test" && requiredCapabilityForRequest({ pathname, method: "GET" }) === null && requiredCapabilityForRequest({ pathname, method: "POST" }) === null)
+      // Auth, self-service logout, health and monitoring self-test authenticate with dedicated protocol-specific controls.
+      .filter((pathname) => !pathname.startsWith("/api/auth") && pathname !== "/api/security/logout" && pathname !== "/api/health" && pathname !== "/api/monitoring/self-test" && requiredCapabilityForRequest({ pathname, method: "GET" }) === null && requiredCapabilityForRequest({ pathname, method: "POST" }) === null)
     expect(unmapped).toEqual([])
   })
 })

@@ -12,7 +12,14 @@ export async function loadForgeOperationalHealth() {
     db.select().from(forgeWorkerHeartbeats).orderBy(desc(forgeWorkerHeartbeats.lastHeartbeatAt)).limit(20),
     db.select().from(forgeJobs).orderBy(desc(forgeJobs.updatedAt)).limit(500),
     db.select({ id: forgeProjects.id, name: forgeProjects.name, businessName: forgeProjects.businessName }).from(forgeProjects),
-    db.select({ runId: forgeRunSteps.runId, jobId: forgeRunSteps.jobId, stage: forgeRunSteps.stage, operatorErrorJson: forgeRunSteps.operatorErrorJson }).from(forgeRunSteps).orderBy(desc(forgeRunSteps.updatedAt)).limit(500),
+    db.select({
+      projectId: forgeRunSteps.projectId,
+      runId: forgeRunSteps.runId,
+      jobId: forgeRunSteps.jobId,
+      stage: forgeRunSteps.stage,
+      operatorErrorJson: forgeRunSteps.operatorErrorJson,
+      updatedAt: forgeRunSteps.updatedAt,
+    }).from(forgeRunSteps).orderBy(desc(forgeRunSteps.updatedAt)).limit(500),
     loadProviderHealthSnapshot(),
     db.select({ provider: forgeProviderHealth.provider, projectId: forgeProviderHealth.projectId, createdAt: forgeProviderHealth.createdAt }).from(forgeProviderHealth).orderBy(desc(forgeProviderHealth.createdAt)).limit(100),
     db.select({ average: sql<number | null>`avg(extract(epoch from (${forgeRuns.completedAt} - ${forgeRuns.startedAt})) * 1000)` }).from(forgeRuns),
@@ -54,6 +61,13 @@ export async function loadForgeOperationalHealth() {
     fallbackAvailable: providerSnapshot.providers.some((candidate) => candidate.provider !== provider.provider && candidate.state !== "open"),
   }))
   const errors = healthJobs.filter((job) => job.operatorError).map((job) => ({ projectId: job.projectId, runId: job.runId, error: job.operatorError! }))
+  for (const step of runSteps.filter((item) => item.operatorErrorJson && !item.jobId)) {
+    errors.push({
+      projectId: step.projectId,
+      runId: step.runId,
+      error: step.operatorErrorJson!,
+    })
+  }
   for (const job of healthJobs.filter((item) => ["failed", "dead_letter"].includes(item.status) && !item.operatorError)) {
     errors.push({
       projectId: job.projectId,

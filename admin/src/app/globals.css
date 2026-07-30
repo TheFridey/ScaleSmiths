@@ -112,6 +112,7 @@ input:focus, textarea:focus, select:focus { border-color: rgba(37,99,235,.5); }
   cursor: pointer;
 }
 .admin-icon-button:hover { background: rgba(148,163,184,.08); color: var(--t1); }
+.admin-tooltip { position: relative; }
 .admin-tooltip::after {
   position: absolute;
   z-index: 80;

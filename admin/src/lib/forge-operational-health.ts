@@ -227,7 +227,7 @@ function severityFor(error: ForgeOperatorError): ForgeAttentionSeverity {
 function dedupe(items: ForgeAttentionItem[]) {
   const seen = new Set<string>()
   return items.filter((item) => {
-    const key = `${item.projectId}:${item.id}:${item.category}`
+    const key = `${item.projectId}:${item.category}`
     if (seen.has(key)) return false
     seen.add(key)
     return true

@@ -5,6 +5,40 @@ Branch: `master`
 Base commit: `cabf515`  
 Decision: **BLOCKED — DO NOT DEPLOY**
 
+## Current release-candidate evidence
+
+This section supersedes the earlier, time-stamped blocker observations retained below
+for audit history. The tested candidate was branch `release/forge-v2-rc` at
+`98210747c134d45ba1a5d646c20c23b42f789988`, based on `cabf515`. The original checkout
+remains untouched.
+
+The July 30 exact-SHA GitHub runs established:
+
+| Workflow | Run | Result |
+|---|---|---|
+| Security | `30587271058` | **PASS** - audits, TruffleHog, sandbox tests, Hadolint, both image builds/scans/SBOM jobs; dependency review correctly skipped on push |
+| CodeQL | `30587270911` | **PASS** - JavaScript/TypeScript analysis |
+| CI | `30587270841` | **PASS EXCEPT INSPECTED BASELINE** - every job except Web passed; Web passed install, disposable PostgreSQL, lint, 127 unit tests, production build, performance budgets and 46/47 Chromium checks |
+
+The sole CI failure was the intentionally unchanged mobile homepage baseline. The new
+390x844 capture was inspected after the experience controls were moved out of the fixed
+mobile overlay; it has no overlapping controls and preserves the verified proof label.
+The inspected desktop, tablet and mobile Linux baselines are now recorded in the
+candidate. A final exact-SHA CI rerun is required after that baseline-only commit.
+
+Local evidence for the current mobile fix:
+
+| Command | Exact result |
+|---|---|
+| `web: npm run lint` | **PASS** - exit 0 |
+| `web: npm run test` | **PASS** - 28 files, 127 tests |
+
+Release blockers that remain regardless of the final automated rerun:
+
+1. No authorised restore of a production-derived encrypted backup has been performed.
+2. Dependency Review must run in its native pull-request context before approval.
+3. Human release approval and the documented manual production checks remain outstanding.
+
 This document records the verification actually performed against the current dirty
 ScaleSmiths checkout. It is not an approval. The checkout contains extensive uncommitted
 admin, Forge, web, migration, workflow and dependency changes, so a release candidate
@@ -83,6 +117,46 @@ are still unavailable in this environment. No release tag was created.
    a pre-release authentication dependency that requires conscious release acceptance.
 
 ## Command ledger
+
+### 2026-07-30 admin/Forge release-unblocking update
+
+The isolated PostgreSQL 16 fixture and production-mode admin server are now proven
+locally on Node `v22.14.0`. This supersedes the older admin browser/PostgreSQL blocker
+entries below, but does not change the overall release verdict.
+
+| Area | Command | Result |
+|---|---|---|
+| Guarded database | `npm run test:db:prepare && npm run test:db:migrate && npm run test:db:seed && npm run test:db:assert` | **PASS** - web then admin migrations, deterministic seed and invariants passed against `scalesmiths_admin_e2e` |
+| Database idempotency | `npm run test:db:seed && npm run test:db:assert` repeated | **PASS** |
+| Database guard | `npx vitest run scripts/test-database-guard.test.mjs` | **PASS** - 3/3 |
+| Admin unit | `npm run test` | **PASS** - 78 files, 546 tests |
+| Admin lint | `npm run lint` | **PASS WITH WARNINGS** - 0 errors, 9 pre-existing unused legacy-surface warnings |
+| Admin build | `npm run build` with isolated production E2E environment | **PASS** - Next.js 15.5.22 |
+| Forge benchmark | `npm run test:forge-benchmark` | **PASS** - 10 fixtures, schema 100%, consistency 100, content 99 |
+| Admin/Forge browser | `npx playwright test --config=playwright.forge.config.ts` | **PASS** - 22/22 in production mode |
+| Diff hygiene | `git diff --check` | **PASS** - no whitespace errors; Windows line-ending notices only |
+
+The production browser suite now proves real credentials authentication, RBAC
+navigation, invalid-credential rejection, server-revocable logout, prompt-only and
+URL-plus-prompt intake, editable brief interpretation, Forge Run creation, automatic
+stage progression, isolated generated-site workspace creation, pause/resume, provider
+and QA recovery, desktop/tablet/mobile preview layouts without document overflow,
+affected-stage-only feedback invalidation, preview approval, deployment blocking and
+Advanced records.
+
+Two runtime defects were found and fixed by this pass:
+
+1. Code generation could be queued without a generated-site workspace. Run
+   orchestration now creates and records the isolated workspace before that atomic
+   stage.
+2. Auth.js rolling-session responses could race browser sign-out. Logout now increments
+   the persisted session version before clearing the browser token, so any raced JWT is
+   rejected by the existing middleware check.
+
+CI now contains an `Admin Forge E2E` job with PostgreSQL 16, guarded/idempotent fixture
+setup, a production admin build, Chromium installation and the auth/Forge journeys.
+The job uses an explicit test-only MFA bootstrap grace window; production MFA policy is
+unchanged.
 
 | Area | Command | Result |
 |---|---|---|

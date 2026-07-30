@@ -72,6 +72,10 @@ const nextConfig = {
   // server bundle is untouched and still starts the worker and monitoring normally.
   webpack: (config, { nextRuntime }) => {
     if (nextRuntime === "edge") config.resolve.alias[join(appDir, "src/instrumentation.ts")] = false
+    config.watchOptions = {
+      ...config.watchOptions,
+      ignored: /[\\/](?:node_modules|generated-sites)[\\/]/,
+    }
     return config
   },
   async headers() {

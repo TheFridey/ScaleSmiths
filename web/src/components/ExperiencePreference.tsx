@@ -151,8 +151,8 @@ export function HomeExperienceGate({ children, initialVariant, initialPreference
     if (initialPreference === "normal") {
       return (
         <>
-          <ExperienceSwitchControl current="normal" />
           {children}
+          <ExperienceSwitchControl current="normal" />
         </>
       )
     }
@@ -163,8 +163,8 @@ export function HomeExperienceGate({ children, initialVariant, initialPreference
   if (preference === "normal") {
     return (
       <>
-        <ExperienceSwitchControl current="normal" onReset={() => setPreference(null)} />
         {children}
+        <ExperienceSwitchControl current="normal" onReset={() => setPreference(null)} />
       </>
     )
   }
@@ -376,7 +376,7 @@ export function ExperienceSwitchControl({ current, onReset }: ExperienceSwitchCo
   return (
     <aside
       aria-label="Experience preference"
-      className="fixed bottom-4 right-4 z-40 flex flex-col items-end gap-2 sm:flex-row"
+      className="relative z-40 flex flex-col items-stretch gap-2 px-4 pb-4 sm:fixed sm:bottom-4 sm:right-4 sm:flex-row sm:items-end sm:p-0"
     >
       <button
         type="button"

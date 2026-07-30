@@ -2,7 +2,7 @@ name: CodeQL
 
 on:
   push:
-    branches: [master]
+    branches: [master, release/forge-v2-rc]
   pull_request:
     branches: [master]
   schedule:
@@ -29,15 +29,15 @@ jobs:
       security-events: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@051e2f90686233507fe9283ff167d2e709304b30 # v3.36.0
         with:
           languages: javascript-typescript
           queries: security-extended
       # JavaScript/TypeScript extraction does not require a synthetic root build;
       # web and admin production builds are separate required CI jobs.
       - name: Analyze
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@051e2f90686233507fe9283ff167d2e709304b30 # v3.36.0
         with:
           category: /language:javascript-typescript

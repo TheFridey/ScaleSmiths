@@ -35,9 +35,11 @@ Thumbs.db
 # Local test / tooling artifacts
 .playwright-mcp/
 playwright-report/
+playwright-shell-report/
 test-results/
 performance-reports/
 benchmark-results/
+audit-results/
 
 # Forge generated client sites (workspaces are local only)
 generated-sites/*

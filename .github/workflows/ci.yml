@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [master]
+    branches: [master, release/forge-v2-rc]
   pull_request:
     branches: [master]
   workflow_dispatch:
@@ -19,22 +19,48 @@ jobs:
     name: Web
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: scalesmiths_web_e2e
+          POSTGRES_USER: scalesmiths_web_test
+          POSTGRES_PASSWORD: local_ci_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U scalesmiths_web_test -d scalesmiths_web_e2e"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      WEB_DATABASE_URL: postgresql://scalesmiths_web_test:local_ci_only@127.0.0.1:5432/scalesmiths_web_e2e
+      MIGRATION_DATABASE_URL: postgresql://scalesmiths_web_test:local_ci_only@127.0.0.1:5432/scalesmiths_web_e2e
+      SCALESMITHS_TEST_ENVIRONMENT: forge-v2-e2e
     defaults:
       run:
         working-directory: web
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: web/package-lock.json
 
+      - name: Use supported npm
+        run: npm install --global npm@10.9.2
+
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
+
+      - name: Prepare disposable web database
+        run: |
+          npm run test:db:prepare
+          npm run db:migrate
+          npm run test:db:seed
+          npm run test:db:assert
 
       - name: Lint
         run: npm run lint
@@ -56,7 +82,7 @@ jobs:
 
       - name: Upload Playwright failure evidence
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: web-playwright-artifacts
           path: |
@@ -67,7 +93,7 @@ jobs:
 
       - name: Upload performance reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: web-performance-reports
           path: web/performance-reports
@@ -83,14 +109,17 @@ jobs:
         working-directory: web
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: web/package-lock.json
+
+      - name: Use supported npm
+        run: npm install --global npm@10.9.2
 
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
@@ -103,7 +132,7 @@ jobs:
 
       - name: Upload cross-browser failure evidence
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: cross-browser-playwright-artifacts
           path: |
@@ -121,14 +150,17 @@ jobs:
         working-directory: admin
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: admin/package-lock.json
+
+      - name: Use supported npm
+        run: npm install --global npm@10.9.2
 
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
@@ -147,7 +179,7 @@ jobs:
 
       - name: Upload Forge benchmark report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: forge-benchmark-report
           path: admin/benchmark-results/forge
@@ -174,16 +206,19 @@ jobs:
       TEST_DATABASE_URL: postgresql://scalesmiths_ci:local_ci_only@127.0.0.1:5432/scalesmiths_integration_test
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: admin/package-lock.json
+
+      - name: Use supported npm
+        run: npm install --global npm@10.9.2
 
       - name: Install admin dependencies
         working-directory: admin
@@ -207,7 +242,7 @@ jobs:
 
       - name: Upload migration and integration logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: database-migration-logs
           path: ci-artifacts
@@ -236,12 +271,15 @@ jobs:
       TEST_RESTORE_DATABASE_URL: postgresql://scalesmiths_backup_test:local_ci_only@127.0.0.1:5432/scalesmiths_restore_drill_test
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
+
+      - name: Use supported npm
+        run: npm install --global npm@10.9.2
 
       - name: Install recovery test tools
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends postgresql-client-16 jq gnupg shellcheck
@@ -262,7 +300,7 @@ jobs:
 
       - name: Upload backup framework diagnostics
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: backup-framework-test-log
           path: ci-artifacts
@@ -275,12 +313,15 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
+
+      - name: Use supported npm
+        run: npm install --global npm@10.9.2
 
       - name: Check env hygiene
         run: npm run check:env-hygiene
@@ -318,12 +359,15 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
+
+      - name: Use supported npm
+        run: npm install --global npm@10.9.2
 
       - name: Validate production Nginx config syntax
         run: npm run test:nginx-config
@@ -337,14 +381,17 @@ jobs:
     timeout-minutes: 40
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: admin/package-lock.json
+
+      - name: Use supported npm
+        run: npm install --global npm@10.9.2
 
       # Admin migrations reference web-owned tables, so the web history is applied
       # first by scripts/run-forge-e2e-tests.mjs and web dependencies are required.
@@ -364,7 +411,7 @@ jobs:
 
       - name: Upload Forge E2E log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: forge-e2e-logs
           path: ci-artifacts/forge-workflow-e2e.log

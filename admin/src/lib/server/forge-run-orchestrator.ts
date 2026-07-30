@@ -226,7 +226,7 @@ export async function continueForgeRun(runId: number, actor = "system"): Promise
     return
   }
   if (next.status === "awaiting_approval") {
-    await pauseFor(runId, next.stage, `Human approval required for ${stageLabel(next.stage)}.`, actor, next.id)
+    await pauseFor(runId, next.stage, `Human approval required for ${stageLabel(next.stage)}.`, actor, next.id, "approval_required")
     return
   }
   if (next.status === "failed") {
@@ -504,7 +504,11 @@ async function pauseFor(runId: number, stage: string, reason: string, actor: str
   const now = new Date()
   const operatorError = normalizeForgeOperatorError(reason, {
     stage,
-    category: category === "budget_exhausted" ? "budget_exceeded" : "missing_input",
+    category: category === "budget_exhausted"
+      ? "budget_exceeded"
+      : category === "approval_required"
+        ? "approval_required"
+        : "missing_input",
     retryable: false,
     runId,
     technicalReference: `forge:run:${runId}:stage:${stage}`,
@@ -512,7 +516,17 @@ async function pauseFor(runId: number, stage: string, reason: string, actor: str
   })
   await db.transaction(async (tx) => {
     await tx.update(forgeRuns).set({ status: "paused", currentStage: stage, pausedAt: now, pauseReason: reason, updatedAt: now }).where(eq(forgeRuns.id, runId))
-    if (stepId) await tx.update(forgeRunSteps).set({ status: category === "budget_exhausted" ? "blocked" : "pending", failureCategory: operatorError.category, failureMessage: operatorError.summary, operatorErrorJson: operatorError, updatedAt: now }).where(eq(forgeRunSteps.id, stepId))
+    if (stepId) await tx.update(forgeRunSteps).set({
+      status: category === "budget_exhausted"
+        ? "blocked"
+        : category === "approval_required"
+          ? "awaiting_approval"
+          : "pending",
+      failureCategory: operatorError.category,
+      failureMessage: operatorError.summary,
+      operatorErrorJson: operatorError,
+      updatedAt: now,
+    }).where(eq(forgeRunSteps.id, stepId))
   })
   await recordRunEvent(runId, stepId ?? null, "run_paused", actor, reason, { category, stage })
 }

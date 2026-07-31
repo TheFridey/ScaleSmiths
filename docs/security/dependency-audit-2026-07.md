@@ -1,8 +1,9 @@
 # Dependency and CI security audit — July 2026
 
-Date: 2026-07-29  
-Scope: `web`, `admin`, dependency governance, security CI, and the disposable backup/restore drill  
-Baseline: Node.js 22.14.0 and npm 10.9.2
+- Date: 2026-07-29
+- Last updated: 2026-07-31 (Dependency Review verification and resolved runtime gates)
+- Scope: `web`, `admin`, dependency governance, security CI, and the disposable backup/restore drill
+- Baseline: Node.js 22.14.0 and npm 10.9.2
 
 ## Outcome
 
@@ -73,7 +74,85 @@ The overrides are identical in web and admin so framework behavior remains align
 - CodeQL and generated-site sandbox security coverage are preserved.
 - Repository policy tests now reject mutable security action references, duplicate TruffleHog failure flags, and Trivy enforcement that precedes evidence upload.
 
-GitHub Dependency Graph must be enabled under **Settings → Security → Advanced Security** for Dependency Review to run.
+## Dependency Review verification
+
+### Dependency Graph is now enabled
+
+GitHub Dependency Graph was previously disabled for this repository. It has now been
+enabled under **Settings → Security → Advanced Security**. Direct API probes on
+2026-07-31 confirm the endpoints the workflow depends on:
+
+| Endpoint | Result |
+| --- | --- |
+| `GET /repos/TheFridey/ScaleSmiths/dependency-graph/sbom` | **HTTP 200** — SPDX-2.3 document returned |
+| `GET /repos/TheFridey/ScaleSmiths/dependency-graph/compare/{base}...{head}` | **HTTP 200** |
+
+### The previous failure was not a vulnerability finding
+
+Dependency Review failed on PR #35 (Security run `30588518347`, merge-test SHA
+`44e7e3a8d5a20e0cd754b66f8e353a71e5013b44`). The job log records:
+
+```text
+Dependency Review could not run (GitHub API HTTP 404). Enable Dependency Graph in
+Settings > Security > Advanced Security, then rerun this workflow.
+```
+
+That is the workflow's own preflight guard failing closed against an **unavailable
+Dependency Graph endpoint**. `actions/dependency-review-action` never executed, so it
+reported no vulnerable dependency, no disallowed licence and no disallowed dependency
+change. The failure must not be read as a security finding, and the guard must not be
+weakened or skipped to make the check green.
+
+Dependency Review is skipped by design on `push` events because the action requires a
+pull-request context. Branch-push evidence therefore cannot substitute for it.
+
+### Authoritative verification event
+
+Pull request [#36](https://github.com/TheFridey/ScaleSmiths/pull/36), opened from
+`chore/forge-v2-release-closure`, is the authoritative verification event for Dependency
+Review. It has now run in its native pull-request context and **passed**.
+
+| Field | Value |
+| --- | --- |
+| Pull request | [#36](https://github.com/TheFridey/ScaleSmiths/pull/36) |
+| Workflow | Security, run `30619638107`, job `91120844879` |
+| Branch head SHA | `a8d93656beaff245994cc3971911932cd9817953` |
+| Checked SHA | `b24c5800b1f215ede4c32af0b8944dfa8b6f356f` — merge of `a8d93656` into `5ac4bacd` |
+| Dependency Graph preflight | **HTTP 200** (previously HTTP 404) |
+| Dependency Review conclusion | **Passed** |
+
+Findings, quoted from the job log:
+
+```text
+Dependency review did not detect any vulnerable packages with severity level "high" or higher.
+Dependency review did not detect any denied packages
+```
+
+This is a confirmation of **no disallowed dependency change**. The pull request changes no
+dependency manifest or lockfile, so the reviewed diff contains no added, removed or
+upgraded package; the check nevertheless executed against the real Dependency Graph rather
+than failing closed on an unavailable endpoint, which is exactly what needed proving.
+
+No finding was suppressed, and the preflight guard in `security.yml` was not weakened or
+skipped. Had the check reported a real finding it would have been investigated and fixed,
+not waived without a documented, time-limited and separately reviewed risk decision.
+
+The commit that records this result re-triggers CI, Security, CodeQL, Dependency Review
+and PR metadata validation against a new merge SHA. That is expected: the table above
+pins the first successful verification event rather than chasing each subsequent merge
+SHA. The pull request must not be merged until the checks on its final commit pass.
+
+### Dependency posture at verification time
+
+- Production audits remain **zero-vulnerability** for both `web` and `admin`
+  (`npm audit --omit=dev`), confirmed by Security run `30588532278` on merged `master`
+  `5ac4bacd89cffc6bd524dfa527738ac239c961c2`.
+- The four Moderate development-only Drizzle Kit/esbuild findings per application remain
+  **accepted temporarily** under the owner and expiry recorded above (Engineering /
+  platform, review by 2026-10-31). They are absent from both production installs.
+- `npm audit fix --force` is **not authorised**. Its proposals remain an unsupported
+  Next.js downgrade and a breaking Drizzle Kit downgrade; neither is a valid security
+  remediation.
 
 ## Backup diagnostics
 
@@ -107,12 +186,20 @@ Completed successfully in a clean Ubuntu/WSL ext4 checkout unless noted:
 
 The Forge E2E rerun reached the controlled QA stage after successful migrations, owner bootstrap, authentication, client creation, and Forge intake/research/sitemap/copy/design/design-system/component/workspace/site-generation API stages. At that point the local WSL service suffered a host-level I/O failure (`Wsl/Service/E_UNEXPECTED` and failed `/etc/passwd` lookups) twice. The application log contained no server exception before the subsystem failed.
 
-That host failure also made the PostgreSQL-backed backup/restore drill and ShellCheck unavailable for the final rerun. These gates are therefore **not claimed as passed** in this report. They remain release blockers and should be rerun in GitHub Actions or a healthy Linux/container host:
+That host failure also made the PostgreSQL-backed backup/restore drill and ShellCheck unavailable for the final rerun. These gates were therefore **not claimed as passed** at the time of that local run.
 
-```bash
-npm run test:forge-e2e
-shellcheck -x scripts/backup/*.sh
-npm run test:backup-framework
-```
+### Resolved on GitHub Actions (2026-07-31)
 
-Public browser E2E and container image scanning were not completed after the host failure. No production deployment should be approved from this local run until those outstanding gates pass.
+Those gates have since been rerun on Linux GitHub Actions runners and **passed** on merged `master` `5ac4bacd89cffc6bd524dfa527738ac239c961c2`, CI run `30588532289` and Security run `30588532278`:
+
+| Gate | Job | Status |
+| --- | --- | --- |
+| `npm run test:forge-e2e` | CI `Forge Workflow E2E` | **Passed** |
+| `shellcheck -x scripts/backup/*.sh` | CI `Backup and Restore` | **Passed** |
+| `npm run test:backup-framework` | CI `Backup and Restore` | **Passed** — synthetic fixture only |
+| Public browser E2E and visual regression | CI `Web`, `Cross-browser Smoke` | **Passed** |
+| Container image build, Trivy scan and SBOM | Security `Image Security (web)`, `Image Security (admin)` | **Passed** |
+
+The backup drill is synthetic: it creates a disposable PostgreSQL source inside the runner. It proves the framework, encryption, redaction and verifier logic, and proves nothing about production data. An authorised production-derived encrypted backup restore is **not executed** and remains a release blocker.
+
+No production deployment should be approved until that restore, the documented manual production checks, and the Dependency Review verification above are complete. See `docs/release-readiness/forge-v2.md`.

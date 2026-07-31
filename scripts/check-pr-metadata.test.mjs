@@ -8,6 +8,7 @@ import {
   classify,
   fencedBlockAfter,
   parseSections,
+  stripComments,
   titleFailures,
   validatePullRequestMetadata,
 } from "./check-pr-metadata.mjs"
@@ -209,4 +210,36 @@ test("section parsing ignores markdown headings inside fenced blocks", () => {
 test("checkbox and fenced-block helpers ignore commented-out template guidance", () => {
   assert.deepEqual(checkedOptions("<!-- - [x] commented -->\n- [x] Real option\n- [ ] Unselected"), ["Real option"])
   assert.equal(fencedBlockAfter("Commands run:\n\n```text\nnpm test\n```", "Commands run"), "npm test")
+})
+
+test("comment stripping leaves no comment marker behind", () => {
+  // A single replace pass splices the text on either side of a removed comment, which
+  // can produce a brand new "<!--" that then survives the strip.
+  for (const input of [
+    "<!--<!-- - [x] hidden -->-->",
+    "<!<!-- x -->!-- - [x] visible -->",
+    "before <!-- unterminated - [x] hidden",
+    "<!-- a --><!-- b -->visible",
+    "<!--<!--<!-- deep -->-->-->",
+  ]) {
+    assert(!stripComments(input).includes("<!--"), `"${input}" left a comment marker`)
+  }
+})
+
+test("comment stripping removes genuinely hidden content but keeps rendered text", () => {
+  // Nested and unterminated comments hide their content when the body is rendered.
+  assert(!/hidden/.test(stripComments("<!--<!-- - [x] hidden -->-->")))
+  assert(!/hidden/.test(stripComments("before <!-- unterminated - [x] hidden")))
+  assert.equal(stripComments("before <!-- unterminated"), "before ")
+
+  // This one renders as visible text, so it must not be silently discarded.
+  assert(/visible/.test(stripComments("<!<!-- x -->!-- - [x] visible -->")))
+
+  assert.equal(stripComments("<!-- a --><!-- b -->visible"), "visible")
+  assert.equal(stripComments("plain text"), "plain text")
+})
+
+test("a summary made only of commented-out guidance is rejected", () => {
+  const hidden = validatePullRequestMetadata(pullRequest({ body: body({ summary: "<!--<!-- Describe the change here -->-->" }) }))
+  assert(hidden.some((failure) => failure.startsWith("[summary]")))
 })

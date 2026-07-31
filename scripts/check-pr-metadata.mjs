@@ -33,7 +33,18 @@ const GENERIC_TITLES = new Set([
 const CONVENTIONAL_PREFIX = /^(feat|fix|test|docs|refactor|security|perf|chore|revert|build|ci|style)(\([^)]*\))?!?:\s*/i
 
 export function stripComments(text) {
-  return String(text ?? "").replace(/<!--[\s\S]*?-->/g, "")
+  let value = String(text ?? "")
+  let previous
+  // Repeat to a fixed point. A single pass can splice the text on either side of a
+  // removed comment into a brand new "<!--", which would then survive the strip and
+  // let commented-out template guidance be counted as a completed section.
+  do {
+    previous = value
+    value = value.replace(/<!--[\s\S]*?-->/g, "")
+  } while (value !== previous)
+  // An unclosed comment hides everything after it when the body is rendered, so drop
+  // the remainder here too rather than treating hidden text as real content.
+  return value.replace(/<!--[\s\S]*$/, "")
 }
 
 // Splits a markdown body into `## Heading` sections, ignoring headings inside fences.

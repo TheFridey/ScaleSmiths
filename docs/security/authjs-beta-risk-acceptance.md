@@ -1,10 +1,11 @@
 # Auth.js beta risk acceptance
 
-Status: accepted with monitoring  
-Dependency: `next-auth@5.0.0-beta.32`  
-Owner: ScaleSmiths repository owner  
-Recorded: 2026-07-30  
-Review by: 2026-10-30
+- Status: accepted with monitoring
+- Dependency: `next-auth@5.0.0-beta.32`
+- Owner: ScaleSmiths repository owner
+- Recorded: 2026-07-30
+- Last reviewed: 2026-07-31 (browser authentication evidence added; acceptance unchanged)
+- Review by: 2026-10-30
 
 ## Why this version is used
 
@@ -18,11 +19,43 @@ session, cookie and RBAC risk.
 The current automated suite covers password authentication helpers, persistent admin
 identity, session-version invalidation, protected-route behaviour, RBAC filtering, MFA
 policy and recovery-code logic. The production dependency audit reports zero known
-vulnerabilities for both applications as of 2026-07-30.
+vulnerabilities for both applications as of 2026-07-31.
 
-The remaining release gate requires the real browser login, invalid-login, session
-persistence, logout, role visibility and protected-route redirect journeys to pass
-against the disposable PostgreSQL fixture. This acceptance does not waive that gate.
+### Browser authentication is now validated
+
+The previously outstanding browser gate has been **executed and passed**. Earlier
+revisions of this document recorded that real browser authentication remained untested;
+that statement is superseded.
+
+The disposable PostgreSQL 16 browser suite runs against a production-mode admin server in
+the CI `Admin Forge E2E` job (`admin/test/e2e/auth.setup.ts` and
+`admin/test/e2e/admin-auth.spec.ts`). On merged `master`
+`5ac4bacd89cffc6bd524dfa527738ac239c961c2`, CI run `30588532289`, it validated:
+
+| Behaviour | Status |
+| --- | --- |
+| Real login through the credentials provider with real stored credentials | **Passed** |
+| Invalid login rejected by the real credentials provider | **Passed** |
+| Protected-route handling for unauthenticated requests | **Passed** |
+| Session persistence across navigations via reused browser storage state | **Passed** |
+| Logout and server-side session invalidation | **Passed** |
+| Role-based navigation and RBAC visibility | **Passed** |
+| Authenticated Forge routes reachable under a real session | **Passed** |
+
+The same authenticated session drives all 18 Forge operator journeys, so authenticated
+routing and session persistence are exercised continuously rather than only at login.
+
+### What this evidence does and does not establish
+
+Passing these journeys mitigates **implementation risk**: it shows this application's use
+of the Auth.js v5 credentials, session and RBAC surfaces behaves correctly under a real
+browser against a real database.
+
+It does not change the **supply and support risk** of depending on a pre-release package.
+A passing test suite does not make `5.0.0-beta.32` equivalent to a stable release. Beta
+releases may still introduce behavioural changes between patch versions, carry weaker
+compatibility guarantees, and receive less predictable security and support response.
+This acceptance therefore remains in force and is not discharged by the test results.
 
 ## Risks and monitoring
 

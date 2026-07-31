@@ -32,6 +32,8 @@ const REQUIRED_CONTENT = {
     "forge-benchmark-report",
     "npm run test:forge-e2e",
     "forge-e2e-logs",
+    "npm run check:pr-metadata",
+    "npm run test:pr-metadata",
   ],
   "security.yml": [
     "actions/dependency-review-action@",
@@ -115,6 +117,14 @@ export function validateWorkflowSet(workflows, repositoryRoot) {
     failures.push("[build-artifact-order] ci.yml must measure the production build before Playwright's dev server can replace .next output")
   }
 
+  // The PR metadata gate must exist, must be pull-request scoped, and must never reach
+  // for the GitHub API, which would require a token broader than the read-only default.
+  if (!/^ {2}pr-metadata:\s*$/m.test(ci)) {
+    failures.push("[pr-metadata] ci.yml must define the pr-metadata job")
+  } else if (!/^ {2}pr-metadata:\s*\n(?: {4}[^\n]*\n)*? {4}if:\s*github\.event_name == 'pull_request'\s*$/m.test(ci)) {
+    failures.push("[pr-metadata] ci.yml pr-metadata job must run only for pull_request events")
+  }
+
   const security = byName.get("security.yml") ?? ""
   if (/extra_args:\s*[^\n]*--fail/.test(security)) failures.push("[trufflehog-arguments] TruffleHog must not receive a duplicate --fail argument")
   if (!security.includes("dependency-graph/sbom") || !security.includes("Enable Dependency Graph")) {
@@ -157,7 +167,12 @@ function ensurePath(failures, repositoryRoot, relativePath, workflow) {
 
 export async function loadWorkflowSet(repositoryRoot) {
   const workflowRoot = path.join(repositoryRoot, ".github", "workflows")
-  return Promise.all(REQUIRED_WORKFLOWS.map(async (name) => ({ name, content: await readFile(path.join(workflowRoot, name), "utf8") })))
+  // Normalise line endings so the policy rules and their tests behave identically on a
+  // CRLF Windows checkout and an LF Linux runner.
+  return Promise.all(REQUIRED_WORKFLOWS.map(async (name) => ({
+    name,
+    content: (await readFile(path.join(workflowRoot, name), "utf8")).replace(/\r\n/g, "\n"),
+  })))
 }
 
 async function main() {

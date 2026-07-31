@@ -12,6 +12,7 @@
     "check:env-hygiene": "node scripts/check-env-hygiene.mjs",
     "check:github-actions": "node scripts/check-github-actions.mjs",
     "check:migration-history": "node scripts/check-migration-history.mjs",
+    "check:pr-metadata": "node scripts/check-pr-metadata.mjs",
     "check:production-topology": "node scripts/check-production-topology.mjs",
     "test:production-topology": "node --test scripts/check-production-topology.test.mjs",
     "update:cloudflare-ranges": "node scripts/update-cloudflare-nginx-ranges.mjs",
@@ -24,6 +25,7 @@
     "test:backup-framework": "bash scripts/backup/test-backup-framework.sh",
     "test:dependency-governance": "node --test scripts/check-dependency-governance.test.mjs",
     "test:github-actions": "node --test scripts/check-github-actions.test.mjs",
+    "test:pr-metadata": "node --test scripts/check-pr-metadata.test.mjs",
     "test:forge-e2e": "node scripts/run-forge-e2e-tests.mjs",
     "test:release-simulation": "node --test scripts/release-manager.test.mjs"
   }

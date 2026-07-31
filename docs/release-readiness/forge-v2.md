@@ -1,265 +1,192 @@
 # Forge V2 release readiness
 
-Date: 2026-07-30  
-Branch: `master`  
-Base commit: `cabf515`  
-Decision: **BLOCKED — DO NOT DEPLOY**
+- Date: 2026-07-31
+- Branch: `master`
+- Merged commit: `5ac4bacd89cffc6bd524dfa527738ac239c961c2`
+- Decision: **BLOCKED — DO NOT DEPLOY**
 
-## Current release-candidate evidence
+Forge V2 is now **automated-gate complete**. Every mandatory automated gate has passed on
+Linux GitHub Actions runners against exact, recorded SHAs. The release remains blocked on
+operational evidence that cannot be produced by automation: an authorised
+production-derived encrypted backup restore, the documented manual production checks, and
+recorded human release approval.
 
-This section supersedes the earlier, time-stamped blocker observations retained below
-for audit history. The tested candidate was branch `release/forge-v2-rc` at
-`98210747c134d45ba1a5d646c20c23b42f789988`, based on `cabf515`. The original checkout
-remains untouched.
+This document is a release ledger, not an approval.
 
-The July 30 exact-SHA GitHub runs established:
+## Authoritative identifiers
+
+Release evidence is only meaningful against an exact SHA. These five identifiers are
+distinct and must not be conflated.
+
+| Identifier | Value | What it means |
+| --- | --- | --- |
+| Forge V2 candidate head | `b9b6be2af9d7645588a95d66ce61ab12b29eaec9` | Final commit on `release/forge-v2-rc`; the reviewed candidate tree |
+| Previous `master` | `1cc9e4e071926154ba7dbd4d3c5e4f851e54912b` | PR #35 base at merge time |
+| PR merge-test SHA | `44e7e3a8d5a20e0cd754b66f8e353a71e5013b44` | Ephemeral `Merge b9b6be2a into 1cc9e4e0` commit that `pull_request` jobs actually checked out |
+| Merged `master` SHA | `5ac4bacd89cffc6bd524dfa527738ac239c961c2` | Merge commit of PR #35; the current release candidate |
+| Merged pull request | [#35](https://github.com/TheFridey/ScaleSmiths/pull/35) | Merged 2026-07-30T22:50:26Z |
+
+### Evidence classes
+
+| Class | Trigger | Scope and limits |
+| --- | --- | --- |
+| Branch-push evidence | `push` to `release/forge-v2-rc` | Runs against the candidate head exactly. Dependency Review is skipped by design; `dependency-review-action` requires a pull-request context. |
+| Pull-request evidence | `pull_request` into `master` | Runs against the ephemeral merge-test SHA, not the candidate head. This is the only context in which Dependency Review executes. |
+| Merged-`master` evidence | `push` to `master` | Runs against the merged tree that would actually be deployed. Authoritative for release. |
+| Synthetic backup evidence | CI `Backup and Restore` job | Disposable PostgreSQL fixture created inside the runner. Proves the framework, encryption, redaction and verifier logic. Proves nothing about production data. |
+| Production-derived restore evidence | Authorised operator, out of band | Restore of a real encrypted production backup into an isolated target. **Not executed.** Cannot be produced by CI and must never be simulated. |
+
+## Automated gate results
+
+### Merged `master` — `5ac4bacd` (authoritative)
 
 | Workflow | Run | Result |
-|---|---|---|
-| Security | `30587271058` | **PASS** - audits, TruffleHog, sandbox tests, Hadolint, both image builds/scans/SBOM jobs; dependency review correctly skipped on push |
-| CodeQL | `30587270911` | **PASS** - JavaScript/TypeScript analysis |
-| CI | `30587270841` | **PASS EXCEPT INSPECTED BASELINE** - every job except Web passed; Web passed install, disposable PostgreSQL, lint, 127 unit tests, production build, performance budgets and 46/47 Chromium checks |
+| --- | --- | --- |
+| CI | `30588532289` | **Passed** — 9/9 jobs |
+| Security | `30588532278` | **Passed** — 8/8 executed jobs; Dependency Review **Not applicable** on `push` |
+| CodeQL | `30588532257` | **Passed** — JavaScript/TypeScript analysis |
 
-The sole CI failure was the intentionally unchanged mobile homepage baseline. The new
-390x844 capture was inspected after the experience controls were moved out of the fixed
-mobile overlay; it has no overlapping controls and preserves the verified proof label.
-The inspected desktop, tablet and mobile Linux baselines are now recorded in the
-candidate. A final exact-SHA CI rerun is required after that baseline-only commit.
+CI jobs, all **Passed**: Web, Admin, Cross-browser Smoke, Admin Forge E2E, Forge Workflow
+E2E, Database and Migrations, Backup and Restore, Nginx Topology, Root Hygiene.
 
-Local evidence for the current mobile fix:
+Security jobs, all **Passed**: npm Audit (web), npm Audit (admin), Image Security (web),
+Image Security (admin), Hadolint (web), Hadolint (admin), Generated-site Sandbox,
+TruffleHog.
 
-| Command | Exact result |
-|---|---|
-| `web: npm run lint` | **PASS** - exit 0 |
-| `web: npm run test` | **PASS** - 28 files, 127 tests |
+### Forge V2 candidate head — `b9b6be2a` (branch push)
 
-Release blockers that remain regardless of the final automated rerun:
+| Workflow | Run | Result |
+| --- | --- | --- |
+| CI | `30587778565` | **Passed** |
+| Security | `30587778551` | **Passed**; Dependency Review **Not applicable** on `push` |
+| CodeQL | `30587779137` | **Passed** |
 
-1. No authorised restore of a production-derived encrypted backup has been performed.
-2. Dependency Review must run in its native pull-request context before approval.
-3. Human release approval and the documented manual production checks remain outstanding.
+### PR #35 pull-request context — merge-test SHA `44e7e3a8`
 
-This document records the verification actually performed against the current dirty
-ScaleSmiths checkout. It is not an approval. The checkout contains extensive uncommitted
-admin, Forge, web, migration, workflow and dependency changes, so a release candidate
-cannot be reproduced from `cabf515`.
+| Workflow | Run | Result |
+| --- | --- | --- |
+| CI | `30588518342` | **Passed** — 9/9 jobs |
+| CodeQL | `30588518349` | **Passed** |
+| Security | `30588518347` | **Failed** — Dependency Review only; 8/9 jobs passed |
 
-## Release-unblocking rerun
+The single Security failure was the Dependency Review preflight, which received
+**HTTP 404** from `GET /repos/TheFridey/ScaleSmiths/dependency-graph/sbom`. That is an
+unavailable Dependency Graph endpoint, **not** a vulnerability finding and not a
+disallowed dependency change. GitHub Dependency Graph has since been enabled; see
+`docs/security/dependency-audit-2026-07.md` for the verification event and its result.
 
-The intentional change set was preserved from the original dirty checkout and reapplied
-to an isolated worktree on branch `release/forge-v2-rc`, based on the exact source commit
-`cabf515b9798feb3ff90f7b2d527722b9137d770`. Generated Playwright, audit, build and
-dependency directories were not reapplied. The original checkout was not reset, cleaned
-or otherwise rewritten.
+## Gate-by-gate ledger
 
-This rerun resolved the local dependency-install blocker. After `npm cache verify`, both
-apps completed two consecutive fresh installs:
+| Gate | Evidence | Status |
+| --- | --- | --- |
+| Web lint, unit tests, production build | CI `Web`, run `30588532289` | **Passed** |
+| Web performance budgets | CI `Web` | **Passed** |
+| Web Chromium journeys and visual regression | CI `Web` | **Passed** |
+| Web cross-browser smoke (Firefox, WebKit) | CI `Cross-browser Smoke` | **Passed** |
+| Admin lint, unit tests, production build | CI `Admin` | **Passed** |
+| Forge benchmark suite | CI `Admin` | **Passed** |
+| Authenticated admin browser journeys | CI `Admin Forge E2E` | **Passed** — 3/3 |
+| Forge browser journeys | CI `Admin Forge E2E` | **Passed** — 18/18 |
+| Full Forge workflow API E2E | CI `Forge Workflow E2E` | **Passed** |
+| Migration journal and history integrity | CI `Database and Migrations` | **Passed** |
+| PostgreSQL integration suite | CI `Database and Migrations` | **Passed** |
+| Synthetic backup/restore framework drill | CI `Backup and Restore` | **Passed** |
+| ShellCheck on backup scripts | CI `Backup and Restore` | **Passed** |
+| Nginx config syntax and topology integration | CI `Nginx Topology` | **Passed** |
+| Repository policy checks and release simulation | CI `Root Hygiene` | **Passed** |
+| Production npm audit (web) | Security `30588532278` | **Passed** — 0 vulnerabilities |
+| Production npm audit (admin) | Security `30588532278` | **Passed** — 0 vulnerabilities |
+| Dockerfile lint (web, admin) | Security `30588532278` | **Passed** |
+| Container image build, Trivy scan, SPDX SBOM (web, admin) | Security `30588532278` | **Passed** — no unfixed High/Critical |
+| Generated-site sandbox security fixtures | Security `30588532278` | **Passed** |
+| Secret-history scan (TruffleHog, verified only) | Security `30588532278` | **Passed** |
+| CodeQL static analysis | CodeQL `30588532257` | **Passed** |
+| Dependency Review | Requires `pull_request`; last attempt HTTP 404 | **Pending** — re-verification in progress |
+| Production-derived encrypted backup restore | Requires authorised operator | **Not executed** |
+| Manual production checks | Requires authorised release operator | **Not executed** |
+| Human release approval | Requires named approver | **Not executed** |
 
-- Web: `npm ci` installed 603 packages twice.
-- Admin: `npm ci` installed 612 packages twice.
-
-The lock graph intentionally resolves root esbuild `0.25.12` and isolated esbuild
-`0.28.1` copies for tsx and Vitest. The prior binary mismatch came from the contaminated
-installed dependency tree, not package-lock inconsistency. Root, web and admin manifests
-now declare `packageManager: npm@10.9.2` and support Node `>=22 <23`.
-
-The release decision remains **BLOCKED**. A disposable PostgreSQL/authenticated Forge
-fixture, the 18 required operator journeys, inspected responsive screenshots, Linux
-GitHub Actions security/container evidence and an authorised production-backup restore
-are still unavailable in this environment. No release tag was created.
-
-### Rerun command evidence
-
-| Area | Command | Exact result |
-|---|---|---|
-| Candidate | `git worktree add -b release/forge-v2-rc ... cabf515...` | **PASS** - isolated candidate created from exact base SHA |
-| Cache | `npm cache verify` | **PASS** - 3,204 content objects verified |
-| Web install | `npm ci` twice | **PASS** - 603 packages per run |
-| Admin install | `npm ci` twice | **PASS** - 612 packages per run |
-| Web lint | `npm run lint` | **PASS** - exit 0 |
-| Web unit | `npm test -- --run` | **PASS** - 27 files, 124 tests |
-| Web build | `npm run build` | **PASS** - Next.js 15.5.22 production build |
-| Web bundle/runtime budgets | `PERFORMANCE_BUDGET_SKIP_LIGHTHOUSE=1 npm run check:performance-budgets` | **PASS** - 2 routes; Lighthouse deliberately not counted |
-| Web Lighthouse budgets | `npm run check:performance-budgets` | **BLOCKED** - runtime returned HTTP 500 without `WEB_DATABASE_URL`; timeout handling hardened |
-| Admin lint | `npm run lint` | **PASS WITH WARNINGS** - 0 errors, 9 warnings |
-| Admin unit | `npm test -- --run` | **PASS** - 77 files, 541 tests |
-| Admin build | `npm run build` | **PASS** - Next.js 15.5.22 production build |
-| Workflow policy | `npm run check:github-actions` | **PASS** |
-| Workflow tests | `npm run test:github-actions` | **PASS after observed fixture fix** - 6 tests |
-| Dependency policy | check and tests | **PASS** - 3 tests |
-| Migration integrity | history check and consistency tests | **PASS** - 52 historical, 11 forward; 2 tests |
-| Web production audit | `npm audit --omit=dev` | **PASS** - 0 vulnerabilities |
-| Admin production audit | `npm audit --omit=dev` | **PASS** - 0 vulnerabilities |
-| Full audits | `npm audit` in both apps | **WARN** - 4 Moderate development-only Drizzle Kit/esbuild findings per app |
-
-## Release blockers
-
-1. Fresh `npm ci` did not complete for either `web` or `admin` within 15 minutes, even
-   after the existing dependency trees were isolated. The web tree also contains an
-   esbuild binary mismatch (`0.28.1` package, `0.25.12` binary). Deterministic installation
-   is therefore not proven.
-2. Docker Desktop is unavailable. PostgreSQL integration, full Forge E2E, Nginx topology,
-   container builds, image scans and container-derived SBOMs could not run.
-3. The required authenticated Forge visual/user journeys could not run because no
-   `ADMIN_EMAIL`/`ADMIN_PASSWORD` test credentials or disposable database were supplied.
-   Playwright browsers are now installed, but the application fixture is not provisioned.
-4. Web lint, unit, build, performance and cross-browser/visual gates remain blocked by the
-   corrupted web dependency tree.
-5. TruffleHog, Trivy, Syft and CodeQL CLIs are not installed. GitHub workflow policy was
-   validated, but GitHub-native dependency review, CodeQL and secret/image scans were not
-   reproduced locally.
-6. No latest production backup was supplied for an authorised isolated restore. The
-   backup framework and verifier safeguards pass, but production recovery evidence cannot
-   be fabricated.
-7. The full development audits report four Moderate findings through Drizzle Kit's
-   development-only esbuild chain in both apps. Production audits are clean.
-8. `next-auth@5.0.0-beta.32` is an explicitly pinned and policy-approved beta, but remains
-   a pre-release authentication dependency that requires conscious release acceptance.
-
-## Command ledger
-
-### 2026-07-30 admin/Forge release-unblocking update
-
-The isolated PostgreSQL 16 fixture and production-mode admin server are now proven
-locally on Node `v22.14.0`. This supersedes the older admin browser/PostgreSQL blocker
-entries below, but does not change the overall release verdict.
-
-| Area | Command | Result |
-|---|---|---|
-| Guarded database | `npm run test:db:prepare && npm run test:db:migrate && npm run test:db:seed && npm run test:db:assert` | **PASS** - web then admin migrations, deterministic seed and invariants passed against `scalesmiths_admin_e2e` |
-| Database idempotency | `npm run test:db:seed && npm run test:db:assert` repeated | **PASS** |
-| Database guard | `npx vitest run scripts/test-database-guard.test.mjs` | **PASS** - 3/3 |
-| Admin unit | `npm run test` | **PASS** - 78 files, 546 tests |
-| Admin lint | `npm run lint` | **PASS WITH WARNINGS** - 0 errors, 9 pre-existing unused legacy-surface warnings |
-| Admin build | `npm run build` with isolated production E2E environment | **PASS** - Next.js 15.5.22 |
-| Forge benchmark | `npm run test:forge-benchmark` | **PASS** - 10 fixtures, schema 100%, consistency 100, content 99 |
-| Admin/Forge browser | `npx playwright test --config=playwright.forge.config.ts` | **PASS** - 22/22 in production mode |
-| Diff hygiene | `git diff --check` | **PASS** - no whitespace errors; Windows line-ending notices only |
-
-The production browser suite now proves real credentials authentication, RBAC
-navigation, invalid-credential rejection, server-revocable logout, prompt-only and
-URL-plus-prompt intake, editable brief interpretation, Forge Run creation, automatic
-stage progression, isolated generated-site workspace creation, pause/resume, provider
-and QA recovery, desktop/tablet/mobile preview layouts without document overflow,
-affected-stage-only feedback invalidation, preview approval, deployment blocking and
-Advanced records.
-
-Two runtime defects were found and fixed by this pass:
-
-1. Code generation could be queued without a generated-site workspace. Run
-   orchestration now creates and records the isolated workspace before that atomic
-   stage.
-2. Auth.js rolling-session responses could race browser sign-out. Logout now increments
-   the persisted session version before clearing the browser token, so any raced JWT is
-   rejected by the existing middleware check.
-
-CI now contains an `Admin Forge E2E` job with PostgreSQL 16, guarded/idempotent fixture
-setup, a production admin build, Chromium installation and the auth/Forge journeys.
-The job uses an explicit test-only MFA bootstrap grace window; production MFA policy is
-unchanged.
-
-| Area | Command | Result |
-|---|---|---|
-| Repository | `git status --short` | **BLOCKED** — extensive tracked and untracked release changes |
-| Runtime | `node -v` / `npm -v` | **PASS** — Node `v22.14.0`, npm `10.9.2` |
-| Docker | `docker version` | **BLOCKED** — Docker Desktop Linux engine unavailable |
-| Lock/install | `web: npm ci --no-audit --no-fund --progress=false` | **BLOCKED** — timed out after 904 seconds |
-| Lock/install | `admin: npm ci --no-audit --no-fund --progress=false` | **BLOCKED** — timed out after 904 seconds |
-| Dependencies | `web: npm audit --omit=dev --json` | **PASS** — 0 vulnerabilities |
-| Dependencies | `admin: npm audit --omit=dev --json` | **PASS** — 0 vulnerabilities |
-| Dependencies | `web: npm audit --json` | **WARN** — 4 Moderate, all Drizzle Kit/esbuild development chain |
-| Dependencies | `admin: npm audit --json` | **WARN** — 4 Moderate, all Drizzle Kit/esbuild development chain |
-| Policy | `npm run check:dependency-governance` | **PASS** |
-| Policy | `npm run test:dependency-governance` | **PASS** — 3 tests |
-| Policy | `npm run check:github-actions` | **PASS** |
-| Policy | `npm run test:github-actions` | **PASS** — 6 tests |
-| Environment | `npm run check:env-hygiene` | **PASS** |
-| Admin | `npm run lint` | **PASS WITH WARNINGS** — 0 errors, 9 unused legacy-surface warnings |
-| Admin | `npm test` | **PASS** — 77 files, 541 tests |
-| Admin | `npm run build` | **PASS** after isolating stale `.next`; Next 15.5.22 production build completed |
-| Admin | `npm run test:forge-benchmark` | **PASS** — 10 fixtures, schema 100%, consistency 100, content 99 |
-| Admin | `npm run test -- src/lib/forge-sandbox-security.test.ts` | **PASS** — 6 tests |
-| Admin visual | `npm run test:visual:shell` | **BLOCKED** — 7 tests require missing admin test credentials |
-| Forge workflow | `admin: npm run test:forge-e2e` | **BLOCKED** — no server at `127.0.0.1:3301` |
-| Forge workflow | `root: npm run test:forge-e2e` | **BLOCKED** — Docker unavailable |
-| PostgreSQL | `npm run test:integration` | **BLOCKED** — Docker unavailable |
-| Migrations | `npm run test:migration-consistency` | **PASS** — 2 tests |
-| Migrations | `npm run check:migration-history` | **PASS** — 52 historical and 11 forward migrations locked |
-| Migrations | `npm run test:migration-history` | **PASS** — 4 tests |
-| Topology | `npm run check:production-topology` | **PASS** after correcting two test-fixture paths |
-| Topology | `npm run test:production-topology` | **PASS** — 4 tests |
-| Backup | `npm run test:backup-migration-safety` | **PASS** — 7 tests |
-| Backup | `bash -lc 'export PATH="/c/nvm4w/nodejs:$PATH"; bash scripts/backup/test-backup-framework.sh'` | **PASS** |
-| Nginx | `npm run test:nginx-config` | **BLOCKED** — Docker unavailable |
-| Nginx | `npm run test:nginx` | **BLOCKED** — Docker unavailable |
-| Web | `npm run lint` | **BLOCKED** — incomplete dependency extraction |
-| Web | `npm test` | **BLOCKED** — missing `@vitest/mocker` |
-| Web | `npm run build` | **BLOCKED** — missing Next `server/require-hook` |
-| Web E2E | `npm run test:e2e:chromium` | **BLOCKED** — web application cannot start |
-| Web E2E | `npm run test:e2e:cross-browser` | **BLOCKED** — web application cannot start |
-| Web performance | `npm run check:performance-budgets` | **BLOCKED** — build/runtime unavailable |
-| Web visual | Playwright visual suite without `--update-snapshots` | **BLOCKED** — web server cannot start |
-| Browsers | Playwright install for Chromium, Firefox and WebKit | **PASS** |
-| Supply chain | TruffleHog | **BLOCKED** — CLI unavailable |
-| Supply chain | dependency review | **BLOCKED LOCAL** — GitHub-native gate only; workflow policy passes |
-| Containers | web/admin image builds | **BLOCKED** — Docker unavailable |
-| Containers | Trivy scans | **BLOCKED** — Docker and Trivy unavailable |
-| Containers | SBOM generation | **BLOCKED** — images and Syft unavailable |
-| Static analysis | CodeQL | **BLOCKED LOCAL** — CLI unavailable; workflow policy passes |
-| Diff hygiene | `git diff --check` | **PASS** except line-ending normalisation notices |
+Full development audits report four Moderate findings per application through the
+development-only Drizzle Kit → `@esbuild-kit/*` → esbuild chain. These are **accepted
+temporarily** and are absent from both production installs. See
+`docs/security/dependency-audit-2026-07.md`.
 
 ## Forge journey coverage
 
-The existing deterministic API workflow covers project/client creation, structured
-intake, research, sitemap, copy rejection/regeneration, design, design system, component
-specification, workspace creation, generated site, controlled QA failure, repair,
-proposal generation, deployment blocking, fallback-quality approval, activity logs and
-artifact provenance. Unit coverage additionally exercises run sequencing, optional
-stages, approvals, retries, recovery, budget pauses, idempotency, operational health,
-provider correlation and atomic QA/repair rules.
+All 18 Forge operator journeys execute in a production-mode admin server against a
+disposable PostgreSQL 16 fixture in CI (`admin/test/e2e/forge-journeys.spec.ts`), and all
+**Passed** on `5ac4bacd`:
 
-The requested browser-level journeys are **not release-proven**. In particular, no green
-end-to-end evidence exists for pause/resume UI, provider fallback UI, affected-stage-only
-feedback invalidation, preview approval/deployment preparation, worker restart recovery,
-Advanced records, or historical-project compatibility. These remain mandatory release
-blockers until run with the Docker-backed fixture.
+1. Creates a new project from prompt only.
+2. Creates a project from website URL and prompt using the guarded deterministic reader.
+3. Reviews and edits the interpreted brief before creation.
+4. Approving the brief creates and starts a Forge Run.
+5. Observes an active Forge Run in the production workspace.
+6. Pauses a running Forge Run through the authenticated API.
+7. Resumes the paused Forge Run and records the transition.
+8. Displays a provider failure with an operator-facing recovery.
+9. Retries a provider-failed stage through the real run API.
+10. Displays a failed functional QA stage.
+11. Requests repair by retrying the failed atomic QA stage.
+12. Opens the desktop preview workspace (1440×900).
+13. Opens the tablet preview workspace (1024×768).
+14. Opens the mobile preview workspace (390×844).
+15. Submits guarded feedback and invalidates only affected run stages.
+16. Approves the preview through the existing project action.
+17. Blocks deployment without the required final evidence and approval.
+18. Opens Advanced records for historical tasks, artifacts and activity.
+
+Three authenticated journeys run alongside them
+(`admin/test/e2e/admin-auth.spec.ts`), plus the real-credentials `auth-setup` project —
+22 browser checks total, all **Passed**.
 
 ## Visual evidence
 
-The Playwright shell suite defines the requested six sizes:
+Desktop, tablet and mobile Chromium baselines for the public site are **accepted** and
+enforced. The candidate diffs recorded in
+`docs/release-readiness/visual-review/public-homepage-86cfc75.md` were inspected, the
+mobile experience-control overlap was fixed in `9821074`, and the inspected baselines
+were accepted in `b9b6be2a` ("test(web): accept inspected mobile homepage baseline").
 
-- 1920×1080
-- 1600×900
-- 1440×900
-- 1366×768
-- 1024×768
-- 390×844
+The web visual regression suite now **Passes** against those committed baselines on
+`5ac4bacd` with the configured 0.02 maximum difference ratio unchanged. Baselines under
+`web/tests/e2e/public-site.visual.spec.ts-snapshots/` cover normal home, chooser and
+interactive-plan routes at desktop, tablet and mobile widths.
 
-It asserts horizontal overflow, clipped controls, responsive global navigation,
-reduced-motion usability and persistent/reversible Focus Mode. The current run stopped
-at authentication because test credentials were absent, so the generated images under
-`admin/test-results/admin-shell/**/test-failed-1.png` are login/error diagnostics, **not**
-accepted Forge screenshots. No visual baselines were updated.
+The six-viewport authenticated admin shell suite (`npm run test:visual:shell`) is **Not
+executed** in CI. It is not a Forge V2 release gate; the Forge preview viewports are
+covered by journeys 12–14 above. Inspection of authenticated captures and keyboard/focus
+order remains a manual production check.
 
-Required authenticated captures still include `/dashboard`, `/forge`, `/forge/new` and
-an active project in Overview, Build, Preview, Attention and Advanced views. The visual
-acceptance criteria therefore remain unverified.
+## Remaining release blockers
+
+These are the real unresolved limits. None can be closed by re-running automation.
+
+1. **No authorised production-derived encrypted backup restore has been completed.** The
+   CI drill is synthetic: it creates its own disposable PostgreSQL source inside the
+   runner. Production recovery evidence must not be inferred from it or fabricated.
+2. **Manual production checks still require an authorised release operator.** See
+   "Remaining manual production checks" below.
+3. **Dependency Review must pass on a pull request** before this governance task is
+   complete. It has never executed successfully in its native context because Dependency
+   Graph was disabled. Status is **Pending** until a real pull-request check passes.
+4. **Human release approval is separate from automated test success.** A fully green
+   pipeline is a precondition for approval, not approval itself.
 
 ## Database migration and rollback
 
-Pending forward migrations in this release include:
+Forward migrations in this release:
 
-- Web `0010`–`0013`, including verified claims, enquiry intent, local-growth analytics
-  and the additive `web_vital` enum value.
-- Admin `0042`–`0048`, including historical reconciliation, dependency admission,
-  tenant controls, durable operations, Forge Runs, operational health and atomic-stage
-  cost fields.
+- Web `0010`–`0013`: verified claims, enquiry intent, local-growth analytics and the
+  additive `web_vital` enum value.
+- Admin `0042`–`0048`: historical reconciliation, dependency admission, tenant controls,
+  durable operations, Forge Runs, operational health and atomic-stage cost fields.
 
 Production sequence:
 
-1. Freeze the candidate at a reviewed commit and record both existing migration ledgers.
-2. Produce and verify an encrypted backup of PostgreSQL, environment configuration,
-   Nginx state and generated workspaces.
+1. Freeze the candidate at a reviewed commit and record both migration ledgers.
+2. Produce and verify an encrypted backup of PostgreSQL, environment configuration, Nginx
+   state and generated workspaces.
 3. Restore that backup into an explicitly isolated PostgreSQL 16 target.
 4. Apply **web migrations first**, then **admin migrations**.
 5. Run the guarded backup-migration verifier and attach its JSON evidence.
@@ -272,14 +199,13 @@ when it is schema-forward-compatible. Otherwise restore the tested pre-release b
 
 ## Deployment sequence
 
-1. Resolve every blocker above on a clean Linux/CI runner.
-2. Create a reviewed commit; rerun clean installs, audits, all app tests/builds,
-   PostgreSQL/Forge/Nginx/backup suites, browser journeys and security jobs.
-3. Record image digests, SBOMs, Trivy/CodeQL/TruffleHog/dependency-review results and
+1. Complete the production-derived restore drill and record its evidence.
+2. Confirm the merged candidate SHA and rerun the full pipeline against it.
+3. Record image digests, SBOMs, Trivy/CodeQL/TruffleHog/Dependency Review results and
    inspected screenshots.
 4. Verify production secrets, provider budgets, Docker sandbox mode, backup ownership,
    monitoring delivery and the maintenance window.
-5. Back up and migrate web then admin.
+5. Back up, then migrate web then admin.
 6. Deploy immutable web/admin images to the inactive release slot.
 7. Run health, login/RBAC, Forge project/run, preview, quote and portal smoke checks.
 8. Validate Nginx, switch traffic through the release manager, monitor, then save the
@@ -298,29 +224,26 @@ when it is schema-forward-compatible. Otherwise restore the tested pre-release b
 
 ## Environment variables
 
-No `.env.example` changes were introduced by this verification pass. Before the release
-fixture can run it needs isolated/test values for:
+No `.env.example` changes were introduced by this release-closure pass. The CI fixtures
+use isolated, test-only values for:
 
-- `TEST_DATABASE_URL`
-- `ADMIN_EMAIL`
-- `ADMIN_PASSWORD`
+- `WEB_DATABASE_URL`, `ADMIN_DATABASE_URL`, `MIGRATION_DATABASE_URL`, `TEST_DATABASE_URL`
+- `SCALESMITHS_TEST_ENVIRONMENT`
+- `ADMIN_E2E_PASSWORD`
 - `AUTH_SECRET`
-- `AUTH_TRUST_HOST=true`
-- `FORGE_ENABLE_AI=false`
-- `FORGE_DEFAULT_AI_PROVIDER=mock`
-- `FORGE_JOB_MODE=inline`
-- `FORGE_SANDBOX_RUNNER=local` for the disposable E2E runner only
-- `FORGE_E2E_BASE_URL`
-- `FORGE_QA_COMMAND_TIMEOUT_MS`
+- `ADMIN_MFA_BOOTSTRAP_GRACE_UNTIL` (test-only bootstrap grace window)
+- `FORGE_E2E_URL_FIXTURE`
+- `ADMIN_FORGE_SERVER_MODE`
+- `TEST_SOURCE_DATABASE_URL`, `TEST_RESTORE_DATABASE_URL`
 
-Production must use the Docker sandbox and real secret-manager values. It must also
-configure the existing provider, monitoring, R2, Resend, backup, release-manager and
-health-check variables documented in the operations runbooks. Never reuse E2E
-credentials or local sandbox mode in production.
+Production must use the Docker sandbox and real secret-manager values, and must configure
+the provider, monitoring, R2, Resend, backup, release-manager and health-check variables
+documented in the operations runbooks. Never reuse E2E credentials, the MFA bootstrap
+grace window, or local sandbox mode in production.
 
 ## Remaining manual production checks
 
-- Inspect the six authenticated viewport captures and keyboard/focus order.
+- Inspect the authenticated viewport captures and keyboard/focus order.
 - Verify Focus Mode persistence and reversible global navigation.
 - Verify actual production backup ownership, encryption, off-host retention and restore.
 - Verify Sentry delivery and alert routing.
@@ -328,4 +251,18 @@ credentials or local sandbox mode in production.
 - Confirm provider credentials, budgets and fallback policy with safe non-production
   calls.
 - Confirm named deployment, database and rollback operators.
-- Record human release approval only after every mandatory automated gate is green.
+- Record human release approval only after every mandatory automated gate is green and
+  the production-derived restore is evidenced.
+
+## Audit history
+
+Earlier revisions of this document recorded a dirty working checkout, missing
+authenticated Forge fixtures, unavailable browser journeys, unavailable final CI, and
+unavailable responsive screenshots. Those observations were accurate when written and are
+now **superseded** by the GitHub Actions evidence above. They have been removed rather
+than retained inline, because a release ledger that states both "blocked: tests never ran"
+and "passed" cannot be read safely. The superseded statements remain recoverable through
+this file's git history.
+
+The release verdict has not changed. Forge V2 is **BLOCKED — DO NOT DEPLOY** until the
+production-derived restore and the authorised manual production checks are complete.

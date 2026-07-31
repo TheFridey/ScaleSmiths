@@ -1,6 +1,15 @@
 # Public homepage visual review candidate
 
-Status: **pending human approval — baseline not updated**
+Status: **resolved — baselines inspected and accepted**
+
+> **Resolution (2026-07-31).** This review is closed. The mobile experience-control
+> placement flagged below was fixed in `9821074` ("fix(web): prevent mobile experience
+> controls overlap") rather than accepted as-is, and the inspected desktop, tablet and
+> mobile baselines were committed in `b9b6be2a` ("test(web): accept inspected mobile
+> homepage baseline"). The web visual regression gate passes on merged `master`
+> `5ac4bacd` (CI run `30588532289`) with the 0.02 maximum difference ratio unchanged.
+> The record below is retained as the point-in-time inspection evidence for that
+> decision.
 
 Source run:
 
@@ -44,4 +53,6 @@ Do not copy these files into `web/tests/e2e/public-site.visual.spec.ts-snapshots
 3. specifically accepts or requests adjustment to the mobile preference-control placement;
 4. records the decision and reviewer in this document.
 
-Until that happens, the visual regression gate remains a release blocker and the release verdict remains **BLOCKED — DO NOT DEPLOY**.
+Those steps were completed as recorded in the resolution note at the top of this document, so the visual regression gate is no longer a release blocker.
+
+The overall release verdict remains **BLOCKED — DO NOT DEPLOY** for unrelated reasons: the production-derived encrypted backup restore and the authorised manual production checks are still outstanding. See `docs/release-readiness/forge-v2.md`.

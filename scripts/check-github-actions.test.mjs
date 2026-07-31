@@ -70,6 +70,30 @@ test("rejects mutable security action references and duplicate TruffleHog failur
   assert(failures.some((failure) => failure.startsWith("[trufflehog-arguments]")))
 })
 
+test("rejects removing the pull request metadata gate", async () => {
+  const workflows = await loadWorkflowSet(root)
+  const mutated = workflows.map((workflow) => workflow.name === "ci.yml" ? {
+    ...workflow,
+    content: workflow.content
+      .replace(/^ {2}pr-metadata:\s*$/m, "  pr-metadata-disabled:")
+      .replace("      - name: Check pull request metadata\n        run: npm run check:pr-metadata\n", "")
+      .replace("      - name: Test pull request metadata rules\n        run: npm run test:pr-metadata\n", ""),
+  } : workflow)
+  const failures = validateWorkflowSet(mutated, root)
+  assert(failures.some((failure) => failure === "[pr-metadata] ci.yml must define the pr-metadata job"))
+  assert(failures.some((failure) => failure === "[required-gate] ci.yml is missing npm run check:pr-metadata"))
+  assert(failures.some((failure) => failure === "[required-gate] ci.yml is missing npm run test:pr-metadata"))
+})
+
+test("rejects widening the pull request metadata gate beyond pull_request events", async () => {
+  const workflows = await loadWorkflowSet(root)
+  const mutated = workflows.map((workflow) => workflow.name === "ci.yml" ? {
+    ...workflow,
+    content: workflow.content.replace("    if: github.event_name == 'pull_request'\n", ""),
+  } : workflow)
+  assert(validateWorkflowSet(mutated, root).some((failure) => failure === "[pr-metadata] ci.yml pr-metadata job must run only for pull_request events"))
+})
+
 test("rejects Trivy enforcement before evidence upload", async () => {
   const workflows = await loadWorkflowSet(root)
   const mutated = workflows.map((workflow) => workflow.name === "security.yml" ? {

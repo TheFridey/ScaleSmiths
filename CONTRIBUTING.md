@@ -55,6 +55,18 @@ Before opening a PR:
 
 Small PRs can be reviewed quickly. Large programme stages are acceptable when the change is naturally cross-cutting, but they should include a clear summary and risk section.
 
+### PR metadata check
+
+CI runs `npm run check:pr-metadata` on every pull request. It reads the local GitHub event payload, makes no API request, and fails when the template is left as boilerplate. It requires a meaningful title (not GitHub's default branch-name title), a real Summary, at least one Type and Scope selection, recorded validation commands, explicit migration and environment declarations, completed security declarations, evidence, an explicit residual-risk entry (`None` is accepted), and rollback notes.
+
+Documented exceptions:
+
+- Dependabot and Renovate pull requests are exempt; the dependency and security gates still apply to them.
+- Emergency rollbacks — labelled `emergency-rollback`, or titled `revert:`/`rollback:` — need only a meaningful title and Summary, so an incident is never blocked on paperwork.
+- A pull request whose only checked Scope is `Documentation only` does not need Evidence or Rollback, but must still account for validation, including stating that no commands applied.
+
+Run the rules locally with `npm run test:pr-metadata`, or check a saved payload with `node scripts/check-pr-metadata.mjs --event <path>`.
+
 Changes touching authentication, MFA, RBAC, migrations, Forge providers, AI budgets, sandboxing, deployment, Nginx, GitHub Actions, environment handling, or financial logic are CODEOWNERS-sensitive. See `docs/operations/protected-areas-and-branch-protection.md`.
 
 ## Definition of Done

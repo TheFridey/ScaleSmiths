@@ -436,6 +436,32 @@ jobs:
       - name: Simulate canary release and rollback
         run: npm run test:release-simulation
 
+  pr-metadata:
+    name: PR Metadata
+    # Pull requests only: the check reads the local event payload, which exists only here.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+
+      - name: Use supported npm
+        run: npm install --global npm@10.9.2
+
+      - name: Test pull request metadata rules
+        run: npm run test:pr-metadata
+
+      # Reads GITHUB_EVENT_PATH from the runner. No GitHub API request is made, so this
+      # stays on the ordinary pull_request trigger with the workflow's read-only token.
+      - name: Check pull request metadata
+        run: npm run check:pr-metadata
+
   nginx:
     name: Nginx Topology
     runs-on: ubuntu-latest

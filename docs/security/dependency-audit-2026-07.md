@@ -108,25 +108,39 @@ pull-request context. Branch-push evidence therefore cannot substitute for it.
 
 ### Authoritative verification event
 
-The pull request opened from `chore/forge-v2-release-closure` is the authoritative
-verification event for Dependency Review. Until its pull-request check actually passes,
-the result below is recorded as **Pending**. It must not be recorded as passed on the
-strength of the enabled endpoints alone — endpoint availability is a precondition, not
-the check result.
+Pull request [#36](https://github.com/TheFridey/ScaleSmiths/pull/36), opened from
+`chore/forge-v2-release-closure`, is the authoritative verification event for Dependency
+Review. It has now run in its native pull-request context and **passed**.
 
 | Field | Value |
 | --- | --- |
-| Pull request | _Pending — recorded after the check runs_ |
-| Workflow run ID | _Pending_ |
-| Checked SHA | _Pending — the pull-request merge-test SHA, not the branch head_ |
-| Dependency Review conclusion | **Pending** |
-| Findings | _Pending_ |
+| Pull request | [#36](https://github.com/TheFridey/ScaleSmiths/pull/36) |
+| Workflow | Security, run `30619638107`, job `91120844879` |
+| Branch head SHA | `a8d93656beaff245994cc3971911932cd9817953` |
+| Checked SHA | `b24c5800b1f215ede4c32af0b8944dfa8b6f356f` — merge of `a8d93656` into `5ac4bacd` |
+| Dependency Graph preflight | **HTTP 200** (previously HTTP 404) |
+| Dependency Review conclusion | **Passed** |
 
-If the check reports a real finding, it will be investigated and fixed. It will not be
-suppressed without a documented, time-limited and separately reviewed risk decision. If
-it still reports the Dependency Graph as unavailable, the exact HTTP status and observed
-repository configuration will be recorded here and the workflow will be left failing
-closed.
+Findings, quoted from the job log:
+
+```text
+Dependency review did not detect any vulnerable packages with severity level "high" or higher.
+Dependency review did not detect any denied packages
+```
+
+This is a confirmation of **no disallowed dependency change**. The pull request changes no
+dependency manifest or lockfile, so the reviewed diff contains no added, removed or
+upgraded package; the check nevertheless executed against the real Dependency Graph rather
+than failing closed on an unavailable endpoint, which is exactly what needed proving.
+
+No finding was suppressed, and the preflight guard in `security.yml` was not weakened or
+skipped. Had the check reported a real finding it would have been investigated and fixed,
+not waived without a documented, time-limited and separately reviewed risk decision.
+
+The commit that records this result re-triggers CI, Security, CodeQL, Dependency Review
+and PR metadata validation against a new merge SHA. That is expected: the table above
+pins the first successful verification event rather than chasing each subsequent merge
+SHA. The pull request must not be merged until the checks on its final commit pass.
 
 ### Dependency posture at verification time
 

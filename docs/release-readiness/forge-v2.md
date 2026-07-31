@@ -72,8 +72,13 @@ TruffleHog.
 The single Security failure was the Dependency Review preflight, which received
 **HTTP 404** from `GET /repos/TheFridey/ScaleSmiths/dependency-graph/sbom`. That is an
 unavailable Dependency Graph endpoint, **not** a vulnerability finding and not a
-disallowed dependency change. GitHub Dependency Graph has since been enabled; see
-`docs/security/dependency-audit-2026-07.md` for the verification event and its result.
+disallowed dependency change.
+
+GitHub Dependency Graph has since been enabled, and Dependency Review has now **passed**
+in its native pull-request context on PR #36 (Security run `30619638107`, checked SHA
+`b24c5800b1f215ede4c32af0b8944dfa8b6f356f`), reporting no vulnerable packages at high
+severity or above and no denied packages. See
+`docs/security/dependency-audit-2026-07.md` for the full verification record.
 
 ## Gate-by-gate ledger
 
@@ -101,7 +106,8 @@ disallowed dependency change. GitHub Dependency Graph has since been enabled; se
 | Generated-site sandbox security fixtures | Security `30588532278` | **Passed** |
 | Secret-history scan (TruffleHog, verified only) | Security `30588532278` | **Passed** |
 | CodeQL static analysis | CodeQL `30588532257` | **Passed** |
-| Dependency Review | Requires `pull_request`; last attempt HTTP 404 | **Pending** — re-verification in progress |
+| Dependency Review | PR #36, Security run `30619638107`, checked SHA `b24c5800` | **Passed** — no high-or-higher vulnerable packages, no denied packages |
+| PR metadata validation | PR #36, CI run `30619638138` | **Passed** |
 | Production-derived encrypted backup restore | Requires authorised operator | **Not executed** |
 | Manual production checks | Requires authorised release operator | **Not executed** |
 | Human release approval | Requires named approver | **Not executed** |
@@ -167,11 +173,14 @@ These are the real unresolved limits. None can be closed by re-running automatio
    runner. Production recovery evidence must not be inferred from it or fabricated.
 2. **Manual production checks still require an authorised release operator.** See
    "Remaining manual production checks" below.
-3. **Dependency Review must pass on a pull request** before this governance task is
-   complete. It has never executed successfully in its native context because Dependency
-   Graph was disabled. Status is **Pending** until a real pull-request check passes.
-4. **Human release approval is separate from automated test success.** A fully green
+3. **Human release approval is separate from automated test success.** A fully green
    pipeline is a precondition for approval, not approval itself.
+
+Now resolved, recorded here for traceability:
+
+- **Dependency Review has passed** in its native pull-request context on PR #36 after
+  Dependency Graph was enabled. It had never previously executed successfully. This
+  closes the governance gap; it does not affect blockers 1–3.
 
 ## Database migration and rollback
 

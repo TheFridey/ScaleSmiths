@@ -28,6 +28,19 @@ const securityHeaders = [
   { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains; preload" },
 ]
 
+// RFC 8288 agent-discovery links. Duplicated from src/lib/agent-discovery.ts because a
+// Next config cannot use the TypeScript path alias; agent-discovery.test.ts asserts the
+// two stay in step.
+const siteOrigin = (process.env.NEXT_PUBLIC_SITE_ORIGIN || "https://scalesmiths.co.uk").replace(/\/+$/, "")
+const agentDiscoveryLinkHeader = [
+  `<${siteOrigin}/.well-known/api-catalog>; rel="api-catalog"`,
+  `<${siteOrigin}/openapi.json>; rel="service-desc"; type="application/json"`,
+  `<${siteOrigin}/api/health>; rel="status"`,
+  `<${siteOrigin}/sitemap.xml>; rel="sitemap"; type="application/xml"`,
+  `<${siteOrigin}/llms.txt>; rel="describedby"; type="text/plain"`,
+  `<${siteOrigin}/>; rel="canonical"`,
+].join(", ")
+
 const nextConfig = {
   output: "standalone",
   transpilePackages: ["@react-three/fiber", "@react-three/drei", "three"],
@@ -43,6 +56,16 @@ const nextConfig = {
       {
         source: "/:path*",
         headers: securityHeaders,
+      },
+      {
+        // RFC 8288 discovery links. Kept to the homepage and the API surface so the
+        // header stays small; every target is a resource this app actually serves.
+        source: "/",
+        headers: [{ key: "Link", value: agentDiscoveryLinkHeader }],
+      },
+      {
+        source: "/api/:path*",
+        headers: [{ key: "Link", value: agentDiscoveryLinkHeader }],
       },
     ]
   },

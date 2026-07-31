@@ -15,7 +15,7 @@ test.describe("about and founders page", () => {
 
     await expect(page.getByRole("heading", { level: 1 })).toContainText(/two founders/i)
     await expect(page.getByRole("heading", { level: 3, name: "Rhys", exact: true })).toBeVisible()
-    await expect(page.getByRole("heading", { level: 3, name: "Trevor" })).toBeVisible()
+    await expect(page.getByRole("heading", { level: 3, name: "Trevor Newton-Bradley" })).toBeVisible()
 
     const rhys = page.locator("#rhys")
     await expect(rhys).toContainText(/co-founder/i)

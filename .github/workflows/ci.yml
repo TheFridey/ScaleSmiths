@@ -412,6 +412,12 @@ jobs:
       - name: Check architecture documentation
         run: npm run check:architecture-docs
 
+      - name: Check Forge V2 release documentation
+        run: npm run check:forge-v2-release-docs
+
+      - name: Test Forge V2 release documentation policy
+        run: npm run test:forge-v2-release-docs
+
       - name: Check dependency governance
         run: npm run check:dependency-governance
 

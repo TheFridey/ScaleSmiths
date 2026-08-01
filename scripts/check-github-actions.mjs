@@ -22,6 +22,8 @@ const REQUIRED_CONTENT = {
     "npm run test:forge-benchmark",
     "npm run check:env-hygiene",
     "npm run check:architecture-docs",
+    "npm run check:forge-v2-release-docs",
+    "npm run test:forge-v2-release-docs",
     "npm run test:release-simulation",
     "npm run test:backup-migration-safety",
     "npm run test:backup-framework",

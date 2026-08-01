@@ -1033,10 +1033,17 @@ export const forgePreviews = pgTable("forge_previews", {
   index("forge_previews_lease_expires_at_idx").on(table.leaseExpiresAt),
 ])
 
+// Cost attribution is by relationship, never by time window: overlapping jobs on one
+// project would otherwise each absorb the other's spend. run/step/job are nullable
+// because usage also originates outside a Forge Run (intake, triage, proposals) and
+// because rows predating 0049 are deliberately left unattributed rather than guessed.
 export const forgeAiUsage = pgTable("forge_ai_usage", {
   id: serial("id").primaryKey(),
   projectId: integer("project_id").references(() => forgeProjects.id, { onDelete: "cascade" }),
   taskId: integer("task_id").references(() => forgeTasks.id, { onDelete: "set null" }),
+  runId: integer("run_id").references(() => forgeRuns.id, { onDelete: "set null" }),
+  runStepId: integer("run_step_id").references(() => forgeRunSteps.id, { onDelete: "set null" }),
+  jobId: integer("job_id").references(() => forgeJobs.id, { onDelete: "set null" }),
   provider: text("provider").notNull(),
   model: text("model").notNull(),
   promptTokens: integer("prompt_tokens").default(0).notNull(),
@@ -1050,6 +1057,10 @@ export const forgeAiUsage = pgTable("forge_ai_usage", {
   index("forge_ai_usage_task_id_idx").on(table.taskId),
   index("forge_ai_usage_completed_at_idx").on(table.completedAt),
   index("forge_ai_usage_provider_idx").on(table.provider),
+  index("forge_ai_usage_run_id_idx").on(table.runId),
+  index("forge_ai_usage_run_step_id_idx").on(table.runStepId),
+  index("forge_ai_usage_job_id_idx").on(table.jobId),
+  index("forge_ai_usage_project_completed_at_idx").on(table.projectId, table.completedAt),
 ])
 
 export const forgeAiBudgetReservations = pgTable("forge_ai_budget_reservations", {
@@ -1247,6 +1258,18 @@ export const forgeAiUsageRelations = relations(forgeAiUsage, ({ one }) => ({
   task: one(forgeTasks, {
     fields: [forgeAiUsage.taskId],
     references: [forgeTasks.id],
+  }),
+  run: one(forgeRuns, {
+    fields: [forgeAiUsage.runId],
+    references: [forgeRuns.id],
+  }),
+  runStep: one(forgeRunSteps, {
+    fields: [forgeAiUsage.runStepId],
+    references: [forgeRunSteps.id],
+  }),
+  job: one(forgeJobs, {
+    fields: [forgeAiUsage.jobId],
+    references: [forgeJobs.id],
   }),
 }))
 

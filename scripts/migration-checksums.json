@@ -434,6 +434,12 @@
       "sha256": "ec808d8d552b1f39e54d02af2526bfc14708520fed02a92826333c6d19ca02fb",
       "lifecycle": "forward",
       "reason": "Adds per-stage estimated, actual, retry, and remaining cost accounting for atomic Forge Run steps."
+    },
+    {
+      "path": "admin/drizzle/0049_forge_ai_usage_exact_attribution.sql",
+      "sha256": "6df1c1cdc0d08bf8c7c8468f803bf5de48d9a92b9accac9c7a5daca26bf46781",
+      "lifecycle": "forward",
+      "reason": "Links Forge AI usage to its run, run step and job so cost attribution is exact instead of time-window based. Historical rows stay unattributed."
     }
   ],
   "journals": {
@@ -524,6 +530,13 @@
           "version": "7",
           "when": 1786262400000,
           "tag": "0048_atomic_forge_stage_costs",
+          "breakpoints": true
+        },
+        {
+          "idx": 49,
+          "version": "7",
+          "when": 1786348800000,
+          "tag": "0049_forge_ai_usage_exact_attribution",
           "breakpoints": true
         }
       ]

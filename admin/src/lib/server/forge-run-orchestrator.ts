@@ -28,6 +28,7 @@ import {
   type ForgeRunStatus,
   type ForgeStageEvaluationContext,
 } from "@/lib/forge-run-stages"
+import { selectStagesToInvalidate } from "@/lib/forge-run-invalidation"
 import { insertForgeJob, cancelForgeJob } from "./forge-job-queue"
 import { loadForgeAiUsageBudgetSnapshot } from "./forge-ai-usage"
 import { createForgeProjectWorkspace } from "./forge-workspace"
@@ -426,13 +427,13 @@ export async function handleForgeRunJobOutcome(jobId: number, outcome: "complete
   const [job] = await db.select().from(forgeJobs).where(eq(forgeJobs.id, jobId)).limit(1)
   if (!job) return
   if (outcome === "failed" && job.status === "queued") {
-    await updateRunStepActualCost(step.id, job)
+    await updateRunStepActualCost(step.id)
     await db.update(forgeRunSteps).set({ status: "queued", failureCategory: job.operatorErrorJson?.category ?? "transient", failureMessage: job.operatorErrorJson?.summary ?? message ?? job.failureReason, operatorErrorJson: job.operatorErrorJson, updatedAt: new Date() }).where(eq(forgeRunSteps.id, step.id))
     await recordRunEvent(step.runId, step.id, "job_retry_scheduled", "system", `${definition.label} job will retry.`, { jobId, attempts: job.attempts })
     return
   }
   if (outcome === "failed") {
-    await updateRunStepActualCost(step.id, job)
+    await updateRunStepActualCost(step.id)
     const now = new Date()
     await db.transaction(async (tx) => {
       await tx.update(forgeRunSteps).set({ status: "failed", failureCategory: job.operatorErrorJson?.category ?? categorizeFailure(message ?? job.failureReason), failureMessage: job.operatorErrorJson?.summary ?? message ?? job.failureReason ?? "Job failed.", operatorErrorJson: job.operatorErrorJson, completedAt: now, updatedAt: now }).where(eq(forgeRunSteps.id, step.id))
@@ -469,7 +470,7 @@ export async function handleForgeRunJobOutcome(jobId: number, outcome: "complete
     }
   }
   const context = await loadStageContext(step.projectId, run.mode as ForgeRunMode, run.policyJson as ForgeRunPolicy)
-  await updateRunStepActualCost(step.id, job)
+  await updateRunStepActualCost(step.id)
   const outputIds = validArtifactIds(context, definition.producedArtifacts)
   const completion = definition.completionEvaluator(context)
   if (!completion.ready) {
@@ -501,7 +502,7 @@ export async function handleForgeRunJobOutcome(jobId: number, outcome: "complete
   const nextStatus = definition.approvalPolicy === "human" ? "awaiting_approval" : "completed"
   const approvalError = nextStatus === "awaiting_approval" ? normalizeForgeOperatorError(`${definition.label} is waiting for human approval.`, { stage: step.stage, category: "approval_required", retryable: false, runId: step.runId, jobId, affectedArtifactIds: outputIds, technicalReference: `forge:run:${step.runId}:step:${step.id}:approval` }) : null
   await db.update(forgeRunSteps).set({ status: nextStatus, approvalRequired: nextStatus === "awaiting_approval", outputArtifactIds: outputIds, taskId: job.taskId ?? task?.id ?? null, completedAt: nextStatus === "completed" ? new Date() : null, failureCategory: approvalError?.category ?? null, failureMessage: approvalError?.summary ?? null, operatorErrorJson: approvalError, updatedAt: new Date() }).where(eq(forgeRunSteps.id, step.id))
-  await updateRunActualCost(step.runId, step.projectId)
+  await updateRunActualCost(step.runId)
   await recordRunEvent(step.runId, step.id, nextStatus === "awaiting_approval" ? "approval_requested" : "step_completed", "system", `${definition.label} ${nextStatus === "awaiting_approval" ? "awaits approval" : "completed"}.`, { jobId, artifactIds: outputIds })
   await invalidateDownstreamForChangedInput(step.runId, step.projectId, step.stage as ForgeRunStage, "system")
   await continueForgeRun(step.runId)
@@ -624,11 +625,27 @@ function computeInputHash(context: Awaited<ReturnType<typeof loadStageContext>>,
 async function invalidateDownstreamForChangedInput(runId: number, projectId: number, stageKey: ForgeRunStage, actor: string) {
   const definition = getForgeRunStage(stageKey)
   if (!definition?.invalidatedDownstreamStages.length) return
-  const context = await loadStageContext(projectId, "standard", {})
+
+  // Evaluate against the run that is actually executing. Using a hardcoded "standard"
+  // mode and empty policy here judged redesign, refresh and migration runs — and every
+  // skip-stage, client-review and migration decision — against the wrong run.
+  const [run] = await db
+    .select({ mode: forgeRuns.mode, policyJson: forgeRuns.policyJson })
+    .from(forgeRuns)
+    .where(eq(forgeRuns.id, runId))
+    .limit(1)
+  if (!run) return
+  const mode = run.mode as ForgeRunMode
+  const policy = normalizePolicy(run.policyJson as ForgeRunPolicy)
+  const context = await loadStageContext(projectId, mode, policy)
+
   const steps = await db.select().from(forgeRunSteps).where(and(eq(forgeRunSteps.runId, runId), inArray(forgeRunSteps.stage, definition.invalidatedDownstreamStages)))
-  const invalid = steps.filter((step) => {
-    const stage = getForgeRunStage(step.stage)
-    return stage && step.inputHash && step.inputHash !== computeInputHash(context, stage.requiredInputs) && ["completed", "awaiting_approval"].includes(step.status)
+  const invalid = selectStagesToInvalidate({
+    changedStage: stageKey,
+    steps,
+    context,
+    policy,
+    currentInputHash: (requiredInputs) => computeInputHash(context, requiredInputs),
   })
   if (!invalid.length) return
   const invalidStages = invalid.map((step) => step.stage)
@@ -675,27 +692,29 @@ async function pauseFor(runId: number, stage: string, reason: string, actor: str
 
 async function completeRun(runId: number, projectId: number, actor: string) {
   const now = new Date()
-  await updateRunActualCost(runId, projectId)
+  await updateRunActualCost(runId)
   await db.update(forgeRuns).set({ status: "completed", currentStage: null, completedAt: now, pauseReason: null, updatedAt: now }).where(eq(forgeRuns.id, runId))
   await recordRunEvent(runId, null, "run_completed", actor, "Forge run completed.", {})
   await db.insert(forgeActivityLogs).values({ projectId, actor, action: "forge_run_completed", message: `Completed Forge run #${runId}.`, metadataJson: { runId } })
 }
 
-async function updateRunActualCost(runId: number, projectId: number) {
-  const [run] = await db.select({ startedAt: forgeRuns.startedAt, createdAt: forgeRuns.createdAt }).from(forgeRuns).where(eq(forgeRuns.id, runId)).limit(1)
-  if (!run) return
-  const [cost] = await db.select({ total: sql<string>`coalesce(sum(${forgeAiUsage.estimatedCost}), 0)` }).from(forgeAiUsage).where(and(eq(forgeAiUsage.projectId, projectId), sql`${forgeAiUsage.completedAt} >= ${run.startedAt ?? run.createdAt}`))
+// Costs are summed by relationship, never by time window. The previous implementation
+// summed every project usage row inside the run's or job's wall-clock window, so two
+// overlapping jobs on one project each absorbed the other's spend and a retry absorbed
+// the whole attempt history. Sums stay in PostgreSQL numeric for decimal safety.
+async function updateRunActualCost(runId: number) {
+  const [cost] = await db
+    .select({ total: sql<string>`coalesce(sum(${forgeAiUsage.estimatedCost}), 0)` })
+    .from(forgeAiUsage)
+    .where(eq(forgeAiUsage.runId, runId))
   await db.update(forgeRuns).set({ actualCostUsd: Number(cost?.total ?? 0).toFixed(6), updatedAt: new Date() }).where(eq(forgeRuns.id, runId))
 }
 
-async function updateRunStepActualCost(stepId: number, job: typeof forgeJobs.$inferSelect) {
-  if (!job.startedAt) return
-  const end = job.completedAt ?? new Date()
-  const [cost] = await db.select({ total: sql<string>`coalesce(sum(${forgeAiUsage.estimatedCost}), 0)` }).from(forgeAiUsage).where(and(
-    eq(forgeAiUsage.projectId, job.projectId),
-    sql`${forgeAiUsage.startedAt} >= ${job.startedAt}`,
-    sql`${forgeAiUsage.completedAt} <= ${end}`,
-  ))
+async function updateRunStepActualCost(stepId: number) {
+  const [cost] = await db
+    .select({ total: sql<string>`coalesce(sum(${forgeAiUsage.estimatedCost}), 0)` })
+    .from(forgeAiUsage)
+    .where(eq(forgeAiUsage.runStepId, stepId))
   await db.update(forgeRunSteps).set({ actualCostUsd: Number(cost?.total ?? 0).toFixed(6), updatedAt: new Date() }).where(eq(forgeRunSteps.id, stepId))
 }
 

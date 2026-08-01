@@ -12,7 +12,7 @@ import {
   readForgeCommandChatMemory,
   type ForgeCommandMessageStatus,
 } from "@/lib/forge-command-chat"
-import { forgeActivityLogs, forgeMemories, forgeTasks } from "@/lib/schema"
+import { forgeActivityLogs, forgeMemories, forgeRunSteps, forgeTasks } from "@/lib/schema"
 import {
   buildForgeJobOwner,
   claimForgeJobById,
@@ -32,6 +32,38 @@ import { ForgeAiBudgetExceededError, assertForgeAiBudgetAllowsJob } from "./forg
 import { normalizeUnknownError } from "./logging"
 import { requestLogger } from "./request-context"
 import { addMonitoringBreadcrumb, captureMonitoringException, captureMonitoringMessage, withMonitoringScope } from "./monitoring"
+import { withForgeAttribution } from "./forge-attribution-context"
+
+/**
+ * Resolves the run and step a job belongs to from the database, not from the job payload.
+ * `forge_run_steps.job_id` is unique and is written only by the run orchestrator, so it is
+ * the authoritative server-side linkage.
+ *
+ * The orchestrator inserts the job and then sets `forge_run_steps.job_id` in a following
+ * transaction, so a worker that claims the job in between sees no linkage yet. In that
+ * window only, the orchestrator-written payload hint is used to locate the step — and the
+ * step is still re-read from the database and checked to belong to the claimed job's
+ * project, so a stale or malformed payload can never attribute spend to another project's
+ * run. Client input never reaches this path.
+ */
+async function resolveForgeJobAttribution(jobId: number, projectId: number, payload: JobPayload) {
+  const [linked] = await db
+    .select({ id: forgeRunSteps.id, runId: forgeRunSteps.runId })
+    .from(forgeRunSteps)
+    .where(eq(forgeRunSteps.jobId, jobId))
+    .limit(1)
+  if (linked) return { runId: linked.runId, runStepId: linked.id }
+
+  const hintedStepId = typeof payload.forgeRunStepId === "number" ? payload.forgeRunStepId : null
+  if (!hintedStepId) return { runId: null, runStepId: null }
+
+  const [hinted] = await db
+    .select({ id: forgeRunSteps.id, runId: forgeRunSteps.runId })
+    .from(forgeRunSteps)
+    .where(and(eq(forgeRunSteps.id, hintedStepId), eq(forgeRunSteps.projectId, projectId)))
+    .limit(1)
+  return { runId: hinted?.runId ?? null, runStepId: hinted?.id ?? null }
+}
 
 export class ForgeJobError extends Error {
   safeMessage: string
@@ -277,8 +309,19 @@ export async function runClaimedForgeJob(claimed: ForgeJobRow, owner: string, op
   }, Math.max(5_000, Math.floor(FORGE_JOB_LEASE_TTL_MS / 3)))
   if (typeof heartbeat.unref === "function") heartbeat.unref()
 
+  // Attribution is resolved from the job's own row and the run step that owns it, so AI
+  // spend recorded anywhere inside this handler lands on the correct run, step and job
+  // even when several jobs for one project run concurrently.
+  const attribution = await resolveForgeJobAttribution(claimed.id, claimed.projectId, payload)
+
   try {
-    const result = await withMonitoringScope({ projectId: claimed.projectId, taskId, forgeStage: claimed.kind, jobId: claimed.id }, () => handler(claimed.projectId, claimed.actor ?? "system", payload))
+    const result = await withMonitoringScope(
+      { projectId: claimed.projectId, taskId, forgeStage: claimed.kind, jobId: claimed.id },
+      () => withForgeAttribution(
+        { projectId: claimed.projectId, jobId: claimed.id, taskId: taskId ?? null, ...attribution },
+        () => handler(claimed.projectId, claimed.actor ?? "system", payload),
+      ),
+    )
     clearInterval(heartbeat)
     await completeForgeJob(claimed.id, owner, result)
     await import("./forge-run-orchestrator")

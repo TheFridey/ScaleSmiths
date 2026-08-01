@@ -1,6 +1,13 @@
 import { expect, test, type Page } from "@playwright/test"
+import { readFile, unlink, writeFile } from "node:fs/promises"
 
 const prompt = "Build a premium lead-generation website for a Nottingham commercial roofing company. They want larger contracts, have weak branding and need enquiries sent by email and WhatsApp."
+const createdRunIds = new Set<number>()
+
+test.afterEach(async ({ page }) => {
+  for (const runId of createdRunIds) await cancelRun(page, runId, "Forge E2E afterEach cleanup.")
+  createdRunIds.clear()
+})
 
 async function interpret(page: import("@playwright/test").Page, request = prompt, websiteUrl = "") {
   await page.goto("/forge/new")
@@ -46,44 +53,33 @@ test("4. approving the brief creates and starts a Forge Run", async ({ page }) =
     const response = await fetch(`/api/forge/projects/${id}/runs/current`, { cache: "no-store" })
     return { ok: response.ok, status: response.status, body: await response.json() }
   }, projectId)
-  const response = await readCurrentRun()
-  expect(response.ok, `current run API returned ${response.status}`).toBe(true)
-  const body = response.body
-  expect(body.run).toBeTruthy()
-  expect(["running", "paused", "completed"]).toContain(body.run.status)
-  let latest = { run: body.run.status as string | undefined, copy: undefined as string | undefined, code: undefined as string | undefined, workspaceCreated: false }
-  await expect.poll(async () => {
-    try {
+  let runId: number | undefined
+  try {
+    const response = await readCurrentRun()
+    expect(response.ok, `current run API returned ${response.status}`).toBe(true)
+    const body = response.body
+    expect(body.run).toBeTruthy()
+    runId = body.run.id
+    createdRunIds.add(runId)
+    expect(["running", "paused", "completed"]).toContain(body.run.status)
+    let latest = { run: body.run.status as string | undefined, copy: undefined as string | undefined, code: undefined as string | undefined, workspaceCreated: false }
+    await expect.poll(async () => {
+      await browserApi(page, "/api/forge/jobs/run", "POST", { limit: 1 })
       const current = await readCurrentRun()
-      const payload = current.body as {
-        run?: {
-          status: string
-          steps: Array<{ stage: string; status: string }>
-          events: Array<{ eventType: string }>
-        }
-      }
+      const payload = current.body as { run?: { status: string; steps: Array<{ stage: string; status: string }>; events: Array<{ eventType: string }> } }
       const copy = payload.run?.steps.find((step) => step.stage === "copy")
       const code = payload.run?.steps.find((step) => step.stage === "code_generation")
-      latest = {
-        run: payload.run?.status,
-        copy: copy?.status,
-        code: code?.status,
-        workspaceCreated: payload.run?.events.some((event) => event.eventType === "workspace_created") ?? false,
-      }
-    } catch {
-      // Next dev may briefly reset a connection while the generated workspace is created.
+      latest = { run: payload.run?.status, copy: copy?.status, code: code?.status, workspaceCreated: payload.run?.events.some((event) => event.eventType === "workspace_created") ?? false }
+      return latest
+    }, { message: "Manual E2E drains should reach code generation with an isolated workspace.", timeout: 120_000, intervals: [500, 1_000] }).toMatchObject({
+      run: expect.stringMatching(/running|paused|completed/), copy: "completed", code: expect.stringMatching(/queued|running|completed/), workspaceCreated: true,
+    })
+  } finally {
+    if (runId) {
+      await cancelRun(page, runId, "Journey 4 reached its controlled transition; cancel remaining work.")
+      await writeFile("test-results/forge-journey-4-run.json", JSON.stringify({ runId }), "utf8")
     }
-    return latest
-  }, {
-    message: "The automatic run policy should reach code generation with an isolated workspace.",
-    timeout: 120_000,
-    intervals: [1_000, 2_000, 5_000],
-  }).toMatchObject({
-    run: expect.stringMatching(/running|paused|completed/),
-    copy: "completed",
-    code: expect.stringMatching(/queued|running|completed/),
-    workspaceCreated: true,
-  })
+  }
 })
 
 test("5. observes an active Forge Run in the production workspace", async ({ page }) => {
@@ -112,10 +108,12 @@ test("7. resumes the paused Forge Run and records the transition", async ({ page
 
 test("8. displays a provider failure with an operator-facing recovery", async ({ page }) => {
   const row = await fixture(page, "E2E Provider Failure")
-  await page.goto(`/forge/${row.project_id}?view=attention`)
+  await page.goto(`/forge/${row.project_id}?view=attention&run=${row.run_id}&stage=${row.stage}&item=${encodeURIComponent(row.incident_id)}`)
   await expect(page.getByRole("heading", { name: "Needs attention", exact: true })).toBeVisible()
-  await expect(page.getByText(/Anthropic is unavailable/i)).toBeVisible()
-  await expect(page.getByText(/fallback/i).first()).toBeVisible()
+  const incident = page.locator(`.project-attention-view:visible [data-incident-id="${row.incident_id}"]`)
+  await expect(incident).toContainText(/Anthropic is unavailable/i)
+  await expect(incident).toContainText(/fallback/i)
+  await expect(page).toHaveURL(new RegExp(`item=${encodeURIComponent(row.incident_id).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`))
 })
 
 test("9. retries a provider-failed stage through the real run API", async ({ page }) => {
@@ -128,9 +126,10 @@ test("9. retries a provider-failed stage through the real run API", async ({ pag
 test("10. displays a failed functional QA stage", async ({ page }) => {
   const row = await fixture(page, "E2E QA Failure")
   await page.goto(`/forge/${row.project_id}?view=attention`)
-  await expect(page.getByRole("heading", { name: "Quality Check Failed", exact: true })).toBeVisible()
-  await expect(page.getByText(/Functional QA failed/i)).toBeVisible()
-  await expect(page.getByRole("button", { name: "Retry safely", exact: true })).toBeVisible()
+  const incident = page.locator(`.project-attention-view:visible [data-incident-id="${row.incident_id}"]`)
+  await expect(incident.getByRole("heading", { name: "Quality Check Failed", exact: true })).toBeVisible()
+  await expect(incident).toContainText(/Functional QA failed/i)
+  await expect(incident.getByRole("button", { name: "Retry safely", exact: true })).toBeVisible()
 })
 
 test("11. requests repair by retrying the failed atomic QA stage", async ({ page }) => {
@@ -147,10 +146,14 @@ for (const [number, viewport, width, height] of [
 ] as const) {
   test(`${number}. opens the ${viewport} preview workspace`, async ({ page }) => {
     const row = await fixture(page, "E2E Preview Ready")
+    if (number === 12) {
+      await expectJourneyFourIsolated(page)
+    }
     await page.setViewportSize({ width, height })
     await page.goto(`/forge/${row.project_id}?view=preview&viewport=${viewport}`)
     await expect(page.getByRole("heading", { name: "Review preview", exact: true })).toBeVisible()
-    await expect(page.getByRole("button", { name: /Approve preview|Approve for launch/ })).toBeVisible()
+    await expect(page.getByRole("button", { name: "Start", exact: true })).toBeEnabled()
+    await expect(page.getByRole("button", { name: "Internally approve preview", exact: true })).toBeVisible()
     const overflow = await page.evaluate(() => ({
       documentWidth: document.documentElement.scrollWidth,
       viewportWidth: window.innerWidth,
@@ -192,7 +195,7 @@ test("15. submits guarded feedback and invalidates only affected run stages", as
   await page.goto(`/forge/${row.project_id}?view=preview`)
   await page.getByRole("button", { name: "Request changes", exact: true }).click()
   await expect(page.getByRole("heading", { name: "Preview feedback", exact: true })).toBeVisible()
-  await expect(page.getByRole("button", { name: /Approve preview|Approve for launch/ })).toBeVisible()
+  await expect(page.getByRole("button", { name: "Internally approve preview", exact: true })).toBeVisible()
   await page.getByLabel("Forge command").fill("Apply this client feedback: make the layout more premium without changing the approved copy.")
   await page.getByRole("button", { name: "Send", exact: true }).click()
   await expect(page.getByText("Confirmation required", { exact: true })).toBeVisible({ timeout: 45_000 })
@@ -205,18 +208,24 @@ test("15. submits guarded feedback and invalidates only affected run stages", as
     }
     return {
       research: payload.run.steps.find((step) => step.stage === "research")?.status,
+      copy: payload.run.steps.find((step) => step.stage === "copy")?.status,
       design: payload.run.steps.find((step) => step.stage === "design_direction")?.status,
       invalidated: payload.run.events.some((event) => event.eventType === "command_feedback_invalidated"),
     }
-  }).toEqual({ research: "completed", design: expect.not.stringMatching(/^completed$/), invalidated: true })
+  }).toEqual({ research: "completed", copy: "completed", design: expect.not.stringMatching(/^completed$/), invalidated: true })
 })
 
 test("16. approves the preview through the existing project action", async ({ page }) => {
   const row = await fixture(page, "E2E Preview Ready")
   await page.goto(`/forge/${row.project_id}?view=preview`)
-  await page.getByRole("button", { name: "Approve preview", exact: true }).click()
+  await page.getByRole("button", { name: "Internally approve preview", exact: true }).click()
   await expect(page).toHaveURL(/view=preview/)
-  await expect(page.getByRole("button", { name: "Approve for launch", exact: true })).toBeVisible()
+  await expect(page.getByRole("button", { name: "Record client approval", exact: true })).toBeVisible()
+  const project = await browserApi(page, `/api/forge/projects/${row.project_id}`)
+  expect((project.body as { project: { status: string } }).project.status).toBe("client_review")
+  await page.getByRole("button", { name: "Advanced", exact: true }).click()
+  await page.getByRole("button", { name: "Activity", exact: true }).click()
+  await expect(page.getByText(/Recorded internal preview approval/i)).toBeVisible()
 })
 
 test("17. blocks deployment without the required final evidence and approval", async ({ page }) => {
@@ -251,13 +260,35 @@ async function fixture(page: Page, name: string) {
   expect(runResponse.ok).toBe(true)
   const runBody = runResponse.body as { run?: { id: number; status: string; steps: Array<{ stage: string; status: string }> } }
   expect(runBody.run).toBeTruthy()
+  const stage = runBody.run!.steps[0]!.stage
+  const category = name === "E2E Provider Failure" ? "provider_unavailable" : name === "E2E QA Failure" ? "quality_failure" : undefined
+  const technicalReference = name === "E2E Provider Failure" ? "fixture-provider" : name === "E2E QA Failure" ? "fixture-qa" : undefined
   return {
     project_id: project!.id,
     run_id: runBody.run!.id,
-    stage: runBody.run!.steps[0]!.stage,
+    stage,
     run_status: runBody.run!.status,
     step_status: runBody.run!.steps[0]!.status,
+    incident_id: category && technicalReference ? incidentIdentity(project!.id, runBody.run!.id, stage, category, technicalReference) : "",
   }
+}
+
+async function expectJourneyFourIsolated(page: Page) {
+  const evidence = JSON.parse(await readFile("test-results/forge-journey-4-run.json", "utf8")) as { runId: number }
+  expect((await runState(page, evidence.runId)).status).toBe("cancelled")
+  await unlink("test-results/forge-journey-4-run.json")
+}
+
+function incidentIdentity(projectId: number, runId: number, stage: string, category: string, technicalReference: string) {
+  return `incident:${[projectId, runId, stage, "none", category, technicalReference].map((part) => encodeURIComponent(String(part))).join(":")}`
+}
+
+async function cancelRun(page: Page, runId: number, reason: string) {
+  const state = await runState(page, runId)
+  if (["completed", "cancelled"].includes(state.status)) return
+  const response = await browserApi(page, `/api/forge/runs/${runId}/cancel`, "POST", { reason })
+  expect(response.ok).toBe(true)
+  expect((await runState(page, runId)).status).toBe("cancelled")
 }
 
 async function runState(page: Page, runId: number) {
@@ -286,8 +317,6 @@ async function pauseCreatedRun(page: Page) {
   expect(current.ok).toBe(true)
   const runId = (current.body as { run?: { id: number } }).run?.id
   expect(runId).toBeTruthy()
-  const paused = await browserApi(page, `/api/forge/runs/${runId}/pause`, "POST", {
-    reason: "Release journey fixture created successfully; pause downstream generation.",
-  })
-  expect(paused.ok).toBe(true)
+  createdRunIds.add(runId!)
+  await cancelRun(page, runId!, "Release journey fixture created successfully; cancel downstream generation.")
 }

@@ -191,6 +191,22 @@ async function seedProject(db, fixture) {
   `, [projectId, fixture.run, fixture.stage, FIXTURE_OWNER_EMAIL, fixture.pause ?? (fixture.failure ? `${fixture.failure} requires attention.` : null)])
   const runId = run.rows[0].id
 
+  if (hasGeneratedBuild) {
+    const now = new Date().toISOString()
+    await db.query(`
+      insert into forge_memories (project_id, key, value, source)
+      values ($1, 'generated_site_workspace', $2, 'forge-e2e-fixture')
+    `, [projectId, JSON.stringify({
+      projectId,
+      slug: `e2e-${fixture.key}`,
+      relativePath: `generated-sites/e2e-${fixture.key}`,
+      template: "next-ts-tailwind",
+      fileCount: 3,
+      createdAt: now,
+      updatedAt: now,
+    })])
+  }
+
   const operatorError = fixture.failure ? {
     stage: fixture.stage,
     category: fixture.failure,
@@ -251,6 +267,8 @@ async function seedProject(db, fixture) {
       values
         ($1, 'research_report', 'E2E unaffected research', 'Approved research remains valid.',
          '{"fixture":true,"scope":"unaffected"}'::jsonb, 'validated', 'approved', $2, 32),
+        ($1, 'copy_doc', 'E2E approved copy', 'Approved copy remains current.',
+         '{"fixture":true,"scope":"unaffected"}'::jsonb, 'validated', 'approved', $2, 30),
         ($1, 'design_direction', 'E2E affected design', 'Approved design before feedback.',
          '{"fixture":true,"scope":"affected"}'::jsonb, 'validated', 'approved', $2, 32),
         ($1, 'sitemap', 'Sitemap & Strategy', 'Approved sitemap fixture.',
@@ -265,11 +283,13 @@ async function seedProject(db, fixture) {
          started_at, completed_at)
       values
         ($1, $2, 'research', 'completed', 2, true, $3, 1, 3, false, 1.00, 0, now() - interval '9 minutes', now() - interval '8 minutes'),
-        ($1, $2, 'design_direction', 'completed', 3, true, $4, 1, 3, false, 1.00, 0, now() - interval '7 minutes', now() - interval '6 minutes')
+        ($1, $2, 'copy', 'completed', 3, true, $4, 1, 3, false, 1.00, 0, now() - interval '8 minutes', now() - interval '7 minutes'),
+        ($1, $2, 'design_direction', 'completed', 4, true, $5, 1, 3, false, 1.00, 0, now() - interval '7 minutes', now() - interval '6 minutes')
     `, [
       runId,
       projectId,
       JSON.stringify([artifactByType.get("research_report")]),
+      JSON.stringify([artifactByType.get("copy_doc")]),
       JSON.stringify([artifactByType.get("design_direction")]),
     ])
   }

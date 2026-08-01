@@ -32,6 +32,7 @@ import { ForgeAiBudgetExceededError, assertForgeAiBudgetAllowsJob } from "./forg
 import { normalizeUnknownError } from "./logging"
 import { requestLogger } from "./request-context"
 import { addMonitoringBreadcrumb, captureMonitoringException, captureMonitoringMessage, withMonitoringScope } from "./monitoring"
+import { isForgeE2EManualWorkerMode } from "./forge-e2e-isolation"
 
 export class ForgeJobError extends Error {
   safeMessage: string
@@ -217,7 +218,7 @@ export async function enqueueForgeJob(input: EnqueueForgeJobInput): Promise<Enqu
 
   // Fire-and-forget background execution in the persistent server process. The durable job row
   // is the source of truth, so a restart is recovered by the worker (reaper + queue drain).
-  if (input.autoStart !== false) {
+  if (input.autoStart !== false && !(await isForgeE2EManualWorkerMode())) {
     void processForgeJob(job.id, { propagate: false }).catch(() => undefined)
   }
   return { mode: "background", jobId: job.id }

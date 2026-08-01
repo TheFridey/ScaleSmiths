@@ -211,6 +211,8 @@ jobs:
       AUTH_SECRET: forge-v2-e2e-auth-secret-32-characters-minimum
       ADMIN_MFA_BOOTSTRAP_GRACE_UNTIL: 2099-01-01T00:00:00.000Z
       FORGE_E2E_URL_FIXTURE: enabled
+      FORGE_E2E_MANUAL_WORKER: enabled
+      FORGE_WORKER_DISABLED: "true"
       ADMIN_FORGE_SERVER_MODE: production
     defaults:
       run:

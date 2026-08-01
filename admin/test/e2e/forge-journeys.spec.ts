@@ -128,9 +128,10 @@ test("9. retries a provider-failed stage through the real run API", async ({ pag
 test("10. displays a failed functional QA stage", async ({ page }) => {
   const row = await fixture(page, "E2E QA Failure")
   await page.goto(`/forge/${row.project_id}?view=attention`)
-  await expect(page.getByRole("heading", { name: "Quality Check Failed", exact: true })).toBeVisible()
-  await expect(page.getByText(/Functional QA failed/i)).toBeVisible()
-  await expect(page.getByRole("button", { name: "Retry safely", exact: true })).toBeVisible()
+  const functionalQaIncident = page.getByRole("article").filter({ hasText: "Functional QA failed" })
+  await expect(functionalQaIncident.getByRole("heading", { name: "Quality Check Failed", exact: true })).toBeVisible()
+  await expect(functionalQaIncident.getByText(/Functional QA failed/i)).toBeVisible()
+  await expect(functionalQaIncident.getByRole("button", { name: "Retry safely", exact: true })).toBeVisible()
 })
 
 test("11. requests repair by retrying the failed atomic QA stage", async ({ page }) => {
@@ -150,7 +151,7 @@ for (const [number, viewport, width, height] of [
     await page.setViewportSize({ width, height })
     await page.goto(`/forge/${row.project_id}?view=preview&viewport=${viewport}`)
     await expect(page.getByRole("heading", { name: "Review preview", exact: true })).toBeVisible()
-    await expect(page.getByRole("button", { name: /Approve preview|Approve for launch/ })).toBeVisible()
+    await expect(page.getByRole("button", { name: /Internally approve preview|Record client approval/ })).toBeVisible()
     const overflow = await page.evaluate(() => ({
       documentWidth: document.documentElement.scrollWidth,
       viewportWidth: window.innerWidth,
@@ -192,7 +193,7 @@ test("15. submits guarded feedback and invalidates only affected run stages", as
   await page.goto(`/forge/${row.project_id}?view=preview`)
   await page.getByRole("button", { name: "Request changes", exact: true }).click()
   await expect(page.getByRole("heading", { name: "Preview feedback", exact: true })).toBeVisible()
-  await expect(page.getByRole("button", { name: /Approve preview|Approve for launch/ })).toBeVisible()
+  await expect(page.getByRole("button", { name: /Internally approve preview|Record client approval/ })).toBeVisible()
   await page.getByLabel("Forge command").fill("Apply this client feedback: make the layout more premium without changing the approved copy.")
   await page.getByRole("button", { name: "Send", exact: true }).click()
   await expect(page.getByText("Confirmation required", { exact: true })).toBeVisible({ timeout: 45_000 })
@@ -214,9 +215,9 @@ test("15. submits guarded feedback and invalidates only affected run stages", as
 test("16. approves the preview through the existing project action", async ({ page }) => {
   const row = await fixture(page, "E2E Preview Ready")
   await page.goto(`/forge/${row.project_id}?view=preview`)
-  await page.getByRole("button", { name: "Approve preview", exact: true }).click()
+  await page.getByRole("button", { name: "Internally approve preview", exact: true }).click()
   await expect(page).toHaveURL(/view=preview/)
-  await expect(page.getByRole("button", { name: "Approve for launch", exact: true })).toBeVisible()
+  await expect(page.getByRole("button", { name: "Record client approval", exact: true })).toBeVisible()
 })
 
 test("17. blocks deployment without the required final evidence and approval", async ({ page }) => {

@@ -63,6 +63,10 @@ export function validateWorkflowSet(workflows, repositoryRoot) {
   const failures = []
   const byName = new Map(workflows.map((workflow) => [workflow.name, workflow.content]))
 
+  if (existsSync(path.join(repositoryRoot, "package-lock.json"))) {
+    failures.push("[root-lockfile] the repository must not contain a root package-lock.json")
+  }
+
   for (const name of REQUIRED_WORKFLOWS) {
     const content = byName.get(name)
     if (!content) {
@@ -94,6 +98,7 @@ export function validateWorkflowSet(workflows, repositoryRoot) {
       if (!/^\s{4}timeout-minutes:\s*\d+\s*$/m.test(job.content)) {
         failures.push(`[timeout] ${name} job ${job.name} has no timeout-minutes`)
       }
+      failures.push(...validateSetupNodeCaching(job.content, repositoryRoot, `${name} job ${job.name}`))
     }
   }
 
@@ -156,6 +161,42 @@ export function validateWorkflowSet(workflows, repositoryRoot) {
   return failures
 }
 
+export function validateSetupNodeCaching(jobContent, repositoryRoot, label = "workflow job") {
+  const failures = []
+  const setupBlocks = jobContent
+    .split(/(?=^\s*- name:)/m)
+    .filter((step) => step.includes("actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38"))
+  if (!setupBlocks.length) return failures
+
+  const needsWeb = /working-directory:[ \t]*web[ \t]*$/m.test(jobContent) || /npm\s+--prefix\s+web\s+(?:ci|install)\b/.test(jobContent)
+  const needsAdmin = /working-directory:[ \t]*admin[ \t]*$/m.test(jobContent) || /npm\s+--prefix\s+admin\s+(?:ci|install)\b/.test(jobContent)
+  const matrixApps = /app:\s*\[\s*web\s*,\s*admin\s*\]/.test(jobContent)
+
+  for (const block of setupBlocks) {
+    const disabled = /^\s*package-manager-cache:\s*false\s*$/m.test(block)
+    const npmCache = /^\s*cache:\s*["']?npm["']?\s*$/m.test(block)
+    const paths = cacheDependencyPaths(block)
+    if (disabled) {
+      if (npmCache || paths.length) failures.push(`[setup-node-cache] ${label} mixes disabled and enabled caching`)
+      if (needsWeb || needsAdmin || matrixApps) failures.push(`[setup-node-cache] ${label} disables caching for an application dependency install`)
+      continue
+    }
+    if (!npmCache) failures.push(`[setup-node-cache] ${label} relies on setup-node automatic package-manager caching`)
+    if (!paths.length) failures.push(`[setup-node-cache-path] ${label} enables npm caching without an explicit cache-dependency-path`)
+    const hasWeb = paths.includes("web/package-lock.json")
+    const hasAdmin = paths.includes("admin/package-lock.json")
+    const hasMatrix = paths.includes("${{ matrix.app }}/package-lock.json")
+    if ((needsWeb || matrixApps) && !hasWeb && !hasMatrix) failures.push(`[setup-node-cache-path] ${label} must cache web/package-lock.json`)
+    if ((needsAdmin || matrixApps) && !hasAdmin && !hasMatrix) failures.push(`[setup-node-cache-path] ${label} must cache admin/package-lock.json`)
+    for (const cachePath of paths) {
+      if (cachePath === "${{ matrix.app }}/package-lock.json") continue
+      ensurePath(failures, repositoryRoot, cachePath, label)
+      if (!/^(web|admin)\/package-lock\.json$/.test(cachePath)) failures.push(`[cache-isolation] ${label} uses unsupported cache path ${cachePath}`)
+    }
+  }
+  return failures
+}
+
 function workflowJobs(content) {
   const jobsIndex = content.search(/^jobs:\s*$/m)
   if (jobsIndex === -1) return []
@@ -168,7 +209,21 @@ function workflowJobs(content) {
 }
 
 function cacheDependencyPaths(content) {
-  return [...content.matchAll(/^\s+cache-dependency-path:\s*([^\s#]+)\s*$/gm)].map((match) => match[1].replace(/^['"]|['"]$/g, ""))
+  const paths = []
+  for (const match of content.matchAll(/^(\s*)cache-dependency-path:\s*([^\n#]*)\s*$/gm)) {
+    const indent = match[1].length
+    const value = match[2].trim()
+    if (value && value !== "|") paths.push(value.replace(/^['"]|['"]$/g, ""))
+    if (value === "|") {
+      const tail = content.slice((match.index ?? 0) + match[0].length)
+      for (const line of tail.split("\n").slice(1)) {
+        const item = line.match(/^(\s+)(\S.*)$/)
+        if (!item || item[1].length <= indent) break
+        paths.push(item[2].trim())
+      }
+    }
+  }
+  return paths
 }
 
 function ensurePath(failures, repositoryRoot, relativePath, workflow) {

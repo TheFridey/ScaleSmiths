@@ -360,6 +360,7 @@ jobs:
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version: 22
+          package-manager-cache: false
 
       - name: Use supported npm
         run: npm install --global npm@10.9.2
@@ -402,6 +403,7 @@ jobs:
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version: 22
+          package-manager-cache: false
 
       - name: Use supported npm
         run: npm install --global npm@10.9.2
@@ -456,6 +458,7 @@ jobs:
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version: 22
+          package-manager-cache: false
 
       - name: Use supported npm
         run: npm install --global npm@10.9.2
@@ -480,6 +483,7 @@ jobs:
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version: 22
+          package-manager-cache: false
 
       - name: Use supported npm
         run: npm install --global npm@10.9.2
@@ -503,7 +507,9 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: admin/package-lock.json
+          cache-dependency-path: |
+            web/package-lock.json
+            admin/package-lock.json
 
       - name: Use supported npm
         run: npm install --global npm@10.9.2

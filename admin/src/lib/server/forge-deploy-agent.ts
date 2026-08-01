@@ -29,6 +29,7 @@ import { forgeTasks } from "@/lib/schema"
 import { taskBlocksDeployment } from "@/lib/forge-task-quality"
 import { evaluatePersistedProjectTransition, workflowAuditMetadata } from "./forge-workflow"
 import { requireVerifiedApprovedDeploymentCandidate } from "./forge-deployment-candidates"
+import { hasClientDeploymentApproval } from "@/lib/forge-approval-semantics"
 
 export class ForgeDeployError extends Error {
   safeMessage: string
@@ -89,6 +90,7 @@ async function updateChecklist(context: DeployContext, actor: string, request: F
 
 async function markReady(context: DeployContext, actor: string) {
   await requireVerifiedApprovedDeploymentCandidate(context.project.id)
+  if (!context.clientApprovalRecorded) throw new ForgeDeployError("Record explicit client approval before marking this project ready to deploy.", 400)
   const transition = await evaluatePersistedProjectTransition({ projectId: context.project.id, to: "ready_to_deploy" })
   if (!context.signals.hasGeneratedSite) throw new ForgeDeployError("Generate the site before marking it ready to deploy.", 400)
   if (context.qualityBlockers.length) throw new ForgeDeployError(`Deployment blocked by unapproved task quality: ${context.qualityBlockers.join(", ")}.`, 400)
@@ -131,6 +133,7 @@ async function markReady(context: DeployContext, actor: string) {
 
 async function markDeployed(context: DeployContext, actor: string) {
   await requireVerifiedApprovedDeploymentCandidate(context.project.id)
+  if (!context.clientApprovalRecorded) throw new ForgeDeployError("Recorded client approval is required before deployment.", 400)
   const transition = await evaluatePersistedProjectTransition({ projectId: context.project.id, to: "deployed" })
   if (context.qualityBlockers.length) throw new ForgeDeployError(`Deployment blocked by unapproved task quality: ${context.qualityBlockers.join(", ")}.`, 400)
   if (context.project.status !== "ready_to_deploy" && context.existing.lifecycle !== "ready") {
@@ -256,7 +259,7 @@ async function loadDeployContext(projectId: number) {
   const [project] = await db.select().from(forgeProjects).where(eq(forgeProjects.id, projectId)).limit(1)
   if (!project) throw new ForgeDeployError("Forge project not found.", 404)
 
-    const [workspaceMemories, generatedCodeArtifacts, qaArtifacts, visualQaArtifacts, deployArtifacts, integrations, qualityTasks] = await Promise.all([
+    const [workspaceMemories, generatedCodeArtifacts, qaArtifacts, visualQaArtifacts, deployArtifacts, integrations, qualityTasks, approvalActivity] = await Promise.all([
     db.select({ value: forgeMemories.value }).from(forgeMemories).where(and(
       eq(forgeMemories.projectId, projectId),
       eq(forgeMemories.key, FORGE_WORKSPACE_MEMORY_KEY),
@@ -287,6 +290,7 @@ async function loadDeployContext(projectId: number) {
       }).from(forgeIntegrationConfigs).where(eq(forgeIntegrationConfigs.projectId, projectId)),
       db.select({ id: forgeTasks.id, title: forgeTasks.title, status: forgeTasks.status, resultQuality: forgeTasks.resultQuality, humanApprovalRequired: forgeTasks.humanApprovalRequired, qualityApprovedAt: forgeTasks.qualityApprovedAt, qualityApprovalReason: forgeTasks.qualityApprovalReason })
         .from(forgeTasks).where(eq(forgeTasks.projectId, projectId)),
+      db.select({ action: forgeActivityLogs.action, metadataJson: forgeActivityLogs.metadataJson }).from(forgeActivityLogs).where(eq(forgeActivityLogs.projectId, projectId)),
   ])
 
   const generated = readForgeGeneratedCodeArtifact(generatedCodeArtifacts[0]?.metadataJson)
@@ -315,6 +319,7 @@ async function loadDeployContext(projectId: number) {
 
     return {
       project,
+      clientApprovalRecorded: hasClientDeploymentApproval(project.status, approvalActivity),
       qualityBlockers: qualityTasks.filter(taskBlocksDeployment).map((task) => `#${task.id} ${task.title}`),
     signals,
     deployContext,

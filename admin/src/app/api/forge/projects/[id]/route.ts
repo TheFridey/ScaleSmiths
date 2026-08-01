@@ -73,6 +73,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const actor = sessionActor(session)
   const now = new Date()
   const actorRole = session.user?.role as AdminRole | undefined
+  const approvalScope = input.approvalScope === "client" ? "client" : input.approvalScope === "internal" ? "internal" : null
 
   if (action === "archive") {
     let transition: Awaited<ReturnType<typeof evaluatePersistedProjectTransition>>
@@ -134,13 +135,28 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       .where(eq(forgeProjects.id, id))
       .returning()
 
-    await tx.insert(forgeActivityLogs).values({
+    const records: Array<typeof forgeActivityLogs.$inferInsert> = [{
       projectId: id,
       actor,
       action: "update",
       message: `Updated Forge project ${updated.name}.`,
       metadataJson: { changedFields: Object.keys(parsed.data), ...(transition ? workflowAuditMetadata(transition, now) : {}) },
+    }]
+    if (approvalScope === "client" && existing.status === "client_review" && updated.status === "ready_to_deploy") records.push({
+      projectId: id,
+      actor,
+      action: "client_approval_recorded",
+      message: `Recorded client approval for ${updated.name}.`,
+      metadataJson: { approvalScope: "client", from: existing.status, to: updated.status, recordedAt: now.toISOString() },
     })
+    else if (approvalScope === "internal" && existing.status === "preview" && updated.status === "client_review") records.push({
+      projectId: id,
+      actor,
+      action: "internal_approval_recorded",
+      message: `Recorded internal preview approval for ${updated.name}.`,
+      metadataJson: { approvalScope: "internal", from: existing.status, to: updated.status, recordedAt: now.toISOString() },
+    })
+    await tx.insert(forgeActivityLogs).values(records)
 
     return updated
   })

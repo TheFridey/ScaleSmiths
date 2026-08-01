@@ -211,6 +211,8 @@ export async function loadForgeProjectPageData(id: number) {
       .orderBy(desc(forgeJobs.updatedAt)),
     db
       .select({
+        runId: forgeRunSteps.runId,
+        jobId: forgeRunSteps.jobId,
         stage: forgeRunSteps.stage,
         operatorErrorJson: forgeRunSteps.operatorErrorJson,
         updatedAt: forgeRunSteps.updatedAt,

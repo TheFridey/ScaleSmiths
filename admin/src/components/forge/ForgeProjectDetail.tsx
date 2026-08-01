@@ -123,6 +123,8 @@ interface ForgeJobRow {
 }
 
 interface ForgeRunStepAttentionRow {
+  runId: number
+  jobId: number | null
   stage: string
   operatorErrorJson: ReturnType<typeof normalizeForgeOperatorError> | null
   updatedAt: Date | string
@@ -340,7 +342,7 @@ export function ForgeProjectDetail({
       const response = await fetch(`/api/forge/projects/${projectId}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ status: nextStatus }),
+        body: JSON.stringify({ status: nextStatus, approvalScope: nextStatus === "ready_to_deploy" ? "client" : "internal" }),
       })
       const json = await response.json().catch(() => ({}))
       if (!response.ok) throw new Error(json.error || "Unable to record preview approval.")
@@ -420,7 +422,7 @@ export function ForgeProjectDetail({
             <div className="preview-workspace-toolbar"><div><p className="workspace-eyebrow">Generated site</p><h2>Review preview</h2></div><div><button type="button" className="forge-secondary-action" onClick={() => { setQaPane("visual"); navigate("build", "quality") }}><Monitor size={16} aria-hidden="true" />Capture screenshots</button><button type="button" className="forge-secondary-action" onClick={() => setPreviewContextOpen((open) => !open)}><PanelRightOpen size={16} aria-hidden="true" />{previewContextOpen ? "Hide feedback" : "Feedback"}</button></div></div>
             <div className={previewContextOpen ? "preview-workspace-grid is-split" : "preview-workspace-grid"}><ForgePreviewRail projectId={projectId} initialWorkspace={initialWorkspace} initialGeneratedCode={initialGeneratedCode} initialPreview={initialPreview} disabled={archived} />{previewContextOpen && <aside className="preview-feedback"><h2>Preview feedback</h2><p>Record approval or requested changes through the project command surface.</p><ForgeCommandChatPanel projectId={projectId} initialChat={initialCommandChat} disabled={archived} /></aside>}</div>
             {previewDecisionError && <div className="inline-alert tone-danger" role="alert">{previewDecisionError}</div>}
-            <div className="preview-decision-bar"><button type="button" className="forge-secondary-action" onClick={() => setPreviewContextOpen(true)}>Request changes</button><button type="button" className="forge-primary-action" disabled={previewDecisionBusy} onClick={() => void approvePreview()}>{project.status === "client_review" ? "Approve for launch" : "Approve preview"}<CheckCircle2 size={16} aria-hidden="true" /></button></div>
+            <div className="preview-decision-bar"><button type="button" className="forge-secondary-action" onClick={() => setPreviewContextOpen(true)}>Request changes</button><button type="button" className="forge-primary-action" disabled={previewDecisionBusy} onClick={() => void approvePreview()}>{project.status === "client_review" ? "Record client approval" : "Internally approve preview"}<CheckCircle2 size={16} aria-hidden="true" /></button></div>
           </div>}
 
           {activeView === "attention" && <div className="project-attention-view"><header><p className="workspace-eyebrow">Interventions</p><h2>Needs attention</h2><p>Failures, approvals and production blockers for this project.</p></header>{attentionItems.length ? attentionItems.map((item) => <article key={item.id} id={item.id} tabIndex={-1} className="project-attention-item"><span className={`tone-${item.severity}`}><ShieldCheck size={18} aria-hidden="true" /></span><div><div><h3>{item.title}</h3><Badge value={item.severity} tone={item.severity === "critical" || item.severity === "high" ? "bad" : "warn"} /></div><p>{item.reason}</p><small>{item.action}</small><details><summary>Technical details</summary><code>{item.technicalReference}</code></details></div><div className="flex flex-wrap gap-2">{item.jobId && item.availableActions.includes("retry") ? <ProjectJobAction jobId={item.jobId} action="retry" /> : null}{item.jobId && item.availableActions.includes("cancel") ? <ProjectJobAction jobId={item.jobId} action="cancel" /> : null}<button type="button" className="forge-row-action" onClick={() => navigate(item.view, item.stage)}>{item.actionLabel}<ChevronRight size={15} aria-hidden="true" /></button></div></article>) : <div className="attention-clear"><CheckCircle2 size={20} aria-hidden="true" />No recorded blocker requires intervention.</div>}</div>}
@@ -508,9 +510,9 @@ function buildProjectAttention({
 }): ProjectAttentionItem[] {
   const projectId = project.id
   if (!projectId) return []
-  const errors: Array<{ projectId: number; error: ReturnType<typeof normalizeForgeOperatorError> }> = []
+  const errors: Array<{ projectId: number; runId?: number | null; error: ReturnType<typeof normalizeForgeOperatorError> }> = []
   for (const step of runSteps) {
-    if (step.operatorErrorJson) errors.push({ projectId, error: step.operatorErrorJson })
+    if (step.operatorErrorJson) errors.push({ projectId, runId: step.runId, error: { ...step.operatorErrorJson, runId: step.operatorErrorJson.runId ?? step.runId, jobId: step.operatorErrorJson.jobId ?? step.jobId, stage: step.operatorErrorJson.stage ?? step.stage } })
   }
   for (const task of tasks) {
     const stage = stageForAgent(task.agentType)
@@ -522,7 +524,8 @@ function buildProjectAttention({
   if (aiUsage.budget.project.blocked || aiUsage.budget.monthly.blocked) errors.push({ projectId, error: normalizeForgeOperatorError("Further AI work is blocked by a configured budget limit.", { stage: "budget", category: "budget_exceeded", retryable: false, technicalReference: `forge:project:${projectId}:budget` }) })
   if (!integrations.some((integration) => integration.enabled) && stages.find((stage) => stage.key === "launch")?.status !== "pending") errors.push({ projectId, error: normalizeForgeOperatorError("No enabled project integration is recorded.", { stage: "launch", category: "integration_missing", retryable: false, technicalReference: `forge:project:${projectId}:integration` }) })
   if (deploy.notes && !deploy.ready && deploy.notes.readiness.failed.length) errors.push({ projectId, error: normalizeForgeOperatorError(deploy.notes.readiness.failed.join(" "), { stage: "launch", category: "deployment_blocked", retryable: false, technicalReference: `forge:project:${projectId}:deployment` }) })
-  const healthJobs: ForgeHealthJob[] = jobs.map((job) => ({ id: job.id, projectId, kind: job.kind, stage: job.kind, status: job.status, attempts: 0, maxAttempts: 3, scheduledAt: job.scheduledAt, heartbeatAt: job.heartbeatAt, completedAt: ["failed", "dead_letter"].includes(job.status) ? job.updatedAt : null, failureReason: job.error }))
+  const stepByJob = new Map(runSteps.filter((step) => step.jobId).map((step) => [step.jobId!, step]))
+  const healthJobs: ForgeHealthJob[] = jobs.map((job) => { const step = stepByJob.get(job.id); return { id: job.id, projectId, runId: step?.runId ?? null, kind: job.kind, stage: step?.stage ?? job.kind, status: job.status, attempts: 0, maxAttempts: 3, scheduledAt: job.scheduledAt, heartbeatAt: job.heartbeatAt, completedAt: ["failed", "dead_letter"].includes(job.status) ? job.updatedAt : null, failureReason: job.error, operatorError: step?.operatorErrorJson ?? null } })
   return deriveForgeAttentionItems({ projects: [{ id: projectId, name: project.name, businessName: project.businessName }], jobs: healthJobs, errors }).map((item) => ({
     id: item.id,
     title: attentionTitle(item.category),

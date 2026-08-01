@@ -10,6 +10,7 @@ import { evaluateReleaseGates, releaseGateDecisionAllowed, type ReleaseGateDecis
 import { verifyForgeDependencyEvidence, type ForgeDependencyAdmissionReport } from "@/lib/forge-dependency-admission"
 import { assertForgeWorkspaceExecutionSafe, listForgeWorkspaceFiles, readForgeWorkspaceFile } from "./forge-workspace"
 import { collectForgeDependencyEvidence } from "./forge-dependency-admission"
+import { isCurrentHumanApprovedArtifact } from "@/lib/forge-approval-semantics"
 
 export class ForgeDeploymentCandidateError extends Error {
   constructor(public safeMessage: string, public status = 400) { super(safeMessage); this.name = "ForgeDeploymentCandidateError" }
@@ -47,7 +48,7 @@ export async function createDeploymentCandidate(input: { projectId: number; acto
   const trackedWorkspace = snapshot.workspace
   const workspace = await hashForgeWorkspace(trackedWorkspace)
   if (!workspace.files.length) throw new ForgeDeploymentCandidateError("The tracked Forge workspace is empty.")
-  const artifacts = snapshot.artifacts.filter((artifact) => artifact.approvalState === "approved")
+  const artifacts = snapshot.artifacts.filter(isCurrentHumanApprovedArtifact)
   if (!artifacts.length) throw new ForgeDeploymentCandidateError("Approve the required Forge artifacts before creating a deployment candidate.")
   const dependencyEvidence = await collectForgeDependencyEvidence(trackedWorkspace, workspace.hash)
   const [numberResult] = await db.select({ value: max(forgeDeploymentCandidates.candidateNumber) }).from(forgeDeploymentCandidates).where(eq(forgeDeploymentCandidates.projectId, input.projectId))

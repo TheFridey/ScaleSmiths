@@ -4,6 +4,7 @@ import { useMemo, useState } from "react"
 import { FileText } from "lucide-react"
 import type { ForgeArtifactType } from "@/lib/forge"
 import type { ForgeTaskResultQuality } from "@/lib/forge-task-quality"
+import { artifactApprovalLabels } from "@/lib/forge-approval-semantics"
 
 const T = { s1:"var(--s1)", s2:"var(--s2)", s3:"var(--s3)", b1:"var(--b1)", b2:"var(--b2)", t1:"var(--t1)", t2:"var(--t2)", t3:"var(--t3)", acc:"var(--acc)", grn:"var(--grn)", amb:"var(--amb)", red:"var(--red)" }
 
@@ -96,7 +97,7 @@ export function ForgeArtifactTabs({ artifacts }: { artifacts: ForgeArtifactRow[]
                 <div className="flex gap-2"><span className="font-dm text-[11px]" style={{ color:T.t3 }}>v{row.version} / {formatDate(row.createdAt)}</span><button disabled={busy === row.id} onClick={() => rollback(row)} className="font-dm text-[11px] underline">Create rollback version</button></div>
               </div>
               <div className="mt-1 font-dm text-[11px] uppercase tracking-[.06em]" style={{ color:T.t3 }}>{labelize(row.type)}</div>
-              <div className="mt-2 flex flex-wrap gap-2 font-dm text-[11px]" style={{ color:T.t2 }}><span>{row.qualityState}</span><span>{row.approvalState}</span><span>{row.supersededAt ? "superseded" : "current"}</span><span>Task {row.sourceTaskId ? `#${row.sourceTaskId}` : "unknown"}</span><span>{row.provider ?? "provider unknown"}{row.model ? ` / ${row.model}` : ""}</span></div>
+              <div className="mt-2 flex flex-wrap gap-2 font-dm text-[11px]" style={{ color:T.t2 }}>{artifactApprovalLabels(row).map((label) => <span key={label}>{label}</span>)}<span>Task {row.sourceTaskId ? `#${row.sourceTaskId}` : "unknown"}</span><span>{row.provider ?? "provider unknown"}{row.model ? ` / ${row.model}` : ""}</span></div>
               {(row.qualityState === "fallback" || row.qualityState === "degraded") && <div className="mt-2 rounded border border-amber-500/30 bg-amber-500/10 p-2 text-xs text-amber-200">This version contains {row.qualityState} output and must not be treated as validated.</div>}
               {humanEdit(row) && <HumanEditSummary value={humanEdit(row)!} />}
               <details className="mt-2 text-xs" style={{ color:T.t2 }}><summary>Lineage and approval history</summary><div className="mt-2 space-y-1"><p>Parent: {row.parentArtifactId ? `#${row.parentArtifactId}` : "root"}</p><p>Upstream: {row.upstreamArtifactIds.length ? row.upstreamArtifactIds.map((id) => `#${id}`).join(", ") : "none recorded"}</p><p>Prompt/schema: {row.promptVersion} / {row.schemaVersion}</p><p>SHA-256: {row.outputHash}</p><p>Approvals: {row.approvalHistory.length ? JSON.stringify(row.approvalHistory) : "none recorded"}</p>{index < rows.length - 1 && <Diff previous={rows[index + 1].content} current={row.content} />}</div></details>

@@ -6,6 +6,16 @@ import { fileURLToPath } from "node:url"
 
 const REQUIRED_WORKFLOWS = ["ci.yml", "security.yml", "codeql.yml"]
 
+const REQUIRED_ACTION_RELEASES = new Map([
+  ["actions/checkout", "d23441a48e516b6c34aea4fa41551a30e30af803"], // v6.1.0, Node 24
+  ["actions/setup-node", "249970729cb0ef3589644e2896645e5dc5ba9c38"], // v6.5.0, Node 24
+  ["actions/upload-artifact", "330a01c490aca151604b8cf639adc76d48f6c5d4"], // v5.0.0, Node 24
+  ["actions/dependency-review-action", "a1d282b36b6f3519aa1f3fc636f609c47dddb294"], // v5.0.0, Node 24
+  ["anchore/sbom-action", "e22c389904149dbc22b58101806040fa8d37a610"], // v0.24.0, Node 24
+  ["github/codeql-action/init", "a2983b8bed1923f44751c5c43237f479442827b3"], // v3.37.4, current stable
+  ["github/codeql-action/analyze", "a2983b8bed1923f44751c5c43237f479442827b3"], // v3.37.4, current stable
+])
+
 const REQUIRED_CONTENT = {
   "ci.yml": [
     "web/package-lock.json",
@@ -97,6 +107,10 @@ export function validateWorkflowSet(workflows, repositoryRoot) {
     for (const match of workflow.content.matchAll(/^\s+uses:\s*([^@\s]+)@([^\s#]+)/gm)) {
       const [, action, reference] = match
       if (!/^[0-9a-f]{40}$/.test(reference)) failures.push(`[action-pin] ${workflow.name} must pin ${action} to an immutable commit SHA`)
+      const requiredReference = REQUIRED_ACTION_RELEASES.get(action)
+      if (requiredReference && reference !== requiredReference) {
+        failures.push(`[action-runtime] ${workflow.name} must use the approved current release of ${action}`)
+      }
     }
     const nodeSetups = [...workflow.content.matchAll(/actions\/setup-node@[0-9a-f]{40}/g)].length
     const npmPins = [...workflow.content.matchAll(/npm install --global npm@10\.9\.2/g)].length

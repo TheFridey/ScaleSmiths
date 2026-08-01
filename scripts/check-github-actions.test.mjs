@@ -70,6 +70,18 @@ test("rejects mutable security action references and duplicate TruffleHog failur
   assert(failures.some((failure) => failure.startsWith("[trufflehog-arguments]")))
 })
 
+test("rejects immutable but deprecated JavaScript action runtimes", async () => {
+  const workflows = await loadWorkflowSet(root)
+  const mutated = workflows.map((workflow) => workflow.name === "ci.yml" ? {
+    ...workflow,
+    content: workflow.content.replace(
+      "actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803",
+      "actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+    ),
+  } : workflow)
+  assert(validateWorkflowSet(mutated, root).some((failure) => failure.startsWith("[action-runtime]")))
+})
+
 test("rejects removing the pull request metadata gate", async () => {
   const workflows = await loadWorkflowSet(root)
   const mutated = workflows.map((workflow) => workflow.name === "ci.yml" ? {

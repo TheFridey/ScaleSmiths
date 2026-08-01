@@ -5,6 +5,7 @@ import {
   canRetryForgeJob,
   deriveForgeAttentionItems,
   deriveForgeOperationalHealth,
+  groupForgeAttentionItems,
   type ForgeHealthJob,
 } from "./forge-operational-health"
 
@@ -82,7 +83,34 @@ describe("Forge operational health", () => {
   })
 
   it("generates stable project attention deep links", () => {
-    expect(buildForgeAttentionDeepLink(7, 3, "copy", "job-11")).toBe("/forge/7?view=attention&item=job-11&run=3&stage=copy")
+    expect(buildForgeAttentionDeepLink(7, 3, "copy", "incident-11")).toBe("/forge/7?view=attention&item=incident-11&run=3&stage=copy")
+  })
+
+  it("keeps separate stage failures in the same project visible and grouped", () => {
+    const items = deriveForgeAttentionItems({ projects: [{ id: 7, name: "Acme", businessName: "Acme Ltd" }], jobs: [job({ id: 11, stage: "copy", status: "failed" }), job({ id: 12, stage: "design", kind: "design", status: "failed" })], now })
+    expect(items.map((item) => item.stage)).toEqual(expect.arrayContaining(["copy", "design"]))
+    expect(groupForgeAttentionItems(items)[0]).toMatchObject({ incidentCount: 2, runs: [{ runId: 3, incidentCount: 2 }] })
+  })
+
+  it("collapses mirrored job and run-step errors into one incident with history", () => {
+    const error = normalizeForgeOperatorError("Copy provider failed", { runId: 3, stage: "copy", jobId: 11, category: "provider_unavailable", technicalReference: "forge:run:3:step:2" })
+    const items = deriveForgeAttentionItems({ projects: [{ id: 7, name: "Acme", businessName: "Acme Ltd" }], jobs: [job({ status: "failed", operatorError: error })], errors: [{ projectId: 7, runId: 3, error: { ...error, technicalReference: "forge:job:11" } }], now })
+    expect(items).toHaveLength(1)
+    expect(items[0].history).toHaveLength(2)
+    expect(items[0].technicalDetails.jobId).toBe(11)
+  })
+
+  it("removes resolved job incidents from active attention", () => {
+    const error = normalizeForgeOperatorError("Copy provider failed", { runId: 3, stage: "copy", jobId: 11, category: "provider_unavailable" })
+    const items = deriveForgeAttentionItems({ projects: [{ id: 7, name: "Acme", businessName: "Acme Ltd" }], jobs: [job({ status: "completed", operatorError: error })], errors: [{ projectId: 7, runId: 3, error }], now })
+    expect(items).toEqual([])
+  })
+
+  it("shows the latest retry attempt and prior attempt count", () => {
+    const error = normalizeForgeOperatorError("Retry queued", { runId: 3, stage: "copy", jobId: 11, category: "provider_unavailable", metadata: { attemptCount: 3 } })
+    const [item] = deriveForgeAttentionItems({ projects: [{ id: 7, name: "Acme", businessName: "Acme Ltd" }], jobs: [job({ status: "queued", attempts: 3, operatorError: error })], now })
+    expect(item.retryState).toEqual({ status: "queued", latestAttempt: 3, priorAttemptCount: 2, maxAttempts: 3 })
+    expect(item.deepLink).toContain("run=3&stage=copy")
   })
 })
 

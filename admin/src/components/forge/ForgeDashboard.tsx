@@ -22,6 +22,7 @@ import {
   Wrench,
 } from "lucide-react"
 import { MobileSheet } from "@/components/admin-shell/AdminShell"
+import { useAdminShell } from "@/components/admin-shell/AdminShellContext"
 import {
   DetailDrawer,
   EmptyState,
@@ -101,6 +102,7 @@ export function ForgeDashboard({
   dashboardArtifacts: DashboardArtifact[]
   dashboardIntegrations: DashboardIntegration[]
 }) {
+  const { toggleFocusMode } = useAdminShell()
   const [query, setQuery] = useState("")
   const [stage, setStage] = useState<"all" | ForgeProjectStatus>("all")
   const [runStatus, setRunStatus] = useState<ProjectFilterStatus>("all")
@@ -181,7 +183,7 @@ export function ForgeDashboard({
             <button
               type="button"
               className="forge-secondary-action"
-              onClick={() => document.querySelector<HTMLButtonElement>(".admin-focus-toggle")?.click()}
+              onClick={toggleFocusMode}
             >
               <PanelLeftClose size={17} aria-hidden="true" />
               Focus mode
@@ -345,6 +347,7 @@ function ContinueWork({ project }: { project: DashboardProjectView }) {
 }
 
 function AttentionQueue({ items }: { items: DashboardAttentionItem[] }) {
+  const groups = [...items.reduce((grouped, item) => grouped.set(item.projectId, [...(grouped.get(item.projectId) ?? []), item]), new Map<number, DashboardAttentionItem[]>()).values()]
   return (
     <PageSection
       title="Needs Attention"
@@ -353,17 +356,20 @@ function AttentionQueue({ items }: { items: DashboardAttentionItem[] }) {
     >
       {items.length ? (
         <div className="attention-list">
-          {items.slice(0, 8).map((item) => (
+          {groups.map((group) => group?.length ? <details key={group[0].projectId} open={groups.length === 1} className="attention-project-group"><summary><strong>{group[0].projectName}</strong><span>{group.length} active incident{group.length === 1 ? "" : "s"}</span></summary>{group.map((item) => (
             <article key={item.id} className="attention-item">
               <SeverityMark severity={item.severity} />
               <div className="attention-copy">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h3>{item.projectName}</h3>
+                  <h3>{item.stageLabel}</h3>
                   <StatusBadge tone={severityTone(item.severity)}>{label(item.severity)}</StatusBadge>
+                  {item.runId ? <span>Run #{item.runId}</span> : null}
+                  {item.jobId ? <span>Job #{item.jobId}</span> : null}
                   <span>{relativeAge(item.occurredAt)}</span>
                 </div>
                 <p>{item.reason}</p>
                 <small>{item.recommendedAction}</small>
+                {item.retryState ? <small>Attempt {item.retryState.latestAttempt} of {item.retryState.maxAttempts} · {item.retryState.priorAttemptCount} prior</small> : null}
                 <details><summary>Technical details</summary><code>{item.technicalReference}</code></details>
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -373,7 +379,7 @@ function AttentionQueue({ items }: { items: DashboardAttentionItem[] }) {
                 <Link href={item.href} className="forge-row-action">{item.actionLabel}<ArrowRight size={15} aria-hidden="true" /></Link>
               </div>
             </article>
-          ))}
+          ))}</details> : null)}
         </div>
       ) : (
         <div className="attention-clear"><CheckCircle2 size={20} aria-hidden="true" /><span>Active projects have no recorded blockers.</span></div>

@@ -79,6 +79,10 @@ export interface DashboardAttentionItem {
   availableActions: Array<"retry" | "retry_fallback" | "cancel" | "approve" | "configure" | "open">
   jobId: number | null
   technicalReference: string
+  runId: number | null
+  stageLabel: string
+  retryState: { status: string; latestAttempt: number; priorAttemptCount: number; maxAttempts: number } | null
+  state: "active" | "resolved"
 }
 
 export interface DashboardProjectView extends DashboardProject {
@@ -164,6 +168,10 @@ export function deriveAttentionItems(input: {
       availableActions: item.availableActions,
       jobId: item.technicalDetails.jobId,
       technicalReference: item.technicalDetails.reference,
+      runId: item.runId,
+      stageLabel: item.stageLabel,
+      retryState: item.retryState,
+      state: item.state,
     }
   })
 }

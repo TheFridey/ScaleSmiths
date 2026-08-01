@@ -52,6 +52,7 @@ export interface ForgeOperationalHealth {
 
 export interface ForgeAttentionItem {
   id: string
+  identity: string
   severity: ForgeAttentionSeverity
   projectId: number
   projectName: string
@@ -59,13 +60,24 @@ export interface ForgeAttentionItem {
   runId: number | null
   stage: string | null
   explanation: string
+  stageLabel: string
   recommendedAction: string
   availableActions: Array<"retry" | "retry_fallback" | "cancel" | "approve" | "configure" | "open">
   ageMs: number
+  state: "active" | "resolved"
+  retryState: { status: string; latestAttempt: number; priorAttemptCount: number; maxAttempts: number } | null
+  history: Array<{ occurredAt: string; explanation: string; technicalReference: string; attemptCount: number | null }>
   technicalDetails: { reference: string; category: string; jobId: number | null; attemptCount: number | null; nextRetryAt: string | null }
   deepLink: string
   category: string
   occurredAt: Date
+}
+
+export interface ForgeAttentionGroup {
+  projectId: number
+  projectName: string
+  incidentCount: number
+  runs: Array<{ runId: number | null; incidentCount: number; incidents: ForgeAttentionItem[] }>
 }
 
 export function deriveForgeOperationalHealth(input: {
@@ -124,42 +136,52 @@ export function deriveForgeAttentionItems(input: {
 }): ForgeAttentionItem[] {
   const now = input.now ?? new Date()
   const projects = new Map(input.projects.map((project) => [project.id, project]))
+  const jobs = new Map(input.jobs.map((job) => [job.id, job]))
   const items: ForgeAttentionItem[] = []
-  const add = (projectId: number, error: ForgeOperatorError, occurredAt: Date | string, actions: ForgeAttentionItem["availableActions"], nextRetryAt: string | null = null) => {
+  const add = (projectId: number, error: ForgeOperatorError, occurredAt: Date | string, actions: ForgeAttentionItem["availableActions"], nextRetryAt: string | null = null, sourceJob?: ForgeHealthJob) => {
     const project = projects.get(projectId)
     if (!project) return
+    const currentJob = sourceJob ?? (error.jobId ? jobs.get(error.jobId) : undefined)
+    if (currentJob && ["completed", "cancelled"].includes(currentJob.status)) return
     const stage = error.stage || null
-    const itemKey = error.jobId ? `job-${error.jobId}` : `${error.category}-${error.runId ?? "project"}`
+    const identity = forgeIncidentIdentity(projectId, error)
+    const attemptCount = numberMetadata(error.metadata.attemptCount) ?? currentJob?.attempts ?? null
     items.push({
-      id: itemKey,
+      id: identity,
+      identity,
       severity: severityFor(error),
       projectId,
       projectName: project.name,
       businessName: project.businessName,
       runId: error.runId,
       stage,
+      stageLabel: label(stage ?? "project"),
       explanation: error.summary,
       recommendedAction: error.recommendedAction,
       availableActions: actions,
       ageMs: Math.max(0, now.getTime() - date(occurredAt).getTime()),
-      technicalDetails: { reference: error.technicalReference, category: error.category, jobId: error.jobId, attemptCount: numberMetadata(error.metadata.attemptCount), nextRetryAt },
-      deepLink: buildForgeAttentionDeepLink(projectId, error.runId, stage, itemKey),
+      state: "active",
+      retryState: currentJob ? { status: currentJob.status, latestAttempt: currentJob.attempts, priorAttemptCount: Math.max(0, currentJob.attempts - 1), maxAttempts: currentJob.maxAttempts } : null,
+      history: [{ occurredAt: date(occurredAt).toISOString(), explanation: error.summary, technicalReference: error.technicalReference, attemptCount }],
+      technicalDetails: { reference: error.technicalReference, category: error.category, jobId: error.jobId, attemptCount, nextRetryAt },
+      deepLink: buildForgeAttentionDeepLink(projectId, error.runId, stage, identity),
       category: error.category,
       occurredAt: date(occurredAt),
     })
   }
   for (const item of input.errors ?? []) {
-    add(item.projectId, item.error, item.error.timestamp, actionsFor(item.error))
+    const error = { ...item.error, runId: item.error.runId ?? item.runId ?? null }
+    add(item.projectId, error, error.timestamp, actionsFor(error))
   }
   for (const job of input.jobs) {
     if (job.operatorError) {
-      add(job.projectId, job.operatorError, job.operatorError.timestamp, actionsForJob(job), job.status === "queued" ? date(job.scheduledAt).toISOString() : null)
+      add(job.projectId, job.operatorError, job.operatorError.timestamp, actionsForJob(job), job.status === "queued" ? date(job.scheduledAt).toISOString() : null, job)
     } else if (job.status === "dead_letter") {
-      add(job.projectId, fallbackJobError(job, "internal_error", "The job exhausted all retry attempts.", false), job.completedAt ?? job.scheduledAt, ["open"])
+      add(job.projectId, fallbackJobError(job, "internal_error", "The job exhausted all retry attempts.", false), job.completedAt ?? job.scheduledAt, ["open"], null, job)
     } else if (job.status === "failed") {
-      add(job.projectId, fallbackJobError(job, "internal_error", job.failureReason ?? `${label(job.kind)} failed.`, true), job.completedAt ?? job.scheduledAt, ["retry", "open"])
+      add(job.projectId, fallbackJobError(job, "internal_error", job.failureReason ?? `${label(job.kind)} failed.`, true), job.completedAt ?? job.scheduledAt, ["retry", "open"], null, job)
     } else if (job.status === "queued" && now.getTime() - date(job.scheduledAt).getTime() >= FORGE_QUEUE_STALE_MS) {
-      add(job.projectId, fallbackJobError(job, "queue_stalled", `${label(job.kind)} has remained queued beyond the operational threshold.`, true), job.scheduledAt, ["retry", "cancel", "open"], date(job.scheduledAt).toISOString())
+      add(job.projectId, fallbackJobError(job, "queue_stalled", `${label(job.kind)} has remained queued beyond the operational threshold.`, true), job.scheduledAt, ["retry", "cancel", "open"], date(job.scheduledAt).toISOString(), job)
     }
   }
   for (const outage of input.providerOutages ?? []) {
@@ -170,6 +192,31 @@ export function deriveForgeAttentionItems(input: {
     }
   }
   return dedupe(items).sort(compareAttention)
+}
+
+export function forgeIncidentIdentity(projectId: number, error: Pick<ForgeOperatorError, "runId" | "stage" | "jobId" | "category" | "technicalReference">) {
+  const reference = error.jobId ? `job:${error.jobId}` : error.technicalReference.trim().toLowerCase()
+  return ["incident", projectId, error.runId ?? "project", error.stage ?? "project", error.jobId ?? "none", error.category, reference].map((part) => encodeURIComponent(String(part))).join(":")
+}
+
+export function groupForgeAttentionItems(items: ForgeAttentionItem[]): ForgeAttentionGroup[] {
+  const projects = new Map<number, ForgeAttentionGroup>()
+  for (const item of items.filter((incident) => incident.state === "active").sort(compareAttention)) {
+    let project = projects.get(item.projectId)
+    if (!project) {
+      project = { projectId: item.projectId, projectName: item.projectName, incidentCount: 0, runs: [] }
+      projects.set(item.projectId, project)
+    }
+    let run = project.runs.find((candidate) => candidate.runId === item.runId)
+    if (!run) {
+      run = { runId: item.runId, incidentCount: 0, incidents: [] }
+      project.runs.push(run)
+    }
+    run.incidents.push(item)
+    run.incidentCount += 1
+    project.incidentCount += 1
+  }
+  return [...projects.values()]
 }
 
 export function buildForgeAttentionDeepLink(projectId: number, runId: number | null, stage: string | null, itemId: string) {
@@ -225,13 +272,18 @@ function severityFor(error: ForgeOperatorError): ForgeAttentionSeverity {
 }
 
 function dedupe(items: ForgeAttentionItem[]) {
-  const seen = new Set<string>()
-  return items.filter((item) => {
-    const key = `${item.projectId}:${item.category}`
-    if (seen.has(key)) return false
-    seen.add(key)
-    return true
-  })
+  const incidents = new Map<string, ForgeAttentionItem>()
+  for (const item of items) {
+    const current = incidents.get(item.identity)
+    if (!current) {
+      incidents.set(item.identity, item)
+      continue
+    }
+    const latest = item.occurredAt >= current.occurredAt ? item : current
+    const history = [...current.history, ...item.history].sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime())
+    incidents.set(item.identity, { ...latest, history })
+  }
+  return [...incidents.values()]
 }
 
 function compareAttention(a: ForgeAttentionItem, b: ForgeAttentionItem) {

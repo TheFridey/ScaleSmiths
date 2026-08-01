@@ -328,18 +328,20 @@ export function DashboardContent({ clients, salesMetrics, todayLabel, operationa
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1.6fr_1fr]">
           <div className="rounded-[8px] border p-4 sm:p-5" style={{ background: T.s1, borderColor: T.b1 }}>
             <h3 className="font-syne text-[15px] font-bold mb-4">MRR by Tier</h3>
-            <ResponsiveContainer width="100%" height={148}>
-              <BarChart data={mrrData} barSize={30}>
+            {mrrData.length === 0 ? (
+              <p className="flex h-[148px] items-center justify-center font-dm text-sm" style={{ color: T.t2 }}>No recurring revenue data yet.</p>
+            ) : <ResponsiveContainer width="100%" height={148}>
+              <BarChart data={mrrData} barSize={30} accessibilityLayer aria-label="Monthly recurring revenue by client tier">
                 <XAxis dataKey="name" tick={{ fontFamily: "var(--font-dm)", fontSize: 11, fill: T.t2 }} axisLine={false} tickLine={false} />
                 <Tooltip
                   contentStyle={{ background: T.s2, border: `1px solid ${T.b2}`, borderRadius: 8, fontFamily: "var(--font-dm)", fontSize: 12 }}
                   labelStyle={{ color: T.t2 }}
                   itemStyle={{ color: T.t1 }}
-                  formatter={(v: number) => [gbp(v), "MRR"]}
+                  formatter={(value) => [gbp(typeof value === "number" ? value : Number(value)), "MRR"]}
                 />
                 <Bar dataKey="value" fill="var(--acc)" radius={[4, 4, 0, 0]} />
               </BarChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer>}
           </div>
 
           <div className="rounded-[8px] border p-4 sm:p-5" style={{ background: T.s1, borderColor: T.b1 }}>

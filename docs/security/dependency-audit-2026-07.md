@@ -1,13 +1,28 @@
 # Dependency and CI security audit — July 2026
 
 - Date: 2026-07-29
-- Last updated: 2026-07-31 (Dependency Review verification and resolved runtime gates)
+- Last updated: 2026-08-01 (dependency and CI runtime modernisation)
 - Scope: `web`, `admin`, dependency governance, security CI, and the disposable backup/restore drill
 - Baseline: Node.js 22.14.0 and npm 10.9.2
 
 ## Outcome
 
 Both production dependency trees now report zero vulnerabilities. Both full trees report zero High and zero Critical findings. The four remaining Moderate findings in each full audit belong to the development-only Drizzle Kit command-line chain (`drizzle-kit` → deprecated `@esbuild-kit/*` → `esbuild`) and are not installed in production.
+
+## 2026-08-01 warning ledger
+
+| Classification | Before | After |
+| --- | --- | --- |
+| Application dependency | Admin clean install warned that Recharts 1.x/2.x is inactive. | Recharts 3.10.1; warning removed. |
+| Development tooling | Drizzle Kit emitted deprecations for `@esbuild-kit/esm-loader` and `@esbuild-kit/core-utils`. | Retained upstream-only; 0.31.10 remains the latest stable Drizzle Kit release and still declares the loader. |
+| GitHub Action runtime | checkout v4 and setup-node v4 used Node 20; upload-artifact v4 was also on the retiring JavaScript runtime line. | Immutable checkout v6.1.0, setup-node v6.5.0 and upload-artifact v5.0.0 pins use Node 24. |
+| Sentry configuration | Both App Router applications lacked `global-error.tsx`, producing the integration configuration finding. | Both applications capture render errors and render safe retry fallbacks; local builds require no auth token. |
+| Expected test output | Crawler policy and monitoring-provider failure tests log their deliberately induced failures. | Retained and tests pass; these messages prove fail-closed/containment behaviour. |
+| Upstream-only | Webpack reports large cache-string serialization during the web production build. | Retained; it is a framework cache-performance diagnostic with no application-safe remediation. |
+
+CodeQL 3.37.4 remains on `node20` even though it is the current official stable action release. Its runner warning is therefore upstream-only; no compatibility override is enabled.
+
+The Recharts audit found one import surface, the admin command-centre MRR-by-tier chart. Its responsive container, axis, tooltip and bar meaning are preserved. Recharts 3 accessibility support is explicit, the chart has an accessible name, and an empty-data message replaces a blank plot.
 
 | Application | Audit | Before | After |
 | --- | --- | ---: | ---: |
@@ -46,6 +61,8 @@ Owner: Engineering / platform
 Review or expiry date: 2026-10-31  
 Required review: upgrade when Drizzle Kit removes the affected loader chain, then rerun migration consistency and database integration tests.
 
+Registry evidence was refreshed on 2026-08-01: 0.31.10 is still the current stable release and still directly declares `@esbuild-kit/esm-loader`. The existing owner and 2026-10-31 review date remain justified and were not extended.
+
 ### Contextually non-exploitable
 
 No High or Critical finding is being accepted as contextually non-exploitable. The remaining Moderate esbuild development-server advisory requires an attacker to interact with the local tooling server and is not present in either production install.
@@ -65,6 +82,14 @@ No High or Critical finding is being accepted as contextually non-exploitable. T
 The overrides are identical in web and admin so framework behavior remains aligned.
 
 ## GitHub Actions remediation
+
+- Updated `actions/checkout` to immutable v6.1.0 (`d23441a48e516b6c34aea4fa41551a30e30af803`).
+- Updated `actions/setup-node` to immutable v6.5.0 (`249970729cb0ef3589644e2896645e5dc5ba9c38`).
+- Updated `actions/upload-artifact` to immutable v5.0.0 (`330a01c490aca151604b8cf639adc76d48f6c5d4`).
+- Updated `actions/dependency-review-action` to immutable v5.0.0 (`a1d282b36b6f3519aa1f3fc636f609c47dddb294`).
+- Updated `anchore/sbom-action` to immutable v0.24.0 (`e22c389904149dbc22b58101806040fa8d37a610`).
+- Updated CodeQL to immutable v3.37.4 (`a2983b8bed1923f44751c5c43237f479442827b3`); upstream still declares Node 20.
+- Policy tests reject old immutable pins as well as mutable tags; workflow permissions and inputs are unchanged.
 
 - Removed the duplicate TruffleHog failure flag.
 - Pinned security-sensitive third-party actions in `security.yml` to immutable commit SHAs.

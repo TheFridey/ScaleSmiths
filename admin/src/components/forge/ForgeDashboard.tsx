@@ -22,6 +22,7 @@ import {
   Wrench,
 } from "lucide-react"
 import { MobileSheet } from "@/components/admin-shell/AdminShell"
+import { useAdminShell } from "@/components/admin-shell/AdminShellContext"
 import {
   DetailDrawer,
   EmptyState,
@@ -101,6 +102,7 @@ export function ForgeDashboard({
   dashboardArtifacts: DashboardArtifact[]
   dashboardIntegrations: DashboardIntegration[]
 }) {
+  const { toggleFocusMode } = useAdminShell()
   const [query, setQuery] = useState("")
   const [stage, setStage] = useState<"all" | ForgeProjectStatus>("all")
   const [runStatus, setRunStatus] = useState<ProjectFilterStatus>("all")
@@ -181,7 +183,7 @@ export function ForgeDashboard({
             <button
               type="button"
               className="forge-secondary-action"
-              onClick={() => document.querySelector<HTMLButtonElement>(".admin-focus-toggle")?.click()}
+              onClick={toggleFocusMode}
             >
               <PanelLeftClose size={17} aria-hidden="true" />
               Focus mode

@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useId, useMemo, useRef, useState } from "react"
+import { createPortal } from "react-dom"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { signOut } from "next-auth/react"
@@ -26,9 +27,7 @@ import {
 import { Logo } from "@/components/Logo"
 import type { AdminRole } from "@/lib/admin-users"
 import { isNavigationVisible, type Capability } from "@/lib/rbac"
-
-const SIDEBAR_KEY = "scalesmiths-admin-sidebar"
-const FOCUS_KEY = "scalesmiths-forge-focus-mode"
+import { AdminShellProvider, useAdminShell } from "./AdminShellContext"
 
 const NAV: Array<{ href: string; label: string; Icon: typeof LayoutDashboard; capability: Capability }> = [
   { href: "/dashboard", label: "Dashboard", Icon: LayoutDashboard, capability: "projects.read" },
@@ -48,20 +47,13 @@ const NAV: Array<{ href: string; label: string; Icon: typeof LayoutDashboard; ca
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const isForge = pathname === "/forge" || pathname.startsWith("/forge/")
-  const [collapsed, setCollapsed] = useState(true)
-  const [focusMode, setFocusMode] = useState(false)
+  return <AdminShellProvider pathname={pathname}><AdminShellFrame pathname={pathname}>{children}</AdminShellFrame></AdminShellProvider>
+}
+
+function AdminShellFrame({ pathname, children }: { pathname: string; children: React.ReactNode }) {
+  const { isForgeRoute, focusMode, sidebarCollapsed, toggleSidebar, toggleFocusMode, ready } = useAdminShell()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [role, setRole] = useState<AdminRole | null>(null)
-  const [ready, setReady] = useState(false)
-
-  useEffect(() => {
-    const storedSidebar = window.localStorage.getItem(SIDEBAR_KEY)
-    const storedFocus = window.localStorage.getItem(FOCUS_KEY)
-    setCollapsed(storedSidebar ? storedSidebar === "collapsed" : isForge)
-    setFocusMode(isForge && storedFocus === "enabled")
-    setReady(true)
-  }, [isForge])
 
   useEffect(() => {
     setMobileOpen(false)
@@ -85,22 +77,6 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     [role],
   )
 
-  function toggleCollapsed() {
-    setCollapsed((current) => {
-      const next = !current
-      window.localStorage.setItem(SIDEBAR_KEY, next ? "collapsed" : "expanded")
-      return next
-    })
-  }
-
-  function toggleFocusMode() {
-    setFocusMode((current) => {
-      const next = !current
-      window.localStorage.setItem(FOCUS_KEY, next ? "enabled" : "disabled")
-      return next
-    })
-  }
-
   async function handleSignOut() {
     try {
       await fetch("/api/security/logout", { method: "POST" })
@@ -113,22 +89,22 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   return (
     <div
       className="admin-shell"
-      data-sidebar={ready && collapsed ? "collapsed" : "expanded"}
-      data-focus-mode={isForge && focusMode ? "true" : "false"}
-      data-forge-route={isForge ? "true" : "false"}
+      data-sidebar={ready && sidebarCollapsed ? "collapsed" : "expanded"}
+      data-focus-mode={focusMode ? "true" : "false"}
+      data-forge-route={isForgeRoute ? "true" : "false"}
     >
       <AdminSidebar
-        collapsed={collapsed}
-        focusMode={isForge && focusMode}
+        collapsed={sidebarCollapsed}
+        focusMode={focusMode}
         pathname={pathname}
         navigation={visibleNav}
-        onCollapse={toggleCollapsed}
+        onCollapse={toggleSidebar}
         onSignOut={() => void handleSignOut()}
       />
 
       <AdminTopBar
-        isForge={isForge}
-        focusMode={isForge && focusMode}
+        isForge={isForgeRoute}
+        focusMode={focusMode}
         onOpenNavigation={() => setMobileOpen(true)}
         onToggleFocus={toggleFocusMode}
       />
@@ -278,28 +254,73 @@ export function MobileSheet({
   title: string
   children: React.ReactNode
 }) {
+  const layerRef = useRef<HTMLDivElement>(null)
+  const closeButtonRef = useRef<HTMLButtonElement>(null)
+  const restoreFocusRef = useRef<HTMLElement | null>(null)
+  const titleId = useId()
+
   useEffect(() => {
     if (!open) return
+    const layer = layerRef.current
+    restoreFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    const background = Array.from(document.body.children).filter((element) => element !== layer)
+    const inertStates = background.map((element) => ({ element: element as HTMLElement, inert: (element as HTMLElement).inert }))
+    for (const { element } of inertStates) element.inert = true
+
+    const focusable = () => Array.from(layer?.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    ) ?? []).filter((element) => !element.hidden && element.getAttribute("aria-hidden") !== "true")
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose()
+      if (event.key === "Escape") {
+        event.preventDefault()
+        onClose()
+        return
+      }
+      if (event.key !== "Tab") return
+      const controls = focusable()
+      if (!controls.length) {
+        event.preventDefault()
+        layer?.focus()
+        return
+      }
+      const first = controls[0]
+      const last = controls[controls.length - 1]
+      if (event.shiftKey && (document.activeElement === first || !layer?.contains(document.activeElement))) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
     }
     window.addEventListener("keydown", handleKeyDown)
-    return () => window.removeEventListener("keydown", handleKeyDown)
+    const focusFrame = window.requestAnimationFrame(() => closeButtonRef.current?.focus())
+    return () => {
+      window.cancelAnimationFrame(focusFrame)
+      window.removeEventListener("keydown", handleKeyDown)
+      document.body.style.overflow = previousOverflow
+      for (const { element, inert } of inertStates) element.inert = inert
+      restoreFocusRef.current?.focus()
+      restoreFocusRef.current = null
+    }
   }, [onClose, open])
 
   if (!open) return null
-  return (
-    <div className="mobile-sheet-layer">
-      <button type="button" className="mobile-sheet-backdrop" onClick={onClose} aria-label="Close navigation" />
-      <aside className="mobile-sheet" role="dialog" aria-modal="true" aria-label={title}>
+  return createPortal(
+    <div className="mobile-sheet-layer" ref={layerRef} tabIndex={-1}>
+      <button type="button" className="mobile-sheet-backdrop" onClick={onClose} aria-label={`Close ${title.toLowerCase()}`} tabIndex={-1} />
+      <aside className="mobile-sheet" role="dialog" aria-modal="true" aria-labelledby={titleId}>
         <div className="mobile-sheet-header">
-          <Logo size={24} />
-          <button type="button" className="admin-icon-button" onClick={onClose} aria-label="Close navigation">
+          <h2 id={titleId} className="admin-topbar-title">{title}</h2>
+          <button ref={closeButtonRef} type="button" className="admin-icon-button" onClick={onClose} aria-label={`Close ${title.toLowerCase()}`}>
             <X size={20} aria-hidden="true" />
           </button>
         </div>
         <div className="flex min-h-0 flex-1 flex-col">{children}</div>
       </aside>
-    </div>
+    </div>,
+    document.body,
   )
 }

@@ -2,7 +2,8 @@
 
 import { Children, useEffect, useMemo, useState, type ReactNode } from "react"
 import Link from "next/link"
-import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import dynamic from "next/dynamic"
+import { useRouter } from "next/navigation"
 import type { LucideIcon } from "lucide-react"
 import {
   Activity,
@@ -10,29 +11,23 @@ import {
   Box,
   Brain,
   CheckCircle2,
-  ChevronLeft,
   ChevronRight,
   Code2,
   DollarSign,
   Download,
   Eye,
   FileText,
-  Globe2,
   Link2,
   ListChecks,
   Monitor,
-  MoreHorizontal,
-  PanelLeftOpen,
   PanelRightOpen,
   Rocket,
   Settings2,
   ShieldCheck,
-  Target,
   Workflow,
 } from "lucide-react"
-import { ForgeArtifactTabs } from "./ForgeArtifactTabs"
 import { ForgeIntakeForm, type ForgeIntakeState } from "./ForgeIntakeForm"
-import { ForgeProjectForm, type ForgeProjectFormValue } from "./ForgeProjectForm"
+import type { ForgeProjectFormValue } from "./ForgeProjectForm"
 import { ForgeComponentSpecPanel } from "./ForgeComponentSpecPanel"
 import { ForgeCostQualityPanel } from "./ForgeCostQualityPanel"
 import { ForgeCommandChatPanel } from "./ForgeCommandChatPanel"
@@ -45,13 +40,11 @@ import { ForgeExportPanel } from "./ForgeExportPanel"
 import { ForgePreviewRail } from "./ForgePreviewRail"
 import { ForgeProposalPanel } from "./ForgeProposalPanel"
 import { ForgeQaPanel } from "./ForgeQaPanel"
-import { ForgeResendConfigPanel } from "./ForgeResendConfigPanel"
 import { ForgeResearchActions } from "./ForgeResearchActions"
 import { ForgeSeoPanel } from "./ForgeSeoPanel"
 import { ForgeSitemapStrategyPanel } from "./ForgeSitemapStrategyPanel"
 import { ForgeVisualCritiquePanel } from "./ForgeVisualCritiquePanel"
 import { ForgeVisualQaPanel } from "./ForgeVisualQaPanel"
-import { ForgeWhatsAppConfigPanel } from "./ForgeWhatsAppConfigPanel"
 import { ForgeWorkspacePanel } from "./ForgeWorkspacePanel"
 import { redactIntegrationConfig, type ForgeArtifactType, type ForgeIntegrationProvider, type ForgeTaskAgentType, type ForgeTaskStatus } from "@/lib/forge"
 import type { ForgeTaskResultQuality } from "@/lib/forge-task-quality"
@@ -74,28 +67,20 @@ import type { ForgeSitemapArtifactState } from "@/lib/forge-sitemap"
 import type { ForgeWhatsAppConfig } from "@/lib/forge-whatsapp"
 import type { ForgeWorkspaceMetadata } from "@/lib/forge-workspace"
 import { ContextDrawer, DetailDrawer, WorkspaceShell } from "@/components/admin-shell/primitives"
+import { useAdminShell } from "@/components/admin-shell/AdminShellContext"
 import { deriveForgeAttentionItems, type ForgeHealthJob } from "@/lib/forge-operational-health"
 import { normalizeForgeOperatorError } from "@/lib/forge-operator-error"
+import { useForgeWorkspaceNavigation, type ProductionStage, type WorkspaceStage, type WorkspaceView } from "./useForgeWorkspaceNavigation"
+import { ForgeProjectHeader, ForgeProjectNavigation, ForgeStageRail } from "./ForgeProjectChrome"
 
 const T = { s1:"var(--s1)", s2:"var(--s2)", s3:"var(--s3)", b1:"var(--b1)", b2:"var(--b2)", t1:"var(--t1)", t2:"var(--t2)", t3:"var(--t3)", acc:"var(--acc)", grn:"var(--grn)", amb:"var(--amb)", red:"var(--red)" }
 
-type ProjectTab = "command" | "intake" | "strategy" | "build" | "qa" | "launch" | "records"
-type WorkspaceView = "overview" | "build" | "preview" | "attention" | "advanced"
-type ProductionStage = "brief" | "research" | "site-plan" | "copy" | "design" | "components" | "build" | "seo" | "quality" | "preview" | "client-review" | "launch"
-type IntakePane = "brief" | "settings"
-type StrategyPane = "research" | "sitemap" | "copy" | "design" | "spec"
-type BuildPane = "workspace" | "integrations" | "generate" | "seo"
-type QaPane = "critique" | "checks" | "visual" | "cost"
-type LaunchPane = "proposal" | "estimate" | "export" | "deploy"
-type RecordsPane = "tasks" | "activity" | "usage" | "memory" | "integrations" | "artifacts" | "technical" | "settings" | "details"
+const advancedPanelLoading = () => <div className="forge-empty" role="status">Loading advanced project tools…</div>
+const ForgeArtifactTabs = dynamic(() => import("./ForgeArtifactTabs").then((module) => module.ForgeArtifactTabs), { loading: advancedPanelLoading })
+const ForgeProjectForm = dynamic(() => import("./ForgeProjectForm").then((module) => module.ForgeProjectForm), { loading: advancedPanelLoading })
+const ForgeResendConfigPanel = dynamic(() => import("./ForgeResendConfigPanel").then((module) => module.ForgeResendConfigPanel), { loading: advancedPanelLoading })
+const ForgeWhatsAppConfigPanel = dynamic(() => import("./ForgeWhatsAppConfigPanel").then((module) => module.ForgeWhatsAppConfigPanel), { loading: advancedPanelLoading })
 
-const WORKSPACE_VIEWS: Array<{ key: WorkspaceView; label: string; Icon: LucideIcon }> = [
-  { key: "overview", label: "Overview", Icon: Target },
-  { key: "build", label: "Build", Icon: Code2 },
-  { key: "preview", label: "Preview", Icon: Monitor },
-  { key: "attention", label: "Attention", Icon: ShieldCheck },
-  { key: "advanced", label: "Advanced", Icon: Settings2 },
-]
 
 interface ForgeTaskRow {
   id: number
@@ -290,16 +275,8 @@ export function ForgeProjectDetail({
   initialResendConfig: ForgeResendConfig
   initialWhatsAppConfig: ForgeWhatsAppConfig
 }) {
+  const { toggleFocusMode } = useAdminShell()
   const router = useRouter()
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
-  const requestedView = parseWorkspaceView(searchParams.get("view"))
-  const requestedStage = parseProductionStage(searchParams.get("stage"))
-  const [activeView, setActiveView] = useState<WorkspaceView>(requestedView ?? "overview")
-  const [activeStage, setActiveStage] = useState<ProductionStage>(requestedStage ?? "brief")
-  const [qaPane, setQaPane] = useState<QaPane>("critique")
-  const [launchPane, setLaunchPane] = useState<LaunchPane>("proposal")
-  const [recordsPane, setRecordsPane] = useState<RecordsPane>("tasks")
   const projectId = project.id ?? 0
   const archived = project.status === "archived"
   const stages = useMemo(
@@ -325,7 +302,6 @@ export function ForgeProjectDetail({
   const failedTasks = tasks.filter((task) => task.status === "failed")
   const approvedFallbackTasks = tasks.filter((task) => task.resultQuality === "fallback" && task.qualityApprovedAt)
   const currentStep = resolveCurrentStep(stages)
-  const [workflowOpen, setWorkflowOpen] = useState(false)
   const [contextOpen, setContextOpen] = useState(false)
   const [overflowOpen, setOverflowOpen] = useState(false)
   const [previewContextOpen, setPreviewContextOpen] = useState(false)
@@ -337,21 +313,7 @@ export function ForgeProjectDetail({
   const runStatus = failedTasks.length || failedJobs.length ? "failed" : activeTasks.some((task) => task.status === "running") || activeJobs.some((job) => job.status === "running") ? "running" : activeTasks.length || activeJobs.length ? "queued" : project.status === "deployed" ? "complete" : "idle"
   const progress = Math.round((completedStages / stages.length) * 100)
   const primaryAction = resolvePrimaryProjectAction({ projectStatus: project.status, currentStep, failedTasks, activeTasks, intake: initialIntake, generatedCode: initialGeneratedCode, qa: initialQa, preview: initialPreview, deploy: initialDeploy })
-
-  useEffect(() => {
-    if (!requestedView && !requestedStage) {
-      const current = stages.find((stage) => stage.label === currentStep.label)
-      if (current) setActiveStage(current.key)
-    }
-  }, [currentStep.label, requestedStage, requestedView, stages])
-
-  useEffect(() => {
-    if (requestedView) setActiveView(requestedView)
-    if (requestedStage) {
-      setActiveStage(requestedStage)
-      setStagePane(requestedStage, { setQaPane, setLaunchPane })
-    }
-  }, [requestedStage, requestedView])
+  const { activeView, activeStage, qaPane, setQaPane, launchPane, setLaunchPane, recordsPane, setRecordsPane, workflowOpen, setWorkflowOpen, navigate, selectStage } = useForgeWorkspaceNavigation(stages, currentStep)
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -363,32 +325,6 @@ export function ForgeProjectDetail({
     window.addEventListener("keydown", onKeyDown)
     return () => window.removeEventListener("keydown", onKeyDown)
   }, [])
-
-  useEffect(() => {
-    const item = searchParams.get("item")
-    if (activeView !== "attention" || !item) return
-    window.requestAnimationFrame(() => document.getElementById(item)?.focus({ preventScroll: false }))
-  }, [activeView, searchParams])
-
-  function navigate(view: WorkspaceView, stage?: ProductionStage, extra?: Record<string, string | null>) {
-    setActiveView(view)
-    if (stage) setActiveStage(stage)
-    const params = new URLSearchParams(searchParams.toString())
-    params.set("view", view)
-    if (stage) params.set("stage", stage)
-    else if (view !== "build") params.delete("stage")
-    for (const [key, value] of Object.entries(extra ?? {})) {
-      if (value === null) params.delete(key)
-      else params.set(key, value)
-    }
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false })
-  }
-
-  function selectStage(stage: CockpitStage) {
-    setStagePane(stage.key, { setQaPane, setLaunchPane })
-    navigate(stage.key === "preview" || stage.key === "client-review" ? "preview" : "build", stage.key)
-    setWorkflowOpen(false)
-  }
 
   async function approvePreview() {
     if (previewDecisionBusy) return
@@ -424,52 +360,16 @@ export function ForgeProjectDetail({
 
   return (
     <WorkspaceShell className="forge-workspace forge-project-workspace">
-      <header className="project-workspace-header">
-        <div className="project-header-identity">
-          <Link href="/forge" className="admin-icon-button" aria-label="Back to Forge"><ChevronLeft size={18} aria-hidden="true" /></Link>
-          <div>
-            <p>Forge project</p>
-            <h1>{project.name}</h1>
-            <span>{project.businessName}{project.industry ? ` · ${project.industry}` : ""}</span>
-          </div>
-        </div>
-        <div className="project-header-status" role="group" aria-label="Project status">
-          <button type="button" onClick={() => setContextOpen(true)} className="project-status-summary">
-            <span><strong>{currentStep.label}</strong><small>Current stage</small></span>
-            <Badge value={runStatus} tone={runStatus === "failed" ? "bad" : runStatus === "complete" ? "good" : runStatus === "running" ? "accent" : "muted"} />
-          </button>
-          <div className="project-header-progress"><span style={{ width: `${progress}%` }} /><small>{progress}%</small></div>
-          <span className="project-header-cost">{formatCost(aiUsage.totals.estimatedCost)}</span>
-        </div>
-        <div className="project-header-actions">
-          <button type="button" className="forge-primary-action" onClick={() => navigate(primaryAction.view, primaryAction.stage)}>
-            {primaryAction.label}<ChevronRight size={16} aria-hidden="true" />
-          </button>
-          <button type="button" className="forge-secondary-action project-focus-button" onClick={() => document.querySelector<HTMLButtonElement>(".admin-focus-toggle")?.click()}>
-            <PanelLeftOpen size={16} aria-hidden="true" />Focus Mode
-          </button>
-          <div className="project-overflow">
-            <button type="button" className="admin-icon-button" aria-label="More project actions" aria-expanded={overflowOpen} onClick={() => setOverflowOpen((open) => !open)}><MoreHorizontal size={19} aria-hidden="true" /></button>
-            {overflowOpen && <div className="project-overflow-menu">
-              <button type="button" onClick={() => { navigate("advanced"); setRecordsPane("settings"); setOverflowOpen(false) }}>Project settings</button>
-              <button type="button" onClick={() => { setContextOpen(true); setOverflowOpen(false) }}>Open context <kbd>Ctrl I</kbd></button>
-              <Link href={`/api/forge/ai-usage/export?projectId=${projectId}`}>Export AI usage</Link>
-            </div>}
-          </div>
-        </div>
-      </header>
+      <ForgeProjectHeader projectId={projectId} name={project.name} businessName={project.businessName} industry={project.industry} currentStage={currentStep.label} progress={progress} cost={formatCost(aiUsage.totals.estimatedCost)} status={<Badge value={runStatus} tone={runStatus === "failed" ? "bad" : runStatus === "complete" ? "good" : runStatus === "running" ? "accent" : "muted"} />} primaryAction={primaryAction.label} overflowOpen={overflowOpen} onPrimaryAction={() => navigate(primaryAction.view, primaryAction.stage)} onOpenContext={() => { setContextOpen(true); setOverflowOpen(false) }} onToggleFocus={toggleFocusMode} onToggleOverflow={() => setOverflowOpen((open) => !open)} onOpenSettings={() => { navigate("advanced"); setRecordsPane("settings"); setOverflowOpen(false) }} />
 
       {approvedFallbackTasks.length > 0 && <div className="project-workspace-warning"><strong>Fallback dependency warning:</strong> deployment remains subject to {approvedFallbackTasks.length} recorded quality approval{approvedFallbackTasks.length === 1 ? "" : "s"}.</div>}
 
-      <nav className="project-view-nav" aria-label="Project workspace">
-        <button type="button" className="project-stage-mobile-trigger" onClick={() => setWorkflowOpen(true)}><Workflow size={16} aria-hidden="true" />Stages</button>
-        {WORKSPACE_VIEWS.map(({ key, label, Icon }) => <button key={key} type="button" className={activeView === key ? "is-active" : ""} onClick={() => navigate(key)}><Icon size={16} aria-hidden="true" />{label}{key === "attention" && attentionItems.length > 0 ? <span>{attentionItems.length}</span> : null}</button>)}
-      </nav>
+      <ForgeProjectNavigation activeView={activeView} attentionCount={attentionItems.length} onNavigate={navigate} onOpenWorkflow={() => setWorkflowOpen(true)} />
 
       <div className="project-workspace-body">
         <aside className="project-stage-rail" aria-label="Production stages">
           <button type="button" className="project-stage-rail-heading" onClick={() => setWorkflowOpen(true)}><Workflow size={16} aria-hidden="true" /><span>Production journey</span></button>
-          <StageRail stages={stages} activeStage={activeStage} onSelect={selectStage} />
+          <ForgeStageRail stages={stages} activeStage={activeStage} onSelect={selectStage} />
         </aside>
 
         <main className="project-workspace-main">
@@ -539,22 +439,15 @@ export function ForgeProjectDetail({
         </main>
       </div>
 
-      <ContextDrawer open={workflowOpen} title="Production stages" onClose={() => setWorkflowOpen(false)}><StageRail stages={stages} activeStage={activeStage} onSelect={selectStage} /></ContextDrawer>
+      <ContextDrawer open={workflowOpen} title="Production stages" onClose={() => setWorkflowOpen(false)}><ForgeStageRail stages={stages} activeStage={activeStage} onSelect={selectStage} /></ContextDrawer>
       <DetailDrawer open={contextOpen} title="Project context" onClose={() => setContextOpen(false)}><LiveContextRail stages={stages} activeTasks={activeTasks} failedTasks={failedTasks} artifacts={artifacts} design={initialDesign} qa={initialQa} generatedCode={initialGeneratedCode} aiUsage={aiUsage} /></DetailDrawer>
       {activeTasks.length + activeJobs.length > 0 && <div className="project-active-run-strip"><span className="system-health-dot tone-success" /><strong>{activeTasks.length + activeJobs.length} active</strong><span>{activeTasks[0]?.title ?? labelize(activeJobs[0]?.kind ?? "Forge job")}</span><button type="button" onClick={() => setContextOpen(true)}>View run</button></div>}
     </WorkspaceShell>
   )
 }
 
-type CockpitStageStatus = "approved" | "needs_review" | "failed" | "running" | "complete" | "pending" | "skipped"
-
-interface CockpitStage {
-  key: ProductionStage
-  label: string
-  status: CockpitStageStatus
-  detail: string
-  tab: ProjectTab
-}
+type CockpitStageStatus = WorkspaceStage["status"]
+type CockpitStage = WorkspaceStage
 
 interface ProjectAttentionItem {
   id: string
@@ -570,26 +463,8 @@ interface ProjectAttentionItem {
   technicalReference: string
 }
 
-function StageRail({ stages, activeStage, onSelect }: { stages: CockpitStage[]; activeStage: ProductionStage; onSelect: (stage: CockpitStage) => void }) {
-  return <ol className="production-stage-list">{stages.map((stage, index) => <li key={stage.key}><button type="button" className={activeStage === stage.key ? "is-active" : ""} onClick={() => onSelect(stage)} aria-current={activeStage === stage.key ? "step" : undefined}><span className={`stage-state tone-${stage.status}`} aria-hidden="true">{index + 1}</span><span><strong>{stage.label}</strong><small>{labelize(stage.status)}</small></span></button></li>)}</ol>
-}
-
 function StageTimeline({ stages, onSelect }: { stages: CockpitStage[]; onSelect: (stage: CockpitStage) => void }) {
   return <ol className="project-stage-timeline">{stages.map((stage) => <li key={stage.key}><button type="button" onClick={() => onSelect(stage)}><span className={`stage-state tone-${stage.status}`} /><span><strong>{stage.label}</strong><small>{stage.detail}</small></span><StageBadge status={stage.status} /></button></li>)}</ol>
-}
-
-function parseWorkspaceView(value: string | null): WorkspaceView | null {
-  return value && WORKSPACE_VIEWS.some((item) => item.key === value) ? value as WorkspaceView : null
-}
-
-function parseProductionStage(value: string | null): ProductionStage | null {
-  const stages: ProductionStage[] = ["brief", "research", "site-plan", "copy", "design", "components", "build", "seo", "quality", "preview", "client-review", "launch"]
-  return value && stages.includes(value as ProductionStage) ? value as ProductionStage : null
-}
-
-function setStagePane(stage: ProductionStage, setters: { setQaPane: (value: QaPane) => void; setLaunchPane: (value: LaunchPane) => void }) {
-  if (stage === "quality") setters.setQaPane("checks")
-  if (stage === "launch") setters.setLaunchPane("deploy")
 }
 
 function stageAgentTypes(stage: ProductionStage): ForgeTaskAgentType[] {
@@ -728,213 +603,6 @@ function estimateRemainingCost(usage: ForgeAiUsageMetrics, progress: number) {
   return formatCost(Math.max(0, usage.totals.estimatedCost * ((100 - progress) / progress)))
 }
 
-function WorkspaceSidebar({
-  project,
-  projects,
-  tasks,
-  activityLogs,
-  stages,
-  activeTab,
-  setActiveTab,
-  completedStages,
-}: {
-  project: ForgeProjectFormValue
-  projects: ForgeProjectSidebarSummary[]
-  tasks: ForgeTaskRow[]
-  activityLogs: ForgeActivityRow[]
-  stages: CockpitStage[]
-  activeTab: ProjectTab
-  setActiveTab: (tab: ProjectTab) => void
-  completedStages: number
-}) {
-  const visibleProjects = projects.length ? projects : [{
-    id: project.id ?? 0,
-    name: project.name,
-    businessName: project.businessName,
-    status: project.status,
-    priority: project.priority,
-    updatedAt: new Date().toISOString(),
-  }]
-
-  return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4">
-      <ProjectSummary project={project} completedStages={completedStages} totalStages={stages.length} />
-
-      <div className="min-h-0 flex-1 overflow-auto rounded-[8px] border" style={{ background:"rgba(2,6,23,.45)", borderColor:"rgba(148,163,184,.14)" }}>
-        <SidebarBlock title="Projects" icon={Box}>
-          <div className="space-y-2">
-            {visibleProjects.slice(0, 8).map((item) => {
-              const active = item.id === project.id
-              return (
-                <Link
-                  key={item.id}
-                  href={`/forge/${item.id}`}
-                  className="block rounded-[8px] border p-3 transition-colors"
-                  style={{ background:active ? "rgba(56,189,248,.09)" : T.s2, borderColor:active ? "rgba(56,189,248,.45)" : T.b1 }}
-                >
-                  <div className="flex min-w-0 items-center justify-between gap-2">
-                    <span className="truncate font-dm text-sm font-semibold text-white">{item.businessName}</span>
-                    <Badge value={labelize(item.status ?? "intake")} tone={item.status === "ready_to_deploy" ? "good" : "muted"} />
-                  </div>
-                  <div className="mt-1 truncate font-dm text-[11px]" style={{ color:T.t2 }}>{item.name}</div>
-                </Link>
-              )
-            })}
-          </div>
-        </SidebarBlock>
-
-        <SidebarBlock title="Build Flow" icon={Workflow}>
-          <div className="space-y-2">
-            {stages.map((stage, index) => (
-              <button
-                key={stage.label}
-                type="button"
-                onClick={() => setActiveTab(stage.tab)}
-                className="group w-full rounded-[8px] border p-3 text-left transition-colors hover:bg-[rgba(56,189,248,.045)]"
-                style={{ background:T.s2, borderColor:activeTab === stage.tab ? "rgba(56,189,248,.45)" : T.b1 }}
-              >
-                <div className="mb-1 flex items-center justify-between gap-2">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <span className="font-syne text-xs font-extrabold" style={{ color:T.t2 }}>{String(index + 1).padStart(2, "0")}</span>
-                    <span className="truncate font-dm text-sm font-semibold">{stage.label}</span>
-                  </div>
-                  <StageBadge status={stage.status} />
-                </div>
-                <p className="line-clamp-2 font-dm text-[11px] leading-4" style={{ color:T.t2 }}>{stage.detail}</p>
-              </button>
-            ))}
-          </div>
-        </SidebarBlock>
-
-        <SidebarBlock title="Jobs" icon={ListChecks}>
-          {tasks.length === 0 ? (
-            <p className="font-dm text-xs" style={{ color:T.t2 }}>No jobs queued yet.</p>
-          ) : (
-            <div className="space-y-2">
-              {tasks.slice(0, 5).map((task) => (
-                <div key={task.id} className="rounded-[8px] border p-3" style={{ background:T.s2, borderColor:T.b1 }}>
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="truncate font-dm text-xs font-semibold">{task.title}</span>
-                    <Badge value={task.status} tone={task.status === "completed" ? "good" : task.status === "failed" ? "bad" : "accent"} />
-                  </div>
-                  <div className="mt-1 font-dm text-[11px]" style={{ color:T.t3 }}>{labelize(task.agentType)} / {formatDate(task.createdAt)}</div>
-                </div>
-              ))}
-            </div>
-          )}
-        </SidebarBlock>
-
-        <SidebarBlock title="History" icon={Activity}>
-          {activityLogs.length === 0 ? (
-            <p className="font-dm text-xs" style={{ color:T.t2 }}>No history recorded.</p>
-          ) : (
-            <div className="space-y-2">
-              {activityLogs.slice(0, 5).map((log) => (
-                <div key={log.id} className="rounded-[8px] border p-3" style={{ background:T.s2, borderColor:T.b1 }}>
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="truncate font-dm text-xs font-semibold">{labelize(log.action)}</span>
-                    <span className="shrink-0 font-dm text-[10px]" style={{ color:T.t3 }}>{formatDate(log.createdAt)}</span>
-                  </div>
-                  <p className="mt-1 line-clamp-2 font-dm text-[11px] leading-4" style={{ color:T.t2 }}>{log.message}</p>
-                </div>
-              ))}
-            </div>
-          )}
-        </SidebarBlock>
-      </div>
-    </div>
-  )
-}
-
-function SidebarBlock({ title, icon: Icon, children }: { title: string; icon: LucideIcon; children: ReactNode }) {
-  return (
-    <section className="border-b p-3 last:border-b-0" style={{ borderColor:"rgba(148,163,184,.12)" }}>
-      <div className="mb-3 flex items-center gap-2">
-        <Icon size={14} style={{ color:"#22d3ee" }} aria-hidden="true" />
-        <h2 className="font-dm text-xs font-bold uppercase tracking-[.12em]" style={{ color:"#cbd5e1" }}>{title}</h2>
-      </div>
-      {children}
-    </section>
-  )
-}
-
-function ProjectSummary({ project, completedStages, totalStages }: { project: ForgeProjectFormValue; completedStages: number; totalStages: number }) {
-  return (
-    <section className="relative shrink-0 overflow-hidden rounded-[8px] border p-4" style={{ background:"rgba(2,6,23,.58)", borderColor:"rgba(56,189,248,.18)" }}>
-      <GridWash />
-      <div className="relative">
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <div>
-            <p className="font-dm text-[11px] font-semibold uppercase tracking-[.22em]" style={{ color:"#7dd3fc" }}>Live Run</p>
-            <h2 className="mt-1 font-syne text-2xl font-extrabold leading-tight text-white">{project.businessName}</h2>
-          </div>
-          <Monitor size={20} style={{ color:"#22d3ee" }} aria-hidden="true" />
-        </div>
-        <div className="grid grid-cols-3 gap-2">
-          <Metric label="Ready" value={`${completedStages}/${totalStages}`} tone={completedStages === totalStages ? "green" : "cyan"} />
-          <Metric label="Priority" value={project.priority} tone={project.priority === "high" ? "amber" : "violet"} />
-          <Metric label="Status" value={labelize(project.status ?? "intake")} tone="cyan" />
-        </div>
-        <div className="mt-3 grid gap-2">
-          <MiniDetail icon={Globe2} label="Website" value={project.websiteUrl ?? "No website set"} />
-          <MiniDetail icon={Target} label="Goal" value={project.primaryGoal ?? "No goal set"} />
-        </div>
-      </div>
-    </section>
-  )
-}
-
-function HeaderSignal({ icon: Icon, label, tone }: { icon: LucideIcon; label: string; tone: "cyan" | "green" | "amber" | "violet" }) {
-  return (
-    <div className="inline-flex h-8 items-center gap-2 rounded-full border px-3" style={{ background:"rgba(15,23,42,.7)", borderColor:"rgba(148,163,184,.16)" }}>
-      <Icon size={13} style={{ color:toneColor(tone) }} aria-hidden="true" />
-      <span className="font-dm text-[11px] font-semibold" style={{ color:"#cbd5e1" }}>{label}</span>
-    </div>
-  )
-}
-
-function Metric({ label, value, tone }: { label: string; value: string | number; tone: "cyan" | "green" | "amber" | "violet" }) {
-  return (
-    <div className="rounded-[8px] border p-3" style={{ background:"rgba(15,23,42,.64)", borderColor:"rgba(148,163,184,.14)" }}>
-      <div className="font-dm text-[10px] font-semibold uppercase tracking-[.1em]" style={{ color:"#94a3b8" }}>{label}</div>
-      <div className="mt-1 truncate font-syne text-lg font-extrabold" style={{ color:toneColor(tone) }}>{value}</div>
-    </div>
-  )
-}
-
-function MiniDetail({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string }) {
-  return (
-    <div className="flex min-w-0 items-center gap-2 rounded-[8px] border px-3 py-2" style={{ background:"rgba(15,23,42,.54)", borderColor:"rgba(148,163,184,.14)" }}>
-      <Icon size={13} style={{ color:"#94a3b8" }} aria-hidden="true" />
-      <span className="shrink-0 font-dm text-[11px]" style={{ color:"#64748b" }}>{label}</span>
-      <span className="truncate font-dm text-[11px]" style={{ color:"#cbd5e1" }}>{value}</span>
-    </div>
-  )
-}
-
-function MobileContextBar({
-  currentStep,
-  qaStatus,
-  cost,
-  activeTasks,
-  failedTasks,
-}: {
-  currentStep: CockpitStage
-  qaStatus: ForgeQaArtifactState["status"]
-  cost: number
-  activeTasks: number
-  failedTasks: number
-}) {
-  return (
-    <div className="grid gap-2 rounded-[8px] border p-3 sm:grid-cols-4" style={{ background:"rgba(2,6,23,.5)", borderColor:"rgba(56,189,248,.18)" }}>
-      <CompactSignal label="Step" value={currentStep.label} tone={currentStep.status === "failed" ? "bad" : currentStep.status === "running" ? "accent" : "muted"} />
-      <CompactSignal label="QA" value={labelize(qaStatus)} tone={qaStatus === "passed" ? "good" : qaStatus === "failed" ? "bad" : "muted"} />
-      <CompactSignal label="Cost" value={formatCost(cost)} tone="accent" />
-      <CompactSignal label="Jobs" value={`${activeTasks} active / ${failedTasks} failed`} tone={failedTasks ? "bad" : activeTasks ? "accent" : "muted"} />
-    </div>
-  )
-}
-
 function LiveContextRail({
   stages,
   activeTasks,
@@ -1043,53 +711,12 @@ function LiveContextRail({
   )
 }
 
-function StatusDock({
-  currentStep,
-  aiUsage,
-  activeTasks,
-  failedTasks,
-  qa,
-  visualCritique,
-}: {
-  currentStep: CockpitStage
-  aiUsage: ForgeAiUsageMetrics
-  activeTasks: ForgeTaskRow[]
-  failedTasks: ForgeTaskRow[]
-  qa: ForgeQaArtifactState
-  visualCritique: ForgeVisualCritiqueArtifactState
-}) {
-  const validation = qa.status === "failed"
-    ? qa.report?.failureSummary ?? "QA failed. View logs for command output."
-    : visualCritique.score !== null
-      ? `Visual critique ${visualCritique.score}/100`
-      : "Validation pending"
-
-  return (
-    <footer className="grid shrink-0 gap-2 border-t px-3 py-2 md:grid-cols-[1.1fr_.8fr_.8fr_1.4fr]" style={{ background:"rgba(2,6,23,.82)", borderColor:"rgba(148,163,184,.14)" }}>
-      <CompactSignal label="Current Step" value={`${currentStep.label} / ${labelize(currentStep.status)}`} tone={currentStep.status === "failed" ? "bad" : currentStep.status === "running" ? "accent" : "muted"} />
-      <CompactSignal label="Usage" value={`${aiUsage.totals.totalTokens.toLocaleString()} tokens / ${formatCost(aiUsage.totals.estimatedCost)}`} tone={aiUsage.budget.project.blocked || aiUsage.budget.monthly.blocked ? "bad" : "accent"} />
-      <CompactSignal label="Jobs" value={`${activeTasks.length} active / ${failedTasks.length} failed`} tone={failedTasks.length ? "bad" : activeTasks.length ? "accent" : "muted"} />
-      <CompactSignal label="Validation" value={validation} tone={qa.status === "passed" ? "good" : qa.status === "failed" ? "bad" : "muted"} />
-    </footer>
-  )
-}
-
 function RailRow({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string }) {
   return (
     <div className="flex min-w-0 items-center gap-2 rounded-[8px] border px-3 py-2" style={{ background:T.s2, borderColor:T.b1 }}>
       <Icon size={13} style={{ color:"#38bdf8" }} aria-hidden="true" />
       <span className="shrink-0 font-dm text-[11px]" style={{ color:T.t3 }}>{label}</span>
       <span className="truncate font-dm text-[11px] font-semibold" style={{ color:T.t1 }}>{value}</span>
-    </div>
-  )
-}
-
-function CompactSignal({ label, value, tone }: { label: string; value: string; tone: "accent" | "good" | "bad" | "muted" }) {
-  const color = tone === "good" ? T.grn : tone === "bad" ? T.red : tone === "accent" ? "#38bdf8" : T.t2
-  return (
-    <div className="min-w-0 rounded-[8px] border px-3 py-2" style={{ background:"rgba(15,23,42,.62)", borderColor:"rgba(148,163,184,.14)" }}>
-      <div className="font-dm text-[10px] font-semibold uppercase tracking-[.1em]" style={{ color:T.t3 }}>{label}</div>
-      <div className="mt-0.5 truncate font-dm text-xs font-semibold" style={{ color }}>{value}</div>
     </div>
   )
 }
@@ -1314,11 +941,6 @@ function stageTaskStatus(tasks: ForgeTaskRow[], agentTypes: ForgeTaskAgentType[]
   return fallback
 }
 
-function forgeCritiqueHasLowScore(report: ForgeVisualCritiqueArtifactState["report"]) {
-  if (!report) return false
-  return Object.values(report.scores).some((score) => typeof score === "number" && score < 75)
-}
-
 function StageBadge({ status }: { status: CockpitStageStatus }) {
   const color = status === "approved" || status === "complete" ? T.grn : status === "failed" ? T.red : status === "running" ? "#38bdf8" : T.amb
   return (
@@ -1502,23 +1124,6 @@ function GridWash() {
       aria-hidden="true"
     />
   )
-}
-
-function tabTitle(tab: ProjectTab) {
-  if (tab === "command") return "Command & Artifacts"
-  if (tab === "intake") return "Intake & Settings"
-  if (tab === "strategy") return "Strategy, Copy & Design"
-  if (tab === "build") return "Build & Integrations"
-  if (tab === "qa") return "QA & Repair"
-  if (tab === "launch") return "Proposal, Export & Deploy"
-  return "Project Records"
-}
-
-function toneColor(tone: "cyan" | "green" | "amber" | "violet") {
-  if (tone === "green") return T.grn
-  if (tone === "amber") return T.amb
-  if (tone === "violet") return "#a78bfa"
-  return "#22d3ee"
 }
 
 function resolveCurrentStep(stages: CockpitStage[]) {

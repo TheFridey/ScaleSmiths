@@ -12,7 +12,7 @@ export default defineConfig({
   expect: { timeout: 10_000 },
   fullyParallel: false,
   workers: 1,
-  retries: process.env.CI ? 2 : 0,
+  retries: 0,
   reporter: [["list"], ["html", { open: "never", outputFolder: "playwright-forge-report" }]],
   use: {
     baseURL,

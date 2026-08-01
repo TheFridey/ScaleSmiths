@@ -2,13 +2,60 @@ import test from "node:test"
 import assert from "node:assert/strict"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { loadWorkflowSet, validateWorkflowSet } from "./check-github-actions.mjs"
+import { mkdtemp, rm, writeFile } from "node:fs/promises"
+import os from "node:os"
+import { loadWorkflowSet, validateSetupNodeCaching, validateWorkflowSet } from "./check-github-actions.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 
 test("accepts the repository GitHub Actions policy", async () => {
   const workflows = await loadWorkflowSet(root)
   assert.deepEqual(validateWorkflowSet(workflows, root), [])
+})
+
+const setupNode = (configuration, context = "") => `${context}
+    steps:
+      - name: Setup Node
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 22
+${configuration}
+      - name: Next step
+        run: node --version
+`
+
+test("accepts explicit web, admin, two-lockfile and cache-disabled setup-node configurations", () => {
+  const cases = [
+    setupNode("          cache: npm\n          cache-dependency-path: web/package-lock.json", "    defaults:\n      run:\n        working-directory: web"),
+    setupNode("          cache: npm\n          cache-dependency-path: admin/package-lock.json", "    defaults:\n      run:\n        working-directory: admin"),
+    setupNode("          cache: npm\n          cache-dependency-path: |\n            web/package-lock.json\n            admin/package-lock.json", "    run: npm --prefix web ci && npm --prefix admin ci"),
+    setupNode("          package-manager-cache: false"),
+  ]
+  for (const fixture of cases) assert.deepEqual(validateSetupNodeCaching(fixture, root, "fixture"), [])
+})
+
+test("rejects setup-node automatic root caching and enabled caching without a lockfile path", () => {
+  const automatic = validateSetupNodeCaching(setupNode(""), root, "automatic")
+  assert(automatic.some((failure) => failure.startsWith("[setup-node-cache]")))
+  assert(automatic.some((failure) => failure.startsWith("[setup-node-cache-path]")))
+  const missing = validateSetupNodeCaching(setupNode("          cache: npm"), root, "missing path")
+  assert(missing.some((failure) => failure.startsWith("[setup-node-cache-path]")))
+})
+
+test("rejects an application cache pointed at the wrong lockfile", () => {
+  const fixture = setupNode("          cache: npm\n          cache-dependency-path: admin/package-lock.json", "    defaults:\n      run:\n        working-directory: web")
+  assert(validateSetupNodeCaching(fixture, root, "web fixture").some((failure) => failure.includes("must cache web/package-lock.json")))
+})
+
+test("rejects introducing a root package-lock.json", async () => {
+  const temporaryRoot = await mkdtemp(path.join(os.tmpdir(), "scalesmiths-actions-policy-"))
+  try {
+    await writeFile(path.join(temporaryRoot, "package-lock.json"), "{}\n")
+    const workflows = await loadWorkflowSet(root)
+    assert(validateWorkflowSet(workflows, temporaryRoot).some((failure) => failure === "[root-lockfile] the repository must not contain a root package-lock.json"))
+  } finally {
+    await rm(temporaryRoot, { recursive: true, force: true })
+  }
 })
 
 test("rejects a root lockfile cache and silent required-gate skips", async () => {

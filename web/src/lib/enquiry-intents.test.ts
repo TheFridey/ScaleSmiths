@@ -19,4 +19,9 @@ describe("enquiry intents", () => {
     expect(parseEnquiryIntent("book_now")).toBe("quote")
     expect(parseEnquiryIntent(undefined)).toBe("quote")
   })
+
+  it("supports the standalone business email journey", () => {
+    expect(ENQUIRY_INTENTS.business_email).toBe("Set Up Managed Business Email")
+    expect(enquiryIntentHref("business_email")).toBe("/quote?intent=business_email")
+  })
 })

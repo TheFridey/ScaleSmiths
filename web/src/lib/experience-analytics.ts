@@ -1,3 +1,5 @@
+import { readCookiePreferences } from "./cookie-consent"
+
 export const EXPERIENCE_EVENT_NAMES = [
   "experience_choice_displayed",
   "experience_normal_selected",
@@ -73,7 +75,7 @@ const PREFERENCE_SET = new Set(["normal", "interactive", "none", "unknown"])
 const DEVICE_SET = new Set(["mobile", "tablet", "desktop", "unknown"])
 
 export function shouldRespectPrivacyOptOut(headers: Headers) {
-  return headers.get("sec-gpc") === "1" || headers.get("dnt") === "1" || hasCookie(headers.get("cookie"), ANALYTICS_OPT_OUT_COOKIE, "1")
+  return headers.get("sec-gpc") === "1" || headers.get("dnt") === "1" || hasCookie(headers.get("cookie"), ANALYTICS_OPT_OUT_COOKIE, "1") || !readCookiePreferences(headers.get("cookie") ?? undefined)?.analytics
 }
 
 function hasCookie(header: string | null, name: string, value: string) {

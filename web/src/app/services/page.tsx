@@ -87,12 +87,13 @@ export default function ServicesPage() {
             {[
               { title: "Hosting", body: "Production deployment and infrastructure responsibility where agreed.", Icon: ServerCog },
               { title: "Maintenance", body: "Updates, monitoring and support around the managed system.", Icon: Wrench },
-              { title: "Managed Business Email", body: "Professional email on your own domain, configured and supported as part of the wider estate.", Icon: Mail },
+              { title: "Managed Business Email", body: "Professional custom-domain email from £15, available standalone or inside an agreed managed relationship.", Icon: Mail },
             ].map(({ title, body, Icon }) => (
               <article key={title} className="border-l border-b2 pl-5">
                 <Icon size={17} className="text-acc" aria-hidden="true" />
                 <h3 className="mt-4 font-syne text-base font-bold">{title}</h3>
                 <p className="mt-2 font-dm text-xs leading-relaxed text-t2">{body}</p>
+                {title === "Managed Business Email" && <Link href="/services/managed-business-email" className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-acc">View email service <ArrowRight size={12} /></Link>}
               </article>
             ))}
           </div>

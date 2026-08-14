@@ -2,6 +2,7 @@ import Link from "next/link"
 import { ArrowUpRight } from "lucide-react"
 import { Logo } from "./Logo"
 import { LEGAL_LINKS } from "@/lib/legal"
+import { CookieSettingsButton } from "./CookieSettingsButton"
 
 const primaryLinks = [
   { href: "/work", label: "Work" }, { href: "/services", label: "Services" },
@@ -25,7 +26,7 @@ export function Footer() {
 
         <div className="overflow-hidden border-y border-b1 py-5" aria-label="ScaleSmiths"><p className="whitespace-nowrap text-center font-syne text-[clamp(54px,13.5vw,176px)] font-extrabold leading-[.82] tracking-[-.065em] text-t1">SCALESMITHS</p></div>
 
-        <div className="mt-7 flex flex-col gap-4 font-dm text-xs text-t3 sm:flex-row sm:items-center sm:justify-between"><address className="not-italic">Hucknall, Nottinghamshire · Working across the UK</address><div className="flex flex-wrap gap-5">{LEGAL_LINKS.map((link) => <Link key={link.href} href={link.href} className="footer-link">{link.label}</Link>)}</div><span>© 2026 ScaleSmiths</span></div>
+        <div className="mt-7 flex flex-col gap-4 font-dm text-xs text-t3 sm:flex-row sm:items-center sm:justify-between"><address className="not-italic">Hucknall, Nottinghamshire · Working across the UK</address><div className="flex flex-wrap gap-5">{LEGAL_LINKS.map((link) => <Link key={link.href} href={link.href} className="footer-link">{link.label}</Link>)}<CookieSettingsButton /></div><span>© 2026 ScaleSmiths</span></div>
       </div>
     </footer>
   )

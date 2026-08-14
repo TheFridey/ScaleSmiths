@@ -10,7 +10,7 @@ import { motionStagger, motionTransitions } from "@/lib/motion"
 const estateNodes = [
   { id: "website", label: "Website", description: "The public experience, conversion paths and content your customers rely on.", x: 12, y: 18 },
   { id: "hosting", label: "Hosting", description: "Production hosting and deployment responsibility scoped around the system we manage.", x: 38, y: 8 },
-  { id: "email", label: "Business Email", description: "Professional email on your own domain, configured and supported as part of the wider relationship.", x: 72, y: 16 },
+  { id: "email", label: "Business Email", description: "Professional custom-domain email, configured, authenticated and supported by ScaleSmiths. Available standalone or as part of a managed relationship.", x: 72, y: 16 },
   { id: "dns", label: "DNS", description: "Domain records kept organised and changed deliberately when they are within our agreed scope.", x: 88, y: 42 },
   { id: "ssl", label: "SSL", description: "Secure web connections maintained as part of managed hosting and infrastructure.", x: 75, y: 76 },
   { id: "backups", label: "Backups", description: "Backup responsibility and restore expectations documented for infrastructure we manage.", x: 45, y: 88 },
@@ -109,6 +109,10 @@ export function DigitalEstate() {
           <Link href="/portal/login" prefetch={false} className="group inline-flex shrink-0 items-center gap-2 font-dm text-sm font-semibold text-t1">
             Open Client Portal <ArrowRight size={15} className="transition-transform group-hover:translate-x-1" aria-hidden="true" />
           </Link>
+        </AnimateIn>
+        <AnimateIn className="mt-5 flex flex-col justify-between gap-4 rounded-2xl border border-acc/20 bg-acc/[.04] p-5 sm:flex-row sm:items-center">
+          <p className="font-dm text-sm text-t2"><strong className="text-t1">Need professional email only?</strong> Managed Business Email starts from £15 for three 5GB mailboxes, with initial setup included.</p>
+          <Link href="/services/managed-business-email" prefetch={false} className="group inline-flex shrink-0 items-center gap-2 font-dm text-sm font-semibold text-acc">Explore Managed Email <ArrowRight size={15} className="transition-transform group-hover:translate-x-1" aria-hidden="true" /></Link>
         </AnimateIn>
       </div>
     </section>

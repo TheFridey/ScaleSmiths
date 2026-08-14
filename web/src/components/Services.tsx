@@ -73,6 +73,11 @@ export function Services({ claims }: { claims: ReadonlyMap<string, PublicClaim> 
           })}
         </StaggerIn>
 
+        <AnimateIn className="mt-6 grid gap-6 rounded-2xl border border-acc/20 bg-s1 p-7 md:grid-cols-[1fr_auto] md:items-center">
+          <div><p className="font-dm text-xs font-semibold uppercase tracking-[.12em] text-acc">Standalone service</p><h3 className="mt-2 font-syne text-2xl font-bold">Managed Business Email</h3><p className="mt-2 max-w-[720px] font-dm text-sm leading-relaxed text-t2">Professional custom-domain email, configured and supported by ScaleSmiths. Starts at £15 for three 5GB mailboxes, with initial setup included.</p></div>
+          <Link href="/services/managed-business-email" prefetch={false} className="btn-ghost min-h-11 justify-center font-dm">Explore Business Email <ChevronRight size={14} /></Link>
+        </AnimateIn>
+
         <AnimateIn className="mt-10 bg-s1 border border-b1 rounded-2xl p-7" delay={0.2}>
           <h3 className="font-syne text-lg font-bold mb-1">Monthly Retainers</h3>
           <p className="font-dm text-sm text-t2 mb-6">

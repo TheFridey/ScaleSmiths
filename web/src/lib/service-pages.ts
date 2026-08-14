@@ -59,7 +59,8 @@ export const serviceHubItems = [
 
 export const managedBusinessEmailService = {
   title: "Managed Business Email",
-  description: "Professional email on your own domain, configured and supported within an individually agreed managed service scope.",
+  description: "Professional custom-domain email, configured, authenticated and supported by ScaleSmiths. Available standalone or within an agreed managed relationship.",
+  href: "/services/managed-business-email",
 }
 
 export const pricingItems = [
@@ -69,7 +70,7 @@ export const pricingItems = [
   { name: "Custom web app", range: "Scoped after discovery", priceClaimId: "price.forge", note: "Database-backed product, portal, dashboard, or SaaS surface." },
   { name: "Ongoing care plans", range: "Scoped separately", priceClaimId: "price.care-plan", note: "Maintenance, monitoring, improvements, and retained technical support." },
   { name: "Hosting / maintenance", range: "Scoped to stack", priceClaimId: null, note: "Deployment, SSL, backups, monitoring, and infrastructure support." },
-  { name: "Managed Business Email", range: "Scoped separately", priceClaimId: null, note: "Professional email on your own domain, configured and supported within an agreed managed service scope." },
+  { name: "Managed Business Email", range: "From £15", priceClaimId: null, note: "Three professional 5GB mailboxes on your domain, with initial setup included." },
 ]
 
 export function buildServiceHubSchema(baseUrl = "https://scalesmiths.co.uk") {

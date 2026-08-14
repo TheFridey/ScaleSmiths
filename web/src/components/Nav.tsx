@@ -17,6 +17,8 @@ const links = [
   { href: "/about", label: "About" },
 ]
 
+const serviceLink = { href: "/services/managed-business-email", label: "Managed Business Email" }
+
 export function Nav() {
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
@@ -163,6 +165,11 @@ export function Nav() {
                     </Link>
                   </m.div>
                 ))}
+                <m.div variants={staggerItem}>
+                  <Link href={serviceLink.href} prefetch={false} onClick={closeMenu} className="flex min-h-14 items-center border-b border-b1 font-syne text-lg font-bold text-t1">
+                    {serviceLink.label}<span className="ml-auto font-dm text-[10px] font-semibold uppercase tracking-[.1em] text-acc">From £15</span>
+                  </Link>
+                </m.div>
               </m.div>
               <div className="mt-auto grid gap-3 pt-8">
                 <Link href="/portal/login" prefetch={false} onClick={closeMenu} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-b2 font-dm text-sm font-medium text-t1">

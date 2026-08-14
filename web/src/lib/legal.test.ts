@@ -5,6 +5,8 @@ import {
   legalSitemapEntries,
   privacyMetadata,
   termsMetadata,
+  legalRoutes,
+  legalEntity,
 } from "./legal"
 
 describe("public legal surfaces", () => {
@@ -12,13 +14,17 @@ describe("public legal surfaces", () => {
     expect(privacyMetadata.robots).toEqual({ index: true, follow: true })
     expect(termsMetadata.robots).toEqual({ index: true, follow: true })
     expect(LEGAL_LINKS).toEqual([
-      { href: "/privacy", label: "Privacy" },
-      { href: "/terms", label: "Terms" },
+      { href: "/legal", label: "Legal" },
+      { href: "/legal/privacy", label: "Privacy" },
+      { href: "/legal/cookies", label: "Cookies" },
+      { href: "/legal/website-terms", label: "Terms" },
     ])
 
     const urls = legalSitemapEntries("https://scalesmiths.co.uk").map((entry) => entry.url)
-    expect(urls).toContain("https://scalesmiths.co.uk/privacy")
-    expect(urls).toContain("https://scalesmiths.co.uk/terms")
+    expect(urls).toContain("https://scalesmiths.co.uk/legal/privacy")
+    expect(urls).toContain("https://scalesmiths.co.uk/legal/website-terms")
+    expect(legalRoutes).toHaveLength(15)
+    expect(legalEntity.companyNumber).toBeNull()
   })
 
   it("uses specific enquiry permission without inferring marketing consent", () => {

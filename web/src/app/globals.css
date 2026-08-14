@@ -11,6 +11,15 @@
   background-size: auto, auto, 64px 64px, 64px 64px;
 }
 
+@media print {
+  header, footer, [role="dialog"], .btn-primary, .btn-ghost { display: none !important; }
+  body, main, article { background: #fff !important; color: #111 !important; }
+  article { max-width: none !important; padding: 0 !important; }
+  .legal-document, .legal-document * { color: #111 !important; }
+  .legal-document section { break-inside: avoid; }
+  a { color: #111 !important; text-decoration: underline !important; }
+}
+
 @layer components {
   .growth-check-field {
     @apply w-full rounded-[10px] border border-b2 bg-s2 px-4 py-3 font-dm text-sm text-t1 outline-none transition-colors placeholder:text-t3 focus:border-acc focus-visible:ring-2 focus-visible:ring-acc;

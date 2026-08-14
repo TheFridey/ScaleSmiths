@@ -175,6 +175,28 @@ describe("quote security", () => {
     if (result.ok) expect(result.data.intent).toBe("quote")
   })
 
+  it("accepts and normalises the lightweight Managed Business Email funnel", () => {
+    const result = validateQuotePayload({
+      name: "A Customer",
+      email: "customer@example.com",
+      biz: "Example Ltd",
+      goal: "Set up Managed Business Email for example.com",
+      brief: "Domain: example.com\nMailbox names: hello, accounts, sales",
+      funnelType: "business_email",
+      intent: "business_email",
+      consent: true,
+    })
+
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.data.funnelType).toBe("business_email")
+      expect(result.data.leadSource).toBe("business_email")
+      expect(result.data.type).toBe("Managed Business Email")
+      expect(result.data.budget).toBe("£15 starting service")
+      expect(result.data.needs).toEqual(["Managed Business Email"])
+    }
+  })
+
   it("scores high-intent leads server-side", () => {
     const result = validateQuotePayload({
       name: "Rhys",

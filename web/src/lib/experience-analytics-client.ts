@@ -2,6 +2,7 @@
 
 import type { ExperienceDeviceClass, ExperienceEventName, ExperiencePreferenceValue } from "./experience-analytics"
 import { EXPERIENCE_EXPERIMENT_COOKIE } from "./experience-experiment"
+import { readCookiePreferences } from "./cookie-consent"
 
 export const ANALYTICS_SESSION_KEY = "scalesmiths.analytics.session"
 export const ANALYTICS_SENT_KEY = "scalesmiths.analytics.sent"
@@ -64,7 +65,8 @@ export function trackQuoteCta(target = "/quote") {
 
 export function hasAnalyticsOptOut() {
   const nav = navigator as Navigator & { globalPrivacyControl?: boolean; doNotTrack?: string }
-  return nav.globalPrivacyControl === true || nav.doNotTrack === "1" || readCookie(ANALYTICS_OPT_OUT_COOKIE) === "1"
+  const consent = readCookiePreferences(document.cookie)
+  return nav.globalPrivacyControl === true || nav.doNotTrack === "1" || readCookie(ANALYTICS_OPT_OUT_COOKIE) === "1" || !consent?.analytics
 }
 
 function shouldSkipAnalytics() {

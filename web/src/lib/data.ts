@@ -288,10 +288,10 @@ export const faqs = [
   },
   {
     q: "What is ScaleSmiths Managed Business Email?",
-    a: "It is professional email on your own business domain, configured and supported as part of a wider managed technical relationship. The exact service scope is agreed around the organisation rather than sold as a commodity mailbox package.",
+    a: "It is professional custom-domain email configured, authenticated and supported by ScaleSmiths. The standalone starting service is £15 for three 5GB mailboxes with initial setup included.",
   },
   {
     q: "Is managed business email included in a ScaleSmiths plan?",
-    a: "Managed Business Email is available alongside ScaleSmiths retainers, but it is not presented as automatically included. The proposal must define the required service and commercial terms before it becomes part of an engagement.",
+    a: "Managed Business Email can be part of an agreed retained relationship or purchased as a standalone service. Retainer inclusion and requirements are defined in the client proposal rather than inferred from the standalone three-mailbox package.",
   },
 ]

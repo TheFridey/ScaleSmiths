@@ -1,6 +1,15 @@
 import type { FunnelType } from "./quote-security"
 
 export function quoteEmailContent(funnelType: FunnelType, safeName: string) {
+  if (funnelType === "business_email") {
+    return {
+      internalLabel: "New Managed Business Email enquiry",
+      internalSubject: `Business email enquiry from ${safeName}`,
+      confirmationSubject: "Your Managed Business Email enquiry",
+      confirmationHeading: "Your email setup enquiry is in.",
+      confirmationBody: `Thanks, ${safeName}. We&apos;ll review the domain and mailbox details, clarify any migration requirements, and reply with the next onboarding step. Do not send domain or registrar passwords by email.`,
+    }
+  }
   if (funnelType === "local_growth_check") {
     return {
       internalLabel: "New local growth check",

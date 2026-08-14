@@ -29,9 +29,9 @@ export function EnquiryConsent({ id, checked, onChange, tone = "standard" }: Enq
         </label>
         <p id={descriptionId} className="mt-1 text-xs leading-relaxed text-t3">
           This permission is only for handling this enquiry; marketing consent is not requested or inferred. Read our{" "}
-          <Link href="/privacy" className="underline decoration-white/30 underline-offset-2 hover:text-t1">privacy notice</Link>
+          <Link href="/legal/privacy" className="underline decoration-white/30 underline-offset-2 hover:text-t1">privacy notice</Link>
           {" "}and{" "}
-          <Link href="/terms" className="underline decoration-white/30 underline-offset-2 hover:text-t1">website terms</Link>.
+          <Link href="/legal/website-terms" className="underline decoration-white/30 underline-offset-2 hover:text-t1">website terms</Link>.
         </p>
       </div>
     </div>

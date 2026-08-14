@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { MotionProvider } from "@/components/MotionProvider"
 import { SiteChrome } from "@/components/SiteChrome"
 import { WebVitalsReporter } from "@/components/WebVitalsReporter"
+import { CookiePreferences } from "@/components/CookiePreferences"
 import { founders } from "@/lib/founders"
 import "./globals.css"
 
@@ -86,6 +87,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <WebVitalsReporter />
         <MotionProvider>
           <SiteChrome>{children}</SiteChrome>
+          <CookiePreferences />
         </MotionProvider>
       </body>
     </html>

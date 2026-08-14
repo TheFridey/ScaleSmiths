@@ -17,14 +17,15 @@ describe("service and pricing schemas", () => {
     expect(schema.mainEntity.length).toBeGreaterThanOrEqual(2)
   })
 
-  it("publishes managed email without commodity pricing or provider disclosure", () => {
+  it("publishes the confirmed managed email starting offer without provider disclosure", () => {
     const schema = buildServiceHubSchema()
     const emailService = schema.hasPart.find((item) => item.name === managedBusinessEmailService.title)
     const publicSurface = JSON.stringify({ schema, pricingItems })
 
-    expect(emailService?.description).toContain("own domain")
-    expect(pricingItems.find((item) => item.name === managedBusinessEmailService.title)?.range).toBe("Scoped separately")
-    expect(publicSurface).not.toMatch(/mailbox count|storage quota/i)
+    expect(emailService?.description).toContain("custom-domain")
+    expect(pricingItems.find((item) => item.name === managedBusinessEmailService.title)?.range).toBe("From £15")
+    expect(publicSurface).toContain("Three professional 5GB mailboxes")
+    expect(publicSurface).not.toMatch(/mailcow|sogo|smtp infrastructure topology/i)
   })
 
   it("keeps managed email available rather than silently included in retainers", () => {

@@ -2,11 +2,13 @@
 
 import Link from "next/link"
 import { useEffect, useId, useRef, useState } from "react"
+import { AnimatePresence, m, useReducedMotion } from "motion/react"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, ArrowRight, Check } from "lucide-react"
 import { EnquiryConsent } from "@/components/EnquiryConsent"
 import { enquiryIntentFromLocation } from "@/lib/enquiry-intents"
 import { trackExperienceEvent } from "@/lib/experience-analytics-client"
+import { motionDistances, motionDurations, motionTransitions } from "@/lib/motion"
 
 const STORAGE_KEY = "scalesmiths.quote.draft.v2"
 const STAGES = ["About You", "What Needs Changing", "Commercial Fit", "Brief and Consent"] as const
@@ -25,10 +27,13 @@ export default function QuotePage() {
   const [data, setData] = useState<FormData>({})
   const [restored, setRestored] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [direction, setDirection] = useState<1 | -1>(1)
   const [error, setError] = useState("")
   const [invalidField, setInvalidField] = useState<string | null>(null)
   const errorId = useId()
   const errorRef = useRef<HTMLDivElement>(null)
+  const submissionInFlight = useRef(false)
+  const reducedMotion = useReducedMotion()
   const router = useRouter()
 
   useEffect(() => {
@@ -117,9 +122,10 @@ export default function QuotePage() {
       return
     }
     const nextStage = stage + 1
+    setDirection(1)
     window.history.pushState({ ...window.history.state, quoteStage: nextStage }, "")
     setStage(nextStage)
-    window.scrollTo({ top: 0, behavior: "smooth" })
+    window.scrollTo({ top: 0, behavior: reducedMotion ? "auto" : "smooth" })
   }
 
   function previousStage() {
@@ -128,14 +134,17 @@ export default function QuotePage() {
       return
     }
     const nextStage = stage - 1
+    setDirection(-1)
     window.history.pushState({ ...window.history.state, quoteStage: nextStage }, "")
     setStage(nextStage)
     setError("")
     setInvalidField(null)
-    window.scrollTo({ top: 0, behavior: "smooth" })
+    window.scrollTo({ top: 0, behavior: reducedMotion ? "auto" : "smooth" })
   }
 
   async function submitQuote() {
+    if (submissionInFlight.current) return
+    submissionInFlight.current = true
     setSubmitting(true)
     const intent = enquiryIntentFromLocation(window.location.search)
     try {
@@ -171,6 +180,7 @@ export default function QuotePage() {
       setInvalidField(null)
       setError(caught instanceof Error ? caught.message : "Unable to submit your brief.")
     } finally {
+      submissionInFlight.current = false
       setSubmitting(false)
     }
   }
@@ -193,24 +203,26 @@ export default function QuotePage() {
         </aside>
       )}
 
-      <ol className="mb-9 grid grid-cols-2 gap-2 md:grid-cols-4" aria-label="Quote progress">
+      <div className="mb-9" aria-label="Quote progress">
+        <div className="mb-4 flex items-center justify-between font-dm text-xs text-t3"><span>Project brief</span><span>{stage + 1} of {STAGES.length}</span></div>
+        <div className="h-1 overflow-hidden rounded-full bg-b1" role="progressbar" aria-valuenow={stage + 1} aria-valuemin={1} aria-valuemax={STAGES.length} aria-label={`Stage ${stage + 1} of ${STAGES.length}: ${STAGES[stage]}`}>
+          <m.div className="h-full origin-left bg-acc" animate={{ scaleX: (stage + 1) / STAGES.length }} initial={false} transition={reducedMotion ? { duration: 0 } : motionTransitions.ui} />
+        </div>
+      </div>
+      <ol className="mb-9 hidden grid-cols-4 gap-3 md:grid" aria-label="Project brief stages">
         {STAGES.map((label, index) => (
-          <li key={label} aria-current={index === stage ? "step" : undefined} className={`rounded-lg px-3 py-2 font-dm text-xs ${index === stage ? "bg-acc text-bg" : index < stage ? "bg-acc/15 text-t1" : "bg-s1 text-t3"}`}>
-            <span className="flex items-center gap-1.5">{index < stage ? <Check size={13} aria-hidden="true" /> : `${index + 1}.`} {label}</span>
+          <li key={label} aria-current={index === stage ? "step" : undefined} className={`border-t pt-3 font-dm text-xs transition-colors ${index === stage ? "border-acc text-t1" : index < stage ? "border-acc/35 text-t2" : "border-b1 text-t3"}`}>
+            <span className="flex items-center gap-1.5">{index < stage ? <Check size={13} className="text-acc" aria-hidden="true" /> : `${index + 1}.`} {label}</span>
           </li>
         ))}
       </ol>
-      <div role="progressbar" aria-valuenow={stage + 1} aria-valuemin={1} aria-valuemax={4} aria-label={`Stage ${stage + 1} of 4: ${STAGES[stage]}`} className="sr-only" />
-      <p className="font-dm text-xs font-semibold uppercase tracking-[.12em] text-acc">Stage {stage + 1} of 4</p>
-      <h1 className="mt-2 font-syne text-3xl font-extrabold tracking-[-0.025em]">{STAGES[stage]}</h1>
-      <p className="mb-8 mt-3 font-dm text-sm leading-relaxed text-t2" aria-live="polite">
-        {stage === 0 && "Tell us who you are and what kind of business we are helping."}
-        {stage === 1 && "Choose the project shape once, then describe the commercial result and functionality."}
-        {stage === 2 && "Share practical budget, timing and contact preferences."}
-        {stage === 3 && "Add any useful detail, confirm consent and send the complete brief."}
-      </p>
+      <AnimatePresence mode="wait" initial={false} custom={direction}>
+        <m.div key={stage} custom={direction} initial={reducedMotion ? { opacity: 1 } : { opacity: 0, x: direction * motionDistances.enter }} animate={{ opacity: 1, x: 0 }} exit={reducedMotion ? { opacity: 0 } : { opacity: 0, x: direction * -motionDistances.enter }} transition={reducedMotion ? { duration: motionDurations.instant } : motionTransitions.ui}>
+          <p className="font-dm text-xs font-semibold uppercase tracking-[.12em] text-acc">Stage {stage + 1} of 4</p>
+          <h1 className="mt-2 font-syne text-3xl font-extrabold tracking-[-0.025em]">{STAGES[stage]}</h1>
+          <p className="mb-8 mt-3 font-dm text-sm leading-relaxed text-t2" aria-live="polite">{stage === 0 && "Tell us who you are and what kind of business we are helping."}{stage === 1 && "Choose the project shape once, then describe the commercial result and functionality."}{stage === 2 && "Share practical budget, timing and contact preferences."}{stage === 3 && "Add any useful detail, confirm consent and send the complete brief."}</p>
 
-      {error && <div ref={errorRef} id={errorId} role="alert" tabIndex={-1} className="mb-6 rounded-lg border border-red/30 bg-red/10 px-4 py-3 font-dm text-sm text-t1">{error}</div>}
+      {error && <m.div initial={{ opacity: 0, y: reducedMotion ? 0 : -4 }} animate={{ opacity: 1, y: 0 }} ref={errorRef} id={errorId} role="alert" tabIndex={-1} className="mb-6 rounded-lg border border-red/30 bg-red/10 px-4 py-3 font-dm text-sm text-t1">{error}</m.div>}
 
       <section aria-labelledby={`stage-${stage}`} className="space-y-6">
         <h2 id={`stage-${stage}`} className="sr-only">{STAGES[stage]} fields</h2>
@@ -245,10 +257,12 @@ export default function QuotePage() {
           <input type="text" name="website" tabIndex={-1} autoComplete="off" value={data.website ?? ""} onChange={(event) => update("website", event.target.value)} className="hidden" aria-hidden="true" />
           <EnquiryConsent id="quote-enquiry-consent" checked={data.consent === "true"} onChange={(checked) => update("consent", checked ? "true" : "")} />
         </>}
-        <button type="button" onClick={continueStage} disabled={submitting} className="btn-primary min-h-11 font-dm text-sm">
-          {submitting ? "Sending..." : stage === 3 ? "Submit Brief" : "Continue"} <ArrowRight size={15} aria-hidden="true" />
+        <button type="button" onClick={continueStage} disabled={submitting} aria-busy={submitting} className="btn-primary min-h-11 font-dm text-sm disabled:cursor-wait disabled:opacity-60">
+          {submitting ? "Sending securely…" : stage === 3 ? "Submit Brief" : "Continue"} <ArrowRight size={15} aria-hidden="true" />
         </button>
       </section>
+        </m.div>
+      </AnimatePresence>
     </main>
   )
 }
@@ -267,8 +281,8 @@ function ChoiceGroup({ legend, name, options, value, update }: { legend: string;
 }
 
 function Choice({ type, name, option, checked, onChange }: { type: "radio" | "checkbox"; name: string; option: string; checked: boolean; onChange: () => void }) {
-  return <label className={`flex min-h-11 cursor-pointer items-center gap-3 rounded-[10px] border px-4 py-3 font-dm text-sm transition-colors ${checked ? "border-acc bg-acc/10 text-t1" : "border-b2 text-t2 hover:border-acc/50"}`}>
+  return <m.label whileTap={{ scale: 0.99 }} className={`flex min-h-11 cursor-pointer items-center gap-3 rounded-[10px] border px-4 py-3 font-dm text-sm transition-[border-color,background-color,transform] ${checked ? "border-acc bg-acc/10 text-t1 shadow-[inset_3px_0_0_var(--acc)]" : "border-b2 text-t2 hover:border-acc/50"}`}>
     <input type={type} name={name} value={option} checked={checked} onChange={onChange} className="h-4 w-4 accent-[var(--acc)]" />
     {option}
-  </label>
+  </m.label>
 }

@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { ArrowRight, CheckCircle2 } from "lucide-react"
+import { ArrowRight, CheckCircle2, Mail, ServerCog, Wrench } from "lucide-react"
 import { AnimateIn } from "@/components/AnimateIn"
 import { CTA } from "@/components/CTA"
 import { ServiceRouteChooser } from "@/components/ServiceRouteChooser"
@@ -8,7 +8,7 @@ import { buildServiceHubSchema, serviceHubItems } from "@/lib/service-pages"
 
 export const metadata: Metadata = {
   title: "Services",
-  description: "Conversion websites, local business sites, e-commerce builds, custom web apps, SEO/AEO landing pages, care plans, hosting and maintenance.",
+  description: "Conversion websites, custom systems, managed business email, care plans, hosting, maintenance and digital infrastructure.",
   alternates: { canonical: "/services" },
 }
 
@@ -74,6 +74,28 @@ export default function ServicesPage() {
               </div>
             </article>
           ))}
+        </div>
+      </section>
+      <section aria-labelledby="managed-estate-services" className="px-6 pb-24 md:px-12">
+        <div className="mx-auto grid max-w-[1240px] gap-8 rounded-3xl bg-s1 p-7 md:p-10 lg:grid-cols-[.8fr_1.2fr] lg:items-center">
+          <div>
+            <span className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">Managed infrastructure</span>
+            <h2 id="managed-estate-services" className="mt-3 font-syne text-[clamp(30px,4vw,48px)] font-extrabold tracking-[-.03em]">One technical partner beyond launch.</h2>
+            <p className="mt-4 font-dm text-sm leading-[1.8] text-t2">Hosting, maintenance and professional business email can sit inside the same deliberately scoped relationship as the systems ScaleSmiths builds.</p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {[
+              { title: "Hosting", body: "Production deployment and infrastructure responsibility where agreed.", Icon: ServerCog },
+              { title: "Maintenance", body: "Updates, monitoring and support around the managed system.", Icon: Wrench },
+              { title: "Managed Business Email", body: "Professional email on your own domain, configured and supported as part of the wider estate.", Icon: Mail },
+            ].map(({ title, body, Icon }) => (
+              <article key={title} className="border-l border-b2 pl-5">
+                <Icon size={17} className="text-acc" aria-hidden="true" />
+                <h3 className="mt-4 font-syne text-base font-bold">{title}</h3>
+                <p className="mt-2 font-dm text-xs leading-relaxed text-t2">{body}</p>
+              </article>
+            ))}
+          </div>
         </div>
       </section>
       <CTA />

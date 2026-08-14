@@ -14,6 +14,7 @@ export interface Project {
   accentColor: string
   gradient: string
   credit: string
+  portfolioGroup: "client-work" | "product-platform"
   heroImage?: string
   thumbImage?: string
   blurDataURL?: string
@@ -52,6 +53,7 @@ export const projects: Project[] = [
     thumbImage: "/images/projects/glow-tanning/thumb.jpg",
     blurDataURL: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAGCAIAAAB1kpiRAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAxUlEQVR4nAG6AEX/AP7Lg//tn//cktmsbKB9S3pfOFdEJVZBIlxFJE06HgD+yYL/5Jf/x4GZdEV6XzVkTChSPR9kTCl3WzN5XDQAm3lIaE8rb1YxlX9bfmdGcVw/alc9SzkeRDEYXUYnADAkFD0sF1xHJ+rVtMq3nNjGp+TRtlpHLjcnFSUcEQAUDAB4aFF1YklWRjJ4aFJaSThfUkJLRT03LB0NAwAAFAgAQjQccVcznn1LyJ1jxJpgn39RZk80NCcbBAAEvVlDxw0IpsIAAAAASUVORK5CYII=",
     credit: "Made by Rhys · ScaleSmiths co-founder",
+    portfolioGroup: "client-work",
   },
   {
     id: 2,
@@ -83,6 +85,7 @@ export const projects: Project[] = [
     thumbImage: "/images/projects/pinkys-prints/thumb.jpg",
     blurDataURL: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAGCAIAAAB1kpiRAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAxUlEQVR4nAG6AEX/AP+t1f/S///B7N+RtKZqhoJTaV85S1ozRmM5TFEsPgD/qdL/w+//qM+bYHx+TGRnOlBWL0JrQVV7SmF7R2QAoGeBcERYeEtgp36RkWp8hWRzeFhoTyk9RyQ6YjdUADslL0YoOV43S/bO4v/w//TO5e7G31k0TUEhOCoXKwAZDReHZYN+WXhbPFqDXYZiQmNrTW1WQWA8Iz0WBR4AGAcSSSk8dkdjo2aKy4GsyH+qpmmQb0JlOB48DwIeljBOWPR4kQUAAAAASUVORK5CYII=",
     credit: "Made by Rhys · ScaleSmiths co-founder",
+    portfolioGroup: "client-work",
   },
   {
     id: 3,
@@ -114,6 +117,7 @@ export const projects: Project[] = [
     thumbImage: "/images/projects/csds/thumb.jpg",
     blurDataURL: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAGCAIAAAB1kpiRAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAxUlEQVR4nAG6AEX/AP+jn//Fu/+0rdqGgaRlYn1LSVw1NFYvLl4zME8qKgD/oZv/trH+nZmnZ2V5REVlODVgOTZpPzx3RUN3QEIAnWBdbT8+cEE+Yjc2jGNhg19fRCMjSiAkYDM4ADUgIEMlJlUsLWE0NvvY2v/y81w0OEojKj8eJigSHAAYDg+AXWl9V2FrSVV6VGZbOkhzVWVTPk05HSkRABEAFwUFSCcqcD5CmFhcyXh8xHV5m1piaDpGNRooDQATqidBHlONUuYAAAAASUVORK5CYII=",
     credit: "Made by Rhys · ScaleSmiths co-founder",
+    portfolioGroup: "client-work",
   },
   {
     id: 4,
@@ -145,6 +149,7 @@ export const projects: Project[] = [
     thumbImage: "/images/projects/the-business-circle/thumb.jpg",
     blurDataURL: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAGCAIAAAB1kpiRAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAxUlEQVR4nAG6AEX/ALiz/9jQ/8jA/5iU2HJtolZTfjw7XDY2Vjk3WzExTwC1r/3Nxv+lnutkYJVPTnlAP2QyMlI4N1xOS3ZPTX8AbWqbSUhtg4KoeXidcG6OZGN/XV54Y2OCLC1PPDtoACUlOC8vSsbF5+3s//j5/+7t/87P9svL8S4uUg8UNAARERtoappTVYZBQ3BjZZ9HSXdUV4M1OWImKU8GCSYACgoaLjBPT0x+aWajiYXQhoTPbmyuSUl/HyFLAgQmf55PpzTt9pEAAAAASUVORK5CYII=",
     credit: "Made by Trev",
+    portfolioGroup: "product-platform",
   },
   {
     id: 5,
@@ -176,6 +181,7 @@ export const projects: Project[] = [
     thumbImage: "/images/projects/prymal/thumb.jpg",
     blurDataURL: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAGCAIAAAB1kpiRAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAxUlEQVR4nAG6AEX/AJXa0Lr//K346nq5r1WIgj1pYiJDQB9CPyNJRBs8OACT1s2x/PGT1s1WiYM4ZF4qU00lRkMuVE81YVw5ZWMAUIF9L1ZSMlpULlRPVXdzSGhjGTY1Fzk3Fjk4Jk1PABMpJhk2NRo/PDBXU7bZ18Hl5SlNTxY5PBAyNQAcJAAADA5Mc3pFbnY4XWVGcH4rT1xEaXQrSlgQMDkABxgAAAoKGTk6NV9gUYKDda6tda+vVYaLNV1mDi05AAAW7Iw/N+zrhtQAAAAASUVORK5CYII=",
     credit: "Made by Rhys · ScaleSmiths co-founder",
+    portfolioGroup: "product-platform",
     repoUrl: "https://github.com/TheFridey/Prymal",
   },
   {
@@ -208,6 +214,7 @@ export const projects: Project[] = [
     thumbImage: "/images/projects/veteranfinder/thumb.jpg",
     blurDataURL: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAGCAIAAAB1kpiRAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAxUlEQVR4nAG6AEX/AJqq9LfH/6S0/3yJzVtpm0JNdi05WCQwUCc1VRwoSACUpvCsvf+RoexKV4s7SHIpNlsgLEsxPWA5R3A5RnYAV2SUMT1gPktxdoKlX2qKZW+LWGF+IixMFSFCKDRfAB0lNxkkQTI9X+/9/+v3/+/9/+Lu/yo3XBAeQQgXNAAKDxxebJlPXI00QW5ZZp8zQW9HVYA7SHAYJUoABSQAAAYYGydHOEVzU1+cbnfCcHjEWmamOER5EiBJAAEjv/BF0IdbfaYAAAAASUVORK5CYII=",
     credit: "Made by Rhys · ScaleSmiths co-founder",
+    portfolioGroup: "product-platform",
     repoUrl: "https://github.com/TheFridey/VF",
   },
 ]
@@ -250,10 +257,12 @@ export const services: Service[] = [
   },
 ]
 
-export const retainers = [
-  { name: "Maintenance", price: "Scoped separately", priceClaimId: "price.maintenance-retainer", desc: "Hosting, updates, uptime monitoring and minor fixes." },
-  { name: "Growth Partner", price: "Scoped separately", priceClaimId: "price.growth-retainer", desc: "Maintenance plus monthly performance reviews and improvements." },
-  { name: "Ecosystem", price: "Scoped separately", priceClaimId: "price.ecosystem-retainer", desc: "Full ongoing partnership — development, strategy and advisory support." },
+export type ManagedServiceAvailability = "included" | "available" | "optional"
+
+export const retainers: Array<{ name: string; price: string; priceClaimId: string; desc: string; managedEmail: ManagedServiceAvailability }> = [
+  { name: "Maintenance", price: "Scoped separately", priceClaimId: "price.maintenance-retainer", desc: "Hosting, updates, uptime monitoring and minor fixes.", managedEmail: "available" },
+  { name: "Growth Partner", price: "Scoped separately", priceClaimId: "price.growth-retainer", desc: "Maintenance plus monthly performance reviews and improvements.", managedEmail: "available" },
+  { name: "Ecosystem", price: "Scoped separately", priceClaimId: "price.ecosystem-retainer", desc: "Full ongoing partnership — development, strategy and advisory support.", managedEmail: "available" },
 ]
 
 export const faqs = [
@@ -276,5 +285,13 @@ export const faqs = [
   {
     q: "What happens after launch?",
     a: "Post-launch support can include maintenance, monitoring, measured improvements and roadmap work. It is optional and scoped separately from the initial build.",
+  },
+  {
+    q: "What is ScaleSmiths Managed Business Email?",
+    a: "It is professional email on your own business domain, configured and supported as part of a wider managed technical relationship. The exact service scope is agreed around the organisation rather than sold as a commodity mailbox package.",
+  },
+  {
+    q: "Is managed business email included in a ScaleSmiths plan?",
+    a: "Managed Business Email is available alongside ScaleSmiths retainers, but it is not presented as automatically included. The proposal must define the required service and commercial terms before it becomes part of an engagement.",
   },
 ]

@@ -1,6 +1,6 @@
 "use client"
 
-import { motion, useReducedMotion } from "framer-motion"
+import { m as motion, useReducedMotion } from "motion/react"
 import { AlertCircle, BarChart3, CalendarDays, CheckCircle2, ClipboardCheck, MailCheck, MessageSquarePlus, Search, Star, Workflow } from "lucide-react"
 import type { V2Industry } from "@/lib/v2/scenes"
 import { getIndustryContent } from "@/lib/v2/industryContent"
@@ -26,7 +26,7 @@ export function BusinessSimulationLayer({ industry }: BusinessSimulationLayerPro
   const content = getIndustryContent(industry)
 
   const containerTransition = reducedMotion ? { duration: 0 } : { staggerChildren: 0.08, delayChildren: 0.08 }
-  const itemTransition = reducedMotion ? { duration: 0 } : { duration: 0.36, ease: "easeOut" }
+  const itemTransition = reducedMotion ? { duration: 0 } : { duration: 0.36, ease: "easeOut" as const }
 
   return (
     <motion.aside

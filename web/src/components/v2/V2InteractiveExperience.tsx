@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import dynamic from "next/dynamic"
-import { AnimatePresence, MotionConfig, motion, useReducedMotion } from "framer-motion"
+import { AnimatePresence, MotionConfig, m as motion, useReducedMotion } from "motion/react"
 import { ArrowRight, Building2, CalendarCheck, ChefHat, Dumbbell, Hammer, Package, Sparkles, Telescope, Users } from "lucide-react"
 import { ResetExperiencePreferenceButton, rememberInteractiveExperience, rememberNormalExperience } from "@/components/ExperiencePreference"
 import { trackExperienceEvent } from "@/lib/experience-analytics-client"
@@ -343,7 +343,7 @@ export function V2InteractiveExperience() {
     initial: reducedMotion ? false : { opacity: 0, y: 22 },
     animate: { opacity: 1, y: 0 },
     exit: reducedMotion ? { opacity: 1 } : { opacity: 0, y: -18 },
-    transition: reducedMotion ? { duration: 0 } : { duration: 0.48, ease: "easeOut" },
+    transition: reducedMotion ? { duration: 0 } : { duration: 0.48, ease: "easeOut" as const },
   }
 
   return (

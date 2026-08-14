@@ -2,6 +2,9 @@ import { CTA } from "@/components/CTA"
 import { FAQ } from "@/components/FAQ"
 import { FitSection } from "@/components/FitSection"
 import { Hero } from "@/components/Hero"
+import { DigitalEstate } from "@/components/DigitalEstate"
+import { ClientPortalSection } from "@/components/ClientPortalSection"
+import { BuildProofBlocks } from "@/components/BuildProofBlocks"
 import { Portfolio } from "@/components/Portfolio"
 import { Process } from "@/components/Process"
 import { Services } from "@/components/Services"
@@ -29,8 +32,11 @@ export async function HomePageContent() {
     <>
       <Hero verifiedStats={heroStats} />
       <ServiceRouteChooser compact />
+      <BuildProofBlocks />
       <Testimonials testimonials={testimonials} />
       <Services claims={serviceClaims} />
+      <DigitalEstate />
+      <ClientPortalSection />
       <Portfolio limit={2} />
       <FitSection />
       <Process verifiedDeliveryClaim={processClaims.get("process.built-on-time")?.approvedWording} verifiedRetentionClaim={processClaims.get("process.most-clients-retain")?.approvedWording} />

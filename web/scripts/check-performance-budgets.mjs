@@ -191,7 +191,7 @@ function evaluateInteractiveRuntime(report) {
 async function inspectInteractiveRuntime() {
   const canvasPath = path.join(webRoot, "src", "components", "v2", "three", "ClientSceneCanvas.tsx")
   const interactivePath = path.join(webRoot, "src", "components", "v2", "V2InteractiveExperience.tsx")
-  const heroPath = path.join(webRoot, "src", "components", "ForgeHeroScene.tsx")
+  const heroPath = path.join(webRoot, "src", "components", "Hero.tsx")
   const canvas = await readFile(canvasPath, "utf8")
   const interactive = await readFile(interactivePath, "utf8")
   const hero = await readFile(heroPath, "utf8")
@@ -205,7 +205,7 @@ async function inspectInteractiveRuntime() {
     hardCheck("low-powered-device fallback is present", canvas.includes("deviceMemory") && canvas.includes("hardwareConcurrency")),
     hardCheck("mobile/coarse pointer fallback is present", canvas.includes("pointer: coarse") && canvas.includes("max-width: 767px")),
     hardCheck("interactive route lazy-loads the Three.js canvas", interactive.includes("dynamic(() => import") && interactive.includes("ClientSceneCanvas")),
-    hardCheck("public e2e can disable canvases without production env flags", interactive.includes("scalesmiths.e2e.disableCanvas") && hero.includes("scalesmiths.e2e.disableCanvas")),
+    hardCheck("normal homepage hero does not load Three.js", !hero.includes('from "three"') && !hero.includes("ForgeHeroScene") && hero.includes("hero-scene-fallback")),
   ]
 
   return { checks }

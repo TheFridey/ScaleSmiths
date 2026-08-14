@@ -57,6 +57,11 @@ export const serviceHubItems = [
   },
 ]
 
+export const managedBusinessEmailService = {
+  title: "Managed Business Email",
+  description: "Professional email on your own domain, configured and supported within an individually agreed managed service scope.",
+}
+
 export const pricingItems = [
   { name: "One-page business site", range: "Scoped after discovery", priceClaimId: "price.one-page", note: "Focused single-page presence for a clear offer or campaign." },
   { name: "Local business growth site", range: "Scoped after discovery", priceClaimId: "price.foundation", note: "Multi-page local site with conversion and SEO foundations." },
@@ -64,6 +69,7 @@ export const pricingItems = [
   { name: "Custom web app", range: "Scoped after discovery", priceClaimId: "price.forge", note: "Database-backed product, portal, dashboard, or SaaS surface." },
   { name: "Ongoing care plans", range: "Scoped separately", priceClaimId: "price.care-plan", note: "Maintenance, monitoring, improvements, and retained technical support." },
   { name: "Hosting / maintenance", range: "Scoped to stack", priceClaimId: null, note: "Deployment, SSL, backups, monitoring, and infrastructure support." },
+  { name: "Managed Business Email", range: "Scoped separately", priceClaimId: null, note: "Professional email on your own domain, configured and supported within an agreed managed service scope." },
 ]
 
 export function buildServiceHubSchema(baseUrl = "https://scalesmiths.co.uk") {
@@ -72,12 +78,17 @@ export function buildServiceHubSchema(baseUrl = "https://scalesmiths.co.uk") {
     "@type": "CollectionPage",
     name: "ScaleSmiths Services",
     url: `${baseUrl}/services`,
-    hasPart: serviceHubItems.map((item) => ({
+    hasPart: [...serviceHubItems.map((item) => ({
       "@type": "Service",
       name: item.title,
       description: item.outcome,
       provider: { "@type": "Organization", name: "ScaleSmiths", url: baseUrl },
-    })),
+    })), {
+      "@type": "Service",
+      name: managedBusinessEmailService.title,
+      description: managedBusinessEmailService.description,
+      provider: { "@type": "Organization", name: "ScaleSmiths", url: baseUrl },
+    }],
   }
 }
 

@@ -4,7 +4,6 @@ import { ReactNode, useEffect } from "react"
 import { usePathname } from "next/navigation"
 import { Nav } from "@/components/Nav"
 import { Footer } from "@/components/Footer"
-import { PageTransition } from "@/components/PageTransition"
 import { trackExperienceEvent } from "@/lib/experience-analytics-client"
 import { parseEnquiryIntent } from "@/lib/enquiry-intents"
 
@@ -47,9 +46,7 @@ export function SiteChrome({ children }: SiteChromeProps) {
         Skip to content
       </a>
       {!isInteractiveJourney && <Nav />}
-      <PageTransition>
-        <main id="main" tabIndex={-1}>{children}</main>
-      </PageTransition>
+      <main id="main" tabIndex={-1}>{children}</main>
       {!isInteractiveJourney && <Footer />}
     </>
   )

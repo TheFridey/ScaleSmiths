@@ -1,5 +1,5 @@
 import { Star } from "lucide-react"
-import { AnimateIn, StaggerIn } from "./AnimateIn"
+import { AnimateIn } from "./AnimateIn"
 
 export interface VerifiedTestimonial {
   id: string
@@ -19,7 +19,7 @@ export function Testimonials({ testimonials }: { testimonials: VerifiedTestimoni
             What clients say.
           </h2>
         </AnimateIn>
-        <StaggerIn className="grid md:grid-cols-3 gap-3">
+        <div className="grid gap-3 md:grid-cols-3">
           {testimonials.map((t) => (
             <blockquote
               key={t.id}
@@ -39,7 +39,7 @@ export function Testimonials({ testimonials }: { testimonials: VerifiedTestimoni
               </footer>
             </blockquote>
           ))}
-        </StaggerIn>
+        </div>
       </div>
     </section>
   )

@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { CheckCircle2, Globe, TrendingUp, Layers, ChevronRight } from "lucide-react"
-import { AnimateIn, GSAPReveal } from "./AnimateIn"
+import { AnimateIn, StaggerIn } from "./AnimateIn"
 import { services, retainers } from "@/lib/data"
 import { cn } from "@/lib/utils"
 import { claimWording, type PublicClaim } from "@/lib/public-claims"
@@ -23,7 +23,7 @@ export function Services({ claims }: { claims: ReadonlyMap<string, PublicClaim> 
           </p>
         </AnimateIn>
 
-        <GSAPReveal className="grid md:grid-cols-3 gap-3" stagger={0.1}>
+        <StaggerIn className="grid md:grid-cols-3 gap-3" staggerDelay={0.1}>
           {services.map((s) => {
             const Icon = ICONS[s.icon]
             return (
@@ -71,7 +71,7 @@ export function Services({ claims }: { claims: ReadonlyMap<string, PublicClaim> 
               </article>
             )
           })}
-        </GSAPReveal>
+        </StaggerIn>
 
         <AnimateIn className="mt-10 bg-s1 border border-b1 rounded-2xl p-7" delay={0.2}>
           <h3 className="font-syne text-lg font-bold mb-1">Monthly Retainers</h3>
@@ -84,6 +84,10 @@ export function Services({ claims }: { claims: ReadonlyMap<string, PublicClaim> 
                 <div className="font-syne text-[15px] font-bold mb-1">{r.name}</div>
                 <div className="font-syne text-sm font-semibold text-acc mb-2">{claimWording(claims, r.priceClaimId, r.price)}</div>
                 <div className="font-dm text-[13px] text-t2 leading-relaxed">{r.desc}</div>
+                <div className="mt-4 flex items-center justify-between border-t border-b2 pt-3 font-dm text-[11px]">
+                  <span className="text-t3">Managed Business Email</span>
+                  <span className="rounded-full bg-acc/10 px-2.5 py-1 font-semibold uppercase tracking-[.08em] text-acc">{r.managedEmail}</span>
+                </div>
               </div>
             ))}
           </div>

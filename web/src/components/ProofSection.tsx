@@ -3,7 +3,7 @@ import Link from "next/link"
 import { ArrowRight, CheckCircle2 } from "lucide-react"
 import { projects } from "@/lib/data"
 import type { PublicClaim } from "@/lib/public-claims"
-import { AnimateIn, GSAPReveal } from "./AnimateIn"
+import { AnimateIn, StaggerIn } from "./AnimateIn"
 
 const proofProjects = projects.slice(0, 3)
 
@@ -22,7 +22,7 @@ export function ProofSection({ claims }: { claims: ReadonlyMap<string, PublicCla
           </p>
         </AnimateIn>
 
-        <GSAPReveal className="grid gap-4 lg:grid-cols-3" stagger={0.08}>
+        <StaggerIn className="grid gap-4 lg:grid-cols-3" staggerDelay={0.08}>
           {proofProjects.map((project, index) => (
             <article key={project.slug} className="rounded-2xl border border-b1 bg-s1 p-5">
               {project.thumbImage && (
@@ -82,7 +82,7 @@ export function ProofSection({ claims }: { claims: ReadonlyMap<string, PublicCla
               </div>
             </article>
           ))}
-        </GSAPReveal>
+        </StaggerIn>
 
         <AnimateIn className="mt-10">
           <Link href="/work" prefetch={false} className="inline-flex items-center gap-2 font-dm text-sm font-medium text-t2 transition-colors hover:text-t1">

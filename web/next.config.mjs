@@ -43,7 +43,7 @@ const agentDiscoveryLinkHeader = [
 
 const nextConfig = {
   output: "standalone",
-  transpilePackages: ["@react-three/fiber", "@react-three/drei", "three"],
+  transpilePackages: ["@react-three/fiber", "three"],
   images: {
     formats: ["image/avif", "image/webp"],
     qualities: [75, 90],

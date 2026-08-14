@@ -2,7 +2,7 @@
 
 import type { FormEvent, ReactNode } from "react"
 import { useMemo, useRef, useState } from "react"
-import { motion, useReducedMotion } from "framer-motion"
+import { m as motion, useReducedMotion } from "motion/react"
 import { CheckCircle2, ClipboardList, MailCheck, Send, Sparkles } from "lucide-react"
 import { trackExperienceEvent } from "@/lib/experience-analytics-client"
 import { EnquiryConsent } from "@/components/EnquiryConsent"

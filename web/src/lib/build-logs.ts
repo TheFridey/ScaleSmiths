@@ -6,6 +6,8 @@ export interface BuildLog {
   solution: string
   technicalApproach: string[]
   tags: string[]
+  system: string
+  status: "Production note" | "System note"
 }
 
 export const buildLogs: BuildLog[] = [
@@ -17,6 +19,8 @@ export const buildLogs: BuildLog[] = [
     solution: "Kept the existing Next.js architecture and hardened the surfaces that matter most for lead generation and delivery trust.",
     technicalApproach: ["Next.js App Router", "PostgreSQL with Drizzle", "Docker standalone builds", "Nginx reverse proxy", "Deterministic system fonts"],
     tags: ["Next.js", "PostgreSQL", "Drizzle", "Docker", "CSP"],
+    system: "Public site · Admin · Portal · Deployment",
+    status: "Production note",
   },
   {
     slug: "quote-system-hardening",
@@ -26,6 +30,8 @@ export const buildLogs: BuildLog[] = [
     solution: "Added authoritative backend validation, safe errors, Postgres-backed rate limits, consent capture, and server-side lead quality scoring.",
     technicalApproach: ["Request body size limits", "Honeypot handling", "Hashed IP/email keys", "Lead quality helper", "Resend-safe error handling"],
     tags: ["Security", "Validation", "Rate limits", "Lead quality"],
+    system: "Quote funnel",
+    status: "System note",
   },
   {
     slug: "portal-foundation",
@@ -35,6 +41,8 @@ export const buildLogs: BuildLog[] = [
     solution: "Built a protected workspace with JWT cookies, DB-backed client auth, clear dashboard cards, support CTA, and intentional empty states.",
     technicalApproach: ["bcrypt password hashes", "HS256 JWT sessions", "httpOnly cookies", "Protected portal matcher", "Safe empty states"],
     tags: ["Portal", "Auth", "JWT", "bcrypt"],
+    system: "Client portal",
+    status: "System note",
   },
   {
     slug: "seo-aeo-page-architecture",
@@ -44,6 +52,8 @@ export const buildLogs: BuildLog[] = [
     solution: "Created data-driven landing pages for local and UK-wide services with schema and internal links.",
     technicalApproach: ["Canonical metadata", "FAQPage schema", "Service schema", "LocalBusiness schema", "Sitemap inclusion"],
     tags: ["SEO", "AEO", "Schema", "Sitemap"],
+    system: "Public site architecture",
+    status: "Production note",
   },
   {
     slug: "admin-dashboard-foundation",
@@ -53,6 +63,8 @@ export const buildLogs: BuildLog[] = [
     solution: "Kept admin focused: database-backed clients, roadmap cards, lead inbox, and clear empty states.",
     technicalApproach: ["Auth.js credentials", "Drizzle queries", "Lead cards", "MRR by tier", "Standalone output"],
     tags: ["Admin", "Leads", "Clients", "Dashboard"],
+    system: "Operations platform",
+    status: "System note",
   },
   {
     slug: "security-hardening-pass",
@@ -62,6 +74,8 @@ export const buildLogs: BuildLog[] = [
     solution: "Added headers, tightened portal auth, removed Google font build dependency, and avoided leaking provider errors.",
     technicalApproach: ["Content-Security-Policy", "HSTS", "Referrer-Policy", "Permissions-Policy", "No Google-hosted fonts"],
     tags: ["CSP", "Headers", "Cookies", "Production"],
+    system: "Public and admin applications",
+    status: "Production note",
   },
 ]
 

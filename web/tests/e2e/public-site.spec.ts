@@ -419,6 +419,37 @@ test.describe("quote and contact forms", () => {
     await expect(page.getByRole("heading", { name: /brief received/i })).toBeVisible()
   })
 
+  test("prevents duplicate quote submissions while the first request is in flight", async ({ page }) => {
+    let requestCount = 0
+    await page.route("**/api/quote", async (route) => {
+      requestCount += 1
+      await new Promise((resolve) => setTimeout(resolve, 250))
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ok: true }) })
+    })
+
+    await gotoReady(page, "/quote")
+    await page.getByLabel(/full name/i).fill("Single Submit")
+    await page.getByLabel(/email address/i).fill("single@example.com")
+    await page.getByLabel(/company name/i).fill("Single Studio")
+    await page.getByRole("radio", { name: /professional services/i }).check()
+    await page.getByRole("button", { name: /continue/i }).click()
+    await page.getByRole("radio", { name: /website redesign/i }).check()
+    await page.getByLabel(/main business goal/i).fill("Improve qualified enquiries.")
+    await page.getByRole("checkbox", { name: /^analytics$/i }).check()
+    await page.getByRole("button", { name: /continue/i }).click()
+    await page.getByRole("radio", { name: /GBP 8,000-15,000/i }).check()
+    await page.getByRole("radio", { name: /4-6 weeks/i }).check()
+    await page.getByRole("radio", { name: /^maybe$/i }).check()
+    await page.getByRole("radio", { name: /^email$/i }).check()
+    await page.getByRole("button", { name: /continue/i }).click()
+    await page.getByLabel(/store the information i submit/i).check()
+    const submit = page.getByRole("button", { name: /submit brief/i })
+    await submit.dblclick()
+
+    await expect(page).toHaveURL(/\/quote\/thanks\?intent=quote$/)
+    expect(requestCount).toBe(1)
+  })
+
   test("retains a discovery-call request intent in the enquiry payload", async ({ page }) => {
     let submittedPayload: Record<string, unknown> | undefined
     await mockQuoteApi(page, { ok: true, onRequest: (payload) => { submittedPayload = payload } })

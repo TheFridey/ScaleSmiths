@@ -29,18 +29,6 @@ const config: Config = {
         syne: ["var(--font-syne)", "sans-serif"],
         dm:   ["var(--font-dm)",   "sans-serif"],
       },
-      animation: {
-        "ticker":   "ticker 32s linear infinite",
-        "float":    "float 4.5s ease-in-out infinite",
-        "pulse-dot":"pulse-dot 2.2s ease infinite",
-        "drift":    "drift var(--duration, 8s) ease-in-out infinite",
-      },
-      keyframes: {
-        ticker:     { "0%": { transform: "translateX(0)" }, "100%": { transform: "translateX(-50%)" } },
-        float:      { "0%,100%": { transform: "translateY(0)" }, "50%": { transform: "translateY(-6px)" } },
-        "pulse-dot":{ "0%,100%": { boxShadow: "0 0 0 0 rgba(16,185,129,.35)" }, "50%": { boxShadow: "0 0 0 6px rgba(16,185,129,0)" } },
-        drift:      { "0%": { opacity: "0", transform: "translate(0,0)" }, "10%": { opacity: ".07" }, "90%": { opacity: ".07" }, "100%": { opacity: "0", transform: "translate(var(--px,0px), var(--py,-100px))" } },
-      },
     },
   },
   plugins: [],

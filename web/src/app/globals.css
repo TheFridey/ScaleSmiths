@@ -43,11 +43,6 @@
 /* ── Base ───────────────────────────────────────────────────── */
 html { scroll-behavior: auto; }
 
-html.custom-cursor-enabled,
-html.custom-cursor-enabled * {
-  cursor: none !important;
-}
-
 body {
   background:
     radial-gradient(circle at 18% -8%, rgba(34,211,238,0.10), transparent 30%),
@@ -58,44 +53,7 @@ body {
   overflow-x: hidden;
 }
 
-/* ── Hero animations — CSS only, fire before JS loads ───────── */
-@keyframes slide-up {
-  from { transform: translateY(105%) scaleX(var(--hero-scale, 1)); }
-  to   { transform: translateY(0) scaleX(var(--hero-scale, 1)); }
-}
-
-@keyframes fade-up {
-  from { opacity: 0; transform: translateY(18px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes fade-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-
-@keyframes pulse-dot {
-  0%,100% { box-shadow: 0 0 0 0 rgba(20,241,178,0.38); }
-  50%     { box-shadow: 0 0 0 6px rgba(20,241,178,0); }
-}
-
-@keyframes float {
-  0%,100% { transform: translateY(0); }
-  50%     { transform: translateY(-6px); }
-}
-
-@keyframes ticker {
-  0%   { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
-}
-
-@keyframes particle-drift {
-  0%   { opacity: 0; transform: translate(0, 0) scale(1); }
-  10%  { opacity: var(--p-o, 0.07); }
-  90%  { opacity: var(--p-o, 0.07); }
-  100% { opacity: 0; transform: translate(var(--p-x, 0px), var(--p-y, -120px)) scale(0.8); }
-}
-
+/* ── Motion-safe CSS animations ─────────────────────────────── */
 @keyframes v2-loading-sweep {
   0%   { transform: translateX(-100%); opacity: 0; }
   20%  { opacity: 1; }
@@ -116,8 +74,6 @@ body {
   font-size: 13px;
   color: var(--t2);
   letter-spacing: 0.04em;
-  animation: fade-up 0.5s cubic-bezier(0.22,1,0.36,1) both;
-  animation-delay: 0.06s;
 }
 
 .hero-badge-dot {
@@ -125,7 +81,6 @@ body {
   height: 6px;
   border-radius: 50%;
   background: var(--grn);
-  animation: pulse-dot 2.2s ease infinite;
   flex-shrink: 0;
 }
 
@@ -146,37 +101,6 @@ body {
   color: transparent;
 }
 
-.hero-line-1 {
-  animation: slide-up 0.72s cubic-bezier(0.22,1,0.36,1) both;
-  animation-delay: 0.16s;
-  margin-bottom: 6px;
-}
-
-.hero-line-2 {
-  animation: slide-up 0.72s cubic-bezier(0.22,1,0.36,1) both;
-  animation-delay: 0.34s;
-}
-
-.hero-sub {
-  animation: fade-up 0.55s cubic-bezier(0.22,1,0.36,1) both;
-  animation-delay: 0.6s;
-}
-
-.hero-location {
-  animation: fade-up 0.45s cubic-bezier(0.22,1,0.36,1) both;
-  animation-delay: 0.72s;
-}
-
-.hero-ctas {
-  animation: fade-up 0.5s cubic-bezier(0.22,1,0.36,1) both;
-  animation-delay: 0.84s;
-}
-
-.hero-stats {
-  animation: fade-up 0.5s cubic-bezier(0.22,1,0.36,1) both;
-  animation-delay: 1.0s;
-}
-
 @media (max-width: 767px) {
   .hero-h {
     font-size: 42px;
@@ -193,21 +117,6 @@ body {
   background-size: 100% 100%, 64px 64px, 64px 64px;
 }
 
-/* ── Ambient particles ───────────────────────────────────────── */
-.particle {
-  position: absolute;
-  border-radius: 50%;
-  background: var(--acc);
-  pointer-events: none;
-  animation: particle-drift var(--p-dur, 8s) ease-in-out infinite;
-  animation-delay: var(--p-del, 0s);
-  width: var(--p-size, 8px);
-  height: var(--p-size, 8px);
-  left: var(--p-l, 50%);
-  top: var(--p-t, 80%);
-  opacity: 0;
-}
-
 /* ── Buttons ─────────────────────────────────────────────────── */
 .btn-primary {
   display: inline-flex;
@@ -219,11 +128,13 @@ body {
   padding: 14px 30px;
   border-radius: 10px;
   font-size: 15px;
-  transition: opacity 0.2s, transform 0.15s;
-  box-shadow: 0 0 48px rgba(34,211,238,0.34);
+  transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
+  box-shadow: 0 14px 36px rgba(34,211,238,0.18);
   text-decoration: none;
 }
-.btn-primary:hover { opacity: 0.9; transform: translateY(-2px); }
+.btn-primary svg { transition: transform 0.2s ease; }
+.btn-primary:hover { opacity: 0.96; transform: translateY(-1px); box-shadow: 0 16px 40px rgba(34,211,238,0.24); }
+.btn-primary:hover svg { transform: translateX(3px); }
 
 .btn-ghost {
   display: inline-flex;
@@ -236,10 +147,10 @@ body {
   padding: 14px 30px;
   border-radius: 10px;
   font-size: 15px;
-  transition: all 0.2s;
+  transition: border-color 0.2s, background-color 0.2s, color 0.2s;
   text-decoration: none;
 }
-.btn-ghost:hover { border-color: var(--b3); background: rgba(34,211,238,0.08); }
+.btn-ghost:hover { border-color: var(--b3); background: rgba(255,255,255,0.045); }
 
 .btn-sm {
   display: inline-flex;
@@ -293,18 +204,17 @@ body {
   border-color: var(--b3) !important;
 }
 
-/* ── Ticker ──────────────────────────────────────────────────── */
-.ticker-inner {
-  display: flex;
-  width: fit-content;
-  animation: ticker 32s linear infinite;
+.footer-link {
+  text-decoration-line: underline;
+  text-decoration-color: transparent;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+  transition: color 0.18s ease, text-decoration-color 0.18s ease;
 }
+.footer-link:hover { color: var(--t1); text-decoration-color: var(--acc); }
 
-/* ── Section reveal (via Framer Motion useInView) ─────────────── */
-.section-reveal {
-  /* Initial state set via Framer Motion — just the transition config */
-  transition: opacity 0.65s cubic-bezier(0.22,1,0.36,1),
-              transform 0.65s cubic-bezier(0.22,1,0.36,1);
+@media (hover: none), (pointer: coarse), (max-width: 767px) {
+  .btn-primary:hover, .card-lift:hover { transform: none; }
 }
 
 /* ── FAQ ─────────────────────────────────────────────────────── */
@@ -324,9 +234,8 @@ body {
 
 /* ── Reduced motion ──────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+  .btn-primary:hover,
+  .card-lift:hover {
+    transform: none;
   }
 }

@@ -1,20 +1,12 @@
 "use client"
 
 import Link from "next/link"
-import dynamic from "next/dynamic"
-import { Fragment, useEffect, useLayoutEffect, useRef, useState } from "react"
-import gsap from "gsap"
+import { Fragment, useLayoutEffect, useRef } from "react"
+import { m, useReducedMotion } from "motion/react"
 import { ArrowRight, ArrowUpRight, MapPin } from "lucide-react"
+import { motionStagger, revealMask, revealSoft, staggerContainer } from "@/lib/motion"
 
 const HERO_LINES = ["FORGE YOUR", "DIGITAL EDGE"] as const
-
-const ForgeHeroScene = dynamic(
-  () => import("./ForgeHeroScene").then((module) => module.ForgeHeroScene),
-  {
-    ssr: false,
-    loading: () => <div className="hero-scene-fallback absolute inset-0" aria-hidden="true" />,
-  },
-)
 
 function renderHeroLine(text: string) {
   return text.split(" ").map((word, wordIndex, words) => (
@@ -31,101 +23,36 @@ function renderHeroLine(text: string) {
   ))
 }
 
-function DeferredHeroScene() {
-  const [enabled, setEnabled] = useState(false)
-
-  useEffect(() => {
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    const connection = navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }
-    const lowPower = connection.connection?.saveData
-      || ["slow-2g", "2g"].includes(connection.connection?.effectiveType ?? "")
-      || (navigator.hardwareConcurrency > 0 && navigator.hardwareConcurrency <= 4)
-      || window.matchMedia("(max-width: 767px)").matches
-    if (reducedMotion || lowPower) return
-
-    const idleWindow = window as Window & { requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number; cancelIdleCallback?: (id: number) => void }
-    const id = idleWindow.requestIdleCallback
-      ? idleWindow.requestIdleCallback(() => setEnabled(true), { timeout: 1_500 })
-      : window.setTimeout(() => setEnabled(true), 700)
-    return () => {
-      if (idleWindow.cancelIdleCallback) idleWindow.cancelIdleCallback(id)
-      else window.clearTimeout(id)
-    }
-  }, [])
-
-  return enabled
-    ? <ForgeHeroScene />
-    : <div className="hero-scene-fallback absolute inset-0" data-hero-scene="static" aria-hidden="true" />
-}
-
 export function Hero({ verifiedStats = [] }: { verifiedStats?: string[] }) {
   const heroRef = useRef<HTMLElement>(null)
+  const reducedMotion = useReducedMotion()
 
   useLayoutEffect(() => {
     const root = heroRef.current
     if (!root) return
 
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
     const lines = Array.from(root.querySelectorAll<HTMLElement>(".hero-h"))
-    const magneticCleanups: Array<() => void> = []
-
-    const ctx = gsap.context(() => {
+    const fitLines = () => {
       lines.forEach((line) => {
         const maxWidth = Math.max(260, root.clientWidth - 72)
         const scale = Math.min(1, maxWidth / line.scrollWidth)
-        line.style.setProperty("--hero-scale", String(scale))
-      })
-
-      if (!reducedMotion) lines.forEach((line, index) => {
-        const chars = Array.from(line.querySelectorAll<HTMLElement>(".hero-char"))
-
-        gsap.from(chars, {
-          y: "105%",
-          opacity: 0,
-          duration: 0.7,
-          stagger: 0.03,
-          ease: "power3.out",
-          delay: index === 0 ? 0.15 : 0.3,
-        })
-      })
-
-      if (!reducedMotion) root.querySelectorAll<HTMLElement>("[data-magnetic]").forEach((button) => {
-        const onMove = (event: MouseEvent) => {
-          const rect = button.getBoundingClientRect()
-          const x = ((event.clientX - rect.left) / rect.width - 0.5) * 16
-          const y = ((event.clientY - rect.top) / rect.height - 0.5) * 16
-
-          gsap.to(button, {
-            x: Math.max(-8, Math.min(8, x)),
-            y: Math.max(-8, Math.min(8, y)),
-            duration: 0.28,
-            ease: "power3.out",
-          })
+        const mask = line.parentElement
+        if (mask) {
+          mask.style.transform = `scaleX(${scale})`
+          mask.style.transformOrigin = "center"
         }
-
-        const onLeave = () => {
-          gsap.to(button, {
-            x: 0,
-            y: 0,
-            duration: 0.8,
-            ease: "elastic.out(1, 0.45)",
-          })
-        }
-
-        button.addEventListener("mousemove", onMove)
-        button.addEventListener("mouseleave", onLeave)
-        magneticCleanups.push(() => {
-          button.removeEventListener("mousemove", onMove)
-          button.removeEventListener("mouseleave", onLeave)
-        })
       })
-    }, root)
+    }
+    fitLines()
+    const observer = new ResizeObserver(fitLines)
+    observer.observe(root)
 
     return () => {
-      magneticCleanups.forEach((cleanup) => cleanup())
-      ctx.revert()
+      observer.disconnect()
       lines.forEach((line) => {
-        line.style.removeProperty("--hero-scale")
+        const mask = line.parentElement
+        mask?.style.removeProperty("transform")
+        mask?.style.removeProperty("transform-origin")
       })
     }
   }, [])
@@ -136,57 +63,63 @@ export function Hero({ verifiedStats = [] }: { verifiedStats?: string[] }) {
       className="hero-grid-bg relative min-h-[91vh] flex flex-col items-center justify-center text-center overflow-hidden px-6 md:px-12 pb-16 pt-20"
       aria-label="ScaleSmiths - forge your digital edge"
     >
-      <DeferredHeroScene />
+      <div className="hero-scene-fallback absolute inset-0" data-hero-scene="static" aria-hidden="true" />
 
-      <div className="relative z-10 flex w-full flex-col items-center">
-        <div className="hero-badge font-dm" role="status">
+      <m.div
+        className="relative z-10 flex w-full flex-col items-center"
+        variants={staggerContainer}
+        initial={reducedMotion ? false : "hidden"}
+        animate="visible"
+        transition={{ delayChildren: 0.02, staggerChildren: motionStagger.tight }}
+      >
+        <m.div variants={revealSoft} className="hero-badge font-dm" role="status">
           <span className="hero-badge-dot" aria-hidden="true" />
           Plan your next digital project
-        </div>
+        </m.div>
 
         <h1 className="mb-6 w-full">
           <span className="hero-line-overflow block">
-            <span className="hero-h hero-outline hero-line-1 font-syne inline-block whitespace-nowrap" aria-label={HERO_LINES[0]}>
+            <m.span variants={revealMask} className="hero-h hero-outline font-syne inline-block whitespace-nowrap" aria-label={HERO_LINES[0]}>
               {renderHeroLine(HERO_LINES[0])}
-            </span>
+            </m.span>
           </span>
           <span className="hero-line-overflow block">
-            <span className="hero-h text-t1 hero-line-2 font-syne inline-block whitespace-nowrap" aria-label={HERO_LINES[1]}>
+            <m.span variants={revealMask} className="hero-h text-t1 font-syne inline-block whitespace-nowrap" aria-label={HERO_LINES[1]}>
               {renderHeroLine(HERO_LINES[1])}
-            </span>
+            </m.span>
           </span>
         </h1>
 
-        <p className="hero-sub font-dm font-light text-t2 w-full max-w-[520px] leading-relaxed text-[clamp(15px,1.8vw,18px)] mb-4">
+        <m.p variants={revealSoft} className="font-dm font-light text-t2 w-full max-w-[520px] leading-relaxed text-[clamp(15px,1.8vw,18px)] mb-4">
           Conversion-focused websites, SEO-ready builds, custom web apps, and ongoing care plans for
           local businesses and founder-led teams that need digital to create measurable growth.
-        </p>
+        </m.p>
 
-        <div className="mb-5 flex max-w-[780px] flex-wrap justify-center gap-2" aria-label="ScaleSmiths core offers">
+        <m.div variants={revealSoft} className="mb-5 flex max-w-[780px] flex-wrap justify-center gap-x-5 gap-y-2" aria-label="ScaleSmiths core offers">
           {["Websites that convert", "Custom web apps", "Local SEO foundations", "Care plans"].map((offer) => (
-            <span key={offer} className="rounded-full border border-b1 bg-s1/80 px-3 py-1.5 font-dm text-[11px] font-medium text-t2 shadow-[0_0_24px_rgba(34,211,238,0.06)]">
+            <span key={offer} className="border-l border-b2 pl-3 font-dm text-[11px] font-medium tracking-[.02em] text-t2">
               {offer}
             </span>
           ))}
-        </div>
+        </m.div>
 
-        <div className="hero-location flex items-center gap-2 mb-10">
+        <m.div variants={revealSoft} className="flex items-center gap-2 mb-10">
           <MapPin size={12} className="text-t3" aria-hidden="true" />
           <span className="font-dm text-xs text-t3 tracking-wider">
             Hucknall, Nottinghamshire, UK {"\u00b7"} Working nationally
           </span>
-        </div>
+        </m.div>
 
-        <div className="hero-ctas flex flex-wrap gap-3 justify-center">
-          <Link href="/quote" prefetch={false} className="btn-primary font-dm" data-magnetic>
+        <m.div variants={revealSoft} className="flex flex-wrap gap-3 justify-center">
+          <Link href="/quote" prefetch={false} className="btn-primary font-dm">
             Request a Quote <ArrowRight size={16} aria-hidden="true" />
           </Link>
-          <Link href="/work" prefetch={false} className="btn-ghost font-dm" data-magnetic>
+          <Link href="/work" prefetch={false} className="btn-ghost font-dm">
             View Work <ArrowUpRight size={16} aria-hidden="true" />
           </Link>
-        </div>
+        </m.div>
 
-        <div className="hero-stats flex flex-wrap gap-14 justify-center mt-20">
+        <m.div variants={revealSoft} className="flex flex-wrap gap-14 justify-center mt-20">
           {(verifiedStats.length > 0
             ? verifiedStats
             : ["Conversion websites", "E-commerce systems", "Custom web applications"]
@@ -198,8 +131,8 @@ export function Hero({ verifiedStats = [] }: { verifiedStats?: string[] }) {
               </div>
             </div>
           ))}
-        </div>
-      </div>
+        </m.div>
+      </m.div>
     </section>
   )
 }

@@ -201,42 +201,39 @@ function BuildLogPage({ log, verifiedBusinessValue, verifiedOutcome }: { log: Bu
           <ArrowLeft size={14} aria-hidden="true" /> Back to Work
         </a>
         <AnimateIn>
-          <span className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">Build log</span>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">
+            <span>{log.status}</span><span className="text-t3">System · {log.system}</span>
+          </div>
           <h1 className="mt-3 font-syne text-[clamp(38px,7vw,76px)] font-extrabold leading-none tracking-[-0.03em]">
             {log.title}
           </h1>
           <p className="mt-6 max-w-[720px] font-dm text-lg leading-relaxed text-t2">{log.summary}</p>
-          <div className="mt-7 flex flex-wrap gap-1.5">
+          <div className="mt-7 flex flex-wrap gap-3 font-dm text-[11px] text-t3">
             {log.tags.map((tag) => (
-              <span key={tag} className="rounded border border-b1 bg-s2 px-2.5 py-1 font-dm text-[11px] text-t2">{tag}</span>
+              <span key={tag}>#{tag.replaceAll(" ", "-").toLowerCase()}</span>
             ))}
           </div>
         </AnimateIn>
 
-        <div className="my-16 grid gap-6 md:grid-cols-2">
+        <div className="my-16 border-y border-b1">
           {[
             ["Problem", log.problem],
-            ["Solution", log.solution],
+            ["Decision", log.solution],
             ...(verifiedBusinessValue ? [["Verified business value", verifiedBusinessValue]] : []),
             ...(verifiedOutcome ? [["Verified outcome", verifiedOutcome]] : []),
-          ].map(([title, copy]) => (
-            <AnimateIn key={title} className="rounded-2xl border border-b1 bg-s1 p-6">
-              <h2 className="font-syne text-xl font-bold">{title}</h2>
-              <p className="mt-3 font-dm text-sm leading-relaxed text-t2">{copy}</p>
+          ].map(([title, copy], index) => (
+            <AnimateIn key={title} className={`grid gap-4 py-8 md:grid-cols-[180px_1fr] ${index ? "border-t border-b1" : ""}`}>
+              <h2 className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">{title}</h2>
+              <p className="max-w-[720px] font-dm text-base leading-relaxed text-t2">{copy}</p>
             </AnimateIn>
           ))}
         </div>
 
-        <AnimateIn className="mb-20 rounded-2xl border border-b1 bg-s1 p-6">
-          <h2 className="font-syne text-xl font-bold">Technical approach</h2>
-          <ul className="mt-5 grid gap-3 md:grid-cols-2">
-            {log.technicalApproach.map((item) => (
-              <li key={item} className="flex items-center gap-2.5 font-dm text-sm text-t2">
-                <CheckCircle2 size={15} className="shrink-0 text-grn" aria-hidden="true" />
-                {item}
-              </li>
-            ))}
-          </ul>
+        <AnimateIn className="mb-20 grid gap-8 rounded-2xl border border-b1 bg-s1 p-7 md:grid-cols-[0.7fr_1.3fr] md:p-9">
+          <div><span className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">Implementation record</span><h2 className="mt-2 font-syne text-2xl font-bold">Technical approach</h2></div>
+          <ol className="grid gap-0 border-t border-b1">
+            {log.technicalApproach.map((item, index) => <li key={item} className="grid grid-cols-[34px_1fr] border-b border-b1 py-3 font-dm text-sm text-t2"><span className="text-t3">0{index + 1}</span>{item}</li>)}
+          </ol>
         </AnimateIn>
       </div>
       <CTA />
@@ -270,18 +267,19 @@ export default async function ProjectPage({ params }: Props) {
         {/* Hero */}
         <AnimateIn>
           {/* Personal badge — links to the founder responsible for this build */}
+          <p className="mb-2 font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">ScaleSmiths case study</p>
           {founderForProject(p.slug) ? (
             <Link
               href={`/about#${founderForProject(p.slug)!.slug}`}
               prefetch={false}
-              className="mb-6 inline-flex items-center gap-2 rounded-full border border-b2 bg-s2 px-4 py-1.5 transition-colors hover:border-b3 hover:text-t1"
+              className="mb-6 inline-flex items-center gap-2 font-dm text-xs text-t3 transition-colors hover:text-t1"
             >
-              <span className="font-dm text-xs tracking-wider text-t2">{p.credit}</span>
+              <span>Founder contribution · {p.credit.replace("Made by ", "")}</span>
               <ArrowRight size={12} aria-hidden="true" className="text-t3" />
             </Link>
           ) : (
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-b2 bg-s2 px-4 py-1.5">
-              <span className="font-dm text-xs tracking-wider text-t2">{p.credit}</span>
+            <div className="mb-6 inline-flex items-center gap-2 font-dm text-xs text-t3">
+              <span>ScaleSmiths delivery · {p.credit}</span>
             </div>
           )}
 
@@ -317,16 +315,18 @@ export default async function ProjectPage({ params }: Props) {
           {/* Main content */}
           <div>
             <AnimateIn className="mb-12">
-              <h2 className="font-syne text-2xl font-bold mb-4 text-t1">The Challenge</h2>
+              <p className="mb-2 font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">Context / challenge</p>
+              <h2 className="font-syne text-2xl font-bold mb-4 text-t1">The commercial constraint</h2>
               <p className="font-dm text-base text-t2 leading-relaxed">{p.challenge}</p>
             </AnimateIn>
 
             <AnimateIn delay={0.05} className="mb-12">
-              <h2 className="font-syne text-2xl font-bold mb-4 text-t1">The Solution</h2>
+              <p className="mb-2 font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">What we built</p>
+              <h2 className="font-syne text-2xl font-bold mb-4 text-t1">The implemented system</h2>
               <p className="font-dm text-base text-t2 leading-relaxed">{p.solution}</p>
             </AnimateIn>
 
-            <AnimateIn delay={0.1}>
+            <AnimateIn delay={0.1} className="mb-12">
               <h2 className="font-syne text-2xl font-bold mb-5 text-t1">{verifiedOutcomes.length ? "Verified outcomes" : "Delivered capabilities"}</h2>
               <ul className="flex flex-col gap-3">
                 {(verifiedOutcomes.length ? verifiedOutcomes : p.features.slice(0, 3)).map((o) => (
@@ -336,6 +336,14 @@ export default async function ProjectPage({ params }: Props) {
                   </li>
                 ))}
               </ul>
+            </AnimateIn>
+
+            <AnimateIn delay={0.12}>
+              <p className="mb-2 font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">Technical approach</p>
+              <h2 className="mb-5 font-syne text-2xl font-bold text-t1">Production scope</h2>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {p.features.map((feature, index) => <div key={feature} className="border-t border-b1 py-3 font-dm text-sm text-t2"><span className="mr-3 text-t3">0{index + 1}</span>{feature}</div>)}
+              </div>
             </AnimateIn>
           </div>
 

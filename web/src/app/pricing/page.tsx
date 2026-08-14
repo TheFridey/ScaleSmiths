@@ -7,7 +7,7 @@ import { getVerifiedPublicClaims } from "@/lib/public-claims.server"
 
 export const metadata: Metadata = {
   title: "Pricing Guidance",
-  description: "How ScaleSmiths scopes websites, e-commerce builds, custom web apps, care plans, hosting and maintenance.",
+  description: "How ScaleSmiths scopes websites, custom systems, care plans, managed business email, hosting and maintenance.",
   alternates: { canonical: "/pricing" },
 }
 export const dynamic = "force-dynamic"

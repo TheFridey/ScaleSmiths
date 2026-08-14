@@ -53,7 +53,7 @@ export const serviceJourneys: Record<ServiceJourneySlug, ServiceJourney> = {
       { href: "/web-development-nottingham", label: "Web development in Nottingham", description: "Broader website and workflow development for Nottingham businesses." },
       { href: "/pricing", label: "Pricing guidance", description: "How local growth builds and ongoing support are scoped." },
     ],
-    primaryCta: { href: "/local-growth-check", label: "Request a Local Growth Check" },
+    primaryCta: { href: "/local-growth-check", label: "Explore the Business Growth Audit" },
     secondaryCta: { href: "/quote", label: "Use the Full Project Brief" },
     serviceType: "Local business website and managed growth services",
     areaServed: "Nottinghamshire and the United Kingdom",

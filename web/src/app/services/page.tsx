@@ -69,7 +69,7 @@ export default function ServicesPage() {
               </div>
               <div className="mt-6 flex flex-wrap gap-2">
                 <Link href={service.journey === "local-growth" ? "/local-growth-check" : "/quote"} prefetch={false} className="btn-primary font-dm text-sm">
-                  {service.journey === "local-growth" ? "Request a Local Growth Check" : "Start a Project Brief"}
+                  {service.journey === "local-growth" ? "Explore the Business Growth Audit" : "Start a Project Brief"}
                 </Link>
                 {service.links.map((href) => (
                   <Link key={href} href={href} prefetch={false} className="btn-ghost font-dm text-sm">{href.replace("/", "").replaceAll("-", " ")}</Link>

@@ -20,7 +20,12 @@ export function BusinessGrowthAuditForm() {
   const inFlight = useRef(false)
   const router = useRouter()
   const update = (key: string, value: string) => setForm((current) => ({ ...current, [key]: value }))
-  const markStarted = () => { if (started.current) return; started.current = true; trackExperienceEvent("quote_form_started", { metadata: { funnelType: "business_growth_audit", source: "audit_intake" } }) }
+  const acquisitionSource = () => {
+    if (typeof window === "undefined") return "audit_intake"
+    const source = new URLSearchParams(window.location.search).get("source")
+    return source === "local_growth_check" || source === "quote" || source === "homepage" ? source : "audit_intake"
+  }
+  const markStarted = () => { if (started.current) return; started.current = true; trackExperienceEvent("quote_form_started", { metadata: { funnelType: "business_growth_audit", source: acquisitionSource() } }) }
 
   async function submit(event: FormEvent) {
     event.preventDefault()
@@ -32,13 +37,13 @@ export function BusinessGrowthAuditForm() {
       `Location / service area: ${form.location}`, `Industry: ${form.industry}`, `What the business sells: ${form.offer}`, `Ideal customer: ${form.idealCustomer}`,
       `How customers find the business: ${form.discovery}`, `What is working: ${form.working || "Not provided"}`, `What is not working / biggest frustration: ${form.friction}`,
       `Current enquiry and follow-up process: ${form.leadProcess}`, `Time-consuming operations / automation opportunities: ${form.operations}`, `Current tools: ${form.tools || "Not provided"}`,
-      `6–12 month goal: ${form.goal}`, `Additional context: ${form.notes || "Not provided"}`, `B2B authority and legal terms version ${LEGAL_VERSION} accepted for Audit onboarding: Yes`,
+      `6–12 month goal: ${form.goal}`, `Additional context: ${form.notes || "Not provided"}`, `Acquisition source: ${acquisitionSource()}`, `B2B authority and legal terms version ${LEGAL_VERSION} accepted for Audit onboarding: Yes`,
     ].join("\n\n")
     try {
       const response = await fetch("/api/quote", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: form.name, email: form.email, biz: form.business, websiteUrl: form.website, businessType: form.industry, goal: form.friction, brief, funnelType: "business_growth_audit", intent: "business_growth_audit", consent: form.consent === "yes", website: form.websiteTrap }) })
       const result = await response.json()
       if (!response.ok || !result.ok) throw new Error(result.error || "Unable to send your Audit request.")
-      trackExperienceEvent("quote_form_submitted", { metadata: { funnelType: "business_growth_audit", source: "audit_intake" } })
+      trackExperienceEvent("quote_form_submitted", { metadata: { funnelType: "business_growth_audit", source: acquisitionSource() } })
       router.push("/services/business-growth-audit/thanks")
     } catch (caught) { setError(caught instanceof Error ? caught.message : "Unable to send your Audit request."); inFlight.current = false; setSubmitting(false) }
   }

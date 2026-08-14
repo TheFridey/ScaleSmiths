@@ -211,7 +211,7 @@ test.describe("public navigation and accessibility behaviours", () => {
     await gotoReady(page, "/local-growth")
     await expect(page.getByRole("heading", { level: 1, name: /trusted enquiries and bookings/i })).toBeVisible()
     await expect(page.getByText("Trades and home services", { exact: true })).toBeVisible()
-    await expect(page.getByRole("link", { name: /request a local growth check/i }).first()).toHaveAttribute("href", "/local-growth-check")
+    await expect(page.getByRole("link", { name: /explore the business growth audit/i }).first()).toHaveAttribute("href", "/local-growth-check")
     await expect(page.getByRole("link", { name: /glow tanning/i })).toHaveAttribute("href", "/work/glow-tanning")
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", /\/local-growth$/)
     expect((await page.locator('script[type="application/ld+json"]').allTextContents()).join(" ")).toContain("BreadcrumbList")
@@ -268,7 +268,7 @@ test.describe("public navigation and accessibility behaviours", () => {
 
     // Each custom-systems service card routes to the full brief; local-growth cards route to
     // the short check instead, so assert both journeys keep a working commercial next step.
-    await expect(page.getByRole("link", { name: /request a local growth check/i }).first()).toHaveAttribute("href", "/local-growth-check")
+    await expect(page.getByRole("link", { name: /explore the business growth audit/i }).first()).toHaveAttribute("href", "/local-growth-check")
     const projectBriefLink = page.getByRole("link", { name: /start a project brief/i }).first()
     await expect(projectBriefLink).toHaveAttribute("href", "/quote")
     await projectBriefLink.click({ noWaitAfter: true })
@@ -298,78 +298,36 @@ test.describe("public navigation and accessibility behaviours", () => {
 })
 
 test.describe("quote and contact forms", () => {
-  test("offers the short local growth route without changing the full quote wizard", async ({ page }) => {
+  test("offers the paid Audit alternative without changing the full quote wizard", async ({ page }) => {
     await gotoReady(page, "/quote")
 
-    const shortAlternative = page.getByRole("complementary", { name: "Short enquiry alternative" })
-    await expect(shortAlternative).toContainText("Prefer a shorter first step?")
-    await expect(shortAlternative.getByRole("link", { name: /request a local growth check/i })).toHaveAttribute("href", "/local-growth-check")
+    const auditAlternative = page.getByRole("complementary", { name: "Business Growth Audit alternative" })
+    await expect(auditAlternative).toContainText("Not sure what to fix first?")
+    await expect(auditAlternative).toContainText("£395")
+    await expect(auditAlternative.getByRole("link", { name: /explore the audit/i })).toHaveAttribute("href", "/services/business-growth-audit?source=quote")
     await expect(page.getByRole("progressbar")).toHaveAttribute("aria-valuemax", "4")
+    await expect(page.getByText("Stage 1 of 4", { exact: true })).toBeVisible()
   })
 
-  test("submits the accessible local growth check with its source and analytics", async ({ page }) => {
-    let submittedPayload: Record<string, unknown> | undefined
-    let requestCount = 0
-    const analyticsEvents: string[] = []
-    await mockQuoteApi(page, { ok: true, onRequest: (payload) => { submittedPayload = payload; requestCount += 1 } })
-    await mockExperienceAnalytics(page, (payload) => analyticsEvents.push(String(payload.eventName)))
-
+  test("presents the local paid Audit and routes into its canonical intake", async ({ page }) => {
     await gotoReady(page, "/local-growth-check")
-    await expect(page.getByRole("heading", { level: 1, name: /useful first look/i })).toBeVisible()
+    await expect(page.getByRole("heading", { level: 1, name: /what's actually holding your business back/i })).toBeVisible()
+    await expect(page.getByText("£395", { exact: true }).first()).toBeVisible()
+    await expect(page.getByText(/full £395 is credited against an eligible/i)).toBeVisible()
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", /\/local-growth-check$/)
     const structuredData = await page.locator('script[type="application/ld+json"]').allTextContents()
-    expect(structuredData.join(" ")).toContain("Local Growth Check")
-
-    await page.getByLabel(/^name/i).fill("Alex Local")
-    await page.getByLabel(/business name/i).fill("Alex Plumbing")
-    await page.getByLabel(/website or social-page/i).fill("https://example.com")
-    await page.getByLabel(/^email/i).fill("alex@example.com")
-    await page.getByLabel(/^phone/i).fill("+44 7700 900123")
-    await page.getByLabel(/primary problem or goal/i).fill("People cannot tell which areas we cover or which service to choose.")
-    await page.getByRole("button", { name: /request my local growth check/i }).click()
-
-    await expect(page.getByText(/complete the required fields and confirm consent/i)).toBeVisible()
-    expect(requestCount).toBe(0)
-
-    await page.getByLabel(/store the information i submit/i).check()
-    await page.getByRole("button", { name: /request my local growth check/i }).click()
-
-    await expect(page.getByRole("status")).toContainText(/founder will review/i)
-    expect(submittedPayload).toMatchObject({
-      funnelType: "local_growth_check",
-      leadSource: "local_growth_check",
-      intent: "local_growth_check",
-      consent: true,
-    })
-    expect(submittedPayload).not.toHaveProperty("marketingConsent")
-    await expect.poll(() => analyticsEvents).toEqual(expect.arrayContaining([
-      "local_growth_check_viewed",
-      "local_growth_check_form_started",
-      "local_growth_check_form_submitted",
-    ]))
+    expect(structuredData.join(" ")).toContain("ScaleSmiths Business Growth Audit")
+    await page.getByRole("link", { name: /start my growth audit/i }).click()
+    await expect(page).toHaveURL(/\/services\/business-growth-audit\/start\?source=local_growth_check$/)
+    await expect(page.getByLabel("Business name")).toBeVisible()
   })
 
-  test("keeps local growth actions keyboard-accessible and tracks both onward routes", async ({ page }) => {
-    const analyticsEvents: string[] = []
-    await mockExperienceAnalytics(page, (payload) => analyticsEvents.push(String(payload.eventName)))
+  test("keeps the distinct free strategy-call route keyboard accessible", async ({ page }) => {
     await gotoReady(page, "/local-growth-check")
-
-    const fullQuote = page.getByRole("link", { name: /use the full quote route/i })
-    const strategyCall = page.getByRole("link", { name: /request a strategy call/i })
-    await expect(fullQuote).toHaveAttribute("href", "/quote")
-    await expect(strategyCall).toHaveAttribute("href", "/quote?intent=strategy_call")
-
-    await fullQuote.focus()
-    await expect(fullQuote).toBeFocused()
-    await fullQuote.click()
-    await page.waitForURL(/\/quote$/)
-    await gotoReady(page, "/local-growth-check")
-    await page.getByRole("link", { name: /request a strategy call/i }).click()
-    await page.waitForURL(/\/quote\?intent=strategy_call$/)
-    await expect.poll(() => analyticsEvents).toEqual(expect.arrayContaining([
-      "local_growth_check_full_quote_selected",
-      "local_growth_check_strategy_call_requested",
-    ]))
+    const strategyCall = page.getByRole("link", { name: /strategy call/i })
+    await strategyCall.focus()
+    await expect(strategyCall).toBeFocused()
+    await expect(strategyCall).toHaveAttribute("href", /\/quote\?intent=discovery_call/)
   })
 
   test("shows validation errors before submission", async ({ page }) => {

@@ -29,22 +29,6 @@ describe("experience analytics privacy and taxonomy", () => {
     expect(sanitizeExperienceEvent({ eventName: "quote_cta_clicked", eventKey: "bad key with spaces", sessionId: "sess_1" })).toBeNull()
   })
 
-  it("accepts privacy-minimised local growth funnel events", () => {
-    const event = sanitizeExperienceEvent({
-      eventName: "local_growth_check_form_submitted",
-      eventKey: "sess_1:local_growth_check_form_submitted",
-      sessionId: "sess_1",
-      path: "/local-growth-check",
-      metadata: { funnelType: "local_growth_check", email: "private@example.com" },
-    })
-
-    expect(event).toMatchObject({
-      eventName: "local_growth_check_form_submitted",
-      path: "/local-growth-check",
-      metadata: { funnelType: "local_growth_check" },
-    })
-  })
-
   it("respects browser privacy opt-out headers", () => {
     expect(shouldRespectPrivacyOptOut(new Headers({ "sec-gpc": "1" }))).toBe(true)
     expect(shouldRespectPrivacyOptOut(new Headers({ dnt: "1" }))).toBe(true)

@@ -8,7 +8,7 @@ describe("service buying journeys", () => {
 
     expect(local.audience).toContain("Trades and home services")
     expect(systems.audience).toContain("SaaS and product founders")
-    expect(local.primaryCta).toEqual({ href: "/local-growth-check", label: "Request a Local Growth Check" })
+    expect(local.primaryCta).toEqual({ href: "/local-growth-check", label: "Explore the Business Growth Audit" })
     expect(systems.primaryCta).toEqual({ href: "/quote", label: "Start a Project Brief" })
     expect(systems.secondaryCta.href).toBe("/quote?intent=strategy_call")
     expect(new Set(local.proofSlugs)).not.toContain(systems.proofSlugs[0])

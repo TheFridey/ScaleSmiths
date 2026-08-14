@@ -15,11 +15,6 @@ export const EXPERIENCE_EVENT_NAMES = [
   "experience_fallback_activated",
   "experience_error",
   "web_vital",
-  "local_growth_check_viewed",
-  "local_growth_check_form_started",
-  "local_growth_check_form_submitted",
-  "local_growth_check_full_quote_selected",
-  "local_growth_check_strategy_call_requested",
 ] as const
 
 export const ANALYTICS_OPT_OUT_COOKIE = "ss_analytics_opt_out"

@@ -4,7 +4,6 @@ export const ENQUIRY_INTENTS = {
   strategy_call: "Request a Strategy Call",
   v2_demo: "Request a V2 Demo",
   email_plan: "Email This Plan",
-  local_growth_check: "Request a Local Growth Check",
   business_email: "Set Up Managed Business Email",
   business_growth_audit: "Start a Business Growth Audit",
 } as const

@@ -1,11 +1,12 @@
 "use client"
 
-import Link from "next/link"
 import { useEffect, useId, useRef, useState } from "react"
 import { AnimatePresence, m, useReducedMotion } from "motion/react"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, ArrowRight, Check } from "lucide-react"
 import { EnquiryConsent } from "@/components/EnquiryConsent"
+import { AuditAcquisitionLink } from "@/components/AuditAcquisitionLink"
+import { formatAuditPrice } from "@/lib/business-growth-audit"
 import { enquiryIntentFromLocation } from "@/lib/enquiry-intents"
 import { trackExperienceEvent } from "@/lib/experience-analytics-client"
 import { motionDistances, motionDurations, motionTransitions } from "@/lib/motion"
@@ -196,10 +197,9 @@ export default function QuotePage() {
       </button>
 
       {stage === 0 && (
-        <aside className="mb-8 rounded-xl border border-acc/20 bg-acc/[.06] p-4 font-dm text-sm" aria-label="Short enquiry alternative">
-          <strong className="text-t1">Prefer a shorter first step?</strong>
-          <p className="mt-1 text-t2">Request a focused Local Growth Check instead of completing the full project brief.</p>
-          <Link href="/local-growth-check" prefetch={false} className="mt-3 inline-flex items-center gap-1 font-semibold text-acc">Request a Local Growth Check <ArrowRight size={14} /></Link>
+        <aside className="mb-7 grid gap-3 rounded-xl border border-b1 bg-s1 p-4 font-dm text-sm sm:grid-cols-[1fr_auto] sm:items-center" aria-label="Business Growth Audit alternative">
+          <div><strong className="text-t1">Not sure what to fix first?</strong><p className="mt-1 text-t2">Use the Growth Audit if the business needs improving but the right project is not yet clear. Already know what you need? Continue with this project quote.</p></div>
+          <div className="sm:text-right"><p className="font-semibold text-acc">Business Growth Audit · {formatAuditPrice()}</p><AuditAcquisitionLink source="quote" className="mt-1 inline-flex items-center gap-1 font-semibold text-t1">Explore the Audit <ArrowRight size={14} aria-hidden="true" /></AuditAcquisitionLink><p className="mt-1 text-xs text-t3">Full fee credited against an eligible build.</p></div>
         </aside>
       )}
 

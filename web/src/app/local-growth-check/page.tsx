@@ -1,87 +1,49 @@
 import type { Metadata } from "next"
-import { ArrowRight, CheckCircle2, MapPin } from "lucide-react"
-import { LocalGrowthCheckForm, LocalGrowthFullQuoteLink, LocalGrowthStrategyCallLink } from "@/components/LocalGrowthCheckForm"
+import Link from "next/link"
+import { ArrowRight, Check, Compass, MapPin, SearchCheck } from "lucide-react"
+import { AnimateIn } from "@/components/AnimateIn"
+import { AuditAcquisitionLink } from "@/components/AuditAcquisitionLink"
+import { DiscoveryCallLink } from "@/components/DiscoveryCallLink"
+import { businessGrowthAudit, formatAuditPrice } from "@/lib/business-growth-audit"
 
 export const metadata: Metadata = {
-  title: "Local Growth Check for Nottinghamshire Businesses",
-  description: "A founder-led first review for local and referral businesses that want a clearer view of their website, visibility, trust, or enquiry journey.",
+  title: "Business Growth Audit for Hucknall & Nottingham Businesses | £395",
+  description: "A practical £395 business growth review for Hucknall, Nottingham and Nottinghamshire businesses, covering visibility, trust, enquiries, systems and what to fix first.",
   alternates: { canonical: "/local-growth-check" },
-  openGraph: {
-    title: "Local Growth Check | ScaleSmiths",
-    description: "A focused, no-obligation first review for local businesses from ScaleSmiths in Hucknall, Nottinghamshire.",
-    url: "/local-growth-check",
-  },
+  openGraph: { title: "Local Business Growth Audit | ScaleSmiths", description: "Find what is actually holding your local business back, with clear findings and a prioritised roadmap.", url: "/local-growth-check" },
 }
+
+const problems = ["Plenty of website visits but very few enquiries", "Most work still comes through word of mouth", "People find competitors before they find you", "Customers cannot quickly see why they should choose you", "Enquiries arrive through several channels with no single process", "Quotes go out, but follow-up is inconsistent", "Nobody knows whether the old website is doing anything", "Hours disappear into admin that could be simpler"]
+const checks = [
+  ["Can people find you?", "Google visibility, local search intent, your Business Profile and whether the right services appear in the right places."],
+  ["Do they trust you?", "First impressions, reviews, proof, messaging and whether the business looks as credible online as it is in person."],
+  ["Can they contact or buy from you?", "Calls, forms, bookings, quotes, mobile usability and the friction between interest and action."],
+  ["What happens after an enquiry?", "Response, follow-up, lost leads, repeat business and whether opportunities have a clear next step."],
+  ["Is the digital setup joined up?", "The relevant parts of your website, domain, business email, hosting, analytics and provider responsibilities."],
+  ["Where are you wasting time?", "Repeated admin, duplicated work, disconnected tools and sensible opportunities to simplify or automate."],
+]
+const deliverables = ["Executive summary", "Key problems and opportunities", "Relevant website and digital findings", "Customer-journey findings", "Local visibility findings where relevant", "Operational observations where relevant", "Quick wins and priority actions", "A clear what-we-would-do-first roadmap"]
 
 export default function LocalGrowthCheckPage() {
   const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://scalesmiths.co.uk").replace(/\/$/, "")
-  const schema = [
-    {
-      "@context": "https://schema.org",
-      "@type": "WebPage",
-      name: "ScaleSmiths Local Growth Check",
-      url: `${baseUrl}/local-growth-check`,
-      description: metadata.description,
-      isPartOf: { "@type": "WebSite", name: "ScaleSmiths", url: baseUrl },
-    },
-    {
-      "@context": "https://schema.org",
-      "@type": "Service",
-      name: "Local Growth Check",
-      serviceType: "Website and digital growth review",
-      provider: { "@id": `${baseUrl}/#org` },
-      areaServed: ["Hucknall", "Nottinghamshire", "United Kingdom"],
-      url: `${baseUrl}/local-growth-check`,
-      description: "A founder-led review of a business's public website or social presence, enquiry path, trust signals, and local discoverability.",
-    },
-  ]
+  const schema = { "@context": "https://schema.org", "@type": "WebPage", name: "Business Growth Audit for local businesses", url: `${baseUrl}/local-growth-check`, description: metadata.description, about: { "@type": "Service", name: businessGrowthAudit.name, url: `${baseUrl}${businessGrowthAudit.slug}` }, areaServed: ["Hucknall", "Nottingham", "Nottinghamshire", "United Kingdom"] }
+  return <main>
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
+    <section className="px-6 py-16 md:px-12 md:py-24"><div className="mx-auto grid max-w-[1240px] gap-10 lg:grid-cols-[1.15fr_.85fr] lg:items-end">
+      <AnimateIn><span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[.15em] text-acc"><MapPin size={14} aria-hidden="true" /> Local business growth</span><h1 className="mt-5 max-w-[850px] font-syne text-[clamp(46px,7vw,88px)] font-extrabold leading-[.92] tracking-[-.05em]">What&apos;s actually holding your business back?</h1><p className="mt-7 max-w-[720px] text-lg leading-relaxed text-t2">You do not need another agency telling you to rebuild everything. We look at how your business is found, trusted, contacted and operated—then show you where the biggest opportunities actually are.</p><div className="mt-8 flex flex-wrap gap-3"><AuditAcquisitionLink source="local_growth_check" start className="btn-primary">Start my Growth Audit <ArrowRight size={16} aria-hidden="true" /></AuditAcquisitionLink><a href="#included" className="btn-ghost">See what&apos;s included</a></div></AnimateIn>
+      <AnimateIn delay={.08} className="rounded-3xl border border-acc/20 bg-s1 p-7 md:p-9"><p className="text-xs font-semibold uppercase tracking-[.14em] text-acc">ScaleSmiths Business Growth Audit</p><p className="mt-4 font-syne text-6xl font-extrabold">{formatAuditPrice()}</p><p className="mt-1 text-xs font-semibold uppercase tracking-[.12em] text-t3">One-time</p><p className="mt-6 border-t border-b1 pt-5 text-sm leading-relaxed text-t2">For local businesses in Hucknall, Nottingham and beyond. The full {formatAuditPrice(businessGrowthAudit.buildCreditMinor)} is credited against an eligible subsequent ScaleSmiths build.</p></AnimateIn>
+    </div></section>
 
-  return (
-    <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
-      <div className="mx-auto max-w-[1180px] px-6 py-14 md:px-12 md:py-20">
-        <header className="max-w-3xl">
-          <div className="inline-flex items-center gap-2 rounded-full border border-acc/25 bg-acc/10 px-3 py-1.5 font-dm text-xs font-semibold uppercase tracking-[.12em] text-acc">
-            <MapPin size={13} aria-hidden="true" /> Hucknall &amp; Nottinghamshire
-          </div>
-          <h1 className="mt-6 font-syne text-[clamp(38px,6vw,68px)] font-black leading-[1.02] tracking-[-.04em]">A useful first look at what is holding your local growth back.</h1>
-          <p className="mt-6 max-w-2xl font-dm text-lg leading-relaxed text-t2">
-            Share the main problem in a few lines. A ScaleSmiths founder will review the public information available and identify a sensible next step—without assuming you need to commission a full website build.
-          </p>
-        </header>
+    <section className="border-y border-b1 bg-s1 px-6 py-20 md:px-12"><div className="mx-auto max-w-[1240px]"><AnimateIn className="max-w-[760px]"><span className="text-xs font-semibold uppercase tracking-[.14em] text-acc">Sound familiar?</span><h2 className="mt-3 font-syne text-4xl font-extrabold md:text-6xl">Good businesses still lose opportunities.</h2></AnimateIn><div className="mt-10 grid gap-x-10 md:grid-cols-2">{problems.map((problem) => <div key={problem} className="flex gap-3 border-t border-b2 py-4 text-sm text-t2"><Check size={16} className="mt-0.5 shrink-0 text-acc" aria-hidden="true" />{problem}</div>)}</div></div></section>
 
-        <div className="mt-12 grid gap-10 lg:grid-cols-[.82fr_1.18fr] lg:items-start">
-          <div className="space-y-7">
-            <section aria-labelledby="review-heading" className="rounded-2xl border border-b1 bg-s1 p-6">
-              <h2 id="review-heading" className="font-syne text-2xl font-extrabold">What we will review</h2>
-              <ul className="mt-5 space-y-3 font-dm text-sm leading-relaxed text-t2">
-                {["How clearly your offer and location are communicated", "Whether mobile visitors can find a confident next step", "Trust, contact, and enquiry friction visible from public pages", "Obvious local-search and content gaps worth investigating"].map((item) => (
-                  <li key={item} className="flex gap-3"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-acc" aria-hidden="true" />{item}</li>
-                ))}
-              </ul>
-            </section>
+    <section className="px-6 py-24 md:px-12"><div className="mx-auto grid max-w-[1240px] gap-12 lg:grid-cols-[.8fr_1.2fr]"><AnimateIn><SearchCheck size={25} className="text-acc" aria-hidden="true" /><h2 className="mt-5 font-syne text-4xl font-extrabold md:text-6xl">Your business might not need a new website.</h2><p className="mt-5 leading-relaxed text-t2">Sometimes the website is the problem. Sometimes it isn&apos;t. The constraint might be visibility, messaging, your enquiry process, follow-up, reputation, booking flow, email setup—or a digital presence that has grown without anybody joining it together.</p><p className="mt-4 leading-relaxed text-t2">The Audit finds that out before you spend thousands fixing the wrong thing.</p></AnimateIn><div className="grid gap-3 sm:grid-cols-2">{checks.map(([title, copy], index) => <AnimateIn key={title} delay={index * .025} className="rounded-2xl border border-b1 bg-s1 p-6"><span className="text-xs font-semibold text-acc">0{index + 1}</span><h3 className="mt-4 font-syne text-xl font-bold">{title}</h3><p className="mt-3 text-sm leading-relaxed text-t2">{copy}</p></AnimateIn>)}</div></div></section>
 
-            <section aria-labelledby="findings-heading" className="rounded-2xl border border-b1 p-6">
-              <h2 id="findings-heading" className="font-syne text-xl font-extrabold">Useful findings might include</h2>
-              <p className="mt-3 font-dm text-sm leading-relaxed text-t2">A confusing call to action, missing service-area context, weak mobile contact routes, inconsistent business details, or a page that does not answer the buyer&apos;s first question. Findings depend on the public information available.</p>
-            </section>
+    <section id="included" className="bg-s1 px-6 py-24 md:px-12 scroll-mt-24"><div className="mx-auto max-w-[1240px]"><div className="grid gap-12 lg:grid-cols-2"><AnimateIn><span className="text-xs font-semibold uppercase tracking-[.14em] text-acc">What you receive</span><h2 className="mt-3 font-syne text-4xl font-extrabold md:text-6xl">A useful answer, not a pile of warnings.</h2><p className="mt-5 leading-relaxed text-t2">Your Audit adapts to the business. We investigate the areas that matter, then explain the findings in plain English so you can act on them with or without ScaleSmiths.</p></AnimateIn><ul className="grid gap-2 sm:grid-cols-2">{deliverables.map((item) => <li key={item} className="flex gap-3 rounded-xl border border-b1 bg-bg p-4 text-sm text-t2"><Check size={16} className="shrink-0 text-acc" aria-hidden="true" />{item}</li>)}</ul></div><div className="mt-14 grid gap-3 md:grid-cols-3">{[["Fix first", "Problems likely costing opportunities now."],["Improve next", "Meaningful improvements after immediate issues are handled."],["Grow later", "Larger opportunities once the foundations are stronger."]].map(([title, copy], index) => <div key={title} className="border-t border-acc/50 pt-5"><span className="text-xs text-acc">0{index + 1}</span><h3 className="mt-3 font-syne text-2xl font-bold">{title}</h3><p className="mt-2 text-sm text-t2">{copy}</p></div>)}</div></div></section>
 
-            <section aria-labelledby="local-proof-heading" className="rounded-2xl border border-acc/20 bg-acc/[.06] p-6">
-              <h2 id="local-proof-heading" className="font-syne text-xl font-extrabold">Local, founder-led, and practical</h2>
-              <p className="mt-3 font-dm text-sm leading-relaxed text-t2">ScaleSmiths is based in Hucknall, Nottinghamshire. We build websites and digital systems for local businesses and wider UK organisations, so the review considers both local discovery and the commercial job your site needs to do.</p>
-            </section>
+    <section className="px-6 py-24 md:px-12"><div className="mx-auto grid max-w-[1240px] gap-5 lg:grid-cols-2"><AnimateIn className="rounded-3xl border border-b1 p-8 md:p-10"><Compass size={24} className="text-acc" aria-hidden="true" /><h2 className="mt-5 font-syne text-3xl font-extrabold">Not an automated report.</h2><p className="mt-4 leading-relaxed text-t2">This is not a scanner generating pages of technical warnings. ScaleSmiths looks at the business behind the website: how people find you, why they choose you, how they enquire, what happens next and where technology could genuinely help.</p><p className="mt-6 font-syne text-3xl font-bold text-acc">{formatAuditPrice()} <span className="font-dm text-xs uppercase tracking-[.12em] text-t3">one-time</span></p></AnimateIn><AnimateIn delay={.05} className="rounded-3xl border border-acc/25 bg-acc/[.06] p-8 md:p-10"><p className="text-xs font-semibold uppercase tracking-[.14em] text-acc">Relevant local proof</p><h2 className="mt-4 font-syne text-3xl font-extrabold">Glow Tanning, Hucknall</h2><p className="mt-4 leading-relaxed text-t2">ScaleSmiths built a joined-up local presence with digital booking, consolidated review presentation and tools the business could manage itself.</p><Link href="/work/glow-tanning" className="mt-6 inline-flex items-center gap-2 border-b border-acc pb-2 text-sm font-semibold">View the project <ArrowRight size={15} aria-hidden="true" /></Link></AnimateIn></div></section>
 
-            <div className="flex flex-wrap items-center gap-3 font-dm text-sm text-t2">
-              <span>Already know what you need?</span>
-              <LocalGrowthFullQuoteLink className="inline-flex items-center gap-1 font-semibold text-acc hover:text-t1">Use the full quote route <ArrowRight size={14} aria-hidden="true" /></LocalGrowthFullQuoteLink>
-              <span aria-hidden="true">·</span>
-              <LocalGrowthStrategyCallLink className="font-semibold text-acc hover:text-t1" />
-            </div>
-          </div>
+    <section className="border-y border-b1 bg-s1 px-6 py-24 md:px-12"><div className="mx-auto max-w-[1050px] text-center"><p className="text-xs font-semibold uppercase tracking-[.14em] text-acc">No obligation</p><h2 className="mt-4 font-syne text-[clamp(38px,6vw,70px)] font-extrabold">If we build it, your {formatAuditPrice()} comes off the project.</h2><p className="mx-auto mt-6 max-w-[760px] leading-relaxed text-t2">If the Audit identifies a larger piece of work and you choose ScaleSmiths for an eligible build, the full Audit fee is credited against that project. The findings remain useful if you implement internally, use another provider or decide not to change anything yet.</p></div></section>
 
-          <LocalGrowthCheckForm />
-        </div>
-      </div>
-    </>
-  )
+    <section className="px-6 py-24 md:px-12"><div className="mx-auto max-w-[1000px] rounded-3xl border border-acc/20 bg-s1 p-8 md:p-12"><p className="text-xs font-semibold uppercase tracking-[.14em] text-acc">Business Growth Audit · {formatAuditPrice()} one-time</p><h2 className="mt-4 font-syne text-4xl font-extrabold md:text-6xl">Find out what we&apos;d fix first.</h2><p className="mt-5 max-w-[700px] leading-relaxed text-t2">A professional assessment with clear findings, prioritised recommendations and the full {formatAuditPrice()} credited against an eligible ScaleSmiths build.</p><div className="mt-8 flex flex-wrap gap-3"><AuditAcquisitionLink source="local_growth_check" start className="btn-primary">Start my Audit <ArrowRight size={16} aria-hidden="true" /></AuditAcquisitionLink><DiscoveryCallLink source="local_growth_check" className="btn-ghost">Not sure? Book a strategy call</DiscoveryCallLink></div></div></section>
+  </main>
 }

@@ -6,8 +6,8 @@ export const QUOTE_BODY_LIMIT_BYTES = 16 * 1024
 export const QUOTE_RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000
 export const QUOTE_RATE_LIMIT_MAX = 3
 
-export type LeadSource = "public_quote" | "interactive_v2" | "local_growth_check" | "business_email" | "business_growth_audit"
-export type FunnelType = "full_quote" | "interactive_v2" | "local_growth_check" | "business_email" | "business_growth_audit"
+export type LeadSource = "public_quote" | "interactive_v2" | "business_email" | "business_growth_audit"
+export type FunnelType = "full_quote" | "interactive_v2" | "business_email" | "business_growth_audit"
 
 export interface QuotePayload {
   name?: unknown
@@ -121,14 +121,13 @@ export function cleanString(value: unknown, maxLength = 2000) {
 
 export function validateQuotePayload(payload: QuotePayload): QuoteValidationResult {
   const requestedFunnel = cleanString(payload.funnelType, 40)
-  const localGrowthCheck = requestedFunnel === "local_growth_check"
   const businessEmail = requestedFunnel === "business_email"
   const businessAudit = requestedFunnel === "business_growth_audit"
   const rawType = cleanString(payload.type, 120)
   const inferredInteractive = rawType.startsWith("ScaleSmiths V2 interactive journey")
-  const funnelType: FunnelType = businessAudit ? "business_growth_audit" : businessEmail ? "business_email" : localGrowthCheck ? "local_growth_check" : inferredInteractive ? "interactive_v2" : "full_quote"
-  const leadSource: LeadSource = businessAudit ? "business_growth_audit" : businessEmail ? "business_email" : localGrowthCheck ? "local_growth_check" : inferredInteractive ? "interactive_v2" : "public_quote"
-  const goal = cleanString(payload.goal, localGrowthCheck ? 1000 : 240)
+  const funnelType: FunnelType = businessAudit ? "business_growth_audit" : businessEmail ? "business_email" : inferredInteractive ? "interactive_v2" : "full_quote"
+  const leadSource: LeadSource = businessAudit ? "business_growth_audit" : businessEmail ? "business_email" : inferredInteractive ? "interactive_v2" : "public_quote"
+  const goal = cleanString(payload.goal, 240)
   const phone = cleanString(payload.phone, 40)
 
   const data: ValidQuotePayload = {
@@ -136,22 +135,22 @@ export function validateQuotePayload(payload: QuotePayload): QuoteValidationResu
     email: cleanString(payload.email, 254).toLowerCase(),
     biz: cleanString(payload.biz, 160),
     websiteUrl: cleanString(payload.websiteUrl, 240),
-    businessType: businessAudit ? cleanString(payload.businessType, 120) || "Business Growth Audit customer" : businessEmail ? "Business email customer" : localGrowthCheck ? "Local business" : cleanString(payload.businessType, 120),
-    type: businessAudit ? "Business Growth Audit" : businessEmail ? "Managed Business Email" : localGrowthCheck ? "Local Growth Check" : rawType,
-    budget: businessAudit ? "£395 one-time audit" : businessEmail ? "£15 starting service" : localGrowthCheck ? "Not discussed" : cleanString(payload.budget, 80),
-    timeframe: businessAudit ? "Delivery date to be confirmed before work begins" : businessEmail ? "Email onboarding" : localGrowthCheck ? "Initial review" : cleanString(payload.timeframe, 120),
+    businessType: businessAudit ? cleanString(payload.businessType, 120) || "Business Growth Audit customer" : businessEmail ? "Business email customer" : cleanString(payload.businessType, 120),
+    type: businessAudit ? "Business Growth Audit" : businessEmail ? "Managed Business Email" : rawType,
+    budget: businessAudit ? "£395 one-time audit" : businessEmail ? "£15 starting service" : cleanString(payload.budget, 80),
+    timeframe: businessAudit ? "Delivery date to be confirmed before work begins" : businessEmail ? "Email onboarding" : cleanString(payload.timeframe, 120),
     goal,
-    needs: businessAudit ? ["Business Growth Audit"] : businessEmail ? ["Managed Business Email"] : localGrowthCheck ? ["Local growth review"] : Array.isArray(payload.needs)
+    needs: businessAudit ? ["Business Growth Audit"] : businessEmail ? ["Managed Business Email"] : Array.isArray(payload.needs)
       ? payload.needs.map((item) => cleanString(item, 80)).filter(Boolean).slice(0, 8)
       : [],
-    carePlanInterest: businessAudit ? "Optional implementation after audit" : businessEmail ? "Standalone email enquiry" : localGrowthCheck ? "Not discussed" : cleanString(payload.carePlanInterest, 80),
-    preferredContactMethod: businessAudit || businessEmail ? "Email" : localGrowthCheck ? phone ? "Email and phone" : "Email" : cleanString(payload.preferredContactMethod, 80),
+    carePlanInterest: businessAudit ? "Optional implementation after audit" : businessEmail ? "Standalone email enquiry" : cleanString(payload.carePlanInterest, 80),
+    preferredContactMethod: businessAudit || businessEmail ? "Email" : cleanString(payload.preferredContactMethod, 80),
     phone,
     leadSource,
     funnelType,
-    intent: businessAudit ? "business_growth_audit" : businessEmail ? "business_email" : localGrowthCheck ? "local_growth_check" : parseEnquiryIntent(payload.intent),
+    intent: businessAudit ? "business_growth_audit" : businessEmail ? "business_email" : parseEnquiryIntent(payload.intent),
     consent: payload.consent === true,
-    brief: localGrowthCheck ? goal : cleanString(payload.brief, 5000),
+    brief: cleanString(payload.brief, 5000),
     website: cleanString(payload.website, 200),
   }
 
@@ -159,8 +158,6 @@ export function validateQuotePayload(payload: QuotePayload): QuoteValidationResu
     ? !data.name || !data.email || !data.biz || !data.websiteUrl || !data.goal || !data.brief || !data.consent
     : businessEmail
     ? !data.name || !data.email || !data.biz || !data.goal || !data.brief || !data.consent
-    : localGrowthCheck
-    ? !data.name || !data.email || !data.biz || !data.goal || !data.consent
     : !data.name || !data.email || !data.brief || !data.type || !data.budget || !data.timeframe || !data.goal || !data.businessType || !data.preferredContactMethod || !data.consent
 
   if (missingRequired) {
@@ -171,16 +168,8 @@ export function validateQuotePayload(payload: QuotePayload): QuoteValidationResu
     return { ok: false, status: 400, error: "Please check the required fields and try again." }
   }
 
-  if (localGrowthCheck && data.websiteUrl && !isSafePublicUrl(data.websiteUrl)) {
-    return { ok: false, status: 400, error: "Please add a valid public website or social-page URL." }
-  }
-
   if (businessAudit && !isSafePublicUrl(data.websiteUrl)) {
     return { ok: false, status: 400, error: "Please add a valid public website or social-page URL, including https://." }
-  }
-
-  if (localGrowthCheck && data.phone && !/^[+()\d\s.-]{7,40}$/.test(data.phone)) {
-    return { ok: false, status: 400, error: "Please add a valid phone number or leave it blank." }
   }
 
   return { ok: true, data }

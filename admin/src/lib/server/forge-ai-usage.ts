@@ -18,10 +18,14 @@ import {
 } from "@/lib/forge-cost-quality"
 import type { ForgeQaArtifactState } from "@/lib/forge-qa"
 import { forgeActivityLogs, forgeAiUsage, forgeProjects, forgeTasks } from "@/lib/schema"
+import { currentForgeAttribution } from "./forge-attribution-context"
 
 export interface ForgeAiUsageInput {
   projectId?: number | null
   taskId?: number | null
+  runId?: number | null
+  runStepId?: number | null
+  jobId?: number | null
   provider: ForgeAiProvider
   model: string
   usage: ForgeAiUsage
@@ -82,10 +86,19 @@ export async function recordForgeAiUsage(input: ForgeAiUsageInput) {
   const completionTokens = Math.max(0, input.usage.outputTokens ?? 0)
   const totalTokens = Math.max(0, input.usage.totalTokens ?? promptTokens + completionTokens)
   const estimatedCost = roundCost(Math.max(0, input.estimatedCost ?? 0))
+  const ambient = currentForgeAttribution()
+
+  const projectId = input.projectId ?? ambient.projectId
+  const runId = input.runId ?? ambient.runId
+  const runStepId = input.runStepId ?? ambient.runStepId
+  const jobId = input.jobId ?? ambient.jobId
 
   await db.insert(forgeAiUsage).values({
-    projectId: input.projectId ?? null,
-    taskId: input.taskId ?? null,
+    projectId: projectId ?? null,
+    taskId: input.taskId ?? ambient.taskId,
+    runId: runId ?? null,
+    runStepId: runStepId ?? null,
+    jobId: jobId ?? null,
     provider: input.provider,
     model: input.model,
     promptTokens,
@@ -96,11 +109,11 @@ export async function recordForgeAiUsage(input: ForgeAiUsageInput) {
     completedAt: input.completedAt,
   })
 
-  if (input.projectId) {
-    const budgets = await loadForgeAiUsageBudgetSnapshot(input.projectId)
+  if (projectId) {
+    const budgets = await loadForgeAiUsageBudgetSnapshot(projectId)
     if (budgets.project.warning || budgets.monthly.warning) {
       await db.insert(forgeActivityLogs).values({
-        projectId: input.projectId,
+        projectId,
         actor: "system",
         action: "ai_budget_warning",
         message: budgets.project.blocked || budgets.monthly.blocked
@@ -324,6 +337,9 @@ export async function exportForgeAiUsageCsv(projectId?: number | null) {
       projectName: forgeProjects.name,
       taskId: forgeAiUsage.taskId,
       taskTitle: forgeTasks.title,
+      runId: forgeAiUsage.runId,
+      runStepId: forgeAiUsage.runStepId,
+      jobId: forgeAiUsage.jobId,
       provider: forgeAiUsage.provider,
       model: forgeAiUsage.model,
       promptTokens: forgeAiUsage.promptTokens,
@@ -345,6 +361,9 @@ export async function exportForgeAiUsageCsv(projectId?: number | null) {
     "projectName",
     "taskId",
     "taskTitle",
+    "runId",
+    "runStepId",
+    "jobId",
     "provider",
     "model",
     "promptTokens",

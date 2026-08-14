@@ -67,6 +67,9 @@ export interface ForgeAiRequest<TData extends JsonValue = JsonValue> {
   fallbackOnSchemaMismatch?: boolean
   projectId?: number | null
   taskId?: number | null
+  runId?: number | null
+  runStepId?: number | null
+  jobId?: number | null
   promptIdentifier: string
   promptVersion: string
   schemaIdentifier: string
@@ -122,6 +125,9 @@ export async function runForgeAiJson<TData extends JsonValue = JsonValue>(reques
     await recordForgeAiUsage({
       projectId: request.projectId ?? null,
       taskId: request.taskId ?? null,
+      runId: request.runId ?? null,
+      runStepId: request.runStepId ?? null,
+      jobId: request.jobId ?? null,
       provider,
       model,
       usage: result.usage,

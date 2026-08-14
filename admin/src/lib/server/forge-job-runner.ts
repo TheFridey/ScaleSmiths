@@ -33,6 +33,7 @@ import { normalizeUnknownError } from "./logging"
 import { requestLogger } from "./request-context"
 import { addMonitoringBreadcrumb, captureMonitoringException, captureMonitoringMessage, withMonitoringScope } from "./monitoring"
 import { isForgeE2EManualWorkerMode } from "./forge-e2e-isolation"
+import { runWithForgeAttribution } from "./forge-attribution-context"
 
 export class ForgeJobError extends Error {
   safeMessage: string
@@ -279,7 +280,16 @@ export async function runClaimedForgeJob(claimed: ForgeJobRow, owner: string, op
   if (typeof heartbeat.unref === "function") heartbeat.unref()
 
   try {
-    const result = await withMonitoringScope({ projectId: claimed.projectId, taskId, forgeStage: claimed.kind, jobId: claimed.id }, () => handler(claimed.projectId, claimed.actor ?? "system", payload))
+    const attribution = {
+      projectId: claimed.projectId,
+      runId: typeof payload.forgeRunId === "number" ? payload.forgeRunId : null,
+      runStepId: typeof payload.forgeRunStepId === "number" ? payload.forgeRunStepId : null,
+      jobId: claimed.id,
+      taskId: typeof payload.commandTaskId === "number" ? payload.commandTaskId : null,
+    }
+    const result = await runWithForgeAttribution(attribution, () =>
+      withMonitoringScope({ projectId: claimed.projectId, taskId, forgeStage: claimed.kind, jobId: claimed.id }, () => handler(claimed.projectId, claimed.actor ?? "system", payload)),
+    )
     clearInterval(heartbeat)
     await completeForgeJob(claimed.id, owner, result)
     await import("./forge-run-orchestrator")

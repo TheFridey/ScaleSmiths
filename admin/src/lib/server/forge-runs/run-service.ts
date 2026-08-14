@@ -234,13 +234,13 @@ export async function handleForgeRunJobOutcome(jobId: number, outcome: "complete
   const [job] = await db.select().from(forgeJobs).where(eq(forgeJobs.id, jobId)).limit(1)
   if (!job) return
   if (outcome === "failed" && job.status === "queued") {
-    await updateRunStepActualCost(step.id, job)
+    await updateRunStepActualCost(step.id, job.id)
     await db.update(forgeRunSteps).set({ status: "queued", failureCategory: job.operatorErrorJson?.category ?? "transient", failureMessage: job.operatorErrorJson?.summary ?? message ?? job.failureReason, operatorErrorJson: job.operatorErrorJson, updatedAt: new Date() }).where(eq(forgeRunSteps.id, step.id))
     await recordRunEvent(step.runId, step.id, "job_retry_scheduled", "system", `${definition.label} job will retry.`, { jobId, attempts: job.attempts })
     return
   }
   if (outcome === "failed") {
-    await updateRunStepActualCost(step.id, job)
+    await updateRunStepActualCost(step.id, job.id)
     const now = new Date()
     await db.transaction(async (tx) => {
       await tx.update(forgeRunSteps).set({ status: "failed", failureCategory: job.operatorErrorJson?.category ?? categorizeFailure(message ?? job.failureReason), failureMessage: job.operatorErrorJson?.summary ?? message ?? job.failureReason ?? "Job failed.", operatorErrorJson: job.operatorErrorJson, completedAt: now, updatedAt: now }).where(eq(forgeRunSteps.id, step.id))
@@ -277,7 +277,7 @@ export async function handleForgeRunJobOutcome(jobId: number, outcome: "complete
     }
   }
   const context = await loadStageContext(step.projectId, run.mode as ForgeRunMode, run.policyJson as ForgeRunPolicy)
-  await updateRunStepActualCost(step.id, job)
+  await updateRunStepActualCost(step.id, job.id)
   const outputIds = validArtifactIds(context, definition.producedArtifacts)
   const completion = definition.completionEvaluator(context)
   if (!completion.ready) {
@@ -309,7 +309,7 @@ export async function handleForgeRunJobOutcome(jobId: number, outcome: "complete
   const nextStatus = definition.approvalPolicy === "human" ? "awaiting_approval" : "completed"
   const approvalError = nextStatus === "awaiting_approval" ? normalizeForgeOperatorError(`${definition.label} is waiting for human approval.`, { stage: step.stage, category: "approval_required", retryable: false, runId: step.runId, jobId, affectedArtifactIds: outputIds, technicalReference: `forge:run:${step.runId}:step:${step.id}:approval` }) : null
   await db.update(forgeRunSteps).set({ status: nextStatus, approvalRequired: nextStatus === "awaiting_approval", outputArtifactIds: outputIds, taskId: job.taskId ?? task?.id ?? null, completedAt: nextStatus === "completed" ? new Date() : null, failureCategory: approvalError?.category ?? null, failureMessage: approvalError?.summary ?? null, operatorErrorJson: approvalError, updatedAt: new Date() }).where(eq(forgeRunSteps.id, step.id))
-  await updateRunActualCost(step.runId, step.projectId)
+  await updateRunActualCost(step.runId)
   await recordRunEvent(step.runId, step.id, nextStatus === "awaiting_approval" ? "approval_requested" : "step_completed", "system", `${definition.label} ${nextStatus === "awaiting_approval" ? "awaits approval" : "completed"}.`, { jobId, artifactIds: outputIds })
   await invalidateDownstreamForChangedInput(step.runId, step.projectId, step.stage as ForgeRunStage, "system")
   await continueForgeRun(step.runId)
@@ -391,7 +391,7 @@ async function pauseFor(runId: number, stage: string, reason: string, actor: str
 
 async function completeRun(runId: number, projectId: number, actor: string) {
   const now = new Date()
-  await updateRunActualCost(runId, projectId)
+  await updateRunActualCost(runId)
   await db.update(forgeRuns).set({ status: "completed", currentStage: null, completedAt: now, pauseReason: null, updatedAt: now }).where(eq(forgeRuns.id, runId))
   await recordRunEvent(runId, null, "run_completed", actor, "Forge run completed.", {})
   await db.insert(forgeActivityLogs).values({ projectId, actor, action: "forge_run_completed", message: `Completed Forge run #${runId}.`, metadataJson: { runId } })

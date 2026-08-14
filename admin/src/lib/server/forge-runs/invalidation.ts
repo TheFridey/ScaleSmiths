@@ -1,8 +1,8 @@
 import "server-only"
 import { and, eq, inArray, isNull } from "drizzle-orm"
 import { db } from "@/lib/db"
-import { forgeArtifacts, forgeRunSteps } from "@/lib/schema"
-import { getForgeRunStage, type ForgeRunStage } from "@/lib/forge-run-stages"
+import { forgeArtifacts, forgeRuns, forgeRunSteps } from "@/lib/schema"
+import { getForgeRunStage, type ForgeRunMode, type ForgeRunPolicy, type ForgeRunStage } from "@/lib/forge-run-stages"
 import { recordRunEvent } from "./events"
 import { loadStageContext } from "./run-repository"
 import { computeInputHash } from "./stage-outcomes"
@@ -10,7 +10,11 @@ import { computeInputHash } from "./stage-outcomes"
 export async function invalidateDownstreamForChangedInput(runId: number, projectId: number, stageKey: ForgeRunStage, actor: string) {
   const definition = getForgeRunStage(stageKey)
   if (!definition?.invalidatedDownstreamStages.length) return
-  const context = await loadStageContext(projectId, "standard", {})
+  const [run] = await db.select({ mode: forgeRuns.mode, policyJson: forgeRuns.policyJson }).from(forgeRuns).where(eq(forgeRuns.id, runId)).limit(1)
+  if (!run) return
+  const mode = (run.mode as ForgeRunMode) ?? "standard"
+  const policy = (run.policyJson as ForgeRunPolicy) ?? {}
+  const context = await loadStageContext(projectId, mode, policy)
   const steps = await db.select().from(forgeRunSteps).where(and(eq(forgeRunSteps.runId, runId), inArray(forgeRunSteps.stage, definition.invalidatedDownstreamStages)))
   const invalid = steps.filter((step) => {
     const stage = getForgeRunStage(step.stage)

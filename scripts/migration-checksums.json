@@ -434,6 +434,12 @@
       "sha256": "ec808d8d552b1f39e54d02af2526bfc14708520fed02a92826333c6d19ca02fb",
       "lifecycle": "forward",
       "reason": "Adds per-stage estimated, actual, retry, and remaining cost accounting for atomic Forge Run steps."
+    },
+    {
+      "path": "admin/drizzle/0049_forge_ai_usage_exact_attribution.sql",
+      "sha256": "130c6a9e5435e502ef0e45e83ee687bad8bd6b013a89b3dc7af83dd41f87327b",
+      "lifecycle": "forward",
+      "reason": "Adds exact run/step/job foreign keys to forge_ai_usage for FK-based cost attribution instead of time-window matching."
     }
   ],
   "journals": {
@@ -524,6 +530,13 @@
           "version": "7",
           "when": 1786262400000,
           "tag": "0048_atomic_forge_stage_costs",
+          "breakpoints": true
+        },
+        {
+          "idx": 49,
+          "version": "7",
+          "when": 1786348800000,
+          "tag": "0049_forge_ai_usage_exact_attribution",
           "breakpoints": true
         }
       ]

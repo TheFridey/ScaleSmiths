@@ -18,6 +18,7 @@ const links = [
 ]
 
 const serviceLink = { href: "/services/managed-business-email", label: "Managed Business Email" }
+const auditLink = { href: "/services/business-growth-audit", label: "Business Growth Audit" }
 
 export function Nav() {
   const [scrolled, setScrolled] = useState(false)
@@ -165,6 +166,11 @@ export function Nav() {
                     </Link>
                   </m.div>
                 ))}
+                <m.div variants={staggerItem}>
+                  <Link href={auditLink.href} prefetch={false} onClick={closeMenu} className="flex min-h-14 items-center border-b border-b1 font-syne text-lg font-bold text-t1">
+                    {auditLink.label}<span className="ml-auto font-dm text-[10px] font-semibold uppercase tracking-[.1em] text-acc">£395</span>
+                  </Link>
+                </m.div>
                 <m.div variants={staggerItem}>
                   <Link href={serviceLink.href} prefetch={false} onClick={closeMenu} className="flex min-h-14 items-center border-b border-b1 font-syne text-lg font-bold text-t1">
                     {serviceLink.label}<span className="ml-auto font-dm text-[10px] font-semibold uppercase tracking-[.1em] text-acc">From £15</span>

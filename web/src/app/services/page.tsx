@@ -5,6 +5,7 @@ import { AnimateIn } from "@/components/AnimateIn"
 import { CTA } from "@/components/CTA"
 import { ServiceRouteChooser } from "@/components/ServiceRouteChooser"
 import { buildServiceHubSchema, serviceHubItems } from "@/lib/service-pages"
+import { businessGrowthAudit, formatAuditPrice } from "@/lib/business-growth-audit"
 
 export const metadata: Metadata = {
   title: "Services",
@@ -36,6 +37,8 @@ export default function ServicesPage() {
       </section>
 
       <ServiceRouteChooser />
+
+      <section className="px-6 pb-20 md:px-12"><div className="mx-auto grid max-w-[1240px] gap-7 rounded-3xl border border-acc/20 bg-s1 p-7 md:grid-cols-[1fr_auto] md:items-center md:p-10"><div><span className="text-xs font-semibold uppercase tracking-[.14em] text-acc">Not sure what you need yet?</span><h2 className="mt-3 font-syne text-[clamp(30px,4vw,48px)] font-extrabold">Start with the Business Growth Audit.</h2><p className="mt-4 max-w-[720px] text-sm leading-relaxed text-t2">A one-time {formatAuditPrice()} assessment of the customer journey, digital presence, systems and growth opportunities—followed by a prioritised roadmap. The full fee is credited against an eligible subsequent ScaleSmiths build.</p></div><Link href={businessGrowthAudit.slug} className="btn-primary justify-center">Explore the Audit <ArrowRight size={16} /></Link></div></section>
 
       <section className="px-6 pb-20 md:px-12">
         <div className="mx-auto max-w-[1240px]">

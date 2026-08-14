@@ -15,6 +15,7 @@ export function buildPublicSitemap(siteUrl = "https://scalesmiths.co.uk"): Metad
     { url: `${base}/work`,        lastModified: lastModified(), changeFrequency: "monthly", priority: 0.9 },
     { url: `${base}/services`,    lastModified: lastModified(), changeFrequency: "monthly", priority: 0.9 },
     { url: `${base}/services/managed-business-email`, lastModified: lastModified(), changeFrequency: "monthly", priority: 0.85 },
+    { url: `${base}/services/business-growth-audit`, lastModified: lastModified(), changeFrequency: "monthly", priority: 0.9 },
     { url: `${base}/local-growth`, lastModified: lastModified(), changeFrequency: "monthly", priority: 0.9 },
     { url: `${base}/custom-systems`, lastModified: lastModified(), changeFrequency: "monthly", priority: 0.9 },
     { url: `${base}/about`,       lastModified: lastModified(), changeFrequency: "monthly", priority: 0.8 },

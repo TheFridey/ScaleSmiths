@@ -1,6 +1,9 @@
 import type { FunnelType } from "./quote-security"
 
 export function quoteEmailContent(funnelType: FunnelType, safeName: string) {
+  if (funnelType === "business_growth_audit") {
+    return { internalLabel: "New Business Growth Audit request", internalSubject: `Business Growth Audit request from ${safeName}`, confirmationSubject: "Your Business Growth Audit request", confirmationHeading: "Your Audit request is in.", confirmationBody: `Thanks, ${safeName}. We&apos;ll review the business context you supplied, confirm the one-time £395 engagement and delivery date, then send the next step. No payment has been taken through this website.` }
+  }
   if (funnelType === "business_email") {
     return {
       internalLabel: "New Managed Business Email enquiry",

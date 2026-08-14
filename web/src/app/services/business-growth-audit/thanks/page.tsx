@@ -1,0 +1,5 @@
+import type { Metadata } from "next"
+import Link from "next/link"
+import { CheckCircle2 } from "lucide-react"
+export const metadata: Metadata = { title: "Audit Request Received", robots: { index: false, follow: false } }
+export default function AuditThanksPage() { return <main className="px-6 py-24 md:px-12"><div className="mx-auto max-w-[760px] text-center"><CheckCircle2 size={44} className="mx-auto text-acc" /><p className="mt-5 text-xs font-semibold uppercase tracking-[.14em] text-acc">Business Growth Audit</p><h1 className="mt-3 font-syne text-5xl font-extrabold">Audit request received.</h1><p className="mt-5 leading-relaxed text-t2">No payment has been taken through this website. ScaleSmiths will review the context supplied, confirm the £395 one-time engagement and delivery date, and provide the next secure onboarding step.</p><div className="mt-8 flex justify-center gap-3"><Link href="/services/business-growth-audit" className="btn-primary">Review the Audit</Link><Link href="/" className="btn-ghost">Return home</Link></div></div></main> }

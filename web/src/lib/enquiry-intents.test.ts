@@ -24,4 +24,8 @@ describe("enquiry intents", () => {
     expect(ENQUIRY_INTENTS.business_email).toBe("Set Up Managed Business Email")
     expect(enquiryIntentHref("business_email")).toBe("/quote?intent=business_email")
   })
+
+  it("supports the Business Growth Audit journey", () => {
+    expect(ENQUIRY_INTENTS.business_growth_audit).toBe("Start a Business Growth Audit")
+  })
 })

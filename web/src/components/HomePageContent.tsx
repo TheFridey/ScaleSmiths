@@ -5,6 +5,7 @@ import { Hero } from "@/components/Hero"
 import { DigitalEstate } from "@/components/DigitalEstate"
 import { ClientPortalSection } from "@/components/ClientPortalSection"
 import { BuildProofBlocks } from "@/components/BuildProofBlocks"
+import { EntryProducts } from "@/components/EntryProducts"
 import { Portfolio } from "@/components/Portfolio"
 import { Process } from "@/components/Process"
 import { Services } from "@/components/Services"
@@ -33,6 +34,7 @@ export async function HomePageContent() {
       <Hero verifiedStats={heroStats} />
       <ServiceRouteChooser compact />
       <BuildProofBlocks />
+      <EntryProducts />
       <Testimonials testimonials={testimonials} />
       <Services claims={serviceClaims} />
       <DigitalEstate />

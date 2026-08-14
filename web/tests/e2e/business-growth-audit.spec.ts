@@ -1,0 +1,29 @@
+import { expect, test } from "@playwright/test"
+
+test("Business Growth Audit has a distinct credible route and intake", async ({ page }) => {
+  await page.goto("/services/business-growth-audit", { waitUntil: "domcontentloaded" })
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Know what to fix next.")
+  await expect(page.getByText("£395", { exact: true })).toBeVisible()
+  await expect(page.getByText(/No payment is taken through this website/)).toBeVisible()
+  await expect(page.getByText(/Example finding—not a client result/)).toBeVisible()
+  await page.getByRole("link", { name: "Start my Audit" }).first().click()
+  await expect(page).toHaveURL(/business-growth-audit\/start/)
+  await expect(page.getByLabel("Business name")).toBeVisible()
+  await expect(page.locator('input[type="password"]')).toHaveCount(0)
+})
+
+test("entry products remain ordered and readable on mobile", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.emulateMedia({ reducedMotion: "reduce" })
+  await page.goto("/?experience=normal", { waitUntil: "domcontentloaded" })
+  const audit = page.getByRole("heading", { name: "Business Growth Audit" })
+  const email = page.getByRole("heading", { name: "Managed Business Email" })
+  await expect(audit).toBeVisible()
+  await expect(email).toBeVisible()
+  const auditBox = await audit.boundingBox()
+  const emailBox = await email.boundingBox()
+  expect(auditBox).not.toBeNull()
+  expect(emailBox).not.toBeNull()
+  expect(auditBox!.y).toBeLessThan(emailBox!.y)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1)
+})

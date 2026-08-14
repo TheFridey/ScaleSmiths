@@ -197,6 +197,12 @@ describe("quote security", () => {
     }
   })
 
+  it("accepts and normalises the Business Growth Audit intake", () => {
+    const result = validateQuotePayload({ name: "A Customer", email: "customer@example.com", biz: "Example Ltd", websiteUrl: "https://example.com", businessType: "Professional services", goal: "Leads are inconsistent", brief: "Detailed business, lead and operational context for the professional assessment.", funnelType: "business_growth_audit", intent: "business_growth_audit", consent: true })
+    expect(result.ok).toBe(true)
+    if (result.ok) expect(result.data).toMatchObject({ funnelType: "business_growth_audit", leadSource: "business_growth_audit", type: "Business Growth Audit", budget: "£395 one-time audit", intent: "business_growth_audit" })
+  })
+
   it("scores high-intent leads server-side", () => {
     const result = validateQuotePayload({
       name: "Rhys",

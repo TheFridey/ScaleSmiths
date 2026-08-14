@@ -1,3 +1,5 @@
+import { businessGrowthAudit, formatAuditPrice } from "./business-growth-audit"
+
 export const serviceHubItems = [
   {
     journey: "local-growth" as const,
@@ -63,6 +65,8 @@ export const managedBusinessEmailService = {
   href: "/services/managed-business-email",
 }
 
+export const businessGrowthAuditService = { title: businessGrowthAudit.shortName, description: "A business-wide assessment of positioning, customer journey, visibility, systems and growth opportunities with a prioritised roadmap.", href: businessGrowthAudit.slug }
+
 export const pricingItems = [
   { name: "One-page business site", range: "Scoped after discovery", priceClaimId: "price.one-page", note: "Focused single-page presence for a clear offer or campaign." },
   { name: "Local business growth site", range: "Scoped after discovery", priceClaimId: "price.foundation", note: "Multi-page local site with conversion and SEO foundations." },
@@ -71,6 +75,7 @@ export const pricingItems = [
   { name: "Ongoing care plans", range: "Scoped separately", priceClaimId: "price.care-plan", note: "Maintenance, monitoring, improvements, and retained technical support." },
   { name: "Hosting / maintenance", range: "Scoped to stack", priceClaimId: null, note: "Deployment, SSL, backups, monitoring, and infrastructure support." },
   { name: "Managed Business Email", range: "From £15", priceClaimId: null, note: "Three professional 5GB mailboxes on your domain, with initial setup included." },
+  { name: businessGrowthAudit.shortName, range: formatAuditPrice(), priceClaimId: null, note: "One-time business-wide assessment with the full fee credited against an eligible subsequent ScaleSmiths build." },
 ]
 
 export function buildServiceHubSchema(baseUrl = "https://scalesmiths.co.uk") {
@@ -88,6 +93,11 @@ export function buildServiceHubSchema(baseUrl = "https://scalesmiths.co.uk") {
       "@type": "Service",
       name: managedBusinessEmailService.title,
       description: managedBusinessEmailService.description,
+      provider: { "@type": "Organization", name: "ScaleSmiths", url: baseUrl },
+    }, {
+      "@type": "Service",
+      name: businessGrowthAuditService.title,
+      description: businessGrowthAuditService.description,
       provider: { "@type": "Organization", name: "ScaleSmiths", url: baseUrl },
     }],
   }

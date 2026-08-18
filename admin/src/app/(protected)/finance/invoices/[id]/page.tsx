@@ -1,0 +1,10 @@
+import type { Metadata } from "next"
+import { notFound } from "next/navigation"
+import { InvoiceBuilder } from "@/components/finance/InvoiceBuilder"
+import { InvoiceDomainError } from "@/lib/invoices"
+import { hasCapability } from "@/lib/rbac"
+import { listInvoiceCatalogue, listInvoiceClients, loadInvoiceForAdmin } from "@/lib/server/invoices"
+import { guardPageCapability } from "@/lib/server/rbac"
+import { loadInvoiceSupplierIdentity } from "@/lib/server/invoice-supplier-settings"
+export const metadata: Metadata = { title: "Invoice" }; export const dynamic = "force-dynamic"
+export default async function InvoicePage({ params }: { params: Promise<{ id: string }> }) { const actor = await guardPageCapability("finance.read"); const id = Number((await params).id); if (!Number.isSafeInteger(id) || id <= 0) notFound(); try { const [invoice, clients, catalogue, supplierSettings] = await Promise.all([loadInvoiceForAdmin(id), listInvoiceClients(), listInvoiceCatalogue(), loadInvoiceSupplierIdentity()]); return <InvoiceBuilder initialInvoice={invoice} clients={clients} catalogue={catalogue} supplierSettings={supplierSettings} canWrite={hasCapability(actor.role, "finance.write")} /> } catch (error) { if (error instanceof InvoiceDomainError && error.status === 404) notFound(); throw error } }

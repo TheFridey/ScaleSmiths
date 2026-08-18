@@ -16,6 +16,7 @@ import { formatReportPeriod } from "@/lib/monthly-reports"
 import { db } from "@/lib/db"
 import { requireClientPortalAccess } from "@/lib/portal-session"
 import { clientRequestMessages, clientRequests, monthlyReports } from "@/lib/schema"
+import { listPortalInvoices } from "@/lib/portal-invoices"
 
 interface PortalPageProps {
   params: Promise<{ clientId: string }>
@@ -91,6 +92,8 @@ export default async function PortalClientPage({ params, searchParams }: PortalP
           <RequestsTab clientId={portalClientId} />
         ) : tab === "reports" ? (
           <ReportsTab clientId={portalClientId} />
+        ) : tab === "invoices" ? (
+          <InvoicesTab clientId={portalClientId} />
         ) : (
           <OverviewTab
             clientId={portalClientId}
@@ -105,6 +108,13 @@ export default async function PortalClientPage({ params, searchParams }: PortalP
     </div>
   )
 }
+
+async function InvoicesTab({clientId}:{clientId:string}) {
+  const invoices=await listPortalInvoices(clientId)
+  const outstanding=invoices.filter(invoice=>invoice.status==="issued").reduce((sum,invoice)=>sum+invoice.total,0)
+  return <section className="rounded-2xl border border-b1 bg-s1 p-6"><div className="flex items-start justify-between gap-4"><div><h2 className="font-syne text-xl font-bold">Invoices</h2><p className="mt-1 font-dm text-sm text-t2">Published ScaleSmiths invoices and payment history.</p></div><div className="text-right"><div className="font-dm text-xs text-t3">Outstanding</div><strong>{gbp(outstanding)}</strong></div></div>{invoices.length?<div className="mt-6 overflow-x-auto"><table className="w-full text-left font-dm text-sm"><thead className="text-t3"><tr><th className="pb-3">Invoice</th><th>Date</th><th>Due</th><th>Status</th><th className="text-right">Total</th><th></th></tr></thead><tbody>{invoices.map(invoice=>{const overdue=invoice.status==="issued"&&new Date(invoice.dueDate)<new Date();return <tr key={invoice.invoiceNumber} className="border-t border-b1"><td className="py-3 font-semibold">{invoice.invoiceNumber}</td><td>{invoice.invoiceDate}</td><td>{invoice.dueDate}</td><td>{overdue?"OVERDUE":invoice.status.toUpperCase()}</td><td className="text-right">{gbp(invoice.total)}</td><td className="text-right"><Link className="text-acc" href={"/portal/"+clientId+"/invoices/"+encodeURIComponent(invoice.invoiceNumber)}>View</Link></td></tr>})}</tbody></table></div>:<div className="mt-6 rounded-xl border border-dashed border-b2 bg-s2 p-5 text-sm text-t2">No invoices have been published to your portal.</div>}</section>
+}
+function gbp(value:number){return new Intl.NumberFormat("en-GB",{style:"currency",currency:"GBP"}).format(value/100)}
 
 function OverviewTab({
   clientId,

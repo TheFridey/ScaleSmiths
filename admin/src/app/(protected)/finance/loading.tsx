@@ -1,0 +1,1 @@
+export default function FinanceLoading() { return <div className="workspace-shell"><div className="loading-state" role="status"><span className="h-5 w-5 animate-spin rounded-full border-2 border-b2 border-t-acc" aria-hidden="true" /><span>Loading finance workspace</span></div></div> }

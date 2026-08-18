@@ -29,6 +29,14 @@ export default function NewClientPage() {
           name: formData.get("name"),
           contactName: formData.get("contactName"),
           contactEmail: formData.get("contactEmail"),
+          invoiceClientCode: formData.get("invoiceClientCode"),
+          billingAddressLine1: formData.get("billingAddressLine1"),
+          billingAddressLine2: formData.get("billingAddressLine2"),
+          billingCity: formData.get("billingCity"),
+          billingCounty: formData.get("billingCounty"),
+          billingPostcode: formData.get("billingPostcode"),
+          billingCountry: formData.get("billingCountry"),
+          portalClientId: formData.get("portalClientId"),
           tier: formData.get("tier"),
           mrr: formData.get("mrr"),
           status: formData.get("status"),
@@ -79,10 +87,31 @@ export default function NewClientPage() {
           </label>
 
           <label className="font-dm text-sm">
+            <span className="mb-1.5 block" style={{ color: T.t2 }}>Permanent invoice code</span>
+            <input name="invoiceClientCode" required minLength={2} maxLength={12} pattern="[A-Za-z0-9]+" className="w-full rounded-lg border px-3 py-2.5 font-dm text-sm uppercase outline-none" style={{ background: T.s2, borderColor: T.b2, color: T.t1 }} />
+            <span className="mt-1 block text-xs" style={{ color: T.t3 }}>2–12 letters or numbers; saved uppercase and cannot be silently changed.</span>
+          </label>
+
+          <label className="font-dm text-sm">
             <span className="mb-1.5 block" style={{ color: T.t2 }}>Tier</span>
             <select name="tier" defaultValue="Foundation" className="w-full rounded-lg border px-3 py-2.5 font-dm text-sm outline-none" style={{ background: T.s2, borderColor: T.b2, color: T.t1 }}>
               {TIERS.map((tier) => <option key={tier} value={tier}>{tier}</option>)}
             </select>
+          </label>
+
+          <fieldset className="grid grid-cols-1 gap-4 sm:col-span-2 sm:grid-cols-2">
+            <legend className="mb-2 font-dm text-sm" style={{ color: T.t2 }}>Optional billing address</legend>
+            <input name="billingAddressLine1" placeholder="Address line 1" className="rounded-lg border px-3 py-2.5 font-dm text-sm" style={{ background: T.s2, borderColor: T.b2, color: T.t1 }} />
+            <input name="billingAddressLine2" placeholder="Address line 2" className="rounded-lg border px-3 py-2.5 font-dm text-sm" style={{ background: T.s2, borderColor: T.b2, color: T.t1 }} />
+            <input name="billingCity" placeholder="City / town" className="rounded-lg border px-3 py-2.5 font-dm text-sm" style={{ background: T.s2, borderColor: T.b2, color: T.t1 }} />
+            <input name="billingCounty" placeholder="County / region" className="rounded-lg border px-3 py-2.5 font-dm text-sm" style={{ background: T.s2, borderColor: T.b2, color: T.t1 }} />
+            <input name="billingPostcode" placeholder="Postcode / postal code" className="rounded-lg border px-3 py-2.5 font-dm text-sm" style={{ background: T.s2, borderColor: T.b2, color: T.t1 }} />
+            <input name="billingCountry" placeholder="Country" className="rounded-lg border px-3 py-2.5 font-dm text-sm" style={{ background: T.s2, borderColor: T.b2, color: T.t1 }} />
+          </fieldset>
+          <label className="font-dm text-sm sm:col-span-2">
+            <span className="mb-1.5 block" style={{ color: T.t2 }}>Portal client ID</span>
+            <input name="portalClientId" className="w-full rounded-lg border px-3 py-2.5 font-dm text-sm outline-none" style={{ background: T.s2, borderColor: T.b2, color: T.t1 }} />
+            <span className="mt-1 block text-xs" style={{ color: T.t3 }}>Must exactly match an existing portal account; it is never inferred from email.</span>
           </label>
 
           <label className="font-dm text-sm">

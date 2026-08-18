@@ -13,6 +13,7 @@ const TABS = [
   { id: "messages", label: "Messages", Icon: MessageSquare },
   { id: "requests", label: "Requests", Icon: ClipboardList },
   { id: "reports", label: "Reports", Icon: FileText },
+  { id: "invoices", label: "Invoices", Icon: FileText },
 ]
 
 interface PortalNavProps {

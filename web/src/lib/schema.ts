@@ -1,6 +1,10 @@
-import { boolean, index, integer, jsonb, pgEnum, pgTable, pgView, serial, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core"
+import { boolean, customType, index, integer, jsonb, pgEnum, pgTable, pgView, serial, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core"
+
+const bytea = customType<{ data: Buffer }>({ dataType: () => "bytea" })
 
 export const quoteStatus = pgEnum("quote_status", ["new", "read", "replied", "reviewed", "contacted", "qualified", "won", "lost"])
+export const invoiceStatus = pgEnum("invoice_status", ["draft", "issued", "paid", "void"])
+export const invoicePortalAccessType = pgEnum("invoice_portal_access_type", ["view", "download"])
 export const clientRequestCategory = pgEnum("client_request_category", [
   "website_update",
   "website_issue",
@@ -88,6 +92,37 @@ export const portalClientAccounts = pgTable("portal_client_accounts", {
   active: boolean("active").default(true).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+})
+
+// Admin owns these shared invoice tables and their migrations. The web portal has
+// an intentionally narrow read/telemetry projection only.
+export const invoicePortalClients = pgTable("clients", {
+  id: serial("id").primaryKey(),
+  portalClientId: text("portal_client_id"),
+})
+export const portalInvoices = pgTable("invoices", {
+  id: serial("id").primaryKey(), invoiceNumber: text("invoice_number"), clientId: integer("client_id").notNull(),
+  clientNameSnapshot: text("client_name_snapshot").notNull(), billingContactNameSnapshot: text("billing_contact_name_snapshot"),
+  billingEmailSnapshot: text("billing_email_snapshot"), billingAddressLine1Snapshot: text("billing_address_line_1_snapshot"),
+  billingAddressLine2Snapshot: text("billing_address_line_2_snapshot"), billingCitySnapshot: text("billing_city_snapshot"),
+  billingCountySnapshot: text("billing_county_snapshot"), billingPostcodeSnapshot: text("billing_postcode_snapshot"),
+  billingCountrySnapshot: text("billing_country_snapshot"), currency: text("currency").notNull(),
+  invoiceDate: timestamp("invoice_date", { withTimezone: true }).notNull(), dueDate: timestamp("due_date", { withTimezone: true }).notNull(),
+  status: invoiceStatus("status").notNull(), subtotal: integer("subtotal").notNull(), total: integer("total").notNull(),
+  customerNotes: text("customer_notes"), issuedAt: timestamp("issued_at", { withTimezone: true }), paidAt: timestamp("paid_at", { withTimezone: true }),
+  voidedAt: timestamp("voided_at", { withTimezone: true }), documentTemplateVersion: text("document_template_version"),
+  supplierSnapshot: jsonb("supplier_snapshot").$type<Record<string, string | null>>(), paymentSnapshot: jsonb("payment_snapshot").$type<Record<string, string | null>>(),
+  documentPdf: bytea("document_pdf"), documentPdfSha256: text("document_pdf_sha256"),
+  portalPublishedAt: timestamp("portal_published_at", { withTimezone: true }),
+})
+export const portalInvoiceItems = pgTable("invoice_items", {
+  id: serial("id").primaryKey(), invoiceId: integer("invoice_id").notNull(), title: text("title").notNull(),
+  description: text("description"), quantity: integer("quantity").notNull(), unitAmount: integer("unit_amount").notNull(),
+  lineAmount: integer("line_amount").notNull(), position: integer("position").notNull(),
+})
+export const invoicePortalAccessEvents = pgTable("invoice_portal_access_events", {
+  id: serial("id").primaryKey(), invoiceId: integer("invoice_id").notNull(), portalClientId: text("portal_client_id").notNull(),
+  accessType: invoicePortalAccessType("access_type").notNull(), createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 })
 
 export const clientRequests = pgTable("client_requests", {

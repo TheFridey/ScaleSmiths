@@ -440,6 +440,12 @@
       "sha256": "130c6a9e5435e502ef0e45e83ee687bad8bd6b013a89b3dc7af83dd41f87327b",
       "lifecycle": "forward",
       "reason": "Adds exact run/step/job foreign keys to forge_ai_usage for FK-based cost attribution instead of time-window matching."
+    },
+    {
+      "path": "admin/drizzle/0050_flippant_namor.sql",
+      "sha256": "58ead8b8b5937fd4ed5895b48acd4e31cc24dc677f11aaf34661d39309fadb4b",
+      "lifecycle": "forward",
+      "reason": "Adds the invoice engine, immutable document snapshots, portal-client mapping and publication metadata, delivery attempts with idempotency and PDF hashes, portal access telemetry, catalogue, supplier and payment settings, lifecycle constraints, and audit records."
     }
   ],
   "journals": {
@@ -537,6 +543,13 @@
           "version": "7",
           "when": 1786348800000,
           "tag": "0049_forge_ai_usage_exact_attribution",
+          "breakpoints": true
+        },
+        {
+          "idx": 50,
+          "version": "7",
+          "when": 1786913327105,
+          "tag": "0050_flippant_namor",
           "breakpoints": true
         }
       ]

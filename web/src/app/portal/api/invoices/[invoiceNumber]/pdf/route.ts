@@ -1,0 +1,5 @@
+import { NextRequest, NextResponse } from "next/server"
+import { loadPortalInvoicePdf, recordPortalInvoiceAccess } from "@/lib/portal-invoices"
+import { getClientSessionFromRequest, unauthorizedClientPortalResponse } from "@/lib/portal-session"
+export const runtime="nodejs"
+export async function GET(request:NextRequest,{params}:{params:Promise<{invoiceNumber:string}>}){const session=await getClientSessionFromRequest(request);if(!session)return unauthorizedClientPortalResponse(request);const invoiceNumber=decodeURIComponent((await params).invoiceNumber);const artifact=await loadPortalInvoicePdf(session.clientId,invoiceNumber);if(!artifact)return NextResponse.json({error:"Invoice not found."},{status:404});await recordPortalInvoiceAccess(session.clientId,invoiceNumber,"download");return new Response(artifact.pdf,{headers:{"Content-Type":"application/pdf","Content-Disposition":'attachment; filename="'+invoiceNumber.replace(/[^A-Z0-9-]/gi,"-")+'.pdf"',"Cache-Control":"private, no-store"}})}

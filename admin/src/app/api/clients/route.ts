@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { clients } from "@/lib/schema"
+import { InvoiceDomainError, normalizeInvoiceClientCode } from "@/lib/invoices"
+import { guardApiCapability } from "@/lib/server/rbac"
 
 export const dynamic = "force-dynamic"
 
@@ -9,6 +11,7 @@ function optionalString(value: unknown) {
 }
 
 export async function POST(request: NextRequest) {
+  await guardApiCapability("clients.write")
   const body = await request.json().catch(() => null)
 
   if (!body || typeof body !== "object" || Array.isArray(body)) {
@@ -22,8 +25,12 @@ export async function POST(request: NextRequest) {
   }
 
   const mrr = Number.parseInt(String(body.mrr ?? "0"), 10)
+  let invoiceClientCode: string
+  try { invoiceClientCode = normalizeInvoiceClientCode(body.invoiceClientCode) }
+  catch (error) { return NextResponse.json({ error: error instanceof InvoiceDomainError ? error.safeMessage : "Invalid invoice client code." }, { status: 400 }) }
 
-  const [client] = await db
+  let client
+  try { [client] = await db
     .insert(clients)
     .values({
       name,
@@ -32,8 +39,20 @@ export async function POST(request: NextRequest) {
       tier: optionalString(body.tier),
       mrr: Number.isFinite(mrr) ? Math.max(0, mrr) : 0,
       status: optionalString(body.status) ?? "active",
+      invoiceClientCode,
+      billingAddressLine1: optionalString(body.billingAddressLine1),
+      billingAddressLine2: optionalString(body.billingAddressLine2),
+      billingCity: optionalString(body.billingCity),
+      billingCounty: optionalString(body.billingCounty),
+      billingPostcode: optionalString(body.billingPostcode),
+      billingCountry: optionalString(body.billingCountry),
+      portalClientId: optionalString(body.portalClientId),
     })
     .returning({ id: clients.id })
+  } catch (error) {
+    if (error && typeof error === "object" && "code" in error && error.code === "23505") return NextResponse.json({ error: "That invoice client code is already in use." }, { status: 409 })
+    throw error
+  }
 
   return NextResponse.json({ ok: true, clientId: client.id }, { status: 201 })
 }

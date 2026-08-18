@@ -1,0 +1,19 @@
+"use client"
+
+import { useState } from "react"
+import Link from "next/link"
+import { InlineAlert, PageSection, WorkspaceHeader, WorkspaceShell } from "@/components/admin-shell/primitives"
+import type { InvoiceSupplierSettings as Settings } from "./finance-types"
+
+type FieldConfig = { key: keyof Settings; label: string; multiline?: boolean }
+const IDENTITY: FieldConfig[] = [{ key:"legalName",label:"Legal / business name"},{key:"tradingName",label:"Trading name"},{key:"addressLine1",label:"Address line 1"},{key:"addressLine2",label:"Address line 2"},{key:"city",label:"City / town"},{key:"county",label:"County / region"},{key:"postcode",label:"Postcode / postal code"},{key:"country",label:"Country"},{key:"contactEmail",label:"Contact email"},{key:"website",label:"Website"},{key:"companyNumber",label:"Company number (if applicable)"},{key:"vatNumber",label:"VAT number (if applicable)"}]
+const PAYMENT: FieldConfig[] = [{key:"paymentInstructions",label:"Customer payment instructions",multiline:true},{key:"paymentAccountName",label:"Account name"},{key:"paymentSortCode",label:"Sort code"},{key:"paymentAccountNumber",label:"Account number"},{key:"paymentReferenceInstructions",label:"Payment reference instructions",multiline:true}]
+const KEYS = [...IDENTITY, ...PAYMENT]
+
+export function InvoiceSettingsForm({ initialSettings, canWrite }: { initialSettings: Settings | null; canWrite: boolean }) {
+  const [values,setValues]=useState<Settings>(()=>Object.fromEntries(KEYS.map(({key})=>[key,initialSettings?.[key]??null])) as unknown as Settings)
+  const [busy,setBusy]=useState(false); const [error,setError]=useState(""); const [saved,setSaved]=useState(false)
+  async function save(){setBusy(true);setError("");setSaved(false);try{const response=await fetch("/api/invoice-settings",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(values)});const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.error||"Unable to save invoice settings.");setValues(data.settings);setSaved(true)}catch(caught){setError(caught instanceof Error?caught.message:"Unable to save invoice settings.")}finally{setBusy(false)}}
+  const field=({key,label,multiline}:FieldConfig)=><label key={key} className="grid gap-1 text-sm"><span className="text-xs text-t2">{label}</span>{multiline?<textarea rows={3} disabled={!canWrite} value={values[key]??""} onChange={event=>setValues({...values,[key]:event.target.value||null})}/>:<input disabled={!canWrite} value={values[key]??""} onChange={event=>setValues({...values,[key]:event.target.value||null})}/>}</label>
+  return <WorkspaceShell><WorkspaceHeader eyebrow="Finance" title="Invoice settings" description="The supplier and payment source for future issued invoice documents." actions={<Link href="/finance/invoices" className="rounded-lg border border-b2 px-3 py-2 text-sm">Invoices</Link>}/>{error?<InlineAlert tone="danger">{error}</InlineAlert>:null}{saved?<InlineAlert tone="success">Invoice supplier settings saved.</InlineAlert>:null}<InlineAlert tone="info">These values are snapshotted when an invoice is issued. Leave company, VAT and payment fields blank unless they genuinely apply.</InlineAlert><PageSection title="ScaleSmiths supplier identity" raised><div className="grid gap-4 md:grid-cols-2">{IDENTITY.map(field)}</div></PageSection><PageSection title="Payment details" description="Optional customer-facing instructions. Bank details remain restricted to finance administration and issued documents." raised><div className="grid gap-4 md:grid-cols-2">{PAYMENT.map(field)}</div>{canWrite?<button type="button" disabled={busy} onClick={()=>void save()} className="mt-5 rounded-lg bg-acc px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">{busy?"Saving…":"Save invoice settings"}</button>:<p className="mt-4 text-sm text-t2">You have read-only finance access.</p>}</PageSection></WorkspaceShell>
+}

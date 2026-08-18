@@ -1,10 +1,13 @@
 import { relations, sql } from "drizzle-orm"
-import { boolean, index, integer, jsonb, numeric, pgEnum, pgTable, primaryKey, serial, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core"
+import { boolean, check, customType, index, integer, jsonb, numeric, pgEnum, pgTable, primaryKey, serial, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core"
 import type { LeadScoreFactor, LeadScoreResult } from "./lead-scoring"
 import type { ProjectEstimateResult } from "./project-estimator"
 import type { ForgeDependencyAdmissionReport } from "./forge-dependency-admission"
 import type { ForgeRunPolicy } from "./forge-run-stages"
 import type { ForgeOperatorError } from "./forge-operator-error"
+import type { InvoicePaymentSnapshot, InvoiceSupplierSnapshot } from "./invoice-document"
+
+const bytea = customType<{ data: Buffer }>({ dataType: () => "bytea" })
 
 export const kanbanColumn = pgEnum("kanban_column", ["backlog", "progress", "review", "done"])
 export const messageDirection = pgEnum("message_direction", ["inbound", "outbound"])
@@ -61,6 +64,10 @@ export const experienceEventName = pgEnum("experience_event_name", [
 ])
 export const experienceDeviceClass = pgEnum("experience_device_class", ["mobile", "tablet", "desktop", "unknown"])
 export const experiencePreference = pgEnum("experience_preference", ["normal", "interactive", "none", "unknown"])
+export const invoiceStatus = pgEnum("invoice_status", ["draft", "issued", "paid", "void"])
+export const invoiceDeliveryType = pgEnum("invoice_delivery_type", ["invoice", "reminder"])
+export const invoiceDeliveryState = pgEnum("invoice_delivery_state", ["pending", "sent", "failed"])
+export const invoicePortalAccessType = pgEnum("invoice_portal_access_type", ["view", "download"])
 
 export type PublicClaimStatus = "draft" | "verified" | "expired" | "rejected"
 export type PublicClaimApprovalStatus = "pending" | "approved" | "declined" | "not_required"
@@ -153,9 +160,137 @@ export const clients = pgTable("clients", {
   mrr: integer("mrr").default(0).notNull(),
   status: text("status").default("active").notNull(),
   progress: integer("progress").default(0).notNull(),
+  invoiceClientCode: text("invoice_client_code"),
+  nextInvoiceSequence: integer("next_invoice_sequence").default(1).notNull(),
+  billingAddressLine1: text("billing_address_line_1"),
+  billingAddressLine2: text("billing_address_line_2"),
+  billingCity: text("billing_city"),
+  billingCounty: text("billing_county"),
+  billingPostcode: text("billing_postcode"),
+  billingCountry: text("billing_country"),
+  portalClientId: text("portal_client_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-})
+}, (table) => [
+  uniqueIndex("clients_invoice_client_code_idx").on(table.invoiceClientCode),
+  uniqueIndex("clients_portal_client_id_idx").on(table.portalClientId),
+  check("clients_invoice_client_code_format_check", sql`${table.invoiceClientCode} is null or ${table.invoiceClientCode} ~ '^[A-Z0-9]{2,12}$'`),
+  check("clients_next_invoice_sequence_check", sql`${table.nextInvoiceSequence} > 0`),
+])
+
+export const invoiceCatalogueItems = pgTable("invoice_catalogue_items", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  defaultUnitAmount: integer("default_unit_amount").notNull(),
+  currency: text("currency").default("GBP").notNull(),
+  active: boolean("active").default(true).notNull(),
+  category: text("category"),
+  position: integer("position").default(0).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  check("invoice_catalogue_unit_amount_check", sql`${table.defaultUnitAmount} >= 0`),
+  check("invoice_catalogue_currency_check", sql`${table.currency} = 'GBP'`),
+])
+
+export const invoices = pgTable("invoices", {
+  id: serial("id").primaryKey(),
+  invoiceNumber: text("invoice_number"),
+  clientId: integer("client_id").references(() => clients.id, { onDelete: "restrict" }).notNull(),
+  sequenceNumber: integer("sequence_number"),
+  clientCodeSnapshot: text("client_code_snapshot"),
+  clientNameSnapshot: text("client_name_snapshot").notNull(),
+  billingContactNameSnapshot: text("billing_contact_name_snapshot"),
+  billingEmailSnapshot: text("billing_email_snapshot"),
+  billingAddressLine1Snapshot: text("billing_address_line_1_snapshot"),
+  billingAddressLine2Snapshot: text("billing_address_line_2_snapshot"),
+  billingCitySnapshot: text("billing_city_snapshot"),
+  billingCountySnapshot: text("billing_county_snapshot"),
+  billingPostcodeSnapshot: text("billing_postcode_snapshot"),
+  billingCountrySnapshot: text("billing_country_snapshot"),
+  currency: text("currency").default("GBP").notNull(),
+  invoiceDate: timestamp("invoice_date", { withTimezone: true }).notNull(),
+  dueDate: timestamp("due_date", { withTimezone: true }).notNull(),
+  status: invoiceStatus("status").default("draft").notNull(),
+  subtotal: integer("subtotal").notNull(),
+  total: integer("total").notNull(),
+  internalNotes: text("internal_notes"),
+  customerNotes: text("customer_notes"),
+  issuedAt: timestamp("issued_at", { withTimezone: true }),
+  paidAt: timestamp("paid_at", { withTimezone: true }),
+  voidedAt: timestamp("voided_at", { withTimezone: true }),
+  documentTemplateVersion: text("document_template_version"),
+  supplierSnapshot: jsonb("supplier_snapshot").$type<InvoiceSupplierSnapshot>(),
+  paymentSnapshot: jsonb("payment_snapshot").$type<InvoicePaymentSnapshot>(),
+  documentPdf: bytea("document_pdf"),
+  documentPdfSha256: text("document_pdf_sha256"),
+  portalPublishedAt: timestamp("portal_published_at", { withTimezone: true }),
+  portalPublishedBy: uuid("portal_published_by").references(() => adminUsers.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("invoices_invoice_number_idx").on(table.invoiceNumber),
+  uniqueIndex("invoices_client_sequence_idx").on(table.clientId, table.sequenceNumber),
+  index("invoices_client_date_idx").on(table.clientId, table.invoiceDate),
+  index("invoices_status_due_date_idx").on(table.status, table.dueDate),
+  check("invoices_number_lifecycle_check", sql`(${table.status} = 'draft' and ${table.invoiceNumber} is null and ${table.sequenceNumber} is null and ${table.issuedAt} is null) or (${table.status} <> 'draft' and ${table.invoiceNumber} is not null and ${table.sequenceNumber} > 0 and ${table.issuedAt} is not null)`),
+  check("invoices_document_snapshot_lifecycle_check", sql`(${table.status} = 'draft' and ${table.documentTemplateVersion} is null and ${table.supplierSnapshot} is null and ${table.paymentSnapshot} is null and ${table.documentPdf} is null and ${table.documentPdfSha256} is null) or (${table.status} <> 'draft' and ${table.documentTemplateVersion} is not null and ${table.supplierSnapshot} is not null and ${table.paymentSnapshot} is not null and ${table.documentPdf} is not null and ${table.documentPdfSha256} is not null)`),
+  check("invoices_amounts_check", sql`${table.subtotal} >= 0 and ${table.total} = ${table.subtotal}`),
+  check("invoices_currency_check", sql`${table.currency} = 'GBP'`),
+  check("invoices_dates_check", sql`${table.dueDate} >= ${table.invoiceDate}`),
+])
+
+export const invoiceSupplierSettings = pgTable("invoice_supplier_settings", {
+  id: integer("id").primaryKey().default(1),
+  legalName: text("legal_name"),
+  tradingName: text("trading_name"),
+  addressLine1: text("address_line_1"),
+  addressLine2: text("address_line_2"),
+  city: text("city"),
+  county: text("county"),
+  postcode: text("postcode"),
+  country: text("country"),
+  contactEmail: text("contact_email"),
+  website: text("website"),
+  companyNumber: text("company_number"),
+  vatNumber: text("vat_number"),
+  paymentInstructions: text("payment_instructions"),
+  paymentAccountName: text("payment_account_name"),
+  paymentSortCode: text("payment_sort_code"),
+  paymentAccountNumber: text("payment_account_number"),
+  paymentReferenceInstructions: text("payment_reference_instructions"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [check("invoice_supplier_settings_singleton_check", sql`${table.id} = 1`)])
+
+export const invoiceItems = pgTable("invoice_items", {
+  id: serial("id").primaryKey(),
+  invoiceId: integer("invoice_id").references(() => invoices.id, { onDelete: "cascade" }).notNull(),
+  catalogueItemId: integer("catalogue_item_id").references(() => invoiceCatalogueItems.id, { onDelete: "set null" }),
+  title: text("title").notNull(),
+  description: text("description"),
+  quantity: integer("quantity").notNull(),
+  unitAmount: integer("unit_amount").notNull(),
+  lineAmount: integer("line_amount").notNull(),
+  position: integer("position").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("invoice_items_invoice_position_idx").on(table.invoiceId, table.position),
+  check("invoice_items_quantity_check", sql`${table.quantity} > 0`),
+  check("invoice_items_unit_amount_check", sql`${table.unitAmount} >= 0`),
+  check("invoice_items_line_amount_check", sql`${table.lineAmount} = ${table.quantity} * ${table.unitAmount}`),
+])
+
+export const invoiceAuditLogs = pgTable("invoice_audit_logs", {
+  id: serial("id").primaryKey(),
+  invoiceId: integer("invoice_id").references(() => invoices.id, { onDelete: "cascade" }).notNull(),
+  actorUserId: uuid("actor_user_id").references(() => adminUsers.id, { onDelete: "set null" }),
+  action: text("action").notNull(),
+  metadataJson: jsonb("metadata_json").$type<Record<string, unknown>>().default({}).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [index("invoice_audit_invoice_idx").on(table.invoiceId, table.createdAt)])
 
 export const kanbanCards = pgTable("kanban_cards", {
   id: serial("id").primaryKey(),
@@ -167,6 +302,36 @@ export const kanbanCards = pgTable("kanban_cards", {
   position: integer("position").default(0).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 })
+
+export const invoiceDeliveryAttempts = pgTable("invoice_delivery_attempts", {
+  id: serial("id").primaryKey(),
+  invoiceId: integer("invoice_id").references(() => invoices.id, { onDelete: "restrict" }).notNull(),
+  deliveryType: invoiceDeliveryType("delivery_type").notNull(),
+  state: invoiceDeliveryState("state").default("pending").notNull(),
+  channel: text("channel").default("email").notNull(),
+  recipient: text("recipient").notNull(),
+  subject: text("subject").notNull(),
+  operationKey: text("operation_key").notNull(),
+  providerMessageId: text("provider_message_id"),
+  documentSha256: text("document_sha256"),
+  failureCategory: text("failure_category"),
+  failureMessage: text("failure_message"),
+  initiatedBy: uuid("initiated_by").references(() => adminUsers.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  sentAt: timestamp("sent_at", { withTimezone: true }),
+  failedAt: timestamp("failed_at", { withTimezone: true }),
+}, (table) => [
+  uniqueIndex("invoice_delivery_operation_key_idx").on(table.operationKey),
+  index("invoice_delivery_invoice_created_idx").on(table.invoiceId, table.createdAt),
+])
+
+export const invoicePortalAccessEvents = pgTable("invoice_portal_access_events", {
+  id: serial("id").primaryKey(),
+  invoiceId: integer("invoice_id").references(() => invoices.id, { onDelete: "restrict" }).notNull(),
+  portalClientId: text("portal_client_id").notNull(),
+  accessType: invoicePortalAccessType("access_type").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [index("invoice_portal_access_invoice_idx").on(table.invoiceId, table.createdAt)])
 
 export const messages = pgTable("messages", {
   id: serial("id").primaryKey(),

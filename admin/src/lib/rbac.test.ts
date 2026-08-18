@@ -44,6 +44,7 @@ describe("server request enforcement", () => {
     expect(authorizeRequest("sales", { pathname: "/api/forge/projects/12/research", method: "POST" })).toMatchObject({ allowed: false, capability: "forge.execute" })
     expect(authorizeRequest("viewer", { pathname: "/api/admin-users/user-id", method: "PATCH" })).toMatchObject({ allowed: false, capability: "users.manage" })
     expect(authorizeRequest("viewer", { pathname: "/api/claims/testimonial.glow-tanning.tom", method: "PATCH" })).toMatchObject({ allowed: false, capability: "claims.manage" })
+    expect(authorizeRequest("viewer", { pathname: "/api/invoices", method: "POST" })).toMatchObject({ allowed: false, capability: "finance.write" })
   })
 
   it("allows reviewed direct route operations", () => {
@@ -60,6 +61,12 @@ describe("server request enforcement", () => {
     expect(requiredCapabilityForRequest({ pathname: "/api/forge/projects/1/sitemap", method: "PATCH" })).toBe("forge.approve")
     expect(requiredCapabilityForRequest({ pathname: "/claims", method: "GET" })).toBe("claims.read")
     expect(requiredCapabilityForRequest({ pathname: "/api/claims/hero.revenue-generated", method: "PATCH" })).toBe("claims.manage")
+    expect(requiredCapabilityForRequest({ pathname: "/finance/invoices", method: "GET" })).toBe("finance.read")
+    expect(requiredCapabilityForRequest({ pathname: "/api/invoices/1/pdf", method: "GET" })).toBe("finance.read")
+    expect(requiredCapabilityForRequest({ pathname: "/api/invoice-settings", method: "PUT" })).toBe("finance.write")
+    expect(requiredCapabilityForRequest({ pathname: "/api/invoice-catalogue/1", method: "PATCH" })).toBe("finance.write")
+    expect(requiredCapabilityForRequest({ pathname: "/api/clients/1/invoice-code", method: "PATCH" })).toBe("finance.write")
+    expect(requiredCapabilityForRequest({ pathname: "/api/clients/1/billing", method: "PATCH" })).toBe("finance.write")
   })
 
   it("fails database query scoping closed without the read capability", () => {

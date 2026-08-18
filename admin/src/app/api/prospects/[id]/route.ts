@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { eq } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { clients, proposalTrackings, prospects } from "@/lib/schema"
+import { InvoiceDomainError, normalizeInvoiceClientCode } from "@/lib/invoices"
 import {
   buildClientFromWonProspect,
   isProspectStage,
@@ -160,13 +161,23 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       return NextResponse.json({ ok: true, clientId: existing.convertedClientId, prospect: existing })
     }
 
-    const [client] = await db
+    let invoiceClientCode: string
+    try { invoiceClientCode = normalizeInvoiceClientCode((body as Record<string, unknown>).invoiceClientCode) }
+    catch (error) { return NextResponse.json({ error: error instanceof InvoiceDomainError ? error.safeMessage : "Invalid invoice client code." }, { status: 400 }) }
+
+    let client
+    try { [client] = await db
       .insert(clients)
       .values({
         ...buildClientFromWonProspect(existing),
+        invoiceClientCode,
         updatedAt: now,
       })
       .returning({ id: clients.id })
+    } catch (error) {
+      if (error && typeof error === "object" && "code" in error && error.code === "23505") return NextResponse.json({ error: "That invoice client code is already in use." }, { status: 409 })
+      throw error
+    }
 
     const [prospect] = await db
       .update(prospects)

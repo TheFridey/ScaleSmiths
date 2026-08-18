@@ -11,6 +11,7 @@ import {
   CalendarClock,
   ClipboardList,
   Gauge,
+  ReceiptText,
   GitBranch,
   LayoutDashboard,
   LogOut,
@@ -32,6 +33,7 @@ import { AdminShellProvider, useAdminShell } from "./AdminShellContext"
 const NAV: Array<{ href: string; label: string; Icon: typeof LayoutDashboard; capability: Capability }> = [
   { href: "/dashboard", label: "Dashboard", Icon: LayoutDashboard, capability: "projects.read" },
   { href: "/clients", label: "Clients", Icon: Users, capability: "clients.read" },
+  { href: "/finance/invoices", label: "Invoices", Icon: ReceiptText, capability: "finance.read" },
   { href: "/requests", label: "Requests", Icon: ClipboardList, capability: "clients.read" },
   { href: "/prospects", label: "Pipeline", Icon: Target, capability: "leads.read" },
   { href: "/forge", label: "Forge", Icon: Gauge, capability: "forge.read" },

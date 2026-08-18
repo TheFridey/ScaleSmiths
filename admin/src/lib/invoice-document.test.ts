@@ -1,0 +1,15 @@
+import { describe, expect, it } from "vitest"
+import { buildInvoiceDocumentData, INVOICE_TEMPLATE_VERSION, paymentSnapshot, supplierSnapshot, validateDocumentIdentity } from "./invoice-document"
+
+const settings = { legalName:"ScaleSmiths",tradingName:null,addressLine1:"1 High Street",addressLine2:null,city:"Leeds",county:null,postcode:"LS1 1AA",country:"United Kingdom",contactEmail:"hello@example.com",website:null,companyNumber:null,vatNumber:null,paymentInstructions:"Pay by bank transfer.",paymentAccountName:"ScaleSmiths",paymentSortCode:null,paymentAccountNumber:null,paymentReferenceInstructions:"Use the invoice number." }
+const customer = { businessName:"Confirm-a-Kill",contactName:"Alex",email:"alex@example.com",addressLine1:"2 Market Road",addressLine2:null,city:"York",county:null,postcode:"YO1 1AA",country:"United Kingdom" }
+
+describe("invoice document data",()=>{
+  it("snapshots supplier and payment values independently of mutable settings",()=>{const supplier=supplierSnapshot(settings);const payment=paymentSnapshot(settings);settings.legalName="Changed";settings.paymentInstructions="Changed";expect(supplier.legalName).toBe("ScaleSmiths");expect(payment.instructions).toBe("Pay by bank transfer.")})
+  it("uses a versioned customer-facing whitelist without internal notes or IDs",()=>{const document=fixture();expect(document.templateVersion).toBe(INVOICE_TEMPLATE_VERSION);expect(document.customer.businessName).toBe("Confirm-a-Kill");expect(document.customerNote).toBe("Customer reference");expect(JSON.stringify(document)).not.toContain("INTERNAL SECRET");expect(document).not.toHaveProperty("internalNotes");expect(document).not.toHaveProperty("id")})
+  it("recalculates GBP pence and does not invent VAT",()=>{const document=fixture();expect(document.items[0]).toMatchObject({unitAmount:35000,lineAmount:70000});expect(document.subtotal).toBe(70000);expect(document.total).toBe(70000);expect(document.currency).toBe("GBP");expect(document).not.toHaveProperty("vat")})
+  it("preserves blank optional company and VAT numbers",()=>{const document=fixture();expect(document.supplier.companyNumber).toBeNull();expect(document.supplier.vatNumber).toBeNull()})
+  it("requires usable supplier and customer document identity",()=>{expect(()=>validateDocumentIdentity({...supplierSnapshot(settings),addressLine1:null},customer)).toThrow(/supplier address/i);expect(()=>validateDocumentIdentity(supplierSnapshot(settings),{...customer,postcode:null})).toThrow(/client billing address/i)})
+})
+
+function fixture(){return buildInvoiceDocumentData({status:"issued",invoiceNumber:"SS-CAK-0001",invoiceDate:"2026-08-16",dueDate:"2026-08-30",issuedAt:"2026-08-16",paidAt:null,customerNotes:"Customer reference",supplier:supplierSnapshot({...settings,legalName:"ScaleSmiths",paymentInstructions:"Pay by bank transfer."}),customer:{...customer},payment:paymentSnapshot({...settings,legalName:"ScaleSmiths",paymentInstructions:"Pay by bank transfer."}),items:[{title:"Monthly Growth Retainer",description:"August services",quantity:2,unitAmount:35000}]})}

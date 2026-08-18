@@ -488,7 +488,7 @@ export function ProspectPipeline({ initialProspects, initialActivities, initialP
             onRecordLeadScoreOutcome={recordLeadScoreOutcome}
             onWon={() => selected && patchProspect(selected.id, { action:"markWon" }, "won")}
             onLost={markLost}
-            onConvert={() => selected && patchProspect(selected.id, { action:"convertToClient" }, "convert")}
+            onConvert={() => { const invoiceClientCode = window.prompt("Permanent invoice client code (2–12 letters or numbers)"); if (selected && invoiceClientCode) void patchProspect(selected.id, { action:"convertToClient", invoiceClientCode }, "convert") }}
           />
         </div>
       )}

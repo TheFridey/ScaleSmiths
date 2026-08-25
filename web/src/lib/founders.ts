@@ -1,25 +1,13 @@
 import type { Metadata } from "next"
 import { projects, type Project } from "./data"
 
-/**
- * Founder content is centrally managed here so no biography copy is scattered through
- * components. Every published statement must cite a repository path that already
- * evidences it. Anything not yet evidenced belongs in `awaitingConfirmation` and is
- * rendered as an explicit "not yet confirmed" note — never as a claim.
- *
- * Never add qualifications, employment history, client counts, revenue figures or awards
- * here without a verified public claim record (see `public-claims.ts`).
- */
-
 export interface EvidencedStatement {
   text: string
-  /** Repository path that already evidences this statement. */
   evidence: string
 }
 
 export interface FounderLinkConfig {
   label: string
-  /** Environment variable supplying the URL. Unset or invalid means the link is not published. */
   envVar: string
 }
 
@@ -31,17 +19,13 @@ export interface FounderLink {
 export interface Founder {
   slug: string
   name: string
-  /** Name as it already appears in project credits. */
   creditName: string
   monogram: string
   role: EvidencedStatement
   responsibilities: EvidencedStatement[]
   involvement: EvidencedStatement[]
-  /** Project slugs in `data.ts` whose credit line names this founder. */
   projectSlugs: string[]
   linkConfig: FounderLinkConfig[]
-  /** Categories deliberately left unpublished until the founder confirms them. */
-  awaitingConfirmation: string[]
   accent: string
 }
 
@@ -60,26 +44,26 @@ export const founders: Founder[] = [
     monogram: "R",
     accent: "#22d3ee",
     role: {
-      text: "Co-founder — strategy, engineering and delivery",
-      evidence: "web/src/lib/data.ts (project credits: \"Made by Rhys · ScaleSmiths co-founder\")",
+      text: "Co-Founder — Engineering, Product & Technical Delivery",
+      evidence: "ScaleSmiths project credits and current founder responsibilities",
     },
     responsibilities: [
       {
-        text: "Named delivery credit on five of the six published ScaleSmiths projects, across local business, e-commerce, AI SaaS and community platform work.",
+        text: "Leads engineering and technical delivery across websites, e-commerce, custom systems, AI products and platform work.",
         evidence: "web/src/lib/data.ts",
       },
       {
-        text: "Builds and operates the production infrastructure the published work runs on — self-hosted Docker Compose, PostgreSQL and Nginx rather than managed defaults.",
-        evidence: "web/src/lib/data.ts (project solutions and feature lists)",
+        text: "Builds and operates the production infrastructure behind published platform work, including self-hosted application, database and deployment systems where appropriate.",
+        evidence: "web/src/lib/data.ts",
       },
       {
-        text: "Publishes source repositories for platform work where the client relationship allows it.",
-        evidence: "web/src/lib/data.ts (repoUrl on Prymal and VeteranFinder)",
+        text: "Works directly from commercial requirements through architecture, implementation, launch and ongoing technical improvement.",
+        evidence: "Current ScaleSmiths operating model",
       },
     ],
     involvement: [
       {
-        text: "The same person who scopes the work writes the code — every credited project above is direct build work, not oversight of a subcontracted team.",
+        text: "Directly involved in scoping and building the work rather than passing delivery through a subcontracted agency layer.",
         evidence: "web/src/lib/data.ts (per-project credit lines)",
       },
     ],
@@ -89,11 +73,6 @@ export const founders: Founder[] = [
       { label: "LinkedIn", envVar: "NEXT_PUBLIC_FOUNDER_RHYS_LINKEDIN" },
       { label: "Email", envVar: "NEXT_PUBLIC_FOUNDER_RHYS_EMAIL_URL" },
     ],
-    awaitingConfirmation: [
-      "Full public name and preferred title",
-      "Professional background and qualifications",
-      "A photograph for publication",
-    ],
   },
   {
     slug: "trevor-newton-bradley",
@@ -102,19 +81,27 @@ export const founders: Founder[] = [
     monogram: "TNB",
     accent: "#6366f1",
     role: {
-      text: "Co-founder — named founder of ScaleSmiths",
-      evidence: "web/src/app/layout.tsx (Organization founders)",
+      text: "Co-Founder — Growth Strategy & Client Partnerships",
+      evidence: "Current ScaleSmiths founder responsibilities",
     },
     responsibilities: [
       {
-        text: "Named delivery credit on The Business Circle — a production SaaS platform with subscription billing, multi-role authentication and integrated video.",
-        evidence: "web/src/lib/data.ts (credit: \"Made by Trev\")",
+        text: "Leads growth strategy, commercial opportunity and client partnerships, helping turn business problems into clear priorities and workable engagements.",
+        evidence: "Current ScaleSmiths operating model",
+      },
+      {
+        text: "Works directly with businesses through discovery, relationship development and ongoing growth planning rather than handing clients into an account-management layer.",
+        evidence: "Current ScaleSmiths operating model",
+      },
+      {
+        text: "Has direct delivery credit on The Business Circle, a production SaaS platform with subscription billing, multi-role authentication and integrated video.",
+        evidence: "web/src/lib/data.ts",
       },
     ],
     involvement: [
       {
-        text: "Listed as a founder in the published ScaleSmiths organisation data, and credited directly on delivered platform work.",
-        evidence: "web/src/app/layout.tsx and web/src/lib/data.ts",
+        text: "Connects the commercial problem to the work ScaleSmiths recommends, then remains involved as the relationship develops.",
+        evidence: "Current ScaleSmiths operating model",
       },
     ],
     projectSlugs: ["the-business-circle"],
@@ -122,18 +109,12 @@ export const founders: Founder[] = [
       { label: "LinkedIn", envVar: "NEXT_PUBLIC_FOUNDER_TREVOR_LINKEDIN" },
       { label: "Email", envVar: "NEXT_PUBLIC_FOUNDER_TREVOR_EMAIL_URL" },
     ],
-    awaitingConfirmation: [
-      "Responsibility split across strategy, delivery and client relationships",
-      "Professional background and qualifications",
-      "A photograph for publication",
-    ],
   },
 ]
 
-/** The origin narrative, restricted to facts already present in the repository. */
 export const originStatements: EvidencedStatement[] = [
   {
-    text: "ScaleSmiths is a strategy-led web development and digital infrastructure practice founded by Rhys and Trevor Newton-Bradley.",
+    text: "ScaleSmiths is a founder-led digital growth and systems company built by Rhys and Trevor Newton-Bradley.",
     evidence: "web/src/app/layout.tsx (Organization founders)",
   },
   {
@@ -145,30 +126,29 @@ export const originStatements: EvidencedStatement[] = [
     evidence: "web/src/lib/data.ts (project 1, Hucknall, 2025)",
   },
   {
-    text: "Published work since has run from local service businesses through to e-commerce migrations, SaaS platforms and multi-agent AI systems.",
-    evidence: "web/src/lib/data.ts (project types across 2025 and 2026)",
+    text: "Published work now spans local service businesses, e-commerce, SaaS platforms, AI systems and operational software.",
+    evidence: "web/src/lib/data.ts",
   },
 ]
 
 export const approachPillars: Array<{ title: string; description: string }> = [
   {
-    title: "Strategy",
+    title: "Find",
     description:
-      "Work starts from the commercial job to be done, not a template. The recommendation may be a focused repair rather than a rebuild, and pricing is scoped after discovery around the agreed outcome, complexity and delivery risk.",
+      "Start with the commercial problem. Audit the customer journey, visibility, systems and constraints, then identify the work that can make the biggest useful difference.",
   },
   {
-    title: "Systems",
+    title: "Fix",
     description:
-      "Data models, permissions, integrations and failure states are designed with the application, not bolted on. Where a workflow has real operational complexity, it is engineered as a system rather than dressed as a website.",
+      "Build or improve what the evidence points to — whether that is a website, conversion journey, e-commerce flow, internal system, automation or deeper technical platform.",
   },
   {
-    title: "Delivery",
+    title: "Grow",
     description:
-      "Builds ship with the security, accessibility, performance and migration checks the work actually needs, deployed on infrastructure we run and can roll back.",
+      "Keep the digital estate moving through an ongoing partnership across visibility, conversion, content, analytics, automation and technical delivery when that relationship makes sense.",
   },
 ]
 
-/** Public claims we deliberately do not make. Kept here so the exclusion is testable. */
 export const UNSUPPORTED_CLAIM_PATTERNS = [
   /\byears of experience\b/i,
   /\b\d+\+?\s*(?:clients?|projects delivered|businesses served)\b/i,
@@ -186,7 +166,6 @@ export function founderProjects(founder: Founder): Project[] {
   })
 }
 
-/** Focus areas are derived from the technology already recorded against credited work. */
 export function founderFocusAreas(founder: Founder, limit = 10): string[] {
   const tags = founderProjects(founder).flatMap((project) => project.tags)
   const counts = new Map<string, number>()
@@ -197,7 +176,6 @@ export function founderFocusAreas(founder: Founder, limit = 10): string[] {
     .map(([tag]) => tag)
 }
 
-/** Resolve the founder responsible for a project from its credit line. */
 export function founderForProject(slug: string): Founder | undefined {
   return founders.find((founder) => founder.projectSlugs.includes(slug))
 }
@@ -206,10 +184,6 @@ export function founderBySlug(slug: string): Founder | undefined {
   return founders.find((founder) => founder.slug === slug)
 }
 
-/**
- * Optional contact links come from configuration only. An unset, blank or non-HTTP(S)
- * value publishes nothing rather than a broken or unsafe link.
- */
 export function founderLinks(
   founder: Founder,
   env: Record<string, string | undefined> = process.env as Record<string, string | undefined>,
@@ -232,12 +206,12 @@ function isPublishableLink(value: string): boolean {
 export const aboutMetadata: Metadata = {
   title: "About & Founders",
   description:
-    "Who owns and delivers ScaleSmiths work: co-founders Rhys and Trevor Newton-Bradley, based in Hucknall, Nottinghamshire. Founder responsibilities, credited project work and how we approach strategy, systems and delivery.",
+    "Meet ScaleSmiths co-founders Rhys and Trevor Newton-Bradley: a founder-led digital growth and systems company based in Hucknall, Nottinghamshire.",
   alternates: { canonical: "/about" },
   openGraph: {
     title: "About & Founders | ScaleSmiths",
     description:
-      "Founder-led web development and digital infrastructure from Hucknall, Nottinghamshire. Meet the people responsible for the work.",
+      "Growth strategy, engineering and direct founder involvement from Hucknall, Nottinghamshire.",
     url: "/about",
   },
 }

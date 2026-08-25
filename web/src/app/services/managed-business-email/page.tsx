@@ -7,11 +7,11 @@ import { buildManagedBusinessEmailSchema, managedBusinessEmail, managedBusinessE
 
 export const metadata: Metadata = {
   title: "Managed Business Email",
-  description: "Professional custom-domain business email configured, authenticated and supported by ScaleSmiths. Three 5GB mailboxes from £15, with initial setup included.",
+  description: "Professional custom-domain business email configured, authenticated and supported by ScaleSmiths. Three 5GB mailboxes for £15/month, with initial setup included.",
   alternates: { canonical: managedBusinessEmail.slug },
   openGraph: {
     title: "ScaleSmiths Managed Business Email",
-    description: "Professional email on your domain, configured properly and managed for you.",
+    description: "Professional email on your domain, configured properly and managed for £15/month.",
     url: managedBusinessEmail.slug,
   },
 }
@@ -35,9 +35,9 @@ export default function ManagedBusinessEmailPage() {
               </div>
             </AnimateIn>
             <AnimateIn delay={0.08} className="rounded-3xl border border-acc/20 bg-s1 p-7 md:p-9">
-              <p className="text-xs font-semibold uppercase tracking-[.14em] text-acc">Starting service</p>
+              <p className="text-xs font-semibold uppercase tracking-[.14em] text-acc">Monthly service</p>
               <div className="mt-4 font-syne text-6xl font-extrabold">{managedBusinessEmailPriceLabel()}</div>
-              <p className="mt-2 text-sm text-t3">Billing cadence confirmed during onboarding</p>
+              <p className="mt-2 text-sm text-t3">Initial setup included</p>
               <div className="mt-7 grid grid-cols-2 gap-4 border-y border-b1 py-6">
                 <Spec value={String(spec.mailboxes)} label="professional mailboxes" />
                 <Spec value={`${spec.storagePerMailboxGb}GB`} label="per mailbox" />
@@ -86,7 +86,7 @@ export default function ManagedBusinessEmailPage() {
         <section className="px-6 pb-28 md:px-12">
           <div className="mx-auto max-w-[1240px] rounded-3xl border border-acc/20 bg-s1 p-8 md:p-12">
             <h2 className="font-syne text-[clamp(32px,5vw,56px)] font-extrabold">Ready for proper business email?</h2>
-            <p className="mt-4 max-w-[680px] leading-relaxed text-t2">Start with three 5GB custom-domain mailboxes from £15. Setup is included, and you do not need to buy a website from ScaleSmiths.</p>
+            <p className="mt-4 max-w-[680px] leading-relaxed text-t2">Get three 5GB custom-domain mailboxes for £15/month. Setup is included, and you do not need to buy a website from ScaleSmiths.</p>
             <div className="mt-7 flex flex-wrap gap-3"><Link href={managedBusinessEmail.onboardingPath} className="btn-primary">Get business email <ArrowRight size={16} /></Link><Link href="/services" className="btn-ghost">Explore the wider digital estate</Link></div>
           </div>
         </section>
@@ -95,5 +95,5 @@ export default function ManagedBusinessEmailPage() {
   )
 }
 
-function Spec({ value, label }: { value: string; label: string }) { return <div><div className="font-syne text-2xl font-bold">{value}</div><div className="mt-1 text-xs text-t3">{label}</div></div> }
+function Spec({ value, label }: { value: string, label: string }) { return <div><div className="font-syne text-2xl font-bold">{value}</div><div className="mt-1 text-xs text-t3">{label}</div></div> }
 function Flow({ Icon, title, copy }: { Icon: typeof Mail; title: string; copy: string }) { return <div className="relative rounded-2xl border border-b1 bg-bg p-5"><Icon size={19} className="text-acc" aria-hidden="true" /><h3 className="mt-5 font-syne text-lg font-bold">{title}</h3><p className="mt-2 text-xs leading-relaxed text-t2">{copy}</p></div> }

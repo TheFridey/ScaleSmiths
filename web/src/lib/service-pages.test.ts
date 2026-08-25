@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { buildPricingSchema, buildServiceHubSchema, managedBusinessEmailService, pricingItems } from "./service-pages"
-import { retainers } from "./data"
+import { digitalGrowthPartnerships } from "./data"
 
 describe("service and pricing schemas", () => {
   it("builds a services collection schema", () => {
@@ -28,8 +28,8 @@ describe("service and pricing schemas", () => {
     expect(publicSurface).not.toMatch(/mailcow|sogo|smtp infrastructure topology/i)
   })
 
-  it("keeps managed email available rather than silently included in retainers", () => {
-    expect(retainers).toHaveLength(3)
-    expect(retainers.every((retainer) => retainer.managedEmail === "available")).toBe(true)
+  it("keeps managed email available rather than silently included in partnerships", () => {
+    expect(digitalGrowthPartnerships).toHaveLength(3)
+    expect(digitalGrowthPartnerships.every((partnership) => partnership.managedEmail === "available")).toBe(true)
   })
 })

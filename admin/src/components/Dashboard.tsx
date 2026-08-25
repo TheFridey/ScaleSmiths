@@ -1,7 +1,7 @@
 "use client"
 
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer } from "recharts"
-import { Activity, AlertTriangle, Bell, CalendarClock, CheckCircle2, Clock3, FileText, Gauge, Mail, MessageSquare, Plus, PoundSterling, Target, TrendingUp, Trophy, Users } from "lucide-react"
+import { Activity, AlertTriangle, Bell, CalendarClock, CheckCircle2, Clock3, FileText, Gauge, Mail, MailX, MessageSquare, Plus, PoundSterling, Target, TrendingUp, Trophy, Users } from "lucide-react"
 import Link from "next/link"
 import { PROSPECT_STAGES, STAGE_LABELS, type ProspectStage } from "@/lib/prospects"
 
@@ -52,6 +52,9 @@ interface OperationalSnapshot {
     createdAt: string
   }[]
   currentMonthReportCount: number
+  failedQuoteEmails: number
+  failedInvoiceDeliveries: number
+  failedRequestNotifications: number
 }
 
 interface DashboardRequest {
@@ -304,6 +307,25 @@ export function DashboardContent({ clients, salesMetrics, todayLabel, operationa
             {operational.recentTimeline.slice(0, 5).map((event) => (
               <OpsItem key={event.id} href="/requests" title={event.title} meta={`${event.clientId} / ${event.visibility === "internal" ? "internal" : "client-visible"}`} body={event.description} />
             ))}
+          </OpsPanel>
+
+          <OpsPanel
+            title="Email delivery failures"
+            count={operational.failedQuoteEmails + operational.failedInvoiceDeliveries + operational.failedRequestNotifications}
+            Icon={MailX}
+            tone={operational.failedQuoteEmails + operational.failedInvoiceDeliveries + operational.failedRequestNotifications > 0 ? T.red : T.grn}
+            emptyTitle="All email deliveries healthy"
+            emptyBody="Quote confirmations, client request notifications and invoice emails are all being delivered."
+          >
+            {operational.failedQuoteEmails > 0 && (
+              <OpsItem href="/leads" title={`${operational.failedQuoteEmails} failed quote email${operational.failedQuoteEmails === 1 ? "" : "s"}`} meta="Quote confirmations undelivered" body="Check Resend dashboard and quote_requests email_delivery_status." />
+            )}
+            {operational.failedRequestNotifications > 0 && (
+              <OpsItem href="/requests" title={`${operational.failedRequestNotifications} failed notification${operational.failedRequestNotifications === 1 ? "" : "s"}`} meta="Client request notifications undelivered" body="Check Resend configuration and notification_email_status on affected requests." />
+            )}
+            {operational.failedInvoiceDeliveries > 0 && (
+              <OpsItem href="/finance/invoices" title={`${operational.failedInvoiceDeliveries} failed invoice deliver${operational.failedInvoiceDeliveries === 1 ? "y" : "ies"}`} meta="Invoice emails undelivered" body="Check individual invoice delivery panels for retry. See Resend dashboard if persistent." />
+            )}
           </OpsPanel>
         </div>
       </section>

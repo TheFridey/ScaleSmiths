@@ -174,7 +174,7 @@ export async function POST(request: NextRequest) {
     const critical = isCriticalClientRequest(parsed.data.category, parsed.data.priority)
     const clientEmail = await findClientNotificationEmail(session.clientId)
     try {
-      await sendClientRequestNotifications({
+      const notificationResult = await sendClientRequestNotifications({
         requestId: created.id,
         correlationId: request.headers.get("x-request-id") ?? undefined,
         actorId: session.clientId,
@@ -186,8 +186,16 @@ export async function POST(request: NextRequest) {
         priority: parsed.data.priority,
         affectedUrl: parsed.data.affectedUrl,
       })
+      await db.update(clientRequests).set({
+        notificationEmailStatus: notificationResult.status,
+        notificationEmailFailureReason: notificationResult.failureReason ?? null,
+      }).where(eq(clientRequests.id, created.id))
     } catch {
       console.warn("[request-notifications] unexpected warning. Request creation was not blocked.")
+      await db.update(clientRequests).set({
+        notificationEmailStatus: "failed",
+        notificationEmailFailureReason: "delivery",
+      }).where(eq(clientRequests.id, created.id)).catch(() => undefined)
     }
 
     return NextResponse.json({

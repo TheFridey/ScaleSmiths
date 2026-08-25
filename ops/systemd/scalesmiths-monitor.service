@@ -1,0 +1,30 @@
+[Unit]
+Description=ScaleSmiths VPS operational health check
+Documentation=file:///var/www/scalesmiths/ScaleSmiths/docs/operations/monitor-health.md
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+EnvironmentFile=-/etc/scalesmiths/monitor.env
+ExecStart=/bin/bash /var/www/scalesmiths/ScaleSmiths/ops/monitor-health.sh
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+ReadOnlyPaths=/var/www/scalesmiths/ScaleSmiths /etc/scalesmiths/monitor.env /etc/scalesmiths/monitor-database-url /var/backups/scalesmiths
+ReadWritePaths=/var/lib/scalesmiths-monitor
+TimeoutStartSec=120
+
+[Install]
+WantedBy=multi-user.target

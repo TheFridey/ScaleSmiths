@@ -1,11 +1,15 @@
 import type { Metadata, MetadataRoute } from "next"
 
-export const LEGAL_VERSION = "2.0"
-export const LEGAL_EFFECTIVE_DATE = "14 August 2026"
-export const LEGAL_LAST_UPDATED = "14 August 2026"
-export const LEGAL_LAST_MODIFIED_ISO = "2026-08-14T00:00:00.000Z"
+export const LEGAL_VERSION = "2.1"
+export const LEGAL_EFFECTIVE_DATE = "20 August 2026"
+export const LEGAL_LAST_UPDATED = "20 August 2026"
+export const LEGAL_LAST_MODIFIED_ISO = "2026-08-20T00:00:00.000Z"
 
 export const legalEntity = {
+  // Trading name as used in the public application. Legal name, entity type,
+  // company number and registered office remain owner input; the repository
+  // does not establish these. Set legalName (and the remaining identity
+  // fields) when the contracting entity is formalised.
   tradingName: "ScaleSmiths",
   legalName: null,
   entityType: null,

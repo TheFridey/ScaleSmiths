@@ -161,6 +161,19 @@ Off-host retention is intentionally not deleted by this script. Configure provid
 
 `BACKUP_FAILURE_HOOK` must be an absolute, non-symlink executable. It receives only a fixed event name and host in a clean environment; notification credentials belong in the hook's separate protected configuration. Alert on failed services, missing daily markers beyond the RPO, missed timers, off-host upload failures, restore evidence older than the drill interval, and RTO breaches.
 
+## Docker-based verification
+
+When the VPS-hosted restore drill is not available (e.g. during initial provisioning, or when the dedicated drill database is not yet configured), run the self-contained Docker verification:
+
+```bash
+chmod +x ops/restore-drill-docker.sh
+bash ops/restore-drill-docker.sh
+```
+
+This spins up disposable PostgreSQL containers, creates an encrypted backup using the production `create-backup-bundle.sh`, validates it with `validate-backup-bundle.sh`, restores it into an isolated target with `restore-backup-bundle.sh`, and verifies table row counts, foreign keys, migration journals, and file restoration. It produces evidence at `ops/restore-evidence/restore-<timestamp>.json` and cleans up all containers/volumes/networks afterward.
+
+This proves the toolchain is sound. It does not prove that a specific production backup is restorable — that requires the VPS restore drill against an actual production bundle.
+
 ## Human production gate
 
 No script promotes restored files or databases to production. Replacing production PostgreSQL, `.env`, Nginx, generated workspaces, release state, or image selection remains an incident-lead action requiring reviewed evidence, maintenance/write controls, a fresh forensic backup where appropriate, and the rollback runbook. Actual production restore evidence cannot be created by CI and remains explicitly human-gated.

@@ -90,7 +90,7 @@ test.describe("public experience SEO routing", () => {
     expect(paths).not.toContain("/traditional")
     expect(paths.filter((path) => path === "/")).toHaveLength(1)
     expect(new Set(locations).size).toBe(locations.length)
-    expect(xml).toContain("2026-07-19T00:00:00.000Z")
+    expect(xml).toContain("2026-08-25T00:00:00.000Z")
   })
 
   test("fails closed when commercial claims have no verified public evidence", async ({ page }) => {

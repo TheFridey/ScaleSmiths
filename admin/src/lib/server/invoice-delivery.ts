@@ -6,6 +6,7 @@ import { db } from "@/lib/db"
 import { buildInvoiceEmail, validInvoiceRecipient, type InvoiceDeliveryKind } from "@/lib/invoice-delivery"
 import { InvoiceDomainError } from "@/lib/invoices"
 import { clients, invoiceAuditLogs, invoiceDeliveryAttempts, invoicePortalAccessEvents, invoices } from "@/lib/schema"
+import { captureMonitoringMessage } from "@/lib/server/monitoring"
 import { loadInvoiceDocument } from "./invoice-documents"
 import { invoicePdfFilename } from "./invoice-pdf"
 
@@ -49,6 +50,7 @@ export async function sendInvoiceDelivery(input:{invoiceId:number;kind:InvoiceDe
   }catch(error){
     const now=new Date();const category=error instanceof InvoiceDomainError?error.code:"provider_delivery";const [failed]=await db.update(invoiceDeliveryAttempts).set({state:"failed",failedAt:now,failureCategory:category,failureMessage:"The email provider did not accept this send. Retry is available."}).where(eq(invoiceDeliveryAttempts.id,attempt.id)).returning()
     await db.insert(invoiceAuditLogs).values({invoiceId:invoice.id,actorUserId:input.actorUserId,action:input.kind==="reminder"?"invoice_reminder_failed":"invoice_email_failed",metadataJson:{deliveryAttemptId:attempt.id,recipient,failureCategory:category}})
+    captureMonitoringMessage("Invoice email delivery failed", "error", { invoiceId: invoice.id, invoiceNumber: invoice.invoiceNumber ?? undefined, deliveryKind: input.kind, failureCategory: category, errorCategory: "invoice_email_delivery" })
     return failed
   }
 }

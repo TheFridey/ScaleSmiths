@@ -45,3 +45,6 @@ audit-results/
 # Forge generated client sites (workspaces are local only)
 generated-sites/*
 !generated-sites/.gitignore
+
+# Restore drill evidence (ephemeral, generated per run)
+ops/restore-evidence/

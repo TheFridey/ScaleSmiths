@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { CheckCircle2, Globe, TrendingUp, Layers, ChevronRight } from "lucide-react"
 import { AnimateIn, StaggerIn } from "./AnimateIn"
-import { services, retainers } from "@/lib/data"
+import { services, digitalGrowthPartnerships } from "@/lib/data"
 import { cn } from "@/lib/utils"
 import { claimWording, type PublicClaim } from "@/lib/public-claims"
 
@@ -79,12 +79,13 @@ export function Services({ claims }: { claims: ReadonlyMap<string, PublicClaim> 
         </AnimateIn>
 
         <AnimateIn className="mt-10 bg-s1 border border-b1 rounded-2xl p-7" delay={0.2}>
-          <h3 className="font-syne text-lg font-bold mb-1">Monthly Retainers</h3>
+          <p className="font-dm text-xs font-semibold uppercase tracking-[.12em] text-acc">Beyond launch</p>
+          <h3 className="mt-2 font-syne text-2xl font-bold">Digital Growth Partnership</h3>
           <p className="font-dm text-sm text-t2 mb-6">
             {claimWording(claims, "service.most-clients-retain-30-days", "Post-launch support is optional and scoped separately around maintenance, monitoring and measured improvements.")}
           </p>
           <div className="grid md:grid-cols-3 gap-3">
-            {retainers.map((r) => (
+            {digitalGrowthPartnerships.map((r) => (
               <div key={r.name} className="bg-s2 border border-b2 rounded-xl p-5">
                 <div className="font-syne text-[15px] font-bold mb-1">{r.name}</div>
                 <div className="font-syne text-sm font-semibold text-acc mb-2">{claimWording(claims, r.priceClaimId, r.price)}</div>
@@ -96,6 +97,9 @@ export function Services({ claims }: { claims: ReadonlyMap<string, PublicClaim> 
               </div>
             ))}
           </div>
+          <Link href="/digital-growth-partnership" prefetch={false} className="mt-6 inline-flex items-center gap-2 font-dm text-sm font-semibold text-acc">
+            Explore the partnership <ChevronRight size={14} aria-hidden="true" />
+          </Link>
         </AnimateIn>
       </div>
     </section>

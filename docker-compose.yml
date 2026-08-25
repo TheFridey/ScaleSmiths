@@ -5,6 +5,7 @@ services:
       context: ./web
       dockerfile: Dockerfile
     restart: unless-stopped
+    stop_grace_period: 30s
     env_file: .env
     environment:
       NODE_ENV: production
@@ -17,6 +18,17 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:3000/api/health | grep -qF '\"status\":\"ok\"'"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
     networks: [ss-net]
 
   admin:
@@ -25,6 +37,7 @@ services:
       context: ./admin
       dockerfile: Dockerfile
     restart: unless-stopped
+    stop_grace_period: 30s
     env_file: .env
     environment:
       NODE_ENV: production
@@ -37,8 +50,19 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- --header=\"x-health-check-token: $$ADMIN_HEALTH_CHECK_TOKEN\" http://127.0.0.1:3001/api/health | grep -qF '\"status\":\"ok\"'"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
     volumes:
       - ./generated-sites:/app/generated-sites
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
     networks: [ss-net]
 
   postgres:
@@ -60,6 +84,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
     networks: [ss-net]
 
   nginx:
@@ -71,7 +100,16 @@ services:
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - /etc/letsencrypt:/etc/letsencrypt:ro
-    depends_on: [web, admin]
+    depends_on:
+      web:
+        condition: service_healthy
+      admin:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
     networks: [ss-net]
 
 volumes:

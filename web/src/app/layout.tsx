@@ -9,11 +9,11 @@ import "./globals.css"
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://scalesmiths.co.uk"),
   title: {
-    default: "ScaleSmiths | Strategy-Led Web Development | Hucknall, UK",
+    default: "Web Design, SEO & Custom Development Nottingham | ScaleSmiths",
     template: "%s | ScaleSmiths",
   },
   description:
-    "ScaleSmiths builds websites, e-commerce platforms and custom digital infrastructure for growth-focused businesses across the UK. Based in Hucknall, Nottinghamshire.",
+    "ScaleSmiths builds conversion-focused websites, local SEO foundations, e-commerce, custom web apps, AI automation and managed digital infrastructure in Nottingham and across the UK.",
   keywords: [
     "web development Nottingham",
     "web agency UK",
@@ -21,6 +21,10 @@ export const metadata: Metadata = {
     "Next.js agency",
     "digital infrastructure",
     "web design Hucknall",
+    "SEO agency Nottingham",
+    "custom web app development UK",
+    "business automation consultancy",
+    "digital growth partnership",
   ],
   authors: [{ name: "ScaleSmiths" }],
   openGraph: {
@@ -29,12 +33,12 @@ export const metadata: Metadata = {
     url: "https://scalesmiths.co.uk",
     siteName: "ScaleSmiths",
     title: "ScaleSmiths | Forge Your Digital Edge",
-    description: "Strategy-led web development for ambitious UK businesses.",
+    description: "Conversion websites, SEO, e-commerce, custom web apps and automation for ambitious UK businesses.",
   },
   twitter: {
     card: "summary_large_image",
     title: "ScaleSmiths | Forge Your Digital Edge",
-    description: "Strategy-led web development for ambitious UK businesses.",
+    description: "Conversion websites, SEO, e-commerce, custom web apps and automation for ambitious UK businesses.",
   },
   robots: {
     index: true,

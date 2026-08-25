@@ -175,7 +175,7 @@ export function PortalOperatingHub({
 
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           <InfoCard Icon={Globe2} label="Domain" value={domain ?? "Domain not connected yet"} note={domain ? "Live website reference" : "Future website profile data"} />
-          <InfoCard Icon={ShieldCheck} label="Plan / retainer" value={planTier ?? "Plan not assigned yet"} note="Confirmed plan will appear here" />
+          <InfoCard Icon={ShieldCheck} label="Plan / partnership" value={planTier ?? "Plan not assigned yet"} note="Confirmed plan will appear here" />
           <InfoCard Icon={HeartPulse} label="Current status" value={currentStatus} note="Operational portal status" />
           <InfoCard
             Icon={Clock3}

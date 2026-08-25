@@ -8,8 +8,8 @@ import { buildServiceHubSchema, serviceHubItems } from "@/lib/service-pages"
 import { businessGrowthAudit, formatAuditPrice } from "@/lib/business-growth-audit"
 
 export const metadata: Metadata = {
-  title: "Services",
-  description: "Conversion websites, custom systems, managed business email, care plans, hosting, maintenance and digital infrastructure.",
+  title: "Web Design, SEO, Apps & Automation Services",
+  description: "Explore ScaleSmiths services: conversion web design, local SEO, e-commerce, custom web apps, AI and business automation, hosting, support and Digital Growth Partnerships.",
   alternates: { canonical: "/services" },
 }
 
@@ -23,10 +23,10 @@ export default function ServicesPage() {
         <AnimateIn className="max-w-[760px]">
           <span className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">Services</span>
           <h1 className="mt-2 font-syne text-[clamp(38px,7vw,76px)] font-extrabold leading-none tracking-[-0.03em]">
-            Commercial web builds, not template theatre.
+            Websites, search visibility and systems built to grow with you.
           </h1>
           <p className="mt-5 font-dm text-lg leading-relaxed text-t2">
-            Choose between a local growth journey and a custom systems journey, then explore the detailed capabilities that support it.
+            From conversion-focused websites and local SEO to e-commerce, portals, AI automation and managed infrastructure, we connect the customer-facing experience to the systems behind it.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link href="/local-growth" prefetch={false} className="btn-primary font-dm">Explore Local Growth <ArrowRight size={16} aria-hidden="true" /></Link>

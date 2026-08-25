@@ -140,6 +140,8 @@ export const clientRequests = pgTable("client_requests", {
   forgeSummary: text("forge_summary"),
   forgeSuggestedActions: text("forge_suggested_actions"),
   forgeSuggestedReply: text("forge_suggested_reply"),
+  notificationEmailStatus: text("notification_email_status"),
+  notificationEmailFailureReason: text("notification_email_failure_reason"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   completedAt: timestamp("completed_at", { withTimezone: true }),

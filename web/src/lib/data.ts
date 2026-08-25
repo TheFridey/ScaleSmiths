@@ -19,10 +19,39 @@ export interface Project {
   thumbImage?: string
   blurDataURL?: string
   repoUrl?: string
+  websiteUrl?: string
   screenshots?: string[]
 }
 
 export const projects: Project[] = [
+  {
+    id: 7,
+    slug: "precision-finish-plastering-rendering",
+    name: "Precision Finish Plastering & Rendering",
+    type: "Local Trades Website",
+    location: "Hucknall, Nottinghamshire",
+    year: "2026",
+    tags: ["Local SEO", "Service Architecture", "Conversion UX", "Project Galleries", "Lead Capture"],
+    headline: "A search-led local trades website that turns a wide service area and specialist offer into clear routes to advice, proof, and a quote.",
+    challenge: "Precision Finish needed one credible digital home for a broad plastering and rendering offer. Customers had to be able to understand the right service, see relevant work, check local coverage, and ask for useful first advice without navigating a generic trades template.",
+    solution: "ScaleSmiths created a structured local growth site around internal plastering, external rendering, specialist services, property types, service areas, project proof, and practical advice. The enquiry journey supports photo uploads and preferred contact methods so the team can qualify work with better context from the first message.",
+    outcomeClaimIds: ["project.precision-finish.outcome.live-site"],
+    features: [
+      "Service and location content architecture",
+      "Photo-led quote request journey",
+      "Filterable work gallery and project pages",
+      "Property-type and advice content hubs",
+      "Local trust and review presentation",
+      "Responsive, search-ready website",
+    ],
+    accentColor: "#caa46a",
+    gradient: "from-amber-500/10 to-stone-500/5",
+    heroImage: "/images/projects/precision-finish/hero.webp",
+    thumbImage: "/images/projects/precision-finish/thumb.webp",
+    credit: "Built by ScaleSmiths",
+    portfolioGroup: "client-work",
+    websiteUrl: "https://precisionplasteringandrendering.co.uk",
+  },
   {
     id: 1,
     slug: "glow-tanning",
@@ -259,7 +288,7 @@ export const services: Service[] = [
 
 export type ManagedServiceAvailability = "included" | "available" | "optional"
 
-export const retainers: Array<{ name: string; price: string; priceClaimId: string; desc: string; managedEmail: ManagedServiceAvailability }> = [
+export const digitalGrowthPartnerships: Array<{ name: string; price: string; priceClaimId: string; desc: string; managedEmail: ManagedServiceAvailability }> = [
   { name: "Maintenance", price: "Scoped separately", priceClaimId: "price.maintenance-retainer", desc: "Hosting, updates, uptime monitoring and minor fixes.", managedEmail: "available" },
   { name: "Growth Partner", price: "Scoped separately", priceClaimId: "price.growth-retainer", desc: "Maintenance plus monthly performance reviews and improvements.", managedEmail: "available" },
   { name: "Ecosystem", price: "Scoped separately", priceClaimId: "price.ecosystem-retainer", desc: "Full ongoing partnership — development, strategy and advisory support.", managedEmail: "available" },
@@ -292,6 +321,6 @@ export const faqs = [
   },
   {
     q: "Is managed business email included in a ScaleSmiths plan?",
-    a: "Managed Business Email can be part of an agreed retained relationship or purchased as a standalone service. Retainer inclusion and requirements are defined in the client proposal rather than inferred from the standalone three-mailbox package.",
+    a: "Managed Business Email can be part of an agreed Digital Growth Partnership or purchased as a standalone service. Partnership inclusion and requirements are defined in the client proposal rather than inferred from the standalone three-mailbox package.",
   },
 ]

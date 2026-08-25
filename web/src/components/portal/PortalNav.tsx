@@ -69,7 +69,7 @@ export function PortalNav({ clientId, clientName, tier, price }: PortalNavProps)
 
       <div className="mt-4 md:mt-auto">
         <div className="rounded-xl border border-acc/20 bg-acc/10 p-4">
-          <div className="font-dm text-[11px] text-t2">Retainer</div>
+          <div className="font-dm text-[11px] text-t2">Digital Growth Partnership</div>
           <div className="mt-1 font-syne text-base font-bold text-t1">{tier}</div>
           <div className="mt-2 font-syne text-2xl font-extrabold text-acc">{price}</div>
         </div>

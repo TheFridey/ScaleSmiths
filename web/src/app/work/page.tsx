@@ -7,9 +7,9 @@ import { CTA } from "@/components/CTA"
 import { buildLogs } from "@/lib/build-logs"
 
 export const metadata: Metadata = {
-  title: "Our Work",
+  title: "Web Design & Development Case Studies",
   description:
-    "Portfolio of projects built by the ScaleSmiths team - local businesses, e-commerce, SaaS platforms and more.",
+    "ScaleSmiths web design and development case studies across local SEO, lead generation, e-commerce, SaaS, AI platforms and custom business systems.",
   alternates: { canonical: "/work" },
   openGraph: { url: "/work" },
 }

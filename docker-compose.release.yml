@@ -4,6 +4,7 @@ services:
   web:
     image: scalesmiths-web:${SS_RELEASE_ID:?SS_RELEASE_ID is required}
     restart: unless-stopped
+    stop_grace_period: 30s
     env_file: ${SS_ENV_FILE:-.env}
     environment:
       NODE_ENV: production
@@ -13,11 +14,23 @@ services:
       LOG_SHIPPING_TOKEN: ""
     ports:
       - "127.0.0.1:${SS_WEB_PORT:?SS_WEB_PORT is required}:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:3000/api/health | grep -qF '\"status\":\"ok\"'"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
     networks: [production]
 
   admin:
     image: scalesmiths-admin:${SS_RELEASE_ID:?SS_RELEASE_ID is required}
     restart: unless-stopped
+    stop_grace_period: 30s
     env_file: ${SS_ENV_FILE:-.env}
     environment:
       NODE_ENV: production
@@ -27,8 +40,19 @@ services:
       LOG_SHIPPING_TOKEN: ""
     ports:
       - "127.0.0.1:${SS_ADMIN_PORT:?SS_ADMIN_PORT is required}:3001"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- --header=\"x-health-check-token: $$ADMIN_HEALTH_CHECK_TOKEN\" http://127.0.0.1:3001/api/health | grep -qF '\"status\":\"ok\"'"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
     volumes:
       - ${SS_GENERATED_SITES_DIR:?SS_GENERATED_SITES_DIR is required}:/app/generated-sites
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
     networks: [production]
 
 networks:

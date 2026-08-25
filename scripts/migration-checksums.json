@@ -394,6 +394,12 @@
       "reason": "Adds privacy-minimised real-user Web Vitals telemetry to the existing experience analytics stream."
     },
     {
+      "path": "web/drizzle/0014_client_request_notification_status.sql",
+      "sha256": "f679e7cbeed9077f73eb7db283c48547fe900b32180c0af72deac6937fa23f10",
+      "lifecycle": "forward",
+      "reason": "Adds notification_email_status and notification_email_failure_reason columns to client_requests so email notification failures are persisted."
+    },
+    {
       "path": "admin/drizzle/0042_historical_schema_reconciliation.sql",
       "sha256": "0f0644d5c55fff5589cb0b7b0a506d62f0886d6dbd551c34edf85d6cadfb301a",
       "lifecycle": "forward-correction",
@@ -480,6 +486,13 @@
           "version": "7",
           "when": 1786262400000,
           "tag": "0013_web_vital_experience_event",
+          "breakpoints": true
+        },
+        {
+          "idx": 14,
+          "version": "7",
+          "when": 1790982000000,
+          "tag": "0014_client_request_notification_status",
           "breakpoints": true
         }
       ]

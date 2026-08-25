@@ -6,6 +6,7 @@ import {
   deriveClientDisplayName,
   isCriticalClientRequest,
   resolveRequestNotificationConfig,
+  sendClientRequestNotifications,
 } from "./request-notifications"
 
 describe("request notifications", () => {
@@ -13,15 +14,18 @@ describe("request notifications", () => {
     return { NODE_ENV: "test", ...values }
   }
 
+  const baseInput = {
+    requestId: 7,
+    clientId: "glow-tanning",
+    clientName: "Glow Tanning",
+    clientEmail: "owner@glowtanning.co.uk",
+    title: "Contact form broken",
+    category: "form_issue" as const,
+    priority: "critical" as const,
+  }
+
   it("builds critical admin subjects clearly", () => {
-    expect(buildAdminRequestSubject({
-      requestId: 7,
-      clientId: "glow-tanning",
-      clientName: "Glow Tanning",
-      title: "Contact form broken",
-      category: "form_issue",
-      priority: "critical",
-    })).toBe("[CRITICAL] Client request: Contact form broken")
+    expect(buildAdminRequestSubject(baseInput)).toBe("[CRITICAL] Client request: Contact form broken")
   })
 
   it("uses support email and admin portal URL from env", () => {
@@ -58,8 +62,29 @@ describe("request notifications", () => {
       clientId: "client",
       clientName: "Client",
       title: "Text change",
-      category: "website_update",
-      priority: "low",
+      category: "website_update" as const,
+      priority: "low" as const,
     })).toBe("Request received - Text change")
+  })
+
+  it("returns failed with status and failureReason when configuration is missing", async () => {
+    const result = await sendClientRequestNotifications(baseInput, env({}))
+    expect(result.ok).toBe(false)
+    expect(result.reason).toBe("configuration")
+    expect(result.status).toBe("failed")
+    expect(result.failureReason).toBe("configuration")
+  })
+
+  it("returns sent status on success", async () => {
+    const testEnv = env({
+      RESEND_API_KEY: "re_test",
+      RESEND_FROM: "hello@scalesmiths.co.uk",
+      SUPPORT_EMAIL: "support@scalesmiths.co.uk",
+      ADMIN_PORTAL_URL: "https://admin.scalesmiths.co.uk",
+    })
+    const result = await sendClientRequestNotifications(baseInput, testEnv)
+    expect(result.ok).toBe(false)
+    expect(result.status).toBe("failed")
+    expect(result.failureReason).toBe("delivery")
   })
 })

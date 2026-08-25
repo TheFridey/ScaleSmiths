@@ -99,6 +99,13 @@
       "when": 1786262400000,
       "tag": "0013_web_vital_experience_event",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1790982000000,
+      "tag": "0014_client_request_notification_status",
+      "breakpoints": true
     }
   ]
 }

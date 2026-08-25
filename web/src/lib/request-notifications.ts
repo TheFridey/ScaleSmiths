@@ -21,6 +21,8 @@ export interface ClientRequestNotificationInput {
 export interface ClientRequestNotificationResult {
   ok: boolean
   reason?: "configuration" | "delivery"
+  status: "sent" | "failed"
+  failureReason?: "configuration" | "delivery"
 }
 
 const CATEGORY_LABELS: Record<ClientRequestCategory, string> = {
@@ -92,7 +94,7 @@ export async function sendClientRequestNotifications(
   if (!config.apiKey || !config.from || !config.supportEmail) {
     warnRequestNotification("configuration", input.requestId)
     captureWebMessage("Client request email configuration is incomplete", "warning", { correlationId: input.correlationId, actorId: input.actorId, clientRequestId: input.requestId, emailOperation: "client_request_notification", errorCategory: "email_configuration" })
-    return { ok: false, reason: "configuration" }
+    return { ok: false, reason: "configuration", status: "failed", failureReason: "configuration" }
   }
 
   const resend = new Resend(config.apiKey)
@@ -125,19 +127,19 @@ export async function sendClientRequestNotifications(
     if (results.some((result) => result.error)) {
       warnRequestNotification("delivery", input.requestId)
       captureWebMessage("Client request email provider returned a delivery error", "error", { correlationId: input.correlationId, actorId: input.actorId, clientRequestId: input.requestId, emailOperation: "client_request_notification", errorCategory: "email_delivery" })
-      return { ok: false, reason: "delivery" }
+      return { ok: false, reason: "delivery", status: "failed", failureReason: "delivery" }
     }
   } catch (error) {
     warnRequestNotification("delivery", input.requestId)
     captureWebException(error, { correlationId: input.correlationId, actorId: input.actorId, clientRequestId: input.requestId, emailOperation: "client_request_notification", errorCategory: "email_delivery" })
-    return { ok: false, reason: "delivery" }
+    return { ok: false, reason: "delivery", status: "failed", failureReason: "delivery" }
   }
 
   if (critical) {
     console.warn(`[request-notifications] Critical request ${input.requestId} notification sent.`)
   }
 
-  return { ok: true }
+  return { ok: true, status: "sent" }
 }
 
 function buildAdminEmailHtml(input: ClientRequestNotificationInput, adminLink: string | null) {

@@ -2,11 +2,24 @@ import type { Metadata } from "next"
 import { desc, eq } from "drizzle-orm"
 import { DashboardContent } from "@/components/Dashboard"
 import { db } from "@/lib/db"
-import { clientRequestMessages, clientRequests, clientTimelineEvents, clients, monthlyReports, outreachActivities, proposalTrackings, prospects, salesProposals } from "@/lib/schema"
+import { clientRequestMessages, clientRequests, clientTimelineEvents, clients, invoiceDeliveryAttempts, monthlyReports, outreachActivities, proposalTrackings, prospects, quoteRequests, salesProposals } from "@/lib/schema"
 import { computeSalesMetrics } from "@/lib/prospects"
 
 export const metadata: Metadata = { title: "Dashboard" }
 export const dynamic = "force-dynamic"
+
+async function loadEmailFailures() {
+  const [quoteFailures, invoiceFailures, requestNotificationFailures] = await Promise.all([
+    db.select({ id: quoteRequests.id }).from(quoteRequests).where(eq(quoteRequests.emailDeliveryStatus, "failed")).limit(50),
+    db.select({ id: invoiceDeliveryAttempts.id }).from(invoiceDeliveryAttempts).where(eq(invoiceDeliveryAttempts.state, "failed")).limit(50),
+    db.select({ id: clientRequests.id }).from(clientRequests).where(eq(clientRequests.notificationEmailStatus, "failed")).limit(50),
+  ])
+  return {
+    failedQuoteEmails: quoteFailures.length,
+    failedInvoiceDeliveries: invoiceFailures.length,
+    failedRequestNotifications: requestNotificationFailures.length,
+  }
+}
 
 export default async function DashboardPage() {
   const now = new Date()
@@ -23,6 +36,7 @@ export default async function DashboardPage() {
     reportRows,
     salesProposalRows,
     proposalStageProspects,
+    emailFailures,
   ] = await Promise.all([
     db
       .select({
@@ -124,6 +138,7 @@ export default async function DashboardPage() {
       })
       .from(prospects)
       .where(eq(prospects.stage, "proposal_sent")),
+    loadEmailFailures(),
   ])
 
   const todayLabel = new Date().toLocaleDateString("en-GB", {
@@ -161,6 +176,7 @@ export default async function DashboardPage() {
       createdAt: event.createdAt.toISOString(),
     })),
     currentMonthReportCount: currentMonthReports.length,
+    ...emailFailures,
   }
 
   return (

@@ -18,10 +18,10 @@ import { getVerifiedPublicClaims } from "@/lib/public-claims.server"
 export async function HomePageContent() {
   const publicClaims = await getVerifiedPublicClaims({ route: "/" })
   const heroClaims = mapForComponents(publicClaims, "hero_stats")
-  const serviceClaims = mapForComponents(publicClaims, "services_intro", "service_pricing", "retainer_summary", "retainer_pricing")
+  const serviceClaims = mapForComponents(publicClaims, "services_intro", "service_pricing", "retainer_pricing")
   const processClaims = mapForComponents(publicClaims, "process")
   const faqClaims = mapForComponents(publicClaims, "faq")
-  const heroStats = ["hero.projects-delivered", "hero.revenue-generated", "hero.retainer-retention-rate"]
+  const heroStats = ["hero.projects-delivered", "hero.revenue-generated"]
     .map((id) => heroClaims.get(id)?.approvedWording)
     .filter((value): value is string => Boolean(value))
   const testimonials = selectVerifiedPublicClaims(publicClaims, { route: "/", component: "testimonials" })
@@ -41,7 +41,7 @@ export async function HomePageContent() {
       <ClientPortalSection />
       <Portfolio limit={2} />
       <FitSection />
-      <Process verifiedDeliveryClaim={processClaims.get("process.built-on-time")?.approvedWording} verifiedRetentionClaim={processClaims.get("process.most-clients-retain")?.approvedWording} />
+      <Process verifiedDeliveryClaim={processClaims.get("process.built-on-time")?.approvedWording} />
       <FAQ items={faqs.map((faq) => faq.q === "How much does a website cost?"
         ? { ...faq, a: verifiedPricingAnswer(faqClaims) }
         : faq.q === "How long does a project take?"

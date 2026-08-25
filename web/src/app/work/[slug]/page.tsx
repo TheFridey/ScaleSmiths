@@ -378,6 +378,16 @@ export default async function ProjectPage({ params }: Props) {
               >
                 Start a Similar Project
               </Link>
+              {p.websiteUrl && (
+                <Link
+                  href={p.websiteUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-b2 px-5 py-2.5 font-dm text-sm font-medium text-t2 transition-colors hover:text-t1"
+                >
+                  Visit Live Website <ExternalLink size={14} aria-hidden="true" />
+                </Link>
+              )}
               {p.repoUrl && (
                 <Link
                   href={p.repoUrl}

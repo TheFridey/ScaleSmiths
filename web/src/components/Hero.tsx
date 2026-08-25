@@ -74,7 +74,7 @@ export function Hero({ verifiedStats = [] }: { verifiedStats?: string[] }) {
       >
         <m.div variants={revealSoft} className="hero-badge font-dm" role="status">
           <span className="hero-badge-dot" aria-hidden="true" />
-          Plan your next digital project
+          Strategy. Systems. Ongoing growth.
         </m.div>
 
         <h1 className="mb-6 w-full">
@@ -90,13 +90,13 @@ export function Hero({ verifiedStats = [] }: { verifiedStats?: string[] }) {
           </span>
         </h1>
 
-        <m.p variants={revealSoft} className="font-dm font-light text-t2 w-full max-w-[520px] leading-relaxed text-[clamp(15px,1.8vw,18px)] mb-4">
-          Conversion-focused websites, SEO-ready builds, custom web apps, and ongoing care plans for
-          local businesses and founder-led teams that need digital to create measurable growth.
+        <m.p variants={revealSoft} className="font-dm font-light text-t2 w-full max-w-[620px] leading-relaxed text-[clamp(15px,1.8vw,18px)] mb-4">
+          ScaleSmiths helps ambitious businesses find what is holding growth back, build the right digital solution,
+          and keep improving it through one accountable long-term partnership.
         </m.p>
 
-        <m.div variants={revealSoft} className="mb-5 flex max-w-[780px] flex-wrap justify-center gap-x-5 gap-y-2" aria-label="ScaleSmiths core offers">
-          {["Websites that convert", "Custom web apps", "Local SEO foundations", "Care plans"].map((offer) => (
+        <m.div variants={revealSoft} className="mb-5 flex max-w-[820px] flex-wrap justify-center gap-x-5 gap-y-2" aria-label="ScaleSmiths core offers">
+          {["Business Growth Audit", "Websites & local growth", "Custom systems", "Digital Growth Partnership"].map((offer) => (
             <span key={offer} className="border-l border-b2 pl-3 font-dm text-[11px] font-medium tracking-[.02em] text-t2">
               {offer}
             </span>
@@ -112,22 +112,22 @@ export function Hero({ verifiedStats = [] }: { verifiedStats?: string[] }) {
 
         <m.div variants={revealSoft} className="flex flex-wrap gap-3 justify-center">
           <Link href="/quote" prefetch={false} className="btn-primary font-dm">
-            Request a Quote <ArrowRight size={16} aria-hidden="true" />
+            Start a Project <ArrowRight size={16} aria-hidden="true" />
           </Link>
-          <Link href="/work" prefetch={false} className="btn-ghost font-dm">
-            View Work <ArrowUpRight size={16} aria-hidden="true" />
+          <Link href="/digital-growth-partnership" prefetch={false} className="btn-ghost font-dm">
+            Explore the Partnership <ArrowUpRight size={16} aria-hidden="true" />
           </Link>
         </m.div>
 
         <m.div variants={revealSoft} className="flex flex-wrap gap-14 justify-center mt-20">
           {(verifiedStats.length > 0
             ? verifiedStats
-            : ["Conversion websites", "E-commerce systems", "Custom web applications"]
+            : ["Find the constraint", "Engineer the solution", "Keep improving"]
           ).map((statement) => (
             <div key={statement} className="max-w-[220px] text-center">
               <div className="font-syne text-[19px] font-extrabold text-t1">{statement}</div>
               <div className="font-dm text-xs text-t2 mt-1 tracking-wider">
-                {verifiedStats.length > 0 ? "Verified public claim" : "ScaleSmiths capability"}
+                {verifiedStats.length > 0 ? "Verified public claim" : "ScaleSmiths approach"}
               </div>
             </div>
           ))}

@@ -9,22 +9,22 @@ import "./globals.css"
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://scalesmiths.co.uk"),
   title: {
-    default: "ScaleSmiths | Business Growth & Engineering Company",
+    default: "ScaleSmiths | Digital Growth, Websites & Custom Systems",
     template: "%s | ScaleSmiths",
   },
   description:
-    "ScaleSmiths is a founder-led business growth and engineering company that identifies constraints, builds the right digital solution and supports ongoing improvement.",
+    "ScaleSmiths helps ambitious businesses find growth constraints, build the right digital solution, and keep improving through websites, local growth, custom systems, automation and ongoing digital partnership.",
   keywords: [
+    "digital growth partnership",
     "web development Nottingham",
-    "web agency UK",
+    "web design Hucknall",
+    "local business growth",
+    "custom web app development UK",
     "e-commerce development",
     "Next.js agency",
     "digital infrastructure",
-    "web design Hucknall",
     "SEO agency Nottingham",
-    "custom web app development UK",
     "business automation consultancy",
-    "digital growth partnership",
   ],
   authors: [{ name: "ScaleSmiths" }],
   openGraph: {
@@ -33,12 +33,12 @@ export const metadata: Metadata = {
     url: "https://scalesmiths.co.uk",
     siteName: "ScaleSmiths",
     title: "ScaleSmiths | Forge Your Digital Edge",
-    description: "Conversion websites, SEO, e-commerce, custom web apps and automation for ambitious UK businesses.",
+    description: "Strategy, websites, custom systems and ongoing digital growth for ambitious businesses.",
   },
   twitter: {
     card: "summary_large_image",
     title: "ScaleSmiths | Forge Your Digital Edge",
-    description: "Conversion websites, SEO, e-commerce, custom web apps and automation for ambitious UK businesses.",
+    description: "Strategy, websites, custom systems and ongoing digital growth for ambitious businesses.",
   },
   robots: {
     index: true,
@@ -63,7 +63,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               "@id": "https://scalesmiths.co.uk/#org",
               "name": "ScaleSmiths",
               "url": "https://scalesmiths.co.uk",
-              "description": "ScaleSmiths is a founder-led business growth and engineering company based in Hucknall, Nottingham. We identify commercial constraints, build the right websites, custom systems and automation, and support ongoing improvement.",
+              "description": "ScaleSmiths is a founder-led digital growth and engineering company based in Hucknall, Nottingham. We help businesses identify growth constraints, build websites and custom systems, automate workflows, and manage ongoing digital improvement.",
               "slogan": "Forge Your Digital Edge",
               "founder": founders.map((founder) => ({
                 "@type": "Person",
@@ -81,8 +81,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 { "@type": "AdministrativeArea", "name": "East Midlands" },
                 { "@type": "Country", "name": "United Kingdom" }
               ],
-              "knowsAbout": ["Web Design", "Web Development", "E-Commerce Development", "Next.js Development", "AI Implementation", "Business Automation", "Conversion Optimisation", "SEO"],
-              "serviceType": ["Business Growth Consultancy", "Web Design", "Web Development", "E-Commerce Development", "Custom Systems Engineering", "AI Implementation", "Business Automation", "Digital Growth Partnership"],
+              "knowsAbout": ["Digital Growth Strategy", "Web Design", "Web Development", "E-Commerce Development", "AI Implementation", "Business Automation", "Conversion Optimisation", "SEO"],
+              "serviceType": ["Digital Growth Partnership", "Web Design", "Web Development", "E-Commerce Development", "AI Implementation Consultancy", "Business Automation Consultancy", "SaaS Development"],
             }),
           }}
         />

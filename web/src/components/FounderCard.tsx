@@ -78,50 +78,53 @@ export function FounderCard({ founder }: { founder: Founder }) {
         ))}
       </section>
 
-      <section aria-label={`${founder.name} areas of focus`} className="mt-6">
-        <h4 className="font-dm text-xs font-semibold uppercase tracking-[.12em] text-t3">
-          Areas of focus
-        </h4>
-        <p className="mt-2 font-dm text-xs text-t3">Taken from the technology recorded against credited work.</p>
-        <ul className="mt-4 flex flex-wrap gap-1.5">
-          {focusAreas.map((area) => (
-            <li key={area} className="rounded border border-b1 bg-s2 px-2.5 py-1 font-dm text-[11px] text-t2">
-              {area}
-            </li>
-          ))}
-        </ul>
-      </section>
+      {focusAreas.length > 0 && (
+        <section aria-label={`${founder.name} areas of focus`} className="mt-6">
+          <h4 className="font-dm text-xs font-semibold uppercase tracking-[.12em] text-t3">
+            Areas of focus
+          </h4>
+          <ul className="mt-4 flex flex-wrap gap-1.5">
+            {focusAreas.map((area) => (
+              <li key={area} className="rounded border border-b1 bg-s2 px-2.5 py-1 font-dm text-[11px] text-t2">
+                {area}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
-      <section aria-label={`Selected work by ${founder.name}`} className="mt-6">
-        <h4 className="font-dm text-xs font-semibold uppercase tracking-[.12em] text-t3">Selected work</h4>
-        <ul className="mt-4 grid gap-2 sm:grid-cols-2">
-          {projects.map((project) => (
-            <li key={project.slug}>
-              <Link
-                href={`/work/${project.slug}`}
-                prefetch={false}
-                className="flex h-full flex-col rounded-xl border border-b1 bg-bg/60 p-4 transition-colors hover:border-b2"
-              >
-                <span className="font-dm text-[11px] font-semibold uppercase tracking-[.1em] text-acc">
-                  {project.type}
-                </span>
-                <span className="mt-1.5 font-syne text-base font-bold">{project.name}</span>
-                <span className="mt-1 font-dm text-xs text-t3">
-                  {project.location} · {project.year}
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-        <Link
-          href="/work"
-          prefetch={false}
-          className="mt-4 inline-flex items-center gap-2 font-dm text-sm font-semibold text-acc"
-        >
-          See the full portfolio
-          <ArrowRight size={14} aria-hidden="true" />
-        </Link>
-      </section>
+      {projects.length > 0 && (
+        <section aria-label={`Selected work by ${founder.name}`} className="mt-6">
+          <h4 className="font-dm text-xs font-semibold uppercase tracking-[.12em] text-t3">Selected work</h4>
+          <ul className="mt-4 grid gap-2 sm:grid-cols-2">
+            {projects.map((project) => (
+              <li key={project.slug}>
+                <Link
+                  href={`/work/${project.slug}`}
+                  prefetch={false}
+                  className="flex h-full flex-col rounded-xl border border-b1 bg-bg/60 p-4 transition-colors hover:border-b2"
+                >
+                  <span className="font-dm text-[11px] font-semibold uppercase tracking-[.1em] text-acc">
+                    {project.type}
+                  </span>
+                  <span className="mt-1.5 font-syne text-base font-bold">{project.name}</span>
+                  <span className="mt-1 font-dm text-xs text-t3">
+                    {project.location} · {project.year}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <Link
+            href="/work"
+            prefetch={false}
+            className="mt-4 inline-flex items-center gap-2 font-dm text-sm font-semibold text-acc"
+          >
+            See the full portfolio
+            <ArrowRight size={14} aria-hidden="true" />
+          </Link>
+        </section>
+      )}
 
       {links.length > 0 && (
         <section aria-label={`Contact ${founder.name}`} className="mt-6">
@@ -137,27 +140,6 @@ export function FounderCard({ founder }: { founder: Founder }) {
                   {link.label}
                   <ExternalLink size={13} aria-hidden="true" />
                 </a>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {founder.awaitingConfirmation.length > 0 && (
-        <section
-          aria-label={`Details awaiting confirmation from ${founder.name}`}
-          className="mt-7 rounded-xl border border-dashed border-b2 bg-s2/50 p-5"
-        >
-          <h4 className="font-dm text-xs font-semibold uppercase tracking-[.12em] text-t3">
-            Not published — awaiting founder confirmation
-          </h4>
-          <p className="mt-2 font-dm text-xs leading-relaxed text-t3">
-            We only publish what we can evidence. These details are intentionally absent until confirmed:
-          </p>
-          <ul className="mt-3 flex flex-col gap-1.5">
-            {founder.awaitingConfirmation.map((item) => (
-              <li key={item} className="font-dm text-xs text-t3">
-                — {item}
               </li>
             ))}
           </ul>

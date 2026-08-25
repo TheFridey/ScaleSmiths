@@ -11,12 +11,13 @@ import { motionTransitions, staggerContainer, staggerItem } from "@/lib/motion"
 
 const links = [
   { href: "/work", label: "Our Work" },
-  { href: "/services", label: "Services" },
   { href: "/local-growth", label: "Local Growth" },
   { href: "/custom-systems", label: "Custom Systems" },
+  { href: "/digital-growth-partnership", label: "Growth Partnership" },
   { href: "/about", label: "About" },
 ]
 
+const servicesLink = { href: "/services", label: "All Services" }
 const serviceLink = { href: "/services/managed-business-email", label: "Managed Business Email" }
 const auditLink = { href: "/services/business-growth-audit", label: "Business Growth Audit" }
 
@@ -167,13 +168,18 @@ export function Nav() {
                   </m.div>
                 ))}
                 <m.div variants={staggerItem}>
+                  <Link href={servicesLink.href} prefetch={false} onClick={closeMenu} className="flex min-h-14 items-center border-b border-b1 font-syne text-lg font-bold text-t1">
+                    {servicesLink.label}
+                  </Link>
+                </m.div>
+                <m.div variants={staggerItem}>
                   <Link href={auditLink.href} prefetch={false} onClick={closeMenu} className="flex min-h-14 items-center border-b border-b1 font-syne text-lg font-bold text-t1">
                     {auditLink.label}<span className="ml-auto font-dm text-[10px] font-semibold uppercase tracking-[.1em] text-acc">£395</span>
                   </Link>
                 </m.div>
                 <m.div variants={staggerItem}>
                   <Link href={serviceLink.href} prefetch={false} onClick={closeMenu} className="flex min-h-14 items-center border-b border-b1 font-syne text-lg font-bold text-t1">
-                    {serviceLink.label}<span className="ml-auto font-dm text-[10px] font-semibold uppercase tracking-[.1em] text-acc">From £15</span>
+                    {serviceLink.label}<span className="ml-auto font-dm text-[10px] font-semibold uppercase tracking-[.1em] text-acc">£15/mo</span>
                   </Link>
                 </m.div>
               </m.div>

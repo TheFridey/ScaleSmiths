@@ -2,25 +2,25 @@
 
 import { useRef } from "react"
 import { m, useReducedMotion, useScroll, useTransform } from "motion/react"
-import { Code2, Rocket, Target, TrendingUp } from "lucide-react"
+import { Code2, SearchCheck, Target, TrendingUp } from "lucide-react"
 import { AnimateIn } from "./AnimateIn"
 
 const steps = [
   {
-    n: "01", label: "Strategy", title: "Strategy Call",
-    desc: "We understand your business first—your goals, constraints, and market. Not just your brief.", Icon: Target,
+    n: "01", label: "Find", title: "Find the constraint",
+    desc: "We understand the business, customer journey, goals and constraints before deciding what service or build actually makes sense.", Icon: SearchCheck,
   },
   {
-    n: "02", label: "Build", title: "Build & Forge",
-    desc: "Your site, system or platform is built to the agreed scope, with delivery progress visible through the client portal.", Icon: Code2,
+    n: "02", label: "Fix", title: "Build the right solution",
+    desc: "That may be a focused improvement, a website, an e-commerce flow, automation or a full custom system. Scope follows the problem—not the other way around.", Icon: Code2,
   },
   {
-    n: "03", label: "Launch", title: "Launch",
-    desc: "We deploy deliberately, verify the production system and make the handover operational rather than ceremonial.", Icon: Rocket,
+    n: "03", label: "Prove", title: "Deliver & measure",
+    desc: "We deploy deliberately, verify the production system and connect the work back to useful business signals rather than treating launch as the finish line.", Icon: Target,
   },
   {
-    n: "04", label: "Scale", title: "Scale",
-    desc: "Monitor and iterate. Ongoing support is optional and scoped around the work the business needs after launch.", Icon: TrendingUp,
+    n: "04", label: "Grow", title: "Keep improving",
+    desc: "A Digital Growth Partnership can keep the roadmap moving across visibility, conversion, content and technology. It can begin here or around an existing digital estate from day one.", Icon: TrendingUp,
   },
 ]
 
@@ -41,13 +41,13 @@ export function Process({ verifiedDeliveryClaim, verifiedRetentionClaim }: { ver
         <AnimateIn className="mb-16 lg:sticky lg:top-32 lg:mb-0 lg:h-fit">
           <span className="font-dm text-xs font-semibold uppercase tracking-[.16em] text-acc">How it works</span>
           <h2 className="mt-3 font-syne text-[clamp(38px,6vw,72px)] font-extrabold leading-[.94] tracking-[-.04em]">
-            From intent<br />to infrastructure.
+            Find. Fix.<br />Grow.
           </h2>
           <p className="mt-6 max-w-[420px] font-dm text-base leading-relaxed text-t2">
-            One accountable path from commercial strategy through launch and managed improvement.
+            One accountable relationship from diagnosis through delivery and ongoing improvement, without forcing every business through the same route.
           </p>
           <div className="mt-10 hidden font-dm text-[10px] font-semibold uppercase tracking-[.18em] text-t3 lg:block">
-            Strategy → Build → Launch → Scale
+            Find → Fix → Prove → Grow
           </div>
         </AnimateIn>
 

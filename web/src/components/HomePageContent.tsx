@@ -33,13 +33,13 @@ export async function HomePageContent() {
     <>
       <Hero verifiedStats={heroStats} />
       <ServiceRouteChooser compact />
+      <Portfolio limit={2} />
       <BuildProofBlocks />
       <EntryProducts />
       <Testimonials testimonials={testimonials} />
       <Services claims={serviceClaims} />
       <DigitalEstate />
       <ClientPortalSection />
-      <Portfolio limit={2} />
       <FitSection />
       <Process verifiedDeliveryClaim={processClaims.get("process.built-on-time")?.approvedWording} />
       <FAQ items={faqs.map((faq) => faq.q === "How much does a website cost?"

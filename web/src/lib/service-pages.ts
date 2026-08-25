@@ -45,7 +45,7 @@ export const serviceHubItems = [
   {
     journey: "local-growth" as const,
     title: "Digital Growth Partnership",
-    for: "Businesses that want one accountable partner continually improving their digital estate, whether ScaleSmiths takes over what already exists or continues after a new build.",
+    for: "Businesses that want one accountable partner improving search visibility, conversion, content and technology — whether ScaleSmiths built the current site or not.",
     includes: "SEO, content, analytics, conversion improvement, roadmap delivery, monitoring and technical support as agreed.",
     outcome: "A prioritised digital estate that evolves with the business instead of quietly decaying.",
     links: ["/digital-growth-partnership", "/pricing"],
@@ -83,7 +83,7 @@ export const pricingItems = [
   { name: "Custom web app", range: "Scoped after discovery", priceClaimId: "price.forge", note: "Database-backed product, portal, dashboard, or SaaS surface." },
   { name: "Digital Growth Partnership", range: "Scoped separately", priceClaimId: "price.care-plan", note: "A commercially bounded, roadmap-led relationship for agreed priorities across SEO, conversion, content, automation, maintenance and ongoing engineering." },
   { name: "Hosting / maintenance", range: "Scoped to stack", priceClaimId: null, note: "Deployment, SSL, backups, monitoring, and infrastructure support." },
-  { name: "Managed Business Email", range: "From £15", priceClaimId: null, note: "Three professional 5GB mailboxes on your domain, with initial setup included." },
+  { name: "Managed Business Email", range: "£15/month", priceClaimId: null, note: "Three professional 5GB mailboxes on your domain, with initial setup included." },
   { name: businessGrowthAudit.shortName, range: formatAuditPrice(), priceClaimId: null, note: "One-time business-wide assessment with the full fee credited against an eligible subsequent ScaleSmiths build." },
 ]
 

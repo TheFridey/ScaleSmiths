@@ -24,86 +24,55 @@ export default function AboutPage() {
           <nav aria-label="Breadcrumb" className="font-dm text-xs text-t3">
             <ol className="flex flex-wrap items-center gap-2">
               <li>
-                <Link href="/" className="hover:text-t1">
-                  Home
-                </Link>
+                <Link href="/" className="hover:text-t1">Home</Link>
               </li>
-              <li aria-hidden="true">
-                <ChevronRight size={12} />
-              </li>
-              <li aria-current="page" className="text-t1">
-                About
-              </li>
+              <li aria-hidden="true"><ChevronRight size={12} /></li>
+              <li aria-current="page" className="text-t1">About</li>
             </ol>
           </nav>
 
           <AnimateIn className="mt-10 grid gap-10 lg:grid-cols-[1.15fr_.85fr] lg:items-end">
             <div>
-              <span className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">
-                About & founders
-              </span>
+              <span className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">About & founders</span>
               <h1 className="mt-3 max-w-4xl font-syne text-[clamp(38px,6.5vw,76px)] font-black leading-[1.02] tracking-[-.04em]">
-                Two founders. Named work. No agency middle layer.
+                Two founders. One accountable team. Built around the business.
               </h1>
               <p className="mt-6 max-w-3xl font-dm text-lg leading-relaxed text-t2">
-                ScaleSmiths is founder-led. The people who scope your project are the people who
-                build it, and every published project carries the name of the founder responsible
-                for it.
+                ScaleSmiths is founder-led across growth strategy, engineering and delivery. We start with the commercial problem, recommend the work that genuinely makes sense, and stay directly involved from the first conversation through build and ongoing improvement.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <Link href="/quote?intent=strategy_call" prefetch={false} className="btn-primary font-dm">
-                  Talk to a Founder
-                  <ArrowRight size={16} aria-hidden="true" />
+                  Talk to a Founder <ArrowRight size={16} aria-hidden="true" />
                 </Link>
-                <Link href="/work" prefetch={false} className="btn-ghost font-dm">
-                  See the Work
-                </Link>
+                <Link href="/work" prefetch={false} className="btn-ghost font-dm">See the Work</Link>
               </div>
             </div>
 
-            <aside
-              aria-label="Where ScaleSmiths is based"
-              className="rounded-2xl border border-acc/25 bg-acc/[.07] p-6 md:p-8"
-            >
+            <aside aria-label="Where ScaleSmiths is based" className="rounded-2xl border border-acc/25 bg-acc/[.07] p-6 md:p-8">
               <p className="flex items-center gap-2 font-dm text-xs font-semibold uppercase tracking-[.12em] text-t3">
-                <MapPin size={14} className="text-acc" aria-hidden="true" />
-                Hucknall, Nottinghamshire
+                <MapPin size={14} className="text-acc" aria-hidden="true" /> Hucknall, Nottinghamshire
               </p>
               <p className="mt-5 font-dm text-sm leading-relaxed text-t2">
-                We are based in Hucknall, on the northern edge of Nottingham. The first project
-                published under the ScaleSmiths name was a Hucknall business, and local work still
-                sits alongside national and international platform builds.
+                We are based in Hucknall, on the northern edge of Nottingham. Local work sits alongside national and international platform builds, with the same principle underneath both: understand the real business problem before deciding what to build.
               </p>
               <p className="mt-4 font-dm text-sm leading-relaxed text-t2">
-                Projects are delivered remotely with a communication and review cadence agreed in
-                the project scope.
+                Projects are delivered directly by the founders and, as ScaleSmiths grows, by specialists working inside the same accountable delivery model.
               </p>
-              <Link
-                href="/web-design-hucknall"
-                prefetch={false}
-                className="mt-6 inline-flex items-center gap-2 font-dm text-sm font-semibold text-acc"
-              >
-                Web design in Hucknall
-                <ArrowRight size={14} aria-hidden="true" />
+              <Link href="/web-design-hucknall" prefetch={false} className="mt-6 inline-flex items-center gap-2 font-dm text-sm font-semibold text-acc">
+                Web design in Hucknall <ArrowRight size={14} aria-hidden="true" />
               </Link>
             </aside>
           </AnimateIn>
         </div>
       </section>
 
-      <section
-        aria-labelledby="about-origin"
-        className="border-y border-b1 bg-s1/60 px-6 py-16 md:px-12 md:py-20"
-      >
+      <section aria-labelledby="about-origin" className="border-y border-b1 bg-s1/60 px-6 py-16 md:px-12 md:py-20">
         <div className="mx-auto grid max-w-[1240px] gap-8 lg:grid-cols-[.72fr_1.28fr]">
           <div>
             <span className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">Origin</span>
-            <h2 id="about-origin" className="mt-2 font-syne text-[clamp(28px,4.2vw,44px)] font-extrabold tracking-[-.03em]">
-              How ScaleSmiths started.
-            </h2>
+            <h2 id="about-origin" className="mt-2 font-syne text-[clamp(28px,4.2vw,44px)] font-extrabold tracking-[-.03em]">How ScaleSmiths started.</h2>
             <p className="mt-4 font-dm text-sm leading-relaxed text-t3">
-              Only what the record supports. No invented milestones, client counts or revenue
-              figures.
+              A local beginning, expanding into increasingly complex digital growth and systems work.
             </p>
           </div>
           <ol className="grid gap-3 sm:grid-cols-2">
@@ -121,33 +90,23 @@ export default function AboutPage() {
         <div className="mx-auto max-w-[1240px]">
           <div className="max-w-3xl">
             <span className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">The founders</span>
-            <h2 id="about-founders" className="mt-2 font-syne text-[clamp(30px,4.5vw,48px)] font-extrabold tracking-[-.03em]">
-              Who owns and delivers the work.
-            </h2>
+            <h2 id="about-founders" className="mt-2 font-syne text-[clamp(30px,4.5vw,48px)] font-extrabold tracking-[-.03em]">Commercial thinking meets technical delivery.</h2>
             <p className="mt-3 font-dm text-sm leading-relaxed text-t2">
-              Each founder is shown with their role, responsibilities, credited project work and
-              areas of focus. Biographical detail we cannot evidence is marked as awaiting
-              confirmation rather than filled in.
+              Trevor leads growth strategy and client partnerships. Rhys leads engineering, product and technical delivery. Both stay directly involved in understanding what the business needs and making sure the work connects back to that outcome.
             </p>
           </div>
           <div className="mt-10 grid gap-3 lg:grid-cols-2 lg:items-start">
-            {founders.map((founder) => (
-              <FounderCard key={founder.slug} founder={founder} />
-            ))}
+            {founders.map((founder) => <FounderCard key={founder.slug} founder={founder} />)}
           </div>
         </div>
       </section>
 
-      <section
-        aria-labelledby="about-approach"
-        className="border-y border-b1 bg-s1/60 px-6 py-16 md:px-12 md:py-20"
-      >
+      <section aria-labelledby="about-approach" className="border-y border-b1 bg-s1/60 px-6 py-16 md:px-12 md:py-20">
         <div className="mx-auto max-w-[1240px]">
           <div className="max-w-3xl">
             <span className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">The approach</span>
-            <h2 id="about-approach" className="mt-2 font-syne text-[clamp(30px,4.5vw,48px)] font-extrabold tracking-[-.03em]">
-              Strategy. Systems. Delivery.
-            </h2>
+            <h2 id="about-approach" className="mt-2 font-syne text-[clamp(30px,4.5vw,48px)] font-extrabold tracking-[-.03em]">Find. Fix. Grow.</h2>
+            <p className="mt-4 font-dm text-sm leading-relaxed text-t2">The service changes with the problem. The underlying job does not: find what is holding the business back, fix the right thing, then keep improving where an ongoing relationship creates value.</p>
           </div>
           <div className="mt-10 grid gap-3 md:grid-cols-3">
             {approachPillars.map((pillar, index) => (
@@ -159,36 +118,22 @@ export default function AboutPage() {
             ))}
           </div>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="/local-growth" prefetch={false} className="btn-ghost font-dm">
-              Local Growth
-            </Link>
-            <Link href="/custom-systems" prefetch={false} className="btn-ghost font-dm">
-              Custom Systems
-            </Link>
-            <Link href="/pricing" prefetch={false} className="btn-ghost font-dm">
-              Pricing Guidance
-            </Link>
+            <Link href="/local-growth" prefetch={false} className="btn-ghost font-dm">Local Growth</Link>
+            <Link href="/custom-systems" prefetch={false} className="btn-ghost font-dm">Custom Systems</Link>
+            <Link href="/digital-growth-partnership" prefetch={false} className="btn-ghost font-dm">Growth Partnership</Link>
           </div>
         </div>
       </section>
 
       <section aria-label="Founder-led call to action" className="px-6 py-20 md:px-12 md:py-24">
         <div className="mx-auto max-w-[760px] rounded-3xl border border-acc/20 bg-gradient-to-br from-s2 to-acc/5 px-8 py-[64px] text-center md:px-16">
-          <h2 className="font-syne text-[clamp(28px,4.5vw,44px)] font-extrabold tracking-[-.025em]">
-            Speak to a founder, not a sales team.
-          </h2>
-          <p className="mx-auto mt-4 max-w-[460px] font-dm text-base leading-relaxed text-t2">
-            Tell us what the business needs to do next. A founder reviews every enquiry and answers
-            it directly — including when the honest answer is that you do not need a rebuild.
+          <h2 className="font-syne text-[clamp(28px,4.5vw,44px)] font-extrabold tracking-[-.025em]">Speak to a founder, not a sales layer.</h2>
+          <p className="mx-auto mt-4 max-w-[500px] font-dm text-base leading-relaxed text-t2">
+            Tell us what the business needs to do next. We will look at the problem first — including when the honest answer is that you do not need a rebuild.
           </p>
           <div className="mt-9 flex flex-wrap justify-center gap-3">
-            <Link href="/quote?intent=strategy_call" prefetch={false} className="btn-primary font-dm inline-flex">
-              Request a Strategy Call
-              <ArrowRight size={16} aria-hidden="true" />
-            </Link>
-            <Link href="/quote" prefetch={false} className="btn-ghost font-dm">
-              Start a Project Brief
-            </Link>
+            <Link href="/quote?intent=strategy_call" prefetch={false} className="btn-primary font-dm inline-flex">Request a Strategy Call <ArrowRight size={16} aria-hidden="true" /></Link>
+            <Link href="/quote" prefetch={false} className="btn-ghost font-dm">Start a Project Brief</Link>
           </div>
         </div>
       </section>

@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
             ${field("Launch Timeframe", timeframe)}
             ${field("Main Goal", goal)}
             ${field("Needs", needs.join(", "))}
-            ${field("Care Plan Interest", carePlanInterest)}
+            ${field("Digital Growth Partnership Interest", carePlanInterest)}
             ${field("Preferred Contact", preferredContactMethod)}
             ${field("Phone", phone)}
             ${field("Requested Next Step", intent.replaceAll("_", " "))}

@@ -18,7 +18,7 @@ export function ServiceRouteChooser({ compact = false }: { compact?: boolean }) 
             href="/local-growth"
             eyebrow="Local service businesses"
             title="Local Growth"
-            description="Trust, local visibility, enquiries, bookings, maintenance, and managed improvement for trades, clinics, hospitality, and founder-led businesses."
+            description="Trust, local visibility, enquiries, bookings and managed improvement for trades, clinics, hospitality and founder-led businesses."
             cta="Explore Local Growth"
             icon={<Building2 size={22} aria-hidden="true" />}
             tone="local"

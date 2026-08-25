@@ -297,7 +297,7 @@ export const digitalGrowthPartnerships: Array<{ name: string; price: string; pri
 export const faqs = [
   {
     q: "What does ScaleSmiths do?",
-    a: "ScaleSmiths is a strategy-led web development and digital infrastructure agency. We build websites, e-commerce platforms, SaaS applications and custom systems for businesses that want to grow. Based in Hucknall, Nottinghamshire, we work with clients across the UK and internationally.",
+    a: "ScaleSmiths is a founder-led business growth and engineering company. We identify commercial constraints, build websites, e-commerce platforms, SaaS applications, automation and custom systems, and can remain involved through a Digital Growth Partnership. Based in Hucknall, Nottinghamshire, we work with clients across the UK and internationally.",
   },
   {
     q: "How much does a website cost?",
@@ -313,7 +313,7 @@ export const faqs = [
   },
   {
     q: "What happens after launch?",
-    a: "Post-launch support can include maintenance, monitoring, measured improvements and roadmap work. It is optional and scoped separately from the initial build.",
+    a: "A Digital Growth Partnership can include maintenance, monitoring, SEO, conversion work, content, automation and roadmap delivery. It is scoped around agreed priorities and can begin with an existing digital estate or continue after a ScaleSmiths build.",
   },
   {
     q: "What is ScaleSmiths Managed Business Email?",

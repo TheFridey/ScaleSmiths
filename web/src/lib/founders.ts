@@ -3,9 +3,8 @@ import { projects, type Project } from "./data"
 
 /**
  * Founder content is centrally managed here so no biography copy is scattered through
- * components. Every published statement must cite a repository path that already
- * evidences it. Anything not yet evidenced belongs in `awaitingConfirmation` and is
- * rendered as an explicit "not yet confirmed" note — never as a claim.
+ * components. Published biographical claims cite an existing source. Details that are
+ * not confirmed stay unpublished rather than becoming customer-facing caveats.
  *
  * Never add qualifications, employment history, client counts, revenue figures or awards
  * here without a verified public claim record (see `public-claims.ts`).
@@ -37,11 +36,10 @@ export interface Founder {
   role: EvidencedStatement
   responsibilities: EvidencedStatement[]
   involvement: EvidencedStatement[]
+  focusAreas: string[]
   /** Project slugs in `data.ts` whose credit line names this founder. */
   projectSlugs: string[]
   linkConfig: FounderLinkConfig[]
-  /** Categories deliberately left unpublished until the founder confirms them. */
-  awaitingConfirmation: string[]
   accent: string
 }
 
@@ -79,20 +77,16 @@ export const founders: Founder[] = [
     ],
     involvement: [
       {
-        text: "The same person who scopes the work writes the code — every credited project above is direct build work, not oversight of a subcontracted team.",
+        text: "Leads technical discovery, architecture and hands-on delivery across websites, custom applications, automation and production infrastructure.",
         evidence: "web/src/lib/data.ts (per-project credit lines)",
       },
     ],
+    focusAreas: ["Strategy", "Engineering", "Systems", "Infrastructure", "Technical architecture", "Delivery"],
     projectSlugs: ["glow-tanning", "pinkys-prints", "csds", "prymal", "veteranfinder"],
     linkConfig: [
       { label: "GitHub", envVar: "NEXT_PUBLIC_FOUNDER_RHYS_GITHUB" },
       { label: "LinkedIn", envVar: "NEXT_PUBLIC_FOUNDER_RHYS_LINKEDIN" },
       { label: "Email", envVar: "NEXT_PUBLIC_FOUNDER_RHYS_EMAIL_URL" },
-    ],
-    awaitingConfirmation: [
-      "Full public name and preferred title",
-      "Professional background and qualifications",
-      "A photograph for publication",
     ],
   },
   {
@@ -102,30 +96,30 @@ export const founders: Founder[] = [
     monogram: "TNB",
     accent: "#6366f1",
     role: {
-      text: "Co-founder — named founder of ScaleSmiths",
-      evidence: "web/src/app/layout.tsx (Organization founders)",
+      text: "Co-founder — commercial growth and client partnerships",
+      evidence: "web/src/app/layout.tsx and admin/src/components/ProspectPipeline.tsx",
     },
     responsibilities: [
       {
-        text: "Named delivery credit on The Business Circle — a production SaaS platform with subscription billing, multi-role authentication and integrated video.",
+        text: "Brings the commercial lens to growth priorities, client relationships, business development and partnership opportunities.",
+        evidence: "admin/src/components/ProspectPipeline.tsx and admin/src/lib/prospects.ts",
+      },
+      {
+        text: "Named delivery credit on The Business Circle, a production SaaS platform with subscription billing, multi-role authentication and integrated video.",
         evidence: "web/src/lib/data.ts (credit: \"Made by Trev\")",
       },
     ],
     involvement: [
       {
-        text: "Listed as a founder in the published ScaleSmiths organisation data, and credited directly on delivered platform work.",
-        evidence: "web/src/app/layout.tsx and web/src/lib/data.ts",
+        text: "Connects commercial priorities and client context to the work ScaleSmiths diagnoses, proposes and delivers.",
+        evidence: "admin/src/components/ProspectPipeline.tsx and web/src/lib/business-growth-audit.ts",
       },
     ],
+    focusAreas: ["Commercial growth", "Client relationships", "Business development", "Sales", "Partnerships", "Commercial strategy"],
     projectSlugs: ["the-business-circle"],
     linkConfig: [
       { label: "LinkedIn", envVar: "NEXT_PUBLIC_FOUNDER_TREVOR_LINKEDIN" },
       { label: "Email", envVar: "NEXT_PUBLIC_FOUNDER_TREVOR_EMAIL_URL" },
-    ],
-    awaitingConfirmation: [
-      "Responsibility split across strategy, delivery and client relationships",
-      "Professional background and qualifications",
-      "A photograph for publication",
     ],
   },
 ]
@@ -133,7 +127,7 @@ export const founders: Founder[] = [
 /** The origin narrative, restricted to facts already present in the repository. */
 export const originStatements: EvidencedStatement[] = [
   {
-    text: "ScaleSmiths is a strategy-led web development and digital infrastructure practice founded by Rhys and Trevor Newton-Bradley.",
+    text: "ScaleSmiths is a founder-led business growth and engineering company founded by Rhys and Trevor Newton-Bradley.",
     evidence: "web/src/app/layout.tsx (Organization founders)",
   },
   {
@@ -152,19 +146,19 @@ export const originStatements: EvidencedStatement[] = [
 
 export const approachPillars: Array<{ title: string; description: string }> = [
   {
-    title: "Strategy",
+    title: "Find",
     description:
-      "Work starts from the commercial job to be done, not a template. The recommendation may be a focused repair rather than a rebuild, and pricing is scoped after discovery around the agreed outcome, complexity and delivery risk.",
+      "Diagnose the commercial constraint before prescribing technology. The answer may be clearer positioning, a focused repair, a workflow change or a new system—not automatically another website.",
   },
   {
-    title: "Systems",
+    title: "Fix",
     description:
-      "Data models, permissions, integrations and failure states are designed with the application, not bolted on. Where a workflow has real operational complexity, it is engineered as a system rather than dressed as a website.",
+      "Build the right intervention with serious engineering underneath it: data, permissions, integrations, infrastructure, migrations, deployment and failure states designed as one operational system.",
   },
   {
-    title: "Delivery",
+    title: "Grow",
     description:
-      "Builds ship with the security, accessibility, performance and migration checks the work actually needs, deployed on infrastructure we run and can roll back.",
+      "Keep improving through a scoped Digital Growth Partnership, with agreed priorities across SEO, conversion, content, automation, technical stewardship and roadmap delivery.",
   },
 ]
 
@@ -186,15 +180,8 @@ export function founderProjects(founder: Founder): Project[] {
   })
 }
 
-/** Focus areas are derived from the technology already recorded against credited work. */
 export function founderFocusAreas(founder: Founder, limit = 10): string[] {
-  const tags = founderProjects(founder).flatMap((project) => project.tags)
-  const counts = new Map<string, number>()
-  for (const tag of tags) counts.set(tag, (counts.get(tag) ?? 0) + 1)
-  return [...counts.entries()]
-    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-    .slice(0, limit)
-    .map(([tag]) => tag)
+  return founder.focusAreas.slice(0, limit)
 }
 
 /** Resolve the founder responsible for a project from its credit line. */
@@ -232,12 +219,12 @@ function isPublishableLink(value: string): boolean {
 export const aboutMetadata: Metadata = {
   title: "About & Founders",
   description:
-    "Who owns and delivers ScaleSmiths work: co-founders Rhys and Trevor Newton-Bradley, based in Hucknall, Nottinghamshire. Founder responsibilities, credited project work and how we approach strategy, systems and delivery.",
+    "Meet ScaleSmiths co-founders Rhys and Trevor Newton-Bradley: complementary commercial growth and technical engineering leadership from Hucknall, Nottinghamshire.",
   alternates: { canonical: "/about" },
   openGraph: {
     title: "About & Founders | ScaleSmiths",
     description:
-      "Founder-led web development and digital infrastructure from Hucknall, Nottinghamshire. Meet the people responsible for the work.",
+      "Founder-led business growth and engineering from Hucknall, Nottinghamshire, combining commercial thinking with serious technical execution.",
     url: "/about",
   },
 }

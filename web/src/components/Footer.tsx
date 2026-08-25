@@ -7,6 +7,9 @@ import { CookieSettingsButton } from "./CookieSettingsButton"
 const primaryLinks = [
   { href: "/work", label: "Work" }, { href: "/services", label: "Services" },
   { href: "/local-growth", label: "Local Growth" }, { href: "/custom-systems", label: "Custom Systems" },
+  { href: "/digital-growth-partnership", label: "Digital Growth Partnership" },
+  { href: "/services/business-growth-audit", label: "Business Growth Audit" },
+  { href: "/services/managed-business-email", label: "Managed Business Email" },
   { href: "/about", label: "About" }, { href: "/quote", label: "Start a Project" },
 ]
 
@@ -20,7 +23,7 @@ export function Footer() {
         </div>
 
         <div className="grid gap-10 py-10 md:grid-cols-[1fr_1.5fr]">
-          <div className="flex items-start gap-3"><Logo size={26} /><p className="max-w-[280px] font-dm text-sm leading-relaxed text-t2">Managed digital infrastructure for ambitious organisations.</p></div>
+          <div className="flex items-start gap-3"><Logo size={26} /><p className="max-w-[280px] font-dm text-sm leading-relaxed text-t2">Founder-led business growth and engineering for ambitious organisations.</p></div>
           <nav aria-label="Footer navigation" className="grid grid-cols-2 gap-x-8 gap-y-3 sm:grid-cols-3">{primaryLinks.map((link) => <Link key={link.href} href={link.href} prefetch={false} className="footer-link font-dm text-sm text-t2">{link.label}</Link>)}</nav>
         </div>
 

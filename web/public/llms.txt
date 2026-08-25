@@ -1,14 +1,15 @@
 # ScaleSmiths
 
-> ScaleSmiths is a web design and web development agency and AI implementation & business automation consultancy based in Hucknall, Nottingham, serving Nottinghamshire, the East Midlands and the wider UK. We build websites, e-commerce platforms and automation systems engineered to generate enquiries, sales and recurring revenue — not just to look good.
+> ScaleSmiths is a founder-led business growth and engineering company based in Hucknall, Nottingham. We identify what is holding a business back, build the right digital solution, and can remain involved through a scoped Digital Growth Partnership.
 
 ## What ScaleSmiths is
 
-- **Web Design Agency** — conversion-focused design systems, not decoration.
-- **Web Development Agency** — production Next.js builds, fast and measurable.
+- **Business Growth & Engineering** — diagnose the constraint before prescribing technology.
+- **Web Design & Development** — conversion-focused websites and production-grade engineering.
 - **E-Commerce Development** — storefronts engineered to sell.
 - **AI Implementation Consultancy** — practical AI built into real business workflows.
 - **Business Automation Consultancy** — removing manual work so teams scale without headcount.
+- **Digital Growth Partnership** — prioritised ongoing improvement across the digital estate.
 
 ## Location & coverage
 
@@ -25,6 +26,7 @@ ScaleSmiths is strategy-led. Work spans conversion-focused websites, local SEO a
 - [Services](https://scalesmiths.co.uk/services): Web design, development, e-commerce, AI and automation.
 - [Work](https://scalesmiths.co.uk/work): Case studies and build logs.
 - [Pricing](https://scalesmiths.co.uk/pricing): Packages from £4,500.
+- [Digital Growth Partnership](https://scalesmiths.co.uk/digital-growth-partnership): Direct-entry ongoing growth and engineering support.
 - [Get a quote](https://scalesmiths.co.uk/quote): Start a project.
 
 ## Contact

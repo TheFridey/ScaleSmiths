@@ -41,7 +41,7 @@ const milestones = [
   { title: "Discovery and scope", status: "Current", body: "We confirm goals, content, assets, pages, integrations, and success criteria.", Icon: ClipboardList },
   { title: "Design direction", status: "Next", body: "Homepage direction, core UI patterns, and key content sections are prepared for review.", Icon: FileText },
   { title: "Build and review", status: "Pending", body: "Development, staging preview, feedback loops, and refinement.", Icon: Clock3 },
-  { title: "Launch and handoff", status: "Pending", body: "Final checks, DNS/deployment, analytics, documentation, and aftercare plan.", Icon: Rocket },
+  { title: "Launch and handoff", status: "Pending", body: "Final checks, DNS/deployment, analytics, documentation and the agreed next-stage plan.", Icon: Rocket },
 ]
 
 export default async function PortalClientPage({ params, searchParams }: PortalPageProps) {

@@ -9,11 +9,11 @@ import "./globals.css"
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://scalesmiths.co.uk"),
   title: {
-    default: "Web Design, SEO & Custom Development Nottingham | ScaleSmiths",
+    default: "ScaleSmiths | Business Growth & Engineering Company",
     template: "%s | ScaleSmiths",
   },
   description:
-    "ScaleSmiths builds conversion-focused websites, local SEO foundations, e-commerce, custom web apps, AI automation and managed digital infrastructure in Nottingham and across the UK.",
+    "ScaleSmiths is a founder-led business growth and engineering company that identifies constraints, builds the right digital solution and supports ongoing improvement.",
   keywords: [
     "web development Nottingham",
     "web agency UK",
@@ -63,7 +63,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               "@id": "https://scalesmiths.co.uk/#org",
               "name": "ScaleSmiths",
               "url": "https://scalesmiths.co.uk",
-              "description": "ScaleSmiths is a web design and web development agency and AI implementation and business automation consultancy based in Hucknall, Nottingham. We build websites, e-commerce platforms and automation systems around enquiry, sales and operational workflows.",
+              "description": "ScaleSmiths is a founder-led business growth and engineering company based in Hucknall, Nottingham. We identify commercial constraints, build the right websites, custom systems and automation, and support ongoing improvement.",
               "slogan": "Forge Your Digital Edge",
               "founder": founders.map((founder) => ({
                 "@type": "Person",
@@ -82,7 +82,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 { "@type": "Country", "name": "United Kingdom" }
               ],
               "knowsAbout": ["Web Design", "Web Development", "E-Commerce Development", "Next.js Development", "AI Implementation", "Business Automation", "Conversion Optimisation", "SEO"],
-              "serviceType": ["Web Design Agency", "Web Development Agency", "E-Commerce Development", "AI Implementation Consultancy", "Business Automation Consultancy", "SaaS Development"],
+              "serviceType": ["Business Growth Consultancy", "Web Design", "Web Development", "E-Commerce Development", "Custom Systems Engineering", "AI Implementation", "Business Automation", "Digital Growth Partnership"],
             }),
           }}
         />

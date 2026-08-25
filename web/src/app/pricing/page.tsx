@@ -7,7 +7,7 @@ import { getVerifiedPublicClaims } from "@/lib/public-claims.server"
 
 export const metadata: Metadata = {
   title: "Pricing Guidance",
-  description: "How ScaleSmiths scopes websites, custom systems, care plans, managed business email, hosting and maintenance.",
+  description: "Pricing guidance for ScaleSmiths audits, websites, custom systems, Digital Growth Partnerships, managed business email, hosting and maintenance.",
   alternates: { canonical: "/pricing" },
 }
 export const dynamic = "force-dynamic"
@@ -29,7 +29,7 @@ export default async function PricingPage() {
           Clear scoping before the proposal.
         </h1>
         <p className="mt-5 max-w-[640px] font-dm text-lg leading-relaxed text-t2">
-          Prices depend on complexity, risk, integrations, content depth, and post-launch responsibility. Verified current guidance appears below only after its evidence and review date have been approved.
+          Prices depend on complexity, risk, integrations, content depth and ongoing responsibility. Current published guidance appears below; final scope, priorities and commercial boundaries are agreed in the proposal.
         </p>
         <div className="mt-10 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
           {visibleItems.map((item) => (
@@ -43,6 +43,7 @@ export default async function PricingPage() {
         <div className="mt-10 flex flex-wrap gap-3">
           <Link href="/quote" prefetch={false} className="btn-primary font-dm">Request a Quote <ArrowRight size={16} aria-hidden="true" /></Link>
           <Link href="/services" prefetch={false} className="btn-ghost font-dm">View Services</Link>
+          <Link href="/digital-growth-partnership" prefetch={false} className="btn-ghost font-dm">Explore Digital Growth Partnership</Link>
         </div>
       </section>
     </>

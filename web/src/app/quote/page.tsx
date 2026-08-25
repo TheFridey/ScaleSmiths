@@ -14,9 +14,9 @@ import { motionDistances, motionDurations, motionTransitions } from "@/lib/motio
 const STORAGE_KEY = "scalesmiths.quote.draft.v2"
 const STAGES = ["About You", "What Needs Changing", "Commercial Fit", "Brief and Consent"] as const
 const BUSINESS_TYPES = ["Local service business", "E-commerce brand", "SaaS / platform", "Professional services", "Community / membership", "Other"]
-const PROJECT_TYPES = ["Conversion Website", "Website Redesign", "E-Commerce", "Custom Web App", "SEO / Local Growth", "Care Plan"]
-const NEEDS = ["SEO", "Hosting", "Care Plan", "Custom Functionality", "Payments", "Client Portal", "Analytics", "Not sure"]
-const BUDGETS = ["GBP 4,500-6,500", "GBP 8,000-15,000", "GBP 18,000-35,000+", "Ongoing care plan", "Not sure yet"]
+const PROJECT_TYPES = ["Conversion Website", "Website Redesign", "E-Commerce", "Custom Web App", "SEO / Local Growth", "Digital Growth Partnership"]
+const NEEDS = ["SEO", "Hosting", "Digital Growth Partnership", "Custom Functionality", "Payments", "Client Portal", "Analytics", "Not sure"]
+const BUDGETS = ["GBP 4,500-6,500", "GBP 8,000-15,000", "GBP 18,000-35,000+", "Ongoing Digital Growth Partnership", "Not sure yet"]
 const TIMEFRAMES = ["ASAP, if the fit is right", "4-6 weeks", "8-12 weeks", "This quarter", "Planning ahead"]
 const CARE = ["Yes", "Maybe", "No", "Not sure"]
 const CONTACT = ["Email", "Phone", "Video call", "No preference"]
@@ -246,7 +246,7 @@ export default function QuotePage() {
         {stage === 2 && <>
           <ChoiceGroup legend="Budget" name="budget" options={BUDGETS} value={data.budget} update={update} />
           <ChoiceGroup legend="Launch Timeframe" name="timeframe" options={TIMEFRAMES} value={data.timeframe} update={update} />
-          <ChoiceGroup legend="Care Plan Interest" name="carePlanInterest" options={CARE} value={data.carePlanInterest} update={update} />
+          <ChoiceGroup legend="Digital Growth Partnership Interest" name="carePlanInterest" options={CARE} value={data.carePlanInterest} update={update} />
           <ChoiceGroup legend="Preferred Contact" name="preferredContactMethod" options={CONTACT} value={data.preferredContactMethod} update={update} />
         </>}
         {stage === 3 && <>

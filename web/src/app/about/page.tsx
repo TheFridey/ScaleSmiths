@@ -43,12 +43,12 @@ export default function AboutPage() {
                 About & founders
               </span>
               <h1 className="mt-3 max-w-4xl font-syne text-[clamp(38px,6.5vw,76px)] font-black leading-[1.02] tracking-[-.04em]">
-                Two founders. Named work. No agency middle layer.
+                Two founders. One accountable relationship.
               </h1>
               <p className="mt-6 max-w-3xl font-dm text-lg leading-relaxed text-t2">
-                ScaleSmiths is founder-led. The people who scope your project are the people who
-                build it, and every published project carries the name of the founder responsible
-                for it.
+                ScaleSmiths combines commercial thinking with technical execution. Trevor leads the
+                commercial growth and relationship perspective; Rhys leads strategy, engineering,
+                systems and delivery. Together, they stay close to the problem and the work.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <Link href="/quote?intent=strategy_call" prefetch={false} className="btn-primary font-dm">
@@ -101,10 +101,7 @@ export default function AboutPage() {
             <h2 id="about-origin" className="mt-2 font-syne text-[clamp(28px,4.2vw,44px)] font-extrabold tracking-[-.03em]">
               How ScaleSmiths started.
             </h2>
-            <p className="mt-4 font-dm text-sm leading-relaxed text-t3">
-              Only what the record supports. No invented milestones, client counts or revenue
-              figures.
-            </p>
+            <p className="mt-4 font-dm text-sm leading-relaxed text-t3">Built in Hucknall, working across local growth and complex digital systems.</p>
           </div>
           <ol className="grid gap-3 sm:grid-cols-2">
             {originStatements.map((statement, index) => (
@@ -125,9 +122,8 @@ export default function AboutPage() {
               Who owns and delivers the work.
             </h2>
             <p className="mt-3 font-dm text-sm leading-relaxed text-t2">
-              Each founder is shown with their role, responsibilities, credited project work and
-              areas of focus. Biographical detail we cannot evidence is marked as awaiting
-              confirmation rather than filled in.
+              Complementary commercial and technical leadership gives clients a direct route from
+              the business problem to a solution that can be delivered and improved.
             </p>
           </div>
           <div className="mt-10 grid gap-3 lg:grid-cols-2 lg:items-start">
@@ -146,7 +142,7 @@ export default function AboutPage() {
           <div className="max-w-3xl">
             <span className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">The approach</span>
             <h2 id="about-approach" className="mt-2 font-syne text-[clamp(30px,4.5vw,48px)] font-extrabold tracking-[-.03em]">
-              Strategy. Systems. Delivery.
+               Find. Fix. Grow.
             </h2>
           </div>
           <div className="mt-10 grid gap-3 md:grid-cols-3">
@@ -167,6 +163,9 @@ export default function AboutPage() {
             </Link>
             <Link href="/pricing" prefetch={false} className="btn-ghost font-dm">
               Pricing Guidance
+            </Link>
+            <Link href="/digital-growth-partnership" prefetch={false} className="btn-ghost font-dm">
+              Digital Growth Partnership
             </Link>
           </div>
         </div>

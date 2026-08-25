@@ -4,7 +4,7 @@ import { permanentRedirect } from "next/navigation"
 export const metadata: Metadata = {
   title: "Normal Website Experience",
   description:
-    "Explore the standard ScaleSmiths website for strategy-led web development, e-commerce, portals, automation and digital infrastructure.",
+    "Explore ScaleSmiths business growth and engineering services across websites, e-commerce, portals, automation and digital infrastructure.",
   alternates: { canonical: "/" },
   robots: { index: false, follow: true },
 }

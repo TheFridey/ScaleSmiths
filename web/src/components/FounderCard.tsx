@@ -82,7 +82,6 @@ export function FounderCard({ founder }: { founder: Founder }) {
         <h4 className="font-dm text-xs font-semibold uppercase tracking-[.12em] text-t3">
           Areas of focus
         </h4>
-        <p className="mt-2 font-dm text-xs text-t3">Taken from the technology recorded against credited work.</p>
         <ul className="mt-4 flex flex-wrap gap-1.5">
           {focusAreas.map((area) => (
             <li key={area} className="rounded border border-b1 bg-s2 px-2.5 py-1 font-dm text-[11px] text-t2">
@@ -143,26 +142,6 @@ export function FounderCard({ founder }: { founder: Founder }) {
         </section>
       )}
 
-      {founder.awaitingConfirmation.length > 0 && (
-        <section
-          aria-label={`Details awaiting confirmation from ${founder.name}`}
-          className="mt-7 rounded-xl border border-dashed border-b2 bg-s2/50 p-5"
-        >
-          <h4 className="font-dm text-xs font-semibold uppercase tracking-[.12em] text-t3">
-            Not published — awaiting founder confirmation
-          </h4>
-          <p className="mt-2 font-dm text-xs leading-relaxed text-t3">
-            We only publish what we can evidence. These details are intentionally absent until confirmed:
-          </p>
-          <ul className="mt-3 flex flex-col gap-1.5">
-            {founder.awaitingConfirmation.map((item) => (
-              <li key={item} className="font-dm text-xs text-t3">
-                — {item}
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
     </article>
   )
 }

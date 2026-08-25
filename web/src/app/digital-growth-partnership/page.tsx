@@ -53,9 +53,9 @@ export default function DigitalGrowthPartnershipPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
       <section className="mx-auto max-w-[1240px] px-6 py-20 md:px-12 md:py-28">
         <AnimateIn className="max-w-[900px]">
-          <p className="text-xs font-semibold uppercase tracking-[.14em] text-acc">Beyond launch</p>
+          <p className="text-xs font-semibold uppercase tracking-[.14em] text-acc">Grow with one accountable partner</p>
           <h1 className="mt-3 font-syne text-[clamp(42px,8vw,88px)] font-extrabold leading-[.92] tracking-[-.04em]">Your Digital Growth Partnership.</h1>
-          <p className="mt-7 max-w-[760px] text-lg leading-relaxed text-t2">A website should not stand still while your market, services and customer behaviour change. ScaleSmiths provides an ongoing partnership across search visibility, conversion, content, automation and technical delivery—prioritised around the work that can move the business forward.</p>
+          <p className="mt-7 max-w-[760px] text-lg leading-relaxed text-t2">A Digital Growth Partnership can begin with an existing website or infrastructure, or continue after a ScaleSmiths build. We continually improve the digital estate across search visibility, conversion, content, automation and technical delivery—within an agreed, prioritised roadmap.</p>
           <div className="mt-9 flex flex-wrap gap-3"><Link href="/quote" className="btn-primary">Discuss a Partnership <ArrowRight size={16} /></Link><Link href="/work" className="btn-ghost">See Our Work</Link></div>
         </AnimateIn>
       </section>

@@ -1,15 +1,13 @@
 import type { Metadata, MetadataRoute } from "next"
 
-export const LEGAL_VERSION = "2.1"
-export const LEGAL_EFFECTIVE_DATE = "20 August 2026"
-export const LEGAL_LAST_UPDATED = "20 August 2026"
-export const LEGAL_LAST_MODIFIED_ISO = "2026-08-20T00:00:00.000Z"
+export const LEGAL_VERSION = "2.2"
+export const LEGAL_EFFECTIVE_DATE = "25 August 2026"
+export const LEGAL_LAST_UPDATED = "25 August 2026"
+export const LEGAL_LAST_MODIFIED_ISO = "2026-08-25T00:00:00.000Z"
 
 export const legalEntity = {
-  // Trading name as used in the public application. Legal name, entity type,
-  // company number and registered office remain owner input; the repository
-  // does not establish these. Set legalName (and the remaining identity
-  // fields) when the contracting entity is formalised.
+  // TODO(owner/legal): confirm and populate the contracting legal name, entity type,
+  // registration details, registered office and VAT status before claiming them publicly.
   tradingName: "ScaleSmiths",
   legalName: null,
   entityType: null,
@@ -24,6 +22,17 @@ export const legalEntity = {
   complaintsEmail: "hello@scalesmiths.co.uk",
   securityEmail: "hello@scalesmiths.co.uk",
 } as const
+
+// Internal decision register. This is deliberately not rendered by any public route.
+export const LEGAL_DECISIONS_REQUIRED = [
+  "Confirm the contracting legal entity and whether Prymal is the legal person trading as ScaleSmiths.",
+  "Confirm company registration, registered office and VAT status where applicable.",
+  "Approve any financial liability cap for the Master Service Terms.",
+  "Approve default notice, minimum commitment, cancellation and refund terms for recurring services.",
+  "Record the production VPS provider, datacentre region and DPA status.",
+  "Record Resend processing region and DPA status.",
+  "Confirm the Managed Business Email infrastructure and backup subprocessors.",
+] as const
 
 export const PRIVACY_CONTACT_EMAIL = legalEntity.privacyEmail
 export const ENQUIRY_CONSENT_COPY = "I agree that ScaleSmiths may store the information I submit and contact me about my enquiry."

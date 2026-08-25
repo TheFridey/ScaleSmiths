@@ -35,7 +35,7 @@ export const landingPages: Record<string, LandingPage> = {
     outcomes: ["Clear local positioning", "Mobile-first UX", "SEO foundations", "Fast launch path"],
     problems: ["The site looks dated compared with the service quality.", "Local buyers cannot quickly see who you help, where you work, or why to trust you.", "Enquiries arrive with too little context or go to the wrong channel.", "The business has outgrown a page builder but does not need a bloated agency process."],
     examples: ["A service business website with local landing pages, quote CTA, project gallery, and trust signals.", "A salon or studio redesign with mobile-first booking routes and before/after proof.", "A professional services site with sharper positioning, FAQs, lead qualification, and analytics-ready events."],
-    proofLinks: ["glow-tanning", "csds"],
+    proofLinks: ["precision-finish-plastering-rendering", "glow-tanning", "csds"],
     buildLogLinks: ["seo-aeo-page-architecture", "quote-system-hardening", "scalesmiths-platform-build"],
     relatedPages: ["web-development-nottingham", "e-commerce-development-nottingham"],
     faqs: [
@@ -137,7 +137,7 @@ export const landingPages: Record<string, LandingPage> = {
     faqs: [
       { q: "What counts as a custom web app?", a: "Client portals, dashboards, SaaS platforms, internal systems, booking tools, and any browser-based workflow software built around your process." },
       { q: "How do you scope complex web apps?", a: "We start with discovery, define core workflows and roles, then split the build into phases that reduce risk." },
-      { q: "Can you maintain the app after launch?", a: "Yes. Optional post-launch support can cover maintenance, improvements, monitoring and roadmap delivery." },
+      { q: "Can you keep improving the app after launch?", a: "Yes. A Digital Growth Partnership can combine technical stewardship, monitoring, planned improvements and roadmap delivery in an agreed ongoing scope." },
       { q: "Can you start with an MVP?", a: "Yes. We define the smallest useful product surface, prove the core workflow, and avoid committing budget to untested extras too early." },
     ],
   },
@@ -190,7 +190,7 @@ export function buildLandingPageSchemas(page: LandingPage, baseUrl = "https://sc
           "@type": "LocalBusiness",
           name: "ScaleSmiths",
           url: baseUrl,
-          description: "Strategy-led web development and digital infrastructure agency based in Hucknall, Nottinghamshire.",
+          description: "Founder-led business growth and engineering company based in Hucknall, Nottinghamshire.",
           areaServed: page.location,
           address: {
             "@type": "PostalAddress",
@@ -216,7 +216,7 @@ export function getLandingPageFaqs(page: LandingPage) {
     },
     {
       q: "Do you provide ongoing support after launch?",
-      a: "Yes. Care plans cover maintenance, monitoring, improvements, and technical support so the site or app keeps working after the initial build.",
+      a: "Yes. A Digital Growth Partnership can include maintenance, monitoring, technical support and prioritised improvements. It is broader than maintenance alone and can begin with an existing website or system.",
     },
   ]
 }

@@ -14,6 +14,7 @@ const links = [
   { href: "/services", label: "Services" },
   { href: "/local-growth", label: "Local Growth" },
   { href: "/custom-systems", label: "Custom Systems" },
+  { href: "/digital-growth-partnership", label: "Digital Growth Partnership" },
   { href: "/about", label: "About" },
 ]
 

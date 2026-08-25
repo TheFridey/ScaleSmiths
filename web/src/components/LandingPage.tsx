@@ -9,7 +9,9 @@ export function LandingPage({ page }: { page: LandingPageData }) {
   const proofLogs = buildLogs.filter((log) => page.buildLogLinks.includes(log.slug))
   const relatedPages = page.relatedPages.map((slug) => landingPages[slug]).filter(Boolean)
   const schemas = buildLandingPageSchemas(page, process.env.NEXT_PUBLIC_SITE_URL ?? "https://scalesmiths.co.uk")
-  const faqs = getLandingPageFaqs(page)
+  const faqs = getLandingPageFaqs(page).map((faq) => faq.q === "Do you provide ongoing support after launch?"
+    ? { q: "Can ScaleSmiths keep improving this after the initial work?", a: "Yes. A Digital Growth Partnership can cover ongoing visibility, conversion, content, monitoring and technical improvement. It can also begin around an existing site or system rather than requiring a new ScaleSmiths build first." }
+    : faq)
 
   return (
     <>
@@ -176,25 +178,13 @@ export function LandingPage({ page }: { page: LandingPageData }) {
         <div className="mx-auto max-w-[1240px]">
           <div className="mb-6 font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">Related pages</div>
           <div className="flex flex-wrap gap-3">
-            <Link href="/" prefetch={false} className="rounded-lg border border-b1 bg-s1 px-4 py-2.5 font-dm text-sm text-t2 transition-colors hover:text-t1">
-              Homepage
-            </Link>
-            <Link href="/services" prefetch={false} className="rounded-lg border border-b1 bg-s1 px-4 py-2.5 font-dm text-sm text-t2 transition-colors hover:text-t1">
-              Services
-            </Link>
-            <Link href="/pricing" prefetch={false} className="rounded-lg border border-b1 bg-s1 px-4 py-2.5 font-dm text-sm text-t2 transition-colors hover:text-t1">
-              Pricing
-            </Link>
-            <Link href="/work" prefetch={false} className="rounded-lg border border-b1 bg-s1 px-4 py-2.5 font-dm text-sm text-t2 transition-colors hover:text-t1">
-              Work
-            </Link>
-            <Link href="/quote" prefetch={false} className="rounded-lg border border-b1 bg-s1 px-4 py-2.5 font-dm text-sm text-t2 transition-colors hover:text-t1">
-              Request a quote
-            </Link>
+            <Link href="/" prefetch={false} className="rounded-lg border border-b1 bg-s1 px-4 py-2.5 font-dm text-sm text-t2 transition-colors hover:text-t1">Homepage</Link>
+            <Link href="/services" prefetch={false} className="rounded-lg border border-b1 bg-s1 px-4 py-2.5 font-dm text-sm text-t2 transition-colors hover:text-t1">Services</Link>
+            <Link href="/pricing" prefetch={false} className="rounded-lg border border-b1 bg-s1 px-4 py-2.5 font-dm text-sm text-t2 transition-colors hover:text-t1">Pricing</Link>
+            <Link href="/work" prefetch={false} className="rounded-lg border border-b1 bg-s1 px-4 py-2.5 font-dm text-sm text-t2 transition-colors hover:text-t1">Work</Link>
+            <Link href="/quote" prefetch={false} className="rounded-lg border border-b1 bg-s1 px-4 py-2.5 font-dm text-sm text-t2 transition-colors hover:text-t1">Request a quote</Link>
             {relatedPages.map((related) => (
-              <Link key={related.slug} href={`/${related.slug}`} prefetch={false} className="rounded-lg border border-b1 bg-s1 px-4 py-2.5 font-dm text-sm text-t2 transition-colors hover:text-t1">
-                {related.title}
-              </Link>
+              <Link key={related.slug} href={`/${related.slug}`} prefetch={false} className="rounded-lg border border-b1 bg-s1 px-4 py-2.5 font-dm text-sm text-t2 transition-colors hover:text-t1">{related.title}</Link>
             ))}
           </div>
         </div>
@@ -202,15 +192,9 @@ export function LandingPage({ page }: { page: LandingPageData }) {
 
       <section className="px-6 py-20 md:px-12">
         <div className="mx-auto max-w-[900px] text-center">
-          <h2 className="font-syne text-[clamp(30px,5vw,52px)] font-extrabold tracking-[-0.025em]">
-            Build the version that fits the business.
-          </h2>
-          <p className="mx-auto mt-4 max-w-[560px] font-dm text-base leading-relaxed text-t2">
-            Tell us where you are, what needs to change, and what the site or app has to prove commercially.
-          </p>
-          <Link href="/quote" prefetch={false} className="btn-primary mt-8 inline-flex font-dm">
-            Start with a brief <ArrowRight size={16} aria-hidden="true" />
-          </Link>
+          <h2 className="font-syne text-[clamp(30px,5vw,52px)] font-extrabold tracking-[-0.025em]">Build the version that fits the business.</h2>
+          <p className="mx-auto mt-4 max-w-[560px] font-dm text-base leading-relaxed text-t2">Tell us where you are, what needs to change, and what the site or app has to prove commercially.</p>
+          <Link href="/quote" prefetch={false} className="btn-primary mt-8 inline-flex font-dm">Start with a brief <ArrowRight size={16} aria-hidden="true" /></Link>
         </div>
       </section>
     </>

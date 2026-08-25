@@ -74,15 +74,15 @@ export function Services({ claims }: { claims: ReadonlyMap<string, PublicClaim> 
         </StaggerIn>
 
         <AnimateIn className="mt-6 grid gap-6 rounded-2xl border border-acc/20 bg-s1 p-7 md:grid-cols-[1fr_auto] md:items-center">
-          <div><p className="font-dm text-xs font-semibold uppercase tracking-[.12em] text-acc">Standalone service</p><h3 className="mt-2 font-syne text-2xl font-bold">Managed Business Email</h3><p className="mt-2 max-w-[720px] font-dm text-sm leading-relaxed text-t2">Professional custom-domain email, configured and supported by ScaleSmiths. Starts at £15 for three 5GB mailboxes, with initial setup included.</p></div>
+          <div><p className="font-dm text-xs font-semibold uppercase tracking-[.12em] text-acc">Standalone service</p><h3 className="mt-2 font-syne text-2xl font-bold">Managed Business Email</h3><p className="mt-2 max-w-[720px] font-dm text-sm leading-relaxed text-t2">Professional custom-domain email, configured and supported by ScaleSmiths. £15/month for three 5GB mailboxes, with initial setup included.</p></div>
           <Link href="/services/managed-business-email" prefetch={false} className="btn-ghost min-h-11 justify-center font-dm">Explore Business Email <ChevronRight size={14} /></Link>
         </AnimateIn>
 
-        <AnimateIn className="mt-10 bg-s1 border border-b1 rounded-2xl p-7" delay={0.2}>
-          <p className="font-dm text-xs font-semibold uppercase tracking-[.12em] text-acc">Beyond launch</p>
+        <AnimateIn className="mt-10 bg-s1 border border-acc/20 rounded-2xl p-7" delay={0.2}>
+          <p className="font-dm text-xs font-semibold uppercase tracking-[.12em] text-acc">Ongoing growth</p>
           <h3 className="mt-2 font-syne text-2xl font-bold">Digital Growth Partnership</h3>
           <p className="font-dm text-sm text-t2 mb-6">
-            {claimWording(claims, "service.most-clients-retain-30-days", "Post-launch support is optional and scoped separately around maintenance, monitoring and measured improvements.")}
+            {claimWording(claims, "service.most-clients-retain-30-days", "A Digital Growth Partnership can begin with the website and systems you already have, or follow a ScaleSmiths build. The scope is agreed around the priorities that can move the business forward.")}
           </p>
           <div className="grid md:grid-cols-3 gap-3">
             {digitalGrowthPartnerships.map((r) => (

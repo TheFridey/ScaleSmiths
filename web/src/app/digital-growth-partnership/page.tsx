@@ -6,7 +6,7 @@ import { CTA } from "@/components/CTA"
 
 export const metadata: Metadata = {
   title: "Digital Growth Partnership",
-  description: "An ongoing digital growth partnership for website improvements, SEO, conversion optimisation, content, analytics, automation and managed technical support.",
+  description: "An ongoing digital growth partnership for website improvements, SEO, conversion optimisation, content, analytics, automation and managed technical support — whether or not ScaleSmiths built the current site.",
   alternates: { canonical: "/digital-growth-partnership" },
   openGraph: {
     title: "Digital Growth Partnership | ScaleSmiths",
@@ -23,8 +23,8 @@ const capabilities = [
 ]
 
 const faq = [
-  { q: "Is a Digital Growth Partnership the same as website maintenance?", a: "Maintenance can be part of it, but the partnership is broader. The agreed scope may combine technical care with SEO, content, conversion work, analytics, automation and roadmap delivery." },
-  { q: "Do I need a new ScaleSmiths website first?", a: "Not necessarily. We first assess the current website, access, technology, risks and growth priorities. Any takeover or improvement work is scoped before the partnership begins." },
+  { q: "Is a Digital Growth Partnership the same as website maintenance?", a: "No. Maintenance can be part of it, but the partnership is broader. The agreed scope may combine technical care with SEO, content, conversion work, analytics, automation and roadmap delivery." },
+  { q: "Do I need a new ScaleSmiths website first?", a: "No. A partnership can begin around the website and systems you already have. We assess access, technology, risks and growth priorities first, then scope any takeover, repair or improvement work that is genuinely useful." },
   { q: "What is included each month?", a: "The proposal defines priorities, working cadence, responsibilities and commercial terms. Work is deliberately scoped around the business rather than presented as an unlimited or generic package." },
 ]
 
@@ -52,12 +52,19 @@ export default function DigitalGrowthPartnershipPage() {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
       <section className="mx-auto max-w-[1240px] px-6 py-20 md:px-12 md:py-28">
-        <AnimateIn className="max-w-[900px]">
-          <p className="text-xs font-semibold uppercase tracking-[.14em] text-acc">Beyond launch</p>
+        <AnimateIn className="max-w-[920px]">
+          <p className="text-xs font-semibold uppercase tracking-[.14em] text-acc">Ongoing growth</p>
           <h1 className="mt-3 font-syne text-[clamp(42px,8vw,88px)] font-extrabold leading-[.92] tracking-[-.04em]">Your Digital Growth Partnership.</h1>
-          <p className="mt-7 max-w-[760px] text-lg leading-relaxed text-t2">A website should not stand still while your market, services and customer behaviour change. ScaleSmiths provides an ongoing partnership across search visibility, conversion, content, automation and technical delivery—prioritised around the work that can move the business forward.</p>
-          <div className="mt-9 flex flex-wrap gap-3"><Link href="/quote" className="btn-primary">Discuss a Partnership <ArrowRight size={16} /></Link><Link href="/work" className="btn-ghost">See Our Work</Link></div>
+          <p className="mt-7 max-w-[790px] text-lg leading-relaxed text-t2">ScaleSmiths becomes the accountable digital partner helping decide what matters next, then actually delivering it. We work across search visibility, conversion, content, automation, website improvement and technical delivery — prioritised around the business rather than a predetermined list of tasks.</p>
+          <div className="mt-9 flex flex-wrap gap-3"><Link href="/quote?intent=strategy_call" className="btn-primary">Discuss a Partnership <ArrowRight size={16} /></Link><Link href="/work" className="btn-ghost">See Our Work</Link></div>
         </AnimateIn>
+      </section>
+
+      <section className="border-y border-acc/20 bg-acc/[.05] px-6 py-12 md:px-12" aria-label="Partnership entry point">
+        <div className="mx-auto grid max-w-[1240px] gap-6 lg:grid-cols-[.8fr_1.2fr] lg:items-center">
+          <div><p className="text-xs font-semibold uppercase tracking-[.14em] text-acc">Start where you are</p><h2 className="mt-2 font-syne text-[clamp(28px,4.5vw,46px)] font-extrabold">You do not need a new website first.</h2></div>
+          <p className="text-base leading-relaxed text-t2">Already have a website, CRM, booking flow or digital stack? Good. We start by understanding what is working, what is getting in the way and what the commercial priorities are. If the right answer is improvement rather than replacement, that is the work we recommend.</p>
+        </div>
       </section>
 
       <section className="border-y border-b1 bg-s1 px-6 py-24 md:px-12" aria-labelledby="partnership-capabilities">

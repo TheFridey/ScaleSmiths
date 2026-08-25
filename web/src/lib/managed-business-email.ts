@@ -5,7 +5,7 @@ export const managedBusinessEmail = {
   onboardingPath: "/services/managed-business-email/get-started",
   standalone: {
     startingPriceGbp: 15,
-    billingCadence: null,
+    billingCadence: "month",
     mailboxes: 3,
     storagePerMailboxGb: 5,
     setupIncluded: true,
@@ -24,7 +24,7 @@ export const managedBusinessEmail = {
     "Initial mailbox and DNS setup",
   ],
   faq: [
-    { q: "What do I get for £15?", a: "Three professional custom-domain mailboxes with 5GB storage per mailbox, managed initial setup, webmail, compatible desktop and mobile access, aliases, forwarding, spam filtering, email authentication configuration and ongoing technical support." },
+    { q: "What do I get for £15/month?", a: "Three professional custom-domain mailboxes with 5GB storage per mailbox, managed initial setup, webmail, compatible desktop and mobile access, aliases, forwarding, spam filtering, email authentication configuration and ongoing technical support." },
     { q: "Do you set it up for me?", a: "Yes. Initial setup is included at no additional setup charge. With appropriate access to your domain's DNS management, ScaleSmiths configures the required email records, authentication and initial mailboxes." },
     { q: "Do I need to understand DNS?", a: "No. ScaleSmiths handles the required technical configuration. We arrange appropriate DNS access during onboarding; never submit domain or registrar passwords through the public form." },
     { q: "Can I use the email on my phone?", a: "Yes. The service works with compatible desktop and mobile email clients as well as webmail. Microsoft 365 or Google Workspace licences are not included." },
@@ -37,7 +37,7 @@ export const managedBusinessEmail = {
 } as const
 
 export function managedBusinessEmailPriceLabel() {
-  return `£${managedBusinessEmail.standalone.startingPriceGbp}`
+  return `£${managedBusinessEmail.standalone.startingPriceGbp}/month`
 }
 
 export function buildManagedBusinessEmailSchema(baseUrl = "https://scalesmiths.co.uk") {
@@ -54,7 +54,7 @@ export function buildManagedBusinessEmailSchema(baseUrl = "https://scalesmiths.c
         "@type": "Offer",
         priceCurrency: "GBP",
         price: managedBusinessEmail.standalone.startingPriceGbp,
-        description: "Starting service with three mailboxes, 5GB per mailbox and initial setup included. Billing cadence is confirmed during onboarding.",
+        description: "£15 per month for three mailboxes, 5GB per mailbox and initial setup included.",
         url: `${baseUrl.replace(/\/$/, "")}${managedBusinessEmail.onboardingPath}`,
       },
     },

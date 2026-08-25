@@ -2,6 +2,14 @@ import { describe, expect, it } from "vitest"
 import { buildLandingPageSchemas, getLandingPageFaqs, landingPages, metadataForLandingPage } from "./landing-pages"
 
 describe("landing pages", () => {
+  it("prioritises the most relevant Hucknall client proof", () => {
+    expect(landingPages["web-design-hucknall"].proofLinks).toEqual([
+      "precision-finish-plastering-rendering",
+      "glow-tanning",
+      "csds",
+    ])
+  })
+
   it("builds canonical metadata for SEO landing pages", () => {
     const metadata = metadataForLandingPage(landingPages["web-design-hucknall"])
 

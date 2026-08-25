@@ -38,8 +38,7 @@ export default function AboutPage() {
                 Two founders. One accountable relationship.
               </h1>
               <p className="mt-6 max-w-3xl font-dm text-lg leading-relaxed text-t2">
-                ScaleSmiths is founder-led. Strategy, commercial thinking and technical delivery stay connected,
-                so clients are not passed between a sales layer, an account layer and a disconnected build team.
+                ScaleSmiths combines commercial thinking with technical execution. Trevor leads the commercial growth and relationship perspective; Rhys leads strategy, engineering, systems and delivery. Together, they stay close to the problem and the work.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <Link href="/quote?intent=strategy_call" prefetch={false} className="btn-primary font-dm">

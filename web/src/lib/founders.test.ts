@@ -53,13 +53,6 @@ describe("founder data source", () => {
     }
   })
 
-  it("marks unevidenced biography categories as awaiting founder confirmation", () => {
-    for (const founder of founders) {
-      expect(founder.awaitingConfirmation.length).toBeGreaterThan(0)
-      expect(founder.awaitingConfirmation.some((item) => /photograph/i.test(item))).toBe(true)
-    }
-  })
-
   it("resolves selected work from the shared project data", () => {
     const rhys = founderBySlug("rhys")!
     expect(founderProjects(rhys).map((project) => project.slug)).toEqual([
@@ -80,23 +73,16 @@ describe("founder data source", () => {
     }
   })
 
-  it("attributes every published project to exactly one founder", () => {
-    for (const project of projects) {
-      expect(founderForProject(project.slug)?.slug).toBeDefined()
-    }
+  it("does not imply that every published project has a named founder credit", () => {
+    expect(founderForProject("precision-finish-plastering-rendering")).toBeUndefined()
     const attributed = founders.flatMap((founder) => founder.projectSlugs)
     expect(new Set(attributed).size).toBe(attributed.length)
-    expect(attributed).toHaveLength(projects.length)
+    expect(attributed.length).toBeLessThan(projects.length)
   })
 
-  it("derives areas of focus from recorded project technology", () => {
-    const focus = founderFocusAreas(founderBySlug("rhys")!)
-    const tags = new Set(founderProjects(founderBySlug("rhys")!).flatMap((project) => project.tags))
-
-    expect(focus.length).toBeGreaterThan(0)
-    expect(focus.length).toBeLessThanOrEqual(10)
-    for (const area of focus) expect(tags.has(area)).toBe(true)
-    expect(new Set(focus).size).toBe(focus.length)
+  it("publishes complementary commercial and technical focus areas", () => {
+    expect(founderFocusAreas(founderBySlug("rhys")!)).toContain("Engineering")
+    expect(founderFocusAreas(founderBySlug("trevor-newton-bradley")!)).toContain("Commercial growth")
   })
 })
 

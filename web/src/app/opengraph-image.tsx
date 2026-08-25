@@ -58,7 +58,7 @@ export default function Image() {
             Forge Your Digital Edge
           </div>
           <div style={{ marginTop: "28px", fontSize: "28px", lineHeight: 1.35, color: "#cbd5e1" }}>
-            Strategy-led web development, e-commerce, and digital infrastructure for ambitious UK businesses.
+            Founder-led business growth and engineering for ambitious UK businesses.
           </div>
         </div>
 

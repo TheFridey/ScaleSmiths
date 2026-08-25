@@ -51,7 +51,7 @@ const budgetRanges = [
   "GBP 4,500-6,500",
   "GBP 8,000-15,000",
   "GBP 18,000-35,000+",
-  "Ongoing care plan",
+  "Digital Growth Partnership",
   "Not sure yet",
 ]
 

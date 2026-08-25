@@ -10,7 +10,7 @@ const FOR = [
 const NOT_FOR = [
   "One-page brochure sites where the lowest upfront price is the main decision.",
   "Projects that need to be copied from a competitor without a strategy or differentiation.",
-  "Builds with no owner, no decision-maker, or no appetite for post-launch improvement.",
+  "Builds with no owner, no decision-maker or no appetite for ongoing improvement.",
 ]
 
 export function FitSection() {

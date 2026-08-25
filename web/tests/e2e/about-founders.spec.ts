@@ -34,7 +34,7 @@ test.describe("about and founders page", () => {
 
     await expect(page.getByRole("heading", { name: /how scalesmiths started/i })).toBeVisible()
     await expect(page.getByText("Hucknall, Nottinghamshire").first()).toBeVisible()
-    await expect(page.getByRole("heading", { name: /strategy\. systems\. delivery\./i })).toBeVisible()
+    await expect(page.getByRole("heading", { name: /find\. fix\. grow\./i })).toBeVisible()
 
     const body = page.locator("body")
     for (const unsupported of [
@@ -48,12 +48,11 @@ test.describe("about and founders page", () => {
     }
   })
 
-  test("marks unevidenced biography detail as awaiting founder confirmation", async ({ page }) => {
+  test("keeps unsupported biography drafting notes off the public page", async ({ page }) => {
     await gotoReady(page, "/about")
 
-    const notices = page.getByText(/awaiting founder confirmation/i)
-    await expect(notices).toHaveCount(2)
-    await expect(page.locator("#rhys")).toContainText(/a photograph for publication/i)
+    await expect(page.getByText(/awaiting founder confirmation/i)).toHaveCount(0)
+    await expect(page.locator("#trevor-newton-bradley")).toContainText(/commercial growth/i)
   })
 
   test("uses monogram presentation rather than stock portraits", async ({ page }) => {

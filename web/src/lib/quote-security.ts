@@ -190,7 +190,7 @@ export function scoreLeadQuality(payload: ValidQuotePayload): LeadQuality {
   if (payload.budget.includes("18,000") || payload.budget.includes("8,000")) score += 2
   if (!payload.budget.includes("Not sure")) score += 1
   if (payload.timeframe.includes("ASAP") || payload.timeframe.includes("4-6") || payload.timeframe.includes("8-12")) score += 1
-  if (payload.needs.includes("Custom Functionality") || payload.needs.includes("Payments") || payload.needs.includes("Care Plan")) score += 1
+  if (payload.needs.includes("Custom Functionality") || payload.needs.includes("Payments") || payload.needs.includes("Digital Growth Partnership") || payload.needs.includes("Care Plan")) score += 1
   if (payload.carePlanInterest === "Yes" || payload.carePlanInterest === "Maybe") score += 1
   if (payload.goal.length > 30 && payload.brief.length > 60) score += 1
 

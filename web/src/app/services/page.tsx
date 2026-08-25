@@ -83,8 +83,8 @@ export default function ServicesPage() {
         <div className="mx-auto grid max-w-[1240px] gap-8 rounded-3xl bg-s1 p-7 md:p-10 lg:grid-cols-[.8fr_1.2fr] lg:items-center">
           <div>
             <span className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">Managed infrastructure</span>
-            <h2 id="managed-estate-services" className="mt-3 font-syne text-[clamp(30px,4vw,48px)] font-extrabold tracking-[-.03em]">One technical partner beyond launch.</h2>
-            <p className="mt-4 font-dm text-sm leading-[1.8] text-t2">Hosting, maintenance and professional business email can sit inside the same deliberately scoped relationship as the systems ScaleSmiths builds.</p>
+            <h2 id="managed-estate-services" className="mt-3 font-syne text-[clamp(30px,4vw,48px)] font-extrabold tracking-[-.03em]">One accountable partner for what exists and what comes next.</h2>
+            <p className="mt-4 font-dm text-sm leading-[1.8] text-t2">A Digital Growth Partnership can start with an existing third-party website or infrastructure, or continue after a ScaleSmiths build. Priorities, responsibilities and commercial boundaries are agreed around the business.</p>
           </div>
           <div className="grid gap-3 sm:grid-cols-3">
             {[

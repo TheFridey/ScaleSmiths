@@ -79,10 +79,10 @@ export function Services({ claims }: { claims: ReadonlyMap<string, PublicClaim> 
         </AnimateIn>
 
         <AnimateIn className="mt-10 bg-s1 border border-b1 rounded-2xl p-7" delay={0.2}>
-          <p className="font-dm text-xs font-semibold uppercase tracking-[.12em] text-acc">Beyond launch</p>
+          <p className="font-dm text-xs font-semibold uppercase tracking-[.12em] text-acc">Ongoing growth and engineering</p>
           <h3 className="mt-2 font-syne text-2xl font-bold">Digital Growth Partnership</h3>
           <p className="font-dm text-sm text-t2 mb-6">
-            {claimWording(claims, "service.most-clients-retain-30-days", "Post-launch support is optional and scoped separately around maintenance, monitoring and measured improvements.")}
+            {claimWording(claims, "service.most-clients-retain-30-days", "Start directly with what already exists or continue after a build. Every partnership is scoped around agreed priorities, a practical roadmap and clear commercial boundaries.")}
           </p>
           <div className="grid md:grid-cols-3 gap-3">
             {digitalGrowthPartnerships.map((r) => (

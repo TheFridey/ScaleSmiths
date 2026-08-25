@@ -46,7 +46,7 @@ export const serviceJourneys: Record<ServiceJourneySlug, ServiceJourney> = {
       { title: "Build and measure", description: "Approved work is delivered with analytics foundations and practical checks against the goal it was meant to support." },
       { title: "Partner and improve", description: "If ongoing help is useful, the Digital Growth Partnership keeps the roadmap moving. It can begin around an existing site or after a ScaleSmiths build." },
     ],
-    proofSlugs: ["precision-finish", "glow-tanning"],
+    proofSlugs: ["precision-finish-plastering-rendering", "glow-tanning"],
     proofIntro: "Relevant local work for service and appointment-led businesses. Public outcome claims appear only when separately verified.",
     relatedPages: [
       { href: "/web-design-hucknall", label: "Web design in Hucknall", description: "Local website strategy, design, trust, and enquiry routes." },

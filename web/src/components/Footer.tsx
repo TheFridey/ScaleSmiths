@@ -1,35 +1,49 @@
 import Link from "next/link"
-import { ArrowUpRight } from "lucide-react"
 import { Logo } from "./Logo"
 import { LEGAL_LINKS } from "@/lib/legal"
 import { CookieSettingsButton } from "./CookieSettingsButton"
 
-const primaryLinks = [
-  { href: "/work", label: "Work" }, { href: "/services", label: "Services" },
-  { href: "/local-growth", label: "Local Growth" }, { href: "/custom-systems", label: "Custom Systems" },
-  { href: "/digital-growth-partnership", label: "Digital Growth Partnership" },
-  { href: "/services/business-growth-audit", label: "Business Growth Audit" },
-  { href: "/services/managed-business-email", label: "Managed Business Email" },
-  { href: "/about", label: "About" }, { href: "/quote", label: "Start a Project" },
+const navigationGroups = [
+  {
+    label: "Explore",
+    links: [{ href: "/work", label: "Work" }, { href: "/services", label: "Services" }, { href: "/about", label: "About" }],
+  },
+  {
+    label: "Build",
+    links: [{ href: "/local-growth", label: "Local Growth" }, { href: "/custom-systems", label: "Custom Systems" }, { href: "/services/managed-business-email", label: "Managed Business Email" }],
+  },
+  {
+    label: "Find & grow",
+    links: [{ href: "/services/business-growth-audit", label: "Business Growth Audit" }, { href: "/digital-growth-partnership", label: "Digital Growth Partnership" }, { href: "/quote", label: "Start a Project" }],
+  },
 ]
 
 export function Footer() {
   return (
-    <footer className="relative overflow-hidden border-t border-b1 bg-[#050d17] px-6 pb-8 pt-20 md:px-12 md:pt-28">
+    <footer className="relative overflow-hidden border-t border-b1 bg-[#050d17] px-6 pb-8 pt-14 sm:pb-28 md:px-12 md:pt-20">
       <div className="mx-auto max-w-[1240px]">
-        <div className="grid gap-14 border-b border-b1 pb-16 md:grid-cols-[1fr_auto] md:items-end">
-          <div><p className="font-dm text-xs font-semibold uppercase tracking-[.16em] text-acc">The next useful move</p><p className="mt-4 max-w-[760px] font-syne text-[clamp(34px,6vw,72px)] font-extrabold leading-[.96] tracking-[-.04em]">Strategy aligned.<br />Systems engineered.<br />Growth managed.</p></div>
-          <Link href="/quote" prefetch={false} className="group inline-flex w-fit items-center gap-3 border-b border-acc pb-2 font-dm text-sm font-semibold text-t1 transition-colors hover:text-acc">Discuss the project <ArrowUpRight size={16} className="transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 motion-reduce:transform-none" aria-hidden="true" /></Link>
+        <div className="grid gap-12 pb-14 md:grid-cols-[minmax(260px,1fr)_minmax(420px,1.45fr)] md:gap-16 md:pb-16">
+          <div>
+            <Logo size={42} />
+            <p className="mt-5 max-w-[360px] font-dm text-sm leading-relaxed text-t2">Founder-led business growth and engineering for ambitious organisations.</p>
+          </div>
+          <nav aria-label="Footer navigation" className="grid gap-9 sm:grid-cols-3 sm:gap-6">
+            {navigationGroups.map((group) => (
+              <div key={group.label}>
+                <p className="font-dm text-[11px] font-semibold uppercase tracking-[.16em] text-t3">{group.label}</p>
+                <ul className="mt-4 grid gap-3">
+                  {group.links.map((link) => <li key={link.href}><Link href={link.href} prefetch={false} className="footer-link inline-flex min-h-6 items-center font-dm text-sm text-t2">{link.label}</Link></li>)}
+                </ul>
+              </div>
+            ))}
+          </nav>
         </div>
 
-        <div className="grid gap-10 py-10 md:grid-cols-[1fr_1.5fr]">
-          <div className="flex items-start gap-3"><Logo size={26} /><p className="max-w-[280px] font-dm text-sm leading-relaxed text-t2">Founder-led business growth and engineering for ambitious organisations.</p></div>
-          <nav aria-label="Footer navigation" className="grid grid-cols-2 gap-x-8 gap-y-3 sm:grid-cols-3">{primaryLinks.map((link) => <Link key={link.href} href={link.href} prefetch={false} className="footer-link font-dm text-sm text-t2">{link.label}</Link>)}</nav>
+        <div className="grid gap-5 border-t border-b1 pt-7 font-dm text-xs text-t3 lg:grid-cols-[1fr_auto_auto] lg:items-center lg:gap-8">
+          <address className="not-italic">Hucknall, Nottinghamshire · Working across the UK</address>
+          <div className="flex flex-wrap gap-x-5 gap-y-3">{LEGAL_LINKS.map((link) => <Link key={link.href} href={link.href} className="footer-link inline-flex min-h-6 items-center">{link.label}</Link>)}<CookieSettingsButton /></div>
+          <span>© 2026 ScaleSmiths</span>
         </div>
-
-        <div className="overflow-hidden border-y border-b1 py-5" aria-label="ScaleSmiths"><p className="whitespace-nowrap text-center font-syne text-[clamp(54px,13.5vw,176px)] font-extrabold leading-[.82] tracking-[-.065em] text-t1">SCALESMITHS</p></div>
-
-        <div className="mt-7 flex flex-col gap-4 font-dm text-xs text-t3 sm:flex-row sm:items-center sm:justify-between"><address className="not-italic">Hucknall, Nottinghamshire · Working across the UK</address><div className="flex flex-wrap gap-5">{LEGAL_LINKS.map((link) => <Link key={link.href} href={link.href} className="footer-link">{link.label}</Link>)}<CookieSettingsButton /></div><span>© 2026 ScaleSmiths</span></div>
       </div>
     </footer>
   )

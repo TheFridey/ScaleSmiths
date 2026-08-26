@@ -20,7 +20,7 @@ const steps = [
   },
   {
     n: "04", label: "Scale", title: "Scale",
-    desc: "Monitor and iterate. Ongoing support is optional and scoped around the work the business needs after launch.", Icon: TrendingUp,
+    desc: "A Digital Growth Partnership keeps agreed priorities moving through a scoped roadmap of ongoing improvement, whether we built the current estate or are taking it over.", Icon: TrendingUp,
   },
 ]
 

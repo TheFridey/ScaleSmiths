@@ -16,7 +16,7 @@ describe("service buying journeys", () => {
   })
 
   it("maps only existing case studies to each journey", () => {
-    expect(projectsForJourney(serviceJourneys["local-growth"]).map((project) => project.slug)).toEqual(["glow-tanning", "csds"])
+    expect(projectsForJourney(serviceJourneys["local-growth"]).map((project) => project.slug)).toEqual(["precision-finish-plastering-rendering", "glow-tanning", "csds"])
     expect(projectsForJourney(serviceJourneys["custom-systems"]).map((project) => project.slug)).toEqual(["pinkys-prints", "the-business-circle", "prymal", "veteranfinder"])
   })
 
@@ -32,6 +32,9 @@ describe("service buying journeys", () => {
   it("does not introduce unverified price promises", () => {
     const publicCopy = JSON.stringify(serviceJourneys)
     expect(publicCopy).not.toMatch(/£|GBP|starting at|from \d/i)
-    expect(serviceJourneys["local-growth"].process.some((step) => /optional|scoped separately/i.test(step.description))).toBe(true)
+    expect(serviceJourneys["local-growth"].process).toContainEqual({
+      title: "Grow",
+      description: expect.stringMatching(/Digital Growth Partnership.*agreed roadmap, cadence and scope/i),
+    })
   })
 })

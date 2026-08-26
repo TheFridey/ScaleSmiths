@@ -10,6 +10,12 @@ import { assertSafeIntegrationDatabaseUrl } from "../../src/lib/test-database-sa
 const runExec = promisify(execFile)
 let pool: Pool
 
+interface ForgeStepState {
+  stage: string
+  status: string
+  failure_category?: string | null
+}
+
 function roleUrl(base: string, username: string, password: string) {
   const url = new URL(base)
   url.username = username
@@ -77,9 +83,9 @@ describe("Forge invalidation modes (real PostgreSQL)", () => {
     const { invalidateDownstreamForChangedInput } = await import("../../src/lib/server/forge-runs/invalidation")
     await invalidateDownstreamForChangedInput(run, project, "copy", "test")
 
-    const steps = await pool.query("SELECT stage, status, failure_category FROM forge_run_steps WHERE run_id=$1 ORDER BY sequence", [run])
-    expect(steps.rows.find((s: any) => s.stage === "research")?.status).toBe("completed")
-    expect(steps.rows.find((s: any) => s.stage === "design_system")?.status).toBe("pending")
+    const steps = await pool.query<ForgeStepState>("SELECT stage, status, failure_category FROM forge_run_steps WHERE run_id=$1 ORDER BY sequence", [run])
+    expect(steps.rows.find((step) => step.stage === "research")?.status).toBe("completed")
+    expect(steps.rows.find((step) => step.stage === "design_system")?.status).toBe("pending")
   })
 
   it("redesign mode invalidation", async () => {
@@ -158,9 +164,9 @@ describe("Forge invalidation modes (real PostgreSQL)", () => {
     await insertArtifact(project, "design_system", "design-v2")
     const { invalidateDownstreamForChangedInput } = await import("../../src/lib/server/forge-runs/invalidation")
     await invalidateDownstreamForChangedInput(run, project, "design_system", "test")
-    const steps = await pool.query("SELECT stage, status FROM forge_run_steps WHERE run_id=$1 ORDER BY sequence", [run])
-    expect(steps.rows.find((s: any) => s.stage === "research")?.status).toBe("completed")
-    expect(steps.rows.find((s: any) => s.stage === "copy")?.status).toBe("completed")
+    const steps = await pool.query<ForgeStepState>("SELECT stage, status FROM forge_run_steps WHERE run_id=$1 ORDER BY sequence", [run])
+    expect(steps.rows.find((step) => step.stage === "research")?.status).toBe("completed")
+    expect(steps.rows.find((step) => step.stage === "copy")?.status).toBe("completed")
   })
 
   it("repeated invalidation is idempotent", async () => {

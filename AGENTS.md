@@ -343,7 +343,7 @@ Do not reintroduce legacy or alternative assumptions such as:
 ```text
 /srv
 /scalesmiths
-scalesmiths.co.uk/admin
+a path-based `/admin` URL on the public website domain
 ```
 
 unless the production-topology policy itself is intentionally being migrated.

@@ -4,17 +4,13 @@ import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import {
   AlertTriangle,
-  CheckCircle2,
+  ClipboardList,
   Clock3,
   ExternalLink,
   FileText,
-  Folder,
-  Globe2,
-  HeartPulse,
   LifeBuoy,
   Loader2,
   MessageSquare,
-  Search,
   ShieldCheck,
   Sparkles,
   type LucideIcon,
@@ -42,7 +38,6 @@ type PortalTimelineRow = ClientPortalTimelineEvent & { createdAt: string | Date 
 interface PortalOperatingHubProps {
   clientId: string
   websiteName: string
-  domain: string | null
   planTier: string | null
   currentStatus: string
   supportEmail: string
@@ -89,7 +84,6 @@ const CATEGORY_LABELS: Record<ClientRequestCategory, string> = {
 export function PortalOperatingHub({
   clientId,
   websiteName,
-  domain,
   planTier,
   currentStatus,
   supportEmail,
@@ -159,13 +153,13 @@ export function PortalOperatingHub({
 
   return (
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(340px,0.9fr)]">
-      <section className="rounded-2xl border border-b1 bg-s1 p-6">
+      <section className="rounded-2xl border border-b1 bg-s1 p-6 xl:col-span-2">
         <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <div className="font-dm text-xs font-semibold uppercase tracking-[0.14em] text-acc">Website overview</div>
+            <div className="font-dm text-xs font-semibold uppercase tracking-[0.14em] text-acc">At a glance</div>
             <h2 className="mt-2 font-syne text-2xl font-bold">{websiteName}</h2>
             <p className="mt-2 max-w-[680px] font-dm text-sm leading-relaxed text-t2">
-              Your ScaleSmiths operating hub for support, requests, website health, content priorities, and shared delivery notes.
+              A focused view of your active work, updates, and next step.
             </p>
           </div>
           <Link href={requestWorkHref} className="btn-primary shrink-0 font-dm text-sm">
@@ -173,43 +167,16 @@ export function PortalOperatingHub({
           </Link>
         </div>
 
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          <InfoCard Icon={Globe2} label="Domain" value={domain ?? "Domain not connected yet"} note={domain ? "Live website reference" : "Future website profile data"} />
-          <InfoCard Icon={ShieldCheck} label="Plan / partnership" value={planTier ?? "Plan not assigned yet"} note="Confirmed plan will appear here" />
-          <InfoCard Icon={HeartPulse} label="Current status" value={currentStatus} note="Operational portal status" />
+        <div className="grid gap-3 md:grid-cols-3">
+          <InfoCard Icon={ClipboardList} label="Open requests" value={loading ? "Checking..." : String(requestGroups.open.length)} note={requestGroups.waiting.length ? `${requestGroups.waiting.length} waiting for you` : "Nothing waiting for you"} />
           <InfoCard
             Icon={Clock3}
-            label="Last updated"
+            label="Latest activity"
             value={requestGroups.latestUpdated ? formatDate(requestGroups.latestUpdated) : "No tracked updates yet"}
-            note="Based on portal request activity"
+            note="From your request workspace"
           />
-          <InfoCard Icon={LifeBuoy} label="Support route" value="Log all work in Requests" note={`Critical issues: also email ${supportEmail}`} />
-          <InfoCard Icon={MessageSquare} label="Response guidance" value="See support agreement" note="Urgency is triaged against the agreed support scope" />
+          <InfoCard Icon={ShieldCheck} label="Partnership" value={planTier ?? "Setup in progress"} note={currentStatus} />
         </div>
-      </section>
-
-      <section className="rounded-2xl border border-acc/20 bg-acc/10 p-6">
-        <AlertTriangle size={18} className="mb-4 text-acc" aria-hidden="true" />
-        <h2 className="font-syne text-xl font-bold">Emergency support</h2>
-        <div className="mt-4 grid gap-3">
-          <GuidanceBlock
-            title="Critical"
-            body="Site down, contact form broken, payment issue, domain issue, or SSL/security warning."
-            tone="critical"
-          />
-          <GuidanceBlock
-            title="Non-critical"
-            body="Text changes, image swaps, SEO/content requests, blog updates, new page requests, and normal website improvements."
-            tone="normal"
-          />
-        </div>
-        <p className="mt-4 font-dm text-sm leading-relaxed text-t2">
-          For critical issues, log a request for tracking, then use your agreed direct line or email{" "}
-          <a href={`mailto:${supportEmail}?subject=URGENT%20client%20portal%20support`} className="text-acc underline-offset-2 hover:underline">
-            {supportEmail}
-          </a>{" "}
-          with URGENT in the subject.
-        </p>
       </section>
 
       <section id="request-centre" className="rounded-2xl border border-b1 bg-s1 p-6 xl:col-span-2">
@@ -293,6 +260,17 @@ export function PortalOperatingHub({
         </Link>
       </section>
 
+      <section className="flex flex-col gap-4 rounded-2xl border border-b1 bg-s1 p-5 sm:flex-row sm:items-center sm:justify-between xl:col-span-2">
+        <div className="flex items-start gap-3">
+          <LifeBuoy size={18} className="mt-0.5 shrink-0 text-acc" aria-hidden="true" />
+          <div>
+            <h2 className="font-syne text-base font-bold">Need urgent support?</h2>
+            <p className="mt-1 max-w-[760px] font-dm text-sm leading-relaxed text-t2">Log a critical request first. If your site is down or there is a security, payment, domain, or form issue, also email {supportEmail}.</p>
+          </div>
+        </div>
+        <a href={`mailto:${supportEmail}?subject=URGENT%20client%20portal%20support`} className="shrink-0 font-dm text-sm font-semibold text-acc underline-offset-2 hover:underline">Email support</a>
+      </section>
+
       <section className="rounded-2xl border border-b1 bg-s1 p-6 xl:col-span-2">
         <Clock3 size={18} className="mb-4 text-acc" aria-hidden="true" />
         <h2 className="font-syne text-xl font-bold">Timeline</h2>
@@ -302,61 +280,6 @@ export function PortalOperatingHub({
         </div>
       </section>
 
-      <section className="rounded-2xl border border-b1 bg-s1 p-6">
-        <Search size={18} className="mb-4 text-acc" aria-hidden="true" />
-        <h2 className="font-syne text-xl font-bold">SEO and content</h2>
-        <div className="mt-5 grid gap-3">
-          <InfoLine label="Current SEO focus" value="Not connected yet" note="Future Search Console/content plan integration." />
-          <InfoLine label="Recent content activity" value={recentContentActivity(requests)} note="Based on portal requests for now." />
-          <InfoLine label="Upcoming recommendations" value="Coming soon" note="Recommendations will appear once live review data is connected." />
-        </div>
-      </section>
-
-      <section className="rounded-2xl border border-b1 bg-s1 p-6">
-        <Folder size={18} className="mb-4 text-acc" aria-hidden="true" />
-        <h2 className="font-syne text-xl font-bold">Documents and assets</h2>
-        <div className="mt-5 grid gap-3">
-          <InfoLine label="Uploaded assets" value="No assets uploaded yet" note="Asset upload/library integration is not live yet." />
-          <InfoLine label="Brand notes" value="Pending" note="Logo, colours, tone of voice, and reusable notes will appear here." />
-          <InfoLine label="Handoff documents" value="Coming soon" note="Launch notes and operating docs will be added when published." />
-        </div>
-      </section>
-
-      <section className="rounded-2xl border border-b1 bg-s1 p-6">
-        <LifeBuoy size={18} className="mb-4 text-acc" aria-hidden="true" />
-        <h2 className="font-syne text-xl font-bold">Contact and support routes</h2>
-        <div className="mt-5 grid gap-3">
-          <SupportRoute title="Request work" body="Best for tracked changes, fixes, content, and approvals." href={requestWorkHref} label="Open requests" />
-          <SupportRoute title="Email support" body={`Best for critical backup communication: ${supportEmail}`} href={`mailto:${supportEmail}`} label="Email ScaleSmiths" />
-          <SupportRoute title="Reports" body="Review published monthly summaries and next-step recommendations." href={`/portal/${clientId}?tab=reports`} label="Open reports" />
-        </div>
-      </section>
-
-      <section className="rounded-2xl border border-b1 bg-s1 p-6 xl:col-span-2">
-        <Sparkles size={18} className="mb-4 text-acc" aria-hidden="true" />
-        <h2 className="font-syne text-xl font-bold">Performance and health</h2>
-        <p className="mt-2 max-w-[760px] font-dm text-sm leading-relaxed text-t2">
-          No fake analytics here. These cards show what is live now and what will become automated as integrations are connected.
-        </p>
-        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          <HealthCard label="Portal access" value="Active" tone="good" note="Secure client login is live." />
-          <HealthCard label="Request tracking" value="Active" tone="good" note="Requests are logged and statused." />
-          <HealthCard label="Uptime monitoring" value="Coming soon" tone="soon" note="No live monitor connected yet." />
-          <HealthCard label="Analytics snapshot" value="Coming soon" tone="soon" note="Traffic metrics will show after integration." />
-        </div>
-      </section>
-    </div>
-  )
-}
-
-function SupportRoute({ title, body, href, label }: { title: string; body: string; href: string; label: string }) {
-  return (
-    <div className="rounded-xl border border-b1 bg-s2 p-4">
-      <div className="font-dm text-sm font-semibold text-t1">{title}</div>
-      <p className="mt-1 font-dm text-sm leading-relaxed text-t2">{body}</p>
-      <Link href={href} className="mt-3 inline-flex font-dm text-xs font-semibold text-acc underline-offset-2 hover:underline">
-        {label}
-      </Link>
     </div>
   )
 }
@@ -435,45 +358,6 @@ function InfoCard({ Icon, label, value, note }: { Icon: LucideIcon; label: strin
   )
 }
 
-function InfoLine({ label, value, note }: { label: string; value: string; note: string }) {
-  return (
-    <div className="rounded-xl border border-b1 bg-s2 p-4">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <div className="font-dm text-xs text-t2">{label}</div>
-          <div className="mt-1 font-dm text-sm font-semibold text-t1">{value}</div>
-        </div>
-        <span className="w-fit rounded border border-b2 bg-s1 px-2 py-0.5 font-dm text-[11px] text-t3">Future data</span>
-      </div>
-      <p className="mt-2 font-dm text-xs leading-relaxed text-t2">{note}</p>
-    </div>
-  )
-}
-
-function HealthCard({ label, value, tone, note }: { label: string; value: string; tone: "good" | "soon"; note: string }) {
-  return (
-    <div className="rounded-xl border border-b1 bg-s2 p-4">
-      <div className="flex items-center justify-between gap-3">
-        <div className="font-dm text-xs text-t2">{label}</div>
-        <span className={tone === "good" ? "text-grn" : "text-t3"}>
-          {tone === "good" ? <CheckCircle2 size={15} aria-hidden="true" /> : <Clock3 size={15} aria-hidden="true" />}
-        </span>
-      </div>
-      <div className="mt-3 font-syne text-lg font-bold">{value}</div>
-      <p className="mt-1 font-dm text-xs leading-relaxed text-t2">{note}</p>
-    </div>
-  )
-}
-
-function GuidanceBlock({ title, body, tone }: { title: string; body: string; tone: "critical" | "normal" }) {
-  return (
-    <div className={tone === "critical" ? "rounded-xl border border-red/25 bg-red/10 p-4" : "rounded-xl border border-b1 bg-s1/70 p-4"}>
-      <div className={tone === "critical" ? "font-dm text-sm font-semibold text-red" : "font-dm text-sm font-semibold text-t1"}>{title}</div>
-      <p className="mt-1 font-dm text-sm leading-relaxed text-t2">{body}</p>
-    </div>
-  )
-}
-
 function PanelNotice({ Icon, title, body, spin = false }: { Icon: LucideIcon; title: string; body: string; spin?: boolean }) {
   return (
     <div className="rounded-xl border border-dashed border-b2 bg-s2 p-5">
@@ -490,12 +374,6 @@ function Badge({ children }: { children: React.ReactNode }) {
       {children}
     </span>
   )
-}
-
-function recentContentActivity(requests: PortalRequestRow[]) {
-  const contentRequests = requests.filter((request) => ["seo_request", "content_assets", "new_page", "website_update"].includes(request.category))
-  if (contentRequests.length === 0) return "No recent content activity logged"
-  return `${contentRequests.length} related request${contentRequests.length === 1 ? "" : "s"} logged`
 }
 
 function formatDate(value: Date | string) {

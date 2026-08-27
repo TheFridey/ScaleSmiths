@@ -9,8 +9,8 @@ import {
   formatClientRequestTriageSummary,
 } from "@/lib/client-request-triage"
 import { getClientSessionFromRequest, unauthorizedClientPortalResponse } from "@/lib/portal-session"
+import { loadPortalClientProfile } from "@/lib/portal-client-profile"
 import {
-  deriveClientDisplayName,
   isCriticalClientRequest,
   sendClientRequestNotifications,
 } from "@/lib/request-notifications"
@@ -96,7 +96,8 @@ export async function POST(request: NextRequest) {
 
   try {
     const now = new Date()
-    const clientName = deriveClientDisplayName(session.clientId)
+    const profile = await loadPortalClientProfile(session.clientId)
+    const clientName = profile?.companyName ?? "Client workspace"
     const triage = createFallbackClientRequestTriage({
       title: parsed.data.title,
       description: parsed.data.description,

@@ -98,6 +98,10 @@ export const portalClientAccounts = pgTable("portal_client_accounts", {
 // an intentionally narrow read/telemetry projection only.
 export const invoicePortalClients = pgTable("clients", {
   id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  contactName: text("contact_name"),
+  tier: text("tier"),
+  status: text("status").notNull(),
   portalClientId: text("portal_client_id"),
 })
 export const portalInvoices = pgTable("invoices", {

@@ -12,15 +12,11 @@ import {
 import { serializeClientPortalTimelineEvent } from "@/lib/client-timeline"
 import { db } from "@/lib/db"
 import { requireClientPortalAccess } from "@/lib/portal-session"
+import { loadPortalClientProfile } from "@/lib/portal-client-profile"
 import { clientRequestMessages, clientRequests, clientTimelineEvents } from "@/lib/schema"
 
 interface PortalRequestPageProps {
   params: Promise<{ clientId: string; requestId: string }>
-}
-
-const SAFE_PLACEHOLDER_CLIENT = {
-  tier: null,
-  price: "Active",
 }
 
 export default async function PortalRequestPage({ params }: PortalRequestPageProps) {
@@ -32,7 +28,7 @@ export default async function PortalRequestPage({ params }: PortalRequestPagePro
     notFound()
   }
 
-  const [row] = await db
+  const [[row], profile] = await Promise.all([db
     .select({
       id: clientRequests.id,
       title: clientRequests.title,
@@ -49,9 +45,9 @@ export default async function PortalRequestPage({ params }: PortalRequestPagePro
       eq(clientRequests.id, id),
       eq(clientRequests.clientId, session.clientId),
     ))
-    .limit(1)
+    .limit(1), loadPortalClientProfile(session.clientId)])
 
-  if (!row) {
+  if (!row || !profile) {
     notFound()
   }
 
@@ -96,15 +92,11 @@ export default async function PortalRequestPage({ params }: PortalRequestPagePro
   const request = serializeClientPortalRequest(row)
   const visibleMessages = messages.map(serializeClientPortalMessage).filter((message) => message !== null)
   const visibleTimeline = timeline.map(serializeClientPortalTimelineEvent).filter((event) => event !== null)
-  const websiteName = deriveWebsiteName(session.clientId)
-
   return (
     <div className="flex min-h-screen flex-col bg-bg text-t1 md:flex-row">
       <PortalNav
         clientId={session.clientId}
-        clientName={websiteName}
-        tier={SAFE_PLACEHOLDER_CLIENT.tier ?? "Plan pending"}
-        price={SAFE_PLACEHOLDER_CLIENT.price}
+        clientName={profile.portalName}
       />
 
       <main className="flex-1 px-5 py-6 md:px-8 md:py-8">
@@ -130,16 +122,4 @@ export default async function PortalRequestPage({ params }: PortalRequestPagePro
       </main>
     </div>
   )
-}
-
-function deriveWebsiteName(clientId: string) {
-  const cleaned = clientId
-    .replace(/^https?:\/\//, "")
-    .replace(/^www\./, "")
-    .split(/[/.#?]/)[0]
-    .replace(/[-_]+/g, " ")
-    .trim()
-
-  if (!cleaned) return "Client Workspace"
-  return cleaned.replace(/\b\w/g, (letter) => letter.toUpperCase())
 }

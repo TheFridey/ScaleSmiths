@@ -17,6 +17,7 @@ import { db } from "@/lib/db"
 import { requireClientPortalAccess } from "@/lib/portal-session"
 import { clientRequestMessages, clientRequests, monthlyReports } from "@/lib/schema"
 import { listPortalInvoices } from "@/lib/portal-invoices"
+import { loadPortalClientProfile } from "@/lib/portal-client-profile"
 
 interface PortalPageProps {
   params: Promise<{ clientId: string }>
@@ -24,15 +25,7 @@ interface PortalPageProps {
 }
 
 const SAFE_PLACEHOLDER_CLIENT = {
-  name: "Client Workspace",
-  tier: null,
-  price: "Active",
-  status: "Portal active - website profile pending",
-  phase: "Workspace setup",
   progress: 18,
-  nextAction: "ScaleSmiths will publish your next milestone after onboarding.",
-  keyDates: "Key dates will appear after the project schedule is agreed.",
-  responseWindow: "See support agreement",
   supportEmail: "hello@scalesmiths.co.uk",
 }
 
@@ -50,42 +43,42 @@ export default async function PortalClientPage({ params, searchParams }: PortalP
   const resolvedSearchParams = await searchParams
   const tab = resolvedSearchParams.tab ?? "overview"
   const portalClientId = session.clientId
-  const websiteName = deriveWebsiteName(portalClientId)
-  const domain = deriveDomain(portalClientId)
-  const planTier = SAFE_PLACEHOLDER_CLIENT.tier
-  const [latestReport, recentMessages] = await Promise.all([
+  const [profile, latestReport, recentMessages] = await Promise.all([
+    loadPortalClientProfile(portalClientId),
     loadLatestReport(portalClientId),
     loadRecentThreadMessages(portalClientId),
   ])
+
+  if (!profile) {
+    throw new Error("The portal account is not linked to an active client workspace.")
+  }
+
+  const planTier = profile.tier
 
   return (
     <div className="flex min-h-screen flex-col bg-bg text-t1 md:flex-row">
       <PortalNav
         clientId={portalClientId}
-        clientName={websiteName}
-        tier={planTier ?? "Plan pending"}
-        price={SAFE_PLACEHOLDER_CLIENT.price}
+        clientName={profile.portalName}
       />
 
       <main className="flex-1 px-5 py-6 md:px-8 md:py-8">
-        <div className="mb-8 flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+        <div className="mb-8">
           <div>
-            <span className="font-dm text-xs font-semibold uppercase tracking-[0.14em] text-acc">Portal</span>
-            <h1 className="mt-2 font-syne text-[clamp(32px,5vw,48px)] font-extrabold tracking-[-0.03em]">Operating hub</h1>
+            <span className="font-dm text-xs font-semibold uppercase tracking-[0.14em] text-acc">{profile.portalName}</span>
+            <h1 className="mt-2 font-syne text-[clamp(32px,5vw,48px)] font-extrabold tracking-[-0.03em]">
+              Welcome back{profile.contactFirstName ? `, ${profile.contactFirstName}` : ""}!
+            </h1>
             <p className="mt-2 max-w-[700px] font-dm text-sm leading-relaxed text-t2">
-              Track requests, support routes, website status, useful assets, and next-step guidance in one private ScaleSmiths workspace.
+              Here is what needs your attention and the latest activity from ScaleSmiths.
             </p>
-          </div>
-          <div className="rounded-xl border border-b1 bg-s1 px-4 py-3 lg:text-right">
-            <div className="font-dm text-xs text-t2">Response window</div>
-            <div className="mt-1 font-syne text-sm font-bold">{SAFE_PLACEHOLDER_CLIENT.responseWindow}</div>
           </div>
         </div>
 
         {tab === "files" ? (
           <DocumentsTab />
         ) : tab === "messages" ? (
-          <MessagesTab clientId={portalClientId} />
+          <MessagesTab clientId={portalClientId} clientName={profile.companyName} />
         ) : tab === "board" ? (
           <ProgressTab />
         ) : tab === "requests" ? (
@@ -97,9 +90,9 @@ export default async function PortalClientPage({ params, searchParams }: PortalP
         ) : (
           <OverviewTab
             clientId={portalClientId}
-            websiteName={websiteName}
-            domain={domain}
+            websiteName={profile.companyName}
             planTier={planTier}
+            clientStatus={profile.status}
             latestReport={latestReport}
             recentMessages={recentMessages}
           />
@@ -119,15 +112,15 @@ function gbp(value:number){return new Intl.NumberFormat("en-GB",{style:"currency
 function OverviewTab({
   clientId,
   websiteName,
-  domain,
   planTier,
+  clientStatus,
   latestReport,
   recentMessages,
 }: {
   clientId: string
   websiteName: string
-  domain: string | null
   planTier: string | null
+  clientStatus: string
   latestReport: Awaited<ReturnType<typeof loadLatestReport>>
   recentMessages: Awaited<ReturnType<typeof loadRecentThreadMessages>>
 }) {
@@ -135,9 +128,8 @@ function OverviewTab({
     <PortalOperatingHub
       clientId={clientId}
       websiteName={websiteName}
-      domain={domain}
       planTier={planTier}
-      currentStatus={SAFE_PLACEHOLDER_CLIENT.status}
+      currentStatus={clientStatus === "active" ? "Active workspace" : clientStatus}
       supportEmail={SAFE_PLACEHOLDER_CLIENT.supportEmail}
       latestReport={latestReport}
       recentMessages={recentMessages}
@@ -259,10 +251,10 @@ function DocumentsTab() {
   )
 }
 
-function MessagesTab({ clientId }: { clientId: string }) {
+function MessagesTab({ clientId, clientName }: { clientId: string; clientName: string }) {
   return (
     <div className="grid gap-4 lg:grid-cols-[1fr_0.85fr]">
-      <PortalMessageComposer clientName={SAFE_PLACEHOLDER_CLIENT.name} clientId={clientId} />
+      <PortalMessageComposer clientName={clientName} clientId={clientId} />
       <section className="rounded-2xl border border-b1 bg-s1 p-6">
         <MessageSquare size={18} className="mb-4 text-acc" aria-hidden="true" />
         <h2 className="font-syne text-xl font-bold">Message history</h2>
@@ -353,21 +345,4 @@ function EmptyState({ title, body, Icon }: { title: string; body: string; Icon: 
       </div>
     </section>
   )
-}
-
-function deriveWebsiteName(clientId: string) {
-  const cleaned = clientId
-    .replace(/^https?:\/\//, "")
-    .replace(/^www\./, "")
-    .split(/[/.#?]/)[0]
-    .replace(/[-_]+/g, " ")
-    .trim()
-
-  if (!cleaned) return SAFE_PLACEHOLDER_CLIENT.name
-  return cleaned.replace(/\b\w/g, (letter) => letter.toUpperCase())
-}
-
-function deriveDomain(clientId: string) {
-  const cleaned = clientId.replace(/^https?:\/\//, "").replace(/\/.*$/, "").trim()
-  return cleaned.includes(".") ? cleaned : null
 }

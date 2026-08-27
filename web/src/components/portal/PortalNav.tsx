@@ -19,11 +19,9 @@ const TABS = [
 interface PortalNavProps {
   clientId: string
   clientName: string
-  tier: string
-  price: string
 }
 
-export function PortalNav({ clientId, clientName, tier, price }: PortalNavProps) {
+export function PortalNav({ clientId, clientName }: PortalNavProps) {
   const searchParams = useSearchParams()
   const router = useRouter()
   const active = searchParams.get("tab") ?? "overview"
@@ -68,14 +66,9 @@ export function PortalNav({ clientId, clientName, tier, price }: PortalNavProps)
       </nav>
 
       <div className="mt-4 md:mt-auto">
-        <div className="rounded-xl border border-acc/20 bg-acc/10 p-4">
-          <div className="font-dm text-[11px] text-t2">Digital Growth Partnership</div>
-          <div className="mt-1 font-syne text-base font-bold text-t1">{tier}</div>
-          <div className="mt-2 font-syne text-2xl font-extrabold text-acc">{price}</div>
-        </div>
         <button
           onClick={logout}
-          className="mt-3 flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 font-dm text-[13px] text-t2 transition-colors hover:bg-s2 hover:text-t1"
+          className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 font-dm text-[13px] text-t2 transition-colors hover:bg-s2 hover:text-t1"
         >
           <LogOut size={15} aria-hidden="true" />
           Sign out

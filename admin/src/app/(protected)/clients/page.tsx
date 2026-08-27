@@ -14,6 +14,7 @@ export default async function ClientsPage() {
         id: clients.id,
         name: clients.name,
         contactName: clients.contactName,
+        contactEmail: clients.contactEmail,
         tier: clients.tier,
         mrr: clients.mrr,
         status: clients.status,

@@ -158,6 +158,7 @@ describe("RBAC — clients", () => {
   it("clients write is owner, administrator, project_manager", () => {
     const writeRoutes = [
       { pathname: "/clients/new", method: "GET" },
+      { pathname: "/clients/1/edit", method: "GET" },
       { pathname: "/api/clients", method: "POST" },
       { pathname: "/api/clients/1", method: "PATCH" },
     ]

@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react"
 import Link from "next/link"
-import { Download, Plus, Save, Send, Users, Wand2 } from "lucide-react"
+import { Download, Pencil, Plus, Save, Send, Users, Wand2 } from "lucide-react"
 
 const T = { s1:"var(--s1)",s2:"var(--s2)",s3:"var(--s3)",b1:"var(--b1)",b2:"var(--b2)",t1:"var(--t1)",t2:"var(--t2)",t3:"var(--t3)",grn:"var(--grn)",amb:"var(--amb)" }
 
@@ -10,6 +10,7 @@ interface ClientRow {
   id: number
   name: string
   contactName: string | null
+  contactEmail: string | null
   tier: string | null
   mrr: number
   status: string
@@ -148,8 +149,13 @@ export function ClientsTable({ clients, salesProposals }: { clients: ClientRow[]
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg font-syne text-[13px] font-bold" style={{ background:T.s3, color:T.t2 }}>
                     {initial(client.name)}
                   </div>
-                  <div className="min-w-0">
-                    <div className="truncate font-dm text-sm font-medium">{client.name}</div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <div className="truncate font-dm text-sm font-medium">{client.name}</div>
+                      <Link href={`/clients/${client.id}/edit`} className="shrink-0 text-t3 transition-colors hover:text-acc" aria-label={`Edit ${client.name}`} title={`Edit ${client.name}`}>
+                        <Pencil size={13} aria-hidden="true" />
+                      </Link>
+                    </div>
                     <div className="font-dm text-[11px]" style={{ color:T.t2 }}>{client.contactName ?? "No contact set"}</div>
                   </div>
                 </div>

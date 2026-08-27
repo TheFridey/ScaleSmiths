@@ -400,6 +400,12 @@
       "reason": "Adds notification_email_status and notification_email_failure_reason columns to client_requests so email notification failures are persisted."
     },
     {
+      "path": "web/drizzle/0015_client_request_notification_status_reconciliation.sql",
+      "sha256": "ea2ce5cbcd62d145bca4cf91f18553d8b1a8a790693fc60867b14751f1051b58",
+      "lifecycle": "forward-correction",
+      "reason": "Idempotently reconciles notification delivery columns when migration 0014 is recorded but its schema changes are absent."
+    },
+    {
       "path": "admin/drizzle/0042_historical_schema_reconciliation.sql",
       "sha256": "0f0644d5c55fff5589cb0b7b0a506d62f0886d6dbd551c34edf85d6cadfb301a",
       "lifecycle": "forward-correction",
@@ -493,6 +499,13 @@
           "version": "7",
           "when": 1790982000000,
           "tag": "0014_client_request_notification_status",
+          "breakpoints": true
+        },
+        {
+          "idx": 15,
+          "version": "7",
+          "when": 1791068400000,
+          "tag": "0015_client_request_notification_status_reconciliation",
           "breakpoints": true
         }
       ]

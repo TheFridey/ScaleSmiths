@@ -67,7 +67,7 @@ export function DeliveryCapacityDashboard({ forecast }: { forecast: CapacityFore
         <Metric label="Forge workload" value={`${forecast.weekly[0]?.forgeHours ?? 0}h`} detail="Current week automation/review effort" />
       </section>
 
-      <section className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
+      <section className="grid gap-4 2xl:grid-cols-2">
         <ForecastTable title="Weekly forecast" periods={forecast.weekly} />
         <ForecastTable title="Monthly forecast" periods={forecast.monthly} />
       </section>
@@ -152,27 +152,13 @@ export function DeliveryCapacityDashboard({ forecast }: { forecast: CapacityFore
 
 function ForecastTable({ title, periods }: { title: string; periods: CapacityPeriod[] }) {
   return (
-    <section className="rounded border border-b1 bg-s1 p-4">
-      <h2 className="font-semibold">{title}</h2>
-      <div className="mt-3 overflow-x-auto">
-        <table className="w-full text-left text-sm">
-          <thead className="text-t3"><tr><th>Period</th><th>Confirmed</th><th>Probable</th><th>Capacity</th><th>Use</th><th>Risk</th></tr></thead>
-          <tbody>
-            {periods.map((period) => (
-              <tr key={period.key} className="border-t border-b1 align-top">
-                <td className="py-2">
-                  <div className="font-semibold">{period.label}</div>
-                  {period.warnings.map((warning) => <div key={warning} className="text-xs text-amber-200">{warning}</div>)}
-                </td>
-                <td>{period.confirmedHours}h</td>
-                <td>{period.probableHours}h</td>
-                <td>{period.adjustedCapacityHours}h</td>
-                <td>{period.utilization}%</td>
-                <td><Badge value={`${period.risk} / ${period.confidence}`} tone={period.risk === "high" ? "bad" : period.risk === "medium" ? "warn" : "good"} /></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+    <section className="min-w-0 rounded-xl border border-b1 bg-s1 p-4 sm:p-5">
+      <div className="flex items-center justify-between gap-3"><h2 className="font-syne text-base font-bold">{title}</h2><span className="text-xs text-t3">{periods.length} periods</span></div>
+      <div className="mt-4 overflow-x-auto">
+        <div className="min-w-[680px] text-sm">
+          <div className="grid grid-cols-[minmax(10rem,1fr)_repeat(4,4.75rem)_7.5rem] gap-3 border-b border-b1 px-2 pb-2 text-xs font-semibold uppercase tracking-wide text-t3"><span>Period</span><span>Confirmed</span><span>Probable</span><span>Capacity</span><span>Use</span><span>Risk</span></div>
+          {periods.map((period) => <div key={period.key} className="border-b border-b1/70 px-2 py-3 last:border-0"><div className="grid grid-cols-[minmax(10rem,1fr)_repeat(4,4.75rem)_7.5rem] items-center gap-3"><div className="min-w-0"><div className="font-semibold">{period.label}</div>{period.warnings.length > 0 && <details className="mt-1"><summary className="cursor-pointer text-xs text-amber-200">{period.warnings.length} planning exception{period.warnings.length === 1 ? "" : "s"}</summary><ul className="mt-1 space-y-1 pr-3 text-xs leading-relaxed text-amber-100/80">{period.warnings.map((warning) => <li key={warning}>{warning}</li>)}</ul></details>}</div><span className="font-medium">{period.confirmedHours}h</span><span>{period.probableHours}h</span><span>{period.adjustedCapacityHours}h</span><span className={period.utilization >= 100 ? "font-bold text-red-200" : "font-semibold"}>{period.utilization}%</span><Badge value={`${period.risk} / ${period.confidence}`} tone={period.risk === "high" ? "bad" : period.risk === "medium" ? "warn" : "good"} /></div></div>)}
+        </div>
       </div>
     </section>
   )
@@ -208,7 +194,7 @@ function Metric({ label, value, detail }: { label: string; value: string; detail
 
 function Badge({ value, tone }: { value: string; tone: "good" | "warn" | "bad" }) {
   const cls = tone === "good" ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-100" : tone === "warn" ? "border-amber-400/30 bg-amber-400/10 text-amber-100" : "border-red-400/30 bg-red-400/10 text-red-100"
-  return <span className={`rounded-full border px-2 py-1 text-xs font-semibold ${cls}`}>{value}</span>
+  return <span className={`inline-flex whitespace-nowrap rounded-full border px-2 py-1 text-xs font-semibold ${cls}`}>{value}</span>
 }
 
 function Field({ label, name, type = "text", required = false }: { label: string; name: string; type?: string; required?: boolean }) {

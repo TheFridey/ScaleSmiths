@@ -335,15 +335,10 @@ export function DashboardContent({ clients, salesMetrics, todayLabel, operationa
         <MetricGrid cards={revenueCards} />
       </section>
 
-      <section>
-        <SectionLabel>Sales Pipeline</SectionLabel>
-        <MetricGrid cards={pipelineCards} size={22} />
-      </section>
-
-      <section>
-        <SectionLabel>Outreach Activity</SectionLabel>
-        <MetricGrid cards={activityCards} size={22} />
-      </section>
+      <details className="group rounded-[8px] border" style={{ background:T.s1, borderColor:T.b1 }}>
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-4 sm:p-5"><div><div className="font-syne text-sm font-bold">Commercial detail</div><p className="mt-1 font-dm text-xs" style={{ color:T.t2 }}>Pipeline and outreach metrics</p></div><span className="rounded border px-2.5 py-1 font-dm text-xs" style={{ borderColor:T.b2, background:T.s2, color:T.t2 }}>Expand</span></summary>
+        <div className="space-y-6 border-t p-4 sm:p-5" style={{ borderColor:T.b1 }}><section><SectionLabel>Sales Pipeline</SectionLabel><MetricGrid cards={pipelineCards} size={22} /></section><section><SectionLabel>Outreach Activity</SectionLabel><MetricGrid cards={activityCards} size={22} /></section></div>
+      </details>
 
       <section>
         <SectionLabel>Operations</SectionLabel>
@@ -439,7 +434,7 @@ function OpsPanel({ title, count, Icon, tone, emptyTitle, emptyBody, children }:
   children: React.ReactNode
 }) {
   return (
-    <div className="rounded-[8px] border p-4" style={{ background:T.s1, borderColor:T.b1 }}>
+    <div className="rounded-[8px] border p-3.5" style={{ background:T.s1, borderColor:T.b1 }}>
       <div className="mb-3 flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2">
           <Icon size={15} style={{ color:tone }} aria-hidden="true" />
@@ -448,10 +443,9 @@ function OpsPanel({ title, count, Icon, tone, emptyTitle, emptyBody, children }:
         <span className="rounded border px-2 py-0.5 font-syne text-xs font-bold" style={{ borderColor:T.b2, background:T.s2, color:tone }}>{count}</span>
       </div>
       {count === 0 ? (
-        <div className="rounded-lg border border-dashed p-4" style={{ borderColor:T.b1, background:T.s2 }}>
-          <CheckCircle2 size={15} className="mb-2" style={{ color:T.grn }} aria-hidden="true" />
-          <div className="font-dm text-sm font-semibold">{emptyTitle}</div>
-          <p className="mt-1 font-dm text-xs leading-relaxed" style={{ color:T.t2 }}>{emptyBody}</p>
+        <div className="flex items-start gap-2.5 rounded-lg border border-dashed p-3" style={{ borderColor:T.b1, background:T.s2 }}>
+          <CheckCircle2 size={15} className="mt-0.5 shrink-0" style={{ color:T.grn }} aria-hidden="true" />
+          <div><div className="font-dm text-sm font-semibold">{emptyTitle}</div><p className="mt-0.5 font-dm text-xs leading-relaxed" style={{ color:T.t2 }}>{emptyBody}</p></div>
         </div>
       ) : (
         <div className="space-y-2">{children}</div>

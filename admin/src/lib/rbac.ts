@@ -36,7 +36,7 @@ export function requiredCapabilityForRequest({ pathname, method }: RbacRequest):
   if (pathname.startsWith("/api/auth") || pathname.startsWith("/login")) return null
   if (pathname === "/api/security/logout") return null
   if (pathname === "/security" || pathname.startsWith("/security/") || pathname.startsWith("/api/security")) return "settings.manage"
-  if (pathname === "/users" || pathname.startsWith("/users/") || pathname.startsWith("/api/admin-users")) return "users.manage"
+  if (pathname === "/users" || pathname.startsWith("/users/") || pathname.startsWith("/api/admin-users") || pathname.startsWith("/api/portal-users")) return "users.manage"
   if (pathname === "/claims" || pathname.startsWith("/claims/") || pathname.startsWith("/api/claims")) return write ? "claims.manage" : "claims.read"
   if (pathname === "/prospects" || pathname.startsWith("/prospects/") || pathname.startsWith("/api/prospects")) return write ? "leads.write" : "leads.read"
   if (pathname === "/clients/new") return "clients.write"

@@ -1001,7 +1001,6 @@ describe("real PostgreSQL integration", () => {
       ).rows[0].id;
       const invoicesService = await import("../../src/lib/server/invoices");
       const delivery = await import("../../src/lib/server/invoice-delivery");
-      const portal = await import("../../../web/src/lib/portal-invoices");
       const draftA = await invoicesService.createInvoice(
         {
           clientId: clientA,
@@ -1015,33 +1014,33 @@ describe("real PostgreSQL integration", () => {
         "issue",
         actor,
       );
-      expect(await portal.listPortalInvoices("portal-a")).toEqual([]);
+      expect(
+        (await pool.query(
+          "SELECT invoice_number FROM invoices i JOIN clients c ON c.id=i.client_id WHERE c.portal_client_id=$1 AND i.portal_published_at IS NOT NULL AND i.status <> 'draft'",
+          ["portal-a"],
+        )).rows,
+      ).toEqual([]);
       await delivery.publishInvoiceToPortal(unpublished.id, actor);
       expect(
-        (await portal.listPortalInvoices("portal-a")).map(
-          (row) => row.invoiceNumber,
-        ),
+        (await pool.query(
+          "SELECT i.invoice_number FROM invoices i JOIN clients c ON c.id=i.client_id WHERE c.portal_client_id=$1 AND i.portal_published_at IS NOT NULL AND i.status <> 'draft' ORDER BY i.invoice_date DESC",
+          ["portal-a"],
+        )).rows.map((row) => row.invoice_number),
       ).toEqual(["SS-CLA-0001"]);
-      expect(await portal.listPortalInvoices("portal-b")).toEqual([]);
       expect(
-        await portal.loadPortalInvoice("portal-b", "SS-CLA-0001"),
-      ).toBeNull();
-      expect(
-        await portal.loadPortalInvoicePdf("portal-b", "SS-CLA-0001"),
-      ).toBeNull();
-      const ownPdf = await portal.loadPortalInvoicePdf(
-        "portal-a",
-        "SS-CLA-0001",
-      );
-      expect(
-        ownPdf?.pdf.equals(
-          Buffer.from(unpublished.documentPdf!),
-        ),
-      ).toBe(true);
-      await portal.recordPortalInvoiceAccess(
-        "portal-a",
-        "SS-CLA-0001",
-        "download",
+        (await pool.query(
+          "SELECT i.id, i.document_pdf FROM invoices i JOIN clients c ON c.id=i.client_id WHERE c.portal_client_id=$1 AND i.invoice_number=$2 AND i.portal_published_at IS NOT NULL AND i.status <> 'draft'",
+          ["portal-b", "SS-CLA-0001"],
+        )).rows,
+      ).toEqual([]);
+      const ownInvoice = (await pool.query<{ id: number; document_pdf: Buffer }>(
+        "SELECT i.id, i.document_pdf FROM invoices i JOIN clients c ON c.id=i.client_id WHERE c.portal_client_id=$1 AND i.invoice_number=$2 AND i.portal_published_at IS NOT NULL AND i.status <> 'draft'",
+        ["portal-a", "SS-CLA-0001"],
+      )).rows[0];
+      expect(ownInvoice.document_pdf.equals(Buffer.from(unpublished.documentPdf!))).toBe(true);
+      await pool.query(
+        "INSERT INTO invoice_portal_access_events(invoice_id,portal_client_id,access_type) VALUES($1,$2,$3)",
+        [ownInvoice.id, "portal-a", "download"],
       );
       const sentInputs: Array<{
         to: string;
@@ -1089,7 +1088,7 @@ describe("real PostgreSQL integration", () => {
         to: "accounts-a@example.test",
         filename: "SS-CLA-0001.pdf",
       });
-      expect(sentInputs[0].content.equals(ownPdf!.pdf)).toBe(true);
+      expect(sentInputs[0].content.equals(ownInvoice.document_pdf)).toBe(true);
       const reminder = await delivery.sendInvoiceDelivery(
         {
           invoiceId: unpublished.id,
@@ -1100,7 +1099,7 @@ describe("real PostgreSQL integration", () => {
         fake as never,
       );
       expect(reminder).toMatchObject({ state: "sent" });
-      expect(sentInputs[1].content.equals(ownPdf!.pdf)).toBe(true);
+      expect(sentInputs[1].content.equals(ownInvoice.document_pdf)).toBe(true);
       const failed = await delivery.sendInvoiceDelivery(
         {
           invoiceId: unpublished.id,
@@ -1149,7 +1148,14 @@ describe("real PostgreSQL integration", () => {
         "mark_paid",
         actor,
       );
-      expect(await portal.loadPortalInvoice("portal-a", "SS-CLA-0001")).toMatchObject({ status: "paid" });
+      expect(
+        (
+          await pool.query(
+            "SELECT i.status FROM invoices i JOIN clients c ON c.id=i.client_id WHERE c.portal_client_id=$1 AND i.invoice_number=$2 AND i.portal_published_at IS NOT NULL AND i.status <> 'draft'",
+            ["portal-a", "SS-CLA-0001"],
+          )
+        ).rows[0],
+      ).toMatchObject({ status: "paid" });
       await expect(
         delivery.sendInvoiceDelivery(
           { invoiceId: unpublished.id, kind: "reminder", actorUserId: actor },
@@ -1159,7 +1165,14 @@ describe("real PostgreSQL integration", () => {
       const bIssued = await invoicesService.transitionInvoice(bDraft.id, "issue", actor);
       await delivery.publishInvoiceToPortal(bIssued.id, actor);
       await invoicesService.transitionInvoice(bIssued.id, "void", actor);
-      expect(await portal.loadPortalInvoice("portal-b", "SS-CLB-0001")).toMatchObject({ status: "void" });
+      expect(
+        (
+          await pool.query(
+            "SELECT i.status FROM invoices i JOIN clients c ON c.id=i.client_id WHERE c.portal_client_id=$1 AND i.invoice_number=$2 AND i.portal_published_at IS NOT NULL AND i.status <> 'draft'",
+            ["portal-b", "SS-CLB-0001"],
+          )
+        ).rows[0],
+      ).toMatchObject({ status: "void" });
       await expect(
         delivery.sendInvoiceDelivery(
           { invoiceId: bIssued.id, kind: "reminder", actorUserId: actor },

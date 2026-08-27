@@ -20,7 +20,7 @@ test.describe("about and founders page", () => {
     const rhys = page.locator("#rhys")
     await expect(rhys).toContainText(/co-founder/i)
     await expect(rhys.getByRole("link", { name: /glow tanning/i })).toHaveAttribute("href", "/work/glow-tanning")
-    await expect(rhys).toContainText("Next.js")
+    await expect(rhys).toContainText("Engineering")
 
     const trevor = page.locator("#trevor-newton-bradley")
     await expect(trevor.getByRole("link", { name: /the business circle/i })).toHaveAttribute(
@@ -92,10 +92,10 @@ test.describe("about and founders page", () => {
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible()
   })
 
-  test("links portfolio work back to the responsible founder", async ({ page }) => {
+  test("links verified founder contributions back to the responsible founder", async ({ page }) => {
     await gotoReady(page, "/work/glow-tanning")
 
-    const credit = page.getByRole("link", { name: /made by rhys/i })
+    const credit = page.getByRole("link", { name: /founder contribution.*rhys/i })
     await expect(credit).toHaveAttribute("href", "/about#rhys")
     await credit.click({ noWaitAfter: true })
 

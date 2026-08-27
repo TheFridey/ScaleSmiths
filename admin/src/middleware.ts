@@ -16,6 +16,7 @@ import { captureMonitoringMessage } from "@/lib/server/monitoring"
 
 const { auth } = NextAuth(authConfig)
 const REQUEST_ID_HEADER = "x-request-id"
+const PRIVATE_NO_STORE = "private, no-store, max-age=0"
 const SAFE_REQUEST_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/
 
 export default auth(async (req) => {
@@ -27,10 +28,12 @@ export default auth(async (req) => {
   const next = () => {
     const response = NextResponse.next({ request: { headers: requestHeaders } })
     response.headers.set(REQUEST_ID_HEADER, requestId)
+    response.headers.set("Cache-Control", PRIVATE_NO_STORE)
     return response
   }
   const correlated = <T extends NextResponse>(response: T) => {
     response.headers.set(REQUEST_ID_HEADER, requestId)
+    response.headers.set("Cache-Control", PRIVATE_NO_STORE)
     return response
   }
 

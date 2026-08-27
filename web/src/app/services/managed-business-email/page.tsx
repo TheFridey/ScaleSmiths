@@ -51,7 +51,7 @@ export default function ManagedBusinessEmailPage() {
 
         <section className="border-y border-b1 bg-s1 px-6 py-20 md:px-12">
           <div className="mx-auto max-w-[1240px]">
-            <AnimateIn className="max-w-[760px]"><span className="text-xs font-semibold uppercase tracking-[.14em] text-acc">Your address is part of your brand</span><h2 className="mt-3 font-syne text-[clamp(34px,5vw,58px)] font-extrabold">hello@yourbusiness.co.uk</h2><p className="mt-4 text-lg leading-relaxed text-t2">Choose three addresses that fit how the business works—perhaps hello@, name@, sales@, accounts@, bookings@ or support@.</p></AnimateIn>
+            <AnimateIn className="max-w-[760px]"><span className="text-xs font-semibold uppercase tracking-[.14em] text-acc">Your address is part of your brand</span><h2 className="mt-3 break-all font-syne text-[clamp(34px,5vw,58px)] font-extrabold sm:break-normal">hello@yourbusiness.co.uk</h2><p className="mt-4 text-lg leading-relaxed text-t2">Choose three addresses that fit how the business works—perhaps hello@, name@, sales@, accounts@, bookings@ or support@.</p></AnimateIn>
             <div className="mt-12 grid gap-px overflow-hidden rounded-2xl bg-b1 sm:grid-cols-2 lg:grid-cols-3">
               {managedBusinessEmail.features.map((feature) => <div key={feature} className="flex min-h-24 items-center gap-3 bg-bg p-5 text-sm text-t2"><Check size={16} className="shrink-0 text-acc" aria-hidden="true" />{feature}</div>)}
             </div>

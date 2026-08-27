@@ -31,7 +31,7 @@ test.describe("public experience SEO routing", () => {
 
       expect(response.status()).toBe(200)
       expect(html).toContain('aria-label="FORGE YOUR"')
-      expect(html).toContain("Conversion-focused websites")
+      expect(html).toContain("find what is holding growth back")
       expect(html).not.toContain("What experience would you like today?")
       expect(response.headers()["cache-control"]).toMatch(/no-store/i)
       expect(response.headers()["cache-control"]).toMatch(/must-revalidate/i)
@@ -107,7 +107,7 @@ test.describe("public experience SEO routing", () => {
         await expect(page.getByText(unsupported, { exact: false })).toHaveCount(0)
       }
       await expect(page.locator('section[aria-label="Client testimonials"]')).toHaveCount(0)
-      await expect(page.getByText("Conversion websites", { exact: true })).toBeVisible()
+      await expect(page.getByRole("heading", { name: /built for the way you actually work/i })).toBeVisible()
 
       await gotoReady(page, "/pricing")
       await expect(page.getByText("GBP 4,500-6,500", { exact: false })).toHaveCount(0)
@@ -260,11 +260,11 @@ test.describe("public navigation and accessibility behaviours", () => {
 
     await expect(page.getByRole("link", { name: /explore local growth/i })).toHaveAttribute("href", "/local-growth")
     await expect(page.getByRole("link", { name: /explore custom systems/i })).toHaveAttribute("href", "/custom-systems")
-    const servicesLink = page.getByRole("navigation", { name: /main navigation/i }).getByRole("link", { name: /services/i })
-    await expect(servicesLink).toHaveAttribute("href", "/services")
-    await servicesLink.click({ noWaitAfter: true })
-    await page.waitForURL(/\/services$/, { timeout: 20_000, waitUntil: "domcontentloaded" })
-    await expect(page.getByRole("heading", { name: /commercial web builds/i })).toBeVisible()
+    const partnershipLink = page.getByRole("navigation", { name: /main navigation/i }).getByRole("link", { name: /growth partnership/i })
+    await expect(partnershipLink).toHaveAttribute("href", "/digital-growth-partnership")
+    await partnershipLink.click({ noWaitAfter: true })
+    await page.waitForURL(/\/digital-growth-partnership$/, { timeout: 20_000, waitUntil: "domcontentloaded" })
+    await expect(page.getByRole("heading", { level: 1, name: /digital growth partnership/i })).toBeVisible()
 
     // Each custom-systems service card routes to the full brief; local-growth cards route to
     // the short check instead, so assert both journeys keep a working commercial next step.

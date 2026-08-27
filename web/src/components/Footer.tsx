@@ -24,7 +24,7 @@ export function Footer() {
       <div className="mx-auto max-w-[1240px]">
         <div className="grid gap-12 pb-14 md:grid-cols-[minmax(260px,1fr)_minmax(420px,1.45fr)] md:gap-16 md:pb-16">
           <div>
-            <Logo size={42} />
+            <Logo size={42} className="max-w-full [&_img]:max-w-full" />
             <p className="mt-5 max-w-[360px] font-dm text-sm leading-relaxed text-t2">Founder-led business growth and engineering for ambitious organisations.</p>
           </div>
           <nav aria-label="Footer navigation" className="grid gap-9 sm:grid-cols-3 sm:gap-6">

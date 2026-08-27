@@ -128,7 +128,7 @@ export async function submitQuoteWizard(page: Page, quotePath = "/quote") {
   await page.getByRole("button", { name: /continue/i }).click()
   await page.getByText(/add an expanded project brief/i).click()
   await page.getByLabel(/store the information i submit/i).check()
-  await page.getByLabel(/project brief/i).fill("We need a clearer site, quote journey, and local growth plan.")
+  await page.getByRole("textbox", { name: "Project Brief", exact: true }).fill("We need a clearer site, quote journey, and local growth plan.")
   await page.getByRole("button", { name: /submit brief/i }).click()
 }
 

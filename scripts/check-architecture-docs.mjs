@@ -2,6 +2,23 @@ import { readFileSync } from "node:fs"
 import path from "node:path"
 
 const requiredDocuments = {
+  "current-architecture.md": [
+    "1. System purpose",
+    "3. Modular-monolith boundaries",
+    "5. Trust boundaries",
+    "6. Authentication flows",
+    "8. Data ownership",
+    "9. Database roles and principals",
+    "11. Invoice and document immutability",
+    "12. Forge execution, sandbox, and release path",
+    "13. Deployment topology",
+    "14. Backup and restore",
+    "15. CI and security pipeline",
+    "17. Current residual risks",
+    "18. Retired historical risks",
+    "19. Decisions not to revisit casually",
+    "20. Recommended domain boundaries going forward",
+  ],
   "system-overview.md": ["Public web application", "Admin application", "Authentication", "Tests and current coverage", "Audit findings"],
   "forge-workflow.md": ["Lifecycle", "Agents and outputs", "AI provider abstraction and budgets", "Artifact lifecycle", "Workspace and preview lifecycle"],
   "security-boundaries.md": ["Trust zones", "AI boundary", "Generated workspace boundary", "Preview and publication boundary", "Database boundary"],

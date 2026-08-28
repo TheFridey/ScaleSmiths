@@ -2,6 +2,8 @@
 
 This directory records architecture decisions for the current ScaleSmiths implementation. ADRs describe the architecture that exists now, not an ideal future design.
 
+The [current architecture baseline](../architecture/current-architecture.md) describes how these decisions compose in the repository as of 28 August 2026. ADRs remain individual decision records and are not replaced by that baseline.
+
 ## Index
 
 - [ADR 0001: Two Next.js Applications](0001-two-nextjs-applications.md)

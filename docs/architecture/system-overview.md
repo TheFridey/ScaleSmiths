@@ -1,5 +1,7 @@
 # ScaleSmiths system overview
 
+> **Historical architecture snapshot (10 July 2026).** This implementation map is retained as contemporary evidence and has not been rewritten to match later changes. Use the [current architecture baseline](current-architecture.md) for the authoritative August 2026 system description.
+
 This document describes the repository on `master` as audited on 10 July 2026. It is an implementation map, not a target architecture.
 
 ## Repository shape

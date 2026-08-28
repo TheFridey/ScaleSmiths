@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest"
-import { FORGE_PROJECT_STATES, FORGE_TASK_STATES, assertArtifactApproval, decideProjectTransition, decideTaskTransition } from "./forge-state-machine"
+import { FORGE_PROJECT_STATES, FORGE_TASK_STATES, assertArtifactApproval, decideProjectTransition, decideTaskTransition, isForgeProjectState, isForgeTaskState } from "./forge-state-machine"
 
 const facts = { sitemapApproved: true, buildExists: true, qaPassed: true, artifactCurrent: true, failedPrerequisite: false }
 describe("Forge project state machine", () => {
+  it("rejects unknown persisted project and task states", () => {
+    expect(isForgeProjectState("published")).toBe(false)
+    expect(isForgeTaskState("paused")).toBe(false)
+  })
   it("returns a decision for every possible state pair", () => {
     for (const from of FORGE_PROJECT_STATES) for (const to of FORGE_PROJECT_STATES) expect(decideProjectTransition({ from, to, facts })).toHaveProperty("allowed")
   })

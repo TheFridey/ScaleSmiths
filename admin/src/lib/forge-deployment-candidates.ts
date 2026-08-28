@@ -1,4 +1,7 @@
-export type DeploymentCandidateState = "draft" | "submitted" | "approved" | "rejected" | "superseded"
+export const DEPLOYMENT_CANDIDATE_STATES = ["draft", "submitted", "approved", "rejected", "superseded"] as const
+export type DeploymentCandidateState = (typeof DEPLOYMENT_CANDIDATE_STATES)[number]
+export const DEPLOYMENT_CANDIDATE_STATE_LABELS: Record<DeploymentCandidateState, string> = { draft: "Draft", submitted: "Submitted", approved: "Approved", rejected: "Rejected", superseded: "Superseded" }
+export function isDeploymentCandidateState(value: unknown): value is DeploymentCandidateState { return typeof value === "string" && DEPLOYMENT_CANDIDATE_STATES.includes(value as DeploymentCandidateState) }
 export type CandidateArtifact = { id: number; type: string; title: string; version: number; outputHash: string; qualityState: string; approvalState: string }
 
 export function verifyCandidateSnapshot(candidate: { workspaceHash: string; approvedArtifactsJson: CandidateArtifact[] }, current: { workspaceHash: string; artifacts: CandidateArtifact[] }) {

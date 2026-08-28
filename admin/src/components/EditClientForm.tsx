@@ -4,9 +4,7 @@ import { FormEvent, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, Save } from "lucide-react"
-
-const TIERS = ["Foundation", "Growth Partner", "Ecosystem", "Maintenance", "Forge Build"]
-const STATUSES = ["active", "build", "review", "prospect"]
+import { CLIENT_SERVICE_TIER_OPTIONS, CLIENT_STATUS_OPTIONS } from "@/lib/clients"
 
 interface EditableClient {
   id: number
@@ -80,8 +78,8 @@ export function EditClientForm({ client }: { client: EditableClient }) {
           <Field label="Tier">
             <select name="tier" defaultValue={client.tier ?? ""} className="w-full">
               {!client.tier ? <option value="">No tier set</option> : null}
-              {client.tier && !TIERS.includes(client.tier) ? <option value={client.tier}>{client.tier}</option> : null}
-              {TIERS.map((tier) => <option key={tier}>{tier}</option>)}
+              {client.tier && !CLIENT_SERVICE_TIER_OPTIONS.some((option) => option.value === client.tier) ? <option value={client.tier}>{client.tier} (legacy)</option> : null}
+              {CLIENT_SERVICE_TIER_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
             </select>
           </Field>
           <Field label="MRR">
@@ -89,7 +87,7 @@ export function EditClientForm({ client }: { client: EditableClient }) {
           </Field>
           <Field label="Status">
             <select name="status" defaultValue={client.status} className="w-full">
-              {STATUSES.map((status) => <option key={status}>{status}</option>)}
+              {CLIENT_STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
             </select>
           </Field>
           <div className="rounded-xl border border-b1 bg-s2 p-4 font-dm text-sm">

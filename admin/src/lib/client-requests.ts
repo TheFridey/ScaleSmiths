@@ -1,3 +1,6 @@
+import { CLIENT_REQUEST_STATUSES, type ClientRequestStatus } from "../../../domain/client-requests"
+export { CLIENT_REQUEST_STATUSES, type ClientRequestStatus } from "../../../domain/client-requests"
+
 export const CLIENT_REQUEST_CATEGORIES = [
   "website_update",
   "website_issue",
@@ -12,18 +15,8 @@ export const CLIENT_REQUEST_CATEGORIES = [
 export const CLIENT_REQUEST_PRIORITIES = ["low", "medium", "high", "critical"] as const
 export const CLIENT_REQUEST_MESSAGE_VISIBILITIES = ["client_visible", "internal"] as const
 
-export const CLIENT_REQUEST_STATUSES = [
-  "new",
-  "triaged",
-  "in_progress",
-  "waiting_client",
-  "completed",
-  "cancelled",
-] as const
-
 export type ClientRequestCategory = (typeof CLIENT_REQUEST_CATEGORIES)[number]
 export type ClientRequestPriority = (typeof CLIENT_REQUEST_PRIORITIES)[number]
-export type ClientRequestStatus = (typeof CLIENT_REQUEST_STATUSES)[number]
 export type ClientRequestMessageVisibility = (typeof CLIENT_REQUEST_MESSAGE_VISIBILITIES)[number]
 
 export const CATEGORY_LABELS: Record<ClientRequestCategory, string> = {

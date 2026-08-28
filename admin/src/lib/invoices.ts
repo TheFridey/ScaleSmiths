@@ -1,5 +1,7 @@
-export const INVOICE_STATUSES = ["draft", "issued", "paid", "void"] as const
-export type InvoiceStatus = (typeof INVOICE_STATUSES)[number]
+import { INVOICE_STATUSES, type InvoiceStatus } from "../../../domain/invoices"
+export { INVOICE_STATUSES, type InvoiceStatus } from "../../../domain/invoices"
+export const INVOICE_STATUS_LABELS: Record<InvoiceStatus, string> = { draft: "Draft", issued: "Issued", paid: "Paid", void: "Void" }
+export function isInvoiceStatus(value: unknown): value is InvoiceStatus { return typeof value === "string" && INVOICE_STATUSES.includes(value as InvoiceStatus) }
 
 export class InvoiceDomainError extends Error {
   constructor(public readonly safeMessage: string, public readonly status = 400, public readonly code = "invalid_invoice") {

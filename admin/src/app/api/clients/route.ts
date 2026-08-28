@@ -3,6 +3,7 @@ import { db } from "@/lib/db"
 import { clients } from "@/lib/schema"
 import { InvoiceDomainError, normalizeInvoiceClientCode } from "@/lib/invoices"
 import { guardApiCapability } from "@/lib/server/rbac"
+import { parseClientDomainFields } from "@/lib/clients"
 
 export const dynamic = "force-dynamic"
 
@@ -23,6 +24,8 @@ export async function POST(request: NextRequest) {
   if (!name) {
     return NextResponse.json({ error: "Client name is required." }, { status: 400 })
   }
+  const domain = parseClientDomainFields(body)
+  if (!domain.ok) return NextResponse.json({ error: domain.error }, { status: 400 })
 
   const mrr = Number.parseInt(String(body.mrr ?? "0"), 10)
   let invoiceClientCode: string
@@ -36,9 +39,9 @@ export async function POST(request: NextRequest) {
       name,
       contactName: optionalString(body.contactName),
       contactEmail: optionalString(body.contactEmail),
-      tier: optionalString(body.tier),
+      tier: domain.tier,
       mrr: Number.isFinite(mrr) ? Math.max(0, mrr) : 0,
-      status: optionalString(body.status) ?? "active",
+      status: domain.status,
       invoiceClientCode,
       billingAddressLine1: optionalString(body.billingAddressLine1),
       billingAddressLine2: optionalString(body.billingAddressLine2),

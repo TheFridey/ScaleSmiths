@@ -4,6 +4,9 @@ export const FORGE_PROJECT_STATES = ["intake", "research", "strategy", "sitemap"
 export const FORGE_TASK_STATES = ["queued", "running", "completed", "failed", "cancelled"] as const
 export type ForgeProjectState = typeof FORGE_PROJECT_STATES[number]
 export type ForgeTaskState = typeof FORGE_TASK_STATES[number]
+export const FORGE_PROJECT_STATE_LABELS: Record<ForgeProjectState, string> = Object.fromEntries(FORGE_PROJECT_STATES.map((state) => [state, state.split("_").map((part) => part[0].toUpperCase() + part.slice(1)).join(" ")])) as Record<ForgeProjectState, string>
+export function isForgeProjectState(value: unknown): value is ForgeProjectState { return typeof value === "string" && FORGE_PROJECT_STATES.includes(value as ForgeProjectState) }
+export function isForgeTaskState(value: unknown): value is ForgeTaskState { return typeof value === "string" && FORGE_TASK_STATES.includes(value as ForgeTaskState) }
 export type ForgeOverrideRole = Extract<AdminRole, "owner" | "administrator">
 
 const projectTransitions: Record<ForgeProjectState, readonly ForgeProjectState[]> = {

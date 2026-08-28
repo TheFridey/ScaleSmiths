@@ -29,6 +29,7 @@ import {
   type ClientRequestPriority,
   type ClientRequestStatus,
 } from "@/lib/client-requests"
+import { MONTHLY_REPORT_STATUS_LABELS } from "@/lib/monthly-reports"
 
 const T = {
   s1: "var(--s1)",
@@ -925,7 +926,7 @@ export function ClientRequestsQueue({ initialRequests, loadError, initialSelecte
                             Generate a branded client report from portal requests, visible timeline updates, and safe summaries.
                           </p>
                         </div>
-                        {activeReport && <Badge style={STATUS_STYLE[activeReport.status === "published" ? "completed" : "triaged"]}>{activeReport.status}</Badge>}
+                        {activeReport && <Badge style={STATUS_STYLE[activeReport.status === "published" ? "completed" : "triaged"]}>{MONTHLY_REPORT_STATUS_LABELS[activeReport.status]}</Badge>}
                       </div>
 
                       <div className="grid grid-cols-1 gap-2 sm:grid-cols-[.7fr_.8fr_1fr]">
@@ -977,7 +978,7 @@ export function ClientRequestsQueue({ initialRequests, loadError, initialSelecte
                           >
                             {monthlyReports.map((report) => (
                               <option key={report.id} value={report.id}>
-                                {report.month}/{report.year} - {report.status}
+                                {report.month}/{report.year} - {MONTHLY_REPORT_STATUS_LABELS[report.status]}
                               </option>
                             ))}
                           </select>

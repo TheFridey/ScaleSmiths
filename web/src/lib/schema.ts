@@ -1,9 +1,12 @@
 import { boolean, customType, index, integer, jsonb, pgEnum, pgTable, pgView, serial, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core"
+import { CLIENT_REQUEST_STATUSES } from "./client-requests"
+import { INVOICE_STATUSES } from "./invoice-status"
+import { MONTHLY_REPORT_STATUSES } from "./monthly-reports"
 
 const bytea = customType<{ data: Buffer }>({ dataType: () => "bytea" })
 
 export const quoteStatus = pgEnum("quote_status", ["new", "read", "replied", "reviewed", "contacted", "qualified", "won", "lost"])
-export const invoiceStatus = pgEnum("invoice_status", ["draft", "issued", "paid", "void"])
+export const invoiceStatus = pgEnum("invoice_status", INVOICE_STATUSES)
 export const invoicePortalAccessType = pgEnum("invoice_portal_access_type", ["view", "download"])
 export const clientRequestCategory = pgEnum("client_request_category", [
   "website_update",
@@ -16,10 +19,10 @@ export const clientRequestCategory = pgEnum("client_request_category", [
   "general_support",
 ])
 export const clientRequestPriority = pgEnum("client_request_priority", ["low", "medium", "high", "critical"])
-export const clientRequestStatus = pgEnum("client_request_status", ["new", "triaged", "in_progress", "waiting_client", "completed", "cancelled"])
+export const clientRequestStatus = pgEnum("client_request_status", CLIENT_REQUEST_STATUSES)
 export const requestMessageSenderType = pgEnum("request_message_sender_type", ["client", "admin", "system"])
 export const requestMessageVisibility = pgEnum("request_message_visibility", ["client_visible", "internal"])
-export const monthlyReportStatus = pgEnum("monthly_report_status", ["draft", "published"])
+export const monthlyReportStatus = pgEnum("monthly_report_status", MONTHLY_REPORT_STATUSES)
 export const monthlyReportGeneratedBy = pgEnum("monthly_report_generated_by", ["forge", "manual"])
 export const experienceEventName = pgEnum("experience_event_name", [
   "experience_choice_displayed",

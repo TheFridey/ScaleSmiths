@@ -6,34 +6,40 @@ import type { ForgeDependencyAdmissionReport } from "./forge-dependency-admissio
 import type { ForgeRunPolicy } from "./forge-run-stages"
 import type { ForgeOperatorError } from "./forge-operator-error"
 import type { InvoicePaymentSnapshot, InvoiceSupplierSnapshot } from "./invoice-document"
+import { CLIENT_REQUEST_STATUSES } from "./client-requests"
+import { DEPLOYMENT_CANDIDATE_STATES } from "./forge-deployment-candidates"
+import { FORGE_PROJECT_STATES, FORGE_TASK_STATES } from "./forge-state-machine"
+import { INVOICE_STATUSES } from "./invoices"
+import { MONTHLY_REPORT_STATUSES } from "./monthly-reports"
+import { PROPOSAL_PACKAGE_TYPES, PROPOSAL_STATUSES, PROSPECT_PRIORITIES, PROSPECT_SOURCES, PROSPECT_STAGES } from "./prospects"
 
 const bytea = customType<{ data: Buffer }>({ dataType: () => "bytea" })
 
 export const kanbanColumn = pgEnum("kanban_column", ["backlog", "progress", "review", "done"])
 export const messageDirection = pgEnum("message_direction", ["inbound", "outbound"])
 export const quoteStatus = pgEnum("quote_status", ["new", "read", "replied", "reviewed", "contacted", "qualified", "won", "lost"])
-export const prospectSource = pgEnum("prospect_source", ["linkedin", "email", "facebook", "local", "referral", "inbound", "other"])
-export const prospectStage = pgEnum("prospect_stage", ["found", "audited", "contacted", "replied", "discovery_booked", "proposal_sent", "follow_up_due", "won", "lost"])
-export const prospectPriority = pgEnum("prospect_priority", ["low", "medium", "high"])
+export const prospectSource = pgEnum("prospect_source", PROSPECT_SOURCES)
+export const prospectStage = pgEnum("prospect_stage", PROSPECT_STAGES)
+export const prospectPriority = pgEnum("prospect_priority", PROSPECT_PRIORITIES)
 export const outreachActivityType = pgEnum("outreach_activity_type", ["linkedin_message", "email", "phone_call", "facebook_message", "in_person", "follow_up", "proposal", "note"])
 export const outreachDirection = pgEnum("outreach_direction", ["outbound", "inbound", "internal"])
-export const proposalPackageType = pgEnum("proposal_package_type", ["foundation", "growth", "forge", "retainer", "custom"])
-export const proposalStatus = pgEnum("proposal_status", ["draft", "sent", "viewed", "follow_up_due", "accepted", "rejected"])
+export const proposalPackageType = pgEnum("proposal_package_type", PROPOSAL_PACKAGE_TYPES)
+export const proposalStatus = pgEnum("proposal_status", PROPOSAL_STATUSES)
 export const leadScoreOutcome = pgEnum("lead_score_outcome", ["won", "lost", "no_decision", "disqualified"])
 export const projectEstimateComplexity = pgEnum("project_estimate_complexity", ["low", "medium", "high", "enterprise"])
-export const forgeProjectStatus = pgEnum("forge_project_status", ["intake", "research", "strategy", "sitemap", "copy", "design", "build", "qa", "integrations", "preview", "client_review", "ready_to_deploy", "deployed", "archived"])
+export const forgeProjectStatus = pgEnum("forge_project_status", FORGE_PROJECT_STATES)
 export const forgePriority = pgEnum("forge_priority", ["low", "medium", "high"])
 export const forgeTaskAgentType = pgEnum("forge_task_agent_type", ["intake", "research", "strategy", "sitemap", "copy", "design", "frontend", "integration", "seo", "qa", "deploy", "repair"])
-export const forgeTaskStatus = pgEnum("forge_task_status", ["queued", "running", "completed", "failed", "cancelled"])
+export const forgeTaskStatus = pgEnum("forge_task_status", FORGE_TASK_STATES)
 export const forgeTaskResultQuality = pgEnum("forge_task_result_quality", ["validated", "degraded", "fallback", "requires_review", "failed"])
 export const forgeArtifactType = pgEnum("forge_artifact_type", ["research_report", "sitemap", "copy_doc", "design_direction", "design_system", "component_spec", "generated_code", "visual_critique", "qa_report", "seo_pack", "visual_qa", "accessibility_report", "proposal", "handover_doc", "deployment_notes", "export_record", "consistency_report", "copy_quality_report", "council_review", "originality_report", "site_inventory", "migration_analysis", "migration_candidate"])
 export const forgeIntegrationProvider = pgEnum("forge_integration_provider", ["resend", "whatsapp", "analytics", "calendly", "stripe", "cloudinary", "custom"])
 export const clientRequestCategory = pgEnum("client_request_category", ["website_update", "website_issue", "form_issue", "seo_request", "new_page", "content_assets", "urgent_support", "general_support"])
 export const clientRequestPriority = pgEnum("client_request_priority", ["low", "medium", "high", "critical"])
-export const clientRequestStatus = pgEnum("client_request_status", ["new", "triaged", "in_progress", "waiting_client", "completed", "cancelled"])
+export const clientRequestStatus = pgEnum("client_request_status", CLIENT_REQUEST_STATUSES)
 export const requestMessageSenderType = pgEnum("request_message_sender_type", ["client", "admin", "system"])
 export const requestMessageVisibility = pgEnum("request_message_visibility", ["client_visible", "internal"])
-export const monthlyReportStatus = pgEnum("monthly_report_status", ["draft", "published"])
+export const monthlyReportStatus = pgEnum("monthly_report_status", MONTHLY_REPORT_STATUSES)
 export const monthlyReportGeneratedBy = pgEnum("monthly_report_generated_by", ["forge", "manual"])
 export const salesProposalGeneratedBy = pgEnum("sales_proposal_generated_by", ["forge", "manual"])
 export const adminUserRole = pgEnum("admin_user_role", ["owner", "administrator", "sales", "project_manager", "developer", "finance", "viewer"])
@@ -64,7 +70,7 @@ export const experienceEventName = pgEnum("experience_event_name", [
 ])
 export const experienceDeviceClass = pgEnum("experience_device_class", ["mobile", "tablet", "desktop", "unknown"])
 export const experiencePreference = pgEnum("experience_preference", ["normal", "interactive", "none", "unknown"])
-export const invoiceStatus = pgEnum("invoice_status", ["draft", "issued", "paid", "void"])
+export const invoiceStatus = pgEnum("invoice_status", INVOICE_STATUSES)
 export const invoiceDeliveryType = pgEnum("invoice_delivery_type", ["invoice", "reminder"])
 export const invoiceDeliveryState = pgEnum("invoice_delivery_state", ["pending", "sent", "failed"])
 export const invoicePortalAccessType = pgEnum("invoice_portal_access_type", ["view", "download"])
@@ -676,7 +682,7 @@ export const forgeArtifacts = pgTable("forge_artifacts", {
   index("forge_artifacts_source_task_idx").on(table.sourceTaskId),
 ])
 
-export const forgeDeploymentCandidateState = pgEnum("forge_deployment_candidate_state", ["draft", "submitted", "approved", "rejected", "superseded"])
+export const forgeDeploymentCandidateState = pgEnum("forge_deployment_candidate_state", DEPLOYMENT_CANDIDATE_STATES)
 
 export const forgeDeploymentCandidates = pgTable("forge_deployment_candidates", {
   id: serial("id").primaryKey(),

@@ -1,8 +1,10 @@
-export const MONTHLY_REPORT_STATUSES = ["draft", "published"] as const
+import { MONTHLY_REPORT_STATUSES, type MonthlyReportStatus } from "../../../domain/monthly-reports"
+export { MONTHLY_REPORT_STATUSES, type MonthlyReportStatus } from "../../../domain/monthly-reports"
 export const MONTHLY_REPORT_GENERATORS = ["forge", "manual"] as const
 
-export type MonthlyReportStatus = (typeof MONTHLY_REPORT_STATUSES)[number]
 export type MonthlyReportGeneratedBy = (typeof MONTHLY_REPORT_GENERATORS)[number]
+export const MONTHLY_REPORT_STATUS_LABELS: Record<MonthlyReportStatus, string> = { draft: "Draft", published: "Published" }
+export function isMonthlyReportStatus(value: unknown): value is MonthlyReportStatus { return typeof value === "string" && MONTHLY_REPORT_STATUSES.includes(value as MonthlyReportStatus) }
 
 export function parseReportPeriod(input: Record<string, unknown>, now = new Date()) {
   const month = Number.parseInt(String(input.month ?? now.getMonth() + 1), 10)

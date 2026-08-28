@@ -1,16 +1,18 @@
+import { FORGE_PROJECT_STATES, FORGE_TASK_STATES, type ForgeProjectState, type ForgeTaskState } from "./forge-state-machine"
+
 export const FORGE_ROUTE = "/forge"
 
-export const FORGE_PROJECT_STATUSES = ["intake", "research", "strategy", "sitemap", "copy", "design", "build", "qa", "integrations", "preview", "client_review", "ready_to_deploy", "deployed", "archived"] as const
+export const FORGE_PROJECT_STATUSES = FORGE_PROJECT_STATES
 export const FORGE_PRIORITIES = ["low", "medium", "high"] as const
 export const FORGE_TASK_AGENT_TYPES = ["intake", "research", "strategy", "sitemap", "copy", "design", "frontend", "integration", "seo", "qa", "deploy", "repair"] as const
-export const FORGE_TASK_STATUSES = ["queued", "running", "completed", "failed", "cancelled"] as const
+export const FORGE_TASK_STATUSES = FORGE_TASK_STATES
 export const FORGE_ARTIFACT_TYPES = ["research_report", "sitemap", "copy_doc", "design_direction", "design_system", "component_spec", "generated_code", "visual_critique", "qa_report", "seo_pack", "visual_qa", "accessibility_report", "proposal", "handover_doc", "deployment_notes", "export_record", "consistency_report", "copy_quality_report", "council_review", "originality_report", "site_inventory", "migration_analysis", "migration_candidate"] as const
 export const FORGE_INTEGRATION_PROVIDERS = ["resend", "whatsapp", "analytics", "calendly", "stripe", "cloudinary", "custom"] as const
 
-export type ForgeProjectStatus = (typeof FORGE_PROJECT_STATUSES)[number]
+export type ForgeProjectStatus = ForgeProjectState
 export type ForgePriority = (typeof FORGE_PRIORITIES)[number]
 export type ForgeTaskAgentType = (typeof FORGE_TASK_AGENT_TYPES)[number]
-export type ForgeTaskStatus = (typeof FORGE_TASK_STATUSES)[number]
+export type ForgeTaskStatus = ForgeTaskState
 export type ForgeArtifactType = (typeof FORGE_ARTIFACT_TYPES)[number]
 export type ForgeIntegrationProvider = (typeof FORGE_INTEGRATION_PROVIDERS)[number]
 

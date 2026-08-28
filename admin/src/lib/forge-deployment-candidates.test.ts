@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest"
-import { compareDeploymentCandidates, degradedCandidateDependencies, verifyCandidateSnapshot, type CandidateArtifact } from "./forge-deployment-candidates"
+import { compareDeploymentCandidates, degradedCandidateDependencies, isDeploymentCandidateState, verifyCandidateSnapshot, type CandidateArtifact } from "./forge-deployment-candidates"
 
 const approved = (overrides: Partial<CandidateArtifact> = {}): CandidateArtifact => ({ id: 1, type: "copy_doc", title: "Copy", version: 2, outputHash: "abc", qualityState: "validated", approvalState: "approved", ...overrides })
 
 describe("deployment candidate snapshots", () => {
+  it("rejects unknown candidate states", () => expect(isDeploymentCandidateState("deployed")).toBe(false))
   it("verifies workspace and approved artifact hashes", () => {
     expect(verifyCandidateSnapshot({ workspaceHash: "workspace", approvedArtifactsJson: [approved()] }, { workspaceHash: "workspace", artifacts: [approved()] })).toEqual({ valid: true, errors: [] })
   })

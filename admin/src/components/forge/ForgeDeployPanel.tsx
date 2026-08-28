@@ -13,6 +13,7 @@ import {
   type ForgeDeployMethod,
   type ForgeDeploymentNotes,
 } from "@/lib/forge-deploy"
+import { DEPLOYMENT_CANDIDATE_STATE_LABELS, type DeploymentCandidateState } from "@/lib/forge-deployment-candidates"
 
 const T = { s1:"var(--s1)", s2:"var(--s2)", s3:"var(--s3)", b1:"var(--b1)", b2:"var(--b2)", t1:"var(--t1)", t2:"var(--t2)", t3:"var(--t3)", acc:"var(--acc)", grn:"var(--grn)", amb:"var(--amb)", red:"var(--red)" }
 
@@ -181,7 +182,7 @@ export function ForgeDeployPanel({
 }
 
 type CandidateDependencyReport = { status: "passed" | "failed"; policyVersion: string; evidenceTimestamp: string; packageCount: number; warningCount: number; blockedCount: number; blockingReasons: string[]; warnings: string[]; lockfileHash: string }
-type CandidateRow = { id: number; candidateNumber: number; state: string; workspaceHash: string; repositoryCommit: string | null; approvedArtifactsJson: Array<{ id: number }>; fallbackDependenciesJson: Array<{ id: number; qualityState: string }>; dependencyReportJson: CandidateDependencyReport | null; dependencyReportHash: string | null; dependencySbomHash: string | null; dependencySbomAvailable: boolean; releaseNotes: string; rollbackPlan: string; createdBy: string; createdAt: string; comparisonFromPrevious: null | { workspaceChanged: boolean; artifactsAdded: Array<{ id: number }>; artifactsRemoved: Array<{ id: number }>; artifactsChanged: Array<{ id: number }>; evidenceChanged: boolean } }
+type CandidateRow = { id: number; candidateNumber: number; state: DeploymentCandidateState; workspaceHash: string; repositoryCommit: string | null; approvedArtifactsJson: Array<{ id: number }>; fallbackDependenciesJson: Array<{ id: number; qualityState: string }>; dependencyReportJson: CandidateDependencyReport | null; dependencyReportHash: string | null; dependencySbomHash: string | null; dependencySbomAvailable: boolean; releaseNotes: string; rollbackPlan: string; createdBy: string; createdAt: string; comparisonFromPrevious: null | { workspaceChanged: boolean; artifactsAdded: Array<{ id: number }>; artifactsRemoved: Array<{ id: number }>; artifactsChanged: Array<{ id: number }>; evidenceChanged: boolean } }
 type GateResult = { allowed: boolean; summary: string; gates: Array<{ key: string; label: string; status: "passed" | "blocked" | "overridden" | "not_applicable"; reason: string; overridable: boolean; approvalActor?: string; approvalTime?: string; approvalReason?: string }> }
 type DeploymentActivity = { actor: string; action: string; message: string; createdAt: string; metadataJson: { outcome?: string; failureCategory?: string } }
 
@@ -199,7 +200,7 @@ function DeploymentCandidates({ projectId, disabled }: { projectId: number; disa
   async function act(action: string, candidateId?: number, gateKey?: string) { setBusy(true); setError(""); try { const response = await fetch(`/api/forge/projects/${projectId}/deployment-candidates`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action, candidateId, gateKey, releaseNotes, rollbackPlan, reason }) }); const json = await response.json(); if (!response.ok) throw new Error(json.error || "Candidate action failed."); setReleaseNotes(""); setRollbackPlan(""); setReason(""); await load() } catch (caught) { setError(caught instanceof Error ? caught.message : "Candidate action failed.") } finally { setBusy(false) } }
   const latest = rows[0]
   return <div className="mb-5 rounded-lg border p-4" style={{ background:T.s2, borderColor:T.b1 }}>
-    <div className="mb-2 flex items-center justify-between gap-2"><div className="font-dm text-[11px] uppercase tracking-[.08em]" style={{ color:T.t3 }}>Immutable deployment candidates</div>{latest && <Badge value={`#${latest.candidateNumber} ${latest.state}`} tone={latest.state === "approved" ? "good" : "muted"} />}</div>
+    <div className="mb-2 flex items-center justify-between gap-2"><div className="font-dm text-[11px] uppercase tracking-[.08em]" style={{ color:T.t3 }}>Immutable deployment candidates</div>{latest && <Badge value={`#${latest.candidateNumber} ${DEPLOYMENT_CANDIDATE_STATE_LABELS[latest.state]}`} tone={latest.state === "approved" ? "good" : "muted"} />}</div>
     <p className="mb-3 font-dm text-xs" style={{ color:T.t2 }}>A submitted candidate freezes the workspace hash, approved artifacts, QA/security/accessibility/performance evidence, screenshots, dependencies, SBOM and release requirements. Changes require a new candidate.</p>
     {error && <p className="mb-2 font-dm text-xs" style={{ color:T.red }}>{error}</p>}
     <div className="grid gap-2 md:grid-cols-2"><textarea aria-label="Candidate release notes" value={releaseNotes} onChange={(event) => setReleaseNotes(event.target.value)} placeholder="Release notes" className="min-h-20 rounded border p-2 text-sm" style={{ background:T.s1, borderColor:T.b1 }} /><textarea aria-label="Candidate rollback plan" value={rollbackPlan} onChange={(event) => setRollbackPlan(event.target.value)} placeholder="Rollback plan" className="min-h-20 rounded border p-2 text-sm" style={{ background:T.s1, borderColor:T.b1 }} /></div>

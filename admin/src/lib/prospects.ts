@@ -359,9 +359,9 @@ export function buildClientFromWonProspect(prospect: ClientConversionInput) {
     name: prospect.businessName,
     contactName: prospect.contactName ?? null,
     contactEmail: prospect.contactEmail ?? null,
-    tier: prospect.estimatedMonthlyRetainer > 0 ? "Retainer" : "Forge Build",
+    tier: prospect.estimatedMonthlyRetainer > 0 ? CLIENT_RETAINER_TIER : CLIENT_FORGE_BUILD_TIER,
     mrr: Math.max(0, prospect.estimatedMonthlyRetainer),
-    status: "active",
+    status: DEFAULT_CLIENT_STATUS,
     progress: 0,
   }
 }
@@ -465,3 +465,4 @@ function stageIndex(stage: ProspectStage) {
 function percentage(value: number, total: number) {
   return total > 0 ? Math.round((value / total) * 100) : 0
 }
+import { CLIENT_FORGE_BUILD_TIER, CLIENT_RETAINER_TIER, DEFAULT_CLIENT_STATUS } from "@/lib/clients"

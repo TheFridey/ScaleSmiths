@@ -4,9 +4,7 @@ import { FormEvent, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, Save } from "lucide-react"
-
-const TIERS = ["Foundation", "Growth Partner", "Ecosystem", "Maintenance", "Forge Build"]
-const STATUSES = ["active", "build", "review", "prospect"]
+import { CLIENT_SERVICE_TIER_OPTIONS, CLIENT_STATUS_OPTIONS, DEFAULT_CLIENT_SERVICE_TIER } from "@/lib/clients"
 
 const T = { s1:"var(--s1)",s2:"var(--s2)",b1:"var(--b1)",b2:"var(--b2)",t1:"var(--t1)",t2:"var(--t2)",t3:"var(--t3)",acc:"var(--acc)",grn:"var(--grn)" }
 
@@ -94,8 +92,8 @@ export default function NewClientPage() {
 
           <label className="font-dm text-sm">
             <span className="mb-1.5 block" style={{ color: T.t2 }}>Tier</span>
-            <select name="tier" defaultValue="Foundation" className="w-full rounded-lg border px-3 py-2.5 font-dm text-sm outline-none" style={{ background: T.s2, borderColor: T.b2, color: T.t1 }}>
-              {TIERS.map((tier) => <option key={tier} value={tier}>{tier}</option>)}
+            <select name="tier" defaultValue={DEFAULT_CLIENT_SERVICE_TIER} className="w-full rounded-lg border px-3 py-2.5 font-dm text-sm outline-none" style={{ background: T.s2, borderColor: T.b2, color: T.t1 }}>
+              {CLIENT_SERVICE_TIER_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
             </select>
           </label>
 
@@ -122,7 +120,7 @@ export default function NewClientPage() {
           <label className="font-dm text-sm">
             <span className="mb-1.5 block" style={{ color: T.t2 }}>Status</span>
             <select name="status" defaultValue="active" className="w-full rounded-lg border px-3 py-2.5 font-dm text-sm outline-none" style={{ background: T.s2, borderColor: T.b2, color: T.t1 }}>
-              {STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}
+              {CLIENT_STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
             </select>
           </label>
         </div>

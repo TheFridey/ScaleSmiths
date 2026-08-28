@@ -300,14 +300,17 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: admin/package-lock.json
+          cache-dependency-path: |
+            web/package-lock.json
+            admin/package-lock.json
 
       - name: Use supported npm
         run: npm install --global npm@10.9.2
 
-      - name: Install admin dependencies
-        working-directory: admin
-        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Install web and admin database tooling
+        run: |
+          npm ci --prefix web --ignore-scripts --no-audit --no-fund
+          npm ci --prefix admin --ignore-scripts --no-audit --no-fund
 
       - name: Verify web and admin migration journals
         run: |
@@ -324,6 +327,11 @@ jobs:
           mkdir -p ../ci-artifacts
           set -o pipefail
           npm run test:integration 2>&1 | tee ../ci-artifacts/postgresql-integration.log
+
+      - name: Verify least-privilege PostgreSQL roles against real catalogs
+        run: |
+          set -o pipefail
+          npm run test:postgres-privileges 2>&1 | tee ci-artifacts/postgresql-privileges.log
 
       - name: Upload migration and integration logs
         if: always()
@@ -412,6 +420,12 @@ jobs:
 
       - name: Check env hygiene
         run: npm run check:env-hygiene
+
+      - name: Check database environment boundaries
+        run: npm run check:database-environment-boundaries
+
+      - name: Test database environment boundary policy
+        run: npm run test:database-environment-boundaries
 
       - name: Check local application state hygiene
         run: npm run check:local-state-hygiene

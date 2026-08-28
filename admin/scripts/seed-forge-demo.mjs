@@ -10,6 +10,13 @@ const args = new Set(process.argv.slice(2))
 const dryRun = args.has("--dry-run") || process.env.FORGE_DEMO_DRY_RUN === "true" || process.env.npm_config_dry_run === "true"
 const reset = args.has("--reset") || process.env.FORGE_DEMO_RESET === "true" || process.env.npm_config_reset === "true"
 
+// Development-only tool: it deletes and rewrites Forge project rows. The production admin role
+// deliberately holds DELETE on only the declared lifecycle tables, so a production run would fail
+// mid-transaction with an opaque permission error. Refuse explicitly instead.
+if (!dryRun && process.env.NODE_ENV === "production") {
+  throw new Error("Refusing to seed Forge demo data in production. This tool rewrites Forge project rows and requires privileges the least-privilege admin role does not hold.")
+}
+
 const projectTemplate = {
   name: DEMO_PROJECT_NAME,
   businessName: "Nottingham HomeCare Repairs",

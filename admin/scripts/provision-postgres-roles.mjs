@@ -1,26 +1,10 @@
 import process from "node:process"
 import { Client } from "pg"
+import { ADMIN_DELETE_TABLES, ADMIN_FUNCTION_GRANTS, APPLICATION_SCHEMAS, WEB_INSERT_TABLES, WEB_TABLE_GRANTS } from "./postgres-privilege-policy.mjs"
 
 if (!process.argv.includes("--confirm-provision")) {
   throw new Error("Refusing to change PostgreSQL roles without --confirm-provision.")
 }
-
-const WEB_TABLE_GRANTS = new Map([
-  ["quote_requests", ["SELECT", "INSERT", "UPDATE"]],
-  ["quote_rate_limits", ["SELECT", "INSERT", "UPDATE"]],
-  ["login_rate_limits", ["SELECT", "INSERT", "UPDATE"]],
-  ["portal_client_accounts", ["SELECT"]],
-  ["client_requests", ["SELECT", "INSERT", "UPDATE"]],
-  ["client_request_messages", ["SELECT", "INSERT"]],
-  ["client_timeline_events", ["SELECT", "INSERT"]],
-  ["monthly_reports", ["SELECT"]],
-  ["experience_events", ["INSERT"]],
-  ["public_verified_claims", ["SELECT"]],
-  ["clients", ["SELECT"]],
-  ["invoices", ["SELECT"]],
-  ["invoice_items", ["SELECT"]],
-  ["invoice_portal_access_events", ["INSERT"]],
-])
 
 const provisioningUrl = requiredUrl("POSTGRES_PROVISIONING_DATABASE_URL")
 const web = roleFromUrl("WEB_DATABASE_URL")
@@ -46,6 +30,7 @@ try {
   for (const principal of principals) await ensureLoginRole(principal)
   await client.query(`ALTER DATABASE ${identifier(databaseName(provisioningUrl))} OWNER TO ${identifier(migration.name)}`)
   await client.query(`REVOKE ALL ON DATABASE ${identifier(databaseName(provisioningUrl))} FROM PUBLIC`)
+  for (const principal of principals) await client.query(`REVOKE ALL ON DATABASE ${identifier(databaseName(provisioningUrl))} FROM ${identifier(principal.name)}`)
   for (const principal of principals) await client.query(`GRANT CONNECT ON DATABASE ${identifier(databaseName(provisioningUrl))} TO ${identifier(principal.name)}`)
   await client.query(`GRANT CREATE, TEMPORARY ON DATABASE ${identifier(databaseName(provisioningUrl))} TO ${identifier(migration.name)}`)
 
@@ -55,9 +40,9 @@ try {
   await client.query(`ALTER SCHEMA public OWNER TO ${identifier(migration.name)}`)
   await client.query(`ALTER SCHEMA drizzle OWNER TO ${identifier(migration.name)}`)
   await client.query("REVOKE ALL ON SCHEMA public, drizzle FROM PUBLIC")
+  for (const principal of principals) await client.query(`REVOKE ALL ON SCHEMA public, drizzle FROM ${identifier(principal.name)}`)
   await client.query(`GRANT USAGE, CREATE ON SCHEMA public, drizzle TO ${identifier(migration.name)}`)
   await client.query(`GRANT USAGE ON SCHEMA public TO ${identifier(web.name)}, ${identifier(admin.name)}`)
-  await client.query(`GRANT USAGE ON SCHEMA drizzle TO ${identifier(admin.name)}`)
   if (readonly) await client.query(`GRANT USAGE ON SCHEMA public, drizzle TO ${identifier(readonly.name)}`)
   if (backup) await client.query(`GRANT USAGE ON SCHEMA public, drizzle TO ${identifier(backup.name)}`)
 
@@ -71,33 +56,36 @@ try {
   await client.query("REVOKE ALL ON ALL SEQUENCES IN SCHEMA public, drizzle FROM PUBLIC")
   await client.query("REVOKE EXECUTE ON ALL FUNCTIONS IN SCHEMA public, drizzle FROM PUBLIC")
 
-  await client.query(`GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO ${identifier(admin.name)}`)
+  await client.query(`GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA public TO ${identifier(admin.name)}`)
+  for (const table of ADMIN_DELETE_TABLES) if (await tableExists("public", table)) await client.query(`GRANT DELETE ON TABLE public.${identifier(table)} TO ${identifier(admin.name)}`)
   await client.query(`GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO ${identifier(admin.name)}`)
-  await grantFunctionIfPresent("public", "digest", "bytea, text", admin.name)
-  await grantFunctionIfPresent("public", "digest", "text, text", admin.name)
-  await grantFunctionIfPresent("public", "gen_random_uuid", "", admin.name)
+  for (const fn of ADMIN_FUNCTION_GRANTS) await grantFunctionIfPresent(fn.schema, fn.name, fn.arguments, admin.name)
   for (const [table, operations] of WEB_TABLE_GRANTS) {
     if (await tableExists("public", table)) await client.query(`GRANT ${operations.join(", ")} ON TABLE public.${identifier(table)} TO ${identifier(web.name)}`)
   }
-  const webSequences = await sequencesForTables("public", [...WEB_TABLE_GRANTS.keys()])
+  const webSequences = await sequencesForTables("public", WEB_INSERT_TABLES)
   for (const sequence of webSequences) await client.query(`GRANT USAGE, SELECT ON SEQUENCE public.${identifier(sequence)} TO ${identifier(web.name)}`)
 
   if (readonly) {
     await client.query(`GRANT SELECT ON ALL TABLES IN SCHEMA public, drizzle TO ${identifier(readonly.name)}`)
-    await client.query(`GRANT SELECT ON ALL SEQUENCES IN SCHEMA public, drizzle TO ${identifier(readonly.name)}`)
   }
   if (backup) {
     await client.query(`GRANT SELECT ON ALL TABLES IN SCHEMA public, drizzle TO ${identifier(backup.name)}`)
     await client.query(`GRANT SELECT ON ALL SEQUENCES IN SCHEMA public, drizzle TO ${identifier(backup.name)}`)
   }
 
-  await client.query(`ALTER DEFAULT PRIVILEGES FOR ROLE ${identifier(migration.name)} IN SCHEMA public REVOKE ALL ON TABLES FROM PUBLIC`)
-  await client.query(`ALTER DEFAULT PRIVILEGES FOR ROLE ${identifier(migration.name)} IN SCHEMA public REVOKE ALL ON SEQUENCES FROM PUBLIC`)
-  await client.query(`ALTER DEFAULT PRIVILEGES FOR ROLE ${identifier(migration.name)} IN SCHEMA public REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC`)
-  await client.query(`ALTER DEFAULT PRIVILEGES FOR ROLE ${identifier(migration.name)} IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO ${identifier(admin.name)}`)
+  for (const schema of APPLICATION_SCHEMAS) {
+    await client.query(`ALTER DEFAULT PRIVILEGES FOR ROLE ${identifier(migration.name)} IN SCHEMA ${identifier(schema)} REVOKE ALL ON TABLES FROM PUBLIC`)
+    await client.query(`ALTER DEFAULT PRIVILEGES FOR ROLE ${identifier(migration.name)} IN SCHEMA ${identifier(schema)} REVOKE ALL ON SEQUENCES FROM PUBLIC`)
+    await client.query(`ALTER DEFAULT PRIVILEGES FOR ROLE ${identifier(migration.name)} IN SCHEMA ${identifier(schema)} REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC`)
+  }
+  await client.query(`ALTER DEFAULT PRIVILEGES FOR ROLE ${identifier(migration.name)} IN SCHEMA public GRANT SELECT, INSERT, UPDATE ON TABLES TO ${identifier(admin.name)}`)
   await client.query(`ALTER DEFAULT PRIVILEGES FOR ROLE ${identifier(migration.name)} IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO ${identifier(admin.name)}`)
-  if (readonly) await client.query(`ALTER DEFAULT PRIVILEGES FOR ROLE ${identifier(migration.name)} IN SCHEMA public GRANT SELECT ON TABLES TO ${identifier(readonly.name)}`)
-  if (backup) await client.query(`ALTER DEFAULT PRIVILEGES FOR ROLE ${identifier(migration.name)} IN SCHEMA public GRANT SELECT ON TABLES TO ${identifier(backup.name)}`)
+  if (readonly) for (const schema of APPLICATION_SCHEMAS) await client.query(`ALTER DEFAULT PRIVILEGES FOR ROLE ${identifier(migration.name)} IN SCHEMA ${identifier(schema)} GRANT SELECT ON TABLES TO ${identifier(readonly.name)}`)
+  if (backup) for (const schema of APPLICATION_SCHEMAS) {
+    await client.query(`ALTER DEFAULT PRIVILEGES FOR ROLE ${identifier(migration.name)} IN SCHEMA ${identifier(schema)} GRANT SELECT ON TABLES TO ${identifier(backup.name)}`)
+    await client.query(`ALTER DEFAULT PRIVILEGES FOR ROLE ${identifier(migration.name)} IN SCHEMA ${identifier(schema)} GRANT SELECT ON SEQUENCES TO ${identifier(backup.name)}`)
+  }
 
   await client.query("COMMIT")
   console.log(`PostgreSQL least-privilege roles provisioned for ${provisioningUrl.hostname}/${databaseName(provisioningUrl)}.`)

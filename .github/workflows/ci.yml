@@ -413,6 +413,12 @@ jobs:
       - name: Check env hygiene
         run: npm run check:env-hygiene
 
+      - name: Check local application state hygiene
+        run: npm run check:local-state-hygiene
+
+      - name: Test local application state hygiene
+        run: npm run test:local-state-hygiene
+
       - name: Check architecture documentation
         run: npm run check:architecture-docs
 

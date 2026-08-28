@@ -17,6 +17,9 @@
 /*Dockerfile* @TheFridey
 /nginx/ @TheFridey
 /scripts/check-env-hygiene.mjs @TheFridey
+/scripts/check-local-state-hygiene.mjs @TheFridey
+/scripts/check-local-state-hygiene.test.mjs @TheFridey
+/scripts/local-state-allowlist.json @TheFridey
 /scripts/check-dependency-governance.mjs @TheFridey
 /scripts/dependency-governance-policy.json @TheFridey
 /scripts/check-production-topology.mjs @TheFridey

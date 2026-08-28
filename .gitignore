@@ -28,6 +28,22 @@ yarn-error.log*
 .vscode/
 *.swp
 
+# Developer-machine assistant/tool state
+.freebuff/
+.claude/
+.codex/
+.cursor/
+.windsurf/
+
+# Local SQLite state (intentional fixtures require an explicit force-add and hygiene allowlist)
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+*.sqlite-shm
+*.sqlite-wal
+
 # OS
 .DS_Store
 Thumbs.db

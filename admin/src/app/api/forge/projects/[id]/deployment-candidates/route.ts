@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { AdminIdentityError } from "@/lib/admin-users"
 import { guardApiCapability } from "@/lib/server/rbac"
-import { createDeploymentCandidate, decideDeploymentCandidate, ForgeDeploymentCandidateError, getCandidateReleaseGates, listDeploymentCandidates, recordReleaseGateDecision, submitDeploymentCandidate } from "@/lib/server/forge-deployment-candidates"
+import { createDeploymentCandidate, decideDeploymentCandidate, ForgeDeploymentCandidateError, getCandidateReleaseGates, listDeploymentActivity, listDeploymentCandidates, recordReleaseGateDecision, submitDeploymentCandidate } from "@/lib/server/forge-deployment-candidates"
 import { isReleaseGateKey } from "@/lib/forge-release-gates"
 import { auth } from "../../../../../../../auth"
 
@@ -17,9 +17,9 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
     await guardApiCapability("forge.read")
     const projectId = projectIdFrom((await params).id)
     if (!projectId) return NextResponse.json({ error: "Invalid Forge project id." }, { status: 400 })
-    const candidates = await listDeploymentCandidates(projectId)
+    const [candidates, deploymentActivity] = await Promise.all([listDeploymentCandidates(projectId), listDeploymentActivity(projectId)])
     const gates = candidates[0] ? await getCandidateReleaseGates(projectId, candidates[0].id) : null
-    return NextResponse.json({ ok: true, candidates, gates })
+    return NextResponse.json({ ok: true, candidates, gates, deploymentActivity })
   } catch (error) { return failure(error) }
 }
 

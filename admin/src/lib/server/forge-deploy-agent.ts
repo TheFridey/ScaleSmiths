@@ -52,17 +52,23 @@ export interface ForgeDeployRequest {
 }
 
 export async function runForgeDeployAgent(projectId: number, actor: string, request: ForgeDeployRequest) {
-  const context = await loadDeployContext(projectId)
-  const { project } = context
-
-  if (project.status === "archived") throw new ForgeDeployError("Archived Forge projects cannot be deployed.", 400)
-
-  switch (request.action) {
-    case "prepare": return prepare(context, actor, request)
-    case "update_checklist": return updateChecklist(context, actor, request)
-    case "mark_ready": return markReady(context, actor)
-    case "mark_deployed": return markDeployed(context, actor)
-    default: throw new ForgeDeployError("Unknown deployment action.", 400)
+  try {
+    const context = await loadDeployContext(projectId)
+    const { project } = context
+    if (project.status === "archived") throw new ForgeDeployError("Archived Forge projects cannot be deployed.", 400)
+    switch (request.action) {
+      case "prepare": return prepare(context, actor, request)
+      case "update_checklist": return updateChecklist(context, actor, request)
+      case "mark_ready": return markReady(context, actor)
+      case "mark_deployed": return markDeployed(context, actor)
+      default: throw new ForgeDeployError("Unknown deployment action.", 400)
+    }
+  } catch (error) {
+    if (request.action === "mark_ready" || request.action === "mark_deployed") {
+      const safeSummary = error instanceof ForgeDeployError ? error.safeMessage : "The deployment workflow failed."
+      try { await db.insert(forgeActivityLogs).values({ projectId, actor, action: "release_attempt_failed", message: safeSummary, metadataJson: { action: request.action, outcome: "failed", failureCategory: request.action === "mark_ready" ? "preflight" : "deployment", safeErrorSummary: safeSummary } }) } catch {}
+    }
+    throw error
   }
 }
 

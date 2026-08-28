@@ -54,7 +54,7 @@ sudo -E node scripts/release-manager.mjs prepare \
   --dry-run
 ```
 
-Then run the same command without `--dry-run`. Preparation fails closed if Compose validation, either version-tagged Docker build, container startup, or either health check fails. A release becomes switchable only after both health responses report the expected release identifier. Partially built or unhealthy releases remain recorded as `preparing` and cannot be switched.
+Then run the same command without `--dry-run`. Preparation fails closed if Compose validation, either version-tagged Docker build, container startup, or either health check fails. A release becomes switchable only after both health responses report the expected release identifier. Expected failures are terminalised as `failed`; an abrupt process/host failure leaves the last atomically checkpointed `preparing` stage for reconciliation and cannot be switched.
 
 Before preparing production, complete the immutable Forge deployment-candidate and release gates. Review migration compatibility separately. Database migrations must be backward-compatible with the retained previous application version; create an encrypted recovery bundle, provision the least-privilege roles, run `web-migrate` then `admin-migrate` with `MIGRATION_DATABASE_URL`, and rerun role provisioning to grant new objects. Follow the [least-privilege rollout](postgresql-least-privilege-rollout.md). The release manager intentionally does not run migrations, provision roles or restore backups.
 
@@ -85,7 +85,7 @@ The switch sequence is:
 6. Restore the previous include if validation or reload fails.
 7. Persist active and previous release IDs atomically.
 8. Recheck active services and the configured public health URL.
-9. Append an actor/timestamp/notes record to `/var/lib/scalesmiths-release/deployments.jsonl`.
+9. Finalise the coherent release-attempt record and append an actor/timestamp event to `/var/lib/scalesmiths-release/deployments.jsonl`.
 
 The former containers remain running and their version-tagged images and release record are retained.
 
@@ -97,7 +97,7 @@ Rollback also validates the retained target before changing traffic:
 sudo -E node scripts/release-manager.mjs rollback --actor owner@example.com
 ```
 
-This switches to `previousReleaseId`, tests Nginx before reload, verifies health afterwards, reverses active/previous pointers, and appends a rollback log. If a database migration is not backward-compatible, application rollback alone is unsafe; follow the reviewed database restoration plan from the deployment candidate.
+This switches to `previousReleaseId`, tests Nginx before reload, verifies health afterwards, reverses active/previous pointers, and persists rollback start/result on the release being replaced. Rollback failure is also recorded with its safe stage/category before the command exits non-zero. If a database migration is not backward-compatible, application rollback alone is unsafe; follow the reviewed database restoration plan from the deployment candidate.
 
 ### Rollback checklist
 
@@ -124,4 +124,4 @@ Old images and records are deliberately not pruned automatically. After the rete
 
 ## Local and CI simulation
 
-`npm run test:release-simulation` uses temporary directories and fake Docker, curl, Nginx and systemd commands. It verifies fail-closed preparation, safe failed-release audit events, incomplete-release rejection, atomic switching, Nginx failure restoration, previous-version retention, rollback and mutation-free dry runs. It never contacts production or Docker and runs in the root CI hygiene job.
+`npm run test:release-simulation` uses temporary directories and fake Docker, curl, Nginx and systemd commands. It covers preflight, deployment and health failures; rollback success/failure; cancellation; retry lineage; secret-free records; atomic switching; previous-version retention; and mutation-free dry runs. It never contacts production or Docker. Root CI captures the complete test output as the always-uploaded `release-simulation-log` artifact for 14 days, including failed jobs.

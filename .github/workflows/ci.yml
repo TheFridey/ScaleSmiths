@@ -476,7 +476,19 @@ jobs:
         run: npm run test:branch-protection-policy
 
       - name: Simulate canary release and rollback
-        run: npm run test:release-simulation
+        run: |
+          mkdir -p ci-artifacts
+          set -o pipefail
+          npm run test:release-simulation 2>&1 | tee ci-artifacts/release-simulation.log
+
+      - name: Upload release simulation evidence
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        with:
+          name: release-simulation-log
+          path: ci-artifacts/release-simulation.log
+          if-no-files-found: error
+          retention-days: 14
 
   pr-metadata:
     name: PR Metadata

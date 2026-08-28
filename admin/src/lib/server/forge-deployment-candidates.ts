@@ -39,6 +39,11 @@ export async function listDeploymentCandidates(projectId: number) {
   })
 }
 
+export async function listDeploymentActivity(projectId: number) {
+  const rows = await db.select({ actor: forgeActivityLogs.actor, action: forgeActivityLogs.action, message: forgeActivityLogs.message, metadataJson: forgeActivityLogs.metadataJson, createdAt: forgeActivityLogs.createdAt }).from(forgeActivityLogs).where(eq(forgeActivityLogs.projectId, projectId)).orderBy(desc(forgeActivityLogs.createdAt)).limit(50)
+  return rows.filter((row) => ["release_attempt_failed", "deploy_marked_ready", "deploy_marked_deployed", "deployment_status_changed"].includes(row.action)).slice(0, 10)
+}
+
 function summarizeDependencyReport(report: ForgeDependencyAdmissionReport) { const { dependencies, ...summary } = report; void dependencies; return summary }
 
 export async function createDeploymentCandidate(input: { projectId: number; actor: string; releaseNotes: string; rollbackPlan: string; environmentRequirements?: string[]; migrationRequirements?: string[]; parentCandidateId?: number }) {

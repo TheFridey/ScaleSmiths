@@ -83,7 +83,20 @@ Keep the previous slot and pre-release recovery point until the approved observa
 
 Treat failed prepare, failed switch, incorrect release identity, unhealthy service, auth/RBAC regression, data-integrity concern, worker malfunction, sustained error/latency breach, or loss of observability as a failed release. Stop further switches and migrations, pause new Forge work, preserve bounded logs/containers/workspace hashes, record database state, and notify the release or incident lead.
 
-The release manager records preparation failures as a `failed` release record with `failedAt` and a bounded `failureStage`, and appends `release_prepare_failed` or `release_switch_failed` to `/var/lib/scalesmiths-release/deployments.jsonl`. It deliberately does not persist raw command output or exception text. Preserve and ship that audit log before manual cleanup; supplement it with separately access-controlled diagnostics where needed.
+The release manager checkpoints `/var/lib/scalesmiths-release/releases/<release-id>.json` before and after every preflight, deployment, traffic-switch and health gate. The record contains the deployment and attempt IDs, retry lineage, actor, source commit and image tags, environment, timestamps, gate outcomes, failure category, bounded safe summary, rollback result, and previous/resulting active versions. A killed process therefore normally leaves a `preparing` record with `currentStage`; reconciliation is a human incident action, never an automatic success assumption.
+
+Failed and cancelled operations append a matching event to `/var/lib/scalesmiths-release/deployments.jsonl`. Raw command output and exception text are deliberately excluded from both durable surfaces. Keep detailed diagnostics in the separately access-controlled log system and never paste credentials into `--notes`, `--reason`, release IDs, or source metadata.
+
+Cancel a prepared release that will not be switched:
+
+```bash
+sudo -E node scripts/release-manager.mjs cancel \
+  --release "$RELEASE_ID" \
+  --actor "$RELEASE_OPERATOR" \
+  --reason "change window closed"
+```
+
+A retry is the same release identity but a new attempt. It is permitted only from a failed or cancelled attempt and must name that exact attempt ID, for example `--retry-of "${RELEASE_ID}:1"`. Archived attempts remain under `/var/lib/scalesmiths-release/attempts/`; omitting retry lineage is rejected. Use a new release ID when the commit or artifact changes.
 
 If the retained application is compatible with the current schema, validate it and run:
 
@@ -111,6 +124,29 @@ For a release that changes Forge, generated sites, providers, budgets, sandboxin
 - complete [Forge V2 production validation](forge-v2-production-validation.md) when its scope applies.
 
 The dated [Forge V2 release-readiness ledger](../release-readiness/forge-v2.md) is historical release evidence and may remain blocked. It is not a standing authorisation for a later SHA.
+
+Forge's existing Deployment panel is the natural admin status surface for generated-site candidates: it shows immutable candidate identity, commit/workspace hashes, dependency/SBOM evidence and server-evaluated gate outcomes. The Forge deployment agent currently prepares instructions and records manual readiness/deployed acknowledgements; it does not execute the host release manager. Do not present those acknowledgements as host deployment success. Correlate them to the host release/deployment ID in the approved change record.
+
+## Release state machine
+
+```mermaid
+stateDiagram-v2
+  [*] --> preparing: prepare creates durable attempt
+  preparing --> ready: preflight, builds, start and inactive health pass
+  preparing --> failed: any preparation gate fails
+  preparing --> cancelled: authorised cancellation
+  ready --> switching: switch requested
+  ready --> cancelled: authorised cancellation
+  switching --> active: traffic, persistence and health pass
+  switching --> failed: switch or health fails
+  failed --> preparing: explicit retry-of failed attempt
+  cancelled --> preparing: explicit retry-of cancelled attempt
+  active --> rolling_back: rollback requested
+  rolling_back --> rolled_back: target, switch and health pass
+  rolling_back --> rollback_failed: any rollback stage fails
+```
+
+`failed`, `cancelled`, `rolled_back`, and `rollback_failed` are operationally terminal outcomes. A retry creates a distinguishable attempt and never rewrites the archived terminal record.
 
 ## Emergency procedure
 

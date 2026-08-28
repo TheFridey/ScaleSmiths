@@ -4,6 +4,12 @@
 /.github/ @TheFridey
 /CONTRIBUTING.md @TheFridey
 /SECURITY.md @TheFridey
+/scripts/branch-protection-policy.json @TheFridey
+/scripts/check-branch-protection-policy.mjs @TheFridey
+/scripts/check-branch-protection-policy.test.mjs @TheFridey
+/scripts/check-github-actions.mjs @TheFridey
+/scripts/check-github-actions.test.mjs @TheFridey
+/docs/operations/protected-areas-and-branch-protection.md @TheFridey
 
 # Environment handling and deployment
 /.env.example @TheFridey
@@ -16,6 +22,13 @@
 /scripts/check-production-topology.mjs @TheFridey
 /scripts/production-topology-allowlist.json @TheFridey
 /scripts/release-manager.mjs @TheFridey
+/scripts/release-manager.test.mjs @TheFridey
+/scripts/check-migration-history.mjs @TheFridey
+/scripts/check-migration-history.test.mjs @TheFridey
+/scripts/check-migrations.mjs @TheFridey
+/scripts/check-migrations.test.mjs @TheFridey
+/scripts/migration-checksums.json @TheFridey
+/scripts/backup/ @TheFridey
 /scripts/update-cloudflare-nginx-ranges.mjs @TheFridey
 /docs/operations/dependency-governance.md @TheFridey
 
@@ -62,3 +75,14 @@
 /admin/src/lib/server/forge-deployment-candidates.ts @TheFridey
 /admin/src/lib/forge-deployment-candidates.ts @TheFridey
 /admin/src/app/api/forge/ @TheFridey
+
+# Finance and billing business-critical paths
+/admin/src/app/api/invoices/ @TheFridey
+/admin/src/app/api/invoice-catalogue/ @TheFridey
+/admin/src/app/api/invoice-settings/ @TheFridey
+/admin/src/app/api/clients/*/billing/ @TheFridey
+/admin/src/app/api/clients/*/invoice-code/ @TheFridey
+/admin/src/app/(protected)/finance/ @TheFridey
+/admin/src/components/finance/ @TheFridey
+/admin/src/lib/invoice*.ts @TheFridey
+/admin/src/lib/server/invoice*.ts @TheFridey

@@ -8,6 +8,7 @@
   },
   "scripts": {
     "check:architecture-docs": "node scripts/check-architecture-docs.mjs",
+    "check:branch-protection-policy": "node scripts/check-branch-protection-policy.mjs",
     "check:dependency-governance": "node scripts/check-dependency-governance.mjs",
     "check:env-hygiene": "node scripts/check-env-hygiene.mjs",
     "check:forge-v2-release-docs": "node scripts/check-forge-v2-release-docs.mjs",
@@ -16,6 +17,7 @@
     "check:pr-metadata": "node scripts/check-pr-metadata.mjs",
     "check:production-topology": "node scripts/check-production-topology.mjs",
     "test:production-topology": "node --test scripts/check-production-topology.test.mjs",
+    "test:branch-protection-policy": "node --test scripts/check-branch-protection-policy.test.mjs",
     "update:cloudflare-ranges": "node scripts/update-cloudflare-nginx-ranges.mjs",
     "test:integration": "node scripts/run-admin-integration-tests.mjs",
     "test:migration-consistency": "node --test scripts/check-migrations.test.mjs",

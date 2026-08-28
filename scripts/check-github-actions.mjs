@@ -36,6 +36,8 @@ const REQUIRED_CONTENT = {
     "npm run test:forge-v2-release-docs",
     "npm run test:release-simulation",
     "npm run test:backup-migration-safety",
+    "npm run check:branch-protection-policy",
+    "npm run test:branch-protection-policy",
     "npm run test:backup-framework",
     "backup-framework-test-log",
     "database-migration-logs",

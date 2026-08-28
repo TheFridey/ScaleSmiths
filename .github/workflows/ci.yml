@@ -443,6 +443,12 @@ jobs:
       - name: Test GitHub Actions policy
         run: npm run test:github-actions
 
+      - name: Check master branch-protection contract
+        run: npm run check:branch-protection-policy
+
+      - name: Test master branch-protection contract
+        run: npm run test:branch-protection-policy
+
       - name: Simulate canary release and rollback
         run: npm run test:release-simulation
 

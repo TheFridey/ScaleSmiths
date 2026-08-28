@@ -46,6 +46,8 @@ Keep the subject under roughly 72 characters where possible. Use the body for mi
 
 Branch names should be descriptive, for example `feat/forge-release-gates` or `fix/web-preference-hydration`.
 
+All changes to `master` must normally arrive through a pull request. The pull request must be approved, have all conversations resolved, be current with `master`, and pass every status check listed in `scripts/branch-protection-policy.json`. Direct pushes, force pushes, and deletion of `master` are prohibited. Administrator bypass is reserved for a genuine production or security emergency; it must be the smallest safe change and must be followed by a pull request or incident record explaining the bypass and completing any skipped review or validation.
+
 Before opening a PR:
 
 - Rebase or merge from `master` as appropriate for the team workflow.

@@ -4,6 +4,8 @@ ScaleSmiths includes a public website, private admin app, PostgreSQL database, A
 
 Sensitive repository areas and recommended branch-protection settings are documented in `docs/operations/protected-areas-and-branch-protection.md`.
 
+Security-sensitive changes to `master` require a pull request, successful required security and CodeQL checks where applicable, resolved review conversations, and CODEOWNER approval. An administrator may bypass those controls only to contain a genuine active security or production emergency; the bypass must be documented and followed by retrospective review and any validation that could not safely run first.
+
 ## Reporting a Vulnerability
 
 Do not open a public GitHub issue for suspected vulnerabilities.

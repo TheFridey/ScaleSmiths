@@ -7,18 +7,17 @@ import {
   ShieldCheck,
 } from "lucide-react"
 import Link from "next/link"
-import { and, desc, eq } from "drizzle-orm"
 import { PortalNav } from "@/components/portal/PortalNav"
 import { PortalMessageComposer } from "@/components/portal/PortalMessageComposer"
 import { PortalOperatingHub } from "@/components/portal/PortalOperatingHub"
 import { PortalRequestsPanel } from "@/components/portal/PortalRequestsPanel"
 import { formatReportPeriod } from "@/lib/monthly-reports"
-import { db } from "@/lib/db"
 import { requireClientPortalAccess } from "@/lib/portal-session"
-import { clientRequestMessages, clientRequests, monthlyReports } from "@/lib/schema"
+import { listRecentPortalThreadMessages } from "@/lib/portal-client-requests"
 import { listPortalInvoices } from "@/lib/portal-invoices"
 import { INVOICE_STATUS_LABELS } from "@/lib/invoice-status"
 import { loadPortalClientProfile } from "@/lib/portal-client-profile"
+import { getLatestPublishedPortalReport, listPublishedPortalReports } from "@/lib/portal-reports"
 
 interface PortalPageProps {
   params: Promise<{ clientId: string }>
@@ -46,8 +45,8 @@ export default async function PortalClientPage({ params, searchParams }: PortalP
   const portalClientId = session.clientId
   const [profile, latestReport, recentMessages] = await Promise.all([
     loadPortalClientProfile(portalClientId),
-    loadLatestReport(portalClientId),
-    loadRecentThreadMessages(portalClientId),
+    getLatestPublishedPortalReport(portalClientId),
+    listRecentPortalThreadMessages(portalClientId),
   ])
 
   if (!profile) {
@@ -122,8 +121,8 @@ function OverviewTab({
   websiteName: string
   planTier: string | null
   clientStatus: string
-  latestReport: Awaited<ReturnType<typeof loadLatestReport>>
-  recentMessages: Awaited<ReturnType<typeof loadRecentThreadMessages>>
+  latestReport: Awaited<ReturnType<typeof getLatestPublishedPortalReport>>
+  recentMessages: Awaited<ReturnType<typeof listRecentPortalThreadMessages>>
 }) {
   return (
     <PortalOperatingHub
@@ -136,61 +135,6 @@ function OverviewTab({
       recentMessages={recentMessages}
     />
   )
-}
-
-async function loadLatestReport(clientId: string) {
-  const [report] = await db
-    .select({
-      id: monthlyReports.id,
-      month: monthlyReports.month,
-      year: monthlyReports.year,
-      title: monthlyReports.title,
-      summary: monthlyReports.summary,
-      publishedAt: monthlyReports.publishedAt,
-    })
-    .from(monthlyReports)
-    .where(and(
-      eq(monthlyReports.clientId, clientId),
-      eq(monthlyReports.status, "published"),
-    ))
-    .orderBy(desc(monthlyReports.year), desc(monthlyReports.month), desc(monthlyReports.publishedAt))
-    .limit(1)
-
-  if (!report) return null
-
-  return {
-    id: report.id,
-    title: report.title,
-    summary: report.summary,
-    periodLabel: formatReportPeriod(report.month, report.year),
-    publishedAt: report.publishedAt?.toISOString() ?? null,
-  }
-}
-
-async function loadRecentThreadMessages(clientId: string) {
-  const rows = await db
-    .select({
-      id: clientRequestMessages.id,
-      requestId: clientRequestMessages.requestId,
-      requestTitle: clientRequests.title,
-      senderType: clientRequestMessages.senderType,
-      senderName: clientRequestMessages.senderName,
-      body: clientRequestMessages.body,
-      createdAt: clientRequestMessages.createdAt,
-    })
-    .from(clientRequestMessages)
-    .innerJoin(clientRequests, eq(clientRequestMessages.requestId, clientRequests.id))
-    .where(and(
-      eq(clientRequests.clientId, clientId),
-      eq(clientRequestMessages.visibility, "client_visible"),
-    ))
-    .orderBy(desc(clientRequestMessages.createdAt))
-    .limit(6)
-
-  return rows.map((row) => ({
-    ...row,
-    createdAt: row.createdAt.toISOString(),
-  }))
 }
 
 function ProgressTab() {
@@ -276,21 +220,7 @@ function RequestsTab({ clientId }: { clientId: string }) {
 }
 
 async function ReportsTab({ clientId }: { clientId: string }) {
-  const reports = await db
-    .select({
-      id: monthlyReports.id,
-      month: monthlyReports.month,
-      year: monthlyReports.year,
-      title: monthlyReports.title,
-      summary: monthlyReports.summary,
-      publishedAt: monthlyReports.publishedAt,
-    })
-    .from(monthlyReports)
-    .where(and(
-      eq(monthlyReports.clientId, clientId),
-      eq(monthlyReports.status, "published"),
-    ))
-    .orderBy(desc(monthlyReports.year), desc(monthlyReports.month), desc(monthlyReports.publishedAt))
+  const reports = await listPublishedPortalReports(clientId)
 
   return (
     <section className="rounded-2xl border border-b1 bg-s1 p-6">

@@ -15,9 +15,10 @@ import {
   findForgeProposalOverpromises,
   type ForgeProposalInputs,
 } from "@/lib/forge-proposal"
-import { forgeActivityLogs, forgeArtifacts, forgeIntegrationConfigs, forgeProjects, forgeTasks, outreachActivities, prospects } from "@/lib/schema"
+import { forgeActivityLogs, forgeArtifacts, forgeIntegrationConfigs, forgeProjects, forgeTasks } from "@/lib/schema"
 import { saveVersionedForgeArtifact } from "./forge-artifacts"
 import { getLatestProjectEstimateSnapshot } from "./project-estimator"
+import { getSalesLeadEvidence } from "./sales-lead-context"
 import type { ProjectEstimateResult } from "@/lib/project-estimator"
 
 type ForgeArtifactTypeName = "handover_doc" | "research_report" | "sitemap" | "seo_pack" | "generated_code" | "qa_report"
@@ -187,7 +188,7 @@ async function loadProposalContext(projectId: number): Promise<{ project: typeof
       enabled: forgeIntegrationConfigs.enabled,
     }).from(forgeIntegrationConfigs).where(eq(forgeIntegrationConfigs.projectId, projectId)),
     getLatestProjectEstimateSnapshot(projectId),
-    loadLeadEvidence(project.prospectId),
+    getSalesLeadEvidence(project.prospectId),
   ])
 
   const intakeState = readForgeIntakeArtifact(intakeArtifacts[0]?.metadataJson)
@@ -277,24 +278,6 @@ async function selectArtifact(projectId: number, type: ForgeArtifactTypeName, ti
 
 async function latestProposalArtifact(projectId: number) {
   return (await db.select().from(forgeArtifacts).where(and(eq(forgeArtifacts.projectId, projectId), eq(forgeArtifacts.type, "proposal"), eq(forgeArtifacts.title, FORGE_PROPOSAL_ARTIFACT_TITLE))).orderBy(desc(forgeArtifacts.version), desc(forgeArtifacts.updatedAt)).limit(1))[0] ?? null
-}
-
-async function loadLeadEvidence(prospectId: number | null) {
-  if (!prospectId) return null
-  const [prospect, activities] = await Promise.all([
-    db.select().from(prospects).where(eq(prospects.id, prospectId)).limit(1),
-    db.select().from(outreachActivities).where(eq(outreachActivities.prospectId, prospectId)).orderBy(desc(outreachActivities.createdAt)).limit(8),
-  ])
-  const row = prospect[0]
-  if (!row) return null
-  return {
-    painPoints: [row.painPoints, row.objectionNotes, row.opportunityNotes].filter((value): value is string => Boolean(value?.trim())),
-    discoveryNotes: activities.flatMap((activity) => [activity.subject, activity.body, activity.outcome]).filter((value): value is string => Boolean(value?.trim())).slice(0, 8),
-    sourceRecords: [
-      { label: `Prospect ${row.businessName}`, recordType: "prospect", recordId: row.id },
-      ...activities.map((activity) => ({ label: activity.subject ?? activity.outcome ?? activity.type, recordType: "outreach_activity", recordId: activity.id })),
-    ],
-  }
 }
 
 function estimateSnapshotToResult(snapshot: Awaited<ReturnType<typeof getLatestProjectEstimateSnapshot>>): ProjectEstimateResult | null {

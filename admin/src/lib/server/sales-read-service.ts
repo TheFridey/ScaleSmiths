@@ -1,6 +1,6 @@
 import "server-only"
 
-import { desc, eq } from "drizzle-orm"
+import { and, desc, eq, sql } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { computeSalesMetrics } from "@/lib/prospects"
 import { outreachActivities, proposalTrackings, prospects, salesProposals } from "@/lib/schema"
@@ -28,4 +28,15 @@ export async function getSalesDashboardSnapshot(now = new Date()) {
       ...row, proposalSentAt: row.proposalSentAt?.toISOString() ?? null,
     })).slice(0, 8),
   }
+}
+
+export async function getForgeProposalEconomics(clientId?: number) {
+  const [result] = await db.select({
+    count: sql<number>`count(*)::int`,
+    estimatedRevenue: sql<number>`coalesce(sum(${salesProposals.buildPrice}), 0)::int`,
+  }).from(salesProposals).where(and(
+    eq(salesProposals.generatedBy, "forge"),
+    clientId ? eq(salesProposals.clientId, clientId) : undefined,
+  ))
+  return { proposals: result?.count ?? 0, estimatedRevenue: result?.estimatedRevenue ?? 0 }
 }

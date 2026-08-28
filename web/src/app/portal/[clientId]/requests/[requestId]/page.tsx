@@ -1,19 +1,12 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { and, asc, eq } from "drizzle-orm"
 import { ArrowLeft } from "lucide-react"
 import { PortalNav } from "@/components/portal/PortalNav"
 import { PortalRequestThread } from "@/components/portal/PortalRequestThread"
 import { PortalTimeline } from "@/components/portal/PortalTimeline"
-import {
-  serializeClientPortalMessage,
-  serializeClientPortalRequest,
-} from "@/lib/client-requests"
-import { serializeClientPortalTimelineEvent } from "@/lib/client-timeline"
-import { db } from "@/lib/db"
 import { requireClientPortalAccess } from "@/lib/portal-session"
 import { loadPortalClientProfile } from "@/lib/portal-client-profile"
-import { clientRequestMessages, clientRequests, clientTimelineEvents } from "@/lib/schema"
+import { getPortalRequestThread } from "@/lib/portal-client-requests"
 
 interface PortalRequestPageProps {
   params: Promise<{ clientId: string; requestId: string }>
@@ -28,70 +21,15 @@ export default async function PortalRequestPage({ params }: PortalRequestPagePro
     notFound()
   }
 
-  const [[row], profile] = await Promise.all([db
-    .select({
-      id: clientRequests.id,
-      title: clientRequests.title,
-      description: clientRequests.description,
-      category: clientRequests.category,
-      priority: clientRequests.priority,
-      status: clientRequests.status,
-      affectedUrl: clientRequests.affectedUrl,
-      createdAt: clientRequests.createdAt,
-      updatedAt: clientRequests.updatedAt,
-    })
-    .from(clientRequests)
-    .where(and(
-      eq(clientRequests.id, id),
-      eq(clientRequests.clientId, session.clientId),
-    ))
-    .limit(1), loadPortalClientProfile(session.clientId)])
+  const [thread, profile] = await Promise.all([
+    getPortalRequestThread(session.clientId, id),
+    loadPortalClientProfile(session.clientId),
+  ])
 
-  if (!row || !profile) {
+  if (!thread || !profile) {
     notFound()
   }
-
-  const messages = await db
-    .select({
-      id: clientRequestMessages.id,
-      requestId: clientRequestMessages.requestId,
-      senderType: clientRequestMessages.senderType,
-      senderName: clientRequestMessages.senderName,
-      body: clientRequestMessages.body,
-      visibility: clientRequestMessages.visibility,
-      createdAt: clientRequestMessages.createdAt,
-      updatedAt: clientRequestMessages.updatedAt,
-    })
-    .from(clientRequestMessages)
-    .where(and(
-      eq(clientRequestMessages.requestId, row.id),
-      eq(clientRequestMessages.visibility, "client_visible"),
-    ))
-    .orderBy(asc(clientRequestMessages.createdAt), asc(clientRequestMessages.id))
-
-  const timeline = await db
-    .select({
-      id: clientTimelineEvents.id,
-      clientId: clientTimelineEvents.clientId,
-      requestId: clientTimelineEvents.requestId,
-      projectId: clientTimelineEvents.projectId,
-      type: clientTimelineEvents.type,
-      title: clientTimelineEvents.title,
-      description: clientTimelineEvents.description,
-      visibility: clientTimelineEvents.visibility,
-      createdBy: clientTimelineEvents.createdBy,
-      createdAt: clientTimelineEvents.createdAt,
-    })
-    .from(clientTimelineEvents)
-    .where(and(
-      eq(clientTimelineEvents.requestId, row.id),
-      eq(clientTimelineEvents.visibility, "client_visible"),
-    ))
-    .orderBy(asc(clientTimelineEvents.createdAt), asc(clientTimelineEvents.id))
-
-  const request = serializeClientPortalRequest(row)
-  const visibleMessages = messages.map(serializeClientPortalMessage).filter((message) => message !== null)
-  const visibleTimeline = timeline.map(serializeClientPortalTimelineEvent).filter((event) => event !== null)
+  const { request, messages, timeline } = thread
   return (
     <div className="flex min-h-screen flex-col bg-bg text-t1 md:flex-row">
       <PortalNav
@@ -110,12 +48,12 @@ export default async function PortalRequestPage({ params }: PortalRequestPagePro
           <p className="mt-3 max-w-[820px] whitespace-pre-wrap font-dm text-sm leading-relaxed text-t2">{request.description}</p>
         </div>
         <div className="grid gap-4">
-          <PortalRequestThread request={request} initialMessages={visibleMessages} />
+          <PortalRequestThread request={request} initialMessages={messages} />
           <section className="rounded-2xl border border-b1 bg-s1 p-5">
             <h2 className="font-syne text-xl font-bold">Request timeline</h2>
             <p className="mt-1 font-dm text-sm text-t2">Status and published updates for this request.</p>
             <div className="mt-5">
-              <PortalTimeline events={visibleTimeline} emptyText="No timeline updates have been published for this request yet." />
+              <PortalTimeline events={timeline} emptyText="No timeline updates have been published for this request yet." />
             </div>
           </section>
         </div>

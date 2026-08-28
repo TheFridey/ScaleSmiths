@@ -6,6 +6,9 @@ const BLOCKED_STORAGE_IMPORT = /from\s+["']@\/lib\/(?:db|schema)["']/
 const COMPOSITION_ROOTS = [
   "admin/src/app/(protected)/dashboard/page.tsx",
   "admin/src/app/(protected)/clients/page.tsx",
+  "web/src/app/portal/[clientId]/page.tsx",
+  "web/src/app/portal/[clientId]/reports/[reportId]/page.tsx",
+  "web/src/app/portal/[clientId]/requests/[requestId]/page.tsx",
 ]
 const PUBLIC_READ_APIS = [
   "admin/src/lib/server/acquisition-read-service.ts",
@@ -14,6 +17,11 @@ const PUBLIC_READ_APIS = [
   "admin/src/lib/server/finance-read-service.ts",
   "admin/src/lib/server/reporting-read-service.ts",
   "admin/src/lib/server/sales-read-service.ts",
+  "admin/src/lib/server/sales-lead-context.ts",
+  "web/src/lib/portal-client-profile.ts",
+  "web/src/lib/portal-client-requests.ts",
+  "web/src/lib/portal-invoices.ts",
+  "web/src/lib/portal-reports.ts",
 ]
 
 export function validateDomainBoundaries(root) {

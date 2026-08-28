@@ -1,10 +1,8 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { and, eq } from "drizzle-orm"
 import { ArrowLeft } from "lucide-react"
-import { db } from "@/lib/db"
 import { requireClientPortalAccess } from "@/lib/portal-session"
-import { monthlyReports } from "@/lib/schema"
+import { getPublishedPortalReport } from "@/lib/portal-reports"
 
 interface PortalReportPageProps {
   params: Promise<{ clientId: string; reportId: string }>
@@ -19,19 +17,7 @@ export default async function PortalReportPage({ params }: PortalReportPageProps
     notFound()
   }
 
-  const [report] = await db
-    .select({
-      id: monthlyReports.id,
-      title: monthlyReports.title,
-      htmlContent: monthlyReports.htmlContent,
-    })
-    .from(monthlyReports)
-    .where(and(
-      eq(monthlyReports.id, id),
-      eq(monthlyReports.clientId, session.clientId),
-      eq(monthlyReports.status, "published"),
-    ))
-    .limit(1)
+  const report = await getPublishedPortalReport(session.clientId, id)
 
   if (!report) {
     notFound()

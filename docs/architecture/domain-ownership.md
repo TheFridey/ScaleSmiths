@@ -12,11 +12,11 @@ ScaleSmiths remains a modular monolith. A domain boundary is an in-process TypeS
 | Public acquisition | Quote capture, public funnels and quote notifications | Web quote modules; `server/acquisition-read-service.ts` exposes the admin failure count |
 | Identity | Admin users, sessions, MFA, RBAC and security audit | Auth.js configuration, `rbac.ts`, and identity server modules |
 | Clients | Internal client identity, contact/service state and the explicit portal-client mapping | `server/client-read-service.ts`; client mutation routes and validation in `clients.ts` |
-| Portal | Portal accounts/sessions, client-scoped requests, messages, timeline, published reports and invoices | Web portal libraries and ownership-filtered queries; admin consumes shared operational records without taking migration ownership |
-| Delivery/projects | Requests, timeline, kanban, project state and delivery capacity | `server/delivery-read-service.ts` for dashboard reads; existing delivery and request domain modules |
-| Finance | Invoice catalogue/settings, invoice lifecycle, immutable documents, delivery and audit | `server/invoices.ts`, invoice delivery/document modules, `server/finance-read-service.ts` and finance validation |
-| Sales | Prospects, outreach, proposal tracking and sales proposals | `server/sales-read-service.ts`, proposal generator and sales validation in `prospects.ts`/`sales-proposals.ts` |
-| Reporting | Monthly reports and client analytics | `server/reporting-read-service.ts`, report/analytics server modules and domain validation |
+| Portal | Portal accounts/sessions and the authenticated client boundary | `portal-client-profile.ts` plus ownership-filtered portal APIs; admin consumes shared operational records without taking migration ownership |
+| Delivery/projects | Requests, timeline, kanban, project state and delivery capacity | `portal-client-requests.ts`, `server/delivery-read-service.ts`, and existing delivery/request modules |
+| Finance | Invoice catalogue/settings, invoice lifecycle, immutable documents, delivery and audit | `portal-invoices.ts`, `server/invoices.ts`, invoice delivery/document modules, `server/finance-read-service.ts` and finance validation |
+| Sales | Prospects, outreach, proposal tracking and sales proposals | `server/sales-read-service.ts`, `server/sales-lead-context.ts`, proposal generator and sales validation |
+| Reporting | Monthly reports and client analytics | `portal-reports.ts`, `server/reporting-read-service.ts`, report/analytics modules and validation |
 | Forge | Forge projects, runs, tasks, jobs, artifacts, memories, AI budgets, workspaces, QA and release evidence | Stable `server/forge-run-orchestrator.ts` facade and focused Forge server modules |
 
 Public boundaries are deliberately small functions. They may return use-case-specific read models rather than leaking Drizzle tables or query builders. Route handlers and Server Component pages are adapters/composition roots: they enforce authentication/authorization, call domain APIs, and shape transport/UI responses.
@@ -41,6 +41,6 @@ The admin dashboard is a legitimate composition root. Its acquisition, client, s
 
 - Web and admin still declare some shared portal tables separately; migration ownership remains web-first and strict.
 - Several API routes still query their domain tables directly, especially prospects, reports, client requests and Forge project endpoints.
-- `forge-economics.ts` joins client names into a read-only Forge cost projection. This is a documented reporting join, not authority for Forge to mutate client records.
-- Sales proposal generation reads Forge artifacts and client/prospect records directly. A later pass should expose a narrow approved-artifact reader and client/prospect proposal context rather than move this logic wholesale.
+- Forge economics resolves client names through one batch client-domain query and Forge-attributed proposal value through one sales-owned SQL aggregate; it does not issue per-row lookups.
+- Sales proposal generation still reads Forge artifacts directly, while client/prospect proposal context remains a candidate for further separation. Forge proposal generation now consumes prospect/outreach evidence through the sales-owned `sales-lead-context.ts` API.
 - Finance reads and updates protected client billing/sequence fields inside invoice transactions. This is an intentional consistency boundary and must remain governed by finance authorization and immutability tests.

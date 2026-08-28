@@ -436,6 +436,12 @@ jobs:
       - name: Check architecture documentation
         run: npm run check:architecture-docs
 
+      - name: Check modular-monolith domain boundaries
+        run: npm run check:domain-boundaries
+
+      - name: Test modular-monolith domain boundary policy
+        run: npm run test:domain-boundaries
+
       - name: Check documentation links and canonical references
         run: npm run check:documentation-links
 

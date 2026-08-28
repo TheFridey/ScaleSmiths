@@ -228,6 +228,8 @@ These decisions are also represented by the [ADR index](../adr/README.md).
 
 Strengthen the modular monolith before considering extraction:
 
+The current ownership map, dependency rules, implemented dashboard read boundaries, and deliberately retained exceptions are recorded in [Domain ownership](domain-ownership.md).
+
 1. Establish a canonical tenant identity mapping shared by portal, CRM, analytics, reports, invoices, requests, and Forge, then extend RLS only where the access model is explicit.
 2. Create a narrow shared-contract package or generated compatibility boundary for genuinely shared tables/enums; keep each domain's migration ownership explicit.
 3. Keep identity/RBAC, finance, portal, and Forge as separately testable server modules with route handlers acting as adapters.

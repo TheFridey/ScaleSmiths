@@ -1,4 +1,5 @@
 import type { AdminRole } from "./admin-users"
+import { authorizationExpectation } from "./authorization-policy"
 
 export const CAPABILITIES = [
   "admin_users.read", "admin_users.manage", "admin_users.credentials.reset", "admin_users.owner.assign",
@@ -34,6 +35,8 @@ export function isPrivilegeReduction(currentRole: AdminRole, nextRole: AdminRole
 
 export interface RbacRequest { pathname: string; method: string }
 export function requiredCapabilityForRequest({ pathname, method }: RbacRequest): Capability | null {
+  const apiExpectation = authorizationExpectation(pathname, method)
+  if (apiExpectation) return apiExpectation.capability
   const write = !["GET", "HEAD", "OPTIONS"].includes(method.toUpperCase())
   if (pathname.startsWith("/api/auth") || pathname.startsWith("/login")) return null
   if (pathname === "/api/security/logout") return null
@@ -67,6 +70,10 @@ export function requiredCapabilityForRequest({ pathname, method }: RbacRequest):
 
 export function authorizeRequest(role: AdminRole, request: RbacRequest) {
   const capability = requiredCapabilityForRequest(request)
+  const protocolException = request.pathname.startsWith("/api/auth") || request.pathname === "/api/security/logout" || request.pathname === "/api/health" || request.pathname === "/api/monitoring/self-test"
+  if (request.pathname.startsWith("/api/") && !authorizationExpectation(request.pathname, request.method) && capability === null && !protocolException) {
+    return { allowed: false as const, capability: null, reason: "unmapped_api_operation" as const }
+  }
   return capability ? { ...requireRoleCapability(role, capability), capability } : { allowed: true as const, capability: null }
 }
 

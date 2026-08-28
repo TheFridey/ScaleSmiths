@@ -522,14 +522,15 @@ describe("RBAC — viewer restrictions", () => {
 })
 
 describe("RBAC — unrecognised paths", () => {
-  it("unrecognised paths return null capability (middleware allows by default)", () => {
+  it("unrecognised paths return null capability", () => {
     expect(requiredCapabilityForRequest({ pathname: "/some/unknown/path", method: "GET" })).toBeNull()
     expect(requiredCapabilityForRequest({ pathname: "/api/mysterious-endpoint", method: "POST" })).toBeNull()
   })
 
-  it("null capability allows all roles", () => {
+  it("unknown pages remain layout decisions while unknown APIs fail closed", () => {
     for (const role of ADMIN_ROLES) {
       expect(authorizeRequest(role, { pathname: "/unknown/route", method: "GET" }).allowed).toBe(true)
+      expect(authorizeRequest(role, { pathname: "/api/unknown-route", method: "GET" }).allowed).toBe(false)
     }
   })
 })

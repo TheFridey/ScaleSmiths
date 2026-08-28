@@ -8,6 +8,7 @@
   },
   "scripts": {
     "check:architecture-docs": "node scripts/check-architecture-docs.mjs",
+    "check:authorization-policy": "npm --prefix admin run check:authorization-policy",
     "check:branch-protection-policy": "node scripts/check-branch-protection-policy.mjs",
     "check:dependency-governance": "node scripts/check-dependency-governance.mjs",
     "check:database-environment-boundaries": "node scripts/check-database-environment-boundaries.mjs",

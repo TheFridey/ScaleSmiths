@@ -12,6 +12,7 @@
     "build": "node --env-file-if-exists=../.env ./node_modules/next/dist/bin/next build",
     "start": "node --env-file-if-exists=../.env ./node_modules/next/dist/bin/next start -p 3001",
     "test": "vitest run",
+    "check:authorization-policy": "vitest run src/lib/authorization-policy.test.ts src/lib/rbac.test.ts src/lib/rbac-authorization.test.ts",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:forge-e2e": "node scripts/forge-workflow-e2e.mjs",
     "test:forge-benchmark": "node scripts/forge-benchmark.mjs",

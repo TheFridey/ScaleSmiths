@@ -32,7 +32,7 @@ The July 2026 review resolved the embedded PostCSS advisory with a scoped npm ov
 
 ## Authentication updates
 
-Admin remains on the reviewed `next-auth` `5.0.0-beta.32`. The npm `latest` tag is the older v4 stable line, so changing tags is not a safe stable migration. Any Auth.js update must be deliberate and prove credentials login, MFA success/failure and recovery code use, middleware protection, secure cookie settings, role/session-version revocation, disabled-user rejection, logout and rate limiting.
+Admin remains on the reviewed `next-auth` `5.0.0-beta.32`. The npm `latest` tag is the older v4 stable line, so changing tags is not a safe stable migration. The machine-readable pre-release exception in `scripts/dependency-governance-policy.json` must match the exact manifest pin and points to the full API inventory, rationale, test evidence, checklist and exit criterion in `docs/security/authjs-beta-risk-acceptance.md`. Any Auth.js update must be deliberate and prove credentials login, MFA success/failure and recovery code use, middleware protection, secure cookie settings, role/session-version revocation, disabled-user rejection, logout and rate limiting.
 
 ## Lockfiles and Docker digests
 

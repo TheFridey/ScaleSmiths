@@ -22,5 +22,16 @@
       "pg": "8.21.0"
     }
   },
-  "acceptedAdvisories": []
+  "acceptedAdvisories": [],
+  "preReleaseExceptions": [
+    {
+      "app": "admin",
+      "package": "next-auth",
+      "version": "5.0.0-beta.32",
+      "decision": "retain",
+      "reason": "The admin application depends on the Auth.js v5 App Router API. The current beta is exact-pinned, reviewed, and contains the security fixes unavailable in beta.30 and beta.31; moving to the v4 latest tag would be a backwards migration.",
+      "reviewBy": "2026-10-30",
+      "record": "docs/security/authjs-beta-risk-acceptance.md"
+    }
+  ]
 }

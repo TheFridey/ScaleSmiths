@@ -9,6 +9,7 @@ const policy = {
     admin: { next: "15.5.22", "eslint-config-next": "15.5.22", react: "18.3.1", "react-dom": "18.3.1", "next-auth": "5.0.0-beta.32" },
   },
   acceptedAdvisories: [{ id: "GHSA-example", severity: "moderate" }],
+  preReleaseExceptions: [{ app: "admin", package: "next-auth", version: "5.0.0-beta.32", decision: "retain", reason: "Reviewed v5 dependency.", reviewBy: "2026-10-30", record: "docs/security/authjs-beta-risk-acceptance.md" }],
 }
 
 function app(dependencies, devDependencies = {}) {
@@ -26,6 +27,14 @@ test("accepts aligned exact framework and authentication versions", () => {
   const report = inspectDependencyGovernance({ web, admin }, policy)
   assert.deepEqual(report.errors, [])
   assert.equal(report.acceptedAdvisories[0].severity, "moderate")
+  assert.equal(report.preReleaseExceptions[0].decision, "retain")
+})
+
+test("reports a stale pre-release exception", () => {
+  const web = app({ next: "15.5.22", react: "18.3.1", "react-dom": "18.3.1" }, { "eslint-config-next": "15.5.22" })
+  const admin = app({ next: "15.5.22", react: "18.3.1", "react-dom": "18.3.1", "next-auth": "5.0.0-beta.31" }, { "eslint-config-next": "15.5.22" })
+  const report = inspectDependencyGovernance({ web, admin }, { ...policy, criticalDependencies: { ...policy.criticalDependencies, admin: { ...policy.criticalDependencies.admin, "next-auth": "5.0.0-beta.31" } } })
+  assert(report.errors.some((error) => error.includes("pre-release exception")))
 })
 
 test("reports unpinned critical dependencies and manifest-lock drift", () => {

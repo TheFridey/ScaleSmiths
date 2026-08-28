@@ -53,7 +53,13 @@ export function inspectDependencyGovernance(apps, policy) {
   const adminReactDom = apps.admin?.manifest.dependencies?.["react-dom"]
   if (webReact !== adminReact || webReactDom !== adminReactDom) errors.push(`React mismatch: web uses ${webReact}/${webReactDom}; admin uses ${adminReact}/${adminReactDom}.`)
 
-  return { errors, details, acceptedAdvisories: policy.acceptedAdvisories ?? [] }
+  for (const exception of policy.preReleaseExceptions ?? []) {
+    const declared = apps[exception.app]?.manifest.dependencies?.[exception.package] ?? apps[exception.app]?.manifest.devDependencies?.[exception.package]
+    if (declared !== exception.version) errors.push(`${exception.app}: pre-release exception for ${exception.package}@${exception.version} does not match declared ${declared ?? "missing"}.`)
+    if (!exception.reason || !exception.reviewBy || !exception.record) errors.push(`${exception.app}: pre-release exception for ${exception.package} is incomplete.`)
+  }
+
+  return { errors, details, acceptedAdvisories: policy.acceptedAdvisories ?? [], preReleaseExceptions: policy.preReleaseExceptions ?? [] }
 }
 
 async function readJson(relativePath) {
@@ -74,6 +80,10 @@ async function main() {
   if (report.acceptedAdvisories.length) {
     console.log("Accepted advisories requiring review:")
     for (const advisory of report.acceptedAdvisories) console.log(`- ${advisory.id} [${advisory.severity}] ${advisory.package}: ${advisory.decision}; review by ${advisory.reviewBy}. ${advisory.reason}`)
+  }
+  if (report.preReleaseExceptions.length) {
+    console.log("Reviewed pre-release dependencies:")
+    for (const exception of report.preReleaseExceptions) console.log(`- ${exception.app} ${exception.package}@${exception.version}: ${exception.decision}; review by ${exception.reviewBy}. ${exception.record}`)
   }
   if (report.errors.length) {
     console.error("Dependency governance check failed:")

@@ -16,14 +16,16 @@ flowchart LR
 | Role | Capabilities |
 | --- | --- |
 | owner | all capabilities |
-| administrator | all capabilities except owner assignment and password reset; cannot bypass final-owner invariants |
+| administrator | internal admin read/manage; portal read/manage/credential reset; all other capabilities except internal owner assignment and internal credential reset; cannot bypass final-owner invariants |
 | sales | leads read/write, clients read, projects read, finance read |
-| project_manager | leads read, clients read/write, projects read/write, Forge read/execute/approve/configure, finance read, audit read |
+| project_manager | portal users read/manage, leads read, clients read/write, projects read/write, Forge read/execute/approve/configure, finance read, audit read |
 | developer | clients read, projects read/write, Forge read/execute/approve/configure, audit read, deployments execute |
 | finance | leads read, clients read, projects read, finance read/write, audit read |
 | viewer | leads read, clients read, projects read, Forge read, finance read |
 
-Defined capabilities are `users.manage`, `users.reset_password`, `users.assign_owner`, `leads.read`, `leads.write`, `clients.read`, `clients.write`, `projects.read`, `projects.write`, `forge.read`, `forge.execute`, `forge.approve`, `forge.configure`, `finance.read`, `finance.write`, `settings.manage`, `audit.read`, and `deployments.execute`.
+Identity capabilities are deliberately separate: `admin_users.read`, `admin_users.manage`, `admin_users.credentials.reset`, `admin_users.owner.assign`, `portal_users.read`, `portal_users.manage`, and `portal_users.credentials.reset`. The remaining capabilities are `leads.read`, `leads.write`, `clients.read`, `clients.write`, `projects.read`, `projects.write`, `forge.read`, `forge.execute`, `forge.approve`, `forge.configure`, `finance.read`, `finance.write`, `settings.manage`, `audit.read`, `deployments.execute`, `analytics.read`, `analytics.write`, `claims.read`, and `claims.manage`.
+
+Internal identities are available at `/users` and `/api/admin-users*`; external client identities are available at `/portal-users` and `/api/portal-users*`. A portal manager cannot reach internal identity data or mutations. Reads and ordinary mutations use distinct capabilities. Credential resets are body-dependent operations and are guarded again inside each API handler; portal reset payloads cannot be combined with email or status mutations. Internal owner assignment, password reset, and MFA invalidation remain owner-only domain invariants.
 
 ## Enforcement
 

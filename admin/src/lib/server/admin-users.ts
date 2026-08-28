@@ -74,7 +74,7 @@ export async function updateAdminUser(targetId: string, input: Record<string, un
     const nextRole = input.role === undefined ? target.role : input.role
     const nextActive = input.active === undefined ? target.active : input.active
     if (typeof nextActive !== "boolean" || !isRole(nextRole)) throw new AdminIdentityError("Invalid role or active state.")
-    if (nextRole === "owner" && !hasCapability(actor.role, "users.assign_owner")) throw new AdminIdentityError("Only an owner can grant the owner role.", 403, "owner_required")
+    if (nextRole === "owner" && !hasCapability(actor.role, "admin_users.owner.assign")) throw new AdminIdentityError("Only an owner can grant the owner role.", 403, "owner_required")
     const privilegeReduced = isPrivilegeReduction(target.role, nextRole)
     const mutation = resolveAdminUserMutation({ targetId: target.id, actorId: actor.id, targetRole: target.role, targetActive: target.active, targetSessionVersion: target.sessionVersion, requestedRole: nextRole, requestedActive: nextActive, revokeSessions: input.revokeSessions === true || privilegeReduced, activeOwnerCount: Number(ownerCount.value) })
     const now = new Date()
@@ -84,7 +84,7 @@ export async function updateAdminUser(targetId: string, input: Record<string, un
 }
 
 export async function resetAdminUserPassword(targetId: string, password: string, actor: { role: AdminRole }) {
-  if (!hasCapability(actor.role, "users.reset_password")) throw new AdminIdentityError("Only an owner can reset admin passwords.", 403, "owner_required")
+  if (!hasCapability(actor.role, "admin_users.credentials.reset")) throw new AdminIdentityError("Only an owner can reset admin passwords.", 403, "owner_required")
   if (password.length < 12) throw new AdminIdentityError("Password must be at least 12 characters.")
   const now = new Date()
   const [updated] = await db.update(adminUsers).set({ passwordHash: await bcrypt.hash(password, PASSWORD_ROUNDS), passwordChangedAt: now, sessionVersion: sql`${adminUsers.sessionVersion} + 1`, updatedAt: now }).where(eq(adminUsers.id, targetId)).returning({ id: adminUsers.id })
@@ -153,7 +153,7 @@ export async function verifyAdminMfaChallenge(user: Awaited<ReturnType<typeof fi
 }
 
 export async function invalidateAdminMfa(targetId: string, actor: { id: string; role: AdminRole }, actorPassword: string) {
-  if (!hasCapability(actor.role, "users.reset_password")) throw new AdminIdentityError("Only an owner can invalidate MFA.", 403, "owner_required")
+  if (!hasCapability(actor.role, "admin_users.credentials.reset")) throw new AdminIdentityError("Only an owner can invalidate MFA.", 403, "owner_required")
   const actorUser = await findAdminUserById(actor.id)
   if (!actorUser || !await bcrypt.compare(actorPassword, actorUser.passwordHash)) {
     await writeAdminSecurityAudit({ actorUserId: actor.id, targetUserId: targetId, action: "mfa_disabled", success: false, metadataJson: { reason: "identity_verification_failed" } })

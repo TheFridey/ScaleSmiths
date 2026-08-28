@@ -19,6 +19,8 @@ After successful bootstrap and login verification, remove `ADMIN_PASSWORD` from 
 
 Owners and administrators can list and create internal users, change roles, enable/disable accounts, and revoke sessions at `/users`. Only owners can create owners or reset passwords. Password reset immediately increments the session version. Disabling an account also revokes its sessions. The final active owner cannot be disabled or demoted, and an actor cannot disable their own account.
 
+Client portal identities are a separate authority surface at `/portal-users`. Owners, administrators, and project managers can list accounts, create explicitly client-linked accounts, and change portal email/status; credential resets are limited to owners and administrators. These permissions do not grant access to `/users` or `/api/admin-users*`. There is currently no invitation-token workflow: account creation issues a temporary password (generated or supplied), and resets issue a new generated password. Portal account status changes affect only the external account; internal administrator status and sessions are handled only by the admin identity APIs.
+
 Admin middleware runs in the Node runtime and reloads the authenticated identity for every protected request. A disabled account or mismatched session version is rejected across pages and APIs, not only on the user-management screen.
 
 MFA state and security audits are persisted. See `admin-mfa.md` for enrolment, production enforcement, recovery codes, invalidation, and bootstrap grace operations.

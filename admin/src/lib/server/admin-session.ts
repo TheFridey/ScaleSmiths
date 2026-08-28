@@ -15,6 +15,6 @@ export async function requireCurrentAdminUser() {
 
 export async function requireAdminUserManager() {
   const user = await requireCurrentAdminUser()
-  if (!hasCapability(user.role, "users.manage")) throw new AdminIdentityError("You do not have permission to manage admin users.", 403, "forbidden")
+  if (!hasCapability(user.role, "admin_users.manage")) throw new AdminIdentityError("You do not have permission to manage admin users.", 403, "forbidden")
   return user
 }

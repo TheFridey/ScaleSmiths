@@ -6,9 +6,9 @@ import { CAPABILITIES, ROLE_CAPABILITIES, authorizeRequest, databaseQueryScope, 
 
 const expected: Record<(typeof ADMIN_ROLES)[number], Capability[]> = {
   owner: [...CAPABILITIES],
-  administrator: CAPABILITIES.filter((capability) => capability !== "users.reset_password" && capability !== "users.assign_owner"),
+  administrator: CAPABILITIES.filter((capability) => capability !== "admin_users.credentials.reset" && capability !== "admin_users.owner.assign"),
   sales: ["leads.read", "leads.write", "clients.read", "projects.read", "finance.read", "analytics.read"],
-  project_manager: ["leads.read", "clients.read", "clients.write", "projects.read", "projects.write", "forge.read", "forge.execute", "forge.approve", "forge.configure", "finance.read", "audit.read", "analytics.read", "analytics.write"],
+  project_manager: ["portal_users.read", "portal_users.manage", "leads.read", "clients.read", "clients.write", "projects.read", "projects.write", "forge.read", "forge.execute", "forge.approve", "forge.configure", "finance.read", "audit.read", "analytics.read", "analytics.write"],
   developer: ["clients.read", "projects.read", "projects.write", "forge.read", "forge.execute", "forge.approve", "forge.configure", "audit.read", "deployments.execute", "analytics.read"],
   finance: ["leads.read", "clients.read", "projects.read", "finance.read", "finance.write", "audit.read", "analytics.read"],
   viewer: ["leads.read", "clients.read", "projects.read", "forge.read", "finance.read", "analytics.read"],
@@ -42,8 +42,8 @@ describe("server request enforcement", () => {
   it("prevents viewer and sales roles bypassing UI with direct write calls", () => {
     expect(authorizeRequest("viewer", { pathname: "/api/prospects", method: "POST" })).toMatchObject({ allowed: false, capability: "leads.write" })
     expect(authorizeRequest("sales", { pathname: "/api/forge/projects/12/research", method: "POST" })).toMatchObject({ allowed: false, capability: "forge.execute" })
-    expect(authorizeRequest("viewer", { pathname: "/api/admin-users/user-id", method: "PATCH" })).toMatchObject({ allowed: false, capability: "users.manage" })
-    expect(authorizeRequest("viewer", { pathname: "/api/portal-users/12", method: "PATCH" })).toMatchObject({ allowed: false, capability: "users.manage" })
+    expect(authorizeRequest("viewer", { pathname: "/api/admin-users/user-id", method: "PATCH" })).toMatchObject({ allowed: false, capability: "admin_users.manage" })
+    expect(authorizeRequest("viewer", { pathname: "/api/portal-users/12", method: "PATCH" })).toMatchObject({ allowed: false, capability: "portal_users.manage" })
     expect(authorizeRequest("viewer", { pathname: "/api/claims/testimonial.glow-tanning.tom", method: "PATCH" })).toMatchObject({ allowed: false, capability: "claims.manage" })
     expect(authorizeRequest("viewer", { pathname: "/api/invoices", method: "POST" })).toMatchObject({ allowed: false, capability: "finance.write" })
   })
@@ -53,6 +53,8 @@ describe("server request enforcement", () => {
     expect(authorizeRequest("developer", { pathname: "/api/forge/projects/9/deploy", method: "POST" }).allowed).toBe(true)
     expect(authorizeRequest("sales", { pathname: "/api/proposals", method: "POST" }).allowed).toBe(true)
     expect(authorizeRequest("project_manager", { pathname: "/api/forge/projects/9/design", method: "PATCH" }).allowed).toBe(true)
+    expect(authorizeRequest("project_manager", { pathname: "/api/portal-users/9", method: "PATCH" })).toMatchObject({ allowed: true, capability: "portal_users.manage" })
+    expect(authorizeRequest("project_manager", { pathname: "/api/admin-users/user-id", method: "GET" })).toMatchObject({ allowed: false, capability: "admin_users.read" })
   })
 
   it("maps sensitive routes before generic Forge execution", () => {

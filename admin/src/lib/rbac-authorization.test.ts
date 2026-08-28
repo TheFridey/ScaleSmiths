@@ -82,8 +82,25 @@ describe("RBAC — admin user management", () => {
         } else {
           expect(result.allowed).toBe(false)
         }
-        expect(result.capability).toBe("users.manage")
+        expect(result.capability).toBe(route.method === "GET" ? "admin_users.read" : "admin_users.manage")
       }
+    }
+  })
+})
+
+describe("RBAC — portal user management", () => {
+  it("is separate from internal admin identity authority", () => {
+    for (const role of ADMIN_ROLES) {
+      const portalRead = authorizeRequest(role, { pathname: "/portal-users", method: "GET" })
+      const portalWrite = authorizeRequest(role, { pathname: "/api/portal-users/12", method: "PATCH" })
+      const adminRead = authorizeRequest(role, { pathname: "/api/admin-users", method: "GET" })
+      const portalRole = role === "owner" || role === "administrator" || role === "project_manager"
+      expect(portalRead.allowed).toBe(portalRole)
+      expect(portalRead.capability).toBe("portal_users.read")
+      expect(portalWrite.allowed).toBe(portalRole)
+      expect(portalWrite.capability).toBe("portal_users.manage")
+      expect(adminRead.allowed).toBe(role === "owner" || role === "administrator")
+      expect(adminRead.capability).toBe("admin_users.read")
     }
   })
 })

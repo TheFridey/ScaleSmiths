@@ -173,7 +173,7 @@ These are merge/release evidence, not production deployment approval. GitHub enf
 
 ## 17. Current residual risks
 
-The following are current risks or unverified operational controls, not claims that completed repository mechanisms are absent:
+The authoritative finding-by-finding status, evidence, action, and remaining work are maintained in the [current residual-risk register](residual-risk-register.md). The following is a summary of current risks or unverified operational controls, not a claim that completed repository mechanisms are absent:
 
 1. Strict `master` protection and GitHub-native secret/security settings require live repository configuration and verification.
 2. Historical `.freebuff/` desktop state remains in reachable Git history until a coordinated rewrite.
@@ -236,4 +236,3 @@ Strengthen the modular monolith before considering extraction:
 6. Introduce a dedicated document-storage boundary only when portal asset publication requires it; do not overload generated workspaces or invoice bytes as a general file store.
 7. Preserve append-oriented audit/provenance records and design retention per domain rather than applying one global deletion rule.
 8. Add contract, authorization, and lifecycle tests at boundaries before adding new deployables.
-

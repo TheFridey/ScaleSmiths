@@ -124,4 +124,4 @@ Old images and records are deliberately not pruned automatically. After the rete
 
 ## Local and CI simulation
 
-`npm run test:release-simulation` uses temporary directories and fake Docker, curl, Nginx and systemd commands. It verifies fail-closed preparation, incomplete-release rejection, atomic switching, Nginx failure restoration, previous-version retention, rollback and mutation-free dry runs. It never contacts production or Docker and runs in the root CI hygiene job.
+`npm run test:release-simulation` uses temporary directories and fake Docker, curl, Nginx and systemd commands. It verifies fail-closed preparation, safe failed-release audit events, incomplete-release rejection, atomic switching, Nginx failure restoration, previous-version retention, rollback and mutation-free dry runs. It never contacts production or Docker and runs in the root CI hygiene job.

@@ -83,6 +83,8 @@ Keep the previous slot and pre-release recovery point until the approved observa
 
 Treat failed prepare, failed switch, incorrect release identity, unhealthy service, auth/RBAC regression, data-integrity concern, worker malfunction, sustained error/latency breach, or loss of observability as a failed release. Stop further switches and migrations, pause new Forge work, preserve bounded logs/containers/workspace hashes, record database state, and notify the release or incident lead.
 
+The release manager records preparation failures as a `failed` release record with `failedAt` and a bounded `failureStage`, and appends `release_prepare_failed` or `release_switch_failed` to `/var/lib/scalesmiths-release/deployments.jsonl`. It deliberately does not persist raw command output or exception text. Preserve and ship that audit log before manual cleanup; supplement it with separately access-controlled diagnostics where needed.
+
 If the retained application is compatible with the current schema, validate it and run:
 
 ```bash

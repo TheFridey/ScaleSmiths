@@ -83,8 +83,8 @@ Important enums define quote status, request category/priority/status, message v
 
 ## Migration inventory
 
-- Web migrations `0000`-`0012` build quote capture, portal accounts/rate limits, request threads/timeline, reports, public experience analytics, the public claims registry/restricted view, enquiry intent, and the local-growth funnel classification.
-- Admin migrations `0000`-`0043` build operational CRM, identity/security, Forge workflow/provenance/economics, client operations, analytics, release gates, the forward-only historical-schema reconciliation, and generated-site dependency/SBOM evidence binding.
+- Web migrations `0000`-`0015` build quote capture, portal accounts/rate limits, request threads/timeline and notification reconciliation, reports, public experience analytics, the public claims registry/restricted view, enquiry intent, and the local-growth funnel classification.
+- Admin migrations `0000`-`0050` build operational CRM, identity/security, Forge workflow/provenance/economics, durable operational controls and run orchestration, client operations, analytics, finance/invoicing, release gates, the forward-only historical-schema reconciliation, and generated-site dependency/SBOM evidence binding.
 
 The histories are independent. Their Drizzle journals do not provide a single global order, despite targeting the same database. Deployment compensates by always running web then admin migrations.
 

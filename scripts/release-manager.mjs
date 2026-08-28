@@ -30,15 +30,28 @@ export class ReleaseManager {
     const release = { releaseId, actor, notes, slot, ports, status: "preparing", createdAt: this.now().toISOString(), readyAt: null, switchedAt: null }
     await this.action(`create release record ${recordPath}`, async () => { await mkdir(path.dirname(recordPath), { recursive: true }); await writeJsonAtomic(recordPath, release) })
     const env = this.releaseEnvironment(release)
-    await this.command("validate Compose configuration", ["docker", "compose", "-f", "docker-compose.release.yml", "config", "--quiet"], env)
-    await this.command("build versioned web image", dockerBuildCommand("web", releaseId, env), env)
-    await this.command("build versioned admin image", dockerBuildCommand("admin", releaseId, env), env)
-    await this.command("start inactive release containers", ["docker", "compose", "-p", composeProject(releaseId), "-f", "docker-compose.release.yml", "up", "-d", "--no-build", "web", "admin"], env)
-    await this.healthCheck(release)
-    release.status = "ready"; release.readyAt = this.now().toISOString()
-    await this.action(`mark release ${releaseId} ready`, () => writeJsonAtomic(recordPath, release))
-    await this.log("release_prepared", release, { healthVerified: true })
-    return release
+    let failureStage = "compose_validation"
+    try {
+      await this.command("validate Compose configuration", ["docker", "compose", "-f", "docker-compose.release.yml", "config", "--quiet"], env)
+      failureStage = "web_image_build"
+      await this.command("build versioned web image", dockerBuildCommand("web", releaseId, env), env)
+      failureStage = "admin_image_build"
+      await this.command("build versioned admin image", dockerBuildCommand("admin", releaseId, env), env)
+      failureStage = "inactive_slot_start"
+      await this.command("start inactive release containers", ["docker", "compose", "-p", composeProject(releaseId), "-f", "docker-compose.release.yml", "up", "-d", "--no-build", "web", "admin"], env)
+      failureStage = "inactive_health_check"
+      await this.healthCheck(release)
+      release.status = "ready"; release.readyAt = this.now().toISOString()
+      await this.action(`mark release ${releaseId} ready`, () => writeJsonAtomic(recordPath, release))
+      await this.log("release_prepared", release, { healthVerified: true })
+      return release
+    } catch (error) {
+      release.status = "failed"
+      release.failedAt = this.now().toISOString()
+      release.failureStage = failureStage
+      await this.recordFailure("release_prepare_failed", release, actor, failureStage)
+      throw error
+    }
   }
 
   async adopt({ releaseId, actor, notes, slot }) {
@@ -54,17 +67,27 @@ export class ReleaseManager {
   async switch(releaseId, actor) {
     requireActor(actor)
     const release = await this.loadReady(releaseId)
-    await this.healthCheck(release)
-    const state = await this.loadState()
-    if (state.activeReleaseId === releaseId) throw new ReleaseError(`Release ${releaseId} is already active.`)
-    await this.installUpstreams(release)
-    const nextState = { activeReleaseId: releaseId, previousReleaseId: state.activeReleaseId ?? null, switchedAt: this.now().toISOString(), actor }
-    release.status = "active"; release.switchedAt = nextState.switchedAt
-    await this.action("persist active/previous release state", async () => { await writeJsonAtomic(this.statePath(), nextState); await writeJsonAtomic(this.recordPath(releaseId), release) })
-    await this.healthCheck(release)
-    if (this.env.SS_PUBLIC_HEALTH_URL) await this.command("verify public web health", ["curl", "--fail", "--silent", "--show-error", "--max-time", "15", this.env.SS_PUBLIC_HEALTH_URL])
-    await this.log("release_switched", release, { actor, previousReleaseId: nextState.previousReleaseId, postReleaseVerified: true })
-    return nextState
+    let failureStage = "pre_switch_health_check"
+    try {
+      await this.healthCheck(release)
+      const state = await this.loadState()
+      if (state.activeReleaseId === releaseId) throw new ReleaseError(`Release ${releaseId} is already active.`)
+      failureStage = "nginx_switch"
+      await this.installUpstreams(release)
+      const nextState = { activeReleaseId: releaseId, previousReleaseId: state.activeReleaseId ?? null, switchedAt: this.now().toISOString(), actor }
+      release.status = "active"; release.switchedAt = nextState.switchedAt
+      failureStage = "release_state_persistence"
+      await this.action("persist active/previous release state", async () => { await writeJsonAtomic(this.statePath(), nextState); await writeJsonAtomic(this.recordPath(releaseId), release) })
+      failureStage = "post_switch_health_check"
+      await this.healthCheck(release)
+      failureStage = "public_health_check"
+      if (this.env.SS_PUBLIC_HEALTH_URL) await this.command("verify public web health", ["curl", "--fail", "--silent", "--show-error", "--max-time", "15", this.env.SS_PUBLIC_HEALTH_URL])
+      await this.log("release_switched", release, { actor, previousReleaseId: nextState.previousReleaseId, postReleaseVerified: true })
+      return nextState
+    } catch (error) {
+      await this.recordFailure("release_switch_failed", release, actor, failureStage)
+      throw error
+    }
   }
 
   async rollback(actor) {
@@ -117,6 +140,14 @@ export class ReleaseManager {
   async command(label, argv, env = this.env) { if (this.dryRun) { this.output(`[dry-run] ${label}: ${argv.join(" ")}`); return "" } return this.runner(argv, { cwd: this.repo, env }) }
   runnerOrPlan(argv, input) { if (this.dryRun) { this.output(`[dry-run] health: ${argv.map(redactArg).join(" ")}`); return "" } return this.runner(argv, { env: this.env, input }) }
   async action(label, fn) { if (this.dryRun) { this.output(`[dry-run] ${label}`); return } await fn() }
+  async recordFailure(event, release, actor, failureStage) {
+    try {
+      await this.action(`record ${event}`, async () => {
+        if (event === "release_prepare_failed") await writeJsonAtomic(this.recordPath(release.releaseId), release)
+        await this.log(event, release, { actor, failureStage })
+      })
+    } catch {}
+  }
   recordPath(id) { return path.join(this.root, "releases", `${id}.json`) }
   statePath() { return path.join(this.root, "state.json") }
   async loadState() { return existsSync(this.statePath()) ? JSON.parse(await readFile(this.statePath(), "utf8")) : {} }

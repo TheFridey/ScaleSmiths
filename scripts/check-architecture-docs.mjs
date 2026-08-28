@@ -19,6 +19,7 @@ const requiredDocuments = {
     "19. Decisions not to revisit casually",
     "20. Recommended domain boundaries going forward",
   ],
+  "residual-risk-register.md": ["Register", "Current open-risk summary"],
   "system-overview.md": ["Public web application", "Admin application", "Authentication", "Tests and current coverage", "Audit findings"],
   "forge-workflow.md": ["Lifecycle", "Agents and outputs", "AI provider abstraction and budgets", "Artifact lifecycle", "Workspace and preview lifecycle"],
   "security-boundaries.md": ["Trust zones", "AI boundary", "Generated workspace boundary", "Preview and publication boundary", "Database boundary"],

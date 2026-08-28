@@ -5,6 +5,7 @@ import {
   buildForgeRateLimitKey,
   isForgeMutatingMethod,
   isForgeTaskEndpoint,
+  resolveForgeRateLimitActor,
   resolveForgeRateLimitConfig,
 } from "@/lib/forge-security"
 import { checkDurableRateLimit } from "@/lib/server/rate-limit-store"
@@ -92,7 +93,11 @@ export default auth(async (req) => {
     const config = resolveForgeRateLimitConfig()
     const bucket = isForgeTaskEndpoint(pathname) ? "task" : "mutation"
     const key = buildForgeRateLimitKey({
-      actor: req.auth.user?.email ?? req.headers.get("x-forwarded-for") ?? "admin",
+      actor: resolveForgeRateLimitActor({
+        userId: persistedUser.id,
+        email: req.auth.user?.email,
+        forwardedFor: req.headers.get("x-forwarded-for"),
+      }),
       method: req.method,
       pathname,
       bucket,

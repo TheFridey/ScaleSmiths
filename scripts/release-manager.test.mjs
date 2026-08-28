@@ -10,6 +10,7 @@ async function fixture(options = {}) {
   const commands = []
   const runner = (argv) => {
     commands.push(argv.join(" "))
+    if (options.failWebBuild && argv[0] === "docker" && argv.includes("build") && argv.at(-1) === "web") throw new ReleaseError("simulated build failure containing private diagnostics")
     if (options.failNginx && argv[0] === "nginx") throw new ReleaseError("invalid nginx")
     if (argv[0] === "curl") {
       const url = argv.at(-1)
@@ -54,6 +55,21 @@ test("refuses to switch an incomplete or unknown release", async () => {
   try { await assert.rejects(item.manager.switch("missing", "owner@example.test"), /not prepared/) } finally { await item.cleanup() }
 })
 
+test("persists a safe failed preparation record and audit event", async () => {
+  const item = await fixture({ failWebBuild: true })
+  try {
+    await assert.rejects(item.manager.prepare({ releaseId: "release-blue", actor: "owner@example.test", notes: "Blue release", slot: "blue" }), /simulated build failure/)
+    const record = JSON.parse(await readFile(path.join(item.root, "releases", "release-blue.json"), "utf8"))
+    assert.equal(record.status, "failed")
+    assert.equal(record.failureStage, "web_image_build")
+    assert.equal(record.failedAt, "2026-07-13T12:00:00.000Z")
+    const audit = await readFile(path.join(item.root, "deployments.jsonl"), "utf8")
+    assert.match(audit, /"event":"release_prepare_failed"/)
+    assert.match(audit, /"failureStage":"web_image_build"/)
+    assert.doesNotMatch(audit, /private diagnostics/)
+  } finally { await item.cleanup() }
+})
+
 test("adopts and retains the existing working slot before the first canary", async () => {
   const item = await fixture()
   try {
@@ -83,6 +99,9 @@ test("restores the previous upstream if nginx validation fails", async () => {
     await assert.rejects(item.manager.switch("release-blue", "owner@example.test"), /previous upstream was restored/)
     assert.equal(await readFile(upstreamPath, "utf8"), "previous-working-upstream\n")
     assert.deepEqual(await item.manager.loadState(), {})
+    const audit = await readFile(path.join(item.root, "deployments.jsonl"), "utf8")
+    assert.match(audit, /"event":"release_switch_failed"/)
+    assert.match(audit, /"failureStage":"nginx_switch"/)
   } finally { await item.cleanup() }
 })
 

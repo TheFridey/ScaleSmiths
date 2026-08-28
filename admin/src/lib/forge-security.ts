@@ -41,6 +41,14 @@ export function buildForgeRateLimitKey(parts: {
   return [parts.bucket, parts.actor || "anonymous", parts.method.toUpperCase(), parts.pathname].join(":")
 }
 
+export function resolveForgeRateLimitActor(parts: {
+  userId?: string | null
+  email?: string | null
+  forwardedFor?: string | null
+}) {
+  return parts.userId?.trim() || parts.email?.trim() || parts.forwardedFor?.trim() || "admin"
+}
+
 export function checkForgeRateLimit(
   store: ForgeRateLimitStore,
   key: string,

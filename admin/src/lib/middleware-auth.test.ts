@@ -5,6 +5,7 @@ import {
   checkForgeRateLimit,
   isForgeMutatingMethod,
   isForgeTaskEndpoint,
+  resolveForgeRateLimitActor,
   resolveForgeRateLimitConfig,
 } from "./forge-security"
 
@@ -105,6 +106,12 @@ describe("Forge task endpoint detection", () => {
 })
 
 describe("Forge rate limit key construction", () => {
+  it("prefers the stable persisted user id over mutable identity attributes", () => {
+    expect(resolveForgeRateLimitActor({ userId: "user-123", email: "changed@example.com", forwardedFor: "203.0.113.1" })).toBe("user-123")
+    expect(resolveForgeRateLimitActor({ email: "admin@example.com", forwardedFor: "203.0.113.1" })).toBe("admin@example.com")
+    expect(resolveForgeRateLimitActor({})).toBe("admin")
+  })
+
   it("includes bucket, actor, method and pathname", () => {
     const key = buildForgeRateLimitKey({
       actor: "admin@example.com",

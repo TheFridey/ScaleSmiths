@@ -31,7 +31,7 @@ Admin has no signup. Persistent internal identities are authenticated by Auth.js
 
 Privileged production identities require TOTP MFA after a bounded bootstrap grace deadline. TOTP secrets use AES-256-GCM server-side encryption, recovery codes use salted scrypt hashes and single-use transactional consumption, and setup/failure/disablement events are persisted without secret material.
 
-Forge mutation/task rate limiting is an in-memory map in middleware. It is per process, resets on restart, and is not globally effective across replicas. It is a safety throttle, not a durable abuse-control boundary.
+Forge mutation/task rate limiting uses atomic PostgreSQL fixed-window counters keyed by the persisted admin user ID, method, path and bucket. Counters are shared across replicas and expired rows are pruned by the worker. Middleware deliberately fails open and emits a monitoring warning if the database limiter is unavailable, because a limiter outage must not lock all administrators out; this availability choice remains a bounded residual risk.
 
 ## Database boundary
 
@@ -72,10 +72,4 @@ Restore commands reject the production repository, require isolation words in bo
 
 ## Residual controls and gaps
 
-- CI now runs dependency review, verified-secret scanning, npm audit thresholds, Dockerfile linting, container scanning, SBOM generation, migration/integration checks, CodeQL and sandbox fixtures;
-- generated-site candidate creation now evaluates exact lockfile packages, source, licence, reviewed native/lifecycle risk and npm vulnerability evidence, then binds a per-site SPDX SBOM and admission report to the immutable workspace hash;
-- no integration test for host-Nginx headers/TLS/routing;
-- PostgreSQL role provisioning and selected analytics RLS are implemented, but schema ownership/grants still require production rollout verification against an isolated backup restore;
-- no distributed admin/Forge rate limiter;
-- no automated restoration/reconciliation of orphaned preview processes or containers;
-- RBAC matrix and direct-route tests exist, but there is no exhaustive end-to-end authorization matrix across every admin and portal API.
+The authoritative classifications and evidence are maintained in the [current residual-risk register](residual-risk-register.md). In particular, host-Nginx request behaviour, durable rate limiting, leased preview/container reconciliation, migration immutability, dependency admission and Forge run recovery are now implemented. Production grant verification, tenant-wide RLS, DNS-pinned Forge egress, monitoring activation, external smoke checks, complete authorization E2E coverage, and production-derived restore evidence remain partial or open as recorded there.

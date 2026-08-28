@@ -5,6 +5,7 @@ import { eq, sql } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { quoteRateLimits, quoteRequests } from "@/lib/schema"
 import { quoteEmailContent } from "@/lib/quote-email-content"
+import { rateLimitHeaders } from "@/lib/rate-limit-policy"
 import {
   QUOTE_RATE_LIMIT_MAX,
   QUOTE_RATE_LIMIT_WINDOW_MS,
@@ -48,30 +49,38 @@ async function markQuoteEmailStatus(id: number, status: "sent" | "failed", reaso
     .where(eq(quoteRequests.id, id))
 }
 
+// Every key is incremented before a verdict is returned, so a submitter cannot
+// probe one bucket for free once another is already saturated.
 async function checkQuoteRateLimit(keys: string[]) {
   const now = new Date()
-  const resetAt = new Date(now.getTime() + QUOTE_RATE_LIMIT_WINDOW_MS)
+  const windowResetAt = new Date(now.getTime() + QUOTE_RATE_LIMIT_WINDOW_MS)
+  let allowed = true
+  let remaining = QUOTE_RATE_LIMIT_MAX
+  let resetAt = windowResetAt.getTime()
 
   for (const key of keys) {
     const [row] = await db
       .insert(quoteRateLimits)
-      .values({ key, count: 1, resetAt, updatedAt: now })
+      .values({ key, count: 1, resetAt: windowResetAt, updatedAt: now })
       .onConflictDoUpdate({
         target: quoteRateLimits.key,
         set: {
           count: sql<number>`case when ${quoteRateLimits.resetAt} <= ${now} then 1 else ${quoteRateLimits.count} + 1 end`,
-          resetAt: sql<Date>`case when ${quoteRateLimits.resetAt} <= ${now} then ${resetAt} else ${quoteRateLimits.resetAt} end`,
+          resetAt: sql<Date>`case when ${quoteRateLimits.resetAt} <= ${now} then ${windowResetAt} else ${quoteRateLimits.resetAt} end`,
           updatedAt: now,
         },
       })
-      .returning({ count: quoteRateLimits.count })
+      .returning({ count: quoteRateLimits.count, resetAt: quoteRateLimits.resetAt })
 
-    if ((row?.count ?? QUOTE_RATE_LIMIT_MAX + 1) > QUOTE_RATE_LIMIT_MAX) {
-      return false
+    const count = row?.count ?? QUOTE_RATE_LIMIT_MAX + 1
+    if (count > QUOTE_RATE_LIMIT_MAX) {
+      allowed = false
+      resetAt = (row?.resetAt ?? windowResetAt).getTime()
     }
+    remaining = Math.min(remaining, Math.max(0, QUOTE_RATE_LIMIT_MAX - count))
   }
 
-  return true
+  return { ok: allowed, limit: QUOTE_RATE_LIMIT_MAX, remaining, resetAt }
 }
 
 export async function POST(request: NextRequest) {
@@ -93,12 +102,12 @@ export async function POST(request: NextRequest) {
     }
 
     const ip = getClientIp(request)
-    const allowed = await checkQuoteRateLimit(quoteRateLimitKeys(ip, email))
+    const decision = await checkQuoteRateLimit(quoteRateLimitKeys(ip, email))
 
-    if (!allowed) {
+    if (!decision.ok) {
       return NextResponse.json(
-        { error: genericQuoteError() },
-        { status: 429 },
+        { error: "Too many submissions. Please wait before sending another brief." },
+        { status: 429, headers: rateLimitHeaders(decision) },
       )
     }
 

@@ -571,14 +571,14 @@ async function stopRunningPreview(running: RunningPreview) {
 }
 
 function stopDockerContainer(containerId: string) {
-  return new Promise<void>((resolve) => {
+  return new Promise<void>((resolve, reject) => {
     const stopper = spawn("docker", buildForgeDockerStopArgs(containerId), {
       env: buildForgeGeneratedProcessEnv(),
       windowsHide: true,
       stdio: "ignore",
     })
-    stopper.once("exit", () => resolve())
-    stopper.once("error", () => resolve())
+    stopper.once("exit", (code) => code === 0 ? resolve() : reject(new Error(`Docker failed to stop preview container (exit ${code ?? "unknown"}).`)))
+    stopper.once("error", () => reject(new Error("Docker could not be invoked to stop the preview container.")))
   })
 }
 
@@ -591,9 +591,9 @@ function stopDockerContainer(containerId: string) {
  * An active preview owned by a different, still-leased instance is left alone.
  * Called on startup and periodically by the worker.
  */
-export async function reconcileForgePreviews(): Promise<{ reconciled: number; refreshed: number }> {
+export async function reconcileForgePreviews(input: { now?: Date; actor?: string } = {}): Promise<{ reconciled: number; refreshed: number; reconciledProjectIds: number[]; failures: Array<{ projectId: number; error: string }> }> {
   const instanceId = getAdminInstanceId()
-  const now = new Date()
+  const now = input.now ?? new Date()
   const active = await db
     .select()
     .from(forgePreviews)
@@ -601,6 +601,8 @@ export async function reconcileForgePreviews(): Promise<{ reconciled: number; re
 
   let reconciled = 0
   let refreshed = 0
+  const reconciledProjectIds: number[] = []
+  const failures: Array<{ projectId: number; error: string }> = []
   for (const row of active) {
     const handle = previewProcesses.get(row.projectId)
     const attached = handle ? isRunningPreviewAttached(handle) : false
@@ -616,17 +618,27 @@ export async function reconcileForgePreviews(): Promise<{ reconciled: number; re
 
     if (row.owner === instanceId) {
       await markPreviewReconciled(row.projectId, "Preview process is no longer attached to this admin runtime.")
+      await logPreviewActivity(row.projectId, input.actor ?? "system:forge-reconciler", "preview_reconciled", "Reconciled preview whose local runtime handle was lost.", previewRowToState({ ...row, status: "stopped" }))
       reconciled += 1
+      reconciledProjectIds.push(row.projectId)
       continue
     }
 
-    if (!row.leaseExpiresAt || row.leaseExpiresAt < now) {
-      if (row.containerId) await stopDockerContainer(row.containerId).catch(() => undefined)
-      await markPreviewReconciled(row.projectId, "Preview owner is no longer available; reconciled by another instance.")
-      reconciled += 1
+    if (row.leaseExpiresAt && row.leaseExpiresAt < now) {
+      try {
+        if (row.containerId) await stopDockerContainer(row.containerId)
+        await markPreviewReconciled(row.projectId, "Preview owner is no longer available; reconciled by another instance.")
+        await logPreviewActivity(row.projectId, input.actor ?? "system:forge-reconciler", "preview_reconciled", "Reconciled preview after its ownership lease expired.", previewRowToState({ ...row, status: "stopped" }))
+        reconciled += 1
+        reconciledProjectIds.push(row.projectId)
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Preview cleanup failed."
+        failures.push({ projectId: row.projectId, error: message })
+        captureMonitoringException(error, { projectId: row.projectId, forgeStage: "preview", errorCategory: "preview_reconciliation" })
+      }
     }
   }
-  return { reconciled, refreshed }
+  return { reconciled, refreshed, reconciledProjectIds, failures }
 }
 
 async function markPreviewReconciled(projectId: number, message: string) {

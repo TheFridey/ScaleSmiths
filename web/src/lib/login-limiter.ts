@@ -1,6 +1,7 @@
 import { createHash } from "crypto"
 import { sql } from "drizzle-orm"
 import type { NextRequest } from "next/server"
+import { resolveClientIp } from "./client-ip"
 import { db } from "./db"
 import { loginRateLimits } from "./schema"
 
@@ -11,9 +12,13 @@ export function genericLoginError() {
   return "Unable to sign in with those credentials."
 }
 
+/**
+ * Resolves the rate-limit bucket for a portal login. See `client-ip.ts`: only the
+ * rightmost X-Forwarded-For entry is written by the trusted Nginx hop, and IPv6
+ * clients are bucketed by /64 so prefix rotation cannot mint fresh attempts.
+ */
 export function getRequestIp(request: NextRequest) {
-  const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
-  return forwarded || request.headers.get("x-real-ip") || request.headers.get("cf-connecting-ip") || "unknown"
+  return resolveClientIp(request.headers)
 }
 
 export function hashLimiterIdentifier(value: string) {
@@ -31,29 +36,47 @@ export function loginRateLimitKeys(scope: string, ip: string, identifier: string
   return keys
 }
 
-export async function checkLoginRateLimit(keys: string[], now = new Date()) {
-  const resetAt = new Date(now.getTime() + LOGIN_RATE_LIMIT_WINDOW_MS)
+export interface LoginRateLimitDecision {
+  allowed: boolean
+  limit: number
+  remaining: number
+  resetAt: number
+}
+
+/**
+ * Increments every key before deciding. Returning early on the first exceeded
+ * key would leave the remaining buckets un-incremented, letting an attacker
+ * probe one identity for free once another bucket was already saturated.
+ */
+export async function checkLoginRateLimitDetailed(keys: string[], now = new Date()): Promise<LoginRateLimitDecision> {
+  const windowResetAt = new Date(now.getTime() + LOGIN_RATE_LIMIT_WINDOW_MS)
+  let allowed = true
+  let remaining = LOGIN_RATE_LIMIT_MAX
+  let resetAt = windowResetAt.getTime()
 
   for (const key of keys) {
     const [row] = await db
       .insert(loginRateLimits)
-      .values({ key, count: 1, resetAt, updatedAt: now })
+      .values({ key, count: 1, resetAt: windowResetAt, updatedAt: now })
       .onConflictDoUpdate({
         target: loginRateLimits.key,
         set: {
           count: sql<number>`case when ${loginRateLimits.resetAt} <= ${now} then 1 else ${loginRateLimits.count} + 1 end`,
-          resetAt: sql<Date>`case when ${loginRateLimits.resetAt} <= ${now} then ${resetAt} else ${loginRateLimits.resetAt} end`,
+          resetAt: sql<Date>`case when ${loginRateLimits.resetAt} <= ${now} then ${windowResetAt} else ${loginRateLimits.resetAt} end`,
           updatedAt: now,
         },
       })
-      .returning({ count: loginRateLimits.count })
+      .returning({ count: loginRateLimits.count, resetAt: loginRateLimits.resetAt })
 
-    if ((row?.count ?? LOGIN_RATE_LIMIT_MAX + 1) > LOGIN_RATE_LIMIT_MAX) {
-      return false
+    const count = row?.count ?? LOGIN_RATE_LIMIT_MAX + 1
+    if (count > LOGIN_RATE_LIMIT_MAX) {
+      allowed = false
+      resetAt = (row?.resetAt ?? windowResetAt).getTime()
     }
+    remaining = Math.min(remaining, Math.max(0, LOGIN_RATE_LIMIT_MAX - count))
   }
 
-  return true
+  return { allowed, limit: LOGIN_RATE_LIMIT_MAX, remaining, resetAt }
 }
 
 export function createMemoryLoginLimiter(max = LOGIN_RATE_LIMIT_MAX, windowMs = LOGIN_RATE_LIMIT_WINDOW_MS) {

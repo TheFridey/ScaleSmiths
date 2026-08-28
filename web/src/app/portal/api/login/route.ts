@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { eq } from "drizzle-orm"
 import { db } from "@/lib/db"
-import { checkLoginRateLimit, genericLoginError, getRequestIp, loginRateLimitKeys } from "@/lib/login-limiter"
+import { checkLoginRateLimitDetailed, genericLoginError, getRequestIp, loginRateLimitKeys } from "@/lib/login-limiter"
+import { rateLimitHeaders } from "@/lib/rate-limit-policy"
 import { portalClientAccounts } from "@/lib/schema"
 import {
   PORTAL_SESSION_COOKIE,
@@ -18,10 +19,19 @@ export async function POST(request: NextRequest) {
 
   const credentials = await request.json().catch(() => ({}))
   const identifier = typeof credentials.email === "string" ? credentials.email : ""
-  const allowed = await checkLoginRateLimit(loginRateLimitKeys("portal-login", getRequestIp(request), identifier))
+  const decision = await checkLoginRateLimitDetailed(loginRateLimitKeys("portal-login", getRequestIp(request), identifier))
 
-  if (!allowed) {
-    return NextResponse.json({ error: genericLoginError() }, { status: 401 })
+  // A throttled attempt is not a credential failure: answering 401 told a client
+  // its password was wrong and gave it no signal to back off. 429 with
+  // Retry-After is the honest status and lets well-behaved clients wait.
+  if (!decision.allowed) {
+    return NextResponse.json(
+      { error: "Too many sign-in attempts. Please wait before trying again." },
+      {
+        status: 429,
+        headers: rateLimitHeaders({ ok: false, limit: decision.limit, remaining: decision.remaining, resetAt: decision.resetAt }),
+      },
+    )
   }
 
   const session =

@@ -251,3 +251,16 @@ export const loginRateLimits = pgTable("login_rate_limits", {
   resetAt: timestamp("reset_at", { withTimezone: true }).notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 })
+
+// General-purpose durable counters for every public web limit that is not a
+// login or a quote submission (analytics ingestion, portal writes). One row per
+// key with an absolute reset instant, incremented by a single atomic upsert so
+// concurrent requests across replicas never lose a count.
+export const webRateLimits = pgTable("web_rate_limits", {
+  key: text("key").primaryKey(),
+  count: integer("count").default(0).notNull(),
+  resetAt: timestamp("reset_at", { withTimezone: true }).notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("web_rate_limits_reset_at_idx").on(table.resetAt),
+])

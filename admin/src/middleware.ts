@@ -9,6 +9,7 @@ import {
   resolveForgeRateLimitConfig,
 } from "@/lib/forge-security"
 import { checkDurableRateLimit } from "@/lib/server/rate-limit-store"
+import { resolveClientIp } from "@/lib/client-ip"
 import { isAdminSessionCurrent } from "@/lib/admin-users"
 import { findAdminUserById } from "@/lib/server/admin-users"
 import { authorizeRequest } from "@/lib/rbac"
@@ -96,7 +97,9 @@ export default auth(async (req) => {
       actor: resolveForgeRateLimitActor({
         userId: persistedUser.id,
         email: req.auth.user?.email,
-        forwardedFor: req.headers.get("x-forwarded-for"),
+        // Only reached if an authenticated request somehow carries no id or
+        // email; resolveClientIp never returns a client-chosen value.
+        forwardedFor: resolveClientIp(req.headers),
       }),
       method: req.method,
       pathname,
@@ -114,6 +117,9 @@ export default auth(async (req) => {
             status: 429,
             headers: {
               "Retry-After": String(Math.max(1, Math.ceil(result.retryAfterMs / 1000))),
+              "RateLimit-Limit": String(result.limit),
+              "RateLimit-Remaining": String(result.remaining),
+              "RateLimit-Reset": String(Math.max(0, Math.ceil((result.resetAt - Date.now()) / 1000))),
             },
           },
         ))

@@ -1,5 +1,6 @@
 import { createHash } from "crypto"
 import { sql } from "drizzle-orm"
+import { UNKNOWN_CLIENT_IP, resolveClientIp } from "./client-ip"
 import { db } from "./db"
 import { loginRateLimits } from "./schema"
 
@@ -10,9 +11,17 @@ export function genericLoginError() {
   return "Unable to sign in with those credentials."
 }
 
+/**
+ * Resolves the rate-limit bucket for an admin sign-in attempt.
+ *
+ * Both admin topologies overwrite X-Forwarded-For from `$remote_addr` — the
+ * direct-origin snippet from the TCP peer, the Cloudflare snippet from the peer
+ * that `real_ip` already rewrote after validating the Cloudflare range. The
+ * rightmost entry is therefore always proxy-written, and CF-Connecting-IP never
+ * has to be trusted directly by the application.
+ */
 export function getAuthRequestIp(request?: Request) {
-  const forwarded = request?.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
-  return forwarded || request?.headers.get("x-real-ip") || request?.headers.get("cf-connecting-ip") || "unknown"
+  return request ? resolveClientIp(request.headers) : UNKNOWN_CLIENT_IP
 }
 
 export function hashLimiterIdentifier(value: string) {
@@ -30,8 +39,14 @@ export function loginRateLimitKeys(scope: string, ip: string, identifier: string
   return keys
 }
 
+/**
+ * Increments every key before deciding. Returning early on the first exceeded
+ * key would leave the remaining buckets un-incremented, letting an attacker
+ * probe one identity for free once another bucket was already saturated.
+ */
 export async function checkLoginRateLimit(keys: string[], now = new Date()) {
   const resetAt = new Date(now.getTime() + LOGIN_RATE_LIMIT_WINDOW_MS)
+  let allowed = true
 
   for (const key of keys) {
     const [row] = await db
@@ -48,9 +63,9 @@ export async function checkLoginRateLimit(keys: string[], now = new Date()) {
       .returning({ count: loginRateLimits.count })
 
     if ((row?.count ?? LOGIN_RATE_LIMIT_MAX + 1) > LOGIN_RATE_LIMIT_MAX) {
-      return false
+      allowed = false
     }
   }
 
-  return true
+  return allowed
 }

@@ -13,7 +13,11 @@ export async function reserveForgeAiBudget(input: ReserveInput) {
   const idempotencyKey = input.idempotencyKey ?? (input.taskId ? `task:${input.taskId}:${input.provider}:${input.model}` : `call:${randomUUID()}`)
   return db.transaction(async (tx) => {
     await tx.execute(sql`select pg_advisory_xact_lock(736264438)`)
-    await tx.update(forgeAiBudgetReservations).set({ status:"abandoned", updatedAt:now, failureCategory:"reservation_expired" }).where(and(eq(forgeAiBudgetReservations.status, "reserved"), sql`${forgeAiBudgetReservations.expiresAt} <= ${now}`))
+    await tx.update(forgeAiBudgetReservations).set({
+      status:sql`case when ${forgeAiBudgetReservations.provider} = 'mock' then 'abandoned' else 'failed' end`,
+      actualCost:sql`case when ${forgeAiBudgetReservations.provider} = 'mock' then 0 else ${forgeAiBudgetReservations.reservedCost} end`,
+      usageKnown:sql`${forgeAiBudgetReservations.provider} = 'mock'`, reconciledAt:now, updatedAt:now, failureCategory:"reservation_expired",
+    }).where(and(eq(forgeAiBudgetReservations.status, "reserved"), sql`${forgeAiBudgetReservations.expiresAt} <= ${now}`))
     const [existing] = await tx.select().from(forgeAiBudgetReservations).where(eq(forgeAiBudgetReservations.idempotencyKey, idempotencyKey)).limit(1)
     if (existing) throw new ForgeBudgetReservationError(existing.status === "reserved" ? "An identical AI task is already in progress." : "This AI task execution has already been accounted for.", "replayed_task")
     const dayStart = new Date(now); dayStart.setHours(0, 0, 0, 0)
@@ -32,7 +36,14 @@ export async function reconcileForgeAiBudget(input: { reservationId: number; act
   return row ?? null
 }
 export async function releaseForgeAiBudget(reservationId: number, failureCategory: string, now = new Date()) { return reconcileForgeAiBudget({ reservationId, actualCost:0, usageKnown:true, failureCategory, now }) }
-export async function abandonExpiredForgeAiReservations(now = new Date()) { return db.update(forgeAiBudgetReservations).set({ status:"abandoned", failureCategory:"reservation_expired", updatedAt:now }).where(and(eq(forgeAiBudgetReservations.status, "reserved"), sql`${forgeAiBudgetReservations.expiresAt} <= ${now}`)).returning({ id:forgeAiBudgetReservations.id }) }
+export async function abandonExpiredForgeAiReservations(now = new Date()) { return db.update(forgeAiBudgetReservations).set({
+  status:sql`case when ${forgeAiBudgetReservations.provider} = 'mock' then 'abandoned' else 'failed' end`,
+  actualCost:sql`case when ${forgeAiBudgetReservations.provider} = 'mock' then 0 else ${forgeAiBudgetReservations.reservedCost} end`,
+  usageKnown:sql`${forgeAiBudgetReservations.provider} = 'mock'`,
+  reconciledAt:now,
+  failureCategory:"reservation_expired",
+  updatedAt:now,
+}).where(and(eq(forgeAiBudgetReservations.status, "reserved"), sql`${forgeAiBudgetReservations.expiresAt} <= ${now}`)).returning({ id:forgeAiBudgetReservations.id, projectId:forgeAiBudgetReservations.projectId }) }
 
 async function loadScopes(tx: Parameters<Parameters<typeof db.transaction>[0]>[0], input: ReserveInput, dayStart: Date, env: Partial<Record<string, string | undefined>>): Promise<BudgetScope[]> {
   const active = and(eq(forgeAiBudgetReservations.status, "reserved"), gt(forgeAiBudgetReservations.expiresAt, input.now ?? new Date()))

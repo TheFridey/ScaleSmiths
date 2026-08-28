@@ -84,9 +84,8 @@ QA runs install/typecheck/lint/build and integration checks with command timeout
 
 ## Operational limitations
 
-- The background worker is invoked through an authenticated API route; there is no separate durable worker service in Compose.
-- Job claiming is persisted, but process interruption and retry semantics deserve dedicated integration tests.
+- The durable worker starts in-process from Next.js instrumentation; the authenticated job-drain and reconciliation endpoints provide scheduler and operator backstops. There is no separate worker service in Compose.
+- Job claims and preview ownership use explicit expiring leases. Reconciliation is idempotent, supports dry-run inspection, continues across category failures, and records project audit events.
 - Local sandbox mode executes generated project commands on the host and is intentionally less isolated than Docker mode.
-- Preview state stores PID/container identifiers in generic memory JSON rather than a dedicated lease table; stale runtime state requires reconciliation.
+- Preview state is stored in the dedicated `forge_previews` ownership table with an instance owner, heartbeat and expiring lease. The worker reconciles expired owners and recorded containers; active leases are never taken over.
 - Agent orchestration is distributed across route handlers and agent modules, making global stage invariants difficult to prove.
-

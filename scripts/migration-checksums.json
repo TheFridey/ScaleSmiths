@@ -458,6 +458,12 @@
       "sha256": "58ead8b8b5937fd4ed5895b48acd4e31cc24dc677f11aaf34661d39309fadb4b",
       "lifecycle": "forward",
       "reason": "Adds the invoice engine, immutable document snapshots, portal-client mapping and publication metadata, delivery attempts with idempotency and PDF hashes, portal access telemetry, catalogue, supplier and payment settings, lifecycle constraints, and audit records."
+    },
+    {
+      "path": "web/drizzle/0016_web_rate_limits.sql",
+      "sha256": "8a9c8d71bd194ed4223bac66d0565b18b959814ba757702df3d61638c620e7f1",
+      "lifecycle": "forward",
+      "reason": "Adds the general-purpose web_rate_limits counter table backing durable public rate limits for analytics ingestion and portal writes."
     }
   ],
   "journals": {
@@ -506,6 +512,13 @@
           "version": "7",
           "when": 1791068400000,
           "tag": "0015_client_request_notification_status_reconciliation",
+          "breakpoints": true
+        },
+        {
+          "idx": 16,
+          "version": "7",
+          "when": 1787919297068,
+          "tag": "0016_web_rate_limits",
           "breakpoints": true
         }
       ]

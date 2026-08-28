@@ -101,10 +101,47 @@ The worker periodically prunes expired `rate_limit_counters` and old
 completed/cancelled `forge_jobs` (`FORGE_JOB_RETENTION_DAYS`). Failed and
 dead-lettered jobs are retained for investigation.
 
-## Documented follow-up (not in this change)
+## Resource reconciliation
+
+`reconcileForgeResources()` is the canonical reconciliation service. The worker
+runs it on startup and every six ticks. It covers expired job leases, preview
+ownership, AI budget reservations, and running Forge runs whose steps need to be
+matched to durable job outcomes. Mutations use status and expiry guards, are safe
+to repeat, and produce project activity records. A failure in one category is
+returned and sent to monitoring without hiding the results of other categories.
+
+Use `GET /api/forge/reconciliation` for an authenticated dry run (`audit.read`).
+Use `POST /api/forge/reconciliation` with `{"dryRun":false}` to apply the plan
+(`forge.configure`). POST defaults to dry-run. HTTP `207` means at least one
+resource failed reconciliation and needs operator attention.
+
+| Resource | Orphan threshold | Reconciliation / retention |
+|---|---|---|
+| Running job | Explicit lease expired | Requeue if attempts remain; otherwise dead-letter |
+| Starting/running preview | Explicit ownership lease expired | Stop recorded container, then mark stopped; retain the row and surface failure if Docker stop fails |
+| AI budget reservation | Explicit expiry passed (15 minutes by default) | Release mock-provider reservations as known-zero; conservatively record real-provider expiry as unknown usage at the reserved ceiling |
+| Running run/step | No state update for five minutes (`FORGE_RUN_RECONCILE_AFTER_MS`) | If its durable job is missing, cancelled or terminal, reset or apply the outcome and continue the run state machine |
+| Completed/cancelled job | 14 days by default (`FORGE_JOB_RETENTION_DAYS`) | Delete in normal retention cleanup |
+| Failed/dead-letter job | No automatic expiry | Retain for investigation |
+| Workspace, artifact, deployment candidate | No orphan-deletion threshold | Retain as project, provenance and release evidence |
+| External provider job | Not applicable today | Provider calls are synchronous; no external asynchronous handle is persisted |
+
+Partially created previews are covered because `starting` rows have the same
+owner/lease contract. Rows without an explicit expired lease are not deleted.
+Temporary workspace output is handled by the existing sandbox/QA lifecycle;
+reconciliation never age-deletes an entire generated workspace.
+
+Manual recovery: confirm the owner is not healthy and the lease has expired, run
+a dry run, apply reconciliation, then verify `resource_reconciled_*` and
+`preview_reconciled` activity records. If Docker cleanup fails, stop the recorded
+container on its owning host and rerun. Never clear a live lease or delete a
+workspace simply to clear an alert.
+
+## Documented follow-up
 
 - **Operational dashboards UI**: surface queue depth, oldest queued job, active
   leases, retries, dead letters, and abandoned previews in the admin dashboard.
   The SQL above is the data source; the metrics are already queryable.
-- **Full retention policy**: per-state windows (e.g. dead-letter archival) and a
-  configurable schedule beyond the current worker-driven cleanup.
+- **Long-term evidence retention**: approve per-state archival/deletion windows
+  for dead letters, artifacts, deployment candidates and workspaces before
+  adding destructive cleanup for them.

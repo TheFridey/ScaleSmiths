@@ -46,6 +46,7 @@ export function requiredCapabilityForRequest({ pathname, method }: RbacRequest):
   if (pathname === "/requests" || pathname.startsWith("/requests/") || pathname.startsWith("/api/client-requests")) return write ? "clients.write" : "clients.read"
   if (pathname === "/messages" || pathname.startsWith("/messages/")) return "clients.read"
   if (pathname.startsWith("/api/forge/ai-usage")) return "audit.read"
+  if (pathname === "/api/forge/reconciliation") return write ? "forge.configure" : "audit.read"
   if (/^\/api\/forge\/projects\/[^/]+\/deploy/.test(pathname)) return "deployments.execute"
   if (/^\/api\/forge\/projects\/[^/]+\/integrations/.test(pathname)) return "forge.configure"
   if (/^\/api\/forge\/projects\/[^/]+\/(?:sitemap|copy|design|component-spec|visual-critique)/.test(pathname) && method.toUpperCase() === "PATCH") return "forge.approve"

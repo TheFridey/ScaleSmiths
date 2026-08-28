@@ -57,6 +57,8 @@ describe("server request enforcement", () => {
 
   it("maps sensitive routes before generic Forge execution", () => {
     expect(requiredCapabilityForRequest({ pathname: "/api/forge/ai-usage/export", method: "GET" })).toBe("audit.read")
+    expect(requiredCapabilityForRequest({ pathname: "/api/forge/reconciliation", method: "GET" })).toBe("audit.read")
+    expect(requiredCapabilityForRequest({ pathname: "/api/forge/reconciliation", method: "POST" })).toBe("forge.configure")
     expect(requiredCapabilityForRequest({ pathname: "/api/forge/projects/1/integrations/resend", method: "PATCH" })).toBe("forge.configure")
     expect(requiredCapabilityForRequest({ pathname: "/api/forge/projects/1/deploy", method: "POST" })).toBe("deployments.execute")
     expect(requiredCapabilityForRequest({ pathname: "/api/forge/projects/1/sitemap", method: "PATCH" })).toBe("forge.approve")

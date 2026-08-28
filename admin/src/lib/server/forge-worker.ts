@@ -5,8 +5,8 @@ import { db } from "@/lib/db"
 import { forgeJobs, forgeWorkerHeartbeats } from "@/lib/schema"
 import { buildForgeJobOwner, cleanupTerminalForgeJobs } from "./forge-job-queue"
 import { reapExpiredForgeJobLeases, runDueForgeJobs } from "./forge-job-runner"
-import { reconcileForgePreviews } from "./forge-preview"
-import { cleanupExpiredRateLimitCounters } from "./rate-limit-store"
+import { reconcileForgeResources } from "./forge-reconciliation"
+import { cleanupExpiredRateLimitCounters, cleanupExpiredWebRateLimits } from "./rate-limit-store"
 import { requestLogger } from "./request-context"
 import { captureMonitoringException } from "./monitoring"
 
@@ -62,15 +62,13 @@ export function startForgeWorker(): ForgeWorkerState | null {
     try {
       const recovered = await reapExpiredForgeJobLeases()
       state.recoveredLeases += recovered.requeued + recovered.deadLettered
-      if (state.ticks === 0 || state.ticks % PREVIEW_RECONCILE_EVERY_TICKS === 0) {
-        await (await import("./forge-run-orchestrator")).recoverForgeRuns()
-      }
+      if (state.ticks === 0 || state.ticks % PREVIEW_RECONCILE_EVERY_TICKS === 0) await reconcileForgeResources({ dryRun: false })
       await runDueForgeJobs(BATCH, state.owner)
       state.ticks += 1
       await recordWorkerHeartbeat(state)
-      if (state.ticks % PREVIEW_RECONCILE_EVERY_TICKS === 0) await reconcileForgePreviews()
       if (state.ticks % CLEANUP_EVERY_TICKS === 0) {
         await cleanupExpiredRateLimitCounters()
+        await cleanupExpiredWebRateLimits()
         await cleanupTerminalForgeJobs()
       }
     } catch (error) {

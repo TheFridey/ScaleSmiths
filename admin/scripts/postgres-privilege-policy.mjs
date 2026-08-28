@@ -15,6 +15,9 @@ export const WEB_TABLE_GRANTS = new Map([
   ["invoices", ["SELECT"]],
   ["invoice_items", ["SELECT"]],
   ["invoice_portal_access_events", ["INSERT"]],
+  // Durable counters for the public rate limits. Web upserts its own counters
+  // but never deletes: expired rows are pruned by the admin worker.
+  ["web_rate_limits", ["SELECT", "INSERT", "UPDATE"]],
 ])
 
 export const WEB_INSERT_TABLES = [...WEB_TABLE_GRANTS]
@@ -33,6 +36,9 @@ export const ADMIN_DELETE_TABLES = [
   "invoices",
   "public_claim_evidence",
   "rate_limit_counters",
+  // Pruned by the admin worker on behalf of the web runtime, which holds no
+  // DELETE privilege of its own.
+  "web_rate_limits",
 ]
 
 export const RUNTIME_FORBIDDEN_TABLE_PRIVILEGES = ["TRUNCATE", "REFERENCES", "TRIGGER"]

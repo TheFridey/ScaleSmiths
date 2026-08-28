@@ -300,8 +300,7 @@ export async function retryForgeJob(jobId: number): Promise<{ retried: boolean; 
  * Recovers jobs whose lease expired because the worker died: requeues those with
  * attempts remaining, dead-letters the rest. Returns how many of each.
  */
-export async function reapExpiredForgeJobLeases(): Promise<{ requeued: number; deadLettered: number }> {
-  const now = new Date()
+export async function reapExpiredForgeJobLeases(now = new Date()): Promise<{ requeued: number; deadLettered: number; requeuedIds: number[]; deadLetteredIds: number[] }> {
   const requeued = await db
     .update(forgeJobs)
     .set({ status: "queued", leaseOwner: null, leaseExpiresAt: null, heartbeatAt: null, scheduledAt: now, failureReason: "Recovered after worker lease expired.", updatedAt: now })
@@ -312,7 +311,7 @@ export async function reapExpiredForgeJobLeases(): Promise<{ requeued: number; d
     .set({ status: "dead_letter", leaseOwner: null, leaseExpiresAt: null, completedAt: now, failureReason: "Dead-lettered after worker lease expired with no attempts left.", updatedAt: now })
     .where(and(eq(forgeJobs.status, "running"), lt(forgeJobs.leaseExpiresAt, now), sql`${forgeJobs.attempts} >= ${forgeJobs.maxAttempts}`))
     .returning({ id: forgeJobs.id })
-  return { requeued: requeued.length, deadLettered: deadLettered.length }
+  return { requeued: requeued.length, deadLettered: deadLettered.length, requeuedIds: requeued.map((row) => row.id), deadLetteredIds: deadLettered.map((row) => row.id) }
 }
 
 /**

@@ -48,3 +48,18 @@ export async function cleanupExpiredRateLimitCounters(now = new Date()): Promise
   const deleted = await db.delete(rateLimitCounters).where(lt(rateLimitCounters.expiresAt, now)).returning({ key: rateLimitCounters.key })
   return deleted.length
 }
+
+/**
+ * Prunes the public web application's expired counters. This runs here, not in
+ * the web runtime, because the web PostgreSQL role deliberately holds no DELETE
+ * privilege on any table.
+ *
+ * `web_rate_limits` belongs to the web Drizzle history, so it is addressed with
+ * raw SQL rather than being redeclared in the admin schema — redeclaring it
+ * would make admin's next generated migration try to create a table it does not
+ * own.
+ */
+export async function cleanupExpiredWebRateLimits(now = new Date()): Promise<number> {
+  const result = await db.execute(sql`delete from web_rate_limits where reset_at < ${now}`)
+  return result.rowCount ?? 0
+}

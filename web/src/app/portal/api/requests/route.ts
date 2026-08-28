@@ -9,6 +9,9 @@ import {
   formatClientRequestTriageSummary,
 } from "@/lib/client-request-triage"
 import { getClientSessionFromRequest, unauthorizedClientPortalResponse } from "@/lib/portal-session"
+import { resolveClientIp } from "@/lib/client-ip"
+import { rateLimitHeaders, webRateLimitKeys } from "@/lib/rate-limit-policy"
+import { checkWebRateLimit } from "@/lib/server/rate-limit"
 import { loadPortalClientProfile } from "@/lib/portal-client-profile"
 import {
   isCriticalClientRequest,
@@ -92,6 +95,20 @@ export async function POST(request: NextRequest) {
 
   if (!parsed.ok) {
     return NextResponse.json({ error: parsed.error }, { status: 400 })
+  }
+
+  // Each accepted request notifies staff by email. Limit on the authenticated
+  // client first — that is the identity that actually owns the quota — and on the
+  // network bucket so one compromised session cannot be driven from many hosts.
+  const decision = await checkWebRateLimit(
+    "portalRequestCreate",
+    webRateLimitKeys("portalRequestCreate", resolveClientIp(request.headers), session.clientId),
+  )
+  if (!decision.ok) {
+    return NextResponse.json(
+      { error: "Too many requests submitted. Please wait before submitting another." },
+      { status: 429, headers: rateLimitHeaders(decision) },
+    )
   }
 
   try {

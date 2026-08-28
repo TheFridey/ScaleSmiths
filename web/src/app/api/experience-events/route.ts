@@ -1,5 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server"
 import { shouldRespectPrivacyOptOut, sanitizeExperienceEvent } from "@/lib/experience-analytics"
+import { resolveClientIp } from "@/lib/client-ip"
+import { rateLimitHeaders, webRateLimitKeys } from "@/lib/rate-limit-policy"
+import { checkWebRateLimit } from "@/lib/server/rate-limit"
 import { db } from "@/lib/db"
 import { experienceEvents } from "@/lib/schema"
 
@@ -14,6 +17,20 @@ export async function POST(request: NextRequest) {
   const payload = sanitizeExperienceEvent(await request.json().catch(() => null))
   if (!payload) {
     return NextResponse.json({ ok: false, error: "Invalid analytics event." }, { status: 400, headers: noStoreHeaders() })
+  }
+
+  // Unauthenticated endpoint that writes a row per call. Limit on the trusted
+  // network bucket and the client-declared session, so neither a single network
+  // nor a single replayed session can stuff the analytics table.
+  const decision = await checkWebRateLimit(
+    "experienceEvents",
+    webRateLimitKeys("experienceEvents", resolveClientIp(request.headers), payload.sessionId),
+  )
+  if (!decision.ok) {
+    return NextResponse.json(
+      { ok: false, error: "Too many analytics events." },
+      { status: 429, headers: { ...noStoreHeaders(), ...rateLimitHeaders(decision) } },
+    )
   }
 
   await db

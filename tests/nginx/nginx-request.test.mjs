@@ -110,7 +110,7 @@ test("security headers are present on the admin app", async () => {
   assert.equal(res.headers["x-content-type-options"], "nosniff")
 })
 
-test("public app forwards proto/host and appends the X-Forwarded-For chain", async () => {
+test("public app overwrites the client-supplied X-Forwarded-For chain", async () => {
   const res = await request({
     tls: true,
     host: "scalesmiths.co.uk",
@@ -119,9 +119,11 @@ test("public app forwards proto/host and appends the X-Forwarded-For chain", asy
   })
   const forwarded = json(res).headers
   assert.equal(forwarded["x-forwarded-proto"], "https")
-  // Public origin appends the real peer to the supplied chain.
-  assert.ok(forwarded["x-forwarded-for"].includes("10.9.9.9"), forwarded["x-forwarded-for"])
-  assert.ok(forwarded["x-forwarded-for"].includes(forwarded["x-real-ip"]), forwarded["x-forwarded-for"])
+  // scalesmiths.co.uk is a direct origin, so the supplied chain is untrusted and
+  // dropped entirely. Appending it (the previous behaviour) let a visitor choose
+  // its own rate-limit bucket by sending any address it liked.
+  assert.ok(!forwarded["x-forwarded-for"].includes("10.9.9.9"), forwarded["x-forwarded-for"])
+  assert.equal(forwarded["x-forwarded-for"], forwarded["x-real-ip"])
 })
 
 test("admin app overwrites the client-supplied X-Forwarded-For chain", async () => {
@@ -217,4 +219,58 @@ test("Cloudflare: CF-Connecting-IP from an untrusted origin is not trusted", asy
   })
   // Origin-peer check drops non-Cloudflare sources; the spoofed IP is ignored.
   assert.equal(res.closed, true, "untrusted origin was not rejected")
+})
+
+// ── Edge rate limiting ──────────────────────────────────────────────────
+// The public origin is NOT behind Cloudflare, so these zones are its only
+// volumetric protection. Limits are per exact peer address; because every
+// request from the harness shares one source IP, a rapid burst deterministically
+// exhausts the zone. Rates are r/m, so a burst cannot be refilled mid-test.
+
+async function burst(options, count) {
+  const responses = []
+  for (let index = 0; index < count; index += 1) responses.push(await request(options))
+  return responses
+}
+
+test("public quote submissions are rate limited at the edge with 429", async () => {
+  const responses = await burst(
+    { tls: true, host: "scalesmiths.co.uk", method: "POST", path: "/api/quote", headers: { "Content-Type": "application/json" }, body: "{}" },
+    40,
+  )
+  const limited = responses.filter((res) => res.status === 429)
+  assert.ok(limited.length > 0, "quote endpoint was never rate limited")
+  // 429, not 503: nginx defaults to 503, which tells a client nothing useful.
+  assert.ok(responses.every((res) => res.status !== 503), "quote limiter answered 503 instead of 429")
+  assert.equal(limited[0].headers["retry-after"], "60")
+})
+
+test("portal login is rate limited at the edge with 429", async () => {
+  const responses = await burst(
+    { tls: true, host: "scalesmiths.co.uk", method: "POST", path: "/portal/api/login", headers: { "Content-Type": "application/json" }, body: "{}" },
+    40,
+  )
+  const limited = responses.filter((res) => res.status === 429)
+  assert.ok(limited.length > 0, "portal login was never rate limited")
+  assert.equal(limited[0].headers["retry-after"], "60")
+})
+
+test("admin authentication endpoints are rate limited at the edge", async () => {
+  const responses = await burst(
+    { tls: true, host: "admin.scalesmiths.co.uk", method: "POST", path: "/api/auth/callback/credentials", headers: { "Content-Type": "application/json" }, body: "{}" },
+    60,
+  )
+  const limited = responses.filter((res) => res.status === 429)
+  assert.ok(limited.length > 0, "admin auth endpoint was never rate limited")
+  assert.equal(limited[0].headers["retry-after"], "60")
+})
+
+test("ordinary page traffic is not rate limited", async () => {
+  // A real visitor loading pages must never be throttled by the auth/quote
+  // zones. Only the concurrency guard applies to `location /`.
+  const responses = await burst({ tls: true, host: "scalesmiths.co.uk", path: "/pricing" }, 40)
+  assert.ok(
+    responses.every((res) => res.status === 200),
+    `page traffic was throttled: ${responses.filter((r) => r.status !== 200).map((r) => r.status).join(",")}`,
+  )
 })

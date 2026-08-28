@@ -1,5 +1,6 @@
 import { createHash } from "crypto"
 import type { NextRequest } from "next/server"
+import { resolveClientIp } from "./client-ip"
 import { parseEnquiryIntent, type EnquiryIntent } from "./enquiry-intents"
 
 export const QUOTE_BODY_LIMIT_BYTES = 16 * 1024
@@ -199,14 +200,14 @@ export function scoreLeadQuality(payload: ValidQuotePayload): LeadQuality {
   return "low"
 }
 
+/**
+ * Resolves the rate-limit bucket for a quote submission. The public origin is a
+ * direct Nginx origin, so the rightmost X-Forwarded-For entry is the only value
+ * a client cannot forge. Reading the leftmost entry previously let any submitter
+ * choose its own bucket and bypass the limit entirely.
+ */
 export function getClientIp(request: NextRequest) {
-  const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
-  return (
-    forwarded ||
-    request.headers.get("x-real-ip") ||
-    request.headers.get("cf-connecting-ip") ||
-    "unknown"
-  )
+  return resolveClientIp(request.headers)
 }
 
 export function quoteRateLimitKeys(ip: string, email: string) {

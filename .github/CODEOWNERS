@@ -9,7 +9,10 @@
 /scripts/check-branch-protection-policy.test.mjs @TheFridey
 /scripts/check-github-actions.mjs @TheFridey
 /scripts/check-github-actions.test.mjs @TheFridey
+/scripts/check-documentation-links.mjs @TheFridey
+/scripts/check-documentation-links.test.mjs @TheFridey
 /docs/operations/protected-areas-and-branch-protection.md @TheFridey
+/docs/operations/release-runbook.md @TheFridey
 
 # Environment handling and deployment
 /.env.example @TheFridey

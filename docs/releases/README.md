@@ -2,7 +2,9 @@
 
 This directory indexes immutable or reproducible release evidence. It does not authorise deployment.
 
-## Current report
+The authoritative current procedure is [Production release runbook](../operations/release-runbook.md). Every dated document in this directory is historical evidence for its recorded candidate, even when it is the newest report; it must not be used as instructions or approval for a later SHA.
+
+## Latest historical report
 
 - [Release candidate — 2026-07-20](rc-2026-07-20.md) — regenerated from the current clean HEAD (`ab459cc`). **Blocked**: the admin production npm audit fails on a High-severity undici advisory, and image/SBOM/backup/GitHub-native/human evidence is outstanding.
 - [Machine-readable candidate manifest](rc-2026-07-20.json).

@@ -34,6 +34,8 @@ const REQUIRED_CONTENT = {
     "npm run check:local-state-hygiene",
     "npm run test:local-state-hygiene",
     "npm run check:architecture-docs",
+    "npm run check:documentation-links",
+    "npm run test:documentation-links",
     "npm run check:forge-v2-release-docs",
     "npm run test:forge-v2-release-docs",
     "npm run test:release-simulation",

@@ -63,12 +63,14 @@ cp .env.example .env
 docker-compose -f docker-compose.dev.yml up
 
 # Production build
-docker-compose up --build -d
+docker compose up --build -d
 ```
 
 ---
 
-## Production Deployment (container-owned Nginx)
+## Alternative production topology (container-owned Nginx)
+
+This Compose variant is supported for a new host where nothing else owns ports 80/443, but it is not the canonical ScaleSmiths VPS release path and does not implement blue/green switching. Routine releases must follow the [Production release runbook](docs/operations/release-runbook.md). The steps below are initial host bootstrap guidance only.
 
 1. **Copy files to VPS**
    ```bash
@@ -95,20 +97,22 @@ docker-compose up --build -d
    ```bash
    cd /var/www/scalesmiths/ScaleSmiths
    cp .env.example .env && nano .env
-   docker-compose up --build -d
+   docker compose up --build -d
    ```
 
 5. **Check**
    ```bash
-   docker-compose ps
-   docker-compose logs -f web
-   docker-compose logs -f admin
+   docker compose ps
+   docker compose logs -f web
+   docker compose logs -f admin
    ```
 
 The nginx container handles SSL termination and proxies to the app containers.
 Use this only when nothing else on the server already owns ports 80 and 443.
 
-## Production Deployment (existing VPS + host Nginx)
+## One-time production bootstrap (existing VPS + host Nginx)
+
+This is the canonical topology, but the numbered steps below are initial host provisioning only. Do not use direct `up --build` as the routine release procedure. Releases use the inactive blue/green slots and human-approved switch in the [Production release runbook](docs/operations/release-runbook.md).
 
 Use this path when the VPS already serves another site, such as VeteranFinder,
 on ports 80 and 443. In this setup, Docker runs the ScaleSmiths apps and
@@ -210,16 +214,9 @@ Forge production env is configured in the root `.env` used by Docker Compose:
 - `FORGE_SANDBOX_CPUS`, `FORGE_SANDBOX_MEMORY`, `FORGE_SANDBOX_NETWORK`, `FORGE_SANDBOX_INSTALL_NETWORK`, and `FORGE_SANDBOX_PREVIEW_NETWORK` control generated-site sandbox limits
 - `FORGE_ARTIFACT_MAX_VERSIONS`, `FORGE_ARTIFACT_MAX_CONTENT_BYTES`, and `FORGE_QA_LOG_MAX_CHARS` control retained artifact history and large QA log size
 
-Migration order for a VPS deploy:
+Migration order is release-controlled. Follow the backup, isolated-restore, least-privilege provisioning and web-then-admin sequence in the [Production release runbook](docs/operations/release-runbook.md); do not infer an authorised production sequence from bootstrap commands.
 
-```bash
-docker compose -f docker-compose.host-nginx.yml up -d postgres
-docker compose -f docker-compose.host-nginx.yml run --rm web-migrate
-docker compose -f docker-compose.host-nginx.yml run --rm admin-migrate
-docker compose -f docker-compose.host-nginx.yml up --build -d web admin
-```
-
-For container-owned Nginx, use the same migration order with the default compose file, or run app migrations from a one-off shell before bringing the full stack up. Forge database tables live in the admin migrations.
+Forge database tables live in the admin migration history. The container-owned alternative has no release-manager or migration-tool service and must not be substituted for the canonical procedure during a routine VPS release.
 
 Workspace storage:
 
@@ -540,7 +537,7 @@ The portal is a credible early-stage client workspace, not a full SaaS product. 
 
 ## Database migrations
 
-Run migrations before starting production containers after schema changes:
+For local development, apply migrations in ownership order:
 
 ```bash
 cd web && npm run db:migrate
@@ -558,20 +555,13 @@ The admin app owns the prospect pipeline tables:
 - `outreach_activities`
 - `proposal_trackings`
 
-Run `cd admin && npm run db:migrate` after pulling the prospect pipeline migration.
+Production migrations must use the guarded procedure in the [Production release runbook](docs/operations/release-runbook.md), not an app-only migration command.
 
 ---
 
 ## Production deployment checklist
 
-1. Set strong production secrets in `.env`.
-2. Keep `DEMO_PORTAL_ENABLED=false` unless intentionally testing demo access.
-3. Run web and admin migrations.
-4. Build both apps or rebuild Docker images.
-5. Confirm SSL certificates for `scalesmiths.co.uk`, `www.scalesmiths.co.uk`, and `admin.scalesmiths.co.uk`.
-6. Confirm `PORTAL_SECRET`, `AUTH_SECRET`, and bcrypt password hashes are present.
-7. Confirm Resend env vars are set before accepting quote traffic.
-8. Review `nginx/nginx.conf` admin IP restriction notes if the admin should be IP-locked.
+Use the authoritative [Production release runbook](docs/operations/release-runbook.md) and [Production security checklist](docs/operations/production-security-checklist.md). Do not deploy from this README's bootstrap examples.
 
 ---
 

@@ -422,6 +422,12 @@ jobs:
       - name: Check architecture documentation
         run: npm run check:architecture-docs
 
+      - name: Check documentation links and canonical references
+        run: npm run check:documentation-links
+
+      - name: Test documentation link policy
+        run: npm run test:documentation-links
+
       - name: Check Forge V2 release documentation
         run: npm run check:forge-v2-release-docs
 

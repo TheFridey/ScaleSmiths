@@ -99,7 +99,7 @@ CI builds and scans both application images, starts disposable PostgreSQL, appli
 
 ## Operational risks and documentation drift
 
-- `docker-compose.yml` has no explicit migration services/order, while the host-Nginx file does; operators must follow the README migration instructions.
+- `docker-compose.yml` has no explicit migration services/order and is not the canonical VPS release path; production operators must follow the [Production release runbook](../operations/release-runbook.md) and the host-Nginx tool-service order.
 - Dev service names/images can survive a repository move with stale bind mounts; recreate containers after moving the checkout.
 - The background Forge worker is not a dedicated Compose service. A caller/scheduler must invoke the authenticated worker route when jobs run in background mode.
 - Preview port allocation and process/container lifecycle occur inside admin and need host Docker/process permissions appropriate to the selected runner.

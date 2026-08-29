@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { isTerminalRequestStatus } from "./portal-client-requests"
+import { isTerminalRequestStatus } from "./client-requests"
 
 describe("isTerminalRequestStatus", () => {
   it("treats completed and cancelled as terminal", () => {

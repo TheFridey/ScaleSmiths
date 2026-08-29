@@ -94,6 +94,12 @@ export function isClientRequestStatus(value: unknown): value is ClientRequestSta
   return typeof value === "string" && CLIENT_REQUEST_STATUSES.includes(value as ClientRequestStatus)
 }
 
+export const TERMINAL_REQUEST_STATUSES: ClientRequestStatus[] = ["completed", "cancelled"]
+
+export function isTerminalRequestStatus(status: ClientRequestStatus): boolean {
+  return TERMINAL_REQUEST_STATUSES.includes(status)
+}
+
 export function isClientRequestMessageVisibility(value: unknown): value is ClientRequestMessageVisibility {
   return typeof value === "string" && CLIENT_REQUEST_MESSAGE_VISIBILITIES.includes(value as ClientRequestMessageVisibility)
 }

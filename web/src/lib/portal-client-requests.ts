@@ -1,7 +1,7 @@
 import "server-only"
 
 import { and, asc, desc, eq, notInArray } from "drizzle-orm"
-import { serializeClientPortalMessage, serializeClientPortalRequest, type ClientRequestStatus } from "@/lib/client-requests"
+import { serializeClientPortalMessage, serializeClientPortalRequest, TERMINAL_REQUEST_STATUSES, type ClientRequestStatus } from "@/lib/client-requests"
 import { serializeClientPortalTimelineEvent } from "@/lib/client-timeline"
 import { db } from "@/lib/db"
 import { clientRequestMessages, clientRequests, clientTimelineEvents } from "@/lib/schema"
@@ -57,12 +57,6 @@ export async function getPortalRequestThread(portalClientId: string, requestId: 
     messages: messages.map(serializeClientPortalMessage).filter((row) => row !== null),
     timeline: timeline.map(serializeClientPortalTimelineEvent).filter((row) => row !== null),
   }
-}
-
-const TERMINAL_REQUEST_STATUSES: ClientRequestStatus[] = ["completed", "cancelled"]
-
-export function isTerminalRequestStatus(status: ClientRequestStatus): boolean {
-  return TERMINAL_REQUEST_STATUSES.includes(status)
 }
 
 export async function resolveGeneralMessageThreadId(portalClientId: string, now = new Date()): Promise<{ requestId: number; created: boolean }> {

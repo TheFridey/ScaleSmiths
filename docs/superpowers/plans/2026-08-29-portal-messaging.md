@@ -1117,6 +1117,25 @@ export function serializeClientPortalRequest(input: ClientPortalRequestWithPossi
 
 Also add `clientLastReadAt: unknown` to `ClientPortalRequestWithPossibleAdminFields`'s partial-fields type so admin call sites (which don't select it) still type-check.
 
+This adds a field to `serializeClientPortalRequest`'s output, which breaks the existing exact-shape assertion in `web/src/lib/client-requests.test.ts` (`"serializes only fields that are safe for the client portal"`, currently asserting `toEqual` against a 9-key object with no `clientLastReadAt`). Update that test's expected object to include `clientLastReadAt: null` (the input literal in that test doesn't set `clientLastReadAt` either, so the serializer's `?? null` fallback applies):
+
+```ts
+    expect(serialized).toEqual({
+      id: 12,
+      title: "Broken form",
+      description: "The enquiry form is failing.",
+      category: "form_issue",
+      priority: "high",
+      status: "triaged",
+      affectedUrl: "https://example.com/contact",
+      createdAt,
+      updatedAt,
+      clientLastReadAt: null,
+    })
+```
+
+Run `npx vitest run src/lib/client-requests.test.ts` after this change and confirm it still passes.
+
 - [ ] **Step 2: Rewrite the composer**
 
 Replace the entire contents of `web/src/components/portal/PortalMessageComposer.tsx`:

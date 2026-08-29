@@ -1,7 +1,7 @@
 import "server-only"
 
 import { and, asc, desc, eq, notInArray } from "drizzle-orm"
-import { serializeClientPortalMessage, serializeClientPortalRequest, TERMINAL_REQUEST_STATUSES, type ClientRequestStatus } from "@/lib/client-requests"
+import { serializeClientPortalMessage, serializeClientPortalRequest, TERMINAL_REQUEST_STATUSES } from "@/lib/client-requests"
 import { serializeClientPortalTimelineEvent } from "@/lib/client-timeline"
 import { db } from "@/lib/db"
 import { clientRequestMessages, clientRequests, clientTimelineEvents } from "@/lib/schema"
@@ -66,6 +66,7 @@ export async function resolveGeneralMessageThreadId(portalClientId: string, now 
     .where(and(
       eq(clientRequests.clientId, portalClientId),
       eq(clientRequests.category, "general_support"),
+      eq(clientRequests.title, "Portal messages"),
       notInArray(clientRequests.status, TERMINAL_REQUEST_STATUSES),
     ))
     .orderBy(desc(clientRequests.createdAt))
@@ -145,6 +146,7 @@ export async function getPortalGeneralMessageThread(portalClientId: string) {
     .where(and(
       eq(clientRequests.clientId, portalClientId),
       eq(clientRequests.category, "general_support"),
+      eq(clientRequests.title, "Portal messages"),
       notInArray(clientRequests.status, TERMINAL_REQUEST_STATUSES),
     ))
     .orderBy(desc(clientRequests.createdAt))

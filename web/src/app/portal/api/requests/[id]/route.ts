@@ -3,11 +3,15 @@ import { and, eq } from "drizzle-orm"
 import { db } from "@/lib/db"
 import {
   parseClientRequestMessageBody,
-  serializeClientPortalMessage,
 } from "@/lib/client-requests"
 import { getClientSessionFromRequest, unauthorizedClientPortalResponse } from "@/lib/portal-session"
-import { getPortalRequestThread } from "@/lib/portal-client-requests"
+import { appendClientMessage, getPortalRequestThread } from "@/lib/portal-client-requests"
 import { clientRequestMessages, clientRequests } from "@/lib/schema"
+import { resolveClientIp } from "@/lib/client-ip"
+import { rateLimitHeaders, webRateLimitKeys } from "@/lib/rate-limit-policy"
+import { checkWebRateLimit } from "@/lib/server/rate-limit"
+import { sendClientRequestMessageNotification } from "@/lib/request-notifications"
+import { loadPortalClientProfile } from "@/lib/portal-client-profile"
 
 export const dynamic = "force-dynamic"
 
@@ -34,6 +38,11 @@ export async function GET(request: NextRequest, { params }: RequestDetailContext
     if (!thread) {
       return NextResponse.json({ error: "Request not found." }, { status: 404 })
     }
+
+    await db.update(clientRequests)
+      .set({ clientLastReadAt: new Date() })
+      .where(and(eq(clientRequests.id, id), eq(clientRequests.clientId, session.clientId)))
+
     return NextResponse.json({ ok: true, ...thread })
   } catch {
     return NextResponse.json({ error: "Unable to load request right now." }, { status: 500 })
@@ -66,52 +75,48 @@ export async function POST(request: NextRequest, { params }: RequestDetailContex
     return NextResponse.json({ error: parsed.error }, { status: 400 })
   }
 
-  try {
-    const [existing] = await db
-      .select({ id: clientRequests.id })
-      .from(clientRequests)
-      .where(and(
-        eq(clientRequests.id, id),
-        eq(clientRequests.clientId, session.clientId),
-      ))
-      .limit(1)
+  const decision = await checkWebRateLimit(
+    "portalRequestMessage",
+    webRateLimitKeys("portalRequestMessage", resolveClientIp(request.headers), session.clientId),
+  )
+  if (!decision.ok) {
+    return NextResponse.json(
+      { error: "Too many messages sent. Please wait before sending another." },
+      { status: 429, headers: rateLimitHeaders(decision) },
+    )
+  }
 
-    if (!existing) {
+  try {
+    const result = await appendClientMessage(session.clientId, id, parsed.data)
+    if (!result) {
       return NextResponse.json({ error: "Request not found." }, { status: 404 })
     }
 
-    const now = new Date()
-    const [message] = await db.transaction(async (tx) => {
-      const inserted = await tx
-        .insert(clientRequestMessages)
-        .values({
-          requestId: existing.id,
-          senderType: "client",
-          senderName: "Client",
-          body: parsed.data,
-          visibility: "client_visible",
-          createdAt: now,
-        })
-        .returning({
-          id: clientRequestMessages.id,
-          requestId: clientRequestMessages.requestId,
-          senderType: clientRequestMessages.senderType,
-          senderName: clientRequestMessages.senderName,
-          body: clientRequestMessages.body,
-          visibility: clientRequestMessages.visibility,
-          createdAt: clientRequestMessages.createdAt,
-          updatedAt: clientRequestMessages.updatedAt,
-        })
+    try {
+      const profile = await loadPortalClientProfile(session.clientId)
+      const notificationResult = await sendClientRequestMessageNotification({
+        requestId: id,
+        messageId: result.message.id,
+        correlationId: request.headers.get("x-request-id") ?? undefined,
+        actorId: session.clientId,
+        clientId: session.clientId,
+        clientName: profile?.companyName ?? "Client workspace",
+        requestTitle: result.requestTitle,
+        messageBody: result.message.body,
+      })
+      await db.update(clientRequestMessages).set({
+        notificationEmailStatus: notificationResult.status,
+        notificationEmailFailureReason: notificationResult.failureReason ?? null,
+      }).where(eq(clientRequestMessages.id, result.message.id))
+    } catch {
+      console.warn("[request-notifications] unexpected warning on message reply. Message was not lost.")
+      await db.update(clientRequestMessages).set({
+        notificationEmailStatus: "failed",
+        notificationEmailFailureReason: "delivery",
+      }).where(eq(clientRequestMessages.id, result.message.id)).catch(() => undefined)
+    }
 
-      await tx
-        .update(clientRequests)
-        .set({ updatedAt: now })
-        .where(eq(clientRequests.id, existing.id))
-
-      return inserted
-    })
-
-    return NextResponse.json({ ok: true, message: serializeClientPortalMessage(message) }, { status: 201 })
+    return NextResponse.json({ ok: true, message: result.message }, { status: 201 })
   } catch {
     return NextResponse.json({ error: "Unable to send message right now." }, { status: 500 })
   }

@@ -49,6 +49,10 @@ The portal uses `web/src/lib/portal-projects.ts`. Its project query joins `deliv
 
 A delivery project can link to one Forge project and one of that Forge project's deployment candidates. The service rejects a Forge project belonging to another client and rejects a candidate outside the linked Forge project. Forge remains responsible for generation and release gates; delivery owns what that build means for client progress.
 
+## Testing
+
+`admin/src/lib/delivery-projects.test.ts` covers progress weighting and lifecycle transitions. `web/src/lib/portal-project-boundaries.test.ts` is a source-scan boundary test (the same convention as `portal-invoices.test.ts`) proving the portal query filters every child table on `client_visible`/`visibility`, never selects internal-only or audit columns, and that the page resolves the project set from the authenticated session rather than the URL's client id. `web/tests/e2e/portal-board.spec.ts` covers, against a demo portal account, that unauthenticated visitors are redirected to login, that a signed-in client cannot open another client's portal by editing the URL, and that the board tab renders the empty state (not the removed static placeholder) when no project is published; it requires `DEMO_PORTAL_ENABLED` and skips otherwise.
+
 ## Deliberate first-version limits
 
 - No generic issue tracker, arbitrary workflow designer, time tracking, comments or dependency graph.

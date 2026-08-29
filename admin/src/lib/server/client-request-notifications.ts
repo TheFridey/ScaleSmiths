@@ -17,7 +17,7 @@ export interface ClientReplyNotificationResult {
 }
 
 export function sanitizeHeaderValue(value: string) {
-  return value.replace(/[\r\n\0\s]/g, "")
+  return value.replace(/[\r\n\0]/g, "")
 }
 
 function resolveConfig(env: NodeJS.ProcessEnv) {

@@ -2,8 +2,9 @@ import { describe, expect, it } from "vitest"
 import { sendClientReplyNotification, sanitizeHeaderValue } from "./client-request-notifications"
 
 describe("sanitizeHeaderValue", () => {
-  it("strips CR/LF/NUL", () => {
-    expect(sanitizeHeaderValue("a\r\nb c")).toBe("abc")
+  it("strips CR, LF, and NUL but leaves ordinary spaces alone", () => {
+    expect(sanitizeHeaderValue("a\r\nb" + String.fromCharCode(0) + "c")).toBe("abc")
+    expect(sanitizeHeaderValue("Hello world")).toBe("Hello world")
   })
 })
 

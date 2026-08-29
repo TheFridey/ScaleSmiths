@@ -284,19 +284,22 @@ export function ClientRequestsQueue({ initialRequests, loadError, initialSelecte
     setTimelineTitle("")
     setTimelineDescription("")
     setActionError(null)
-
-    if (selected && hasUnreadClientMessage(selected)) {
-      void fetch(`/api/client-requests/${selected.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "markRead" }),
-      }).then((response) => response.json()).then((json) => {
-        if (json?.ok && json.request) {
-          setRequests((current) => current.map((request) => (request.id === json.request.id ? { ...request, adminLastReadAt: json.request.adminLastReadAt } : request)))
-        }
-      }).catch(() => undefined)
-    }
   }, [selected])
+
+  useEffect(() => {
+    const current = requests.find((request) => request.id === selectedId)
+    if (!current || !hasUnreadClientMessage(current)) return
+
+    void fetch(`/api/client-requests/${current.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "markRead" }),
+    }).then((response) => response.json()).then((json) => {
+      if (json?.ok && json.request) {
+        setRequests((current) => current.map((request) => (request.id === json.request.id ? { ...request, adminLastReadAt: json.request.adminLastReadAt } : request)))
+      }
+    }).catch(() => undefined)
+  }, [selectedId])
 
   const summary = useMemo(() => {
     const openRequests = requests.filter((request) => OPEN_STATUSES.has(request.status))

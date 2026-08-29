@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest"
+﻿import { describe, expect, it } from "vitest"
 import {
   buildAdminRequestLink,
   buildAdminRequestSubject,
@@ -6,6 +6,7 @@ import {
   deriveClientDisplayName,
   isCriticalClientRequest,
   resolveRequestNotificationConfig,
+  sanitizeHeaderValue,
   sendClientRequestNotifications,
 } from "./request-notifications"
 
@@ -86,5 +87,31 @@ describe("request notifications", () => {
     expect(result.ok).toBe(false)
     expect(result.status).toBe("failed")
     expect(result.failureReason).toBe("delivery")
+  })
+})
+
+describe("sanitizeHeaderValue", () => {
+  it("strips CR, LF, and NUL from a header-bound value", () => {
+    expect(sanitizeHeaderValue("Hello\r\nBcc: attacker@example.com")).toBe("HelloBcc: attacker@example.com")
+    expect(sanitizeHeaderValue("line1\nline2")).toBe("line1line2")
+    expect(sanitizeHeaderValue("a\0b")).toBe("ab")
+  })
+
+  it("leaves an ordinary value untouched", () => {
+    expect(sanitizeHeaderValue("Homepage content change")).toBe("Homepage content change")
+  })
+})
+
+describe("buildAdminRequestSubject", () => {
+  it("never contains a newline even when the title does", () => {
+    const subject = buildAdminRequestSubject({
+      requestId: 1,
+      clientId: "client-one",
+      clientName: "Client One",
+      title: "Change this\r\nX-Injected: true",
+      category: "general_support",
+      priority: "medium",
+    })
+    expect(subject).not.toMatch(/[\r\n]/)
   })
 })

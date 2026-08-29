@@ -77,12 +77,12 @@ export function buildAdminRequestLink(requestId: number, env: NodeJS.ProcessEnv 
 
 export function buildAdminRequestSubject(input: ClientRequestNotificationInput) {
   const critical = isCriticalClientRequest(input.category, input.priority)
-  return `${critical ? "[CRITICAL] " : ""}Client request: ${input.title}`.slice(0, 180)
+  return `${critical ? "[CRITICAL] " : ""}Client request: ${sanitizeHeaderValue(input.title)}`.slice(0, 180)
 }
 
 export function buildClientConfirmationSubject(input: ClientRequestNotificationInput) {
   const critical = isCriticalClientRequest(input.category, input.priority)
-  return `${critical ? "Urgent request received" : "Request received"} - ${input.title}`.slice(0, 180)
+  return `${critical ? "Urgent request received" : "Request received"} - ${sanitizeHeaderValue(input.title)}`.slice(0, 180)
 }
 
 export async function sendClientRequestNotifications(
@@ -109,7 +109,7 @@ export async function sendClientRequestNotifications(
       subject: buildAdminRequestSubject(input),
       html: buildAdminEmailHtml(input, adminLink),
       text: buildAdminEmailText(input, adminLink),
-    }),
+    }, { idempotencyKey: `client-request-message-${input.requestId}-created-admin` }),
   ]
 
   if (input.clientEmail) {
@@ -119,7 +119,7 @@ export async function sendClientRequestNotifications(
       subject: buildClientConfirmationSubject(input),
       html: buildClientConfirmationHtml(input),
       text: buildClientConfirmationText(input),
-    }))
+    }, { idempotencyKey: `client-request-message-${input.requestId}-created-client` }))
   }
 
   try {
@@ -241,4 +241,8 @@ function escapeHtml(value: string) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;")
+}
+
+export function sanitizeHeaderValue(value: string) {
+  return value.replace(/[\r\n\0]/g, "")
 }

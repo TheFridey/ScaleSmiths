@@ -133,7 +133,7 @@ describe("sanitizeHeaderValue", () => {
   it("strips CR, LF, and NUL from a header-bound value", () => {
     expect(sanitizeHeaderValue("Hello\r\nBcc: attacker@example.com")).toBe("HelloBcc: attacker@example.com")
     expect(sanitizeHeaderValue("line1\nline2")).toBe("line1line2")
-    expect(sanitizeHeaderValue("a b")).toBe("ab")
+    expect(sanitizeHeaderValue("a\0b")).toBe("ab")
   })
 
   it("leaves an ordinary value untouched", () => {
@@ -847,7 +847,7 @@ import { sendClientReplyNotification, sanitizeHeaderValue } from "./client-reque
 
 describe("sanitizeHeaderValue", () => {
   it("strips CR/LF/NUL", () => {
-    expect(sanitizeHeaderValue("a\r\nb c")).toBe("abc")
+    expect(sanitizeHeaderValue("a\r\nb\0c")).toBe("abc")
   })
 })
 

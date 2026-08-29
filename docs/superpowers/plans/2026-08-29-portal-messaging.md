@@ -378,13 +378,14 @@ git commit -m "feat: add client-message notification builder for admin"
 
 **Files:**
 - Modify: `web/src/lib/portal-client-requests.ts`
+- Modify: `web/src/lib/client-requests.ts` (adds the pure `isTerminalRequestStatus`/`TERMINAL_REQUEST_STATUSES`, since that file has no `server-only` import and can be safely real-imported by a unit test — see Step 3)
 - Test: `web/src/lib/portal-client-requests.test.ts` (new)
 
 **Interfaces:**
 - Produces:
   - `appendClientMessage(portalClientId: string, requestId: number, body: string, now?: Date): Promise<{ message: ClientPortalRequestMessage; requestTitle: string } | null>` — inserts a client-authored message + bumps `updatedAt`; returns `null` if the request doesn't belong to `portalClientId`. Used by Task 5 and Task 6.
   - `resolveGeneralMessageThreadId(portalClientId: string, now?: Date): Promise<{ requestId: number; created: boolean }>` — finds the client's latest non-terminal `general_support` request, or creates one (plus its opening timeline event) in a transaction. Used by Task 6.
-  - `isTerminalRequestStatus(status: ClientRequestStatus): boolean` (pure, exported for the unit test) — true for `"completed"`/`"cancelled"`.
+  - `isTerminalRequestStatus(status: ClientRequestStatus): boolean` and `TERMINAL_REQUEST_STATUSES` (in `client-requests.ts`, not `portal-client-requests.ts` — pure, exported for the unit test) — true for `"completed"`/`"cancelled"`. Re-imported into `portal-client-requests.ts` for use in `resolveGeneralMessageThreadId` and Task 6's `getPortalGeneralMessageThread`.
 - Consumes: `clientRequests`, `clientRequestMessages`, `clientTimelineEvents` from `@/lib/schema`; `serializeClientPortalMessage` from `@/lib/client-requests`.
 
 - [ ] **Step 1: Write the failing test**
@@ -393,7 +394,7 @@ Create `web/src/lib/portal-client-requests.test.ts`:
 
 ```ts
 import { describe, expect, it } from "vitest"
-import { isTerminalRequestStatus } from "./portal-client-requests"
+import { isTerminalRequestStatus } from "./client-requests"
 
 describe("isTerminalRequestStatus", () => {
   it("treats completed and cancelled as terminal", () => {
@@ -417,24 +418,30 @@ Expected: FAIL — `isTerminalRequestStatus` is not exported.
 
 - [ ] **Step 3: Implement the helpers**
 
+`isTerminalRequestStatus` is pure logic with no DB access — it belongs in `web/src/lib/client-requests.ts` (which has no `server-only` import), not in `portal-client-requests.ts` (which starts with `import "server-only"` and therefore can never be safely real-imported by a unit test — Vitest has no Next.js bundler to provide that package, and this codebase's own convention, visible in `portal-project-boundaries.test.ts`/`portal-invoices.test.ts`, is to only ever `readFileSync`-scan server-only files in tests, never import them directly). Keeping the pure predicate in `client-requests.ts` alongside its existing `isClientRequestStatus`/`isClientRequestCategory` guards lets Step 1's test import it safely, matching the pattern `admin/src/lib/delivery-projects.ts` (pure logic, real-imported by `delivery-projects.test.ts`) vs. `admin/src/lib/server/delivery-project-service.ts` (server-only, DB-touching, never real-imported by a test) already established on the admin side.
+
+In `web/src/lib/client-requests.ts`, add near the other status guards (e.g. after `isClientRequestStatus`):
+
+```ts
+export const TERMINAL_REQUEST_STATUSES: ClientRequestStatus[] = ["completed", "cancelled"]
+
+export function isTerminalRequestStatus(status: ClientRequestStatus): boolean {
+  return TERMINAL_REQUEST_STATUSES.includes(status)
+}
+```
+
 In `web/src/lib/portal-client-requests.ts`, add imports for what's not already there and the new exports:
 
 ```ts
 import "server-only"
 
 import { and, asc, desc, eq, notInArray } from "drizzle-orm"
-import { serializeClientPortalMessage, serializeClientPortalRequest, type ClientRequestStatus } from "@/lib/client-requests"
+import { serializeClientPortalMessage, serializeClientPortalRequest, TERMINAL_REQUEST_STATUSES, type ClientRequestStatus } from "@/lib/client-requests"
 import { serializeClientPortalTimelineEvent } from "@/lib/client-timeline"
 import { db } from "@/lib/db"
 import { clientRequestMessages, clientRequests, clientTimelineEvents } from "@/lib/schema"
 
 // ...existing listRecentPortalThreadMessages, getPortalRequestThread...
-
-const TERMINAL_REQUEST_STATUSES: ClientRequestStatus[] = ["completed", "cancelled"]
-
-export function isTerminalRequestStatus(status: ClientRequestStatus): boolean {
-  return TERMINAL_REQUEST_STATUSES.includes(status)
-}
 
 export async function resolveGeneralMessageThreadId(portalClientId: string, now = new Date()): Promise<{ requestId: number; created: boolean }> {
   const [existing] = await db

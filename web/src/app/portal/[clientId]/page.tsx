@@ -4,7 +4,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { PortalNav } from "@/components/portal/PortalNav"
-import { PortalMessagesPanel } from "@/components/portal/PortalMessageComposer"
+import { PortalMessagesPanel } from "@/components/portal/PortalMessagesPanel"
 import { PortalOperatingHub } from "@/components/portal/PortalOperatingHub"
 import { PortalRequestsPanel } from "@/components/portal/PortalRequestsPanel"
 import { formatReportPeriod } from "@/lib/monthly-reports"

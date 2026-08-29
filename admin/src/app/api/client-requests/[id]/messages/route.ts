@@ -142,6 +142,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
 
   const [requestRow] = await db.select().from(clientRequests).where(eq(clientRequests.id, existing.id)).limit(1)
+  const [messageRow] = await db.select().from(clientRequestMessages).where(eq(clientRequestMessages.id, message.id)).limit(1)
 
-  return NextResponse.json({ ok: true, message, timelineEvent, request: requestRow }, { status: 201 })
+  return NextResponse.json({ ok: true, message: messageRow ?? message, timelineEvent, request: requestRow }, { status: 201 })
 }

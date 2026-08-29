@@ -116,7 +116,7 @@ export async function sendClientRequestNotifications(
     resend.emails.send({
       from: config.from,
       to: config.supportEmail,
-      replyTo: input.clientEmail ?? undefined,
+      replyTo: input.clientEmail ? sanitizeHeaderValue(input.clientEmail) : undefined,
       subject: buildAdminRequestSubject(input),
       html: buildAdminEmailHtml(input, adminLink),
       text: buildAdminEmailText(input, adminLink),

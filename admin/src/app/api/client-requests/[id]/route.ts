@@ -63,6 +63,17 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   }
 
   const now = new Date()
+
+  if (action === "markRead") {
+    const [updatedRequest] = await db
+      .update(clientRequests)
+      .set({ adminLastReadAt: now })
+      .where(eq(clientRequests.id, id))
+      .returning()
+
+    return NextResponse.json({ ok: true, request: updatedRequest, timelineEvent: null })
+  }
+
   const updates: Partial<typeof clientRequests.$inferInsert> = { updatedAt: now }
   const internalNote = optionalTrimmedString(input.internalNote)
 
@@ -88,8 +99,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   } else if (action === "reopen") {
     updates.status = "in_progress"
     updates.completedAt = null
-  } else if (action === "markRead") {
-    updates.adminLastReadAt = now
   } else if (action !== "update") {
     return NextResponse.json({ error: "Unsupported client request action." }, { status: 400 })
   }

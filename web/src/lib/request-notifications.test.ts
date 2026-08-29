@@ -1,4 +1,5 @@
-﻿import { describe, expect, it } from "vitest"
+﻿import { readFileSync } from "node:fs"
+import { describe, expect, it } from "vitest"
 import {
   buildAdminRequestLink,
   buildAdminRequestSubject,
@@ -131,5 +132,10 @@ describe("sendClientRequestMessageNotification", () => {
       {} as NodeJS.ProcessEnv,
     )
     expect(result).toEqual({ ok: false, reason: "configuration", status: "failed", failureReason: "configuration" })
+  })
+
+  it("derives its Resend idempotency key from the message id, not the request id", () => {
+    const source = readFileSync(new URL("./request-notifications.ts", import.meta.url), "utf8")
+    expect(source).toContain("client-request-message-${input.messageId}")
   })
 })

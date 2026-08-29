@@ -49,7 +49,7 @@ export async function sendClientReplyNotification(
   try {
     const result = await resend.emails.send({
       from: config.from,
-      to: input.clientEmail,
+      to: sanitizeHeaderValue(input.clientEmail),
       subject,
       html: buildHtml(input, portalLink),
       text: buildText(input, portalLink),

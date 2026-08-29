@@ -16,12 +16,13 @@ describe("invoice admin UI behaviour", () => {
 
 describe("invoice component safety contracts", () => {
   const builder = readFileSync(new URL("../components/finance/InvoiceBuilder.tsx", import.meta.url), "utf8")
+  const model = readFileSync(new URL("../components/finance/invoice-builder-model.ts", import.meta.url), "utf8")
   it("requires confirmation for issue, delete, paid, void and permanent code assignment", () => { for (const action of ['setConfirm("issue")', 'setConfirm("delete")', 'setConfirm("paid")', 'setConfirm("void")', 'setConfirm("code")']) expect(builder).toContain(action) })
-  it("uses the authoritative server invoice after saves and transitions", () => { expect(builder).toContain("setInvoice(saved)"); expect(builder).toContain("setInvoice(data.invoice)") })
+  it("uses the authoritative server invoice after saves and transitions", () => { expect(builder).toContain("setInvoice(saved)"); expect(builder).toContain("setInvoice(updated)") })
   it("does not render edit or delete controls for issued, paid or void invoices", () => { expect(builder).toContain('const mutable = editable && canWrite'); expect(builder).toContain('invoice?.status === "issued" && canWrite') })
   it("explains permanent issue-time allocation without predicting a number", () => { expect(builder).toContain("A permanent invoice number will be allocated by the server when issued."); expect(builder).not.toContain("DRAFT-001") })
-  it("excludes inactive catalogue entries from normal line selection", () => expect(builder).toContain("catalogue.filter((item) => item.active)"))
+  it("excludes inactive catalogue entries from normal line selection", () => expect(model).toContain("catalogue.filter((item) => item.active)"))
   it("surfaces missing invoice code and requires explicit assignment", () => { expect(builder).toContain("Invoice code required before issue"); expect(builder).toContain("Assign Permanently") })
-  it("surfaces document identity blockers and lifecycle-appropriate PDF actions", () => { expect(builder).toContain("Complete the ScaleSmiths supplier address in invoice settings."); expect(builder).toContain("Complete the client's billing address."); expect(builder).toContain("Preview PDF"); expect(builder).toContain("Download PDF") })
+  it("surfaces document identity blockers and lifecycle-appropriate PDF actions", () => { expect(model).toContain("Complete the ScaleSmiths supplier address in invoice settings."); expect(model).toContain("Complete the client's billing address."); expect(builder).toContain("Preview PDF"); expect(builder).toContain("Download PDF") })
   it("delegates publication, sending and reminders to the protected delivery panel", () => { const panel=readFileSync(new URL("../components/finance/InvoiceDeliveryPanel.tsx",import.meta.url),"utf8");expect(panel).toContain("Publish to Client Portal");expect(panel).toContain("Send Invoice");expect(panel).toContain("Send Payment Reminder");expect(panel).toContain("ConfirmationDialog");expect(panel).toContain("canWrite") })
 })

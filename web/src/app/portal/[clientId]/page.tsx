@@ -1,10 +1,7 @@
 import {
-  ClipboardList,
-  Clock3,
   FileText,
   MessageSquare,
-  Rocket,
-  ShieldCheck,
+  ExternalLink,
 } from "lucide-react"
 import Link from "next/link"
 import { PortalNav } from "@/components/portal/PortalNav"
@@ -17,6 +14,7 @@ import { listRecentPortalThreadMessages } from "@/lib/portal-client-requests"
 import { listPortalInvoices } from "@/lib/portal-invoices"
 import { INVOICE_STATUS_LABELS } from "@/lib/invoice-status"
 import { loadPortalClientProfile } from "@/lib/portal-client-profile"
+import { listPortalProjectProgress } from "@/lib/portal-projects"
 import { getLatestPublishedPortalReport, listPublishedPortalReports } from "@/lib/portal-reports"
 
 interface PortalPageProps {
@@ -25,17 +23,8 @@ interface PortalPageProps {
 }
 
 const SAFE_PLACEHOLDER_CLIENT = {
-  progress: 18,
   supportEmail: "hello@scalesmiths.co.uk",
 }
-
-const milestones = [
-  { title: "Workspace opened", status: "Complete", body: "Your private portal is ready for project communication.", Icon: ShieldCheck },
-  { title: "Discovery and scope", status: "Current", body: "We confirm goals, content, assets, pages, integrations, and success criteria.", Icon: ClipboardList },
-  { title: "Design direction", status: "Next", body: "Homepage direction, core UI patterns, and key content sections are prepared for review.", Icon: FileText },
-  { title: "Build and review", status: "Pending", body: "Development, staging preview, feedback loops, and refinement.", Icon: Clock3 },
-  { title: "Launch and handoff", status: "Pending", body: "Final checks, DNS/deployment, analytics, documentation and the agreed next-stage plan.", Icon: Rocket },
-]
 
 export default async function PortalClientPage({ params, searchParams }: PortalPageProps) {
   const { clientId } = await params
@@ -76,11 +65,11 @@ export default async function PortalClientPage({ params, searchParams }: PortalP
         </div>
 
         {tab === "files" ? (
-          <DocumentsTab />
+          <DocumentsTab clientId={portalClientId} />
         ) : tab === "messages" ? (
           <MessagesTab clientId={portalClientId} clientName={profile.companyName} />
         ) : tab === "board" ? (
-          <ProgressTab />
+          <ProgressTab clientId={portalClientId} />
         ) : tab === "requests" ? (
           <RequestsTab clientId={portalClientId} />
         ) : tab === "reports" ? (
@@ -137,62 +126,24 @@ function OverviewTab({
   )
 }
 
-function ProgressTab() {
+async function ProgressTab({ clientId }: { clientId: string }) {
+  const projects = await listPortalProjectProgress(clientId)
+  if (!projects.length) return <EmptyState Icon={FileText} title="No project published yet" body="Your delivery plan will appear here once ScaleSmiths publishes the first client-visible milestone." />
   return (
-    <div className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
-      <section className="rounded-2xl border border-b1 bg-s1 p-6">
-        <h2 className="font-syne text-xl font-bold">Build progress</h2>
-        <p className="mt-2 font-dm text-sm leading-relaxed text-t2">
-          This timeline shows where the project sits and what will happen next once live project milestones are published.
-        </p>
-        <div className="mt-6">
-          <ProgressMeter value={SAFE_PLACEHOLDER_CLIENT.progress} />
-        </div>
-      </section>
-
-      <section className="rounded-2xl border border-b1 bg-s1 p-6">
-        <h2 className="font-syne text-xl font-bold">Milestones</h2>
-        <div className="mt-6 space-y-4">
-          {milestones.map(({ title, status, body, Icon }) => (
-            <div key={title} className="flex gap-4">
-              <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] border border-b2 bg-s2">
-                <Icon size={17} className={status === "Complete" ? "text-grn" : status === "Current" ? "text-acc" : "text-t2"} aria-hidden="true" />
-              </div>
-              <div className="min-w-0 flex-1 border-b border-b1 pb-4 last:border-b-0 last:pb-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="font-syne text-base font-bold">{title}</h3>
-                  <span className="rounded border border-b2 bg-s2 px-2 py-0.5 font-dm text-[11px] text-t2">{status}</span>
-                </div>
-                <p className="mt-1 font-dm text-sm leading-relaxed text-t2">{body}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-    </div>
+    <div className="space-y-5">{projects.map((project) => <section key={project.id} className="rounded-2xl border border-b1 bg-s1 p-6">
+      <div className="flex flex-wrap items-start justify-between gap-4"><div><div className="font-dm text-xs font-semibold uppercase tracking-[0.12em] text-acc">{project.currentPhase.replaceAll("_", " ")} phase</div><h2 className="mt-2 font-syne text-2xl font-bold">{project.name}</h2><p className="mt-2 max-w-3xl font-dm text-sm leading-relaxed text-t2">{project.summary || "Delivery milestones and progress for this project."}</p></div><span className="rounded border border-b2 bg-s2 px-2 py-1 font-dm text-xs text-t2">{project.status}</span></div>
+      <div className="mt-6"><ProgressMeter value={project.progress} /></div>
+      <div className="mt-7 space-y-4">{project.milestones.map((milestone) => <div key={milestone.id} className="flex gap-4"><div className={`mt-1 h-3 w-3 shrink-0 rounded-full ${milestone.status === "completed" ? "bg-grn" : milestone.status === "active" ? "bg-acc" : milestone.status === "blocked" ? "bg-red-400" : "bg-s3"}`} /><div className="min-w-0 flex-1 border-b border-b1 pb-4"><div className="flex flex-wrap items-center gap-2"><h3 className="font-syne text-base font-bold">{milestone.title}</h3><span className="rounded border border-b2 bg-s2 px-2 py-0.5 font-dm text-[11px] text-t2">{milestone.status.replaceAll("_", " ")}</span></div>{milestone.description ? <p className="mt-1 font-dm text-sm text-t2">{milestone.description}</p> : null}{milestone.targetDate ? <div className="mt-2 font-dm text-xs text-t3">Target {formatPortalDate(milestone.targetDate)}</div> : null}</div></div>)}</div>
+      {project.decisions.some((decision) => decision.status === "open") ? <div className="mt-6 rounded-xl border border-amber-400/30 bg-amber-400/10 p-4"><h3 className="font-syne text-base font-bold">Decisions required</h3>{project.decisions.filter((decision) => decision.status === "open").map((decision) => <div key={decision.id} className="mt-3"><strong className="font-dm text-sm">{decision.title}</strong>{decision.description ? <p className="mt-1 font-dm text-sm text-t2">{decision.description}</p> : null}</div>)}</div> : null}
+    </section>)}</div>
   )
 }
 
-function DocumentsTab() {
+async function DocumentsTab({ clientId }: { clientId: string }) {
+  const projects = await listPortalProjectProgress(clientId)
+  const resources = projects.flatMap((project) => project.resources.map((resource) => ({ ...resource, projectName: project.name })))
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
-      <EmptyState
-        Icon={FileText}
-        title="Documents and assets"
-        body="Shared documents, brand assets, handoff notes, staging links, and launch materials will appear here once they are ready for client review."
-      />
-      <section className="rounded-2xl border border-b1 bg-s1 p-6">
-        <h2 className="font-syne text-xl font-bold">Useful links</h2>
-        <div className="mt-5 grid gap-3">
-          {["Staging preview", "Brand asset folder", "Launch checklist", "Handoff notes"].map((item) => (
-            <div key={item} className="flex items-center justify-between rounded-xl border border-b1 bg-s2 p-4">
-              <div className="font-dm text-sm text-t1">{item}</div>
-              <span className="font-dm text-xs text-t3">Pending</span>
-            </div>
-          ))}
-        </div>
-      </section>
-    </div>
+    <section className="rounded-2xl border border-b1 bg-s1 p-6"><FileText size={18} className="mb-4 text-acc" aria-hidden="true" /><h2 className="font-syne text-xl font-bold">Documents and links</h2><p className="mt-1 font-dm text-sm text-t2">Files, previews and handoff resources published by ScaleSmiths.</p>{resources.length ? <div className="mt-6 grid gap-3 lg:grid-cols-2">{resources.map((resource) => <a key={resource.id} href={resource.url} target="_blank" rel="noreferrer" className="flex items-center justify-between gap-3 rounded-xl border border-b1 bg-s2 p-4 hover:border-acc/60"><div><div className="font-dm text-xs text-t3">{resource.projectName}</div><div className="mt-1 font-dm text-sm font-semibold text-t1">{resource.title}</div></div><ExternalLink size={15} className="text-acc" /></a>)}</div> : <div className="mt-6 rounded-xl border border-dashed border-b2 bg-s2 p-5 font-dm text-sm text-t2">No project files or links have been published yet.</div>}</section>
   )
 }
 
@@ -277,3 +228,5 @@ function EmptyState({ title, body, Icon }: { title: string; body: string; Icon: 
     </section>
   )
 }
+
+function formatPortalDate(value: Date | string) { return new Date(value).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) }

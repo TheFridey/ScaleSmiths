@@ -21,6 +21,7 @@ const PUBLIC_READ_APIS = [
   "web/src/lib/portal-client-profile.ts",
   "web/src/lib/portal-client-requests.ts",
   "web/src/lib/portal-invoices.ts",
+  "web/src/lib/portal-projects.ts",
   "web/src/lib/portal-reports.ts",
 ]
 

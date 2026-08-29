@@ -1,0 +1,87 @@
+"use client"
+
+import { useRouter } from "next/navigation"
+import { useState } from "react"
+import Link from "next/link"
+import { ArrowLeft, CheckCircle2, ExternalLink, Link2, Plus } from "lucide-react"
+import { DELIVERY_DELIVERABLE_STATUSES, DELIVERY_MILESTONE_STATUSES, DELIVERY_PROJECT_PHASES, DELIVERY_PROJECT_STATUSES } from "@/lib/delivery-projects"
+
+type Row = Record<string, unknown> & { id: number; title: string; status: string; clientVisible?: boolean; targetDate?: Date | string | null; description?: string | null }
+type ResourceRow = Record<string, unknown> & { id: number; title: string; url: string }
+interface ProjectDetail {
+  project: Record<string, unknown> & { id: number; name: string; summary: string | null; internalNotes: string | null; clientVisible: boolean; status: string; currentPhase: string; targetStartDate: Date | string | null; targetEndDate: Date | string | null; ownerUserId: string | null; forgeProjectId: number | null; deploymentCandidateId: number | null }
+  clientName: string; ownerName: string | null; portalClientId: string | null; forgeProjectName: string | null; deploymentCandidateNumber: number | null
+  progress: number; milestones: Row[]; deliverables: Row[]; resources: ResourceRow[]; decisions: Row[]; audit: Array<Record<string, unknown> & { id: number; action: string; createdAt: Date | string }>
+}
+
+export function DeliveryProjectWorkspace({ initial, owners }: { initial: ProjectDetail; owners: { id: string; name: string }[] }) {
+  const router = useRouter(); const { project } = initial
+  const [busy, setBusy] = useState(""); const [error, setError] = useState("")
+  async function mutate(path: string, method: "POST" | "PATCH", body: Record<string, unknown>, key: string) {
+    setBusy(key); setError("")
+    try { const response = await fetch(path, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); const json = await response.json().catch(() => ({})); if (!response.ok) throw new Error(json.error || "Unable to update project."); router.refresh(); return true }
+    catch (caught) { setError(caught instanceof Error ? caught.message : "Unable to update project."); return false } finally { setBusy("") }
+  }
+  function submit(path: string, key: string, extras: Record<string, unknown> = {}) { return (event: React.FormEvent<HTMLFormElement>) => { event.preventDefault(); const form = event.currentTarget; void mutate(path, "POST", { ...Object.fromEntries(new FormData(form)), ...extras }, key).then((saved) => { if (saved) form.reset() }) } }
+  function updateSubmit(key: string) { return (event: React.FormEvent<HTMLFormElement>) => { event.preventDefault(); void mutate(`/api/projects/${project.id}`, "PATCH", Object.fromEntries(new FormData(event.currentTarget)), key) } }
+
+  return <div className="space-y-6">
+    <Link href="/projects" className="inline-flex items-center gap-2 text-sm text-t2 hover:text-acc"><ArrowLeft size={15} /> All projects</Link>
+    <header className="rounded-2xl border border-b1 bg-s1 p-6">
+      <div className="flex flex-wrap items-start justify-between gap-4"><div><div className="text-xs font-semibold uppercase tracking-[0.14em] text-acc">{initial.clientName}</div><h1 className="mt-2 font-syne text-3xl font-bold">{project.name}</h1><p className="mt-2 max-w-3xl text-sm text-t2">{project.summary || "No client-visible summary yet."}</p></div><div className="text-right"><div className="font-syne text-3xl font-bold">{initial.progress}%</div><div className="text-xs text-t3">milestone progress</div></div></div>
+      <div className="mt-5 h-2 overflow-hidden rounded-full bg-s3"><div className="h-full bg-acc" style={{ width: `${initial.progress}%` }} /></div>
+      <div className="mt-5 grid gap-3 md:grid-cols-4"><SelectAction label="Lifecycle" value={project.status} values={DELIVERY_PROJECT_STATUSES} disabled={busy !== ""} onChange={(status) => void mutate(`/api/projects/${project.id}`, "PATCH", { status }, "project-status")} /><SelectAction label="Phase" value={project.currentPhase} values={DELIVERY_PROJECT_PHASES} disabled={busy !== ""} onChange={(currentPhase) => void mutate(`/api/projects/${project.id}`, "PATCH", { currentPhase }, "project-phase")} /><SelectAction label="Owner" value={project.ownerUserId ?? ""} values={["", ...owners.map((owner) => owner.id)]} labels={new Map(owners.map((owner) => [owner.id, owner.name])).set("", "Unassigned")} disabled={busy !== ""} onChange={(ownerUserId) => void mutate(`/api/projects/${project.id}`, "PATCH", { ownerUserId }, "project-owner")} /><Info label="Target" value={project.targetEndDate ? date(project.targetEndDate) : "Not set"} /></div>
+      {(initial.forgeProjectName || initial.deploymentCandidateNumber) ? <div className="mt-4 flex flex-wrap gap-2 text-xs text-t2">{initial.forgeProjectName ? <span className="rounded border border-b2 bg-s2 px-2 py-1">Forge: {initial.forgeProjectName}</span> : null}{initial.deploymentCandidateNumber ? <span className="rounded border border-b2 bg-s2 px-2 py-1">Deployment candidate #{initial.deploymentCandidateNumber}</span> : null}</div> : null}
+      {error ? <p role="alert" className="mt-4 text-sm text-red-300">{error}</p> : null}
+    </header>
+
+    <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+      <div className="space-y-6">
+        <Section title="Milestones" note="Progress is derived from non-skipped milestone weights.">
+          <div className="space-y-3">{initial.milestones.map((milestone) => <article key={milestone.id} className="rounded-xl border border-b1 bg-s2 p-4"><div className="flex flex-wrap items-start justify-between gap-3"><div><div className="flex items-center gap-2"><h3 className="font-semibold">{milestone.title}</h3>{milestone.clientVisible ? <VisibleBadge /> : <InternalBadge />}</div>{milestone.description ? <p className="mt-1 text-sm text-t2">{milestone.description}</p> : null}</div><select aria-label={`Status for ${milestone.title}`} value={milestone.status} disabled={busy !== ""} onChange={(event) => void mutate(`/api/projects/${project.id}/milestones/${milestone.id}`, "PATCH", { status: event.target.value }, `milestone-${milestone.id}`)}>{DELIVERY_MILESTONE_STATUSES.map((status) => <option key={status}>{status}</option>)}</select></div><div className="mt-2 text-xs text-t3">{milestone.targetDate ? `Target ${date(milestone.targetDate)}` : "No target date"} · Weight {String(milestone.weight)}</div></article>)}</div>
+          <form onSubmit={submit(`/api/projects/${project.id}/milestones`, "new-milestone")} className="mt-4 grid gap-3 rounded-xl border border-dashed border-b2 p-4 md:grid-cols-2"><input name="title" required placeholder="Milestone title" /><input name="targetDate" type="date" /><textarea name="description" rows={2} placeholder="Client-visible description" className="md:col-span-2" /><label className="flex items-center gap-2 text-xs text-t2"><input name="clientVisible" type="checkbox" value="true" /> Publish to client portal</label><label className="flex items-center gap-2 text-xs text-t2">Weight <input name="weight" type="number" min="1" max="100" defaultValue="1" className="w-20" /></label><button disabled={busy !== ""} className="w-fit rounded-lg bg-acc px-3 py-2 text-sm text-white"><Plus size={14} className="mr-1 inline" />Add milestone</button></form>
+        </Section>
+
+        <Section title="Deliverables" note="Concrete outputs can belong to a milestone and remain internal until ready.">
+          <div className="space-y-2">{initial.deliverables.map((item) => <div key={item.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-b1 bg-s2 p-3"><div><strong className="text-sm">{item.title}</strong><span className="ml-2">{item.clientVisible ? <VisibleBadge /> : <InternalBadge />}</span></div><select aria-label={`Status for ${item.title}`} value={item.status} disabled={busy !== ""} onChange={(event) => void mutate(`/api/projects/${project.id}/deliverables/${item.id}`, "PATCH", { status: event.target.value }, `deliverable-${item.id}`)}>{DELIVERY_DELIVERABLE_STATUSES.map((status) => <option key={status}>{status}</option>)}</select></div>)}</div>
+          <form onSubmit={submit(`/api/projects/${project.id}/deliverables`, "new-deliverable")} className="mt-4 grid gap-3 rounded-xl border border-dashed border-b2 p-4 md:grid-cols-2"><input name="title" required placeholder="Deliverable title" /><select name="milestoneId" defaultValue=""><option value="">No milestone</option>{initial.milestones.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select><textarea name="description" rows={2} placeholder="Description" className="md:col-span-2" /><label className="flex items-center gap-2 text-xs text-t2"><input name="clientVisible" type="checkbox" value="true" /> Client visible</label><button disabled={busy !== ""} className="w-fit rounded-lg bg-acc px-3 py-2 text-sm text-white">Add deliverable</button></form>
+        </Section>
+      </div>
+
+      <div className="space-y-6">
+        <Section title="Project settings" note="Client-facing copy is kept separate from internal delivery notes.">
+          <form onSubmit={updateSubmit("project-settings")} className="grid gap-3">
+            <label><span className="mb-1 block text-xs text-t3">Client-visible summary</span><textarea name="summary" rows={3} defaultValue={project.summary ?? ""} /></label>
+            <label><span className="mb-1 block text-xs text-t3">Internal notes</span><textarea name="internalNotes" rows={3} defaultValue={project.internalNotes ?? ""} /></label>
+            <label className="flex items-center gap-2 text-xs text-t2"><input type="hidden" name="clientVisible" value="false" /><input name="clientVisible" type="checkbox" value="true" defaultChecked={project.clientVisible} /> Published to client portal</label>
+            <div className="grid gap-3 sm:grid-cols-2"><label><span className="mb-1 block text-xs text-t3">Target start</span><input name="targetStartDate" type="date" defaultValue={dateInput(project.targetStartDate)} /></label><label><span className="mb-1 block text-xs text-t3">Target end</span><input name="targetEndDate" type="date" defaultValue={dateInput(project.targetEndDate)} /></label></div>
+            <div className="grid gap-3 sm:grid-cols-2"><label><span className="mb-1 block text-xs text-t3">Forge project ID</span><input name="forgeProjectId" type="number" min="1" defaultValue={project.forgeProjectId ?? ""} /></label><label><span className="mb-1 block text-xs text-t3">Deployment candidate ID</span><input name="deploymentCandidateId" type="number" min="1" defaultValue={project.deploymentCandidateId ?? ""} /></label></div>
+            <button disabled={busy !== ""} className="w-fit rounded-lg bg-acc px-3 py-2 text-sm text-white">Save project settings</button>
+          </form>
+        </Section>
+
+        <Section title="Decisions required" note="Open approvals or choices that can block delivery.">
+          <div className="space-y-2">{initial.decisions.map((decision) => <article key={decision.id} className="rounded-xl border border-b1 bg-s2 p-3"><div className="flex items-center justify-between gap-2"><strong className="text-sm">{decision.title}</strong><span className="text-xs text-t3">{label(decision.status)}</span></div>{decision.description ? <p className="mt-1 text-xs text-t2">{decision.description}</p> : null}{decision.status === "open" ? <form onSubmit={(event) => { event.preventDefault(); const resolution = String(new FormData(event.currentTarget).get("resolution") || ""); void mutate(`/api/projects/${project.id}/decisions/${decision.id}`, "PATCH", { status: "resolved", resolution }, `decision-${decision.id}`) }} className="mt-3 flex gap-2"><input name="resolution" required placeholder="Resolution" className="min-w-0 flex-1" /><button className="rounded bg-grn/20 px-2 text-xs text-grn"><CheckCircle2 size={13} /></button></form> : null}</article>)}</div>
+          <form onSubmit={submit(`/api/projects/${project.id}/decisions`, "new-decision")} className="mt-4 grid gap-3 rounded-xl border border-dashed border-b2 p-4"><input name="title" required placeholder="Decision required" /><textarea name="description" rows={2} placeholder="What needs deciding?" /><input name="requestedFrom" placeholder="Requested from" /><label className="flex items-center gap-2 text-xs text-t2"><input type="hidden" name="clientVisible" value="false" /><input name="clientVisible" type="checkbox" value="true" defaultChecked /> Client visible</label><button className="w-fit rounded-lg bg-acc px-3 py-2 text-sm text-white">Request decision</button></form>
+        </Section>
+
+        <Section title="Files and links" note="Only client-visible resources appear in the portal.">
+          <div className="space-y-2">{initial.resources.map((resource) => <a key={resource.id} href={String(resource.url)} target="_blank" rel="noreferrer" className="flex items-center justify-between rounded-xl border border-b1 bg-s2 p-3 text-sm hover:border-acc/60"><span className="flex items-center gap-2"><Link2 size={14} />{resource.title}</span><ExternalLink size={13} /></a>)}</div>
+          <form onSubmit={submit(`/api/projects/${project.id}/resources`, "new-resource")} className="mt-4 grid gap-3 rounded-xl border border-dashed border-b2 p-4"><input name="title" required placeholder="Resource title" /><input name="url" type="url" required placeholder="https://…" /><div className="flex gap-3"><select name="kind"><option value="link">Link</option><option value="file">File</option></select><select name="visibility"><option value="internal">Internal</option><option value="client_visible">Client visible</option></select></div><button className="w-fit rounded-lg bg-acc px-3 py-2 text-sm text-white">Add resource</button></form>
+        </Section>
+
+        <Section title="Audit trail" note="Material workflow changes are append-only."><div className="space-y-2">{initial.audit.slice(0, 12).map((entry) => <div key={entry.id} className="border-b border-b1 pb-2 text-xs"><div className="font-semibold text-t1">{label(entry.action)}</div><div className="text-t3">{dateTime(entry.createdAt)}</div></div>)}</div></Section>
+      </div>
+    </div>
+  </div>
+}
+
+function Section({ title, note, children }: { title: string; note: string; children: React.ReactNode }) { return <section className="rounded-2xl border border-b1 bg-s1 p-5"><h2 className="font-syne text-xl font-bold">{title}</h2><p className="mt-1 mb-4 text-xs text-t3">{note}</p>{children}</section> }
+function SelectAction({ label: text, value, values, labels, disabled, onChange }: { label: string; value: string; values: readonly string[]; labels?: Map<string, string>; disabled: boolean; onChange: (value: string) => void }) { return <label><span className="mb-1 block text-xs text-t3">{text}</span><select className="w-full" value={value} disabled={disabled} onChange={(event) => onChange(event.target.value)}>{values.map((item) => <option key={item} value={item}>{labels?.get(item) ?? label(item)}</option>)}</select></label> }
+function Info({ label: text, value }: { label: string; value: string }) { return <div><div className="text-xs text-t3">{text}</div><div className="mt-2 text-sm font-semibold">{value}</div></div> }
+function VisibleBadge() { return <span className="rounded bg-acc/15 px-1.5 py-0.5 text-[10px] text-acc">Client visible</span> }
+function InternalBadge() { return <span className="rounded bg-s3 px-1.5 py-0.5 text-[10px] text-t3">Internal</span> }
+function label(value: unknown) { return String(value).replaceAll("_", " ").replace(/^./, (letter) => letter.toUpperCase()) }
+function date(value: Date | string | unknown) { return new Date(String(value)).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) }
+function dateTime(value: Date | string | unknown) { return new Date(String(value)).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" }) }
+function dateInput(value: Date | string | null | unknown) { if (!value) return ""; const parsed = new Date(String(value)); return Number.isNaN(parsed.getTime()) ? "" : parsed.toISOString().slice(0, 10) }

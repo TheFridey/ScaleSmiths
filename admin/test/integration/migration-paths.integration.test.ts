@@ -43,7 +43,7 @@ describe("migration installation paths", () => {
     await applyMigrations(WEB_MIGRATIONS, ADMIN_MIGRATIONS)
 
     expect(await migrationCount("__drizzle_web_migrations")).toBe(17)
-    expect(await migrationCount("__drizzle_migrations")).toBe(51)
+    expect(await migrationCount("__drizzle_migrations")).toBe(52)
     expect(await columnExists("forge_artifacts", "content_bytes")).toBe(true)
     expect(await columnExists("forge_deployment_candidates", "dependency_report_json")).toBe(true)
     expect(await columnExists("forge_deployment_candidates", "dependency_sbom_hash")).toBe(true)
@@ -58,6 +58,10 @@ describe("migration installation paths", () => {
     expect(await tableExists("forge_run_events")).toBe(true)
     expect(await tableExists("forge_worker_heartbeats")).toBe(true)
     expect(await tableExists("web_rate_limits")).toBe(true)
+    expect(await tableExists("delivery_projects")).toBe(true)
+    expect(await tableExists("delivery_milestones")).toBe(true)
+    expect(await viewExists("delivery_project_progress")).toBe(true)
+    expect(await constraintExists("delivery_projects_forge_project_id_forge_projects_id_fk")).toBe(true)
   })
 
   it("upgrades a locked historical fixture by applying only the forward reconciliation", async () => {
@@ -83,13 +87,15 @@ describe("migration installation paths", () => {
     await applyMigrations(WEB_MIGRATIONS, ADMIN_MIGRATIONS)
 
     expect(await migrationCount("__drizzle_web_migrations")).toBe(17)
-    expect(await migrationCount("__drizzle_migrations")).toBe(51)
+    expect(await migrationCount("__drizzle_migrations")).toBe(52)
     expect(await columnExists("forge_artifacts", "content_bytes")).toBe(true)
     expect(await columnExists("forge_deployment_candidates", "dependency_report_json")).toBe(true)
     expect(await constraintExists("forge_deployment_candidates_dependency_hashes_sha256")).toBe(true)
     expect(await tableExists("client_request_messages")).toBe(true)
     expect(await indexExists("forge_artifacts_version_idx")).toBe(true)
     expect(await tableExists("forge_runs")).toBe(true)
+    expect(await tableExists("delivery_projects")).toBe(true)
+    expect(await viewExists("delivery_project_progress")).toBe(true)
     expect(
       (
         await pool.query<{ count: number }>(

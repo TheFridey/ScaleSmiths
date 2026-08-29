@@ -1209,6 +1209,53 @@ describe("real PostgreSQL integration", () => {
       ).rows[0].count,
     ).toBe(0);
   });
+
+  it("enforces delivery ownership, derives progress, and audits lifecycle changes", async () => {
+    const actor = (await pool.query(
+      "INSERT INTO admin_users(email,display_name,password_hash,role) VALUES('delivery@example.test','Delivery Manager','test-hash','project_manager') RETURNING id",
+    )).rows[0].id as string;
+    const clientId = (await pool.query(
+      "INSERT INTO clients(name,portal_client_id) VALUES('Delivery Client','delivery-client') RETURNING id",
+    )).rows[0].id as number;
+    const otherClientId = (await pool.query("INSERT INTO clients(name) VALUES('Other Client') RETURNING id")).rows[0].id as number;
+    const forgeProjectId = (await pool.query(
+      "INSERT INTO forge_projects(name,business_name,client_id) VALUES('Delivery Build','Delivery Client',$1) RETURNING id",
+      [clientId],
+    )).rows[0].id as number;
+    const foreignForgeId = (await pool.query(
+      "INSERT INTO forge_projects(name,business_name,client_id) VALUES('Foreign Build','Other Client',$1) RETURNING id",
+      [otherClientId],
+    )).rows[0].id as number;
+    const service = await import("../../src/lib/server/delivery-project-service");
+    const deliveryActor = { id: actor, email: "delivery@example.test" };
+
+    await expect(service.createDeliveryProject({ clientId, name: "Invalid link", forgeProjectId: foreignForgeId }, deliveryActor))
+      .rejects.toMatchObject({ status: 409 });
+
+    const project = await service.createDeliveryProject({ clientId, name: "Website launch", summary: "A client-visible delivery plan.", clientVisible: true, forgeProjectId }, deliveryActor);
+    const discovery = await service.createDeliveryMilestone(project.id, { title: "Discovery", weight: 2, clientVisible: true }, deliveryActor);
+    await service.updateDeliveryMilestone(project.id, discovery.id, { status: "completed" }, deliveryActor);
+    const build = await service.createDeliveryMilestone(project.id, { title: "Build", status: "active", weight: 3, clientVisible: true }, deliveryActor);
+    expect((await service.getDeliveryProjectForAdmin(project.id)).progress).toBe(40);
+
+    await service.updateDeliveryMilestone(project.id, build.id, { status: "completed" }, deliveryActor);
+    await service.updateDeliveryProject(project.id, { status: "completed", currentPhase: "launch" }, deliveryActor);
+    const detail = await service.getDeliveryProjectForAdmin(project.id);
+    expect(detail.progress).toBe(100);
+    expect(detail.project).toMatchObject({ status: "completed", forgeProjectId });
+    expect(detail.audit.map((entry) => entry.action)).toEqual(expect.arrayContaining(["project_created", "milestone_created", "milestone_updated", "project_updated"]));
+    expect((await pool.query("SELECT count(*)::int count FROM client_timeline_events WHERE client_id='delivery-client' AND project_id=$1", [project.id])).rows[0].count).toBeGreaterThanOrEqual(3);
+
+    const webPool = new Pool({ connectionString: webUrl });
+    try {
+      const portalRows = await webPool.query(
+        "SELECT p.id, progress.progress FROM delivery_projects p JOIN clients c ON c.id=p.client_id JOIN delivery_project_progress progress ON progress.project_id=p.id WHERE c.portal_client_id=$1 AND p.client_visible=true",
+        ["delivery-client"],
+      );
+      expect(portalRows.rows).toEqual([{ id: project.id, progress: 100 }]);
+      await expect(webPool.query("SELECT * FROM delivery_project_audit_logs")).rejects.toMatchObject({ code: "42501" });
+    } finally { await webPool.end(); }
+  });
 });
 async function createProject() {
   return (

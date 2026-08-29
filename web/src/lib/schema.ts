@@ -24,6 +24,12 @@ export const requestMessageSenderType = pgEnum("request_message_sender_type", ["
 export const requestMessageVisibility = pgEnum("request_message_visibility", ["client_visible", "internal"])
 export const monthlyReportStatus = pgEnum("monthly_report_status", MONTHLY_REPORT_STATUSES)
 export const monthlyReportGeneratedBy = pgEnum("monthly_report_generated_by", ["forge", "manual"])
+export const deliveryProjectStatus = pgEnum("delivery_project_status", ["active", "paused", "completed", "cancelled"])
+export const deliveryProjectPhase = pgEnum("delivery_project_phase", ["discovery", "strategy", "design", "build", "review", "launch", "ongoing"])
+export const deliveryMilestoneStatus = pgEnum("delivery_milestone_status", ["planned", "active", "blocked", "completed", "skipped"])
+export const deliveryDeliverableStatus = pgEnum("delivery_deliverable_status", ["planned", "in_progress", "in_review", "approved", "delivered", "cancelled"])
+export const deliveryResourceKind = pgEnum("delivery_resource_kind", ["file", "link"])
+export const deliveryDecisionStatus = pgEnum("delivery_decision_status", ["open", "resolved", "cancelled"])
 export const experienceEventName = pgEnum("experience_event_name", [
   "experience_choice_displayed",
   "experience_normal_selected",
@@ -107,6 +113,52 @@ export const invoicePortalClients = pgTable("clients", {
   status: text("status").notNull(),
   portalClientId: text("portal_client_id"),
 })
+
+// Portal-owned projections intentionally omit internal notes, owner identities and audit data.
+// Delivery migrations remain admin-owned; these declarations are read-only mappings.
+export const portalDeliveryProjects = pgTable("delivery_projects", {
+  id: serial("id").primaryKey(),
+  clientId: integer("client_id").notNull(),
+  name: text("name").notNull(),
+  summary: text("summary"),
+  clientVisible: boolean("client_visible").notNull(),
+  status: deliveryProjectStatus("status").notNull(),
+  currentPhase: deliveryProjectPhase("current_phase").notNull(),
+  targetStartDate: timestamp("target_start_date", { withTimezone: true }),
+  targetEndDate: timestamp("target_end_date", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+})
+
+export const portalDeliveryMilestones = pgTable("delivery_milestones", {
+  id: serial("id").primaryKey(), projectId: integer("project_id").notNull(), title: text("title").notNull(),
+  description: text("description"), status: deliveryMilestoneStatus("status").notNull(), clientVisible: boolean("client_visible").notNull(),
+  weight: integer("weight").notNull(), position: integer("position").notNull(), targetDate: timestamp("target_date", { withTimezone: true }),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+})
+
+export const portalDeliveryDeliverables = pgTable("delivery_deliverables", {
+  id: serial("id").primaryKey(), projectId: integer("project_id").notNull(), milestoneId: integer("milestone_id"), title: text("title").notNull(),
+  description: text("description"), status: deliveryDeliverableStatus("status").notNull(), clientVisible: boolean("client_visible").notNull(),
+  targetDate: timestamp("target_date", { withTimezone: true }), position: integer("position").notNull(),
+})
+
+export const portalDeliveryResources = pgTable("delivery_resources", {
+  id: serial("id").primaryKey(), projectId: integer("project_id").notNull(), deliverableId: integer("deliverable_id"),
+  kind: deliveryResourceKind("kind").notNull(), title: text("title").notNull(), url: text("url").notNull(), visibility: requestMessageVisibility("visibility").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+})
+
+export const portalDeliveryDecisions = pgTable("delivery_decisions", {
+  id: serial("id").primaryKey(), projectId: integer("project_id").notNull(), milestoneId: integer("milestone_id"), title: text("title").notNull(),
+  description: text("description"), status: deliveryDecisionStatus("status").notNull(), clientVisible: boolean("client_visible").notNull(),
+  requestedFrom: text("requested_from"), targetDate: timestamp("target_date", { withTimezone: true }), resolution: text("resolution"),
+  resolvedAt: timestamp("resolved_at", { withTimezone: true }), createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+})
+
+export const portalDeliveryProjectProgress = pgView("delivery_project_progress", {
+  projectId: integer("project_id").notNull(), progress: integer("progress").notNull(),
+}).existing()
 export const portalInvoices = pgTable("invoices", {
   id: serial("id").primaryKey(), invoiceNumber: text("invoice_number"), clientId: integer("client_id").notNull(),
   clientNameSnapshot: text("client_name_snapshot").notNull(), billingContactNameSnapshot: text("billing_contact_name_snapshot"),

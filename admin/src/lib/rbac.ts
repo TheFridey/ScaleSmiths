@@ -61,6 +61,7 @@ export function requiredCapabilityForRequest({ pathname, method }: RbacRequest):
   if (pathname.startsWith("/api/forge") || pathname === "/forge" || pathname.startsWith("/forge/")) return write ? "forge.execute" : "forge.read"
   if (pathname.startsWith("/api/proposals")) return write ? "leads.write" : "leads.read"
   if (pathname.startsWith("/api/monthly-reports")) return write ? "finance.write" : "finance.read"
+  if (pathname === "/projects" || pathname.startsWith("/projects/") || pathname === "/api/projects" || pathname.startsWith("/api/projects/")) return write ? "projects.write" : "projects.read"
   if (pathname === "/finance" || pathname.startsWith("/finance/") || pathname.startsWith("/api/invoices") || pathname.startsWith("/api/invoice-catalogue") || pathname.startsWith("/api/invoice-settings")) return write ? "finance.write" : "finance.read"
   if (pathname.startsWith("/operations/") || pathname.startsWith("/api/operations/")) return write ? "projects.write" : "projects.read"
   if (pathname.startsWith("/api/kanban") || pathname === "/roadmap" || pathname.startsWith("/roadmap/")) return write ? "projects.write" : "projects.read"

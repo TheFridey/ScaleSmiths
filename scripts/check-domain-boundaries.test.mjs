@@ -29,6 +29,7 @@ function fixture() {
     "admin/src/lib/server/sales-read-service.ts", "admin/src/lib/server/sales-lead-context.ts",
     "web/src/lib/portal-client-profile.ts", "web/src/lib/portal-client-requests.ts",
     "web/src/lib/portal-invoices.ts", "web/src/lib/portal-reports.ts",
+    "web/src/lib/portal-projects.ts",
   ]) {
     const file = path.join(root, relative)
     fs.mkdirSync(path.dirname(file), { recursive: true })

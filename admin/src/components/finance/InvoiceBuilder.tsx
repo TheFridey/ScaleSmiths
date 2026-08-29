@@ -5,12 +5,13 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Plus, Trash2 } from "lucide-react"
 import { InlineAlert, PageSection, StatusBadge, WorkspaceHeader, WorkspaceShell } from "@/components/admin-shell/primitives"
-import { addDays, canIssueVisibleDraft, catalogueLine, customLine, draftLineTotal, formatGbp, invoiceDisplayStatus, penceToInput, poundsToPence } from "@/lib/invoice-ui"
+import { addDays, canIssueVisibleDraft, catalogueLine, customLine, draftLineTotal, formatGbp, invoiceDisplayStatus, penceToInput } from "@/lib/invoice-ui"
 import { ConfirmationDialog } from "./ConfirmationDialog"
 import { InvoiceDeliveryPanel } from "./InvoiceDeliveryPanel"
 import type { CatalogueItem, FinanceClient, FinanceInvoice, InvoiceLine, InvoiceSupplierSettings } from "./finance-types"
+import { assignInvoiceClientCode, deleteInvoiceDraft, saveInvoiceDraft, transitionInvoice } from "./invoice-builder-api"
+import { buildInvoiceDraftModel, type InvoiceEditorLine } from "./invoice-builder-model"
 
-type EditorLine = { key: string; catalogueItemId: number | null; title: string; description: string; quantity: string; unitPrice: string }
 type ConfirmAction = "issue" | "delete" | "paid" | "void" | "code" | null
 
 export function InvoiceBuilder({ initialInvoice, clients, catalogue, supplierSettings, canWrite }: { initialInvoice?: FinanceInvoice; clients: FinanceClient[]; catalogue: CatalogueItem[]; supplierSettings: InvoiceSupplierSettings | null; canWrite: boolean }) {
@@ -23,7 +24,7 @@ export function InvoiceBuilder({ initialInvoice, clients, catalogue, supplierSet
   const [dueOverridden, setDueOverridden] = useState(Boolean(initialInvoice))
   const [customerNotes, setCustomerNotes] = useState(initialInvoice?.customerNotes ?? "")
   const [internalNotes, setInternalNotes] = useState(initialInvoice?.internalNotes ?? "")
-  const [lines, setLines] = useState<EditorLine[]>(() => initialInvoice?.items?.map(editorLine) ?? [])
+  const [lines, setLines] = useState<InvoiceEditorLine[]>(() => initialInvoice?.items?.map(editorLine) ?? [])
   const [dirty, setDirty] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState("")
@@ -33,38 +34,24 @@ export function InvoiceBuilder({ initialInvoice, clients, catalogue, supplierSet
   const [code, setCode] = useState("")
   const editable = !invoice || invoice.status === "draft"
   const mutable = editable && canWrite
-  const activeCatalogue = catalogue.filter((item) => item.active)
-  const parsedLines = lines.map((line) => ({ ...line, quantityNumber: Number(line.quantity), unitPence: poundsToPence(line.unitPrice) }))
-  const optimisticTotal = parsedLines.reduce((total, line) => Number.isSafeInteger(line.quantityNumber) && line.quantityNumber > 0 && line.unitPence !== null ? total + line.quantityNumber * line.unitPence : total, 0)
-  const blockers = (() => {
-    const values: string[] = []
-    if (!client) values.push("Select a client.")
-    if (!client?.invoiceClientCode) values.push("Assign a permanent invoice client code.")
-    if (!client || !client.billingAddressLine1 || !client.billingCity || !client.billingPostcode || !client.billingCountry) values.push("Complete the client's billing address.")
-    if (!supplierSettings || !(supplierSettings.legalName || supplierSettings.tradingName)) values.push("Complete the ScaleSmiths supplier business name in invoice settings.")
-    if (!supplierSettings?.addressLine1 || !supplierSettings.city || !supplierSettings.postcode || !supplierSettings.country) values.push("Complete the ScaleSmiths supplier address in invoice settings.")
-    if (!lines.length) values.push("Add at least one invoice item.")
-    if (parsedLines.some((line) => !line.title.trim() || !Number.isSafeInteger(line.quantityNumber) || line.quantityNumber <= 0 || line.unitPence === null)) values.push("Correct invalid item titles, quantities or prices.")
-    if (!invoiceDate || !dueDate || dueDate < invoiceDate) values.push("Choose valid invoice and due dates.")
-    return values
-  })()
-  const missingBilling = client ? !client.billingAddressLine1 || !client.billingCity || !client.billingPostcode || !client.billingCountry : false
+  const { activeCatalogue, parsedLines, optimisticTotal, blockers, missingBilling } = buildInvoiceDraftModel({
+    lines, client, catalogue, supplierSettings, invoiceDate, dueDate,
+  })
 
   function changeDate(value: string) { setInvoiceDate(value); if (!dueOverridden) setDueDate(addDays(value, 14)); markDirty() }
   function markDirty() { if (invoice) setDirty(true) }
   function selectClient(id: string) { setClient(clients.find((item) => item.id === Number(id)) ?? null); markDirty() }
   function addCatalogue() { const item = activeCatalogue.find((entry) => entry.id === Number(catalogueId)); if (!item) return; setLines((current) => [...current, { key: crypto.randomUUID(), ...catalogueLine(item) }]); setCatalogueId(""); markDirty() }
   function addCustom() { setLines((current) => [...current, { key: crypto.randomUUID(), ...customLine() }]); markDirty() }
-  function updateLine(key: string, field: keyof EditorLine, value: string) { setLines((current) => current.map((line) => line.key === key ? { ...line, [field]: value } : line)); markDirty() }
+  function updateLine(key: string, field: keyof InvoiceEditorLine, value: string) { setLines((current) => current.map((line) => line.key === key ? { ...line, [field]: value } : line)); markDirty() }
   function removeLine(key: string) { setLines((current) => current.filter((line) => line.key !== key)); markDirty() }
 
   async function save() {
     if (!client || parsedLines.some((line) => line.unitPence === null)) return setError("Correct the invoice before saving.")
     setBusy(true); setError(""); setMessage("")
     try {
-      const response = await fetch(invoice ? `/api/invoices/${invoice.id}` : "/api/invoices", { method: invoice ? "PATCH" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ clientId: client.id, invoiceDate, dueDate, customerNotes, internalNotes, items: parsedLines.map((line) => ({ catalogueItemId: line.catalogueItemId, title: line.title, description: line.description, quantity: line.quantityNumber, unitAmount: line.unitPence })) }) })
-      const data = await response.json().catch(() => ({})); if (!response.ok) throw new Error(data.error || "Unable to save invoice.")
-      const saved = data.invoice as FinanceInvoice; setInvoice(saved); setLines((saved.items ?? []).map(editorLine)); setDirty(false); setMessage("Draft saved.")
+      const saved = await saveInvoiceDraft(invoice?.id, { clientId: client.id, invoiceDate, dueDate, customerNotes, internalNotes, items: parsedLines.map((line) => ({ catalogueItemId: line.catalogueItemId, title: line.title, description: line.description, quantity: line.quantityNumber, unitAmount: line.unitPence })) })
+      setInvoice(saved); setLines((saved.items ?? []).map(editorLine)); setDirty(false); setMessage("Draft saved.")
       if (!invoice) router.replace(`/finance/invoices/${saved.id}`)
     } catch (caught) { setError(caught instanceof Error ? caught.message : "Unable to save invoice.") } finally { setBusy(false) }
   }
@@ -72,10 +59,10 @@ export function InvoiceBuilder({ initialInvoice, clients, catalogue, supplierSet
   async function transition(action: "issue" | "mark_paid" | "void") {
     if (!invoice) return
     setBusy(true); setError("")
-    try { const response = await fetch(`/api/invoices/${invoice.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action }) }); const data = await response.json().catch(() => ({})); if (!response.ok) throw new Error(data.error || "Unable to update invoice."); setInvoice(data.invoice); setLines((data.invoice.items ?? []).map(editorLine)); setDirty(false); setMessage(action === "issue" ? `Invoice issued as ${data.invoice.invoiceNumber}.` : action === "mark_paid" ? "Invoice marked paid." : "Invoice voided; its number remains permanently recorded."); setConfirm(null); router.refresh() } catch (caught) { setError(caught instanceof Error ? caught.message : "Unable to update invoice.") } finally { setBusy(false) }
+    try { const updated = await transitionInvoice(invoice.id, action); setInvoice(updated); setLines((updated.items ?? []).map(editorLine)); setDirty(false); setMessage(action === "issue" ? `Invoice issued as ${updated.invoiceNumber}.` : action === "mark_paid" ? "Invoice marked paid." : "Invoice voided; its number remains permanently recorded."); setConfirm(null); router.refresh() } catch (caught) { setError(caught instanceof Error ? caught.message : "Unable to update invoice.") } finally { setBusy(false) }
   }
-  async function deleteDraft() { if (!invoice) return; setBusy(true); try { const response = await fetch(`/api/invoices/${invoice.id}`, { method: "DELETE" }); if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || "Unable to delete draft."); router.push("/finance/invoices"); router.refresh() } catch (caught) { setError(caught instanceof Error ? caught.message : "Unable to delete draft."); setConfirm(null); setBusy(false) } }
-  async function assignCode() { if (!client) return; setBusy(true); setError(""); try { const response = await fetch(`/api/clients/${client.id}/invoice-code`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ invoiceClientCode: code }) }); const data = await response.json().catch(() => ({})); if (!response.ok) throw new Error(data.error || "Unable to assign code."); setClient(data.client); setCode(""); setConfirm(null); setMessage("Permanent invoice code assigned.") } catch (caught) { setError(caught instanceof Error ? caught.message : "Unable to assign code.") } finally { setBusy(false) } }
+  async function deleteDraft() { if (!invoice) return; setBusy(true); try { await deleteInvoiceDraft(invoice.id); router.push("/finance/invoices"); router.refresh() } catch (caught) { setError(caught instanceof Error ? caught.message : "Unable to delete draft."); setConfirm(null); setBusy(false) } }
+  async function assignCode() { if (!client) return; setBusy(true); setError(""); try { const updated = await assignInvoiceClientCode(client.id, code); setClient(updated); setCode(""); setConfirm(null); setMessage("Permanent invoice code assigned.") } catch (caught) { setError(caught instanceof Error ? caught.message : "Unable to assign code.") } finally { setBusy(false) } }
 
   const displayedTotal = invoice && !dirty ? invoice.total : optimisticTotal
   const displayStatus = invoice ? invoiceDisplayStatus(invoice) : "draft"
@@ -115,8 +102,8 @@ function ClientBillingEditor({ client, onSaved }: { client: FinanceClient; onSav
 function Field({ label, children }: { label: string; children: React.ReactNode }) { return <label className="grid gap-1 text-sm"><span className="text-xs font-medium text-t2">{label}</span>{children}</label> }
 function TotalRow({ label, value, strong = false }: { label: string; value: number; strong?: boolean }) { return <div className="flex justify-between gap-4"><span className="text-t2">{label}</span><span className={strong ? "text-xl font-bold" : "font-semibold"}>{formatGbp(value)}</span></div> }
 function Meta({ label, value }: { label: string; value: string }) { return <div className="flex justify-between gap-2"><dt className="text-t2">{label}</dt><dd>{value}</dd></div> }
-function editorLine(line: InvoiceLine): EditorLine { return { key: String(line.id ?? crypto.randomUUID()), catalogueItemId: line.catalogueItemId, title: line.title, description: line.description ?? "", quantity: String(line.quantity), unitPrice: penceToInput(line.unitAmount) } }
-function validLineTotal(line: EditorLine) { return draftLineTotal(line.quantity, line.unitPrice) }
+function editorLine(line: InvoiceLine): InvoiceEditorLine { return { key: String(line.id ?? crypto.randomUUID()), catalogueItemId: line.catalogueItemId, title: line.title, description: line.description ?? "", quantity: String(line.quantity), unitPrice: penceToInput(line.unitAmount) } }
+function validLineTotal(line: InvoiceEditorLine) { return draftLineTotal(line.quantity, line.unitPrice) }
 function dateInput(value?: Date | string) { return value ? new Date(value).toISOString().slice(0, 10) : "" }
 function dateTime(value: Date | string | null | undefined) { return value ? new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value)) : "—" }
 function confirmTitle(action: ConfirmAction) { return action === "issue" ? "Issue this invoice?" : action === "delete" ? "Delete this draft?" : action === "paid" ? "Mark invoice as paid?" : action === "void" ? "Void this invoice?" : action === "code" ? "Assign permanent client code?" : "Confirm action" }

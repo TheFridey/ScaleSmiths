@@ -14,6 +14,13 @@ erDiagram
   PROSPECTS ||--o{ SALES_PROPOSALS : receives
   CLIENTS ||--o{ SALES_PROPOSALS : receives
   CLIENTS ||--o{ FORGE_PROJECTS : owns
+  CLIENTS ||--o{ DELIVERY_PROJECTS : commissions
+  DELIVERY_PROJECTS ||--o{ DELIVERY_MILESTONES : plans
+  DELIVERY_PROJECTS ||--o{ DELIVERY_DELIVERABLES : produces
+  DELIVERY_PROJECTS ||--o{ DELIVERY_RESOURCES : publishes
+  DELIVERY_PROJECTS ||--o{ DELIVERY_DECISIONS : requires
+  DELIVERY_PROJECTS ||--o{ DELIVERY_PROJECT_AUDIT_LOGS : audits
+  DELIVERY_PROJECTS o|--o| FORGE_PROJECTS : links_build
   PROSPECTS ||--o{ FORGE_PROJECTS : originates
   FORGE_PROJECTS ||--o{ FORGE_TASKS : runs
   FORGE_PROJECTS ||--o{ FORGE_JOBS : queues
@@ -59,6 +66,12 @@ Shared tables are duplicated in TypeScript rather than imported from one package
 - `outreach_activities`: typed communications/notes for a prospect.
 - `proposal_trackings`: commercial package/status/timestamps for a prospect.
 - `sales_proposals`: rendered HTML proposal, prices, selected services and prospect/client association.
+- `delivery_projects`: client-owned delivery identity, lifecycle, phase, ownership, dates, and optional validated Forge/deployment linkage. Multiple projects may belong to one client.
+- `delivery_milestones`: weighted delivery checkpoints. Non-skipped milestone weights are the source of overall progress; client visibility and internal notes are separate.
+- `delivery_deliverables`: concrete project outputs, optionally grouped under a milestone, with workflow state, ownership, target date, and visibility.
+- `delivery_resources`: HTTP(S) file/link references with explicit internal or client-visible publication state.
+- `delivery_decisions`: open/resolved/cancelled choices required from a named party; client visibility is explicit and resolution is lifecycle-validated.
+- `delivery_project_audit_logs`: append-only material project, milestone, deliverable, resource and decision changes.
 
 ## Forge tables
 
@@ -84,7 +97,7 @@ Important enums define quote status, request category/priority/status, message v
 ## Migration inventory
 
 - Web migrations `0000`-`0015` build quote capture, portal accounts/rate limits, request threads/timeline and notification reconciliation, reports, public experience analytics, the public claims registry/restricted view, enquiry intent, and the local-growth funnel classification.
-- Admin migrations `0000`-`0050` build operational CRM, identity/security, Forge workflow/provenance/economics, durable operational controls and run orchestration, client operations, analytics, finance/invoicing, release gates, the forward-only historical-schema reconciliation, and generated-site dependency/SBOM evidence binding.
+- Admin migrations `0000`-`0051` build operational CRM, identity/security, Forge workflow/provenance/economics, durable operational controls and run orchestration, client operations, analytics, finance/invoicing, release gates, the forward-only historical-schema reconciliation, generated-site dependency/SBOM evidence binding, and the client projects/delivery domain.
 
 The histories are independent. Their Drizzle journals do not provide a single global order, despite targeting the same database. Deployment compensates by always running web then admin migrations.
 
@@ -93,7 +106,7 @@ Every migration is SHA-256 locked in `scripts/migration-checksums.json`. Histori
 ## Integrity and lifecycle gaps
 
 - `client_requests.client_id`, reports, and timeline client IDs are text identifiers without an FK to admin `clients`; portal identity and admin integer client identity are separate concepts.
-- `client_timeline_events.project_id` is not constrained to `forge_projects`.
+- `client_timeline_events.project_id` is a logical delivery-project reference rather than a foreign key because the timeline table is web-migration-owned. Delivery services alone publish project events into it.
 - Forge memories are flexible strings with application-validated JSON; the database cannot enforce value schemas or unique semantic keys unless migrations add constraints not represented as relations.
 - Artifact consumers depend on title/type/metadata conventions and can read stale or incompatible records if those conventions drift.
 - HTML report/proposal content is persisted; safe rendering depends on trusted generator/admin inputs and rendering discipline.

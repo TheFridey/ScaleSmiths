@@ -30,6 +30,7 @@ import {
   type ClientRequestStatus,
 } from "@/lib/client-requests"
 import { MONTHLY_REPORT_STATUS_LABELS } from "@/lib/monthly-reports"
+import { useRequestMonthlyReports } from "@/components/client-requests/useRequestMonthlyReports"
 
 const T = {
   s1: "var(--s1)",
@@ -91,7 +92,7 @@ export interface AdminTimelineEvent {
   createdAt: string
 }
 
-interface AdminMonthlyReport {
+export interface AdminMonthlyReport {
   id: number
   clientId: string
   month: number
@@ -228,12 +229,6 @@ export function ClientRequestsQueue({ initialRequests, loadError, initialSelecte
   const [clientReply, setClientReply] = useState("")
   const [timelineTitle, setTimelineTitle] = useState("")
   const [timelineDescription, setTimelineDescription] = useState("")
-  const now = new Date()
-  const [reportMonth, setReportMonth] = useState(now.getMonth() + 1)
-  const [reportYear, setReportYear] = useState(now.getFullYear())
-  const [monthlyReports, setMonthlyReports] = useState<AdminMonthlyReport[]>([])
-  const [activeReport, setActiveReport] = useState<AdminMonthlyReport | null>(null)
-  const [reportDraft, setReportDraft] = useState<{ title: string; summary: string; htmlContent: string } | null>(null)
   const [busyAction, setBusyAction] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
   const [copiedField, setCopiedField] = useState<string | null>(null)
@@ -261,6 +256,11 @@ export function ClientRequestsQueue({ initialRequests, loadError, initialSelecte
   }, [categoryFilter, clientFilter, priorityFilter, requests, search, statusFilter])
 
   const selected = requests.find((request) => request.id === selectedId) ?? filteredRequests[0] ?? requests[0] ?? null
+  const {
+    reportMonth, setReportMonth, reportYear, setReportYear,
+    monthlyReports, activeReport, reportDraft, setReportDraft, selectReport,
+    generateMonthlyReport, saveReport, publishReport,
+  } = useRequestMonthlyReports({ selected, setRequests, setBusyAction, setActionError })
 
   useEffect(() => {
     if (!selected) {
@@ -277,39 +277,7 @@ export function ClientRequestsQueue({ initialRequests, loadError, initialSelecte
     setClientReply("")
     setTimelineTitle("")
     setTimelineDescription("")
-    setActiveReport(null)
-    setReportDraft(null)
-    setMonthlyReports([])
     setActionError(null)
-  }, [selected])
-
-  useEffect(() => {
-    if (!selected) return
-    let mounted = true
-
-    async function loadReports() {
-      try {
-        const response = await fetch(`/api/monthly-reports?clientId=${encodeURIComponent(selected.clientId)}`, { cache: "no-store" })
-        const json = await response.json().catch(() => null)
-        if (!response.ok || !json?.ok) return
-        if (!mounted) return
-        const reports = Array.isArray(json.reports) ? json.reports as AdminMonthlyReport[] : []
-        setMonthlyReports(reports)
-        setActiveReport(reports[0] ?? null)
-        setReportDraft(reports[0] ? {
-          title: reports[0].title,
-          summary: reports[0].summary,
-          htmlContent: reports[0].htmlContent,
-        } : null)
-      } catch {
-        // Report loading is non-critical for request triage.
-      }
-    }
-
-    void loadReports()
-    return () => {
-      mounted = false
-    }
   }, [selected])
 
   const summary = useMemo(() => {
@@ -454,100 +422,6 @@ export function ClientRequestsQueue({ initialRequests, loadError, initialSelecte
       setTimelineDescription("")
     } catch (error) {
       setActionError(error instanceof Error ? error.message : "Unable to add this timeline update.")
-    } finally {
-      setBusyAction(null)
-    }
-  }
-
-  async function generateMonthlyReport() {
-    if (!selected) return
-    setBusyAction("generate-report")
-    setActionError(null)
-
-    try {
-      const response = await fetch("/api/monthly-reports", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          clientId: selected.clientId,
-          month: reportMonth,
-          year: reportYear,
-        }),
-      })
-      const json = await response.json().catch(() => null)
-
-      if (!response.ok || !json?.ok || !json.report) {
-        throw new Error(json?.error ?? "Unable to generate monthly report.")
-      }
-
-      const report = json.report as AdminMonthlyReport
-      setMonthlyReports((current) => [report, ...current.filter((item) => item.id !== report.id)])
-      setActiveReport(report)
-      setReportDraft({ title: report.title, summary: report.summary, htmlContent: report.htmlContent })
-    } catch (error) {
-      setActionError(error instanceof Error ? error.message : "Unable to generate monthly report.")
-    } finally {
-      setBusyAction(null)
-    }
-  }
-
-  async function saveReport() {
-    if (!activeReport || !reportDraft) return
-    setBusyAction("save-report")
-    setActionError(null)
-
-    try {
-      const response = await fetch(`/api/monthly-reports/${activeReport.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "update", ...reportDraft }),
-      })
-      const json = await response.json().catch(() => null)
-
-      if (!response.ok || !json?.ok || !json.report) {
-        throw new Error(json?.error ?? "Unable to save monthly report.")
-      }
-
-      const report = json.report as AdminMonthlyReport
-      setActiveReport(report)
-      setReportDraft({ title: report.title, summary: report.summary, htmlContent: report.htmlContent })
-      setMonthlyReports((current) => current.map((item) => item.id === report.id ? report : item))
-    } catch (error) {
-      setActionError(error instanceof Error ? error.message : "Unable to save monthly report.")
-    } finally {
-      setBusyAction(null)
-    }
-  }
-
-  async function publishReport() {
-    if (!activeReport) return
-    setBusyAction("publish-report")
-    setActionError(null)
-
-    try {
-      const response = await fetch(`/api/monthly-reports/${activeReport.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "publish" }),
-      })
-      const json = await response.json().catch(() => null)
-
-      if (!response.ok || !json?.ok || !json.report) {
-        throw new Error(json?.error ?? "Unable to publish monthly report.")
-      }
-
-      const report = json.report as AdminMonthlyReport
-      const timelineEvent = json.timelineEvent as AdminTimelineEvent | null | undefined
-      setActiveReport(report)
-      setReportDraft({ title: report.title, summary: report.summary, htmlContent: report.htmlContent })
-      setMonthlyReports((current) => current.map((item) => item.id === report.id ? report : item))
-      if (timelineEvent) {
-        setRequests((current) => current.map((request) => request.clientId === report.clientId
-          ? { ...request, timelineEvents: request.id === selected?.id ? [...request.timelineEvents, timelineEvent] : request.timelineEvents }
-          : request))
-      }
-    } catch (error) {
-      setActionError(error instanceof Error ? error.message : "Unable to publish monthly report.")
     } finally {
       setBusyAction(null)
     }
@@ -972,8 +846,7 @@ export function ClientRequestsQueue({ initialRequests, loadError, initialSelecte
                             value={activeReport?.id ?? ""}
                             onChange={(event) => {
                               const report = monthlyReports.find((item) => item.id === Number(event.target.value)) ?? null
-                              setActiveReport(report)
-                              setReportDraft(report ? { title: report.title, summary: report.summary, htmlContent: report.htmlContent } : null)
+                              selectReport(report)
                             }}
                           >
                             {monthlyReports.map((report) => (

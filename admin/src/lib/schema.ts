@@ -1,5 +1,5 @@
 import { relations, sql } from "drizzle-orm"
-import { boolean, check, customType, index, integer, jsonb, numeric, pgEnum, pgTable, primaryKey, serial, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core"
+import { boolean, check, customType, index, integer, jsonb, numeric, pgEnum, pgTable, pgView, primaryKey, serial, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core"
 import type { LeadScoreFactor, LeadScoreResult } from "./lead-scoring"
 import type { ProjectEstimateResult } from "./project-estimator"
 import type { ForgeDependencyAdmissionReport } from "./forge-dependency-admission"
@@ -74,6 +74,12 @@ export const invoiceStatus = pgEnum("invoice_status", INVOICE_STATUSES)
 export const invoiceDeliveryType = pgEnum("invoice_delivery_type", ["invoice", "reminder"])
 export const invoiceDeliveryState = pgEnum("invoice_delivery_state", ["pending", "sent", "failed"])
 export const invoicePortalAccessType = pgEnum("invoice_portal_access_type", ["view", "download"])
+export const deliveryProjectStatus = pgEnum("delivery_project_status", ["active", "paused", "completed", "cancelled"])
+export const deliveryProjectPhase = pgEnum("delivery_project_phase", ["discovery", "strategy", "design", "build", "review", "launch", "ongoing"])
+export const deliveryMilestoneStatus = pgEnum("delivery_milestone_status", ["planned", "active", "blocked", "completed", "skipped"])
+export const deliveryDeliverableStatus = pgEnum("delivery_deliverable_status", ["planned", "in_progress", "in_review", "approved", "delivered", "cancelled"])
+export const deliveryResourceKind = pgEnum("delivery_resource_kind", ["file", "link"])
+export const deliveryDecisionStatus = pgEnum("delivery_decision_status", ["open", "resolved", "cancelled"])
 
 export type PublicClaimStatus = "draft" | "verified" | "expired" | "rejected"
 export type PublicClaimApprovalStatus = "pending" | "approved" | "declined" | "not_required"
@@ -409,6 +415,126 @@ export const clientTimelineEvents = pgTable("client_timeline_events", {
   index("client_timeline_events_visibility_idx").on(table.visibility),
   index("client_timeline_events_created_at_idx").on(table.createdAt),
 ])
+
+export const deliveryProjects = pgTable("delivery_projects", {
+  id: serial("id").primaryKey(),
+  clientId: integer("client_id").references(() => clients.id, { onDelete: "restrict" }).notNull(),
+  name: text("name").notNull(),
+  summary: text("summary"),
+  internalNotes: text("internal_notes"),
+  clientVisible: boolean("client_visible").default(false).notNull(),
+  status: deliveryProjectStatus("status").default("active").notNull(),
+  currentPhase: deliveryProjectPhase("current_phase").default("discovery").notNull(),
+  ownerUserId: uuid("owner_user_id").references(() => adminUsers.id, { onDelete: "set null" }),
+  targetStartDate: timestamp("target_start_date", { withTimezone: true }),
+  targetEndDate: timestamp("target_end_date", { withTimezone: true }),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  // Database foreign keys link these ids to Forge-owned tables. Keeping the Drizzle
+  // declarations as ids avoids making delivery's public schema depend on Forge internals.
+  forgeProjectId: integer("forge_project_id"),
+  deploymentCandidateId: integer("deployment_candidate_id"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("delivery_projects_client_status_idx").on(table.clientId, table.status),
+  index("delivery_projects_owner_status_idx").on(table.ownerUserId, table.status),
+  uniqueIndex("delivery_projects_forge_project_idx").on(table.forgeProjectId),
+  check("delivery_projects_dates_check", sql`${table.targetEndDate} is null or ${table.targetStartDate} is null or ${table.targetEndDate} >= ${table.targetStartDate}`),
+  check("delivery_projects_completion_check", sql`(${table.status} = 'completed' and ${table.completedAt} is not null) or (${table.status} <> 'completed' and ${table.completedAt} is null)`),
+])
+
+export const deliveryMilestones = pgTable("delivery_milestones", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => deliveryProjects.id, { onDelete: "cascade" }).notNull(),
+  title: text("title").notNull(),
+  description: text("description"),
+  internalNotes: text("internal_notes"),
+  status: deliveryMilestoneStatus("status").default("planned").notNull(),
+  clientVisible: boolean("client_visible").default(false).notNull(),
+  weight: integer("weight").default(1).notNull(),
+  position: integer("position").default(0).notNull(),
+  targetDate: timestamp("target_date", { withTimezone: true }),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("delivery_milestones_project_position_idx").on(table.projectId, table.position),
+  index("delivery_milestones_project_visibility_idx").on(table.projectId, table.clientVisible),
+  check("delivery_milestones_weight_check", sql`${table.weight} > 0`),
+  check("delivery_milestones_position_check", sql`${table.position} >= 0`),
+  check("delivery_milestones_completion_check", sql`(${table.status} = 'completed' and ${table.completedAt} is not null) or (${table.status} <> 'completed' and ${table.completedAt} is null)`),
+])
+
+export const deliveryDeliverables = pgTable("delivery_deliverables", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => deliveryProjects.id, { onDelete: "cascade" }).notNull(),
+  milestoneId: integer("milestone_id").references(() => deliveryMilestones.id, { onDelete: "set null" }),
+  title: text("title").notNull(),
+  description: text("description"),
+  internalNotes: text("internal_notes"),
+  status: deliveryDeliverableStatus("status").default("planned").notNull(),
+  clientVisible: boolean("client_visible").default(false).notNull(),
+  ownerUserId: uuid("owner_user_id").references(() => adminUsers.id, { onDelete: "set null" }),
+  targetDate: timestamp("target_date", { withTimezone: true }),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  position: integer("position").default(0).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("delivery_deliverables_project_position_idx").on(table.projectId, table.position),
+  index("delivery_deliverables_milestone_idx").on(table.milestoneId),
+  check("delivery_deliverables_position_check", sql`${table.position} >= 0`),
+])
+
+export const deliveryResources = pgTable("delivery_resources", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => deliveryProjects.id, { onDelete: "cascade" }).notNull(),
+  deliverableId: integer("deliverable_id").references(() => deliveryDeliverables.id, { onDelete: "set null" }),
+  kind: deliveryResourceKind("kind").notNull(),
+  title: text("title").notNull(),
+  url: text("url").notNull(),
+  visibility: requestMessageVisibility("visibility").default("internal").notNull(),
+  createdBy: uuid("created_by").references(() => adminUsers.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("delivery_resources_project_created_idx").on(table.projectId, table.createdAt),
+  index("delivery_resources_deliverable_idx").on(table.deliverableId),
+])
+
+export const deliveryDecisions = pgTable("delivery_decisions", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => deliveryProjects.id, { onDelete: "cascade" }).notNull(),
+  milestoneId: integer("milestone_id").references(() => deliveryMilestones.id, { onDelete: "set null" }),
+  title: text("title").notNull(),
+  description: text("description"),
+  internalNotes: text("internal_notes"),
+  status: deliveryDecisionStatus("status").default("open").notNull(),
+  clientVisible: boolean("client_visible").default(true).notNull(),
+  requestedFrom: text("requested_from"),
+  targetDate: timestamp("target_date", { withTimezone: true }),
+  resolution: text("resolution"),
+  resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+  resolvedBy: uuid("resolved_by").references(() => adminUsers.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("delivery_decisions_project_status_idx").on(table.projectId, table.status),
+  check("delivery_decisions_resolution_check", sql`(${table.status} = 'resolved' and ${table.resolvedAt} is not null and ${table.resolution} is not null) or (${table.status} <> 'resolved' and ${table.resolvedAt} is null)`),
+])
+
+export const deliveryProjectAuditLogs = pgTable("delivery_project_audit_logs", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => deliveryProjects.id, { onDelete: "cascade" }).notNull(),
+  actorUserId: uuid("actor_user_id").references(() => adminUsers.id, { onDelete: "set null" }),
+  action: text("action").notNull(),
+  metadataJson: jsonb("metadata_json").$type<Record<string, unknown>>().default({}).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [index("delivery_project_audit_project_idx").on(table.projectId, table.createdAt)])
+
+export const deliveryProjectProgress = pgView("delivery_project_progress", {
+  projectId: integer("project_id").notNull(),
+  progress: integer("progress").notNull(),
+}).existing()
 
 export const monthlyReports = pgTable("monthly_reports", {
   id: serial("id").primaryKey(),

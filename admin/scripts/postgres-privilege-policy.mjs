@@ -15,6 +15,12 @@ export const WEB_TABLE_GRANTS = new Map([
   ["invoices", ["SELECT"]],
   ["invoice_items", ["SELECT"]],
   ["invoice_portal_access_events", ["INSERT"]],
+  ["delivery_projects", ["SELECT"]],
+  ["delivery_milestones", ["SELECT"]],
+  ["delivery_deliverables", ["SELECT"]],
+  ["delivery_resources", ["SELECT"]],
+  ["delivery_decisions", ["SELECT"]],
+  ["delivery_project_progress", ["SELECT"]],
   // Durable counters for the public rate limits. Web upserts its own counters
   // but never deletes: expired rows are pruned by the admin worker.
   ["web_rate_limits", ["SELECT", "INSERT", "UPDATE"]],

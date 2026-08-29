@@ -57,6 +57,7 @@ function serializeRequest(
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
     completedAt: row.completedAt?.toISOString() ?? null,
+    adminLastReadAt: row.adminLastReadAt?.toISOString() ?? null,
     messages,
     timelineEvents,
   }

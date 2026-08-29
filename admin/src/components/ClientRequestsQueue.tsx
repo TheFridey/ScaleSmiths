@@ -64,6 +64,7 @@ export interface AdminClientRequestRow {
   createdAt: string
   updatedAt: string
   completedAt: string | null
+  adminLastReadAt: string | null
   messages: AdminRequestMessage[]
   timelineEvents: AdminTimelineEvent[]
 }
@@ -172,6 +173,11 @@ function isThisMonth(value: string | null) {
   return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear()
 }
 
+function hasUnreadClientMessage(request: AdminClientRequestRow) {
+  const lastRead = request.adminLastReadAt ? new Date(request.adminLastReadAt).getTime() : 0
+  return request.messages.some((message) => message.senderType === "client" && new Date(message.createdAt).getTime() > lastRead)
+}
+
 function Badge({ children, style }: { children: React.ReactNode; style: { color: string; border: string; bg: string } }) {
   return (
     <span
@@ -278,6 +284,18 @@ export function ClientRequestsQueue({ initialRequests, loadError, initialSelecte
     setTimelineTitle("")
     setTimelineDescription("")
     setActionError(null)
+
+    if (selected && hasUnreadClientMessage(selected)) {
+      void fetch(`/api/client-requests/${selected.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "markRead" }),
+      }).then((response) => response.json()).then((json) => {
+        if (json?.ok && json.request) {
+          setRequests((current) => current.map((request) => (request.id === json.request.id ? { ...request, adminLastReadAt: json.request.adminLastReadAt } : request)))
+        }
+      }).catch(() => undefined)
+    }
   }, [selected])
 
   const summary = useMemo(() => {
@@ -548,7 +566,10 @@ export function ClientRequestsQueue({ initialRequests, loadError, initialSelecte
                             }}
                           >
                             <div className="min-w-0 pr-3 font-dm text-sm font-medium">
-                              <div className="truncate">{request.clientId}</div>
+                              <div className="flex items-center gap-1.5 truncate">
+                                {request.clientId}
+                                {hasUnreadClientMessage(request) && <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: T.acc }} aria-label="Unread client message" />}
+                              </div>
                               <div className="mt-0.5 truncate text-[11px]" style={{ color: T.t3 }}>Client ID</div>
                             </div>
                             <div className="min-w-0 pr-3">

@@ -29,6 +29,9 @@ export const deliveryProjectPhase = pgEnum("delivery_project_phase", ["discovery
 export const deliveryMilestoneStatus = pgEnum("delivery_milestone_status", ["planned", "active", "blocked", "completed", "skipped"])
 export const deliveryDeliverableStatus = pgEnum("delivery_deliverable_status", ["planned", "in_progress", "in_review", "approved", "delivered", "cancelled"])
 export const deliveryResourceKind = pgEnum("delivery_resource_kind", ["file", "link"])
+export const clientDocumentType = pgEnum("client_document_type", ["brief", "proposal", "contract", "brand_asset", "content", "design", "staging_link", "launch_checklist", "handoff", "report", "technical", "other"])
+export const clientDocumentSource = pgEnum("client_document_source", ["upload", "link"])
+export const clientDocumentStorageProvider = pgEnum("client_document_storage_provider", ["r2", "external"])
 export const deliveryDecisionStatus = pgEnum("delivery_decision_status", ["open", "resolved", "cancelled"])
 export const experienceEventName = pgEnum("experience_event_name", [
   "experience_choice_displayed",
@@ -148,6 +151,15 @@ export const portalDeliveryResources = pgTable("delivery_resources", {
   kind: deliveryResourceKind("kind").notNull(), title: text("title").notNull(), url: text("url").notNull(), visibility: requestMessageVisibility("visibility").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
 })
+
+export const portalClientDocuments = pgTable("client_documents", {
+  id: serial("id").primaryKey(), clientId: integer("client_id").notNull(), projectId: integer("project_id").notNull(), deliverableId: integer("deliverable_id"),
+  documentType: clientDocumentType("document_type").notNull(), source: clientDocumentSource("source").notNull(), title: text("title").notNull(), description: text("description"),
+  originalFilename: text("original_filename"), storageProvider: clientDocumentStorageProvider("storage_provider").notNull(), storageKey: text("storage_key").notNull(),
+  visibility: requestMessageVisibility("visibility").notNull(), version: integer("version").notNull(), checksumSha256: text("checksum_sha256"), mimeType: text("mime_type"), sizeBytes: integer("size_bytes"),
+  archivedAt: timestamp("archived_at", { withTimezone: true }), createdAt: timestamp("created_at", { withTimezone: true }).notNull(), updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+})
+export const portalClientDocumentAccessEvents = pgTable("client_document_access_events", { id: serial("id").primaryKey(), documentId: integer("document_id").notNull(), portalClientId: text("portal_client_id").notNull(), action: text("action").notNull(), createdAt: timestamp("created_at", { withTimezone: true }).notNull() })
 
 export const portalDeliveryDecisions = pgTable("delivery_decisions", {
   id: serial("id").primaryKey(), projectId: integer("project_id").notNull(), milestoneId: integer("milestone_id"), title: text("title").notNull(),

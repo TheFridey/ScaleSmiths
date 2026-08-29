@@ -79,6 +79,9 @@ export const deliveryProjectPhase = pgEnum("delivery_project_phase", ["discovery
 export const deliveryMilestoneStatus = pgEnum("delivery_milestone_status", ["planned", "active", "blocked", "completed", "skipped"])
 export const deliveryDeliverableStatus = pgEnum("delivery_deliverable_status", ["planned", "in_progress", "in_review", "approved", "delivered", "cancelled"])
 export const deliveryResourceKind = pgEnum("delivery_resource_kind", ["file", "link"])
+export const clientDocumentType = pgEnum("client_document_type", ["brief", "proposal", "contract", "brand_asset", "content", "design", "staging_link", "launch_checklist", "handoff", "report", "technical", "other"])
+export const clientDocumentSource = pgEnum("client_document_source", ["upload", "link"])
+export const clientDocumentStorageProvider = pgEnum("client_document_storage_provider", ["r2", "external"])
 export const deliveryDecisionStatus = pgEnum("delivery_decision_status", ["open", "resolved", "cancelled"])
 
 export type PublicClaimStatus = "draft" | "verified" | "expired" | "rejected"
@@ -504,6 +507,40 @@ export const deliveryResources = pgTable("delivery_resources", {
   index("delivery_resources_project_created_idx").on(table.projectId, table.createdAt),
   index("delivery_resources_deliverable_idx").on(table.deliverableId),
 ])
+
+export const clientDocuments = pgTable("client_documents", {
+  id: serial("id").primaryKey(),
+  clientId: integer("client_id").references(() => clients.id, { onDelete: "restrict" }).notNull(),
+  projectId: integer("project_id").references(() => deliveryProjects.id, { onDelete: "cascade" }).notNull(),
+  deliverableId: integer("deliverable_id").references(() => deliveryDeliverables.id, { onDelete: "set null" }),
+  documentType: clientDocumentType("document_type").notNull(),
+  source: clientDocumentSource("source").notNull(),
+  title: text("title").notNull(),
+  description: text("description"),
+  originalFilename: text("original_filename"),
+  storageProvider: clientDocumentStorageProvider("storage_provider").notNull(),
+  storageKey: text("storage_key").notNull(),
+  visibility: requestMessageVisibility("visibility").default("internal").notNull(),
+  uploadedBy: uuid("uploaded_by").references(() => adminUsers.id, { onDelete: "set null" }),
+  version: integer("version").default(1).notNull(),
+  checksumSha256: text("checksum_sha256"),
+  mimeType: text("mime_type"),
+  sizeBytes: integer("size_bytes"),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("client_documents_client_project_idx").on(table.clientId, table.projectId, table.createdAt),
+  index("client_documents_project_visibility_idx").on(table.projectId, table.visibility, table.archivedAt),
+  uniqueIndex("client_documents_storage_key_idx").on(table.storageProvider, table.storageKey),
+  check("client_documents_version_check", sql`${table.version} > 0`),
+  check("client_documents_size_check", sql`${table.sizeBytes} is null or ${table.sizeBytes} >= 0`),
+  check("client_documents_source_metadata_check", sql`(${table.source} = 'upload' and ${table.storageProvider} = 'r2' and ${table.originalFilename} is not null and ${table.checksumSha256} is not null and ${table.mimeType} is not null and ${table.sizeBytes} is not null) or (${table.source} = 'link' and ${table.storageProvider} = 'external' and ${table.checksumSha256} is null and ${table.sizeBytes} is null)`),
+])
+
+export const clientDocumentAccessEvents = pgTable("client_document_access_events", {
+  id: serial("id").primaryKey(), documentId: integer("document_id").references(() => clientDocuments.id, { onDelete: "cascade" }).notNull(), portalClientId: text("portal_client_id").notNull(), action: text("action").notNull(), createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [index("client_document_access_document_idx").on(table.documentId, table.createdAt)])
 
 export const deliveryDecisions = pgTable("delivery_decisions", {
   id: serial("id").primaryKey(),

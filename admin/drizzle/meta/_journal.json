@@ -372,6 +372,13 @@
       "when": 1788002306963,
       "tag": "0052_stiff_dazzler",
       "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1788019200000,
+      "tag": "0053_client_documents",
+      "breakpoints": true
     }
   ]
 }

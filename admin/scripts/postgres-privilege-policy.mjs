@@ -19,6 +19,8 @@ export const WEB_TABLE_GRANTS = new Map([
   ["delivery_milestones", ["SELECT"]],
   ["delivery_deliverables", ["SELECT"]],
   ["delivery_resources", ["SELECT"]],
+  ["client_documents", ["SELECT"]],
+  ["client_document_access_events", ["INSERT"]],
   ["delivery_decisions", ["SELECT"]],
   ["delivery_project_progress", ["SELECT"]],
   // Durable counters for the public rate limits. Web upserts its own counters

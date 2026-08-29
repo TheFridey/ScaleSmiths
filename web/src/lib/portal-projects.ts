@@ -1,6 +1,6 @@
 import "server-only"
 
-import { and, asc, eq, inArray, ne } from "drizzle-orm"
+import { and, asc, eq, inArray, isNull, ne } from "drizzle-orm"
 import { db } from "./db"
 import {
   invoicePortalClients,
@@ -9,7 +9,7 @@ import {
   portalDeliveryMilestones,
   portalDeliveryProjects,
   portalDeliveryProjectProgress,
-  portalDeliveryResources,
+  portalClientDocuments,
 } from "./schema"
 
 export async function listPortalProjectProgress(portalClientId: string) {
@@ -36,8 +36,8 @@ export async function listPortalProjectProgress(portalClientId: string) {
       .from(portalDeliveryMilestones).where(and(inArray(portalDeliveryMilestones.projectId, projectIds), eq(portalDeliveryMilestones.clientVisible, true))).orderBy(asc(portalDeliveryMilestones.position)),
     db.select({ id: portalDeliveryDeliverables.id, projectId: portalDeliveryDeliverables.projectId, milestoneId: portalDeliveryDeliverables.milestoneId, title: portalDeliveryDeliverables.title, description: portalDeliveryDeliverables.description, status: portalDeliveryDeliverables.status, targetDate: portalDeliveryDeliverables.targetDate, position: portalDeliveryDeliverables.position })
       .from(portalDeliveryDeliverables).where(and(inArray(portalDeliveryDeliverables.projectId, projectIds), eq(portalDeliveryDeliverables.clientVisible, true))).orderBy(asc(portalDeliveryDeliverables.position)),
-    db.select({ id: portalDeliveryResources.id, projectId: portalDeliveryResources.projectId, deliverableId: portalDeliveryResources.deliverableId, kind: portalDeliveryResources.kind, title: portalDeliveryResources.title, url: portalDeliveryResources.url, createdAt: portalDeliveryResources.createdAt })
-      .from(portalDeliveryResources).where(and(inArray(portalDeliveryResources.projectId, projectIds), eq(portalDeliveryResources.visibility, "client_visible"))).orderBy(asc(portalDeliveryResources.createdAt)),
+    db.select({ id: portalClientDocuments.id, projectId: portalClientDocuments.projectId, deliverableId: portalClientDocuments.deliverableId, source: portalClientDocuments.source, documentType: portalClientDocuments.documentType, title: portalClientDocuments.title, description: portalClientDocuments.description, originalFilename: portalClientDocuments.originalFilename, mimeType: portalClientDocuments.mimeType, sizeBytes: portalClientDocuments.sizeBytes, version: portalClientDocuments.version, createdAt: portalClientDocuments.createdAt })
+      .from(portalClientDocuments).where(and(inArray(portalClientDocuments.projectId, projectIds), eq(portalClientDocuments.visibility, "client_visible"), isNull(portalClientDocuments.archivedAt))).orderBy(asc(portalClientDocuments.createdAt)),
     db.select({ id: portalDeliveryDecisions.id, projectId: portalDeliveryDecisions.projectId, milestoneId: portalDeliveryDecisions.milestoneId, title: portalDeliveryDecisions.title, description: portalDeliveryDecisions.description, status: portalDeliveryDecisions.status, requestedFrom: portalDeliveryDecisions.requestedFrom, targetDate: portalDeliveryDecisions.targetDate, resolution: portalDeliveryDecisions.resolution, resolvedAt: portalDeliveryDecisions.resolvedAt })
       .from(portalDeliveryDecisions).where(and(inArray(portalDeliveryDecisions.projectId, projectIds), eq(portalDeliveryDecisions.clientVisible, true))).orderBy(asc(portalDeliveryDecisions.createdAt)),
   ])

@@ -6,6 +6,7 @@ import {
   adminUsers,
   clientTimelineEvents,
   clients,
+  clientDocuments,
   deliveryDecisions,
   deliveryDeliverables,
   deliveryMilestones,
@@ -81,7 +82,7 @@ export async function getDeliveryProjectForAdmin(projectId: number) {
   const [milestones, deliverables, resources, decisions, audit] = await Promise.all([
     db.select().from(deliveryMilestones).where(eq(deliveryMilestones.projectId, projectId)).orderBy(asc(deliveryMilestones.position), asc(deliveryMilestones.id)),
     db.select().from(deliveryDeliverables).where(eq(deliveryDeliverables.projectId, projectId)).orderBy(asc(deliveryDeliverables.position), asc(deliveryDeliverables.id)),
-    db.select().from(deliveryResources).where(eq(deliveryResources.projectId, projectId)).orderBy(desc(deliveryResources.createdAt)),
+    db.select().from(clientDocuments).where(eq(clientDocuments.projectId, projectId)).orderBy(desc(clientDocuments.createdAt)),
     db.select().from(deliveryDecisions).where(eq(deliveryDecisions.projectId, projectId)).orderBy(desc(deliveryDecisions.createdAt)),
     db.select().from(deliveryProjectAuditLogs).where(eq(deliveryProjectAuditLogs.projectId, projectId)).orderBy(desc(deliveryProjectAuditLogs.createdAt)).limit(100),
   ])
@@ -94,6 +95,11 @@ export async function getDeliveryProjectLinkForForge(forgeProjectId: number) {
   const [project] = await db.select({ id: deliveryProjects.id, name: deliveryProjects.name, status: deliveryProjects.status, currentPhase: deliveryProjects.currentPhase })
     .from(deliveryProjects).where(eq(deliveryProjects.forgeProjectId, forgeProjectId)).limit(1)
   return project ?? null
+}
+export async function getDeliveryProjectStorageScope(projectId: number) {
+  const [project] = await db.select({ id: deliveryProjects.id, clientId: deliveryProjects.clientId }).from(deliveryProjects).where(eq(deliveryProjects.id, projectId)).limit(1)
+  if (!project) throw new DeliveryProjectError("Project not found.", 404)
+  return project
 }
 
 export async function createDeliveryProject(input: Record<string, unknown>, actor: DeliveryActor) {
@@ -285,6 +291,32 @@ export async function createDeliveryResource(projectId: number, input: Record<st
     await tx.insert(deliveryProjectAuditLogs).values({ projectId, actorUserId: actor.id, action: "resource_added", metadataJson: { resourceId: resource.id, kind: resource.kind, visibility: resource.visibility } })
     return resource
   })
+}
+
+export async function createClientDocument(projectId: number, input: { documentType: "brief" | "proposal" | "contract" | "brand_asset" | "content" | "design" | "staging_link" | "launch_checklist" | "handoff" | "report" | "technical" | "other"; title: string; description?: string | null; visibility: "internal" | "client_visible"; source: "upload" | "link"; originalFilename?: string; storageKey: string; checksumSha256?: string; mimeType?: string; sizeBytes?: number }, actor: DeliveryActor) {
+  return db.transaction(async (tx) => {
+    const project = await requireProject(tx, projectId)
+    const [document] = await tx.insert(clientDocuments).values({ clientId: project.clientId, projectId, documentType: input.documentType, source: input.source, title: requiredText(input.title, "Document title"), description: optionalText(input.description, 2000), originalFilename: input.originalFilename ?? null, storageProvider: input.source === "upload" ? "r2" : "external", storageKey: input.storageKey, visibility: input.visibility, uploadedBy: actor.id, checksumSha256: input.checksumSha256 ?? null, mimeType: input.mimeType ?? null, sizeBytes: input.sizeBytes ?? null }).returning()
+    await tx.insert(deliveryProjectAuditLogs).values({ projectId, actorUserId: actor.id, action: "document_created", metadataJson: { documentId: document.id, source: document.source, type: document.documentType, visibility: document.visibility, version: document.version, checksumSha256: document.checksumSha256 } })
+    return document
+  })
+}
+
+export async function updateClientDocument(projectId: number, documentId: number, input: Record<string, unknown>, actor: DeliveryActor) {
+  return db.transaction(async (tx) => {
+    await requireProject(tx, projectId)
+    const [current] = await tx.select().from(clientDocuments).where(and(eq(clientDocuments.id, documentId), eq(clientDocuments.projectId, projectId))).limit(1)
+    if (!current) throw new DeliveryProjectError("Document not found.", 404)
+    const [updated] = await tx.update(clientDocuments).set({ title: input.title === undefined ? current.title : requiredText(input.title, "Document title"), description: input.description === undefined ? current.description : optionalText(input.description, 2000), visibility: input.visibility === undefined ? current.visibility : input.visibility === "client_visible" ? "client_visible" : "internal", archivedAt: input.archived === undefined ? current.archivedAt : booleanValue(input.archived, false) ? current.archivedAt ?? new Date() : null, updatedAt: new Date() }).where(and(eq(clientDocuments.id, documentId), eq(clientDocuments.projectId, projectId))).returning()
+    await tx.insert(deliveryProjectAuditLogs).values({ projectId, actorUserId: actor.id, action: "document_updated", metadataJson: { documentId, changes: changedFields(current, updated, ["title", "description", "visibility", "archivedAt"]) } })
+    return updated
+  })
+}
+
+export async function getAdminDocument(projectId: number, documentId: number) {
+  const [document] = await db.select().from(clientDocuments).where(and(eq(clientDocuments.id, documentId), eq(clientDocuments.projectId, projectId))).limit(1)
+  if (!document) throw new DeliveryProjectError("Document not found.", 404)
+  return document
 }
 
 export async function createDeliveryDecision(projectId: number, input: Record<string, unknown>, actor: DeliveryActor) {

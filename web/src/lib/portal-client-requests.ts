@@ -1,7 +1,7 @@
 import "server-only"
 
-import { and, asc, desc, eq } from "drizzle-orm"
-import { serializeClientPortalMessage, serializeClientPortalRequest } from "@/lib/client-requests"
+import { and, asc, desc, eq, notInArray } from "drizzle-orm"
+import { serializeClientPortalMessage, serializeClientPortalRequest, type ClientRequestStatus } from "@/lib/client-requests"
 import { serializeClientPortalTimelineEvent } from "@/lib/client-timeline"
 import { db } from "@/lib/db"
 import { clientRequestMessages, clientRequests, clientTimelineEvents } from "@/lib/schema"
@@ -57,4 +57,89 @@ export async function getPortalRequestThread(portalClientId: string, requestId: 
     messages: messages.map(serializeClientPortalMessage).filter((row) => row !== null),
     timeline: timeline.map(serializeClientPortalTimelineEvent).filter((row) => row !== null),
   }
+}
+
+const TERMINAL_REQUEST_STATUSES: ClientRequestStatus[] = ["completed", "cancelled"]
+
+export function isTerminalRequestStatus(status: ClientRequestStatus): boolean {
+  return TERMINAL_REQUEST_STATUSES.includes(status)
+}
+
+export async function resolveGeneralMessageThreadId(portalClientId: string, now = new Date()): Promise<{ requestId: number; created: boolean }> {
+  const [existing] = await db
+    .select({ id: clientRequests.id })
+    .from(clientRequests)
+    .where(and(
+      eq(clientRequests.clientId, portalClientId),
+      eq(clientRequests.category, "general_support"),
+      notInArray(clientRequests.status, TERMINAL_REQUEST_STATUSES),
+    ))
+    .orderBy(desc(clientRequests.createdAt))
+    .limit(1)
+
+  if (existing) return { requestId: existing.id, created: false }
+
+  const requestId = await db.transaction(async (tx) => {
+    const [requestRow] = await tx
+      .insert(clientRequests)
+      .values({
+        clientId: portalClientId,
+        title: "Portal messages",
+        description: "Direct messages between this client and ScaleSmiths.",
+        category: "general_support",
+        priority: "medium",
+        status: "new",
+        updatedAt: now,
+        createdAt: now,
+      })
+      .returning({ id: clientRequests.id })
+
+    await tx.insert(clientTimelineEvents).values({
+      clientId: portalClientId,
+      requestId: requestRow.id,
+      type: "messages_thread_opened",
+      title: "Message thread started",
+      description: "A new message thread was started in the ScaleSmiths portal.",
+      visibility: "client_visible",
+      createdBy: "Client",
+      createdAt: now,
+    })
+
+    return requestRow.id
+  })
+
+  return { requestId, created: true }
+}
+
+export async function appendClientMessage(portalClientId: string, requestId: number, body: string, now = new Date()) {
+  const [existing] = await db
+    .select({ id: clientRequests.id, title: clientRequests.title })
+    .from(clientRequests)
+    .where(and(eq(clientRequests.id, requestId), eq(clientRequests.clientId, portalClientId)))
+    .limit(1)
+
+  if (!existing) return null
+
+  const [inserted] = await db.transaction(async (tx) => {
+    const message = await tx
+      .insert(clientRequestMessages)
+      .values({
+        requestId: existing.id,
+        senderType: "client",
+        senderName: "Client",
+        body,
+        visibility: "client_visible",
+        createdAt: now,
+      })
+      .returning()
+
+    await tx.update(clientRequests).set({ updatedAt: now }).where(eq(clientRequests.id, existing.id))
+
+    return message
+  })
+
+  const serialized = serializeClientPortalMessage(inserted)
+  if (!serialized) return null
+
+  return { message: serialized, requestTitle: existing.title }
 }

@@ -48,6 +48,7 @@ export interface ClientPortalRequest {
   affectedUrl: string | null
   createdAt: Date
   updatedAt: Date
+  clientLastReadAt: Date | null
 }
 
 export interface ClientRequestMessage {
@@ -70,7 +71,7 @@ export interface ClientPortalRequestMessage {
   createdAt: Date
 }
 
-type ClientPortalRequestWithPossibleAdminFields = ClientPortalRequest & Partial<{
+type ClientPortalRequestWithPossibleAdminFields = Omit<ClientPortalRequest, "clientLastReadAt"> & Partial<{
   attachmentMetadata: unknown
   internalNotes: unknown
   forgeSummary: unknown
@@ -78,6 +79,7 @@ type ClientPortalRequestWithPossibleAdminFields = ClientPortalRequest & Partial<
   forgeSuggestedReply: unknown
   pageUrl: unknown
   completedAt: unknown
+  clientLastReadAt: unknown
 }>
 
 type ParseResult<T> = { ok: true; data: T } | { ok: false; error: string }
@@ -155,6 +157,7 @@ export function serializeClientPortalRequest(input: ClientPortalRequestWithPossi
     affectedUrl: input.affectedUrl,
     createdAt: input.createdAt,
     updatedAt: input.updatedAt,
+    clientLastReadAt: (input as { clientLastReadAt?: Date | null }).clientLastReadAt ?? null,
   }
 }
 

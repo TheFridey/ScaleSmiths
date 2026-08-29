@@ -1,16 +1,15 @@
 import {
   FileText,
-  MessageSquare,
   ExternalLink,
 } from "lucide-react"
 import Link from "next/link"
 import { PortalNav } from "@/components/portal/PortalNav"
-import { PortalMessageComposer } from "@/components/portal/PortalMessageComposer"
+import { PortalMessagesPanel } from "@/components/portal/PortalMessageComposer"
 import { PortalOperatingHub } from "@/components/portal/PortalOperatingHub"
 import { PortalRequestsPanel } from "@/components/portal/PortalRequestsPanel"
 import { formatReportPeriod } from "@/lib/monthly-reports"
 import { requireClientPortalAccess } from "@/lib/portal-session"
-import { listRecentPortalThreadMessages } from "@/lib/portal-client-requests"
+import { getPortalGeneralMessageThread, listRecentPortalThreadMessages } from "@/lib/portal-client-requests"
 import { listPortalInvoices } from "@/lib/portal-invoices"
 import { INVOICE_STATUS_LABELS } from "@/lib/invoice-status"
 import { loadPortalClientProfile } from "@/lib/portal-client-profile"
@@ -67,7 +66,7 @@ export default async function PortalClientPage({ params, searchParams }: PortalP
         {tab === "files" ? (
           <DocumentsTab clientId={portalClientId} />
         ) : tab === "messages" ? (
-          <MessagesTab clientId={portalClientId} clientName={profile.companyName} />
+          <MessagesTab clientId={portalClientId} />
         ) : tab === "board" ? (
           <ProgressTab clientId={portalClientId} />
         ) : tab === "requests" ? (
@@ -147,22 +146,14 @@ async function DocumentsTab({ clientId }: { clientId: string }) {
   )
 }
 
-function MessagesTab({ clientId, clientName }: { clientId: string; clientName: string }) {
+async function MessagesTab({ clientId }: { clientId: string }) {
+  const thread = await getPortalGeneralMessageThread(clientId)
   return (
-    <div className="grid gap-4 lg:grid-cols-[1fr_0.85fr]">
-      <PortalMessageComposer clientName={clientName} clientId={clientId} />
-      <section className="rounded-2xl border border-b1 bg-s1 p-6">
-        <MessageSquare size={18} className="mb-4 text-acc" aria-hidden="true" />
-        <h2 className="font-syne text-xl font-bold">Message history</h2>
-        <p className="mt-3 font-dm text-sm leading-relaxed text-t2">
-          Structured project messages will appear here once the workspace is connected to live project updates. For now, the message composer opens a pre-filled email so nothing gets lost.
-        </p>
-        <div className="mt-6 rounded-xl border border-b1 bg-s2 p-4">
-          <div className="font-dm text-xs text-t3">No published messages yet</div>
-          <div className="mt-1 font-dm text-sm text-t2">Send questions, approvals, or change notes whenever you need.</div>
-        </div>
-      </section>
-    </div>
+    <PortalMessagesPanel
+      clientId={clientId}
+      initialRequest={thread?.request ?? null}
+      initialMessages={thread?.messages ?? []}
+    />
   )
 }
 

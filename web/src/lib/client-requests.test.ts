@@ -86,6 +86,7 @@ describe("client request helpers", () => {
       affectedUrl: "https://example.com/contact",
       createdAt,
       updatedAt,
+      clientLastReadAt: null,
     })
     expect(serialized).not.toHaveProperty("internalNotes")
     expect(serialized).not.toHaveProperty("forgeSummary")

@@ -137,3 +137,27 @@ export async function appendClientMessage(portalClientId: string, requestId: num
 
   return { message: serialized, requestTitle: existing.title }
 }
+
+export async function getPortalGeneralMessageThread(portalClientId: string) {
+  const [existing] = await db
+    .select({ id: clientRequests.id })
+    .from(clientRequests)
+    .where(and(
+      eq(clientRequests.clientId, portalClientId),
+      eq(clientRequests.category, "general_support"),
+      notInArray(clientRequests.status, TERMINAL_REQUEST_STATUSES),
+    ))
+    .orderBy(desc(clientRequests.createdAt))
+    .limit(1)
+
+  if (!existing) return null
+
+  const thread = await getPortalRequestThread(portalClientId, existing.id)
+  if (!thread) return null
+
+  await db.update(clientRequests)
+    .set({ clientLastReadAt: new Date() })
+    .where(and(eq(clientRequests.id, existing.id), eq(clientRequests.clientId, portalClientId)))
+
+  return { request: thread.request, messages: thread.messages }
+}

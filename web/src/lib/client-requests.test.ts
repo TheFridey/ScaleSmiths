@@ -156,6 +156,7 @@ describe("client request helpers", () => {
       description: "Your request is now in progress.",
       createdBy: "ScaleSmiths",
       createdAt,
+      sourceDomain: null,
     })
 
     expect(serializeClientPortalTimelineEvent({

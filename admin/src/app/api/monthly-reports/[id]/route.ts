@@ -3,7 +3,8 @@ import { eq } from "drizzle-orm"
 import { auth } from "../../../../../auth"
 import { db } from "@/lib/db"
 import { formatReportPeriod, parseReportEditPayload } from "@/lib/monthly-reports"
-import { clientTimelineEvents, monthlyReports } from "@/lib/schema"
+import { clients, monthlyReports } from "@/lib/schema"
+import { recordClientActivity } from "@/lib/server/client-activity"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -54,18 +55,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         .set({ status: "published", publishedAt: existing.publishedAt ?? now, updatedAt: now })
         .where(eq(monthlyReports.id, existing.id))
         .returning()
-      const [createdTimelineEvent] = await tx
-        .insert(clientTimelineEvents)
-        .values({
-          clientId: existing.clientId,
-          type: "monthly_report_published",
-          title: "Monthly report published",
-          description: `${published.title} is now available in your client portal.`,
-          visibility: "client_visible",
-          createdBy: sessionActor(session),
-          createdAt: now,
-        })
-        .returning()
+      const [client] = await tx.select({ id: clients.id }).from(clients).where(eq(clients.portalClientId, existing.clientId)).limit(1)
+      if (!client) throw new Error("The report client is not linked to an internal client record.")
+      const createdTimelineEvent = await recordClientActivity(tx, { clientRecordId: client.id, portalClientId: existing.clientId, sourceDomain: "report", sourceReference: `report:${published.id}:published`, type: "monthly_report_published", title: "Monthly report published", description: `${published.title} is now available in your client portal.`, visibility: "client_visible", actor: { type: "admin", label: sessionActor(session) }, occurredAt: now, idempotencyKey: `report:${published.id}:published` })
 
       return { report: published, timelineEvent: createdTimelineEvent }
     })

@@ -14,6 +14,15 @@ export const CLIENT_TIMELINE_EVENT_TYPES = [
   "project_milestone_changed",
   "project_decision_required",
   "project_decision_changed",
+  "project_created",
+  "project_completed",
+  "milestone_completed",
+  "deliverable_added",
+  "decision_recorded",
+  "invoice_issued",
+  "invoice_paid",
+  "staging_published",
+  "production_deployment_completed",
   "manual_update",
 ] as const
 

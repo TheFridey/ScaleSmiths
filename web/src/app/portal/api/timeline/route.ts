@@ -26,6 +26,9 @@ export async function GET(request: NextRequest) {
         description: clientTimelineEvents.description,
         visibility: clientTimelineEvents.visibility,
         createdBy: clientTimelineEvents.createdBy,
+        sourceDomain: clientTimelineEvents.sourceDomain,
+        actorLabel: clientTimelineEvents.actorLabel,
+        occurredAt: clientTimelineEvents.occurredAt,
         createdAt: clientTimelineEvents.createdAt,
       })
       .from(clientTimelineEvents)
@@ -33,7 +36,7 @@ export async function GET(request: NextRequest) {
         eq(clientTimelineEvents.clientId, session.clientId),
         eq(clientTimelineEvents.visibility, "client_visible"),
       ))
-      .orderBy(desc(clientTimelineEvents.createdAt), desc(clientTimelineEvents.id))
+      .orderBy(desc(clientTimelineEvents.occurredAt), desc(clientTimelineEvents.id))
       .limit(20)
 
     return NextResponse.json({

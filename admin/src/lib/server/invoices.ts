@@ -7,6 +7,7 @@ import { InvoiceDomainError, assertDraft, calculateInvoice, defaultInvoiceDates,
 import { buildInvoiceDocumentData, INVOICE_TEMPLATE_VERSION, paymentSnapshot, supplierSnapshot, validateDocumentIdentity } from "@/lib/invoice-document"
 import { clients, invoiceAuditLogs, invoiceCatalogueItems, invoiceItems, invoiceSupplierSettings, invoices } from "@/lib/schema"
 import { renderInvoicePdf } from "./invoice-pdf"
+import { recordClientActivity } from "./client-activity"
 
 type ItemPayload = Partial<InvoiceItemInput> & { catalogueItemId?: number | null }
 interface InvoicePayload { clientId?: unknown; invoiceDate?: unknown; dueDate?: unknown; internalNotes?: unknown; customerNotes?: unknown; items?: unknown }
@@ -71,6 +72,7 @@ export async function transitionInvoice(invoiceId: number, action: "issue" | "ma
     const [updated] = await tx.update(invoices).set({ status, ...timestamps, updatedAt: now }).where(and(eq(invoices.id, invoiceId), eq(invoices.status, current.status))).returning()
     if (!updated) throw new InvoiceDomainError("Invoice changed concurrently; reload and try again.", 409, "concurrent_change")
     await audit(tx, invoiceId, actorUserId, status === "paid" ? "invoice_marked_paid" : "invoice_voided")
+    if (status === "paid") await recordClientActivity(tx, { clientRecordId: updated.clientId, sourceDomain: "invoice", sourceReference: `invoice:${invoiceId}:paid`, type: "invoice_paid", title: `${updated.invoiceNumber} paid`, description: "Payment has been recorded for this invoice.", visibility: updated.portalPublishedAt ? "client_visible" : "internal", actor: { type: "admin", id: actorUserId, label: "ScaleSmiths" }, metadata: { invoiceNumber: updated.invoiceNumber }, occurredAt: now, idempotencyKey: `invoice:${invoiceId}:paid` })
     return loadInvoice(tx, invoiceId)
   })
 }
@@ -112,6 +114,7 @@ async function issueDraft(tx: AdminDatabaseTransaction, current: typeof invoices
   }).where(and(eq(invoices.id, current.id), eq(invoices.status, "draft"), sql`${invoices.invoiceNumber} is null`, sql`${invoices.sequenceNumber} is null`)).returning()
   if (!updated) throw new InvoiceDomainError("Invoice changed concurrently; reload and try again.", 409, "concurrent_change")
   await audit(tx, current.id, actorUserId, "invoice_issued", { invoiceNumber, documentTemplateVersion: INVOICE_TEMPLATE_VERSION })
+  await recordClientActivity(tx, { clientRecordId: current.clientId, sourceDomain: "invoice", sourceReference: `invoice:${current.id}:issued`, type: "invoice_issued", title: `${invoiceNumber} issued`, description: "A new invoice has been issued.", visibility: "internal", actor: { type: "admin", id: actorUserId, label: "ScaleSmiths" }, metadata: { invoiceNumber, total: updated.total, currency: updated.currency }, occurredAt: now, idempotencyKey: `invoice:${current.id}:issued` })
   return loadInvoice(tx, current.id)
 }
 

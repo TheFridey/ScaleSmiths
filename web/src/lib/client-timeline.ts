@@ -14,6 +14,15 @@ export const CLIENT_TIMELINE_EVENT_TYPES = [
   "project_milestone_changed",
   "project_decision_required",
   "project_decision_changed",
+  "project_created",
+  "project_completed",
+  "milestone_completed",
+  "deliverable_added",
+  "decision_recorded",
+  "invoice_issued",
+  "invoice_paid",
+  "staging_published",
+  "production_deployment_completed",
   "manual_update",
 ] as const
 
@@ -35,6 +44,9 @@ export interface ClientTimelineEvent {
   visibility: ClientTimelineVisibility
   createdBy: string
   createdAt: Date
+  sourceDomain?: string | null
+  actorLabel?: string | null
+  occurredAt?: Date
 }
 
 export interface ClientPortalTimelineEvent {
@@ -46,6 +58,7 @@ export interface ClientPortalTimelineEvent {
   description: string
   createdBy: string
   createdAt: Date
+  sourceDomain: string | null
 }
 
 export function serializeClientPortalTimelineEvent(input: ClientTimelineEvent): ClientPortalTimelineEvent | null {
@@ -58,8 +71,9 @@ export function serializeClientPortalTimelineEvent(input: ClientTimelineEvent): 
     type: input.type,
     title: input.title,
     description: input.description,
-    createdBy: input.createdBy,
-    createdAt: input.createdAt,
+    createdBy: input.actorLabel ?? input.createdBy,
+    createdAt: input.occurredAt ?? input.createdAt,
+    sourceDomain: input.sourceDomain ?? null,
   }
 }
 

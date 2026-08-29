@@ -408,20 +408,31 @@ export const clientRequestMessages = pgTable("client_request_messages", {
 export const clientTimelineEvents = pgTable("client_timeline_events", {
   id: serial("id").primaryKey(),
   clientId: text("client_id").notNull(),
+  clientRecordId: integer("client_record_id").references(() => clients.id, { onDelete: "restrict" }),
   requestId: integer("request_id").references(() => clientRequests.id, { onDelete: "cascade" }),
   projectId: integer("project_id"),
+  sourceDomain: text("source_domain"),
+  sourceReference: text("source_reference"),
   type: text("type").notNull(),
   title: text("title").notNull(),
   description: text("description").notNull(),
   visibility: requestMessageVisibility("visibility").default("client_visible").notNull(),
   createdBy: text("created_by").notNull(),
+  actorType: text("actor_type"),
+  actorId: text("actor_id"),
+  actorLabel: text("actor_label"),
+  metadataJson: jsonb("metadata_json").$type<Record<string, unknown>>().default({}).notNull(),
+  idempotencyKey: text("idempotency_key"),
+  occurredAt: timestamp("occurred_at", { withTimezone: true }).defaultNow().notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
   index("client_timeline_events_client_id_idx").on(table.clientId),
+  index("client_timeline_events_client_record_idx").on(table.clientRecordId, table.occurredAt),
   index("client_timeline_events_request_id_idx").on(table.requestId),
   index("client_timeline_events_project_id_idx").on(table.projectId),
   index("client_timeline_events_visibility_idx").on(table.visibility),
   index("client_timeline_events_created_at_idx").on(table.createdAt),
+  uniqueIndex("client_timeline_events_idempotency_idx").on(table.idempotencyKey),
 ])
 
 export const deliveryProjects = pgTable("delivery_projects", {

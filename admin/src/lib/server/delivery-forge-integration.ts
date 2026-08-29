@@ -2,9 +2,10 @@ import "server-only"
 import { and, eq } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { assertSafeClientStagingUrl, sanitiseInternalDeliveryEvent, type InternalDeliveryEvent } from "@/lib/delivery-projection"
-import { clientTimelineEvents, clients, deliveryForgeIntegrations, deliveryProjectAuditLogs, deliveryProjects, forgeDeploymentCandidates, forgeProjects, forgeRuns } from "@/lib/schema"
+import { clients, deliveryForgeIntegrations, deliveryProjectAuditLogs, deliveryProjects, forgeDeploymentCandidates, forgeProjects, forgeRuns } from "@/lib/schema"
 import { DeliveryProjectError } from "@/lib/delivery-projects"
 import type { DeliveryActor } from "./delivery-project-service"
+import { recordClientActivity } from "./client-activity"
 
 export interface InternalForgeLinkInput { forgeProjectId: number; latestRunId?: number | null; deploymentCandidateId?: number | null; internalReleaseId?: string | null; stagingDeploymentId?: string | null; productionDeploymentId?: string | null; internalBuildStatus?: string | null; internalQaStatus?: string | null; internalDeploymentStatus?: string | null }
 
@@ -41,7 +42,7 @@ export async function projectInternalForgeEvent(forgeProjectId: number, event: I
     await tx.update(deliveryForgeIntegrations).set({ latestRunId: options.latestRunId ?? integration.latestRunId, deploymentCandidateId: options.deploymentCandidateId ?? integration.deploymentCandidateId, internalBuildStatus: options.internalBuildStatus ?? integration.internalBuildStatus, internalQaStatus: options.internalQaStatus ?? integration.internalQaStatus, internalDeploymentStatus: options.internalDeploymentStatus ?? integration.internalDeploymentStatus, lastInternalEventAt: now, updatedAt: now }).where(eq(deliveryForgeIntegrations.projectId, project.id))
     await tx.update(deliveryProjects).set({ clientStatus: projection.status, clientNextStep: projection.nextStep, clientStagingUrl: stagingUrl ?? project.clientStagingUrl, clientStagingVisible: stagingUrl ? true : project.clientStagingVisible, updatedAt: now }).where(eq(deliveryProjects.id, project.id))
     await tx.insert(deliveryProjectAuditLogs).values({ projectId: project.id, actorUserId: actor.id ?? null, action: "forge_event_projected", metadataJson: { event, status: projection.status } })
-    if (project.clientVisible && (project.clientStatus !== projection.status || event === "staging_ready")) { const [client] = await tx.select({ portalClientId: clients.portalClientId }).from(clients).where(eq(clients.id, project.clientId)).limit(1); if (client?.portalClientId) await tx.insert(clientTimelineEvents).values({ clientId: client.portalClientId, projectId: project.id, type: `project_${projection.status}`, title: projection.title, description: projection.description, visibility: "client_visible", createdBy: "ScaleSmiths" }) }
+    if (project.clientVisible && (project.clientStatus !== projection.status || event === "staging_ready")) { const [client] = await tx.select({ portalClientId: clients.portalClientId }).from(clients).where(eq(clients.id, project.clientId)).limit(1); await recordClientActivity(tx, { clientRecordId: project.clientId, portalClientId: client?.portalClientId, projectId: project.id, sourceDomain: event === "staging_ready" || event === "production_deployed" ? "deployment" : "forge", sourceReference: `delivery-projection:${project.id}:${event}:${options.latestRunId ?? "none"}:${options.deploymentCandidateId ?? "none"}`, type: event === "staging_ready" ? "staging_published" : event === "production_deployed" ? "production_deployment_completed" : `project_${projection.status}`, title: projection.title, description: projection.description, visibility: "client_visible", actor: { type: "system", id: actor.id, label: "ScaleSmiths" }, metadata: { status: projection.status }, occurredAt: now, idempotencyKey: `delivery-projection:${project.id}:${event}:${options.latestRunId ?? "none"}:${options.deploymentCandidateId ?? "none"}` }) }
     return { projected: true as const, projectId: project.id, status: projection.status }
   })
 }

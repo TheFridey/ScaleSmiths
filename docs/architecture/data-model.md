@@ -46,7 +46,7 @@ erDiagram
 | `login_rate_limits` | Persistent login throttles | Declared by both apps |
 | `client_requests` | Portal support/change requests and Forge triage fields | Written by both apps |
 | `client_request_messages` | Client/admin/system thread, with visibility | Written/read by both apps |
-| `client_timeline_events` | Client-visible/internal operational timeline | Written/read by both apps; `project_id` is not a foreign key |
+| `client_timeline_events` | Curated client/project business activity timeline | Durable actor, source/reference, internal client ownership, visibility, structured metadata, occurrence time and idempotency key; written/read by both apps; `project_id` is a logical reference |
 | `monthly_reports` | Draft/published HTML reports and period metadata | Managed by admin; published records read by portal |
 | `public_claims` | Exact commercial/testimonial wording, review state, attribution, expiry and placement permissions | Managed by admin; never granted to web runtime |
 | `public_claim_evidence` | Private evidence description/reference separated from public wording | Admin-only; never selected into the public view |
@@ -72,6 +72,8 @@ Shared tables are duplicated in TypeScript rather than imported from one package
 - `delivery_resources`: HTTP(S) file/link references with explicit internal or client-visible publication state.
 - `delivery_decisions`: open/resolved/cancelled choices required from a named party; client visibility is explicit and resolution is lifecycle-validated.
 - `delivery_project_audit_logs`: append-only material project, milestone, deliverable, resource and decision changes.
+
+`client_timeline_events` is deliberately not an audit-log mirror. Domain services emit only meaningful business events through the client-activity recorder, with a stable source reference and unique idempotency key so retries do not duplicate the feed. Admin views may read both visibility levels; portal queries require the authenticated portal client scope and `client_visible` visibility. Operational, security and Forge detail remains in its owning audit tables.
 
 ## Forge tables
 

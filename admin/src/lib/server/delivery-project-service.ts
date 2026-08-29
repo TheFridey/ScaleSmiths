@@ -20,6 +20,7 @@ import {
   forgeRuns,
 } from "@/lib/schema"
 import { assertSafeClientStagingUrl, CLIENT_DELIVERY_STATUSES } from "@/lib/delivery-projection"
+import { recordClientActivity } from "@/lib/server/client-activity"
 import {
   assertMilestoneTransition,
   assertDeliverableTransition,
@@ -82,17 +83,18 @@ export async function getDeliveryProjectForAdmin(projectId: number) {
     .where(eq(deliveryProjects.id, projectId)).limit(1)
   if (!row) throw new DeliveryProjectError("Project not found.", 404)
 
-  const [milestones, deliverables, resources, decisions, audit, forgeIntegration] = await Promise.all([
+  const [milestones, deliverables, resources, decisions, activity, audit, forgeIntegration] = await Promise.all([
     db.select().from(deliveryMilestones).where(eq(deliveryMilestones.projectId, projectId)).orderBy(asc(deliveryMilestones.position), asc(deliveryMilestones.id)),
     db.select().from(deliveryDeliverables).where(eq(deliveryDeliverables.projectId, projectId)).orderBy(asc(deliveryDeliverables.position), asc(deliveryDeliverables.id)),
     db.select().from(clientDocuments).where(eq(clientDocuments.projectId, projectId)).orderBy(desc(clientDocuments.createdAt)),
     db.select().from(deliveryDecisions).where(eq(deliveryDecisions.projectId, projectId)).orderBy(desc(deliveryDecisions.createdAt)),
+    db.select().from(clientTimelineEvents).where(and(eq(clientTimelineEvents.clientRecordId, row.project.clientId), eq(clientTimelineEvents.projectId, projectId))).orderBy(desc(clientTimelineEvents.occurredAt), desc(clientTimelineEvents.id)).limit(100),
     db.select().from(deliveryProjectAuditLogs).where(eq(deliveryProjectAuditLogs.projectId, projectId)).orderBy(desc(deliveryProjectAuditLogs.createdAt)).limit(100),
     db.select({ integration: deliveryForgeIntegrations, runStatus: forgeRuns.status }).from(deliveryForgeIntegrations).leftJoin(forgeRuns, eq(deliveryForgeIntegrations.latestRunId, forgeRuns.id)).where(eq(deliveryForgeIntegrations.projectId, projectId)).limit(1),
   ])
 
   const [progressRow] = await db.select({ progress: deliveryProjectProgress.progress }).from(deliveryProjectProgress).where(eq(deliveryProjectProgress.projectId, projectId)).limit(1)
-  return { ...row, forgeIntegration: forgeIntegration[0] ?? null, progress: progressRow?.progress ?? calculateProjectProgress(milestones), milestones, deliverables, resources, decisions, audit }
+  return { ...row, forgeIntegration: forgeIntegration[0] ?? null, progress: progressRow?.progress ?? calculateProjectProgress(milestones), milestones, deliverables, resources, decisions, activity, audit }
 }
 
 export async function getDeliveryProjectLinkForForge(forgeProjectId: number) {
@@ -135,7 +137,8 @@ export async function createDeliveryProject(input: Record<string, unknown>, acto
     const [project] = await tx.insert(deliveryProjects).values(values).returning()
     await syncForgeIntegration(tx, project.id, values.forgeProjectId, values.deploymentCandidateId)
     await tx.insert(deliveryProjectAuditLogs).values({ projectId: project.id, actorUserId: actor.id, action: "project_created", metadataJson: { clientId, phase: project.currentPhase, clientVisible: project.clientVisible } })
-    if (project.clientVisible) await publishTimeline(tx, project, actor, "project_published", project.name, project.summary ?? "A new delivery project has been published.")
+    await publishTimeline(tx, project, actor, "project", `project:${project.id}`, "project_created", "Project created", `${project.name} was added to the delivery workspace.`, "internal")
+    if (project.clientVisible) await publishTimeline(tx, project, actor, "project", `project:${project.id}:published`, "project_published", project.name, project.summary ?? "A new delivery project has been published.")
     return project
   })
 }
@@ -189,9 +192,9 @@ export async function updateDeliveryProject(projectId: number, input: Record<str
     const changes = changedFields(current, updated, ["name", "summary", "internalNotes", "clientVisible", "status", "currentPhase", "clientStatus", "clientNextStep", "clientStagingUrl", "clientStagingVisible", "ownerUserId", "targetStartDate", "targetEndDate", "forgeProjectId", "deploymentCandidateId"])
     if (changes.length) await tx.insert(deliveryProjectAuditLogs).values({ projectId, actorUserId: actor.id, action: "project_updated", metadataJson: { changes } })
     if (current.status !== status || current.currentPhase !== currentPhase) {
-      await publishTimeline(tx, updated, actor, "project_status_changed", `${updated.name}: ${humanise(currentPhase)}`, `Project is ${humanise(status)} in the ${humanise(currentPhase)} phase.`)
+      await publishTimeline(tx, updated, actor, "project", `project:${projectId}:status:${status}:${currentPhase}`, status === "completed" ? "project_completed" : "project_status_changed", status === "completed" ? `${updated.name} completed` : `${updated.name}: ${humanise(currentPhase)}`, status === "completed" ? "This project has been completed." : `Project is ${humanise(status)} in the ${humanise(currentPhase)} phase.`)
     } else if (!current.clientVisible && updated.clientVisible) {
-      await publishTimeline(tx, updated, actor, "project_published", updated.name, updated.summary ?? "This delivery project is now available in your portal.")
+      await publishTimeline(tx, updated, actor, "project", `project:${projectId}:published`, "project_published", updated.name, updated.summary ?? "This delivery project is now available in your portal.")
     }
     return updated
   })
@@ -214,7 +217,7 @@ export async function createDeliveryMilestone(projectId: number, input: Record<s
       completedAt: null,
     }).returning()
     await tx.insert(deliveryProjectAuditLogs).values({ projectId, actorUserId: actor.id, action: "milestone_created", metadataJson: { milestoneId: milestone.id, status, clientVisible: milestone.clientVisible } })
-    if (milestone.clientVisible) await publishTimeline(tx, project, actor, "project_milestone_created", milestone.title, milestone.description ?? "A new project milestone has been published.")
+    if (milestone.clientVisible) await publishTimeline(tx, project, actor, "project", `milestone:${milestone.id}:created`, "project_milestone_created", milestone.title, milestone.description ?? "A new project milestone has been published.")
     return milestone
   })
 }
@@ -240,7 +243,7 @@ export async function updateDeliveryMilestone(projectId: number, milestoneId: nu
     }).where(eq(deliveryMilestones.id, milestoneId)).returning()
     await tx.insert(deliveryProjectAuditLogs).values({ projectId, actorUserId: actor.id, action: "milestone_updated", metadataJson: { milestoneId, fromStatus: current.status, toStatus: status, clientVisible: updated.clientVisible } })
     if (updated.clientVisible && (current.status !== status || !current.clientVisible)) {
-      await publishTimeline(tx, project, actor, "project_milestone_changed", updated.title, `Milestone is now ${humanise(status)}.`)
+      await publishTimeline(tx, project, actor, "project", `milestone:${milestoneId}:status:${status}`, status === "completed" ? "milestone_completed" : "project_milestone_changed", updated.title, `Milestone is now ${humanise(status)}.`)
     }
     return updated
   })
@@ -262,6 +265,7 @@ export async function createDeliveryDeliverable(projectId: number, input: Record
       completedAt: null,
     }).returning()
     await tx.insert(deliveryProjectAuditLogs).values({ projectId, actorUserId: actor.id, action: "deliverable_created", metadataJson: { deliverableId: deliverable.id, milestoneId, status } })
+    await publishTimeline(tx, await requireProject(tx, projectId), actor, "project", `deliverable:${deliverable.id}:created`, "deliverable_added", deliverable.title, deliverable.description ?? "A project deliverable was added.", deliverable.clientVisible ? "client_visible" : "internal")
     return deliverable
   })
 }
@@ -349,7 +353,7 @@ export async function createDeliveryDecision(projectId: number, input: Record<st
       requestedFrom: optionalText(input.requestedFrom, 180), targetDate: optionalDate(input.targetDate, "Target date"),
     }).returning()
     await tx.insert(deliveryProjectAuditLogs).values({ projectId, actorUserId: actor.id, action: "decision_requested", metadataJson: { decisionId: decision.id, clientVisible: decision.clientVisible } })
-    if (decision.clientVisible) await publishTimeline(tx, project, actor, "project_decision_required", decision.title, decision.description ?? "A decision is required to keep delivery moving.")
+    if (decision.clientVisible) await publishTimeline(tx, project, actor, "decision", `decision:${decision.id}:opened`, "project_decision_required", decision.title, decision.description ?? "A decision is required to keep delivery moving.")
     return decision
   })
 }
@@ -374,7 +378,7 @@ export async function updateDeliveryDecision(projectId: number, decisionId: numb
       targetDate: input.targetDate === undefined ? current.targetDate : optionalDate(input.targetDate, "Target date"), updatedAt: new Date(),
     }).where(eq(deliveryDecisions.id, decisionId)).returning()
     await tx.insert(deliveryProjectAuditLogs).values({ projectId, actorUserId: actor.id, action: "decision_updated", metadataJson: { decisionId, fromStatus: current.status, toStatus: status } })
-    if (updated.clientVisible && current.status !== status) await publishTimeline(tx, project, actor, "project_decision_changed", updated.title, status === "resolved" ? "Decision resolved." : "Decision cancelled.")
+    if (updated.clientVisible && current.status !== status) await publishTimeline(tx, project, actor, "decision", `decision:${decisionId}:status:${status}`, status === "resolved" ? "decision_recorded" : "project_decision_changed", updated.title, status === "resolved" ? "Decision resolved." : "Decision cancelled.")
     return updated
   })
 }
@@ -417,10 +421,9 @@ async function syncForgeIntegration(tx: Parameters<Parameters<typeof db.transact
   await tx.insert(deliveryForgeIntegrations).values({ projectId, forgeProjectId, deploymentCandidateId, updatedAt: now }).onConflictDoUpdate({ target: deliveryForgeIntegrations.projectId, set: { forgeProjectId, deploymentCandidateId, updatedAt: now } })
 }
 
-async function publishTimeline(tx: Parameters<Parameters<typeof db.transaction>[0]>[0], project: { id: number; clientId: number }, actor: DeliveryActor, type: string, title: string, description: string) {
+async function publishTimeline(tx: Parameters<Parameters<typeof db.transaction>[0]>[0], project: { id: number; clientId: number }, actor: DeliveryActor, sourceDomain: "project" | "decision", sourceReference: string, type: string, title: string, description: string, visibility: "internal" | "client_visible" = "client_visible") {
   const [client] = await tx.select({ portalClientId: clients.portalClientId }).from(clients).where(eq(clients.id, project.clientId)).limit(1)
-  if (!client?.portalClientId) return
-  await tx.insert(clientTimelineEvents).values({ clientId: client.portalClientId, projectId: project.id, type, title, description, visibility: "client_visible", createdBy: actor.email ?? actor.name ?? actor.id })
+  await recordClientActivity(tx, { clientRecordId: project.clientId, portalClientId: client?.portalClientId, projectId: project.id, sourceDomain, sourceReference, type, title, description, visibility, actor: { type: "admin", id: actor.id, label: actor.name ?? actor.email ?? "ScaleSmiths" }, idempotencyKey: `${sourceReference}:${type}` })
 }
 
 function assertDateOrder(start: Date | null, end: Date | null) {

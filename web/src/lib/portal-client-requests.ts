@@ -44,11 +44,12 @@ export async function getPortalRequestThread(portalClientId: string, requestId: 
       requestId: clientTimelineEvents.requestId, projectId: clientTimelineEvents.projectId,
       type: clientTimelineEvents.type, title: clientTimelineEvents.title,
       description: clientTimelineEvents.description, visibility: clientTimelineEvents.visibility,
-      createdBy: clientTimelineEvents.createdBy, createdAt: clientTimelineEvents.createdAt,
+      createdBy: clientTimelineEvents.createdBy, sourceDomain: clientTimelineEvents.sourceDomain,
+      actorLabel: clientTimelineEvents.actorLabel, occurredAt: clientTimelineEvents.occurredAt, createdAt: clientTimelineEvents.createdAt,
     }).from(clientTimelineEvents)
       .innerJoin(clientRequests, eq(clientTimelineEvents.requestId, clientRequests.id))
       .where(and(eq(clientRequests.id, requestId), eq(clientRequests.clientId, portalClientId), eq(clientTimelineEvents.visibility, "client_visible")))
-      .orderBy(asc(clientTimelineEvents.createdAt), asc(clientTimelineEvents.id)),
+      .orderBy(asc(clientTimelineEvents.occurredAt), asc(clientTimelineEvents.id)),
   ])
   const request = requests[0]
   if (!request) return null

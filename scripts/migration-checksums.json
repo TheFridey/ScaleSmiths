@@ -494,6 +494,12 @@
       "sha256": "13fda560fd2a89787cd166944395d511bfe34b332998188543921e01a242f3a4",
       "lifecycle": "forward",
       "reason": "Adds an internal-only Forge delivery adapter and a sanitised business-level client project status projection without exposing Forge identifiers or operations to the portal."
+    },
+    {
+      "path": "web/drizzle/0018_unified_client_activity.sql",
+      "sha256": "d0fd1b3a0b2f6decddaad47f1b181dd062b457e0cd3f2f9f1fc9bd5bc422a42c",
+      "lifecycle": "forward",
+      "reason": "Extends the durable client timeline with internal client ownership, source references, actors, structured metadata, occurrence time, and retry-safe idempotency keys."
     }
   ],
   "journals": {
@@ -556,6 +562,13 @@
           "version": "7",
           "when": 1788002554921,
           "tag": "0017_client_request_read_state",
+          "breakpoints": true
+        },
+        {
+          "idx": 18,
+          "version": "7",
+          "when": 1788192000000,
+          "tag": "0018_unified_client_activity",
           "breakpoints": true
         }
       ]

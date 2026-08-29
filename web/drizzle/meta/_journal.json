@@ -127,6 +127,13 @@
       "when": 1788002554921,
       "tag": "0017_client_request_read_state",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1788192000000,
+      "tag": "0018_unified_client_activity",
+      "breakpoints": true
     }
   ]
 }

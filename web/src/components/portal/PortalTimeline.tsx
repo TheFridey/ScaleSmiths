@@ -21,6 +21,7 @@ export function PortalTimeline({ events, emptyText }: PortalTimelineProps) {
               <span>{formatDateTime(event.createdAt)}</span>
               <span>•</span>
               <span>{event.createdBy}</span>
+              {event.sourceDomain ? <><span>·</span><span className="capitalize">{event.sourceDomain.replaceAll("_", " ")}</span></> : null}
             </div>
             <h3 className="font-dm text-sm font-semibold text-t1">{event.title}</h3>
             <p className="mt-1 whitespace-pre-wrap font-dm text-sm leading-relaxed text-t2">{event.description}</p>

@@ -374,6 +374,8 @@ export const clientRequests = pgTable("client_requests", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   completedAt: timestamp("completed_at", { withTimezone: true }),
+  clientLastReadAt: timestamp("client_last_read_at", { withTimezone: true }),
+  adminLastReadAt: timestamp("admin_last_read_at", { withTimezone: true }),
 }, (table) => [
   index("client_requests_client_id_idx").on(table.clientId),
   index("client_requests_status_idx").on(table.status),
@@ -391,6 +393,8 @@ export const clientRequestMessages = pgTable("client_request_messages", {
   visibility: requestMessageVisibility("visibility").default("client_visible").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }),
+  notificationEmailStatus: text("notification_email_status"),
+  notificationEmailFailureReason: text("notification_email_failure_reason"),
 }, (table) => [
   index("client_request_messages_request_id_idx").on(table.requestId),
   index("client_request_messages_visibility_idx").on(table.visibility),

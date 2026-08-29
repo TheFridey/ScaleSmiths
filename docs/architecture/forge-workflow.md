@@ -2,6 +2,8 @@
 
 ScaleSmiths Forge is an authenticated subsystem inside `admin`; it is not a separate service. Projects, orchestration state, artifacts, usage, and audit records are persisted in PostgreSQL, while generated source files live under `generated-sites/`.
 
+Forge is 100% internal ScaleSmiths infrastructure. It may implement work behind a delivery project, but it is never the commercial project source of truth and has no client-facing routes, APIs, permissions or controls. Manual delivery projects require no Forge record. When linked, `server/delivery-forge-integration.ts` validates client/project ownership and converts only allowlisted internal events into delivery-owned business statuses and sanitised timeline entries; the portal never reads Forge tables.
+
 ## Lifecycle
 
 The persisted project status enum is:

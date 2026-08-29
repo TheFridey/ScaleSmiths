@@ -5,12 +5,14 @@ import { useState } from "react"
 import Link from "next/link"
 import { ArrowLeft, CheckCircle2, ExternalLink, Link2, Plus } from "lucide-react"
 import { DELIVERY_DELIVERABLE_STATUSES, DELIVERY_MILESTONE_STATUSES, DELIVERY_PROJECT_PHASES, DELIVERY_PROJECT_STATUSES } from "@/lib/delivery-projects"
+import { CLIENT_DELIVERY_STATUSES } from "@/lib/delivery-projection"
 
 type Row = Record<string, unknown> & { id: number; title: string; status: string; clientVisible?: boolean; targetDate?: Date | string | null; description?: string | null }
 type ResourceRow = Record<string, unknown> & { id: number; title: string; documentType: string; source: "upload" | "link"; storageKey: string; visibility: string; sizeBytes?: number | null; version: number; archivedAt?: Date | string | null }
 interface ProjectDetail {
-  project: Record<string, unknown> & { id: number; name: string; summary: string | null; internalNotes: string | null; clientVisible: boolean; status: string; currentPhase: string; targetStartDate: Date | string | null; targetEndDate: Date | string | null; ownerUserId: string | null; forgeProjectId: number | null; deploymentCandidateId: number | null }
+  project: Record<string, unknown> & { id: number; name: string; summary: string | null; internalNotes: string | null; clientVisible: boolean; status: string; currentPhase: string; clientStatus: string; clientNextStep: string | null; clientStagingUrl: string | null; clientStagingVisible: boolean; targetStartDate: Date | string | null; targetEndDate: Date | string | null; ownerUserId: string | null; forgeProjectId: number | null; deploymentCandidateId: number | null }
   clientName: string; ownerName: string | null; portalClientId: string | null; forgeProjectName: string | null; deploymentCandidateNumber: number | null
+  forgeIntegration: { integration: Record<string, unknown> & { forgeProjectId: number; latestRunId: number | null; internalBuildStatus: string | null; internalQaStatus: string | null; internalDeploymentStatus: string | null }; runStatus: string | null } | null
   progress: number; milestones: Row[]; deliverables: Row[]; resources: ResourceRow[]; decisions: Row[]; audit: Array<Record<string, unknown> & { id: number; action: string; createdAt: Date | string }>
 }
 
@@ -54,11 +56,17 @@ export function DeliveryProjectWorkspace({ initial, owners }: { initial: Project
           <form onSubmit={updateSubmit("project-settings")} className="grid gap-3">
             <label><span className="mb-1 block text-xs text-t3">Client-visible summary</span><textarea name="summary" rows={3} defaultValue={project.summary ?? ""} /></label>
             <label><span className="mb-1 block text-xs text-t3">Internal notes</span><textarea name="internalNotes" rows={3} defaultValue={project.internalNotes ?? ""} /></label>
+            <div className="grid gap-3 sm:grid-cols-2"><label><span className="mb-1 block text-xs text-t3">Client-visible status</span><select name="clientStatus" defaultValue={project.clientStatus}>{CLIENT_DELIVERY_STATUSES.map((status) => <option key={status} value={status}>{label(status)}</option>)}</select></label><label><span className="mb-1 block text-xs text-t3">Client-visible next step</span><input name="clientNextStep" maxLength={500} defaultValue={project.clientNextStep ?? ""} /></label></div>
+            <label><span className="mb-1 block text-xs text-t3">Safe client staging URL</span><input name="clientStagingUrl" type="url" defaultValue={project.clientStagingUrl ?? ""} placeholder="https://review.example.com" /></label><label className="flex items-center gap-2 text-xs text-t2"><input type="hidden" name="clientStagingVisible" value="false" /><input name="clientStagingVisible" type="checkbox" value="true" defaultChecked={project.clientStagingVisible} /> Publish staging preview to client</label>
             <label className="flex items-center gap-2 text-xs text-t2"><input type="hidden" name="clientVisible" value="false" /><input name="clientVisible" type="checkbox" value="true" defaultChecked={project.clientVisible} /> Published to client portal</label>
             <div className="grid gap-3 sm:grid-cols-2"><label><span className="mb-1 block text-xs text-t3">Target start</span><input name="targetStartDate" type="date" defaultValue={dateInput(project.targetStartDate)} /></label><label><span className="mb-1 block text-xs text-t3">Target end</span><input name="targetEndDate" type="date" defaultValue={dateInput(project.targetEndDate)} /></label></div>
             <div className="grid gap-3 sm:grid-cols-2"><label><span className="mb-1 block text-xs text-t3">Forge project ID</span><input name="forgeProjectId" type="number" min="1" defaultValue={project.forgeProjectId ?? ""} /></label><label><span className="mb-1 block text-xs text-t3">Deployment candidate ID</span><input name="deploymentCandidateId" type="number" min="1" defaultValue={project.deploymentCandidateId ?? ""} /></label></div>
             <button disabled={busy !== ""} className="w-fit rounded-lg bg-acc px-3 py-2 text-sm text-white">Save project settings</button>
           </form>
+        </Section>
+
+        <Section title="Internal delivery engine" note="Internal ScaleSmiths infrastructure. None of these identifiers or operational states are included in portal projections.">
+          {initial.forgeIntegration ? <div className="space-y-3 text-sm"><div className="grid gap-3 sm:grid-cols-3"><Info label="Build" value={initial.forgeIntegration.integration.internalBuildStatus ?? initial.forgeIntegration.runStatus ?? "Not recorded"} /><Info label="Latest QA" value={initial.forgeIntegration.integration.internalQaStatus ?? "Not recorded"} /><Info label="Deployment" value={initial.forgeIntegration.integration.internalDeploymentStatus ?? "Not recorded"} /></div><Link href={`/forge/${initial.forgeIntegration.integration.forgeProjectId}`} className="inline-flex items-center gap-2 rounded-lg border border-b2 px-3 py-2 text-xs font-semibold hover:border-acc/60">Open in Forge <ExternalLink size={13} /></Link></div> : <div className="text-sm text-t3">Manual delivery project. No Forge engine is linked or required.</div>}
         </Section>
 
         <Section title="Decisions required" note="Open approvals or choices that can block delivery.">

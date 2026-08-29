@@ -25,6 +25,23 @@ Commercial claims and testimonials fail closed. Admin stores proposed wording, p
 
 Portal login accepts untrusted credentials, uses bcrypt for stored accounts, database-backed login limits, and an HTTP-only, SameSite=Lax, production-secure JWT cookie. Every portal resource is filtered by the session client ID. Internal request messages are excluded from client-visible queries. Demo authentication is an explicit environment override and must remain disabled in production.
 
+### Forge and client portal trust boundary
+
+**Forge is an internal privileged ScaleSmiths delivery system and is outside the client portal trust boundary.** Forge routes, APIs, runs, prompts, agents, artifacts, provider metadata, budgets, costs, workspaces, QA evidence and deployment controls exist only in the authenticated admin application. A portal JWT is not an Auth.js admin session and grants no capability in the admin application.
+
+The commercial delivery project remains authoritative. An optional `delivery_forge_integrations` record holds internal Forge project, run, candidate, release and deployment references. The web schema has no mapping for that table and portal queries never join Forge operational tables. Internal events cross the boundary only through a fixed allowlist that writes a business-level status, next step, deliberately published safe staging URL and sanitised timeline wording to delivery-owned tables.
+
+```mermaid
+flowchart LR
+  Forge[Internal Forge event] --> Adapter[Admin-only delivery integration service]
+  Adapter --> Internal[(Internal integration and audit state)]
+  Adapter --> Safe[(Delivery-owned sanitised projection)]
+  Safe --> Portal[Client portal]
+  Portal -. no route, API, session or database path .-> Forge
+```
+
+Client staging links require explicit publication, credential-free HTTPS, and rejection of admin, local, Forge, sandbox and token-bearing URLs. Internal preview URLs are never projected automatically.
+
 ## Admin boundary
 
 Admin has no signup. Persistent internal identities are authenticated by Auth.js credentials and eight-hour JWT sessions. Middleware denies unauthenticated requests and reloads the database identity to enforce active status and session revocation version across pages and APIs. Production depends on a strong `AUTH_SECRET`; passwords are stored only as bcrypt hashes. Owner/administrator management is authenticated server-side, owner grants and password resets require an owner, and the final active owner is protected.

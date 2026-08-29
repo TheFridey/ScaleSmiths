@@ -39,6 +39,7 @@ export const ADMIN_FUNCTION_GRANTS = [
 ]
 
 export const ADMIN_DELETE_TABLES = [
+  "delivery_forge_integrations",
   "forge_jobs",
   "invoice_items",
   "invoices",

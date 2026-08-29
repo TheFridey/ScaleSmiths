@@ -26,6 +26,7 @@ export const monthlyReportStatus = pgEnum("monthly_report_status", MONTHLY_REPOR
 export const monthlyReportGeneratedBy = pgEnum("monthly_report_generated_by", ["forge", "manual"])
 export const deliveryProjectStatus = pgEnum("delivery_project_status", ["active", "paused", "completed", "cancelled"])
 export const deliveryProjectPhase = pgEnum("delivery_project_phase", ["discovery", "strategy", "design", "build", "review", "launch", "ongoing"])
+export const deliveryClientStatus = pgEnum("delivery_client_status", ["planning", "build_in_progress", "quality_checks", "ready_for_review", "changes_requested", "preparing_launch", "deployed", "on_hold"])
 export const deliveryMilestoneStatus = pgEnum("delivery_milestone_status", ["planned", "active", "blocked", "completed", "skipped"])
 export const deliveryDeliverableStatus = pgEnum("delivery_deliverable_status", ["planned", "in_progress", "in_review", "approved", "delivered", "cancelled"])
 export const deliveryResourceKind = pgEnum("delivery_resource_kind", ["file", "link"])
@@ -127,6 +128,10 @@ export const portalDeliveryProjects = pgTable("delivery_projects", {
   clientVisible: boolean("client_visible").notNull(),
   status: deliveryProjectStatus("status").notNull(),
   currentPhase: deliveryProjectPhase("current_phase").notNull(),
+  clientStatus: deliveryClientStatus("client_status").notNull(),
+  clientNextStep: text("client_next_step"),
+  clientStagingUrl: text("client_staging_url"),
+  clientStagingVisible: boolean("client_staging_visible").notNull(),
   targetStartDate: timestamp("target_start_date", { withTimezone: true }),
   targetEndDate: timestamp("target_end_date", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull(),

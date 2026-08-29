@@ -1,6 +1,6 @@
 import "server-only"
 
-import { and, asc, eq, inArray, isNull, ne } from "drizzle-orm"
+import { and, asc, eq, inArray, isNull, ne, sql } from "drizzle-orm"
 import { db } from "./db"
 import {
   invoicePortalClients,
@@ -19,6 +19,9 @@ export async function listPortalProjectProgress(portalClientId: string) {
     summary: portalDeliveryProjects.summary,
     status: portalDeliveryProjects.status,
     currentPhase: portalDeliveryProjects.currentPhase,
+    clientStatus: portalDeliveryProjects.clientStatus,
+    clientNextStep: portalDeliveryProjects.clientNextStep,
+    stagingUrl: sql<string | null>`case when ${portalDeliveryProjects.clientStagingVisible} then ${portalDeliveryProjects.clientStagingUrl} else null end`,
     targetStartDate: portalDeliveryProjects.targetStartDate,
     targetEndDate: portalDeliveryProjects.targetEndDate,
     updatedAt: portalDeliveryProjects.updatedAt,

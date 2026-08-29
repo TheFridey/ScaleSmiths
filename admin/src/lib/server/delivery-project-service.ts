@@ -13,10 +13,13 @@ import {
   deliveryProjectAuditLogs,
   deliveryProjectProgress,
   deliveryProjects,
+  deliveryForgeIntegrations,
   deliveryResources,
   forgeDeploymentCandidates,
   forgeProjects,
+  forgeRuns,
 } from "@/lib/schema"
+import { assertSafeClientStagingUrl, CLIENT_DELIVERY_STATUSES } from "@/lib/delivery-projection"
 import {
   assertMilestoneTransition,
   assertDeliverableTransition,
@@ -79,16 +82,17 @@ export async function getDeliveryProjectForAdmin(projectId: number) {
     .where(eq(deliveryProjects.id, projectId)).limit(1)
   if (!row) throw new DeliveryProjectError("Project not found.", 404)
 
-  const [milestones, deliverables, resources, decisions, audit] = await Promise.all([
+  const [milestones, deliverables, resources, decisions, audit, forgeIntegration] = await Promise.all([
     db.select().from(deliveryMilestones).where(eq(deliveryMilestones.projectId, projectId)).orderBy(asc(deliveryMilestones.position), asc(deliveryMilestones.id)),
     db.select().from(deliveryDeliverables).where(eq(deliveryDeliverables.projectId, projectId)).orderBy(asc(deliveryDeliverables.position), asc(deliveryDeliverables.id)),
     db.select().from(clientDocuments).where(eq(clientDocuments.projectId, projectId)).orderBy(desc(clientDocuments.createdAt)),
     db.select().from(deliveryDecisions).where(eq(deliveryDecisions.projectId, projectId)).orderBy(desc(deliveryDecisions.createdAt)),
     db.select().from(deliveryProjectAuditLogs).where(eq(deliveryProjectAuditLogs.projectId, projectId)).orderBy(desc(deliveryProjectAuditLogs.createdAt)).limit(100),
+    db.select({ integration: deliveryForgeIntegrations, runStatus: forgeRuns.status }).from(deliveryForgeIntegrations).leftJoin(forgeRuns, eq(deliveryForgeIntegrations.latestRunId, forgeRuns.id)).where(eq(deliveryForgeIntegrations.projectId, projectId)).limit(1),
   ])
 
   const [progressRow] = await db.select({ progress: deliveryProjectProgress.progress }).from(deliveryProjectProgress).where(eq(deliveryProjectProgress.projectId, projectId)).limit(1)
-  return { ...row, progress: progressRow?.progress ?? calculateProjectProgress(milestones), milestones, deliverables, resources, decisions, audit }
+  return { ...row, forgeIntegration: forgeIntegration[0] ?? null, progress: progressRow?.progress ?? calculateProjectProgress(milestones), milestones, deliverables, resources, decisions, audit }
 }
 
 export async function getDeliveryProjectLinkForForge(forgeProjectId: number) {
@@ -112,18 +116,24 @@ export async function createDeliveryProject(input: Record<string, unknown>, acto
     internalNotes: optionalText(input.internalNotes, 4000),
     clientVisible: booleanValue(input.clientVisible, false),
     currentPhase: input.currentPhase ? enumValue(input.currentPhase, DELIVERY_PROJECT_PHASES, "Current phase") : "discovery" as const,
+    clientStatus: input.clientStatus ? enumValue(input.clientStatus, CLIENT_DELIVERY_STATUSES, "Client status") : "planning" as const,
+    clientNextStep: optionalText(input.clientNextStep, 500),
+    clientStagingUrl: input.clientStagingUrl ? assertSafeClientStagingUrl(requiredText(input.clientStagingUrl, "Client staging URL", 2000)) : null,
+    clientStagingVisible: booleanValue(input.clientStagingVisible, false),
     ownerUserId: optionalUuid(input.ownerUserId, "Owner user ID"),
     targetStartDate: optionalDate(input.targetStartDate, "Target start date"),
     targetEndDate: optionalDate(input.targetEndDate, "Target end date"),
     forgeProjectId: optionalPositiveId(input.forgeProjectId, "Forge project ID"),
     deploymentCandidateId: optionalPositiveId(input.deploymentCandidateId, "Deployment candidate ID"),
   }
+  if (values.clientStagingVisible && !values.clientStagingUrl) throw new DeliveryProjectError("A safe staging URL is required before publishing a preview.")
   assertDateOrder(values.targetStartDate, values.targetEndDate)
 
   return db.transaction(async (tx) => {
     await assertClientAndLinkage(tx, values.clientId, values.forgeProjectId, values.deploymentCandidateId)
     await assertOwner(tx, values.ownerUserId)
     const [project] = await tx.insert(deliveryProjects).values(values).returning()
+    await syncForgeIntegration(tx, project.id, values.forgeProjectId, values.deploymentCandidateId)
     await tx.insert(deliveryProjectAuditLogs).values({ projectId: project.id, actorUserId: actor.id, action: "project_created", metadataJson: { clientId, phase: project.currentPhase, clientVisible: project.clientVisible } })
     if (project.clientVisible) await publishTimeline(tx, project, actor, "project_published", project.name, project.summary ?? "A new delivery project has been published.")
     return project
@@ -136,6 +146,10 @@ export async function updateDeliveryProject(projectId: number, input: Record<str
     if (!current) throw new DeliveryProjectError("Project not found.", 404)
     const status = input.status === undefined ? current.status : enumValue(input.status, DELIVERY_PROJECT_STATUSES, "Project status")
     const currentPhase = input.currentPhase === undefined ? current.currentPhase : enumValue(input.currentPhase, DELIVERY_PROJECT_PHASES, "Current phase")
+    const clientStatus = input.clientStatus === undefined ? current.clientStatus : enumValue(input.clientStatus, CLIENT_DELIVERY_STATUSES, "Client status")
+    const clientStagingUrl = input.clientStagingUrl === undefined ? current.clientStagingUrl : input.clientStagingUrl ? assertSafeClientStagingUrl(requiredText(input.clientStagingUrl, "Client staging URL", 2000)) : null
+    const clientStagingVisible = input.clientStagingVisible === undefined ? current.clientStagingVisible : booleanValue(input.clientStagingVisible, current.clientStagingVisible)
+    if (clientStagingVisible && !clientStagingUrl) throw new DeliveryProjectError("A safe staging URL is required before publishing a preview.")
     assertProjectTransition(current.status, status)
     if (status === "completed") {
       const projectMilestones = await tx.select({ status: deliveryMilestones.status }).from(deliveryMilestones).where(eq(deliveryMilestones.projectId, projectId))
@@ -158,6 +172,10 @@ export async function updateDeliveryProject(projectId: number, input: Record<str
       clientVisible: input.clientVisible === undefined ? current.clientVisible : booleanValue(input.clientVisible, current.clientVisible),
       status,
       currentPhase,
+      clientStatus,
+      clientNextStep: input.clientNextStep === undefined ? current.clientNextStep : optionalText(input.clientNextStep, 500),
+      clientStagingUrl,
+      clientStagingVisible,
       ownerUserId,
       targetStartDate,
       targetEndDate,
@@ -166,8 +184,9 @@ export async function updateDeliveryProject(projectId: number, input: Record<str
       deploymentCandidateId,
       updatedAt: new Date(),
     }).where(eq(deliveryProjects.id, projectId)).returning()
+    await syncForgeIntegration(tx, projectId, forgeProjectId, deploymentCandidateId)
 
-    const changes = changedFields(current, updated, ["name", "summary", "internalNotes", "clientVisible", "status", "currentPhase", "ownerUserId", "targetStartDate", "targetEndDate", "forgeProjectId", "deploymentCandidateId"])
+    const changes = changedFields(current, updated, ["name", "summary", "internalNotes", "clientVisible", "status", "currentPhase", "clientStatus", "clientNextStep", "clientStagingUrl", "clientStagingVisible", "ownerUserId", "targetStartDate", "targetEndDate", "forgeProjectId", "deploymentCandidateId"])
     if (changes.length) await tx.insert(deliveryProjectAuditLogs).values({ projectId, actorUserId: actor.id, action: "project_updated", metadataJson: { changes } })
     if (current.status !== status || current.currentPhase !== currentPhase) {
       await publishTimeline(tx, updated, actor, "project_status_changed", `${updated.name}: ${humanise(currentPhase)}`, `Project is ${humanise(status)} in the ${humanise(currentPhase)} phase.`)
@@ -390,6 +409,12 @@ async function assertOwner(tx: Parameters<Parameters<typeof db.transaction>[0]>[
   if (!ownerUserId) return
   const [owner] = await tx.select({ id: adminUsers.id }).from(adminUsers).where(and(eq(adminUsers.id, ownerUserId), eq(adminUsers.active, true))).limit(1)
   if (!owner) throw new DeliveryProjectError("Project owner must be an active admin user.", 409)
+}
+
+async function syncForgeIntegration(tx: Parameters<Parameters<typeof db.transaction>[0]>[0], projectId: number, forgeProjectId: number | null, deploymentCandidateId: number | null) {
+  if (!forgeProjectId) { await tx.delete(deliveryForgeIntegrations).where(eq(deliveryForgeIntegrations.projectId, projectId)); return }
+  const now = new Date()
+  await tx.insert(deliveryForgeIntegrations).values({ projectId, forgeProjectId, deploymentCandidateId, updatedAt: now }).onConflictDoUpdate({ target: deliveryForgeIntegrations.projectId, set: { forgeProjectId, deploymentCandidateId, updatedAt: now } })
 }
 
 async function publishTimeline(tx: Parameters<Parameters<typeof db.transaction>[0]>[0], project: { id: number; clientId: number }, actor: DeliveryActor, type: string, title: string, description: string) {

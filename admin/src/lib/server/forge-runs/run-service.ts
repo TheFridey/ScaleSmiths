@@ -32,6 +32,7 @@ import { executeForgeRunContinuation } from "./stage-executor"
 import { ensureRunWorkspace } from "./workspace"
 import { approveAutomaticStageOutput, AUTOMATIC_POLICY_ACTOR } from "./approvals"
 import { invalidateDownstreamForChangedInput } from "./invalidation"
+import { projectInternalForgeEventSafely } from "../delivery-forge-integration"
 
 export { getCurrentForgeRun, loadForgeRun }
 
@@ -130,6 +131,7 @@ export async function startForgeRun(runId: number, actor: string, override?: { r
   await db.update(forgeRuns).set({ status: "running", startedAt: run.startedAt ?? now, pausedAt: null, pauseReason: null, policyJson: policy, updatedAt: now }).where(eq(forgeRuns.id, runId))
   await db.update(forgeRunSteps).set({ status: "pending", failureCategory: null, failureMessage: null, updatedAt: now }).where(and(eq(forgeRunSteps.runId, runId), eq(forgeRunSteps.status, "blocked")))
   await recordRunEvent(runId, null, "run_started", actor, run.startedAt ? "Resumed run execution." : "Started run execution.", override ? { budgetOverride: override.reason } : {})
+  await projectInternalForgeEventSafely(run.projectId, "build_started", { name: actor }, { latestRunId: runId, internalBuildStatus: "running" })
   for (const stage of FORGE_RUN_STAGE_REGISTRY) {
     await invalidateDownstreamForChangedInput(runId, run.projectId, stage.key, actor)
   }
@@ -395,6 +397,7 @@ async function completeRun(runId: number, projectId: number, actor: string) {
   await db.update(forgeRuns).set({ status: "completed", currentStage: null, completedAt: now, pauseReason: null, updatedAt: now }).where(eq(forgeRuns.id, runId))
   await recordRunEvent(runId, null, "run_completed", actor, "Forge run completed.", {})
   await db.insert(forgeActivityLogs).values({ projectId, actor, action: "forge_run_completed", message: `Completed Forge run #${runId}.`, metadataJson: { runId } })
+  await projectInternalForgeEventSafely(projectId, "ready_for_review", { name: actor }, { latestRunId: runId, internalBuildStatus: "completed", internalQaStatus: "completed" })
 }
 
 function normalizePolicy(policy: ForgeRunPolicy | undefined): ForgeRunPolicy {

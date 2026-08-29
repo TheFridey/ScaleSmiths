@@ -76,6 +76,7 @@ export const invoiceDeliveryState = pgEnum("invoice_delivery_state", ["pending",
 export const invoicePortalAccessType = pgEnum("invoice_portal_access_type", ["view", "download"])
 export const deliveryProjectStatus = pgEnum("delivery_project_status", ["active", "paused", "completed", "cancelled"])
 export const deliveryProjectPhase = pgEnum("delivery_project_phase", ["discovery", "strategy", "design", "build", "review", "launch", "ongoing"])
+export const deliveryClientStatus = pgEnum("delivery_client_status", ["planning", "build_in_progress", "quality_checks", "ready_for_review", "changes_requested", "preparing_launch", "deployed", "on_hold"])
 export const deliveryMilestoneStatus = pgEnum("delivery_milestone_status", ["planned", "active", "blocked", "completed", "skipped"])
 export const deliveryDeliverableStatus = pgEnum("delivery_deliverable_status", ["planned", "in_progress", "in_review", "approved", "delivered", "cancelled"])
 export const deliveryResourceKind = pgEnum("delivery_resource_kind", ["file", "link"])
@@ -432,6 +433,10 @@ export const deliveryProjects = pgTable("delivery_projects", {
   clientVisible: boolean("client_visible").default(false).notNull(),
   status: deliveryProjectStatus("status").default("active").notNull(),
   currentPhase: deliveryProjectPhase("current_phase").default("discovery").notNull(),
+  clientStatus: deliveryClientStatus("client_status").default("planning").notNull(),
+  clientNextStep: text("client_next_step"),
+  clientStagingUrl: text("client_staging_url"),
+  clientStagingVisible: boolean("client_staging_visible").default(false).notNull(),
   ownerUserId: uuid("owner_user_id").references(() => adminUsers.id, { onDelete: "set null" }),
   targetStartDate: timestamp("target_start_date", { withTimezone: true }),
   targetEndDate: timestamp("target_end_date", { withTimezone: true }),
@@ -448,6 +453,7 @@ export const deliveryProjects = pgTable("delivery_projects", {
   uniqueIndex("delivery_projects_forge_project_idx").on(table.forgeProjectId),
   check("delivery_projects_dates_check", sql`${table.targetEndDate} is null or ${table.targetStartDate} is null or ${table.targetEndDate} >= ${table.targetStartDate}`),
   check("delivery_projects_completion_check", sql`(${table.status} = 'completed' and ${table.completedAt} is not null) or (${table.status} <> 'completed' and ${table.completedAt} is null)`),
+  check("delivery_projects_client_staging_check", sql`${table.clientStagingVisible} = false or ${table.clientStagingUrl} is not null`),
 ])
 
 export const deliveryMilestones = pgTable("delivery_milestones", {
@@ -1371,6 +1377,27 @@ export const forgePreviews = pgTable("forge_previews", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
   index("forge_previews_lease_expires_at_idx").on(table.leaseExpiresAt),
+])
+
+// Internal-only adapter state. Portal schema deliberately has no mapping for this table.
+export const deliveryForgeIntegrations = pgTable("delivery_forge_integrations", {
+  projectId: integer("project_id").primaryKey().references(() => deliveryProjects.id, { onDelete: "cascade" }),
+  forgeProjectId: integer("forge_project_id").references(() => forgeProjects.id, { onDelete: "restrict" }).notNull(),
+  latestRunId: integer("latest_run_id").references(() => forgeRuns.id, { onDelete: "set null" }),
+  deploymentCandidateId: integer("deployment_candidate_id").references(() => forgeDeploymentCandidates.id, { onDelete: "set null" }),
+  internalReleaseId: text("internal_release_id"),
+  stagingDeploymentId: text("staging_deployment_id"),
+  productionDeploymentId: text("production_deployment_id"),
+  internalBuildStatus: text("internal_build_status"),
+  internalQaStatus: text("internal_qa_status"),
+  internalDeploymentStatus: text("internal_deployment_status"),
+  lastInternalEventAt: timestamp("last_internal_event_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("delivery_forge_integrations_forge_project_idx").on(table.forgeProjectId),
+  index("delivery_forge_integrations_run_idx").on(table.latestRunId),
+  index("delivery_forge_integrations_candidate_idx").on(table.deploymentCandidateId),
 ])
 
 export const forgeAiUsage = pgTable("forge_ai_usage", {

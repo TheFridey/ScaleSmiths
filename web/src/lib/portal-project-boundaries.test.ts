@@ -15,7 +15,7 @@ describe("portal delivery boundary", () => {
     expect(source.match(/portalDeliveryMilestones\.clientVisible/g)?.length).toBeGreaterThanOrEqual(1)
     expect(source.match(/portalDeliveryDeliverables\.clientVisible/g)?.length).toBeGreaterThanOrEqual(1)
     expect(source.match(/portalDeliveryDecisions\.clientVisible/g)?.length).toBeGreaterThanOrEqual(1)
-    expect(source).toContain('portalDeliveryResources.visibility, "client_visible"')
+    expect(source).toContain('portalClientDocuments.visibility, "client_visible"')
   })
 
   it("never selects internal-only or audit fields into the portal projection", () => {
@@ -26,6 +26,10 @@ describe("portal delivery boundary", () => {
       "resolvedBy",
       "forgeProjectId",
       "deploymentCandidateId",
+      "deliveryForgeIntegrations",
+      "forgeRuns",
+      "forgeArtifacts",
+      "forgeAiUsage",
       "AuditLog",
     ]) {
       expect(source).not.toContain(forbidden)

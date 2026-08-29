@@ -26,6 +26,7 @@ import {
 import { FORGE_WORKSPACE_MEMORY_KEY, readForgeWorkspaceMemory } from "@/lib/forge-workspace"
 import { forgeActivityLogs, forgeArtifacts, forgeIntegrationConfigs, forgeMemories, forgeProjects } from "@/lib/schema"
 import { forgeTasks } from "@/lib/schema"
+import { projectInternalForgeEventSafely } from "./delivery-forge-integration"
 import { taskBlocksDeployment } from "@/lib/forge-task-quality"
 import { evaluatePersistedProjectTransition, workflowAuditMetadata } from "./forge-workflow"
 import { requireVerifiedApprovedDeploymentCandidate } from "./forge-deployment-candidates"
@@ -134,6 +135,7 @@ async function markReady(context: DeployContext, actor: string) {
     return saved
   })
 
+  await projectInternalForgeEventSafely(context.project.id, "preparing_launch", { name: actor }, { internalDeploymentStatus: "ready" })
   return { ok: true as const, artifactId: artifact.id, notes }
 }
 
@@ -174,6 +176,7 @@ async function markDeployed(context: DeployContext, actor: string) {
     return saved
   })
 
+  await projectInternalForgeEventSafely(context.project.id, "deployed", { name: actor }, { internalDeploymentStatus: "deployed" })
   return { ok: true as const, artifactId: artifact.id, notes }
 }
 

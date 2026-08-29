@@ -488,6 +488,12 @@
       "sha256": "cdc42626d5875d23d14dfa7b62fd7e74cd207c4b08744fdb3ed9bb59cc02ca72",
       "lifecycle": "forward",
       "reason": "Adds scoped client document metadata, R2 upload integrity fields, external links, visibility and archival state, access telemetry, and migrates existing HTTPS delivery resources."
+    },
+    {
+      "path": "admin/drizzle/0054_internal_forge_delivery_boundary.sql",
+      "sha256": "13fda560fd2a89787cd166944395d511bfe34b332998188543921e01a242f3a4",
+      "lifecycle": "forward",
+      "reason": "Adds an internal-only Forge delivery adapter and a sanitised business-level client project status projection without exposing Forge identifiers or operations to the portal."
     }
   ],
   "journals": {
@@ -641,6 +647,13 @@
           "version": "7",
           "when": 1788019200000,
           "tag": "0053_client_documents",
+          "breakpoints": true
+        },
+        {
+          "idx": 54,
+          "version": "7",
+          "when": 1788105600000,
+          "tag": "0054_internal_forge_delivery_boundary",
           "breakpoints": true
         }
       ]

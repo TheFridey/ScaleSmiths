@@ -8,6 +8,7 @@ import {
   resolveRequestNotificationConfig,
   sanitizeHeaderValue,
   sendClientRequestNotifications,
+  sendClientRequestMessageNotification,
 } from "./request-notifications"
 
 describe("request notifications", () => {
@@ -113,5 +114,22 @@ describe("buildAdminRequestSubject", () => {
       priority: "medium",
     })
     expect(subject).not.toMatch(/[\r\n]/)
+  })
+})
+
+describe("sendClientRequestMessageNotification", () => {
+  it("returns a configuration failure without throwing when Resend env vars are missing", async () => {
+    const result = await sendClientRequestMessageNotification(
+      {
+        requestId: 1,
+        messageId: 42,
+        clientId: "client-one",
+        clientName: "Client One",
+        requestTitle: "Portal messages",
+        messageBody: "Hello",
+      },
+      {} as NodeJS.ProcessEnv,
+    )
+    expect(result).toEqual({ ok: false, reason: "configuration", status: "failed", failureReason: "configuration" })
   })
 })

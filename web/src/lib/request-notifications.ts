@@ -18,6 +18,17 @@ export interface ClientRequestNotificationInput {
   affectedUrl?: string | null
 }
 
+export interface ClientRequestMessageNotificationInput {
+  requestId: number
+  messageId: number
+  correlationId?: string
+  actorId?: string
+  clientId: string
+  clientName: string
+  requestTitle: string
+  messageBody: string
+}
+
 export interface ClientRequestNotificationResult {
   ok: boolean
   reason?: "configuration" | "delivery"
@@ -245,4 +256,73 @@ function escapeHtml(value: string) {
 
 export function sanitizeHeaderValue(value: string) {
   return value.replace(/[\r\n\0]/g, "")
+}
+
+export async function sendClientRequestMessageNotification(
+  input: ClientRequestMessageNotificationInput,
+  env: NodeJS.ProcessEnv = process.env,
+): Promise<ClientRequestNotificationResult> {
+  const config = resolveRequestNotificationConfig(env)
+
+  if (!config.apiKey || !config.from || !config.supportEmail) {
+    warnRequestNotification("configuration", input.requestId)
+    captureWebMessage("Client request message email configuration is incomplete", "warning", { correlationId: input.correlationId, actorId: input.actorId, clientRequestId: input.requestId, emailOperation: "client_request_message_notification", errorCategory: "email_configuration" })
+    return { ok: false, reason: "configuration", status: "failed", failureReason: "configuration" }
+  }
+
+  const resend = new Resend(config.apiKey)
+  const adminLink = buildAdminRequestLink(input.requestId, env)
+  const subject = `New client message: ${sanitizeHeaderValue(input.requestTitle)}`.slice(0, 180)
+
+  try {
+    const result = await resend.emails.send({
+      from: config.from,
+      to: config.supportEmail,
+      subject,
+      html: buildMessageNotificationHtml(input, adminLink),
+      text: buildMessageNotificationText(input, adminLink),
+    }, { idempotencyKey: `client-request-message-${input.messageId}` })
+
+    if (result.error) {
+      warnRequestNotification("delivery", input.requestId)
+      captureWebMessage("Client request message email provider returned a delivery error", "error", { correlationId: input.correlationId, actorId: input.actorId, clientRequestId: input.requestId, emailOperation: "client_request_message_notification", errorCategory: "email_delivery" })
+      return { ok: false, reason: "delivery", status: "failed", failureReason: "delivery" }
+    }
+  } catch (error) {
+    warnRequestNotification("delivery", input.requestId)
+    captureWebException(error, { correlationId: input.correlationId, actorId: input.actorId, clientRequestId: input.requestId, emailOperation: "client_request_message_notification", errorCategory: "email_delivery" })
+    return { ok: false, reason: "delivery", status: "failed", failureReason: "delivery" }
+  }
+
+  return { ok: true, status: "sent" }
+}
+
+function buildMessageNotificationHtml(input: ClientRequestMessageNotificationInput, adminLink: string | null) {
+  return `
+    <div style="background:#080808;padding:28px;font-family:Arial,sans-serif;">
+      <div style="max-width:680px;margin:0 auto;background:#0f0f0f;border:1px solid #242424;border-radius:16px;overflow:hidden;">
+        <div style="padding:24px 26px;border-bottom:1px solid #242424;">
+          <div style="color:#2563eb;font-size:12px;letter-spacing:0.12em;text-transform:uppercase;font-weight:700;">New client message</div>
+          <h1 style="color:#f4f4f4;margin:8px 0 0;font-size:24px;">${escapeHtml(input.requestTitle)}</h1>
+        </div>
+        <table role="presentation" style="width:100%;border-collapse:collapse;font-size:14px;">
+          ${field("Client", input.clientName)}
+          ${field("Client ID", input.clientId)}
+          ${field("Message", input.messageBody)}
+          ${field("Admin link", adminLink ?? "Not configured")}
+        </table>
+      </div>
+    </div>
+  `
+}
+
+function buildMessageNotificationText(input: ClientRequestMessageNotificationInput, adminLink: string | null) {
+  return [
+    "New client message",
+    `Client: ${input.clientName}`,
+    `Client ID: ${input.clientId}`,
+    `Thread: ${input.requestTitle}`,
+    `Message: ${input.messageBody}`,
+    `Admin link: ${adminLink ?? "Not configured"}`,
+  ].join("\n")
 }

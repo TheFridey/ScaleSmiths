@@ -6,7 +6,8 @@ import {
   isClientRequestMessageVisibility,
   parseClientRequestMessageBody,
 } from "@/lib/client-requests"
-import { clientRequestMessages, clientRequests, clientTimelineEvents } from "@/lib/schema"
+import { clientRequestMessages, clientRequests, clientTimelineEvents, clients } from "@/lib/schema"
+import { sendClientReplyNotification } from "@/lib/server/client-request-notifications"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -109,6 +110,36 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     return { message: inserted[0], timelineEvent: createdTimelineEvent }
   })
+
+  if (visibility === "client_visible") {
+    try {
+      const [clientRow] = await db
+        .select({ contactEmail: clients.contactEmail })
+        .from(clients)
+        .where(eq(clients.portalClientId, existing.clientId))
+        .limit(1)
+
+      const notificationResult = await sendClientReplyNotification({
+        requestId: existing.id,
+        messageId: message.id,
+        portalClientId: existing.clientId,
+        requestTitle: existing.title,
+        messageBody: parsedBody.data,
+        clientEmail: clientRow?.contactEmail ?? null,
+      })
+
+      await db.update(clientRequestMessages).set({
+        notificationEmailStatus: notificationResult.status,
+        notificationEmailFailureReason: notificationResult.failureReason ?? null,
+      }).where(eq(clientRequestMessages.id, message.id))
+    } catch {
+      console.warn("[client-request-notifications] unexpected warning on admin reply. Reply was not lost.")
+      await db.update(clientRequestMessages).set({
+        notificationEmailStatus: "failed",
+        notificationEmailFailureReason: "delivery",
+      }).where(eq(clientRequestMessages.id, message.id)).catch(() => undefined)
+    }
+  }
 
   const [requestRow] = await db.select().from(clientRequests).where(eq(clientRequests.id, existing.id)).limit(1)
 

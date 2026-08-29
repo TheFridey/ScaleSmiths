@@ -88,6 +88,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   } else if (action === "reopen") {
     updates.status = "in_progress"
     updates.completedAt = null
+  } else if (action === "markRead") {
+    updates.adminLastReadAt = now
   } else if (action !== "update") {
     return NextResponse.json({ error: "Unsupported client request action." }, { status: 400 })
   }

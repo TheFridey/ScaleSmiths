@@ -400,6 +400,13 @@
       "when": 1788122155333,
       "tag": "0056_living_wolfpack",
       "breakpoints": true
+    },
+    {
+      "idx": 57,
+      "version": "7",
+      "when": 1788123579543,
+      "tag": "0057_brave_shaman",
+      "breakpoints": true
     }
   ]
 }

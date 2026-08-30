@@ -17,7 +17,9 @@ interface ProjectDetail {
   progress: number; milestones: Row[]; deliverables: Row[]; onboardingItems: Row[]; resources: ResourceRow[]; decisions: Row[]; activity: Array<Record<string, unknown> & { id: number; title: string; description: string; visibility: string; sourceDomain: string | null; actorLabel: string | null; createdBy: string; occurredAt: Date | string }>; audit: Array<Record<string, unknown> & { id: number; action: string; createdAt: Date | string }>
 }
 
-export function DeliveryProjectWorkspace({ initial, owners }: { initial: ProjectDetail; owners: { id: string; name: string }[] }) {
+interface ProjectFinance { invoices: Array<{ id: number; invoiceNumber: string | null; status: string; total: number; portalPublishedAt: Date | string | null }>; serviceAssignments: Array<{ id: number; active: boolean; name: string; defaultUnitAmount: number }> }
+
+export function DeliveryProjectWorkspace({ initial, owners, finance, canWriteFinance }: { initial: ProjectDetail; owners: { id: string; name: string }[]; finance: ProjectFinance | null; canWriteFinance: boolean }) {
   const router = useRouter(); const { project } = initial
   const [busy, setBusy] = useState(""); const [error, setError] = useState("")
   async function mutate(path: string, method: "POST" | "PATCH", body: Record<string, unknown>, key: string) {
@@ -28,6 +30,7 @@ export function DeliveryProjectWorkspace({ initial, owners }: { initial: Project
   function submit(path: string, key: string, extras: Record<string, unknown> = {}) { return (event: React.FormEvent<HTMLFormElement>) => { event.preventDefault(); const form = event.currentTarget; void mutate(path, "POST", { ...Object.fromEntries(new FormData(form)), ...extras }, key).then((saved) => { if (saved) form.reset() }) } }
   function updateSubmit(key: string) { return (event: React.FormEvent<HTMLFormElement>) => { event.preventDefault(); void mutate(`/api/projects/${project.id}`, "PATCH", Object.fromEntries(new FormData(event.currentTarget)), key) } }
   function uploadDocument(event: React.FormEvent<HTMLFormElement>) { event.preventDefault(); const form = event.currentTarget; setBusy("new-document"); setError(""); void fetch(`/api/projects/${project.id}/documents`, { method: "POST", body: new FormData(form) }).then(async (response) => { const json = await response.json().catch(() => ({})); if (!response.ok) throw new Error(json.error || "Unable to save document."); form.reset(); router.refresh() }).catch((caught) => setError(caught instanceof Error ? caught.message : "Unable to save document.")).finally(() => setBusy("")) }
+  function createInvoiceDraft(event: React.FormEvent<HTMLFormElement>) { event.preventDefault(); const form = event.currentTarget; void mutate("/api/invoices/project-draft", "POST", { projectId: project.id, ...Object.fromEntries(new FormData(form)) }, "invoice-draft").then((saved) => { if (saved) router.refresh() }) }
 
   return <div className="space-y-6">
     <Link href="/projects" className="inline-flex items-center gap-2 text-sm text-t2 hover:text-acc"><ArrowLeft size={15} /> All projects</Link>
@@ -69,6 +72,7 @@ export function DeliveryProjectWorkspace({ initial, owners }: { initial: Project
       </div>
 
       <div className="space-y-6">
+        {finance ? <Section title="Financial state" note="Visible only to authorised finance roles. Project status never changes invoice payment state."><div className="space-y-2">{finance.invoices.length ? finance.invoices.map((invoice) => <Link key={invoice.id} href={`/finance/invoices/${invoice.id}`} className="flex items-center justify-between rounded-xl border border-b1 bg-s2 p-3 text-sm"><span>{invoice.invoiceNumber ?? `Draft #${invoice.id}`}</span><span>{label(invoice.status)} · {formatGbp(invoice.total)}{invoice.portalPublishedAt ? " · Portal" : ""}</span></Link>) : <p className="text-sm text-t3">No invoices are linked to this project.</p>}</div>{canWriteFinance && finance.serviceAssignments.some((assignment) => assignment.active) ? <form onSubmit={createInvoiceDraft} className="mt-4 grid gap-3 rounded-xl border border-dashed border-b2 p-4"><select name="serviceAssignmentId" required defaultValue=""><option value="" disabled>Select an accepted client service</option>{finance.serviceAssignments.filter((assignment) => assignment.active).map((assignment) => <option key={assignment.id} value={assignment.id}>{assignment.name} · {formatGbp(assignment.defaultUnitAmount)}</option>)}</select><button disabled={busy !== ""} className="w-fit rounded-lg bg-acc px-3 py-2 text-sm text-white">Create draft invoice</button><p className="text-xs text-t3">Creates an editable draft only. Issuance remains a separate explicit finance action.</p></form> : null}</Section> : null}
         <Section title="Project settings" note="Client-facing copy is kept separate from internal delivery notes.">
           <form onSubmit={updateSubmit("project-settings")} className="grid gap-3">
             <label><span className="mb-1 block text-xs text-t3">Client-visible summary</span><textarea name="summary" rows={3} defaultValue={project.summary ?? ""} /></label>
@@ -114,3 +118,4 @@ function label(value: unknown) { return String(value).replaceAll("_", " ").repla
 function date(value: Date | string | unknown) { return new Date(String(value)).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) }
 function dateTime(value: Date | string | unknown) { return new Date(String(value)).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" }) }
 function dateInput(value: Date | string | null | unknown) { if (!value) return ""; const parsed = new Date(String(value)); return Number.isNaN(parsed.getTime()) ? "" : parsed.toISOString().slice(0, 10) }
+function formatGbp(value: number) { return new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(value / 100) }

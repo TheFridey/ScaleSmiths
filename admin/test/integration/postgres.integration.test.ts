@@ -977,6 +977,45 @@ describe("real PostgreSQL integration", () => {
     ).toBe(0);
   });
 
+  it("links project service drafts without coupling invoice, project, or payment lifecycles", async () => {
+    const actor = (await pool.query("INSERT INTO admin_users(email,display_name,password_hash,role) VALUES('project-finance@example.test','Project Finance','hash','finance') RETURNING id")).rows[0].id;
+    const clientA = (await pool.query("INSERT INTO clients(name,invoice_client_code,billing_address_line_1,billing_city,billing_postcode,billing_country) VALUES('Linked Client','LINK','1 Link Road','Leeds','LS1 1AA','United Kingdom') RETURNING id")).rows[0].id;
+    const clientB = (await pool.query("INSERT INTO clients(name,invoice_client_code,billing_address_line_1,billing_city,billing_postcode,billing_country) VALUES('Other Client','OTHER','2 Other Road','York','YO1 1AA','United Kingdom') RETURNING id")).rows[0].id;
+    const projectA = (await pool.query("INSERT INTO delivery_projects(client_id,name) VALUES($1,'Accepted Website Build') RETURNING id", [clientA])).rows[0].id;
+    const projectB = (await pool.query("INSERT INTO delivery_projects(client_id,name) VALUES($1,'Other Project') RETURNING id", [clientB])).rows[0].id;
+    const catalogue = (await pool.query("INSERT INTO invoice_catalogue_items(name,description,default_unit_amount) VALUES('Website build deposit','Accepted project deposit',125000) RETURNING id")).rows[0].id;
+    const assignmentA = (await pool.query("INSERT INTO client_service_assignments(client_id,catalogue_item_id,assigned_by) VALUES($1,$2,$3) RETURNING id", [clientA, catalogue, actor])).rows[0].id;
+    const assignmentB = (await pool.query("INSERT INTO client_service_assignments(client_id,catalogue_item_id,assigned_by) VALUES($1,$2,$3) RETURNING id", [clientB, catalogue, actor])).rows[0].id;
+    const service = await import("../../src/lib/server/invoices");
+
+    const draft = await service.createProjectInvoiceDraft(projectA, assignmentA, actor);
+    expect(draft).toMatchObject({ status: "draft", invoiceNumber: null, sequenceNumber: null, clientId: clientA, projectId: projectA, serviceAssignmentId: assignmentA, total: 125000 });
+    expect(draft.items[0]).toMatchObject({ catalogueItemId: catalogue, title: "Website build deposit", unitAmount: 125000 });
+    expect((await pool.query("SELECT next_invoice_sequence FROM clients WHERE id=$1", [clientA])).rows[0].next_invoice_sequence).toBe(1);
+
+    await expect(service.createProjectInvoiceDraft(projectA, assignmentB, actor)).rejects.toMatchObject({ code: "invoice_service_client_mismatch" });
+    await expect(pool.query("UPDATE invoices SET project_id=$1 WHERE id=$2", [projectB, draft.id])).rejects.toMatchObject({ code: "23503" });
+
+    await pool.query("UPDATE clients SET name='Client Renamed Later' WHERE id=$1", [clientA]);
+    await pool.query("UPDATE delivery_projects SET name='Project Renamed Later' WHERE id=$1", [projectA]);
+    await pool.query("UPDATE invoice_catalogue_items SET name='Changed catalogue label',default_unit_amount=999999 WHERE id=$1", [catalogue]);
+    const issued = await service.transitionInvoice(draft.id, "issue", actor);
+    expect(issued).toMatchObject({ status: "issued", invoiceNumber: "SS-LINK-0001", clientNameSnapshot: "Client Renamed Later", projectId: projectA, serviceAssignmentId: assignmentA, total: 125000 });
+    expect(issued.items[0]).toMatchObject({ title: "Website build deposit", unitAmount: 125000 });
+    await pool.query("UPDATE clients SET name='Post-issue client rename' WHERE id=$1", [clientA]);
+    await pool.query("UPDATE delivery_projects SET name='Post-issue project rename' WHERE id=$1", [projectA]);
+    expect((await pool.query("SELECT client_name_snapshot,total FROM invoices WHERE id=$1", [issued.id])).rows[0]).toMatchObject({ client_name_snapshot: "Client Renamed Later", total: 125000 });
+    await expect(service.updateDraftInvoice(issued.id, { projectId: projectB, items: [{ title: "Forbidden", quantity: 1, unitAmount: 1 }] }, actor)).rejects.toMatchObject({ code: "invoice_locked" });
+
+    await pool.query("UPDATE delivery_projects SET status='paused' WHERE id=$1", [projectA]);
+    expect((await pool.query("SELECT status,paid_at FROM invoices WHERE id=$1", [issued.id])).rows[0]).toMatchObject({ status: "issued", paid_at: null });
+    await service.transitionInvoice(issued.id, "mark_paid", actor);
+    expect((await pool.query("SELECT project_id,type,visibility FROM client_timeline_events WHERE source_reference=$1", [`invoice:${issued.id}:paid`])).rows[0]).toMatchObject({ project_id: projectA, type: "invoice_paid", visibility: "internal" });
+
+    await pool.query("UPDATE delivery_projects SET status='cancelled' WHERE id=$1", [projectA]);
+    await expect(service.createProjectInvoiceDraft(projectA, assignmentA, actor)).rejects.toMatchObject({ code: "project_not_billable" });
+  });
+
   it("enforces portal ownership and records idempotent invoice delivery attempts", async () => {
     const previousFrom = process.env.RESEND_FROM;
     process.env.RESEND_FROM = "billing@scalesmiths.example";

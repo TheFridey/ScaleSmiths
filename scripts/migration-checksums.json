@@ -518,6 +518,12 @@
       "sha256": "b628d56b9bb8c5d345699b8068300e821c2ce73cc5e7de2c4c572195ac87ae3e",
       "lifecycle": "forward",
       "reason": "Adds stable onboarding-template snapshots, portal welcome content, and editable project-scoped tasks, client inputs, document requests, internal checks, blockers, and next actions."
+    },
+    {
+      "path": "admin/drizzle/0057_brave_shaman.sql",
+      "sha256": "0427a930a352475c7547034ad955368ce350191903407bf8662cec062356f84d",
+      "lifecycle": "forward",
+      "reason": "Links invoices to client-owned delivery projects and service assignments with composite ownership constraints while retaining immutable invoice item and issuance snapshots."
     }
   ],
   "journals": {
@@ -706,6 +712,13 @@
           "version": "7",
           "when": 1788122155333,
           "tag": "0056_living_wolfpack",
+          "breakpoints": true
+        },
+        {
+          "idx": 57,
+          "version": "7",
+          "when": 1788123579543,
+          "tag": "0057_brave_shaman",
           "breakpoints": true
         }
       ]

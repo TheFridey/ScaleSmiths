@@ -5,12 +5,12 @@ import { and, desc, eq, inArray, sql } from "drizzle-orm"
 import { db, type AdminDatabaseTransaction } from "@/lib/db"
 import { InvoiceDomainError, assertDraft, calculateInvoice, defaultInvoiceDates, formatInvoiceNumber, nextInvoiceStatus, normalizeInvoiceClientCode, type InvoiceItemInput } from "@/lib/invoices"
 import { buildInvoiceDocumentData, INVOICE_TEMPLATE_VERSION, paymentSnapshot, supplierSnapshot, validateDocumentIdentity } from "@/lib/invoice-document"
-import { clients, invoiceAuditLogs, invoiceCatalogueItems, invoiceItems, invoiceSupplierSettings, invoices } from "@/lib/schema"
+import { clientServiceAssignments, clients, deliveryProjects, invoiceAuditLogs, invoiceCatalogueItems, invoiceItems, invoiceSupplierSettings, invoices } from "@/lib/schema"
 import { renderInvoicePdf } from "./invoice-pdf"
 import { recordClientActivity } from "./client-activity"
 
 type ItemPayload = Partial<InvoiceItemInput> & { catalogueItemId?: number | null }
-interface InvoicePayload { clientId?: unknown; invoiceDate?: unknown; dueDate?: unknown; internalNotes?: unknown; customerNotes?: unknown; items?: unknown }
+interface InvoicePayload { clientId?: unknown; projectId?: unknown; serviceAssignmentId?: unknown; invoiceDate?: unknown; dueDate?: unknown; internalNotes?: unknown; customerNotes?: unknown; items?: unknown }
 
 export async function assignClientInvoiceCode(clientId: number, rawCode: unknown) {
   const code = normalizeInvoiceClientCode(rawCode)
@@ -30,11 +30,15 @@ export async function createInvoiceWithTx(tx: AdminDatabaseTransaction, payload:
   const clientId = positiveInteger(payload.clientId, "Client")
   const [client] = await tx.select().from(clients).where(eq(clients.id, clientId)).limit(1)
   if (!client) throw new InvoiceDomainError("Client not found.", 404, "client_not_found")
+  const projectId = optionalPositiveInteger(payload.projectId, "Project")
+  const serviceAssignmentId = optionalPositiveInteger(payload.serviceAssignmentId, "Service assignment")
+  if (projectId) await requireInvoiceProject(tx, projectId, clientId)
+  if (serviceAssignmentId) await requireServiceAssignment(tx, serviceAssignmentId, clientId)
 
   const dates = invoiceDates(payload)
   const calculation = await resolveItems(tx, payload.items)
   const [invoice] = await tx.insert(invoices).values({
-    invoiceNumber: null, clientId, sequenceNumber: null, clientCodeSnapshot: client.invoiceClientCode,
+    invoiceNumber: null, clientId, projectId, serviceAssignmentId, sequenceNumber: null, clientCodeSnapshot: client.invoiceClientCode,
     clientNameSnapshot: client.name, billingContactNameSnapshot: client.contactName, billingEmailSnapshot: client.contactEmail,
     billingAddressLine1Snapshot: client.billingAddressLine1, billingAddressLine2Snapshot: client.billingAddressLine2,
     billingCitySnapshot: client.billingCity, billingCountySnapshot: client.billingCounty,
@@ -45,6 +49,20 @@ export async function createInvoiceWithTx(tx: AdminDatabaseTransaction, payload:
   await tx.insert(invoiceItems).values(calculation.items.map((item) => ({ invoiceId: invoice.id, ...item })))
   await audit(tx, invoice.id, actorUserId, "invoice_created")
   return loadInvoice(tx, invoice.id)
+}
+
+export async function createProjectInvoiceDraft(projectId: number, serviceAssignmentId: number, actorUserId: string) {
+  return db.transaction(async (tx) => {
+    const project = await requireInvoiceProject(tx, projectId)
+    if (project.status === "cancelled") throw new InvoiceDomainError("A cancelled project cannot create a new invoice draft.", 409, "project_not_billable")
+    const assignment = await requireServiceAssignment(tx, serviceAssignmentId, project.clientId)
+    if (!assignment.active || !assignment.catalogueActive) throw new InvoiceDomainError("The selected client service is not active.", 409, "service_not_billable")
+    return createInvoiceWithTx(tx, {
+      clientId: project.clientId, projectId, serviceAssignmentId,
+      internalNotes: `Draft generated from project: ${project.name}`,
+      items: [{ catalogueItemId: assignment.catalogueItemId, quantity: 1 }],
+    }, actorUserId)
+  })
 }
 
 export async function updateDraftInvoice(invoiceId: number, payload: InvoicePayload, actorUserId: string) {
@@ -74,7 +92,7 @@ export async function transitionInvoice(invoiceId: number, action: "issue" | "ma
     const [updated] = await tx.update(invoices).set({ status, ...timestamps, updatedAt: now }).where(and(eq(invoices.id, invoiceId), eq(invoices.status, current.status))).returning()
     if (!updated) throw new InvoiceDomainError("Invoice changed concurrently; reload and try again.", 409, "concurrent_change")
     await audit(tx, invoiceId, actorUserId, status === "paid" ? "invoice_marked_paid" : "invoice_voided")
-    if (status === "paid") await recordClientActivity(tx, { clientRecordId: updated.clientId, sourceDomain: "invoice", sourceReference: `invoice:${invoiceId}:paid`, type: "invoice_paid", title: `${updated.invoiceNumber} paid`, description: "Payment has been recorded for this invoice.", visibility: updated.portalPublishedAt ? "client_visible" : "internal", actor: { type: "admin", id: actorUserId, label: "ScaleSmiths" }, metadata: { invoiceNumber: updated.invoiceNumber }, occurredAt: now, idempotencyKey: `invoice:${invoiceId}:paid` })
+    if (status === "paid") await recordClientActivity(tx, { clientRecordId: updated.clientId, projectId: updated.projectId, sourceDomain: "invoice", sourceReference: `invoice:${invoiceId}:paid`, type: "invoice_paid", title: `${updated.invoiceNumber} paid`, description: "Payment has been recorded for this invoice.", visibility: updated.portalPublishedAt ? "client_visible" : "internal", actor: { type: "admin", id: actorUserId, label: "ScaleSmiths" }, metadata: { invoiceNumber: updated.invoiceNumber }, occurredAt: now, idempotencyKey: `invoice:${invoiceId}:paid` })
     return loadInvoice(tx, invoiceId)
   })
 }
@@ -116,7 +134,7 @@ async function issueDraft(tx: AdminDatabaseTransaction, current: typeof invoices
   }).where(and(eq(invoices.id, current.id), eq(invoices.status, "draft"), sql`${invoices.invoiceNumber} is null`, sql`${invoices.sequenceNumber} is null`)).returning()
   if (!updated) throw new InvoiceDomainError("Invoice changed concurrently; reload and try again.", 409, "concurrent_change")
   await audit(tx, current.id, actorUserId, "invoice_issued", { invoiceNumber, documentTemplateVersion: INVOICE_TEMPLATE_VERSION })
-  await recordClientActivity(tx, { clientRecordId: current.clientId, sourceDomain: "invoice", sourceReference: `invoice:${current.id}:issued`, type: "invoice_issued", title: `${invoiceNumber} issued`, description: "A new invoice has been issued.", visibility: "internal", actor: { type: "admin", id: actorUserId, label: "ScaleSmiths" }, metadata: { invoiceNumber, total: updated.total, currency: updated.currency }, occurredAt: now, idempotencyKey: `invoice:${current.id}:issued` })
+  await recordClientActivity(tx, { clientRecordId: current.clientId, projectId: current.projectId, sourceDomain: "invoice", sourceReference: `invoice:${current.id}:issued`, type: "invoice_issued", title: `${invoiceNumber} issued`, description: "A new invoice has been issued.", visibility: "internal", actor: { type: "admin", id: actorUserId, label: "ScaleSmiths" }, metadata: { invoiceNumber, total: updated.total, currency: updated.currency }, occurredAt: now, idempotencyKey: `invoice:${current.id}:issued` })
   return loadInvoice(tx, current.id)
 }
 
@@ -129,7 +147,22 @@ export async function deleteDraftInvoice(invoiceId: number) {
 }
 
 export async function listInvoicesForAdmin() {
-  return db.select().from(invoices).orderBy(desc(invoices.createdAt))
+  return db.select({ invoice: invoices, projectName: deliveryProjects.name, serviceName: invoiceCatalogueItems.name }).from(invoices)
+    .leftJoin(deliveryProjects, eq(invoices.projectId, deliveryProjects.id))
+    .leftJoin(clientServiceAssignments, eq(invoices.serviceAssignmentId, clientServiceAssignments.id))
+    .leftJoin(invoiceCatalogueItems, eq(clientServiceAssignments.catalogueItemId, invoiceCatalogueItems.id))
+    .orderBy(desc(invoices.createdAt)).then((rows) => rows.map(({ invoice, ...links }) => ({ ...invoice, ...links })))
+}
+
+export async function loadProjectFinanceSummary(projectId: number) {
+  const project = await requireInvoiceProject(db, projectId)
+  const [linkedInvoices, assignments] = await Promise.all([
+    db.select().from(invoices).where(eq(invoices.projectId, projectId)).orderBy(desc(invoices.createdAt)),
+    db.select({ id: clientServiceAssignments.id, active: clientServiceAssignments.active, catalogueItemId: invoiceCatalogueItems.id, name: invoiceCatalogueItems.name, description: invoiceCatalogueItems.description, defaultUnitAmount: invoiceCatalogueItems.defaultUnitAmount })
+      .from(clientServiceAssignments).innerJoin(invoiceCatalogueItems, eq(clientServiceAssignments.catalogueItemId, invoiceCatalogueItems.id))
+      .where(eq(clientServiceAssignments.clientId, project.clientId)).orderBy(invoiceCatalogueItems.position, invoiceCatalogueItems.name),
+  ])
+  return { invoices: linkedInvoices, serviceAssignments: assignments }
 }
 
 export async function loadInvoiceForAdmin(invoiceId: number) {
@@ -171,12 +204,25 @@ async function getInvoice(tx: AdminDatabaseTransaction, id: number) {
   if (!invoice) throw new InvoiceDomainError("Invoice not found.", 404, "not_found")
   return invoice
 }
+async function requireInvoiceProject(tx: Pick<AdminDatabaseTransaction, "select">, projectId: number, expectedClientId?: number) {
+  const [project] = await tx.select({ id: deliveryProjects.id, clientId: deliveryProjects.clientId, name: deliveryProjects.name, status: deliveryProjects.status }).from(deliveryProjects).where(eq(deliveryProjects.id, projectId)).limit(1)
+  if (!project) throw new InvoiceDomainError("Project not found.", 404, "project_not_found")
+  if (expectedClientId !== undefined && project.clientId !== expectedClientId) throw new InvoiceDomainError("Project belongs to a different client.", 409, "invoice_project_client_mismatch")
+  return project
+}
+async function requireServiceAssignment(tx: Pick<AdminDatabaseTransaction, "select">, assignmentId: number, expectedClientId: number) {
+  const [assignment] = await tx.select({ id: clientServiceAssignments.id, clientId: clientServiceAssignments.clientId, active: clientServiceAssignments.active, catalogueItemId: clientServiceAssignments.catalogueItemId, catalogueActive: invoiceCatalogueItems.active }).from(clientServiceAssignments).innerJoin(invoiceCatalogueItems, eq(clientServiceAssignments.catalogueItemId, invoiceCatalogueItems.id)).where(eq(clientServiceAssignments.id, assignmentId)).limit(1)
+  if (!assignment) throw new InvoiceDomainError("Client service assignment not found.", 404, "service_assignment_not_found")
+  if (assignment.clientId !== expectedClientId) throw new InvoiceDomainError("Service assignment belongs to a different client.", 409, "invoice_service_client_mismatch")
+  return assignment
+}
 async function loadInvoice(tx: AdminDatabaseTransaction, id: number) {
   const invoice = await getInvoice(tx, id)
   return { ...invoice, items: await tx.select().from(invoiceItems).where(eq(invoiceItems.invoiceId, id)).orderBy(invoiceItems.position) }
 }
 async function audit(tx: AdminDatabaseTransaction, invoiceId: number, actorUserId: string, action: string, metadataJson: Record<string, unknown> = {}) { await tx.insert(invoiceAuditLogs).values({ invoiceId, actorUserId, action, metadataJson }) }
 function positiveInteger(value: unknown, label: string) { const parsed = typeof value === "number" ? value : Number(value); if (!Number.isSafeInteger(parsed) || parsed <= 0) throw new InvoiceDomainError(`${label} id is invalid.`); return parsed }
+function optionalPositiveInteger(value: unknown, label: string) { return value === undefined || value === null || value === "" ? null : positiveInteger(value, label) }
 function optionalText(value: unknown) { return typeof value === "string" && value.trim() ? value.trim() : null }
 function dateValue(value: unknown, fallback: Date, label: string) { if (value === undefined) return fallback; const date = new Date(String(value)); if (Number.isNaN(date.getTime())) throw new InvoiceDomainError(`${label} is invalid.`); return date }
 function invoiceDates(payload: InvoicePayload, existingInvoiceDate?: Date, existingDueDate?: Date) {

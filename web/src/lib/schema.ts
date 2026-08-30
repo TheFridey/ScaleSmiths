@@ -221,6 +221,7 @@ export const portalDeliveryProjectProgress = pgView("delivery_project_progress",
 }).existing()
 export const portalInvoices = pgTable("invoices", {
   id: serial("id").primaryKey(), invoiceNumber: text("invoice_number"), clientId: integer("client_id").notNull(),
+  projectId: integer("project_id"), serviceAssignmentId: integer("service_assignment_id"),
   clientNameSnapshot: text("client_name_snapshot").notNull(), billingContactNameSnapshot: text("billing_contact_name_snapshot"),
   billingEmailSnapshot: text("billing_email_snapshot"), billingAddressLine1Snapshot: text("billing_address_line_1_snapshot"),
   billingAddressLine2Snapshot: text("billing_address_line_2_snapshot"), billingCitySnapshot: text("billing_city_snapshot"),

@@ -1,5 +1,5 @@
 import { relations, sql } from "drizzle-orm"
-import { boolean, check, customType, index, integer, jsonb, numeric, pgEnum, pgTable, pgView, primaryKey, serial, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core"
+import { boolean, check, customType, foreignKey, index, integer, jsonb, numeric, pgEnum, pgTable, pgView, primaryKey, serial, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core"
 import type { LeadScoreFactor, LeadScoreResult } from "./lead-scoring"
 import type { ProjectEstimateResult } from "./project-estimator"
 import type { OnboardingTemplate } from "./delivery-onboarding-templates"
@@ -217,6 +217,8 @@ export const invoices = pgTable("invoices", {
   id: serial("id").primaryKey(),
   invoiceNumber: text("invoice_number"),
   clientId: integer("client_id").references(() => clients.id, { onDelete: "restrict" }).notNull(),
+  projectId: integer("project_id"),
+  serviceAssignmentId: integer("service_assignment_id"),
   sequenceNumber: integer("sequence_number"),
   clientCodeSnapshot: text("client_code_snapshot"),
   clientNameSnapshot: text("client_name_snapshot").notNull(),
@@ -253,6 +255,10 @@ export const invoices = pgTable("invoices", {
   uniqueIndex("invoices_client_sequence_idx").on(table.clientId, table.sequenceNumber),
   index("invoices_client_date_idx").on(table.clientId, table.invoiceDate),
   index("invoices_status_due_date_idx").on(table.status, table.dueDate),
+  index("invoices_project_date_idx").on(table.projectId, table.invoiceDate),
+  index("invoices_service_assignment_idx").on(table.serviceAssignmentId),
+  foreignKey({ columns: [table.projectId, table.clientId], foreignColumns: [deliveryProjects.id, deliveryProjects.clientId], name: "invoices_project_client_fk" }).onDelete("restrict"),
+  foreignKey({ columns: [table.serviceAssignmentId, table.clientId], foreignColumns: [clientServiceAssignments.id, clientServiceAssignments.clientId], name: "invoices_service_assignment_client_fk" }).onDelete("restrict"),
   check("invoices_number_lifecycle_check", sql`(${table.status} = 'draft' and ${table.invoiceNumber} is null and ${table.sequenceNumber} is null and ${table.issuedAt} is null) or (${table.status} <> 'draft' and ${table.invoiceNumber} is not null and ${table.sequenceNumber} > 0 and ${table.issuedAt} is not null)`),
   check("invoices_document_snapshot_lifecycle_check", sql`(${table.status} = 'draft' and ${table.documentTemplateVersion} is null and ${table.supplierSnapshot} is null and ${table.paymentSnapshot} is null and ${table.documentPdf} is null and ${table.documentPdfSha256} is null) or (${table.status} <> 'draft' and ${table.documentTemplateVersion} is not null and ${table.supplierSnapshot} is not null and ${table.paymentSnapshot} is not null and ${table.documentPdf} is not null and ${table.documentPdfSha256} is not null)`),
   check("invoices_amounts_check", sql`${table.subtotal} >= 0 and ${table.total} = ${table.subtotal}`),
@@ -468,6 +474,7 @@ export const deliveryProjects = pgTable("delivery_projects", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
   index("delivery_projects_client_status_idx").on(table.clientId, table.status),
+  uniqueIndex("delivery_projects_id_client_idx").on(table.id, table.clientId),
   index("delivery_projects_owner_status_idx").on(table.ownerUserId, table.status),
   uniqueIndex("delivery_projects_forge_project_idx").on(table.forgeProjectId),
   check("delivery_projects_dates_check", sql`${table.targetEndDate} is null or ${table.targetStartDate} is null or ${table.targetEndDate} >= ${table.targetStartDate}`),
@@ -744,6 +751,7 @@ export const clientServiceAssignments = pgTable("client_service_assignments", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
   uniqueIndex("client_service_assignments_client_catalogue_idx").on(table.clientId, table.catalogueItemId),
+  uniqueIndex("client_service_assignments_id_client_idx").on(table.id, table.clientId),
   index("client_service_assignments_prospect_idx").on(table.sourceProspectId),
 ])
 

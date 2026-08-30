@@ -1,7 +1,7 @@
 import "server-only"
 
 import { and, asc, desc, eq, inArray } from "drizzle-orm"
-import { db } from "@/lib/db"
+import { db, type AdminDatabaseTransaction } from "@/lib/db"
 import {
   adminUsers,
   clientTimelineEvents,
@@ -109,6 +109,10 @@ export async function getDeliveryProjectStorageScope(projectId: number) {
 }
 
 export async function createDeliveryProject(input: Record<string, unknown>, actor: DeliveryActor) {
+  return db.transaction((tx) => createDeliveryProjectWithTx(tx, input, actor))
+}
+
+export async function createDeliveryProjectWithTx(tx: AdminDatabaseTransaction, input: Record<string, unknown>, actor: DeliveryActor) {
   const clientId = optionalPositiveId(input.clientId, "Client ID")
   if (!clientId) throw new DeliveryProjectError("Client ID is required.")
   const values = {
@@ -131,16 +135,14 @@ export async function createDeliveryProject(input: Record<string, unknown>, acto
   if (values.clientStagingVisible && !values.clientStagingUrl) throw new DeliveryProjectError("A safe staging URL is required before publishing a preview.")
   assertDateOrder(values.targetStartDate, values.targetEndDate)
 
-  return db.transaction(async (tx) => {
-    await assertClientAndLinkage(tx, values.clientId, values.forgeProjectId, values.deploymentCandidateId)
-    await assertOwner(tx, values.ownerUserId)
-    const [project] = await tx.insert(deliveryProjects).values(values).returning()
-    await syncForgeIntegration(tx, project.id, values.forgeProjectId, values.deploymentCandidateId)
-    await tx.insert(deliveryProjectAuditLogs).values({ projectId: project.id, actorUserId: actor.id, action: "project_created", metadataJson: { clientId, phase: project.currentPhase, clientVisible: project.clientVisible } })
-    await publishTimeline(tx, project, actor, "project", `project:${project.id}`, "project_created", "Project created", `${project.name} was added to the delivery workspace.`, "internal")
-    if (project.clientVisible) await publishTimeline(tx, project, actor, "project", `project:${project.id}:published`, "project_published", project.name, project.summary ?? "A new delivery project has been published.")
-    return project
-  })
+  await assertClientAndLinkage(tx, values.clientId, values.forgeProjectId, values.deploymentCandidateId)
+  await assertOwner(tx, values.ownerUserId)
+  const [project] = await tx.insert(deliveryProjects).values(values).returning()
+  await syncForgeIntegration(tx, project.id, values.forgeProjectId, values.deploymentCandidateId)
+  await tx.insert(deliveryProjectAuditLogs).values({ projectId: project.id, actorUserId: actor.id, action: "project_created", metadataJson: { clientId, phase: project.currentPhase, clientVisible: project.clientVisible } })
+  await publishTimeline(tx, project, actor, "project", `project:${project.id}`, "project_created", "Project created", `${project.name} was added to the delivery workspace.`, "internal")
+  if (project.clientVisible) await publishTimeline(tx, project, actor, "project", `project:${project.id}:published`, "project_published", project.name, project.summary ?? "A new delivery project has been published.")
+  return project
 }
 
 export async function updateDeliveryProject(projectId: number, input: Record<string, unknown>, actor: DeliveryActor) {

@@ -44,6 +44,7 @@ export function requiredCapabilityForRequest({ pathname, method }: RbacRequest):
   if (pathname === "/users" || pathname.startsWith("/users/") || pathname.startsWith("/api/admin-users")) return write ? "admin_users.manage" : "admin_users.read"
   if (pathname === "/portal-users" || pathname.startsWith("/portal-users/") || pathname.startsWith("/api/portal-users")) return write ? "portal_users.manage" : "portal_users.read"
   if (pathname === "/claims" || pathname.startsWith("/claims/") || pathname.startsWith("/api/claims")) return write ? "claims.manage" : "claims.read"
+  if (/^\/api\/prospects\/[^/]+\/conversion$/.test(pathname)) return method.toUpperCase() === "GET" ? "leads.read" : "prospects.convert"
   if (pathname === "/prospects" || pathname.startsWith("/prospects/") || pathname.startsWith("/api/prospects")) return write ? "leads.write" : "leads.read"
   if (pathname === "/clients/new" || /^\/clients\/[^/]+\/edit$/.test(pathname)) return "clients.write"
   if (/^\/api\/clients\/[^/]+\/(?:invoice-code|billing)/.test(pathname)) return write ? "finance.write" : "finance.read"

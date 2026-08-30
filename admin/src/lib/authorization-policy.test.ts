@@ -60,6 +60,12 @@ describe("authoritative authorization policy", () => {
     }
   })
 
+  it("maps the prospect conversion route before the generic prospects rule", () => {
+    expect(authorizationExpectation("/api/prospects/5/conversion", "GET")?.capability).toBe("leads.read")
+    expect(authorizationExpectation("/api/prospects/5/conversion", "POST")?.capability).toBe("prospects.convert")
+    expect(authorizationExpectation("/api/prospects/5", "PATCH")?.capability).toBe("leads.write")
+  })
+
   it("fails closed for an unregistered API operation", () => {
     expect(authorizeRequest("owner", { pathname: "/api/unregistered-sensitive-route", method: "POST" })).toMatchObject({ allowed: false, capability: null, reason: "unmapped_api_operation" })
   })

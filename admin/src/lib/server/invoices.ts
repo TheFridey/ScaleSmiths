@@ -23,26 +23,28 @@ export async function assignClientInvoiceCode(clientId: number, rawCode: unknown
 }
 
 export async function createInvoice(payload: InvoicePayload, actorUserId: string) {
-  const clientId = positiveInteger(payload.clientId, "Client")
-  return db.transaction(async (tx) => {
-    const [client] = await tx.select().from(clients).where(eq(clients.id, clientId)).limit(1)
-    if (!client) throw new InvoiceDomainError("Client not found.", 404, "client_not_found")
+  return db.transaction((tx) => createInvoiceWithTx(tx, payload, actorUserId))
+}
 
-    const dates = invoiceDates(payload)
-    const calculation = await resolveItems(tx, payload.items)
-    const [invoice] = await tx.insert(invoices).values({
-      invoiceNumber: null, clientId, sequenceNumber: null, clientCodeSnapshot: client.invoiceClientCode,
-      clientNameSnapshot: client.name, billingContactNameSnapshot: client.contactName, billingEmailSnapshot: client.contactEmail,
-      billingAddressLine1Snapshot: client.billingAddressLine1, billingAddressLine2Snapshot: client.billingAddressLine2,
-      billingCitySnapshot: client.billingCity, billingCountySnapshot: client.billingCounty,
-      billingPostcodeSnapshot: client.billingPostcode, billingCountrySnapshot: client.billingCountry,
-      currency: "GBP", ...dates, status: "draft", subtotal: calculation.subtotal, total: calculation.total,
-      internalNotes: optionalText(payload.internalNotes), customerNotes: optionalText(payload.customerNotes),
-    }).returning()
-    await tx.insert(invoiceItems).values(calculation.items.map((item) => ({ invoiceId: invoice.id, ...item })))
-    await audit(tx, invoice.id, actorUserId, "invoice_created")
-    return loadInvoice(tx, invoice.id)
-  })
+export async function createInvoiceWithTx(tx: AdminDatabaseTransaction, payload: InvoicePayload, actorUserId: string) {
+  const clientId = positiveInteger(payload.clientId, "Client")
+  const [client] = await tx.select().from(clients).where(eq(clients.id, clientId)).limit(1)
+  if (!client) throw new InvoiceDomainError("Client not found.", 404, "client_not_found")
+
+  const dates = invoiceDates(payload)
+  const calculation = await resolveItems(tx, payload.items)
+  const [invoice] = await tx.insert(invoices).values({
+    invoiceNumber: null, clientId, sequenceNumber: null, clientCodeSnapshot: client.invoiceClientCode,
+    clientNameSnapshot: client.name, billingContactNameSnapshot: client.contactName, billingEmailSnapshot: client.contactEmail,
+    billingAddressLine1Snapshot: client.billingAddressLine1, billingAddressLine2Snapshot: client.billingAddressLine2,
+    billingCitySnapshot: client.billingCity, billingCountySnapshot: client.billingCounty,
+    billingPostcodeSnapshot: client.billingPostcode, billingCountrySnapshot: client.billingCountry,
+    currency: "GBP", ...dates, status: "draft", subtotal: calculation.subtotal, total: calculation.total,
+    internalNotes: optionalText(payload.internalNotes), customerNotes: optionalText(payload.customerNotes),
+  }).returning()
+  await tx.insert(invoiceItems).values(calculation.items.map((item) => ({ invoiceId: invoice.id, ...item })))
+  await audit(tx, invoice.id, actorUserId, "invoice_created")
+  return loadInvoice(tx, invoice.id)
 }
 
 export async function updateDraftInvoice(invoiceId: number, payload: InvoicePayload, actorUserId: string) {

@@ -161,6 +161,32 @@ describe("RBAC — prospects (leads)", () => {
   })
 })
 
+describe("RBAC — prospect conversion", () => {
+  const convertRoles: AdminRole[] = ["owner", "administrator", "sales", "project_manager"]
+
+  it("preview (GET) needs leads.read; execute (POST) needs prospects.convert", () => {
+    expect(requiredCapabilityForRequest({ pathname: "/api/prospects/5/conversion", method: "GET" })).toBe("leads.read")
+    expect(requiredCapabilityForRequest({ pathname: "/api/prospects/5/conversion", method: "POST" })).toBe("prospects.convert")
+  })
+
+  it("execute is owner, administrator, sales, project_manager only", () => {
+    const route = { pathname: "/api/prospects/5/conversion", method: "POST" as const }
+    for (const role of ADMIN_ROLES) {
+      const result = authorizeRequest(role, route)
+      expect(result.allowed).toBe(convertRoles.includes(role))
+      expect(result.capability).toBe("prospects.convert")
+    }
+  })
+
+  it("preview is denied to developer but allowed for every leads.read role", () => {
+    const route = { pathname: "/api/prospects/5/conversion", method: "GET" as const }
+    for (const role of leadsReadRoles) {
+      expect(authorizeRequest(role, route)).toMatchObject({ allowed: true, capability: "leads.read" })
+    }
+    expect(authorizeRequest("developer", route).allowed).toBe(false)
+  })
+})
+
 describe("RBAC — clients", () => {
   it("clients read is accessible by all roles", () => {
     for (const pathname of ["/clients", "/clients/1", "/api/clients", "/api/clients/1"]) {

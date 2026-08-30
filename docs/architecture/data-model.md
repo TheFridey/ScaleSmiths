@@ -22,6 +22,10 @@ erDiagram
   DELIVERY_PROJECTS ||--o{ DELIVERY_PROJECT_AUDIT_LOGS : audits
   DELIVERY_PROJECTS o|--o| FORGE_PROJECTS : links_build
   PROSPECTS ||--o{ FORGE_PROJECTS : originates
+  PROSPECTS ||--o| PROSPECT_CONVERSIONS : converted_via
+  CLIENTS ||--o{ PROSPECT_CONVERSIONS : from_opportunity
+  CLIENTS ||--o{ CLIENT_SERVICE_ASSIGNMENTS : has
+  INVOICE_CATALOGUE_ITEMS ||--o{ CLIENT_SERVICE_ASSIGNMENTS : offered_as
   FORGE_PROJECTS ||--o{ FORGE_TASKS : runs
   FORGE_PROJECTS ||--o{ FORGE_JOBS : queues
   FORGE_PROJECTS ||--o{ FORGE_ARTIFACTS : produces
@@ -66,6 +70,12 @@ Shared tables are duplicated in TypeScript rather than imported from one package
 - `outreach_activities`: typed communications/notes for a prospect.
 - `proposal_trackings`: commercial package/status/timestamps for a prospect.
 - `sales_proposals`: rendered HTML proposal, prices, selected services and prospect/client association.
+- `prospect_conversions`: one row per converted prospect (prospect_id unique). Actor, client_action
+  (created|linked), assigned_tier, resulting project/draft-invoice ids, portal_provisioning_prepared,
+  onboarding_task_ids, and metadata_json (confirmed options + frozen opportunity snapshot). Idempotency
+  anchor for the conversion workflow.
+- `client_service_assignments`: structured service assignments linking a client to invoice catalogue
+  items, with source_prospect_id for conversion traceability. unique(client_id, catalogue_item_id).
 - `delivery_projects`: client-owned delivery identity, lifecycle, phase, ownership, dates, and optional validated Forge/deployment linkage. Multiple projects may belong to one client.
 - `delivery_milestones`: weighted delivery checkpoints. Non-skipped milestone weights are the source of overall progress; client visibility and internal notes are separate.
 - `delivery_deliverables`: concrete project outputs, optionally grouped under a milestone, with workflow state, ownership, target date, and visibility.

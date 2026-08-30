@@ -22,6 +22,7 @@ import {
   type ProspectStage,
 } from "@/lib/prospects"
 import type { LeadScoreFactor, LeadScoreOutcome } from "@/lib/lead-scoring"
+import { ConvertProspectModal } from "@/components/prospect-conversion/ConvertProspectModal"
 
 const T = { s1:"var(--s1)",s2:"var(--s2)",s3:"var(--s3)",b1:"var(--b1)",b2:"var(--b2)",t1:"var(--t1)",t2:"var(--t2)",t3:"var(--t3)",acc:"var(--acc)",grn:"var(--grn)",amb:"var(--amb)",red:"var(--red)" }
 
@@ -168,6 +169,7 @@ export function ProspectPipeline({ initialProspects, initialActivities, initialP
   const [dragging, setDragging] = useState<Prospect | null>(null)
   const [busy, setBusy] = useState("")
   const [error, setError] = useState("")
+  const [convertProspectId, setConvertProspectId] = useState<number | null>(null)
 
   useEffect(() => {
     setProspects(initialProspects)
@@ -488,9 +490,18 @@ export function ProspectPipeline({ initialProspects, initialActivities, initialP
             onRecordLeadScoreOutcome={recordLeadScoreOutcome}
             onWon={() => selected && patchProspect(selected.id, { action:"markWon" }, "won")}
             onLost={markLost}
-            onConvert={() => { const invoiceClientCode = window.prompt("Permanent invoice client code (2–12 letters or numbers)"); if (selected && invoiceClientCode) void patchProspect(selected.id, { action:"convertToClient", invoiceClientCode }, "convert") }}
+            onConvert={() => selected && setConvertProspectId(selected.id)}
           />
         </div>
+      )}
+
+      {convertProspectId !== null && (
+        <ConvertProspectModal
+          prospectId={convertProspectId}
+          open
+          onClose={() => setConvertProspectId(null)}
+          onConverted={() => router.refresh()}
+        />
       )}
     </div>
   )

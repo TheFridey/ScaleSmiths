@@ -500,7 +500,7 @@ export function ProspectPipeline({ initialProspects, initialActivities, initialP
           prospectId={convertProspectId}
           open
           onClose={() => setConvertProspectId(null)}
-          onConverted={() => { setConvertProspectId(null); router.refresh() }}
+          onConverted={() => router.refresh()}
         />
       )}
     </div>

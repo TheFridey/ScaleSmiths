@@ -111,9 +111,17 @@ export async function executeConversion(prospectId: number, actor: ConversionAct
 
     if (prospect.stage !== "won") throw new ProspectConversionError("Only won opportunities can be converted.", 409, "not_won")
 
+    const selectedCatalogue = options.catalogueItemIds.length
+      ? await tx.select().from(invoiceCatalogueItems).where(and(inArray(invoiceCatalogueItems.id, options.catalogueItemIds), eq(invoiceCatalogueItems.active, true)))
+      : []
+    if (selectedCatalogue.length !== options.catalogueItemIds.length) {
+      throw new ProspectConversionError("One or more selected services are unavailable.", 409, "catalogue_missing")
+    }
+
     // 1. client — create or link
     let clientId: number
     let clientAction: "created" | "linked"
+    let assignedTier: string | null = null
     if (options.client.mode === "link") {
       const [linked] = await tx.select({ id: clients.id, tier: clients.tier, invoiceClientCode: clients.invoiceClientCode })
         .from(clients).where(eq(clients.id, options.client.clientId)).limit(1)
@@ -134,6 +142,7 @@ export async function executeConversion(prospectId: number, actor: ConversionAct
           throw error
         }
       }
+      assignedTier = (patch.tier as string | undefined) ?? linked.tier ?? null
     } else {
       try {
         const [created] = await tx.insert(clients).values({
@@ -149,12 +158,12 @@ export async function executeConversion(prospectId: number, actor: ConversionAct
         }).returning({ id: clients.id })
         clientId = created.id
         clientAction = "created"
+        assignedTier = options.client.tier
       } catch (error) {
         if (isPgUniqueViolation(error)) throw new ProspectConversionError("That invoice client code is already in use.", 409, "duplicate_client_code")
         throw error
       }
     }
-    const assignedTier = options.client.mode === "create" ? options.client.tier : options.client.tier ?? null
 
     // 2. service assignments
     const serviceAssignmentIds: number[] = []
@@ -219,11 +228,9 @@ export async function executeConversion(prospectId: number, actor: ConversionAct
     // 6. draft invoice (optional)
     let draftInvoiceId: number | null = null
     if (options.createDraftInvoice) {
-      const selected = await tx.select().from(invoiceCatalogueItems).where(inArray(invoiceCatalogueItems.id, options.catalogueItemIds))
-      if (selected.length !== options.catalogueItemIds.length) throw new ProspectConversionError("One or more selected services no longer exist.", 409, "catalogue_missing")
       const invoice = await createInvoiceWithTx(tx, {
         clientId,
-        items: selected.map((item) => ({ catalogueItemId: item.id, title: item.name, description: item.description ?? null, quantity: 1, unitAmount: item.defaultUnitAmount })),
+        items: selectedCatalogue.map((item) => ({ catalogueItemId: item.id, title: item.name, description: item.description ?? null, quantity: 1, unitAmount: item.defaultUnitAmount })),
       }, actor.id)
       draftInvoiceId = invoice.id
     }

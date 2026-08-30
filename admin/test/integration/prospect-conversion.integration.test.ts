@@ -236,11 +236,53 @@ describe("executeConversion (atomic)", () => {
     expect(await adminDb.select().from(currentSchema.clients)).toHaveLength(1)
   })
 
+  it("link mode: applies the guarded client patch, preserves an existing tier, and rejects a duplicate invoice code", async () => {
+    process.env.ADMIN_DATABASE_URL = adminUrl
+    const adminDb = drizzle(new Pool({ connectionString: adminUrl }))
+    const item = await seedCatalogue(adminDb)
+
+    // 1. fresh client (no tier, no invoiceClientCode) -> the guarded tx.update(clients) writes all three fields
+    const prospectA = await seedWonProspect(adminDb)
+    const [freshClient] = await adminDb.insert(currentSchema.clients).values({ name: "Fresh Co", updatedAt: new Date() }).returning()
+    const recordA = await executeConversion(prospectA.id, actor, {
+      client: { mode: "link", clientId: freshClient.id, tier: "Retainer", invoiceClientCode: "LINKA" },
+      mrr: 750, catalogueItemIds: [item.id],
+      createProject: false, onboardingTasks: false, createDraftInvoice: false, preparePortal: false,
+    })
+    const [patchedClient] = await adminDb.select().from(currentSchema.clients).where(eq(currentSchema.clients.id, freshClient.id))
+    expect(patchedClient.mrr).toBe(750)
+    expect(patchedClient.tier).toBe("Retainer")
+    expect(patchedClient.invoiceClientCode).toBe("LINKA")
+    expect(recordA.assignedTier).toBe("Retainer")
+
+    // 2. client already has a tier -> the guarded patch must NOT overwrite it, and assigned_tier must record what was kept
+    const prospectB = await seedWonProspect(adminDb)
+    const [tieredClient] = await adminDb.insert(currentSchema.clients).values({ name: "Tiered Co", tier: "Forge Build", updatedAt: new Date() }).returning()
+    const recordB = await executeConversion(prospectB.id, actor, {
+      client: { mode: "link", clientId: tieredClient.id, tier: "Retainer", invoiceClientCode: "LINKB" },
+      mrr: 400, catalogueItemIds: [item.id],
+      createProject: false, onboardingTasks: false, createDraftInvoice: false, preparePortal: false,
+    })
+    const [preservedClient] = await adminDb.select().from(currentSchema.clients).where(eq(currentSchema.clients.id, tieredClient.id))
+    expect(preservedClient.tier).toBe("Forge Build")
+    expect(recordB.assignedTier).toBe("Forge Build")
+
+    // 3. invoice code already held by a DIFFERENT client -> unique violation surfaces as a 409
+    const prospectC = await seedWonProspect(adminDb)
+    await adminDb.insert(currentSchema.clients).values({ name: "Code Holder", invoiceClientCode: "TAKEN", updatedAt: new Date() })
+    const [targetClient] = await adminDb.insert(currentSchema.clients).values({ name: "Wants Code", updatedAt: new Date() }).returning()
+    await expect(executeConversion(prospectC.id, actor, {
+      client: { mode: "link", clientId: targetClient.id, tier: "Retainer", invoiceClientCode: "TAKEN" },
+      mrr: 0, catalogueItemIds: [item.id],
+      createProject: false, onboardingTasks: false, createDraftInvoice: false, preparePortal: false,
+    })).rejects.toMatchObject({ status: 409 })
+  })
+
   it("rolls back everything when a step fails", async () => {
     process.env.ADMIN_DATABASE_URL = adminUrl
     const adminDb = drizzle(new Pool({ connectionString: adminUrl }))
     const prospect = await seedWonProspect(adminDb)
-    // createDraftInvoice true but a catalogue id that does not exist -> resolveItems throws inside the tx
+    // catalogue id that does not exist -> the up-front active-catalogue check throws 409 before any write
     await expect(executeConversion(prospect.id, actor, {
       client: { mode: "create", name: "Acme", tier: "Retainer", invoiceClientCode: "ACME3" },
       mrr: 100, catalogueItemIds: [999999],

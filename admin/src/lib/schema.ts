@@ -683,6 +683,30 @@ export const prospects = pgTable("prospects", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 })
 
+export const prospectConversions = pgTable("prospect_conversions", {
+  id: serial("id").primaryKey(),
+  prospectId: integer("prospect_id").references(() => prospects.id, { onDelete: "restrict" }).notNull(),
+  clientId: integer("client_id").references(() => clients.id, { onDelete: "restrict" }).notNull(),
+  deliveryProjectId: integer("delivery_project_id").references(() => deliveryProjects.id, { onDelete: "set null" }),
+  draftInvoiceId: integer("draft_invoice_id").references(() => invoices.id, { onDelete: "set null" }),
+  // Row id in the web-owned portal_client_accounts table. No cross-ownership FK.
+  portalAccountId: integer("portal_account_id"),
+  linkMode: text("link_mode").notNull(),
+  convertedBy: uuid("converted_by").references(() => adminUsers.id, { onDelete: "set null" }),
+  convertedAt: timestamp("converted_at", { withTimezone: true }).defaultNow().notNull(),
+  optionsJson: jsonb("options_json").$type<Record<string, unknown>>().notNull(),
+  opportunitySnapshotJson: jsonb("opportunity_snapshot_json").$type<Record<string, unknown>>().notNull(),
+  stepsJson: jsonb("steps_json").$type<Record<string, string>>().default({}).notNull(),
+  status: text("status").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("prospect_conversions_prospect_idx").on(table.prospectId),
+  index("prospect_conversions_client_idx").on(table.clientId),
+  check("prospect_conversions_link_mode_check", sql`${table.linkMode} in ('created','linked')`),
+  check("prospect_conversions_status_check", sql`${table.status} in ('completed','partial')`),
+])
+
 export const outreachActivities = pgTable("outreach_activities", {
   id: serial("id").primaryKey(),
   prospectId: integer("prospect_id").references(() => prospects.id, { onDelete: "cascade" }).notNull(),

@@ -5,13 +5,9 @@ import { migrate } from "drizzle-orm/node-postgres/migrator";
 import path from "node:path";
 import { promisify } from "node:util";
 import { execFile } from "node:child_process";
-import { createHash } from "node:crypto";
-import bcrypt from "bcryptjs";
-import { getTableName, is } from "drizzle-orm";
-import { PgTable } from "drizzle-orm/pg-core";
 import * as currentSchema from "../../src/lib/schema";
 import { assertSafeIntegrationDatabaseUrl } from "../../src/lib/test-database-safety";
-import { and, eq, sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { prospectConversions, clientServiceAssignments } from "../../src/lib/schema";
 import { prepareDisabledPortalAccount } from "../../src/lib/server/portal-users";
 import { executeConversion, previewConversion } from "../../src/lib/server/prospect-conversion"
@@ -188,7 +184,10 @@ describe("executeConversion (atomic)", () => {
     expect(record.assignedTier).toBe("Retainer")
     expect(record.portalProvisioningPrepared).toBe(true)
     expect(record.onboardingTaskIds.length).toBe(5)
-    expect((record.metadataJson as any).opportunitySnapshot.acceptedProposal.packageType).toBe("growth")
+    const metadata = record.metadataJson as {
+      opportunitySnapshot: { acceptedProposal: { packageType: string } }
+    }
+    expect(metadata.opportunitySnapshot.acceptedProposal.packageType).toBe("growth")
     const [client] = await adminDb.select().from(currentSchema.clients).where(eq(currentSchema.clients.id, record.clientId))
     expect(client.tier).toBe("Retainer")
     expect(client.invoiceClientCode).toBe("ACME1")

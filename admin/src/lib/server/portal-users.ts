@@ -4,7 +4,7 @@ import { randomBytes } from "node:crypto"
 import bcrypt from "bcryptjs"
 import { asc, eq } from "drizzle-orm"
 import { boolean, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core"
-import { db } from "@/lib/db"
+import { db, type AdminDatabaseTransaction } from "@/lib/db"
 import { clients } from "@/lib/schema"
 import { PortalUserError, validateClientId, validatePortalEmail, validatePortalPassword } from "@/lib/portal-users"
 
@@ -106,4 +106,29 @@ export async function updatePortalUser(idValue: unknown, input: Record<string, u
 
 function isUniqueViolation(error: unknown) {
   return Boolean(error && typeof error === "object" && (("code" in error && error.code === "23505") || ("cause" in error && error.cause && typeof error.cause === "object" && "code" in error.cause && error.cause.code === "23505")))
+}
+
+export async function prepareDisabledPortalAccountWithTx(tx: AdminDatabaseTransaction, clientId: number) {
+  if (!Number.isInteger(clientId) || clientId <= 0) throw new PortalUserError("A valid client is required.")
+  const [client] = await tx.select({ id: clients.id, portalClientId: clients.portalClientId })
+    .from(clients).where(eq(clients.id, clientId)).for("update").limit(1)
+  if (!client) throw new PortalUserError("The selected client no longer exists.", 404, "client_not_found")
+  const portalClientId = client.portalClientId ?? `portal-client-${client.id}`
+  if (!client.portalClientId) await tx.update(clients).set({ portalClientId, updatedAt: new Date() }).where(eq(clients.id, client.id))
+  try {
+    const [account] = await tx.insert(portalClientAccounts).values({
+      clientId: portalClientId,
+      email: `portal-disabled+${client.id}@scalesmiths.co.uk`,
+      passwordHash: await bcrypt.hash(randomBytes(32).toString("base64url"), PASSWORD_ROUNDS),
+      active: false,
+    }).returning({ id: portalClientAccounts.id })
+    return { portalAccountId: account.id, portalClientId }
+  } catch (error) {
+    if (isUniqueViolation(error)) throw new PortalUserError("A portal account already exists for this client.", 409, "duplicate_account")
+    throw error
+  }
+}
+
+export async function prepareDisabledPortalAccount(clientId: number) {
+  return db.transaction((tx) => prepareDisabledPortalAccountWithTx(tx, clientId))
 }

@@ -13,6 +13,7 @@ import * as currentSchema from "../../src/lib/schema";
 import { assertSafeIntegrationDatabaseUrl } from "../../src/lib/test-database-safety";
 import { and, eq, sql } from "drizzle-orm";
 import { prospectConversions, clientServiceAssignments } from "../../src/lib/schema";
+import { prepareDisabledPortalAccount } from "../../src/lib/server/portal-users";
 
 const run = promisify(execFile);
 let pool: Pool;
@@ -111,6 +112,19 @@ describe("prospect_conversions + client_service_assignments schema", () => {
     await expect(
       adminDb.insert(clientServiceAssignments).values({ clientId: client.id, catalogueItemId: item.id }),
     ).rejects.toThrow()
+  })
+
+  it("prepareDisabledPortalAccount links portalClientId and creates a disabled account", async () => {
+    process.env.ADMIN_DATABASE_URL = adminUrl
+    const adminDb = drizzle(new Pool({ connectionString: adminUrl }))
+    const [client] = await adminDb.insert(currentSchema.clients).values({ name: "Portalless", updatedAt: new Date() }).returning()
+    const result = await prepareDisabledPortalAccount(client.id)
+    expect(result.portalClientId).toBe(`portal-client-${client.id}`)
+    const [updated] = await adminDb.select().from(currentSchema.clients).where(eq(currentSchema.clients.id, client.id))
+    expect(updated.portalClientId).toBe(result.portalClientId)
+    const rows = await adminDb.execute(sql`select active, password_hash from portal_client_accounts where id = ${result.portalAccountId}`)
+    expect(rows.rows[0].active).toBe(false)
+    expect(String(rows.rows[0].password_hash).length).toBeGreaterThan(20)
   })
 })
 function roleUrl(base: string, username: string, password: string) {

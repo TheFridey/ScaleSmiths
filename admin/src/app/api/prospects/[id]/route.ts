@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { eq } from "drizzle-orm"
 import { db } from "@/lib/db"
-import { clients, proposalTrackings, prospects } from "@/lib/schema"
-import { InvoiceDomainError, normalizeInvoiceClientCode } from "@/lib/invoices"
+import { proposalTrackings, prospects } from "@/lib/schema"
 import {
-  buildClientFromWonProspect,
   isProspectStage,
   optionalString,
   parseProposalPayload,
@@ -154,43 +152,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       .returning()
 
     return NextResponse.json({ ok: true, prospect })
-  }
-
-  if (action === "convertToClient") {
-    if (existing.convertedClientId) {
-      return NextResponse.json({ ok: true, clientId: existing.convertedClientId, prospect: existing })
-    }
-
-    let invoiceClientCode: string
-    try { invoiceClientCode = normalizeInvoiceClientCode((body as Record<string, unknown>).invoiceClientCode) }
-    catch (error) { return NextResponse.json({ error: error instanceof InvoiceDomainError ? error.safeMessage : "Invalid invoice client code." }, { status: 400 }) }
-
-    let client
-    try { [client] = await db
-      .insert(clients)
-      .values({
-        ...buildClientFromWonProspect(existing),
-        invoiceClientCode,
-        updatedAt: now,
-      })
-      .returning({ id: clients.id })
-    } catch (error) {
-      if (error && typeof error === "object" && "code" in error && error.code === "23505") return NextResponse.json({ error: "That invoice client code is already in use." }, { status: 409 })
-      throw error
-    }
-
-    const [prospect] = await db
-      .update(prospects)
-      .set({
-        stage: "won",
-        wonAt: existing.wonAt ?? now,
-        convertedClientId: client.id,
-        updatedAt: now,
-      })
-      .where(eq(prospects.id, id))
-      .returning()
-
-    return NextResponse.json({ ok: true, clientId: client.id, prospect })
   }
 
   const parsed = parseProspectPayload(body as Record<string, unknown>, "patch")

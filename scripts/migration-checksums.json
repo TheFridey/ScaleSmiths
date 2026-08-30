@@ -512,6 +512,12 @@
       "sha256": "21ea930b37e2116adbb6f42daa5cfb72e9cc6245603eb1909124a880acd4d9cb",
       "lifecycle": "forward",
       "reason": "Adds unique client portal identities, explicit account lifecycle state, hashed expiring activation/reset tokens, revocation, and retry-safe notification delivery tracking."
+    },
+    {
+      "path": "admin/drizzle/0056_living_wolfpack.sql",
+      "sha256": "b628d56b9bb8c5d345699b8068300e821c2ce73cc5e7de2c4c572195ac87ae3e",
+      "lifecycle": "forward",
+      "reason": "Adds stable onboarding-template snapshots, portal welcome content, and editable project-scoped tasks, client inputs, document requests, internal checks, blockers, and next actions."
     }
   ],
   "journals": {
@@ -693,6 +699,13 @@
           "version": "7",
           "when": 1788098201528,
           "tag": "0055_prospect_conversion",
+          "breakpoints": true
+        },
+        {
+          "idx": 56,
+          "version": "7",
+          "when": 1788122155333,
+          "tag": "0056_living_wolfpack",
           "breakpoints": true
         }
       ]

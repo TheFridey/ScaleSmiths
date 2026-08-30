@@ -10,6 +10,7 @@ import {
   deliveryDecisions,
   deliveryDeliverables,
   deliveryMilestones,
+  deliveryOnboardingItems,
   deliveryProjectAuditLogs,
   deliveryProjectProgress,
   deliveryProjects,
@@ -19,6 +20,7 @@ import {
   forgeProjects,
   forgeRuns,
 } from "@/lib/schema"
+import { getOnboardingTemplate, ONBOARDING_ITEM_KINDS, ONBOARDING_ITEM_STATUSES, snapshotOnboardingTemplate } from "@/lib/delivery-onboarding-templates"
 import { assertSafeClientStagingUrl, CLIENT_DELIVERY_STATUSES } from "@/lib/delivery-projection"
 import { recordClientActivity } from "@/lib/server/client-activity"
 import {
@@ -83,9 +85,10 @@ export async function getDeliveryProjectForAdmin(projectId: number) {
     .where(eq(deliveryProjects.id, projectId)).limit(1)
   if (!row) throw new DeliveryProjectError("Project not found.", 404)
 
-  const [milestones, deliverables, resources, decisions, activity, audit, forgeIntegration] = await Promise.all([
+  const [milestones, deliverables, onboardingItems, resources, decisions, activity, audit, forgeIntegration] = await Promise.all([
     db.select().from(deliveryMilestones).where(eq(deliveryMilestones.projectId, projectId)).orderBy(asc(deliveryMilestones.position), asc(deliveryMilestones.id)),
     db.select().from(deliveryDeliverables).where(eq(deliveryDeliverables.projectId, projectId)).orderBy(asc(deliveryDeliverables.position), asc(deliveryDeliverables.id)),
+    db.select().from(deliveryOnboardingItems).where(eq(deliveryOnboardingItems.projectId, projectId)).orderBy(asc(deliveryOnboardingItems.position), asc(deliveryOnboardingItems.id)),
     db.select().from(clientDocuments).where(eq(clientDocuments.projectId, projectId)).orderBy(desc(clientDocuments.createdAt)),
     db.select().from(deliveryDecisions).where(eq(deliveryDecisions.projectId, projectId)).orderBy(desc(deliveryDecisions.createdAt)),
     db.select().from(clientTimelineEvents).where(and(eq(clientTimelineEvents.clientRecordId, row.project.clientId), eq(clientTimelineEvents.projectId, projectId))).orderBy(desc(clientTimelineEvents.occurredAt), desc(clientTimelineEvents.id)).limit(100),
@@ -94,7 +97,7 @@ export async function getDeliveryProjectForAdmin(projectId: number) {
   ])
 
   const [progressRow] = await db.select({ progress: deliveryProjectProgress.progress }).from(deliveryProjectProgress).where(eq(deliveryProjectProgress.projectId, projectId)).limit(1)
-  return { ...row, forgeIntegration: forgeIntegration[0] ?? null, progress: progressRow?.progress ?? calculateProjectProgress(milestones), milestones, deliverables, resources, decisions, activity, audit }
+  return { ...row, forgeIntegration: forgeIntegration[0] ?? null, progress: progressRow?.progress ?? calculateProjectProgress(milestones), milestones, deliverables, onboardingItems, resources, decisions, activity, audit }
 }
 
 export async function getDeliveryProjectLinkForForge(forgeProjectId: number) {
@@ -115,10 +118,13 @@ export async function createDeliveryProject(input: Record<string, unknown>, acto
 export async function createDeliveryProjectWithTx(tx: AdminDatabaseTransaction, input: Record<string, unknown>, actor: DeliveryActor) {
   const clientId = optionalPositiveId(input.clientId, "Client ID")
   if (!clientId) throw new DeliveryProjectError("Client ID is required.")
+  const template = getOnboardingTemplate(input.onboardingTemplateKey)
+  if (input.onboardingTemplateKey && !template) throw new DeliveryProjectError("Onboarding template is invalid.")
+  const templateSnapshot = template ? snapshotOnboardingTemplate(template) : null
   const values = {
     clientId,
     name: requiredText(input.name, "Project name"),
-    summary: optionalText(input.summary, 2000),
+    summary: input.summary === undefined || input.summary === "" ? template?.project.summary ?? null : optionalText(input.summary, 2000),
     internalNotes: optionalText(input.internalNotes, 4000),
     clientVisible: booleanValue(input.clientVisible, false),
     currentPhase: input.currentPhase ? enumValue(input.currentPhase, DELIVERY_PROJECT_PHASES, "Current phase") : "discovery" as const,
@@ -131,6 +137,11 @@ export async function createDeliveryProjectWithTx(tx: AdminDatabaseTransaction, 
     targetEndDate: optionalDate(input.targetEndDate, "Target end date"),
     forgeProjectId: optionalPositiveId(input.forgeProjectId, "Forge project ID"),
     deploymentCandidateId: optionalPositiveId(input.deploymentCandidateId, "Deployment candidate ID"),
+    onboardingTemplateKey: template?.key ?? null,
+    onboardingTemplateVersion: template?.version ?? null,
+    onboardingTemplateSnapshot: templateSnapshot,
+    portalWelcomeTitle: optionalText(input.portalWelcomeTitle, 180) ?? template?.project.portalWelcomeTitle ?? null,
+    portalWelcomeContent: optionalText(input.portalWelcomeContent, 4000) ?? template?.project.portalWelcomeContent ?? null,
   }
   if (values.clientStagingVisible && !values.clientStagingUrl) throw new DeliveryProjectError("A safe staging URL is required before publishing a preview.")
   assertDateOrder(values.targetStartDate, values.targetEndDate)
@@ -138,8 +149,17 @@ export async function createDeliveryProjectWithTx(tx: AdminDatabaseTransaction, 
   await assertClientAndLinkage(tx, values.clientId, values.forgeProjectId, values.deploymentCandidateId)
   await assertOwner(tx, values.ownerUserId)
   const [project] = await tx.insert(deliveryProjects).values(values).returning()
+  if (template) {
+    const milestoneIds = new Map<string, number>()
+    for (const [position, definition] of template.milestones.entries()) {
+      const [milestone] = await tx.insert(deliveryMilestones).values({ projectId: project.id, title: definition.title, description: definition.description, status: "planned", clientVisible: definition.clientVisible, weight: definition.weight, position }).returning({ id: deliveryMilestones.id })
+      milestoneIds.set(definition.ref, milestone.id)
+    }
+    if (template.items.length) await tx.insert(deliveryOnboardingItems).values(template.items.map((definition, position) => ({ projectId: project.id, milestoneId: milestoneIds.get(definition.milestoneRef)!, kind: definition.kind, title: definition.title, description: definition.description ?? null, clientVisible: definition.clientVisible, position })))
+    if (template.deliverables.length) await tx.insert(deliveryDeliverables).values(template.deliverables.map((definition, position) => ({ projectId: project.id, milestoneId: milestoneIds.get(definition.milestoneRef)!, title: definition.title, description: definition.description ?? null, status: "planned" as const, clientVisible: definition.clientVisible, position })))
+  }
   await syncForgeIntegration(tx, project.id, values.forgeProjectId, values.deploymentCandidateId)
-  await tx.insert(deliveryProjectAuditLogs).values({ projectId: project.id, actorUserId: actor.id, action: "project_created", metadataJson: { clientId, phase: project.currentPhase, clientVisible: project.clientVisible } })
+  await tx.insert(deliveryProjectAuditLogs).values({ projectId: project.id, actorUserId: actor.id, action: "project_created", metadataJson: { clientId, phase: project.currentPhase, clientVisible: project.clientVisible, onboardingTemplate: template ? `${template.key}@${template.version}` : null } })
   await publishTimeline(tx, project, actor, "project", `project:${project.id}`, "project_created", "Project created", `${project.name} was added to the delivery workspace.`, "internal")
   if (project.clientVisible) await publishTimeline(tx, project, actor, "project", `project:${project.id}:published`, "project_published", project.name, project.summary ?? "A new delivery project has been published.")
   return project
@@ -187,11 +207,13 @@ export async function updateDeliveryProject(projectId: number, input: Record<str
       completedAt: status === "completed" ? current.completedAt ?? new Date() : null,
       forgeProjectId,
       deploymentCandidateId,
+      portalWelcomeTitle: input.portalWelcomeTitle === undefined ? current.portalWelcomeTitle : optionalText(input.portalWelcomeTitle, 180),
+      portalWelcomeContent: input.portalWelcomeContent === undefined ? current.portalWelcomeContent : optionalText(input.portalWelcomeContent, 4000),
       updatedAt: new Date(),
     }).where(eq(deliveryProjects.id, projectId)).returning()
     await syncForgeIntegration(tx, projectId, forgeProjectId, deploymentCandidateId)
 
-    const changes = changedFields(current, updated, ["name", "summary", "internalNotes", "clientVisible", "status", "currentPhase", "clientStatus", "clientNextStep", "clientStagingUrl", "clientStagingVisible", "ownerUserId", "targetStartDate", "targetEndDate", "forgeProjectId", "deploymentCandidateId"])
+    const changes = changedFields(current, updated, ["name", "summary", "internalNotes", "clientVisible", "status", "currentPhase", "clientStatus", "clientNextStep", "clientStagingUrl", "clientStagingVisible", "ownerUserId", "targetStartDate", "targetEndDate", "forgeProjectId", "deploymentCandidateId", "portalWelcomeTitle", "portalWelcomeContent"])
     if (changes.length) await tx.insert(deliveryProjectAuditLogs).values({ projectId, actorUserId: actor.id, action: "project_updated", metadataJson: { changes } })
     if (current.status !== status || current.currentPhase !== currentPhase) {
       await publishTimeline(tx, updated, actor, "project", `project:${projectId}:status:${status}:${currentPhase}`, status === "completed" ? "project_completed" : "project_status_changed", status === "completed" ? `${updated.name} completed` : `${updated.name}: ${humanise(currentPhase)}`, status === "completed" ? "This project has been completed." : `Project is ${humanise(status)} in the ${humanise(currentPhase)} phase.`)
@@ -247,6 +269,57 @@ export async function updateDeliveryMilestone(projectId: number, milestoneId: nu
     if (updated.clientVisible && (current.status !== status || !current.clientVisible)) {
       await publishTimeline(tx, project, actor, "project", `milestone:${milestoneId}:status:${status}`, status === "completed" ? "milestone_completed" : "project_milestone_changed", updated.title, `Milestone is now ${humanise(status)}.`)
     }
+    return updated
+  })
+}
+
+export async function createDeliveryOnboardingItem(projectId: number, input: Record<string, unknown>, actor: DeliveryActor) {
+  return db.transaction(async (tx) => {
+    await requireProject(tx, projectId)
+    const milestoneId = optionalPositiveId(input.milestoneId, "Milestone ID")
+    if (milestoneId) await requireMilestone(tx, projectId, milestoneId)
+    const ownerUserId = optionalUuid(input.ownerUserId, "Owner user ID")
+    await assertOwner(tx, ownerUserId)
+    const status = input.status ? enumValue(input.status, ONBOARDING_ITEM_STATUSES, "Onboarding item status") : "not_started" as const
+    const blocker = optionalText(input.blocker, 1000)
+    if (status === "blocked" && !blocker) throw new DeliveryProjectError("A blocker is required when an onboarding item is blocked.")
+    const [item] = await tx.insert(deliveryOnboardingItems).values({
+      projectId, milestoneId, ownerUserId, status, blocker,
+      kind: enumValue(input.kind, ONBOARDING_ITEM_KINDS, "Onboarding item kind"),
+      title: requiredText(input.title, "Onboarding item title"), description: optionalText(input.description, 2000),
+      clientVisible: booleanValue(input.clientVisible, false), nextAction: optionalText(input.nextAction, 1000),
+      targetDate: optionalDate(input.targetDate, "Target date"), position: positionValue(input.position),
+      completedAt: status === "completed" ? new Date() : null,
+    }).returning()
+    await tx.insert(deliveryProjectAuditLogs).values({ projectId, actorUserId: actor.id, action: "onboarding_item_created", metadataJson: { itemId: item.id, kind: item.kind, clientVisible: item.clientVisible } })
+    return item
+  })
+}
+
+export async function updateDeliveryOnboardingItem(projectId: number, itemId: number, input: Record<string, unknown>, actor: DeliveryActor) {
+  return db.transaction(async (tx) => {
+    await requireProject(tx, projectId)
+    const [current] = await tx.select().from(deliveryOnboardingItems).where(and(eq(deliveryOnboardingItems.id, itemId), eq(deliveryOnboardingItems.projectId, projectId))).limit(1)
+    if (!current) throw new DeliveryProjectError("Onboarding item not found.", 404)
+    const milestoneId = input.milestoneId === undefined ? current.milestoneId : optionalPositiveId(input.milestoneId, "Milestone ID")
+    if (milestoneId) await requireMilestone(tx, projectId, milestoneId)
+    const ownerUserId = input.ownerUserId === undefined ? current.ownerUserId : optionalUuid(input.ownerUserId, "Owner user ID")
+    await assertOwner(tx, ownerUserId)
+    const status = input.status === undefined ? current.status : enumValue(input.status, ONBOARDING_ITEM_STATUSES, "Onboarding item status")
+    const blocker = input.blocker === undefined ? current.blocker : optionalText(input.blocker, 1000)
+    if (status === "blocked" && !blocker) throw new DeliveryProjectError("A blocker is required when an onboarding item is blocked.")
+    const [updated] = await tx.update(deliveryOnboardingItems).set({
+      milestoneId, ownerUserId, status, blocker: status === "blocked" ? blocker : input.blocker === undefined ? current.blocker : blocker,
+      kind: input.kind === undefined ? current.kind : enumValue(input.kind, ONBOARDING_ITEM_KINDS, "Onboarding item kind"),
+      title: input.title === undefined ? current.title : requiredText(input.title, "Onboarding item title"),
+      description: input.description === undefined ? current.description : optionalText(input.description, 2000),
+      clientVisible: input.clientVisible === undefined ? current.clientVisible : booleanValue(input.clientVisible, current.clientVisible),
+      nextAction: input.nextAction === undefined ? current.nextAction : optionalText(input.nextAction, 1000),
+      targetDate: input.targetDate === undefined ? current.targetDate : optionalDate(input.targetDate, "Target date"),
+      position: input.position === undefined ? current.position : positionValue(input.position),
+      completedAt: status === "completed" ? current.completedAt ?? new Date() : null, updatedAt: new Date(),
+    }).where(eq(deliveryOnboardingItems.id, itemId)).returning()
+    await tx.insert(deliveryProjectAuditLogs).values({ projectId, actorUserId: actor.id, action: "onboarding_item_updated", metadataJson: { itemId, fromStatus: current.status, toStatus: updated.status, changes: changedFields(current, updated, ["milestoneId", "kind", "title", "description", "status", "clientVisible", "ownerUserId", "blocker", "nextAction", "targetDate", "position"]) } })
     return updated
   })
 }

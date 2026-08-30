@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { FolderKanban, Plus } from "lucide-react"
 import { DELIVERY_PROJECT_PHASES } from "@/lib/delivery-projects"
+import { ONBOARDING_TEMPLATES } from "@/lib/delivery-onboarding-templates"
 
 interface ProjectRow {
   id: number; name: string; clientName: string; status: string; currentPhase: string; progress: number
@@ -37,6 +38,7 @@ export function DeliveryProjectsWorkspace({ projects, clients }: { projects: Pro
     {open ? <form onSubmit={create} className="grid gap-4 rounded-2xl border border-b1 bg-s1 p-5 md:grid-cols-2">
       <Field label="Client"><select name="clientId" required defaultValue=""><option value="" disabled>Select client</option>{clients.map((client) => <option key={client.id} value={client.id}>{client.name}</option>)}</select></Field>
       <Field label="Project name"><input name="name" required maxLength={180} /></Field>
+      <Field label="Onboarding template"><select name="onboardingTemplateKey" defaultValue=""><option value="">Blank project</option>{ONBOARDING_TEMPLATES.map((template) => <option key={`${template.key}@${template.version}`} value={template.key}>{template.name} (v{template.version})</option>)}</select><span className="mt-1 block text-[11px] text-t3">Creates an editable snapshot of milestones, tasks, requests and deliverables.</span></Field>
       <Field label="Current phase"><select name="currentPhase" defaultValue="discovery">{DELIVERY_PROJECT_PHASES.map((phase) => <option key={phase} value={phase}>{label(phase)}</option>)}</select></Field>
       <Field label="Target end"><input name="targetEndDate" type="date" /></Field>
       <label className="md:col-span-2"><span className="mb-1 block text-xs text-t2">Client-visible summary</span><textarea name="summary" rows={3} maxLength={2000} /></label>

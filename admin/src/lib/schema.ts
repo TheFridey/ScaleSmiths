@@ -2,6 +2,7 @@ import { relations, sql } from "drizzle-orm"
 import { boolean, check, customType, index, integer, jsonb, numeric, pgEnum, pgTable, pgView, primaryKey, serial, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core"
 import type { LeadScoreFactor, LeadScoreResult } from "./lead-scoring"
 import type { ProjectEstimateResult } from "./project-estimator"
+import type { OnboardingTemplate } from "./delivery-onboarding-templates"
 import type { ForgeDependencyAdmissionReport } from "./forge-dependency-admission"
 import type { ForgeRunPolicy } from "./forge-run-stages"
 import type { ForgeOperatorError } from "./forge-operator-error"
@@ -84,6 +85,8 @@ export const clientDocumentType = pgEnum("client_document_type", ["brief", "prop
 export const clientDocumentSource = pgEnum("client_document_source", ["upload", "link"])
 export const clientDocumentStorageProvider = pgEnum("client_document_storage_provider", ["r2", "external"])
 export const deliveryDecisionStatus = pgEnum("delivery_decision_status", ["open", "resolved", "cancelled"])
+export const deliveryOnboardingItemKind = pgEnum("delivery_onboarding_item_kind", ["task", "client_input", "document_request", "internal_check"])
+export const deliveryOnboardingItemStatus = pgEnum("delivery_onboarding_item_status", ["not_started", "in_progress", "blocked", "completed", "not_required"])
 
 export type PublicClaimStatus = "draft" | "verified" | "expired" | "rejected"
 export type PublicClaimApprovalStatus = "pending" | "approved" | "declined" | "not_required"
@@ -456,6 +459,11 @@ export const deliveryProjects = pgTable("delivery_projects", {
   // declarations as ids avoids making delivery's public schema depend on Forge internals.
   forgeProjectId: integer("forge_project_id"),
   deploymentCandidateId: integer("deployment_candidate_id"),
+  onboardingTemplateKey: text("onboarding_template_key"),
+  onboardingTemplateVersion: integer("onboarding_template_version"),
+  onboardingTemplateSnapshot: jsonb("onboarding_template_snapshot").$type<OnboardingTemplate>(),
+  portalWelcomeTitle: text("portal_welcome_title"),
+  portalWelcomeContent: text("portal_welcome_content"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
@@ -699,6 +707,31 @@ export const prospectConversions = pgTable("prospect_conversions", {
 }, (table) => [
   uniqueIndex("prospect_conversions_prospect_idx").on(table.prospectId),
   index("prospect_conversions_client_idx").on(table.clientId, table.convertedAt),
+])
+
+export const deliveryOnboardingItems = pgTable("delivery_onboarding_items", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => deliveryProjects.id, { onDelete: "cascade" }).notNull(),
+  milestoneId: integer("milestone_id").references(() => deliveryMilestones.id, { onDelete: "set null" }),
+  kind: deliveryOnboardingItemKind("kind").notNull(),
+  title: text("title").notNull(),
+  description: text("description"),
+  status: deliveryOnboardingItemStatus("status").default("not_started").notNull(),
+  clientVisible: boolean("client_visible").default(false).notNull(),
+  ownerUserId: uuid("owner_user_id").references(() => adminUsers.id, { onDelete: "set null" }),
+  blocker: text("blocker"),
+  nextAction: text("next_action"),
+  targetDate: timestamp("target_date", { withTimezone: true }),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  position: integer("position").default(0).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("delivery_onboarding_items_project_position_idx").on(table.projectId, table.position),
+  index("delivery_onboarding_items_project_status_idx").on(table.projectId, table.status),
+  check("delivery_onboarding_items_position_check", sql`${table.position} >= 0`),
+  check("delivery_onboarding_items_blocker_check", sql`${table.status} <> 'blocked' or ${table.blocker} is not null`),
+  check("delivery_onboarding_items_completion_check", sql`(${table.status} = 'completed' and ${table.completedAt} is not null) or (${table.status} <> 'completed' and ${table.completedAt} is null)`),
 ])
 
 export const clientServiceAssignments = pgTable("client_service_assignments", {

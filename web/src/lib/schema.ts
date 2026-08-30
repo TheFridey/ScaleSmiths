@@ -34,6 +34,8 @@ export const clientDocumentType = pgEnum("client_document_type", ["brief", "prop
 export const clientDocumentSource = pgEnum("client_document_source", ["upload", "link"])
 export const clientDocumentStorageProvider = pgEnum("client_document_storage_provider", ["r2", "external"])
 export const deliveryDecisionStatus = pgEnum("delivery_decision_status", ["open", "resolved", "cancelled"])
+export const deliveryOnboardingItemKind = pgEnum("delivery_onboarding_item_kind", ["task", "client_input", "document_request", "internal_check"])
+export const deliveryOnboardingItemStatus = pgEnum("delivery_onboarding_item_status", ["not_started", "in_progress", "blocked", "completed", "not_required"])
 export const experienceEventName = pgEnum("experience_event_name", [
   "experience_choice_displayed",
   "experience_normal_selected",
@@ -163,6 +165,8 @@ export const portalDeliveryProjects = pgTable("delivery_projects", {
   clientNextStep: text("client_next_step"),
   clientStagingUrl: text("client_staging_url"),
   clientStagingVisible: boolean("client_staging_visible").notNull(),
+  portalWelcomeTitle: text("portal_welcome_title"),
+  portalWelcomeContent: text("portal_welcome_content"),
   targetStartDate: timestamp("target_start_date", { withTimezone: true }),
   targetEndDate: timestamp("target_end_date", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
@@ -186,6 +190,14 @@ export const portalDeliveryResources = pgTable("delivery_resources", {
   id: serial("id").primaryKey(), projectId: integer("project_id").notNull(), deliverableId: integer("deliverable_id"),
   kind: deliveryResourceKind("kind").notNull(), title: text("title").notNull(), url: text("url").notNull(), visibility: requestMessageVisibility("visibility").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+})
+
+export const portalDeliveryOnboardingItems = pgTable("delivery_onboarding_items", {
+  id: serial("id").primaryKey(), projectId: integer("project_id").notNull(), milestoneId: integer("milestone_id"),
+  kind: deliveryOnboardingItemKind("kind").notNull(), title: text("title").notNull(), description: text("description"),
+  status: deliveryOnboardingItemStatus("status").notNull(), clientVisible: boolean("client_visible").notNull(),
+  blocker: text("blocker"), nextAction: text("next_action"), targetDate: timestamp("target_date", { withTimezone: true }),
+  completedAt: timestamp("completed_at", { withTimezone: true }), position: integer("position").notNull(),
 })
 
 export const portalClientDocuments = pgTable("client_documents", {

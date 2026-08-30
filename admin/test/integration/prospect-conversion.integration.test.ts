@@ -14,6 +14,21 @@ import { assertSafeIntegrationDatabaseUrl } from "../../src/lib/test-database-sa
 import { and, eq, sql } from "drizzle-orm";
 import { prospectConversions, clientServiceAssignments } from "../../src/lib/schema";
 import { prepareDisabledPortalAccount } from "../../src/lib/server/portal-users";
+import { previewConversion } from "../../src/lib/server/prospect-conversion"
+
+const actor = { id: "00000000-0000-0000-0000-000000000001", email: "op@scalesmiths.co.uk", name: "Op" }
+
+async function seedWonProspect(adminDb: ReturnType<typeof drizzle>) {
+  const [prospect] = await adminDb.insert(currentSchema.prospects).values({
+    businessName: "Acme Ltd", contactEmail: "sam@acme.com", websiteUrl: "https://acme.com",
+    stage: "won", estimatedProjectValue: 9000, estimatedMonthlyRetainer: 500, wonAt: new Date(),
+  }).returning()
+  await adminDb.insert(currentSchema.proposalTrackings).values({
+    prospectId: prospect.id, packageType: "growth", quotedAmount: 9000, monthlyRetainerAmount: 500,
+    status: "accepted", acceptedAt: new Date(), updatedAt: new Date(),
+  })
+  return prospect
+}
 
 const run = promisify(execFile);
 let pool: Pool;
@@ -125,6 +140,27 @@ describe("prospect_conversions + client_service_assignments schema", () => {
     const rows = await adminDb.execute(sql`select active, password_hash from portal_client_accounts where id = ${result.portalAccountId}`)
     expect(rows.rows[0].active).toBe(false)
     expect(String(rows.rows[0].password_hash).length).toBeGreaterThan(20)
+  })
+})
+
+describe("previewConversion", () => {
+  it("returns defaults, catalogue, dedupe candidates, no blocking warnings", async () => {
+    process.env.ADMIN_DATABASE_URL = adminUrl
+    const adminDb = drizzle(new Pool({ connectionString: adminUrl }))
+    const prospect = await seedWonProspect(adminDb)
+    await adminDb.insert(currentSchema.clients).values({ name: "Acme Ltd", contactEmail: "x@y.z", updatedAt: new Date() })
+    await adminDb.insert(currentSchema.invoiceCatalogueItems).values({ name: "Care Plan", defaultUnitAmount: 5000, updatedAt: new Date() })
+    const plan = await previewConversion(prospect.id, actor)
+    expect(plan.defaults.tier).toBe("Retainer")
+    expect(plan.defaults.mrr).toBe(500)
+    expect(plan.matchCandidates[0]).toMatchObject({ matchedOn: ["name"] })
+    expect(plan.catalogue.some((c) => c.name === "Care Plan")).toBe(true)
+    expect(plan.warnings.some((w) => w.blocksExecute)).toBe(false)
+    expect(plan.existingConversionId).toBeNull()
+  })
+  it("404s on a missing prospect", async () => {
+    process.env.ADMIN_DATABASE_URL = adminUrl
+    await expect(previewConversion(999999, actor)).rejects.toMatchObject({ status: 404 })
   })
 })
 function roleUrl(base: string, username: string, password: string) {

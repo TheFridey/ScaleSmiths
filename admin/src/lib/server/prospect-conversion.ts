@@ -64,7 +64,8 @@ export function planInputs(data: Awaited<ReturnType<typeof loadOpportunity>>) {
   }
 }
 
-export async function previewConversion(prospectId: number, _actor: ConversionActor): Promise<ConversionPlanResponse> {
+export async function previewConversion(prospectId: number, actor: ConversionActor): Promise<ConversionPlanResponse> {
+  void actor
   const data = await loadOpportunity(prospectId)
   const existing = await loadConversionRecord(prospectId)
   const [allClients, catalogue] = await Promise.all([
@@ -76,7 +77,7 @@ export async function previewConversion(prospectId: number, _actor: ConversionAc
     allClients,
   )
   const plan = buildConversionPlan({ ...planInputs(data), matchCandidates, existingConversionId: existing?.id ?? null })
-  return { ...plan, catalogue: catalogue.filter((c) => c.active).map(({ active: _a, ...rest }) => rest) }
+  return { ...plan, catalogue: catalogue.filter((item) => item.active).map((item) => ({ id: item.id, name: item.name, defaultUnitAmount: item.defaultUnitAmount, category: item.category })) }
 }
 
 export interface ConversionRecordView extends ProspectConversionRow {

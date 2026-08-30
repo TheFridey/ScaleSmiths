@@ -40,7 +40,6 @@ beforeAll(async () => {
   process.env.DATABASE_URL = url;
   process.env.ADMIN_DATABASE_URL = adminUrl;
   process.env.MIGRATION_DATABASE_URL = migrationUrl;
-  process.env.NODE_ENV = "test";
   pool = new Pool({ connectionString: url, max: 8 });
   await pool.query(
     "DROP SCHEMA IF EXISTS drizzle CASCADE; DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public",

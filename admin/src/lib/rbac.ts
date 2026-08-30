@@ -4,7 +4,7 @@ import { authorizationExpectation } from "./authorization-policy"
 export const CAPABILITIES = [
   "admin_users.read", "admin_users.manage", "admin_users.credentials.reset", "admin_users.owner.assign",
   "portal_users.read", "portal_users.manage", "portal_users.credentials.reset",
-  "leads.read", "leads.write", "clients.read", "clients.write",
+  "leads.read", "leads.write", "prospects.convert", "clients.read", "clients.write",
   "projects.read", "projects.write", "forge.read", "forge.execute", "forge.approve",
   "forge.configure", "finance.read", "finance.write", "settings.manage", "audit.read",
   "deployments.execute", "analytics.read", "analytics.write", "claims.read", "claims.manage",
@@ -14,8 +14,8 @@ export type Capability = (typeof CAPABILITIES)[number]
 export const ROLE_CAPABILITIES: Readonly<Record<AdminRole, readonly Capability[]>> = {
   owner: CAPABILITIES,
   administrator: CAPABILITIES.filter((capability) => capability !== "admin_users.credentials.reset" && capability !== "admin_users.owner.assign"),
-  sales: ["leads.read", "leads.write", "clients.read", "projects.read", "finance.read", "analytics.read"],
-  project_manager: ["portal_users.read", "portal_users.manage", "leads.read", "clients.read", "clients.write", "projects.read", "projects.write", "forge.read", "forge.execute", "forge.approve", "forge.configure", "finance.read", "audit.read", "analytics.read", "analytics.write"],
+  sales: ["leads.read", "leads.write", "prospects.convert", "clients.read", "projects.read", "finance.read", "analytics.read"],
+  project_manager: ["portal_users.read", "portal_users.manage", "leads.read", "prospects.convert", "clients.read", "clients.write", "projects.read", "projects.write", "forge.read", "forge.execute", "forge.approve", "forge.configure", "finance.read", "audit.read", "analytics.read", "analytics.write"],
   developer: ["clients.read", "projects.read", "projects.write", "forge.read", "forge.execute", "forge.approve", "forge.configure", "audit.read", "deployments.execute", "analytics.read"],
   finance: ["leads.read", "clients.read", "projects.read", "finance.read", "finance.write", "audit.read", "analytics.read"],
   viewer: ["leads.read", "clients.read", "projects.read", "forge.read", "finance.read", "analytics.read"],

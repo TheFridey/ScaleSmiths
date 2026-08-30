@@ -683,6 +683,37 @@ export const prospects = pgTable("prospects", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 })
 
+export const prospectConversions = pgTable("prospect_conversions", {
+  id: serial("id").primaryKey(),
+  prospectId: integer("prospect_id").references(() => prospects.id, { onDelete: "restrict" }).notNull(),
+  clientId: integer("client_id").references(() => clients.id, { onDelete: "restrict" }).notNull(),
+  projectId: integer("project_id").references(() => deliveryProjects.id, { onDelete: "set null" }),
+  draftInvoiceId: integer("draft_invoice_id").references(() => invoices.id, { onDelete: "set null" }),
+  actorUserId: uuid("actor_user_id").references(() => adminUsers.id, { onDelete: "set null" }),
+  clientAction: text("client_action").$type<"created" | "linked">().notNull(),
+  assignedTier: text("assigned_tier"),
+  portalProvisioningPrepared: boolean("portal_provisioning_prepared").default(false).notNull(),
+  onboardingTaskIds: jsonb("onboarding_task_ids").$type<number[]>().default(sql`'[]'::jsonb`).notNull(),
+  metadataJson: jsonb("metadata_json").$type<Record<string, unknown>>().default({}).notNull(),
+  convertedAt: timestamp("converted_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("prospect_conversions_prospect_idx").on(table.prospectId),
+  index("prospect_conversions_client_idx").on(table.clientId, table.convertedAt),
+])
+
+export const clientServiceAssignments = pgTable("client_service_assignments", {
+  id: serial("id").primaryKey(),
+  clientId: integer("client_id").references(() => clients.id, { onDelete: "cascade" }).notNull(),
+  catalogueItemId: integer("catalogue_item_id").references(() => invoiceCatalogueItems.id, { onDelete: "restrict" }).notNull(),
+  sourceProspectId: integer("source_prospect_id").references(() => prospects.id, { onDelete: "set null" }),
+  assignedBy: uuid("assigned_by").references(() => adminUsers.id, { onDelete: "set null" }),
+  active: boolean("active").default(true).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("client_service_assignments_client_catalogue_idx").on(table.clientId, table.catalogueItemId),
+  index("client_service_assignments_prospect_idx").on(table.sourceProspectId),
+])
+
 export const outreachActivities = pgTable("outreach_activities", {
   id: serial("id").primaryKey(),
   prospectId: integer("prospect_id").references(() => prospects.id, { onDelete: "cascade" }).notNull(),

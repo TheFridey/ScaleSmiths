@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs"
+import { resolve } from "node:path"
 import { describe, expect, it } from "vitest"
 import {
   ProspectConversionError,
@@ -123,5 +125,12 @@ describe("buildConversionPlan", () => {
     expect(plan.warnings.find((w) => w.code === "not_won")?.blocksExecute).toBe(true)
     expect(plan.warnings.find((w) => w.code === "dedupe_candidates")?.blocksExecute).toBe(false)
     expect(plan.warnings.find((w) => w.code === "no_accepted_proposal")).toBeTruthy()
+  })
+})
+
+describe("conversion service import guard", () => {
+  it("the conversion service imports no email/delivery modules", () => {
+    const source = readFileSync(resolve(__dirname, "server/prospect-conversion.ts"), "utf8")
+    expect(source).not.toMatch(/resend|invoice-delivery|client-request-notifications|safe-outbound|nodemailer|sendMail|monthly-report/i)
   })
 })

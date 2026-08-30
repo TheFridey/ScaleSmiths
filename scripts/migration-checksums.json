@@ -500,6 +500,12 @@
       "sha256": "d0fd1b3a0b2f6decddaad47f1b181dd062b457e0cd3f2f9f1fc9bd5bc422a42c",
       "lifecycle": "forward",
       "reason": "Extends the durable client timeline with internal client ownership, source references, actors, structured metadata, occurrence time, and retry-safe idempotency keys."
+    },
+    {
+      "path": "admin/drizzle/0055_prospect_conversion.sql",
+      "sha256": "d07eb8fa5c16d4768f1d10d829412ac5291c76a3cf975bf2d1db3c144cff5ead",
+      "lifecycle": "forward",
+      "reason": "Adds prospect_conversions (idempotency anchor + immutable audit record for the prospect-to-client conversion workflow) and client_service_assignments (structured client service tier/catalogue assignments captured at conversion)."
     }
   ],
   "journals": {
@@ -667,6 +673,13 @@
           "version": "7",
           "when": 1788105600000,
           "tag": "0054_internal_forge_delivery_boundary",
+          "breakpoints": true
+        },
+        {
+          "idx": 55,
+          "version": "7",
+          "when": 1788098201528,
+          "tag": "0055_prospect_conversion",
           "breakpoints": true
         }
       ]

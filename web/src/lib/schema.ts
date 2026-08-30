@@ -103,9 +103,40 @@ export const portalClientAccounts = pgTable("portal_client_accounts", {
   email: text("email").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
   active: boolean("active").default(true).notNull(),
+  status: text("status").$type<"invited" | "active" | "disabled" | "reset_required">().default("active").notNull(),
+  invitedAt: timestamp("invited_at", { withTimezone: true }),
+  activatedAt: timestamp("activated_at", { withTimezone: true }),
+  disabledAt: timestamp("disabled_at", { withTimezone: true }),
+  lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-})
+}, (table) => [uniqueIndex("portal_client_accounts_client_id_idx").on(table.clientId)])
+
+export const portalAccountTokens = pgTable("portal_account_tokens", {
+  id: serial("id").primaryKey(),
+  accountId: integer("account_id").references(() => portalClientAccounts.id, { onDelete: "cascade" }).notNull(),
+  purpose: text("purpose").$type<"activation" | "reset">().notNull(),
+  tokenHash: text("token_hash").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  usedAt: timestamp("used_at", { withTimezone: true }),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  createdBy: text("created_by"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [uniqueIndex("portal_account_tokens_hash_idx").on(table.tokenHash), index("portal_account_tokens_account_idx").on(table.accountId, table.createdAt)])
+
+export const portalAccountNotifications = pgTable("portal_account_notifications", {
+  id: serial("id").primaryKey(),
+  accountId: integer("account_id").references(() => portalClientAccounts.id, { onDelete: "cascade" }).notNull(),
+  tokenId: integer("token_id").references(() => portalAccountTokens.id, { onDelete: "set null" }),
+  operationKey: text("operation_key").notNull(),
+  recipient: text("recipient").notNull(),
+    status: text("status").$type<"not_requested" | "pending" | "sent" | "failed">().default("pending").notNull(),
+  providerMessageId: text("provider_message_id"),
+  failureMessage: text("failure_message"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  sentAt: timestamp("sent_at", { withTimezone: true }),
+  failedAt: timestamp("failed_at", { withTimezone: true }),
+}, (table) => [uniqueIndex("portal_account_notifications_operation_idx").on(table.operationKey), index("portal_account_notifications_account_idx").on(table.accountId, table.createdAt)])
 
 // Admin owns these shared invoice tables and their migrations. The web portal has
 // an intentionally narrow read/telemetry projection only.

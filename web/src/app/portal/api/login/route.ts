@@ -43,17 +43,20 @@ export async function POST(request: NextRequest) {
           email: portalClientAccounts.email,
           passwordHash: portalClientAccounts.passwordHash,
           active: portalClientAccounts.active,
+          status: portalClientAccounts.status,
         })
         .from(portalClientAccounts)
         .where(eq(portalClientAccounts.email, email))
         .limit(1)
 
-      return account ?? null
+      return account?.status === "active" ? account : null
     }))
 
   if (!session) {
     return NextResponse.json({ error: genericLoginError() }, { status: 401 })
   }
+
+  await db.update(portalClientAccounts).set({ lastLoginAt: new Date(), updatedAt: new Date() }).where(eq(portalClientAccounts.clientId, session.clientId))
 
   const token = await createPortalSessionToken(session.clientId, process.env.PORTAL_SECRET)
 

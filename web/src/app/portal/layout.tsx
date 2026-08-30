@@ -10,6 +10,7 @@ export default async function PortalLayout({ children }: { children: ReactNode }
   const session = await getClientSessionFromCookies()
   const isPublicPortalPath =
     pathname.startsWith("/portal/login") ||
+    pathname.startsWith("/portal/activate") ||
     pathname.startsWith("/portal/api/")
 
   if (pathname === "/portal") {

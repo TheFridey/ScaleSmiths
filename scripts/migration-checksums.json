@@ -506,6 +506,12 @@
       "sha256": "d07eb8fa5c16d4768f1d10d829412ac5291c76a3cf975bf2d1db3c144cff5ead",
       "lifecycle": "forward",
       "reason": "Adds prospect_conversions (idempotency anchor + immutable audit record for the prospect-to-client conversion workflow) and client_service_assignments (structured client service tier/catalogue assignments captured at conversion)."
+    },
+    {
+      "path": "web/drizzle/0019_portal_account_activation.sql",
+      "sha256": "21ea930b37e2116adbb6f42daa5cfb72e9cc6245603eb1909124a880acd4d9cb",
+      "lifecycle": "forward",
+      "reason": "Adds unique client portal identities, explicit account lifecycle state, hashed expiring activation/reset tokens, revocation, and retry-safe notification delivery tracking."
     }
   ],
   "journals": {
@@ -575,6 +581,13 @@
           "version": "7",
           "when": 1788192000000,
           "tag": "0018_unified_client_activity",
+          "breakpoints": true
+        },
+        {
+          "idx": 19,
+          "version": "7",
+          "when": 1788278400000,
+          "tag": "0019_portal_account_activation",
           "breakpoints": true
         }
       ]

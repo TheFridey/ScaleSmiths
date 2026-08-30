@@ -1,0 +1,12 @@
+"use client"
+import { FormEvent, Suspense, useState } from "react"
+import { useSearchParams } from "next/navigation"
+import Link from "next/link"
+
+function ActivationForm() {
+  const token = useSearchParams().get("token") ?? "", [password, setPassword] = useState(""), [confirm, setConfirm] = useState(""), [error, setError] = useState(""), [done, setDone] = useState(false), [busy, setBusy] = useState(false)
+  async function submit(event: FormEvent) { event.preventDefault(); if (password !== confirm) { setError("Passwords do not match."); return } setBusy(true); setError(""); try { const response = await fetch("/portal/api/activate", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token, password }) }); const json = await response.json(); if (!response.ok) throw new Error(json.error); setDone(true) } catch (caught) { setError(caught instanceof Error ? caught.message : "Activation failed.") } finally { setBusy(false) } }
+  return <section className="mx-auto min-h-[70vh] max-w-lg px-6 py-20"><div className="rounded-2xl border border-b1 bg-s1 p-7"><p className="text-xs font-semibold uppercase tracking-[.14em] text-acc">Client portal</p><h1 className="mt-2 font-syne text-3xl font-bold">{done ? "Portal access ready" : "Set your password"}</h1>{done ? <div className="mt-5"><p className="text-sm text-t2">Your secure portal account is active.</p><Link href="/portal/login" className="btn-primary mt-5 inline-flex">Continue to sign in</Link></div> : <form onSubmit={submit} className="mt-6 space-y-4"><p className="text-sm text-t2">Activation links expire after 48 hours and work once.</p><label className="block text-sm">New password<input type="password" autoComplete="new-password" minLength={12} required value={password} onChange={(event) => setPassword(event.target.value)} className="mt-1 w-full" /></label><label className="block text-sm">Confirm password<input type="password" autoComplete="new-password" minLength={12} required value={confirm} onChange={(event) => setConfirm(event.target.value)} className="mt-1 w-full" /></label>{error ? <p className="text-sm text-red-300">{error}</p> : null}<button disabled={busy || !token} className="btn-primary w-full justify-center">{busy ? "Activating…" : "Activate portal"}</button></form>}</div></section>
+}
+
+export default function PortalActivatePage() { return <Suspense fallback={<section className="mx-auto min-h-[70vh] max-w-lg px-6 py-20">Loading activation…</section>}><ActivationForm /></Suspense> }

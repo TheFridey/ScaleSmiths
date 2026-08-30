@@ -3,6 +3,9 @@ import "server-only"
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { type NextRequest, NextResponse } from "next/server"
+import { and, eq } from "drizzle-orm"
+import { db } from "@/lib/db"
+import { portalClientAccounts } from "@/lib/schema"
 import {
   PORTAL_SESSION_COOKIE,
   type PortalSession,
@@ -12,11 +15,18 @@ import {
 
 export async function getClientSessionFromCookies(): Promise<PortalSession | null> {
   const cookieStore = await cookies()
-  return verifyPortalSessionToken(cookieStore.get(PORTAL_SESSION_COOKIE)?.value, process.env.PORTAL_SECRET)
+  return validatePortalSessionAccount(await verifyPortalSessionToken(cookieStore.get(PORTAL_SESSION_COOKIE)?.value, process.env.PORTAL_SECRET))
 }
 
 export async function getClientSessionFromRequest(request: NextRequest): Promise<PortalSession | null> {
-  return verifyPortalSessionToken(request.cookies.get(PORTAL_SESSION_COOKIE)?.value, process.env.PORTAL_SECRET)
+  return validatePortalSessionAccount(await verifyPortalSessionToken(request.cookies.get(PORTAL_SESSION_COOKIE)?.value, process.env.PORTAL_SECRET))
+}
+
+async function validatePortalSessionAccount(session: PortalSession | null) {
+  if (!session) return null
+  const [account] = await db.select({ id: portalClientAccounts.id }).from(portalClientAccounts)
+    .where(and(eq(portalClientAccounts.clientId, session.clientId), eq(portalClientAccounts.active, true), eq(portalClientAccounts.status, "active"))).limit(1)
+  return account ? session : null
 }
 
 export async function requireClientSession(): Promise<PortalSession> {

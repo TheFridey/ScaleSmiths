@@ -50,17 +50,22 @@
 Run: `cd admin && grep -n "prospectConversions\|clientServiceAssignments" src/lib/schema.ts`
 Expected: both `export const … = pgTable(…)` present. If missing, STOP and report — the plan assumes `51e4b5a`.
 
-- [ ] **Step 2: Generate the migration**
+- [ ] **Step 2: Generate, then trim to our two tables**
+
+> **Known repo condition (do not try to fix here):** `admin/drizzle/meta/0053_snapshot.json` and `0054_snapshot.json` were never committed. `db:generate` therefore diffs current `schema.ts` against `0052_snapshot.json` and re-emits migrations 0053 + 0054 + `51e4b5a`'s `client_timeline_events` changes **plus** our two tables. That is expected. We keep drizzle-kit's fresh full-schema **snapshot** (it is a complete, diff-independent picture and is what future `db:generate` needs) and we **hand-assemble the SQL file** from only the statements that concern our two tables.
 
 Run: `cd admin && npm run db:generate`
-Expected: creates `admin/drizzle/0055_<random>.sql` + `admin/drizzle/meta/0055_snapshot.json`; appends idx 55 to `_journal.json`. The SQL must contain exactly two `CREATE TABLE`s (`prospect_conversions`, `client_service_assignments`) plus their FKs and indexes — **no `ALTER`/`DROP`** on existing tables. If other statements appear, STOP and report (schema drift unrelated to this feature).
+It produces `admin/drizzle/0055_<random>.sql` (a large multi-table diff), `admin/drizzle/meta/0055_snapshot.json`, and an idx-55 `_journal.json` entry.
 
-- [ ] **Step 3: Rename for a stable tag**
+Now create `admin/drizzle/0055_prospect_conversion.sql` containing **only** the statements for `prospect_conversions` and `client_service_assignments`, copied verbatim out of the generated `0055_<random>.sql` (drizzle-kit's own wording/ordering — do not retype). It must be exactly: the two `CREATE TABLE` statements, then their `ADD CONSTRAINT … FOREIGN KEY` statements, then their `CREATE [UNIQUE] INDEX` statements, each separated by `--> statement-breakpoint`. Delete the generated `0055_<random>.sql`. The final file must contain **no** statement mentioning any table other than `prospect_conversions` / `client_service_assignments` (grep it to confirm), and must match the committed `schema.ts` definitions:
+- `prospect_conversions`: `id` serial pk; `prospect_id` int not null → `prospects(id)` **restrict**; `client_id` int not null → `clients(id)` **restrict**; `project_id` int → `delivery_projects(id)` **set null**; `draft_invoice_id` int → `invoices(id)` **set null**; `actor_user_id` uuid → `admin_users(id)` **set null**; `client_action` text not null; `assigned_tier` text; `portal_provisioning_prepared` boolean default false not null; `onboarding_task_ids` jsonb default `'[]'::jsonb` not null; `metadata_json` jsonb default `'{}'::jsonb` not null; `converted_at` timestamptz default now() not null. Unique index `prospect_conversions_prospect_idx` on `(prospect_id)`; index `prospect_conversions_client_idx` on `(client_id, converted_at)`.
+- `client_service_assignments`: `id` serial pk; `client_id` int not null → `clients(id)` **cascade**; `catalogue_item_id` int not null → `invoice_catalogue_items(id)` **restrict**; `source_prospect_id` int → `prospects(id)` **set null**; `assigned_by` uuid → `admin_users(id)` **set null**; `active` boolean default true not null; `created_at` timestamptz default now() not null. Unique index `client_service_assignments_client_catalogue_idx` on `(client_id, catalogue_item_id)`; index `client_service_assignments_prospect_idx` on `(source_prospect_id)`.
 
-```bash
-cd admin/drizzle && mv 0055_*.sql 0055_prospect_conversion.sql
-```
-Edit `admin/drizzle/meta/_journal.json`: set the idx-55 entry's `"tag"` to `"0055_prospect_conversion"`.
+**Keep** `admin/drizzle/meta/0055_snapshot.json` exactly as generated (it is the correct full-schema picture). Do not backfill 0053/0054 snapshots — out of scope for this task.
+
+- [ ] **Step 3: Fix the journal tag**
+
+Edit `admin/drizzle/meta/_journal.json`: set the idx-55 entry's `"tag"` to `"0055_prospect_conversion"`. Leave its `when`/`version`/`breakpoints` as generated.
 
 - [ ] **Step 4: Register in the checksum manifest**
 
@@ -84,7 +89,7 @@ In `scripts/migration-checksums.json`:
 - [ ] **Step 5: Migration-history gates**
 
 Run: `cd /d/Projects/scalesmiths/ss && npm run check:migration-history && npm run test:migration-history && npm run test:migration-consistency`
-Expected: pass. Fix manifest to match the journal on "Unregistered migration" / "journal entries do not match".
+Expected: pass. These hash the SQL files + journal, not the `meta/*_snapshot.json` files, so the missing 0053/0054 snapshots do not affect them. Fix the manifest to match the journal on "Unregistered migration" / "journal entries do not match".
 
 - [ ] **Step 6: Write the schema integration test**
 

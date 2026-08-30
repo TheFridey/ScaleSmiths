@@ -1511,79 +1511,175 @@ git commit -m "feat: GET preview / POST execute conversion route; remove legacy 
 ### Task 10: Admin UI — `ConvertProspectModal`
 
 **Files:**
-- Create: `admin/src/components/prospect-conversion/ConvertProspectModal.tsx`
+- Create: `admin/src/components/prospect-conversion/convert-prospect-options.ts` — pure logic the modal calls
+- Create: `admin/src/components/prospect-conversion/convert-prospect-options.test.ts` — Node unit test
+- Create: `admin/src/components/prospect-conversion/ConvertProspectModal.tsx` — thin view
 - Modify: `admin/src/components/ProspectPipeline.tsx` (`onConvert` ~line 491, button ~line 698)
-- Test: `admin/src/components/prospect-conversion/ConvertProspectModal.test.tsx`
+
+**Testing reality (do not deviate):** the `admin/` project has **no `@testing-library/react`, no `jsdom`, no `@vitejs/plugin-react`**, and `vitest.config.ts` runs in Node with no DOM environment. Dependencies are governance-pinned (`check:dependency-governance`) — **do NOT add test deps.** The only React test in the repo (`src/app/global-error.test.tsx`) works by extracting logic into a non-component `.ts` module and unit-testing that (plus optional `renderToStaticMarkup`). Task 10 follows the same pattern: the modal's payload/defaults logic lives in `convert-prospect-options.ts` and is unit-tested in Node; the `.tsx` is a thin view with **no interaction unit test** (repo convention — components aren't unit-tested here). Interaction coverage comes from Task 11 (Playwright E2E) + `tsc`.
 
 **Interfaces:**
-- Consumes: `CLIENT_SERVICE_TIER_OPTIONS` from `@/lib/clients`. Fetches `GET /api/prospects/${prospectId}/conversion`, submits `POST` with `{ options }`.
-- Produces: `export function ConvertProspectModal({ prospectId, open, onClose, onConverted }: { prospectId: number; open: boolean; onClose: () => void; onConverted: (clientId: number) => void }): JSX.Element | null`.
+- `convert-prospect-options.ts` produces:
+  - `interface ConversionPlanView { prospectId: number; alreadyConverted: boolean; warnings: Array<{ code: string; message: string; blocksExecute: boolean }>; defaults: { clientName: string; tier: string; mrr: number; invoiceClientCode: string; projectName: string; onboardingTasks: Array<{ title: string }> }; matchCandidates: Array<{ clientId: number; name: string; tier: string | null; mrr: number; matchedOn: string[] }>; catalogue: Array<{ id: number; name: string; defaultUnitAmount: number; category: string | null }>; existingConversionId: number | null }`
+  - `interface ModalFormState { mode: "create" | "link"; linkClientId: number | null; name: string; tier: string; mrr: number; code: string; serviceIds: number[]; createProject: boolean; projectName: string; onboardingTasks: boolean; createDraftInvoice: boolean; preparePortal: boolean }`
+  - `initialFormState(plan: ConversionPlanView): ModalFormState` — seeds name/tier/mrr/code/projectName from `plan.defaults`, everything else off/empty, `mode: "create"`.
+  - `buildSubmitOptions(state: ModalFormState): Record<string, unknown>` — the `{ options }` POST body payload: `client` is `{ mode:"create", name, tier, invoiceClientCode: code.trim().toUpperCase() }` or `{ mode:"link", clientId: linkClientId, tier, invoiceClientCode: code.trim() ? code.trim().toUpperCase() : undefined }`; plus `mrr: Number(mrr)`, `catalogueItemIds: serviceIds`, `createProject`, `projectName: createProject ? projectName : undefined`, `onboardingTasks`, `createDraftInvoice`, `preparePortal`.
+  - `blocksConvert(plan: ConversionPlanView, state: ModalFormState): boolean` — true if any `plan.warnings[].blocksExecute`, or `state.mode === "link"` with no `linkClientId`, or `state.createDraftInvoice` with `serviceIds.length === 0`.
+  - `formatMoney(minor: number): string` — `£X.XX` (en-GB).
+- `ConvertProspectModal.tsx` produces: `export function ConvertProspectModal({ prospectId, open, onClose, onConverted }: { prospectId: number; open: boolean; onClose: () => void; onConverted: (clientId: number) => void }): JSX.Element | null`. It `fetch`es `GET /api/prospects/${prospectId}/conversion`, holds `ModalFormState` (seeded via `initialFormState`), disables the Convert button when `blocksConvert(...)`, and on submit POSTs `{ options: buildSubmitOptions(state) }` to the same URL, then calls `onConverted(conversion.clientId)`.
 
-- [ ] **Step 1: Failing component tests**
+- [ ] **Step 1: Write the failing Node unit test**
 
-`admin/src/components/prospect-conversion/ConvertProspectModal.test.tsx` (match the render/util imports used by other `*.test.tsx` in the repo):
+`admin/src/components/prospect-conversion/convert-prospect-options.test.ts`:
 
-```tsx
-import { describe, expect, it, vi, beforeEach } from "vitest"
-import { render, screen, waitFor, fireEvent } from "@testing-library/react"
-import { ConvertProspectModal } from "./ConvertProspectModal"
+```ts
+import { describe, expect, it } from "vitest"
+import { initialFormState, buildSubmitOptions, blocksConvert, formatMoney, type ConversionPlanView } from "./convert-prospect-options"
 
-const plan = {
+const plan: ConversionPlanView = {
   prospectId: 5, alreadyConverted: false,
   warnings: [{ code: "dedupe_candidates", message: "Found 1", blocksExecute: false }],
   defaults: { clientName: "Acme Ltd", tier: "Retainer", mrr: 500, invoiceClientCode: "ACME", projectName: "Acme — growth", onboardingTasks: [{ title: "Kickoff & welcome" }] },
   matchCandidates: [{ clientId: 9, name: "Acme Ltd", tier: null, mrr: 0, matchedOn: ["name"] }],
-  acceptedProposal: null, existingConversionId: null,
   catalogue: [{ id: 1, name: "Care Plan", defaultUnitAmount: 5000, category: null }],
+  existingConversionId: null,
 }
 
-beforeEach(() => {
-  vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
-    if (String(url).endsWith("/conversion") && (!init || init.method === undefined || init.method === "GET"))
-      return new Response(JSON.stringify({ ok: true, plan }), { status: 200 })
-    if (String(url).endsWith("/conversion"))
-      return new Response(JSON.stringify({ ok: true, conversion: { id: 1, clientId: 42, clientAction: "created", projectId: null, draftInvoiceId: null, portalProvisioningPrepared: false, metadataJson: {} } }), { status: 200 })
-    return new Response("{}", { status: 404 })
-  }))
+describe("initialFormState", () => {
+  it("seeds from plan.defaults with create mode and everything else off", () => {
+    const s = initialFormState(plan)
+    expect(s).toMatchObject({ mode: "create", name: "Acme Ltd", tier: "Retainer", mrr: 500, code: "ACME", projectName: "Acme — growth", serviceIds: [], createProject: false, onboardingTasks: false, createDraftInvoice: false, preparePortal: false, linkClientId: null })
+  })
 })
 
-describe("ConvertProspectModal", () => {
-  it("shows preview defaults, dedupe candidate, and catalogue", async () => {
-    render(<ConvertProspectModal prospectId={5} open onClose={() => {}} onConverted={() => {}} />)
-    expect(await screen.findByDisplayValue("Acme Ltd")).toBeInTheDocument()
-    expect(screen.getByText(/Found 1/)).toBeInTheDocument()
-    expect(screen.getByText(/Care Plan/)).toBeInTheDocument()
+describe("buildSubmitOptions", () => {
+  it("builds a create payload with uppercased trimmed code and selected services", () => {
+    const s = { ...initialFormState(plan), code: " acme ", serviceIds: [1], createDraftInvoice: true }
+    const o = buildSubmitOptions(s)
+    expect(o.client).toMatchObject({ mode: "create", name: "Acme Ltd", tier: "Retainer", invoiceClientCode: "ACME" })
+    expect(o).toMatchObject({ mrr: 500, catalogueItemIds: [1], createDraftInvoice: true, onboardingTasks: false, preparePortal: false, createProject: false })
+    expect(o.projectName).toBeUndefined()
   })
-  it("submits confirmed options and reports the created client id", async () => {
-    const onConverted = vi.fn()
-    render(<ConvertProspectModal prospectId={5} open onClose={() => {}} onConverted={onConverted} />)
-    await screen.findByDisplayValue("ACME")
-    fireEvent.click(screen.getByLabelText(/Care Plan/))
-    fireEvent.click(screen.getByRole("button", { name: /^Convert to client$/i }))
-    await waitFor(() => expect(onConverted).toHaveBeenCalledWith(42))
-    const call = (globalThis.fetch as any).mock.calls.find((c: any[]) => String(c[0]).endsWith("/conversion") && c[1]?.method === "POST")
-    const sent = JSON.parse(call[1].body).options
-    expect(sent.client).toMatchObject({ mode: "create", invoiceClientCode: "ACME" })
-    expect(sent.catalogueItemIds).toEqual([1])
+  it("omits projectName unless createProject, and passes it when set", () => {
+    expect(buildSubmitOptions({ ...initialFormState(plan), createProject: true, projectName: "P1" }).projectName).toBe("P1")
   })
-  it("disables Convert while a blocking warning is present", async () => {
-    ;(globalThis.fetch as any).mockImplementationOnce(async () =>
-      new Response(JSON.stringify({ ok: true, plan: { ...plan, warnings: [{ code: "not_won", message: "Not won", blocksExecute: true }] } }), { status: 200 }))
-    render(<ConvertProspectModal prospectId={5} open onClose={() => {}} onConverted={() => {}} />)
-    await screen.findByText(/Not won/)
-    expect(screen.getByRole("button", { name: /^Convert to client$/i })).toBeDisabled()
+  it("builds a link payload with optional code", () => {
+    const o = buildSubmitOptions({ ...initialFormState(plan), mode: "link", linkClientId: 9, code: "" })
+    expect(o.client).toMatchObject({ mode: "link", clientId: 9 })
+    expect((o.client as Record<string, unknown>).invoiceClientCode).toBeUndefined()
+  })
+})
+
+describe("blocksConvert", () => {
+  it("false for a clean create plan", () => {
+    expect(blocksConvert(plan, initialFormState(plan))).toBe(false)
+  })
+  it("true when a warning blocks", () => {
+    expect(blocksConvert({ ...plan, warnings: [{ code: "not_won", message: "x", blocksExecute: true }] }, initialFormState(plan))).toBe(true)
+  })
+  it("true for link mode without a chosen client", () => {
+    expect(blocksConvert(plan, { ...initialFormState(plan), mode: "link", linkClientId: null })).toBe(true)
+  })
+  it("true for createDraftInvoice with no services", () => {
+    expect(blocksConvert(plan, { ...initialFormState(plan), createDraftInvoice: true, serviceIds: [] })).toBe(true)
+  })
+})
+
+describe("formatMoney", () => {
+  it("formats minor units as GBP", () => {
+    expect(formatMoney(5000)).toBe("£50.00")
   })
 })
 ```
 
 - [ ] **Step 2: Run — expect failure**
 
-Run: `cd admin && npm test -- src/components/prospect-conversion/ConvertProspectModal.test.tsx`
-Expected: FAIL — component missing.
+Run: `cd admin && npm test -- src/components/prospect-conversion/convert-prospect-options.test.ts`
+Expected: FAIL — `Cannot find module './convert-prospect-options'`.
+
+- [ ] **Step 2b: Implement `convert-prospect-options.ts`**
+
+```ts
+export interface ConversionPlanView {
+  prospectId: number
+  alreadyConverted: boolean
+  warnings: Array<{ code: string; message: string; blocksExecute: boolean }>
+  defaults: { clientName: string; tier: string; mrr: number; invoiceClientCode: string; projectName: string; onboardingTasks: Array<{ title: string }> }
+  matchCandidates: Array<{ clientId: number; name: string; tier: string | null; mrr: number; matchedOn: string[] }>
+  catalogue: Array<{ id: number; name: string; defaultUnitAmount: number; category: string | null }>
+  existingConversionId: number | null
+}
+
+export interface ModalFormState {
+  mode: "create" | "link"
+  linkClientId: number | null
+  name: string
+  tier: string
+  mrr: number
+  code: string
+  serviceIds: number[]
+  createProject: boolean
+  projectName: string
+  onboardingTasks: boolean
+  createDraftInvoice: boolean
+  preparePortal: boolean
+}
+
+export function initialFormState(plan: ConversionPlanView): ModalFormState {
+  return {
+    mode: "create",
+    linkClientId: null,
+    name: plan.defaults.clientName,
+    tier: plan.defaults.tier,
+    mrr: plan.defaults.mrr,
+    code: plan.defaults.invoiceClientCode,
+    serviceIds: [],
+    createProject: false,
+    projectName: plan.defaults.projectName,
+    onboardingTasks: false,
+    createDraftInvoice: false,
+    preparePortal: false,
+  }
+}
+
+export function buildSubmitOptions(state: ModalFormState): Record<string, unknown> {
+  const code = state.code.trim() ? state.code.trim().toUpperCase() : undefined
+  const client =
+    state.mode === "create"
+      ? { mode: "create", name: state.name, tier: state.tier, invoiceClientCode: code ?? "" }
+      : { mode: "link", clientId: state.linkClientId, tier: state.tier, invoiceClientCode: code }
+  return {
+    client,
+    mrr: Number(state.mrr),
+    catalogueItemIds: state.serviceIds,
+    createProject: state.createProject,
+    projectName: state.createProject ? state.projectName : undefined,
+    onboardingTasks: state.onboardingTasks,
+    createDraftInvoice: state.createDraftInvoice,
+    preparePortal: state.preparePortal,
+  }
+}
+
+export function blocksConvert(plan: ConversionPlanView, state: ModalFormState): boolean {
+  if (plan.warnings.some((w) => w.blocksExecute)) return true
+  if (state.mode === "link" && !state.linkClientId) return true
+  if (state.createDraftInvoice && state.serviceIds.length === 0) return true
+  return false
+}
+
+export function formatMoney(minor: number): string {
+  return `£${(minor / 100).toLocaleString("en-GB", { minimumFractionDigits: 2 })}`
+}
+```
+
+- [ ] **Step 2c: Run — expect pass**
+
+Run: `cd admin && npm test -- src/components/prospect-conversion/convert-prospect-options.test.ts`
+Expected: PASS (all cases).
 
 - [ ] **Step 3: Implement the modal**
 
-Create `admin/src/components/prospect-conversion/ConvertProspectModal.tsx` (use the `T` token convention from `ProspectPipeline.tsx`):
+Create `admin/src/components/prospect-conversion/ConvertProspectModal.tsx` (use the `T` token convention from `ProspectPipeline.tsx`). **Import `ConversionPlanView`, `ModalFormState`, `initialFormState`, `buildSubmitOptions`, `blocksConvert`, `formatMoney` from `./convert-prospect-options`** and use them — do NOT re-inline that logic. The reference code below predates the extraction; adapt it so: the `Plan` type is `ConversionPlanView`; on preview load, `setForm(initialFormState(plan))` seeds all form fields (replace the individual `setName`/`setTier`/… calls); the many `useState` fields become one `const [form, setForm] = useState<ModalFormState | null>(null)` updated with `setForm(f => f && ({ ...f, <field>: <value> }))`; the submit handler POSTs `{ options: buildSubmitOptions(form) }`; the Convert button `disabled={busy || !form || blocksConvert(plan, form)}`; money is `formatMoney(item.defaultUnitAmount)`. Keep the JSX structure, labels ("Create new client"/"Link to existing client", "Invoice code (permanent)", "Create delivery project", "Seed onboarding tasks (N)", "Create draft invoice (from selected services)", "Prepare portal access", the "no credentials are generated or sent" caption), the result view ("Conversion completed." + Open client / Open delivery project / Draft invoice created / disabled-portal links), and the button label ("Convert to client" / "Converting…").
 
 ```tsx
 "use client"
@@ -1761,10 +1857,9 @@ export function ConvertProspectModal({ prospectId, open, onClose, onConverted }:
 }
 ```
 
-- [ ] **Step 4: Run — expect pass**
+- [ ] **Step 4: Verify the modal compiles**
 
-Run: `cd admin && npm test -- src/components/prospect-conversion/ConvertProspectModal.test.tsx`
-Expected: PASS.
+There is no interaction unit test for the `.tsx` (repo has no DOM test tooling — see "Testing reality"). Verify it type-checks: `cd admin && npm exec tsc -- --noEmit` — no NEW errors beyond the 31 baseline, and `ConvertProspectModal.tsx` + `convert-prospect-options.ts` compile clean. Re-run the pure test: `cd admin && npm test -- src/components/prospect-conversion/convert-prospect-options.test.ts` — PASS. The modal's runtime behavior is covered by Task 11's Playwright E2E.
 
 - [ ] **Step 5: Wire into `ProspectPipeline.tsx`**
 

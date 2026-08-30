@@ -7,8 +7,8 @@ import { CAPABILITIES, ROLE_CAPABILITIES, authorizeRequest, databaseQueryScope, 
 const expected: Record<(typeof ADMIN_ROLES)[number], Capability[]> = {
   owner: [...CAPABILITIES],
   administrator: CAPABILITIES.filter((capability) => capability !== "admin_users.credentials.reset" && capability !== "admin_users.owner.assign"),
-  sales: ["leads.read", "leads.write", "clients.read", "projects.read", "finance.read", "analytics.read"],
-  project_manager: ["portal_users.read", "portal_users.manage", "leads.read", "clients.read", "clients.write", "projects.read", "projects.write", "forge.read", "forge.execute", "forge.approve", "forge.configure", "finance.read", "audit.read", "analytics.read", "analytics.write"],
+  sales: ["leads.read", "leads.write", "prospects.convert", "clients.read", "projects.read", "finance.read", "analytics.read"],
+  project_manager: ["portal_users.read", "portal_users.manage", "leads.read", "prospects.convert", "clients.read", "clients.write", "projects.read", "projects.write", "forge.read", "forge.execute", "forge.approve", "forge.configure", "finance.read", "audit.read", "analytics.read", "analytics.write"],
   developer: ["clients.read", "projects.read", "projects.write", "forge.read", "forge.execute", "forge.approve", "forge.configure", "audit.read", "deployments.execute", "analytics.read"],
   finance: ["leads.read", "clients.read", "projects.read", "finance.read", "finance.write", "audit.read", "analytics.read"],
   viewer: ["leads.read", "clients.read", "projects.read", "forge.read", "finance.read", "analytics.read"],
@@ -25,6 +25,16 @@ describe("RBAC role/capability matrix", () => {
   it("defines a decision for every capability and role", () => {
     expect(Object.keys(ROLE_CAPABILITIES).sort()).toEqual([...ADMIN_ROLES].sort())
     expect(new Set(Object.values(ROLE_CAPABILITIES).flat())).toEqual(new Set(CAPABILITIES))
+  })
+
+  it("grants prospects.convert to sales/project_manager/administrator/owner only", () => {
+    expect(hasCapability("sales", "prospects.convert")).toBe(true)
+    expect(hasCapability("project_manager", "prospects.convert")).toBe(true)
+    expect(hasCapability("administrator", "prospects.convert")).toBe(true)
+    expect(hasCapability("owner", "prospects.convert")).toBe(true)
+    expect(hasCapability("viewer", "prospects.convert")).toBe(false)
+    expect(hasCapability("finance", "prospects.convert")).toBe(false)
+    expect(hasCapability("developer", "prospects.convert")).toBe(false)
   })
 
   it("detects privilege reductions for session revocation", () => {
@@ -72,6 +82,11 @@ describe("server request enforcement", () => {
     expect(requiredCapabilityForRequest({ pathname: "/api/invoice-catalogue/1", method: "PATCH" })).toBe("finance.write")
     expect(requiredCapabilityForRequest({ pathname: "/api/clients/1/invoice-code", method: "PATCH" })).toBe("finance.write")
     expect(requiredCapabilityForRequest({ pathname: "/api/clients/1/billing", method: "PATCH" })).toBe("finance.write")
+  })
+
+  it("maps the conversion route: GET preview needs leads.read, POST execute needs prospects.convert", () => {
+    expect(requiredCapabilityForRequest({ pathname: "/api/prospects/5/conversion", method: "GET" })).toBe("leads.read")
+    expect(requiredCapabilityForRequest({ pathname: "/api/prospects/5/conversion", method: "POST" })).toBe("prospects.convert")
   })
 
   it("fails database query scoping closed without the read capability", () => {

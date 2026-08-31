@@ -25,6 +25,7 @@
     "test:branch-protection-policy": "node --test scripts/check-branch-protection-policy.test.mjs",
     "update:cloudflare-ranges": "node scripts/update-cloudflare-nginx-ranges.mjs",
     "test:integration": "node scripts/run-admin-integration-tests.mjs",
+    "test:golden-path": "node scripts/run-golden-path-tests.mjs",
     "test:migration-consistency": "node --test scripts/check-migrations.test.mjs",
     "test:nginx-config": "docker build -f tests/nginx/Dockerfile.config-check -t ss-nginx-config-check .",
     "test:nginx": "node scripts/run-nginx-tests.mjs",

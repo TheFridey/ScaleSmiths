@@ -260,6 +260,9 @@ jobs:
       - name: Forge production journeys
         run: npm run test:e2e:forge-journeys
 
+      - name: Golden Path operator journey
+        run: npm run test:e2e:golden-path
+
       - name: Upload Forge E2E failure evidence
         if: failure()
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
@@ -327,6 +330,11 @@ jobs:
           mkdir -p ../ci-artifacts
           set -o pipefail
           npm run test:integration 2>&1 | tee ../ci-artifacts/postgresql-integration.log
+
+      - name: Run Golden Path domain suite
+        run: |
+          set -o pipefail
+          npm run test:golden-path 2>&1 | tee ci-artifacts/golden-path-integration.log
 
       - name: Verify least-privilege PostgreSQL roles against real catalogs
         run: |

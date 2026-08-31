@@ -101,6 +101,17 @@ export function useRequestMonthlyReports({
     })
   }
 
+  async function reviewReport() {
+    if (!activeReport) return
+    return runReportAction("review-report", "Unable to mark monthly report as reviewed.", async () => {
+      const report = await reportRequest(`/api/monthly-reports/${activeReport.id}`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "review" }),
+      }, "Unable to mark monthly report as reviewed.")
+      selectReport(report)
+      setMonthlyReports((current) => current.map((item) => item.id === report.id ? report : item))
+    })
+  }
+
   async function runReportAction(action: string, fallback: string, operation: () => Promise<void>) {
     setBusyAction(action)
     setActionError(null)
@@ -112,7 +123,7 @@ export function useRequestMonthlyReports({
   return {
     reportMonth, setReportMonth, reportYear, setReportYear,
     monthlyReports, activeReport, reportDraft, setReportDraft, selectReport,
-    generateMonthlyReport, saveReport, publishReport,
+    generateMonthlyReport, saveReport, reviewReport, publishReport,
   }
 }
 

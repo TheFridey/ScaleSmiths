@@ -141,6 +141,13 @@
       "when": 1788278400000,
       "tag": "0019_portal_account_activation",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1788364800000,
+      "tag": "0020_monthly_report_evidence",
+      "breakpoints": true
     }
   ]
 }

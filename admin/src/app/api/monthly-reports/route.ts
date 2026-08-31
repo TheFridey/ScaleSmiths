@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
-import { desc, eq } from "drizzle-orm"
-import { auth } from "../../../../auth"
+import { and, desc, eq } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { parseReportPeriod } from "@/lib/monthly-reports"
 import { generateMonthlyClientReport } from "@/lib/server/monthly-report-generator"
-import { monthlyReports } from "@/lib/schema"
+import { monthlyReportAuditLogs, monthlyReports } from "@/lib/schema"
+import { guardApiCapability } from "@/lib/server/rbac"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -14,11 +14,7 @@ function optionalString(value: unknown) {
 }
 
 export async function GET(request: NextRequest) {
-  const session = await auth()
-
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized." }, { status: 401 })
-  }
+  try { await guardApiCapability("finance.read") } catch { return NextResponse.json({ error: "Forbidden." }, { status: 403 }) }
 
   const clientId = optionalString(request.nextUrl.searchParams.get("clientId"))
 
@@ -37,11 +33,8 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const session = await auth()
-
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized." }, { status: 401 })
-  }
+  let actor: Awaited<ReturnType<typeof guardApiCapability>>
+  try { actor = await guardApiCapability("finance.write") } catch { return NextResponse.json({ error: "Forbidden." }, { status: 403 }) }
 
   const body = await request.json().catch(() => null)
 
@@ -68,9 +61,11 @@ export async function POST(request: NextRequest) {
       year: period.data.year,
     })
     const now = new Date()
-    const [report] = await db
-      .insert(monthlyReports)
-      .values({
+    const report = await db.transaction(async (tx) => {
+      const [latest] = await tx.select({ version: monthlyReports.version }).from(monthlyReports)
+        .where(and(eq(monthlyReports.clientId, clientId), eq(monthlyReports.month, period.data.month), eq(monthlyReports.year, period.data.year)))
+        .orderBy(desc(monthlyReports.version)).limit(1)
+      const [created] = await tx.insert(monthlyReports).values({
         clientId,
         month: period.data.month,
         year: period.data.year,
@@ -79,9 +74,13 @@ export async function POST(request: NextRequest) {
         htmlContent: generated.htmlContent,
         status: "draft",
         generatedBy: generated.generatedBy,
+        version: (latest?.version ?? 0) + 1,
+        sourceSnapshot: generated.sourceSnapshot,
         updatedAt: now,
-      })
-      .returning()
+      }).returning()
+      await tx.insert(monthlyReportAuditLogs).values({ reportId: created.id, clientId, action: "draft_generated", actor: actor.email ?? actor.id, metadataJson: { version: created.version, evidenceSchemaVersion: generated.sourceSnapshot.schemaVersion } })
+      return created
+    })
 
     return NextResponse.json({ ok: true, report: serializeReport(report) }, { status: 201 })
   } catch {
@@ -100,6 +99,9 @@ function serializeReport(row: typeof monthlyReports.$inferSelect) {
     htmlContent: row.htmlContent,
     status: row.status,
     generatedBy: row.generatedBy,
+    version: row.version,
+    reviewedAt: row.reviewedAt?.toISOString() ?? null,
+    reviewedBy: row.reviewedBy,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
     publishedAt: row.publishedAt?.toISOString() ?? null,

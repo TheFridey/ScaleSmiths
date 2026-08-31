@@ -1,331 +1,89 @@
 import "server-only"
-import { getForgeAgentRegistryReference } from "@/lib/forge-prompt-registry"
-
-import { and, desc, eq, gte, lt, ne } from "drizzle-orm"
-import type { ForgeJsonSchema, JsonValue } from "@/lib/forge-ai"
-import { formatReportPeriod } from "@/lib/monthly-reports"
+import { and, asc, desc, eq, gte, lt, ne } from "drizzle-orm"
+import { summarizeClientAnalytics, type ClientAnalyticsDailyMetric } from "@/lib/client-analytics"
 import { db } from "@/lib/db"
-import { clientRequests, clientTimelineEvents, clients } from "@/lib/schema"
-import { runForgeAiJson } from "@/lib/server/forge-ai"
+import { formatReportPeriod } from "@/lib/monthly-reports"
+import { clientAnalyticsDailyMetrics, clientRequests, clientTimelineEvents, clients, deliveryMilestones, deliveryProjects, invoices } from "@/lib/schema"
 
-interface ReportSectionData extends Record<string, JsonValue> {
-  executiveSummary: string
-  workCompleted: string[]
-  supportRequestsResolved: string[]
-  seoContentImprovements: string[]
-  websiteHealthStatus: string[]
-  recommendations: string[]
-  nextMonthFocus: string[]
-  positiveClosingNote: string
+export interface MonthlyReportEvidence extends Record<string, unknown> {
+  schemaVersion: 1
+  assembledAt: string
+  period: { month: number; year: number; start: string; end: string; label: string }
+  client: { recordId: number; portalClientId: string; name: string }
+  completedWork: Array<{ source: "milestone" | "activity"; id: number; title: string; detail: string | null; occurredAt: string }>
+  milestones: Array<{ id: number; projectId: number; project: string; title: string; status: string; completedAt: string | null; targetDate: string | null }>
+  deployments: Array<{ id: number; title: string; detail: string; occurredAt: string }>
+  requestsResolved: Array<{ id: number; title: string; category: string; completedAt: string }>
+  analytics: null | { totals: Record<string, number>; sources: string[]; measuredThrough: string }
+  recommendations: Array<{ id: number; title: string; detail: string }>
+  nextMonthPriorities: Array<{ source: "milestone" | "request"; id: number; title: string; detail: string | null }>
+  financialActivity: Array<{ id: number; invoiceNumber: string; status: string; totalMinor: number; eventAt: string }>
+  sourceAvailability: Record<string, { available: boolean; reason?: string }>
 }
 
-const REPORT_SCHEMA = {
-  type: "object",
-  additionalProperties: false,
-  required: [
-    "executiveSummary",
-    "workCompleted",
-    "supportRequestsResolved",
-    "seoContentImprovements",
-    "websiteHealthStatus",
-    "recommendations",
-    "nextMonthFocus",
-    "positiveClosingNote",
-  ],
-  properties: {
-    executiveSummary: { type: "string" },
-    workCompleted: { type: "array", items: { type: "string" } },
-    supportRequestsResolved: { type: "array", items: { type: "string" } },
-    seoContentImprovements: { type: "array", items: { type: "string" } },
-    websiteHealthStatus: { type: "array", items: { type: "string" } },
-    recommendations: { type: "array", items: { type: "string" } },
-    nextMonthFocus: { type: "array", items: { type: "string" } },
-    positiveClosingNote: { type: "string" },
-  },
-} as const satisfies ForgeJsonSchema
-
-export async function generateMonthlyClientReport(input: {
-  clientId: string
-  month: number
-  year: number
-}) {
-  const context = await buildReportContext(input.clientId, input.month, input.year)
-  const fallback = buildFallbackReport(context)
-
-  let data = fallback
-  let generatedBy: "forge" | "manual" = "manual"
-
-  try {
-    const result = await runForgeAiJson<ReportSectionData>({
-      ...getForgeAgentRegistryReference("monthly_report"),
-      taskType: "copywriting",
-      schema: REPORT_SCHEMA,
-      schemaName: "monthly_client_report",
-      prompt: buildReportPrompt(context),
-      systemPrompt: [
-        "Write a positive but truthful monthly client report for ScaleSmiths.",
-        "Do not invent traffic, ranking, conversion, uptime, revenue, or analytics metrics.",
-        "If analytics, SEO, or monitoring data is missing, say it is not connected yet.",
-        "Use only the supplied data. Do not expose internal notes, raw Forge output, or private operational details.",
-        "Return concise, polished report sections.",
-      ].join("\n"),
-      mockData: fallback,
-      fallbackOnSchemaMismatch: true,
-      maxTokens: 1800,
-      temperature: 0.3,
-    })
-    data = result.data
-    generatedBy = result.provider === "mock" ? "manual" : "forge"
-  } catch {
-    data = fallback
-  }
-
-  const title = `${context.businessName} monthly report - ${context.periodLabel}`
-  const summary = data.executiveSummary
-  const htmlContent = renderReportHtml(context, data)
-
-  return { title, summary, htmlContent, generatedBy }
+export async function generateMonthlyClientReport(input: { clientId: string; month: number; year: number }) {
+  return assembleMonthlyClientReport(await collectMonthlyReportEvidence(input))
 }
 
-async function buildReportContext(clientId: string, month: number, year: number) {
-  const periodStart = new Date(Date.UTC(year, month - 1, 1))
-  const periodEnd = new Date(Date.UTC(month === 12 ? year + 1 : year, month === 12 ? 0 : month, 1))
-  const periodLabel = formatReportPeriod(month, year)
-  const [clientProfile] = await db
-    .select({
-      name: clients.name,
-      contactName: clients.contactName,
-      tier: clients.tier,
-      status: clients.status,
-      progress: clients.progress,
-    })
-    .from(clients)
-    .where(eq(clients.name, clientId))
-    .limit(1)
+export async function collectMonthlyReportEvidence(input: { clientId: string; month: number; year: number }): Promise<MonthlyReportEvidence> {
+  const start = new Date(Date.UTC(input.year, input.month - 1, 1))
+  const end = new Date(Date.UTC(input.month === 12 ? input.year + 1 : input.year, input.month === 12 ? 0 : input.month, 1))
+  const [client] = await db.select({ id: clients.id, name: clients.name, portalClientId: clients.portalClientId }).from(clients).where(eq(clients.portalClientId, input.clientId)).limit(1)
+  if (!client?.portalClientId) throw new Error("The portal client is not linked to an internal client record.")
 
-  const completedRequests = await db
-    .select({
-      id: clientRequests.id,
-      title: clientRequests.title,
-      category: clientRequests.category,
-      priority: clientRequests.priority,
-      status: clientRequests.status,
-      completedAt: clientRequests.completedAt,
-      updatedAt: clientRequests.updatedAt,
-      forgeSummary: clientRequests.forgeSummary,
-    })
-    .from(clientRequests)
-    .where(and(
-      eq(clientRequests.clientId, clientId),
-      eq(clientRequests.status, "completed"),
-      gte(clientRequests.updatedAt, periodStart),
-      lt(clientRequests.updatedAt, periodEnd),
-    ))
-    .orderBy(desc(clientRequests.updatedAt))
-
-  const openRequests = await db
-    .select({
-      id: clientRequests.id,
-      title: clientRequests.title,
-      category: clientRequests.category,
-      priority: clientRequests.priority,
-      status: clientRequests.status,
-      updatedAt: clientRequests.updatedAt,
-      forgeSummary: clientRequests.forgeSummary,
-    })
-    .from(clientRequests)
-    .where(and(
-      eq(clientRequests.clientId, clientId),
-      ne(clientRequests.status, "completed"),
-      ne(clientRequests.status, "cancelled"),
-    ))
-    .orderBy(desc(clientRequests.updatedAt))
-    .limit(12)
-
-  const timeline = await db
-    .select({
-      type: clientTimelineEvents.type,
-      title: clientTimelineEvents.title,
-      description: clientTimelineEvents.description,
-      createdAt: clientTimelineEvents.createdAt,
-    })
-    .from(clientTimelineEvents)
-    .where(and(
-      eq(clientTimelineEvents.clientId, clientId),
-      eq(clientTimelineEvents.visibility, "client_visible"),
-      gte(clientTimelineEvents.createdAt, periodStart),
-      lt(clientTimelineEvents.createdAt, periodEnd),
-    ))
-    .orderBy(desc(clientTimelineEvents.createdAt))
-    .limit(20)
-
+  const [milestones, resolved, openRequests, timeline, rawMetrics, publishedInvoices] = await Promise.all([
+    db.select({ id: deliveryMilestones.id, projectId: deliveryProjects.id, project: deliveryProjects.name, title: deliveryMilestones.title, status: deliveryMilestones.status, completedAt: deliveryMilestones.completedAt, targetDate: deliveryMilestones.targetDate }).from(deliveryMilestones).innerJoin(deliveryProjects, eq(deliveryMilestones.projectId, deliveryProjects.id)).where(and(eq(deliveryProjects.clientId, client.id), eq(deliveryProjects.clientVisible, true), eq(deliveryMilestones.clientVisible, true))).orderBy(asc(deliveryMilestones.position)),
+    db.select({ id: clientRequests.id, title: clientRequests.title, category: clientRequests.category, completedAt: clientRequests.completedAt }).from(clientRequests).where(and(eq(clientRequests.clientId, input.clientId), eq(clientRequests.status, "completed"), gte(clientRequests.completedAt, start), lt(clientRequests.completedAt, end))).orderBy(desc(clientRequests.completedAt)),
+    db.select({ id: clientRequests.id, title: clientRequests.title, status: clientRequests.status }).from(clientRequests).where(and(eq(clientRequests.clientId, input.clientId), ne(clientRequests.status, "completed"), ne(clientRequests.status, "cancelled"))).orderBy(desc(clientRequests.updatedAt)).limit(12),
+    db.select({ id: clientTimelineEvents.id, sourceDomain: clientTimelineEvents.sourceDomain, type: clientTimelineEvents.type, title: clientTimelineEvents.title, description: clientTimelineEvents.description, occurredAt: clientTimelineEvents.occurredAt }).from(clientTimelineEvents).where(and(eq(clientTimelineEvents.clientId, input.clientId), eq(clientTimelineEvents.visibility, "client_visible"), gte(clientTimelineEvents.occurredAt, start), lt(clientTimelineEvents.occurredAt, end))).orderBy(desc(clientTimelineEvents.occurredAt)).limit(100),
+    db.select().from(clientAnalyticsDailyMetrics).where(and(eq(clientAnalyticsDailyMetrics.clientId, client.id), gte(clientAnalyticsDailyMetrics.metricDate, start), lt(clientAnalyticsDailyMetrics.metricDate, end))).orderBy(asc(clientAnalyticsDailyMetrics.metricDate)),
+    db.select({ id: invoices.id, invoiceNumber: invoices.invoiceNumber, status: invoices.status, total: invoices.total, portalPublishedAt: invoices.portalPublishedAt, paidAt: invoices.paidAt }).from(invoices).where(and(eq(invoices.clientId, client.id), ne(invoices.status, "draft"), gte(invoices.portalPublishedAt, start), lt(invoices.portalPublishedAt, end))).orderBy(desc(invoices.portalPublishedAt)),
+  ])
+  const analytics = analyticsEvidence(rawMetrics.map(toMetric))
+  const completedMilestones = milestones.filter((row) => row.completedAt && row.completedAt >= start && row.completedAt < end)
+  const deployments = timeline.filter(isDeployment)
+  const recommendations = timeline.filter((row) => row.sourceDomain === "optimisation" || row.type.includes("recommendation"))
+  const activities = timeline.filter((row) => !isDeployment(row) && !recommendations.includes(row) && row.sourceDomain !== "report")
   return {
-    clientId,
-    businessName: clientProfile?.name ?? deriveClientName(clientId),
-    contactName: clientProfile?.contactName ?? null,
-    tier: clientProfile?.tier ?? "Plan not assigned",
-    clientStatus: clientProfile?.status ?? "Portal active",
-    progress: clientProfile?.progress ?? null,
-    month,
-    year,
-    periodLabel,
-    completedRequests,
-    openRequests,
-    timeline,
-    analyticsConnected: false,
-    logoUrl: null as string | null,
+    schemaVersion: 1, assembledAt: new Date().toISOString(),
+    period: { month: input.month, year: input.year, start: start.toISOString(), end: end.toISOString(), label: formatReportPeriod(input.month, input.year) },
+    client: { recordId: client.id, portalClientId: client.portalClientId, name: client.name },
+    completedWork: [...completedMilestones.map((row) => ({ source: "milestone" as const, id: row.id, title: row.title, detail: row.project, occurredAt: row.completedAt!.toISOString() })), ...activities.map((row) => ({ source: "activity" as const, id: row.id, title: row.title, detail: row.description || null, occurredAt: row.occurredAt.toISOString() }))],
+    milestones: milestones.map((row) => ({ id: row.id, projectId: row.projectId, project: row.project, title: row.title, status: row.status, completedAt: row.completedAt?.toISOString() ?? null, targetDate: row.targetDate?.toISOString() ?? null })),
+    deployments: deployments.map((row) => ({ id: row.id, title: row.title, detail: row.description, occurredAt: row.occurredAt.toISOString() })),
+    requestsResolved: resolved.filter((row): row is typeof row & { completedAt: Date } => Boolean(row.completedAt)).map((row) => ({ id: row.id, title: row.title, category: row.category, completedAt: row.completedAt.toISOString() })),
+    analytics,
+    recommendations: recommendations.map((row) => ({ id: row.id, title: row.title, detail: row.description })),
+    nextMonthPriorities: [...milestones.filter((row) => row.status !== "completed" && row.status !== "skipped").slice(0, 8).map((row) => ({ source: "milestone" as const, id: row.id, title: row.title, detail: row.project })), ...openRequests.slice(0, 8).map((row) => ({ source: "request" as const, id: row.id, title: row.title, detail: labelize(row.status) }))],
+    financialActivity: publishedInvoices.filter((row): row is typeof row & { invoiceNumber: string; portalPublishedAt: Date } => Boolean(row.invoiceNumber && row.portalPublishedAt)).map((row) => ({ id: row.id, invoiceNumber: row.invoiceNumber, status: row.status, totalMinor: row.total, eventAt: (row.paidAt ?? row.portalPublishedAt).toISOString() })),
+    sourceAvailability: {
+      projects: { available: milestones.length > 0 }, requests: { available: resolved.length > 0 || openRequests.length > 0 }, clientVisibleActivity: { available: timeline.length > 0 }, analytics: { available: analytics !== null }, publishedInvoices: { available: publishedInvoices.length > 0 },
+      optimisationProposals: { available: recommendations.length > 0, reason: recommendations.length ? undefined : "No client-visible optimisation activity was recorded." },
+    },
   }
 }
 
-function buildFallbackReport(context: Awaited<ReturnType<typeof buildReportContext>>): ReportSectionData {
-  const completed = context.completedRequests.map((request) => `${request.title} (${labelize(request.category)})`)
-  const resolved = context.completedRequests.length > 0
-    ? context.completedRequests.map((request) => `${request.title} was marked complete.`)
-    : ["No support requests were marked complete in this reporting period."]
-  const active = context.openRequests.map((request) => `${request.title} is currently ${labelize(request.status)}.`)
-  const contentItems = [...context.completedRequests, ...context.openRequests]
-    .filter((request) => ["seo_request", "content_assets", "new_page", "website_update"].includes(request.category))
-    .map((request) => `${request.title} supported website content or SEO improvement.`)
-  const timelineHighlights = context.timeline.slice(0, 4).map((event) => `${event.title}: ${event.description}`)
-
-  return {
-    executiveSummary: `${context.periodLabel} focused on keeping ${context.businessName} moving forward through request handling, visible portal updates, and practical next-step planning. Analytics and SEO monitoring are not connected yet, so this report avoids invented performance metrics.`,
-    workCompleted: completed.length > 0 ? completed : ["No completed work was recorded for this month yet."],
-    supportRequestsResolved: resolved,
-    seoContentImprovements: contentItems.length > 0 ? contentItems : ["SEO/content analytics are not connected yet; no specific content improvements were recorded for this month."],
-    websiteHealthStatus: [
-      `Client status: ${context.clientStatus}.`,
-      context.progress === null ? "Project progress is not connected to the client portal yet." : `Current tracked progress is ${context.progress}%.`,
-      "Analytics, uptime monitoring, and Search Console data are not connected yet.",
-    ],
-    recommendations: [
-      "Keep logging requests through the portal so priorities and decisions stay visible.",
-      "Connect analytics/search data when available to make future reports more evidence-led.",
-      active.length > 0 ? "Review open request priorities so the next work cycle stays focused." : "Use the next month to identify the highest-value improvement area.",
-    ],
-    nextMonthFocus: active.length > 0 ? active : ["Confirm the next improvement priority and continue publishing useful client-visible updates."],
-    positiveClosingNote: timelineHighlights.length > 0
-      ? `The strongest signal this month is steady communication: ${timelineHighlights[0]}`
-      : "ScaleSmiths will keep the portal focused on clear updates, useful recommendations, and practical delivery momentum.",
-  }
+export function assembleMonthlyClientReport(evidence: MonthlyReportEvidence) {
+  const counts = [countPhrase(evidence.completedWork.length, "completed work item"), countPhrase(evidence.deployments.length, "deployment or change"), countPhrase(evidence.requestsResolved.length, "resolved request")].filter(Boolean)
+  const summary = counts.length ? `${evidence.period.label} records ${joinPhrases(counts)} from client-visible operational data.` : `No client-visible operational activity is present in the connected data for ${evidence.period.label}.`
+  return { title: `${evidence.client.name} monthly report - ${evidence.period.label}`, summary, htmlContent: renderHtml(evidence, summary), generatedBy: "manual" as const, sourceSnapshot: evidence }
 }
 
-function buildReportPrompt(context: Awaited<ReturnType<typeof buildReportContext>>) {
-  return JSON.stringify({
-    client: {
-      clientId: context.clientId,
-      businessName: context.businessName,
-      tier: context.tier,
-      status: context.clientStatus,
-      progress: context.progress,
-    },
-    period: context.periodLabel,
-    constraints: {
-      analyticsConnected: context.analyticsConnected,
-      neverInventMetrics: true,
-      missingAnalyticsLabel: "not connected yet",
-      doNotExposeRawForgeOutput: true,
-    },
-    completedRequests: context.completedRequests.map((request) => ({
-      title: request.title,
-      category: request.category,
-      priority: request.priority,
-      safeForgeSummary: request.forgeSummary?.slice(0, 500) ?? null,
-    })),
-    openRequests: context.openRequests.map((request) => ({
-      title: request.title,
-      category: request.category,
-      priority: request.priority,
-      status: request.status,
-      safeForgeSummary: request.forgeSummary?.slice(0, 500) ?? null,
-    })),
-    clientVisibleTimeline: context.timeline.map((event) => ({
-      type: event.type,
-      title: event.title,
-      description: event.description,
-    })),
-  })
+function analyticsEvidence(rows: ClientAnalyticsDailyMetric[]): MonthlyReportEvidence["analytics"] {
+  if (!rows.length) return null
+  const totals = Object.fromEntries(Object.entries(summarizeClientAnalytics({ configs: [], metrics: rows }).totals).filter((entry): entry is [string, number] => typeof entry[1] === "number"))
+  return Object.keys(totals).length ? { totals, sources: [...new Set(rows.map((row) => row.sourceAttribution))], measuredThrough: rows.at(-1)!.metricDate } : null
 }
-
-function renderReportHtml(context: Awaited<ReturnType<typeof buildReportContext>>, report: ReportSectionData) {
-  const sections = [
-    section("Executive summary", [report.executiveSummary]),
-    section("Work completed", report.workCompleted),
-    section("Support requests resolved", report.supportRequestsResolved),
-    section("SEO/content improvements", report.seoContentImprovements),
-    section("Website health/status", report.websiteHealthStatus),
-    section("Recommendations", report.recommendations),
-    section("Next month focus", report.nextMonthFocus),
-    section("Closing note", [report.positiveClosingNote]),
-  ].join("")
-
-  return `<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>${escapeHtml(context.businessName)} monthly report - ${escapeHtml(context.periodLabel)}</title>
-  <style>
-    :root { color-scheme: dark; }
-    body { margin:0; background:#080b12; color:#f4f4f5; font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height:1.6; }
-    .wrap { max-width:980px; margin:0 auto; padding:42px 22px 56px; }
-    .brand { display:flex; align-items:center; justify-content:space-between; gap:18px; margin-bottom:34px; }
-    .mark { font-weight:900; letter-spacing:.08em; text-transform:uppercase; color:#38bdf8; }
-    .period { color:#a1a1aa; font-size:14px; }
-    .hero { border:1px solid rgba(56,189,248,.22); background:linear-gradient(135deg, rgba(56,189,248,.14), rgba(16,185,129,.08)); border-radius:18px; padding:30px; }
-    h1 { margin:0; font-size:clamp(34px,5vw,56px); line-height:1; letter-spacing:-.04em; }
-    .subtitle { margin-top:16px; max-width:760px; color:#d4d4d8; }
-    .client { margin-top:22px; display:flex; flex-wrap:wrap; gap:10px; color:#d4d4d8; font-size:14px; }
-    .pill { border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.05); border-radius:999px; padding:6px 10px; }
-    .section { margin-top:18px; border:1px solid rgba(255,255,255,.1); background:rgba(255,255,255,.045); border-radius:14px; padding:22px; }
-    h2 { margin:0 0 12px; font-size:20px; letter-spacing:-.02em; }
-    ul { margin:0; padding-left:20px; }
-    li { margin:8px 0; color:#e4e4e7; }
-    p { margin:0; color:#e4e4e7; }
-    .footer { margin-top:28px; color:#a1a1aa; font-size:13px; }
-    a { color:#38bdf8; }
-  </style>
-</head>
-<body>
-  <main class="wrap">
-    <div class="brand">
-      <div class="mark">ScaleSmiths</div>
-      <div class="period">${escapeHtml(context.periodLabel)}</div>
-    </div>
-    <section class="hero">
-      <h1>${escapeHtml(context.businessName)} monthly report</h1>
-      <p class="subtitle">${escapeHtml(report.executiveSummary)}</p>
-      <div class="client">
-        <span class="pill">Client: ${escapeHtml(context.businessName)}</span>
-        <span class="pill">Plan: ${escapeHtml(context.tier)}</span>
-        <span class="pill">Analytics: not connected yet</span>
-      </div>
-    </section>
-    ${sections}
-    <p class="footer">Prepared by ScaleSmiths. This report only uses connected portal data and avoids invented metrics.</p>
-  </main>
-</body>
-</html>`
+function toMetric(row: typeof clientAnalyticsDailyMetrics.$inferSelect): ClientAnalyticsDailyMetric { return { clientId: row.clientId, configId: row.configId, metricDate: row.metricDate.toISOString(), source: row.source, sourceAttribution: row.sourceAttribution, sessions: row.sessions, conversionEvents: row.conversionEvents, formSubmissions: row.formSubmissions, phoneClicks: row.phoneClicks, ctaClicks: row.ctaClicks, searchImpressions: row.searchImpressions, searchClicks: row.searchClicks, errorCount: row.errorCount, uptimeChecks: row.uptimeChecks, uptimeFailures: row.uptimeFailures, lcpP75Ms: row.lcpP75Ms, inpP75Ms: row.inpP75Ms, clsP75: row.clsP75 === null ? null : Number(row.clsP75) } }
+function renderHtml(e: MonthlyReportEvidence, summary: string) {
+  const sections = [section("Period summary", [summary]), section("Work completed", e.completedWork.map((x) => x.detail ? `${x.title} — ${x.detail}` : x.title)), section("Milestones", e.milestones.map((x) => `${x.project}: ${x.title} — ${labelize(x.status)}`)), section("Deployments and changes", e.deployments.map((x) => `${x.title} — ${x.detail}`)), section("Requests resolved", e.requestsResolved.map((x) => `${x.title} — ${labelize(x.category)}`)), e.analytics ? section("Analytics and KPIs", Object.entries(e.analytics.totals).map(([key, value]) => `${metricLabel(key)}: ${formatMetric(key, value)}`)) : "", section("Recommendations", e.recommendations.map((x) => `${x.title} — ${x.detail}`)), section("Next-month priorities", e.nextMonthPriorities.map((x) => x.detail ? `${x.title} — ${x.detail}` : x.title))].filter(Boolean).join("")
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(e.client.name)} monthly report</title><style>body{margin:0;background:#080b12;color:#f4f4f5;font-family:Inter,system-ui,sans-serif;line-height:1.6}.wrap{max-width:920px;margin:auto;padding:42px 22px}.hero,.section{border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:24px;margin-bottom:18px}.hero{background:linear-gradient(135deg,rgba(56,189,248,.14),rgba(16,185,129,.08))}h1{margin:0;font-size:clamp(32px,5vw,52px);line-height:1.05}h2{margin:0 0 10px;font-size:20px}p,ul{margin:0}li{margin:7px 0}.period,.footer{color:#a1a1aa}.footer{font-size:13px}</style></head><body><main class="wrap"><p class="period">ScaleSmiths · ${escapeHtml(e.period.label)}</p><section class="hero"><h1>${escapeHtml(e.client.name)} monthly report</h1><p>${escapeHtml(summary)}</p></section>${sections}<p class="footer">Drafted from connected client-visible operational records. Reviewed and published deliberately by ScaleSmiths.</p></main></body></html>`
 }
-
-function section(title: string, items: string[]) {
-  const safeItems = items.length > 0 ? items : ["Not populated yet."]
-  return `<section class="section"><h2>${escapeHtml(title)}</h2>${safeItems.length === 1 ? `<p>${escapeHtml(safeItems[0])}</p>` : `<ul>${safeItems.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`}</section>`
-}
-
-function deriveClientName(clientId: string) {
-  return clientId.replace(/^https?:\/\//, "").replace(/^www\./, "").split(/[/.#?]/)[0].replace(/[-_]+/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase()) || "Client"
-}
-
-function labelize(value: string) {
-  return value.replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase())
-}
-
-function escapeHtml(value: string) {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;")
-}
+function section(title: string, items: string[]) { return items.length ? `<section class="section"><h2>${escapeHtml(title)}</h2>${items.length === 1 ? `<p>${escapeHtml(items[0])}</p>` : `<ul>${items.map((x) => `<li>${escapeHtml(x)}</li>`).join("")}</ul>`}</section>` : "" }
+function isDeployment(row: { sourceDomain: string | null; type: string }) { return row.sourceDomain === "deployment" || /(deploy|launch|release|staging|website_change)/i.test(row.type) }
+function countPhrase(count: number, label: string) { return count ? `${count} ${label}${count === 1 ? "" : "s"}` : "" }
+function joinPhrases(items: string[]) { return items.length < 2 ? items[0] : `${items.slice(0, -1).join(", ")} and ${items.at(-1)}` }
+function labelize(value: string) { return value.replace(/_/g, " ").replace(/\b\w/g, (x) => x.toUpperCase()) }
+function metricLabel(key: string) { return key.replace(/([A-Z])/g, " $1").replace(/^\w/, (x) => x.toUpperCase()).replace(/ P75 Ms$/, " p75 (ms)") }
+function formatMetric(key: string, value: number) { return key === "uptimePercent" ? `${value}%` : new Intl.NumberFormat("en-GB", { maximumFractionDigits: key === "clsP75" ? 4 : 2 }).format(value) }
+function escapeHtml(value: string) { return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;") }

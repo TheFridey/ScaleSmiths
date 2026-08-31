@@ -103,6 +103,9 @@ export interface AdminMonthlyReport {
   htmlContent: string
   status: "draft" | "published"
   generatedBy: "forge" | "manual"
+  version: number
+  reviewedAt: string | null
+  reviewedBy: string | null
   createdAt: string
   updatedAt: string
   publishedAt: string | null
@@ -265,7 +268,7 @@ export function ClientRequestsQueue({ initialRequests, loadError, initialSelecte
   const {
     reportMonth, setReportMonth, reportYear, setReportYear,
     monthlyReports, activeReport, reportDraft, setReportDraft, selectReport,
-    generateMonthlyReport, saveReport, publishReport,
+    generateMonthlyReport, saveReport, reviewReport, publishReport,
   } = useRequestMonthlyReports({ selected, setRequests, setBusyAction, setActionError })
 
   useEffect(() => {
@@ -821,7 +824,7 @@ export function ClientRequestsQueue({ initialRequests, loadError, initialSelecte
                             <h3 className="font-syne text-[13px] font-bold uppercase tracking-[.07em]" style={{ color: T.t2 }}>Monthly report</h3>
                           </div>
                           <p className="mt-1 font-dm text-xs leading-relaxed" style={{ color: T.t2 }}>
-                            Generate a branded client report from portal requests, visible timeline updates, and safe summaries.
+                            Assemble a draft from client-visible project, request, deployment, analytics and published financial records. Review is required before publication.
                           </p>
                         </div>
                         {activeReport && <Badge style={STATUS_STYLE[activeReport.status === "published" ? "completed" : "triaged"]}>{MONTHLY_REPORT_STATUS_LABELS[activeReport.status]}</Badge>}
@@ -875,7 +878,7 @@ export function ClientRequestsQueue({ initialRequests, loadError, initialSelecte
                           >
                             {monthlyReports.map((report) => (
                               <option key={report.id} value={report.id}>
-                                {report.month}/{report.year} - {MONTHLY_REPORT_STATUS_LABELS[report.status]}
+                                {report.month}/{report.year} v{report.version} - {MONTHLY_REPORT_STATUS_LABELS[report.status]}
                               </option>
                             ))}
                           </select>
@@ -889,6 +892,7 @@ export function ClientRequestsQueue({ initialRequests, loadError, initialSelecte
                             <input
                               className="mt-1"
                               value={reportDraft.title}
+                              disabled={activeReport.status === "published"}
                               onChange={(event) => setReportDraft((current) => current && { ...current, title: event.target.value })}
                             />
                           </label>
@@ -897,6 +901,7 @@ export function ClientRequestsQueue({ initialRequests, loadError, initialSelecte
                             <textarea
                               className="mt-1 min-h-[84px]"
                               value={reportDraft.summary}
+                              disabled={activeReport.status === "published"}
                               onChange={(event) => setReportDraft((current) => current && { ...current, summary: event.target.value })}
                             />
                           </label>
@@ -913,14 +918,15 @@ export function ClientRequestsQueue({ initialRequests, loadError, initialSelecte
                             <textarea
                               className="mt-1 min-h-[220px] font-mono text-xs"
                               value={reportDraft.htmlContent}
+                              disabled={activeReport.status === "published"}
                               onChange={(event) => setReportDraft((current) => current && { ...current, htmlContent: event.target.value })}
                             />
                           </label>
-                          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                             <button
                               type="button"
                               onClick={() => void saveReport()}
-                              disabled={Boolean(busyAction)}
+                              disabled={Boolean(busyAction) || activeReport.status === "published"}
                               className="inline-flex min-h-10 items-center justify-center gap-2 rounded-[8px] border px-3 py-2 font-dm text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60"
                               style={{ background: T.s1, borderColor: T.b1, color: T.t1 }}
                             >
@@ -929,8 +935,18 @@ export function ClientRequestsQueue({ initialRequests, loadError, initialSelecte
                             </button>
                             <button
                               type="button"
+                              onClick={() => void reviewReport()}
+                              disabled={Boolean(busyAction) || activeReport.status === "published" || Boolean(activeReport.reviewedAt) || reportDraft.title !== activeReport.title || reportDraft.summary !== activeReport.summary || reportDraft.htmlContent !== activeReport.htmlContent}
+                              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-[8px] border px-3 py-2 font-dm text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60"
+                              style={{ background: T.s1, borderColor: T.b1, color: T.t1 }}
+                            >
+                              {busyAction === "review-report" ? <Loader2 size={15} className="animate-spin" /> : <CheckCircle2 size={15} />}
+                              {activeReport.reviewedAt ? "Reviewed" : "Mark Reviewed"}
+                            </button>
+                            <button
+                              type="button"
                               onClick={() => void publishReport()}
-                              disabled={Boolean(busyAction) || activeReport.status === "published"}
+                              disabled={Boolean(busyAction) || activeReport.status === "published" || !activeReport.reviewedAt || reportDraft.title !== activeReport.title || reportDraft.summary !== activeReport.summary || reportDraft.htmlContent !== activeReport.htmlContent}
                               className="inline-flex min-h-10 items-center justify-center gap-2 rounded-[8px] px-3 py-2 font-dm text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
                               style={{ background: T.grn }}
                             >

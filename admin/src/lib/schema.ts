@@ -619,12 +619,18 @@ export const monthlyReports = pgTable("monthly_reports", {
   htmlContent: text("html_content").notNull(),
   status: monthlyReportStatus("status").default("draft").notNull(),
   generatedBy: monthlyReportGeneratedBy("generated_by").default("forge").notNull(),
+  version: integer("version").default(1).notNull(),
+  sourceSnapshot: jsonb("source_snapshot").$type<Record<string, unknown>>().default({}).notNull(),
+  reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+  reviewedBy: text("reviewed_by"),
+  publishedBy: text("published_by"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   publishedAt: timestamp("published_at", { withTimezone: true }),
 }, (table) => [
   index("monthly_reports_client_id_idx").on(table.clientId),
   index("monthly_reports_period_idx").on(table.clientId, table.year, table.month),
+  uniqueIndex("monthly_reports_period_version_idx").on(table.clientId, table.year, table.month, table.version),
   index("monthly_reports_status_idx").on(table.status),
   index("monthly_reports_published_at_idx").on(table.publishedAt),
 ])
@@ -714,6 +720,19 @@ export const prospectConversions = pgTable("prospect_conversions", {
 }, (table) => [
   uniqueIndex("prospect_conversions_prospect_idx").on(table.prospectId),
   index("prospect_conversions_client_idx").on(table.clientId, table.convertedAt),
+])
+
+export const monthlyReportAuditLogs = pgTable("monthly_report_audit_logs", {
+  id: serial("id").primaryKey(),
+  reportId: integer("report_id").references(() => monthlyReports.id, { onDelete: "restrict" }).notNull(),
+  clientId: text("client_id").notNull(),
+  action: text("action").notNull(),
+  actor: text("actor").notNull(),
+  metadataJson: jsonb("metadata_json").$type<Record<string, unknown>>().default({}).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("monthly_report_audit_report_idx").on(table.reportId, table.createdAt),
+  index("monthly_report_audit_client_idx").on(table.clientId, table.createdAt),
 ])
 
 export const deliveryOnboardingItems = pgTable("delivery_onboarding_items", {

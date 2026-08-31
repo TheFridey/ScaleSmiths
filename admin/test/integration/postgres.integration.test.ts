@@ -1295,6 +1295,18 @@ describe("real PostgreSQL integration", () => {
       await expect(webPool.query("SELECT * FROM delivery_project_audit_logs")).rejects.toMatchObject({ code: "42501" });
     } finally { await webPool.end(); }
   });
+  it("preserves published monthly report snapshots and their publication audit", async () => {
+    const report = (await pool.query(
+      "INSERT INTO monthly_reports(client_id,month,year,title,summary,html_content,status,generated_by,version,source_snapshot,reviewed_at,reviewed_by) VALUES('report-client',8,2026,'August report','Evidence summary','<p>Evidence</p>','draft','manual',1,$1,now(),'Reviewer') RETURNING id",
+      [{ schemaVersion: 1, requestsResolved: [{ id: 9, title: "Client-visible request" }] }],
+    )).rows[0];
+    await pool.query("UPDATE monthly_reports SET status='published',published_at=now(),published_by='Publisher' WHERE id=$1", [report.id]);
+    await pool.query("INSERT INTO monthly_report_audit_logs(report_id,client_id,action,actor,metadata_json) VALUES($1,'report-client','published','Publisher',$2)", [report.id, { version: 1 }]);
+
+    await expect(pool.query("UPDATE monthly_reports SET summary='Changed history' WHERE id=$1", [report.id])).rejects.toMatchObject({ message: expect.stringContaining("published monthly reports are immutable") });
+    await expect(pool.query("DELETE FROM monthly_reports WHERE id=$1", [report.id])).rejects.toMatchObject({ message: expect.stringContaining("published monthly reports are immutable") });
+    expect((await pool.query("SELECT action,actor FROM monthly_report_audit_logs WHERE report_id=$1", [report.id])).rows).toEqual([{ action: "published", actor: "Publisher" }]);
+  });
 });
 async function createProject() {
   return (

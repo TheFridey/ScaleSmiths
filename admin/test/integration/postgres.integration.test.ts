@@ -1307,6 +1307,36 @@ describe("real PostgreSQL integration", () => {
     await expect(pool.query("DELETE FROM monthly_reports WHERE id=$1", [report.id])).rejects.toMatchObject({ message: expect.stringContaining("published monthly reports are immutable") });
     expect((await pool.query("SELECT action,actor FROM monthly_report_audit_logs WHERE report_id=$1", [report.id])).rows).toEqual([{ action: "published", actor: "Publisher" }]);
   });
+
+  it("offboards without deleting financial or production-history records and supports controlled reactivation", async () => {
+    const actor = (await pool.query("INSERT INTO admin_users(email,display_name,password_hash,role) VALUES('offboarding@example.test','Offboarding Owner','hash','owner') RETURNING id")).rows[0].id as string;
+    const clientId = (await pool.query("INSERT INTO clients(name,portal_client_id,mrr) VALUES('Archive Me','archive-me',25000) RETURNING id")).rows[0].id as number;
+    await pool.query("INSERT INTO portal_client_accounts(client_id,email,password_hash,active,status) VALUES('archive-me','client@example.test','hash',true,'active')");
+    const catalogueId = (await pool.query("INSERT INTO invoice_catalogue_items(name,default_unit_amount) VALUES('Retainer',25000) RETURNING id")).rows[0].id as number;
+    await pool.query("INSERT INTO client_service_assignments(client_id,catalogue_item_id,active) VALUES($1,$2,true)", [clientId, catalogueId]);
+    await pool.query("INSERT INTO client_analytics_configs(client_id,provider,display_name,consent_granted,retention_days,enabled,credentials_encrypted,source_attribution,created_by) VALUES($1,'google_analytics','GA4',true,30,true,'encrypted-secret','GA4','operator')", [clientId]);
+    const projectId = (await pool.query("INSERT INTO delivery_projects(client_id,name,status,client_visible) VALUES($1,'Production website','active',true) RETURNING id", [clientId])).rows[0].id as number;
+    await pool.query("INSERT INTO client_requests(client_id,title,description,status) VALUES('archive-me','Final request','Close this request','in_progress')");
+    const invoiceId = (await pool.query("INSERT INTO invoices(client_id,client_name_snapshot,invoice_date,due_date,status,subtotal,total) VALUES($1,'Archive Me',now(),now() + interval '14 days','draft',25000,25000) RETURNING id", [clientId])).rows[0].id as number;
+    const service = await import("../../src/lib/server/client-offboarding");
+    const admin = { id: actor, email: "offboarding@example.test", displayName: "Offboarding Owner" };
+    const offboarding = await service.startClientOffboarding(clientId, { retentionReviewAt: "2032-01-01", retentionNotes: "Review by category.", productionHandoffNotes: "Client owns production; leave untouched." }, admin);
+    const detail = await service.getClientOffboarding(clientId);
+    for (const item of detail.items) await service.updateOffboardingItem(clientId, offboarding.id, item.id, { status: "completed", evidence: "Operator evidence recorded.", confirmation: item.destructive ? `CONFIRM ${item.itemKey}` : undefined }, admin);
+    await service.completeClientOffboarding(clientId, offboarding.id, { confirmation: "OFFBOARD Archive Me", productionAction: "leave_untouched" }, admin);
+
+    expect((await pool.query("SELECT status,mrr FROM clients WHERE id=$1", [clientId])).rows[0]).toEqual({ status: "archived", mrr: 0 });
+    expect((await pool.query("SELECT active,status FROM portal_client_accounts WHERE client_id='archive-me'")).rows[0]).toEqual({ active: false, status: "disabled" });
+    expect((await pool.query("SELECT status,client_visible FROM delivery_projects WHERE id=$1", [projectId])).rows[0]).toEqual({ status: "cancelled", client_visible: false });
+    expect((await pool.query("SELECT count(*)::int count FROM invoices WHERE id=$1", [invoiceId])).rows[0].count).toBe(1);
+    expect((await pool.query("SELECT enabled,credentials_encrypted FROM client_analytics_configs WHERE client_id=$1", [clientId])).rows[0]).toEqual({ enabled: false, credentials_encrypted: null });
+    expect((await pool.query("SELECT action FROM client_offboarding_audit_logs WHERE case_id=$1 ORDER BY id DESC LIMIT 1", [offboarding.id])).rows[0].action).toBe("offboarding_completed");
+
+    await service.reactivateClient(clientId, offboarding.id, { confirmation: "REACTIVATE Archive Me" }, admin);
+    expect((await pool.query("SELECT status FROM clients WHERE id=$1", [clientId])).rows[0].status).toBe("active");
+    expect((await pool.query("SELECT active FROM portal_client_accounts WHERE client_id='archive-me'")).rows[0].active).toBe(false);
+    expect((await pool.query("SELECT active FROM client_service_assignments WHERE client_id=$1", [clientId])).rows[0].active).toBe(false);
+  });
 });
 async function createProject() {
   return (

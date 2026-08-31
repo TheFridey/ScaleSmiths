@@ -34,6 +34,12 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if (tier !== null && !isClientServiceTier(tier)) return NextResponse.json({ error: "Select a valid client service tier." }, { status: 400 })
   if (!Number.isFinite(mrr) || mrr < 0) return NextResponse.json({ error: "MRR must be zero or greater." }, { status: 400 })
 
+  const [existing] = await db.select({ status: clients.status }).from(clients).where(eq(clients.id, id)).limit(1)
+  if (!existing) return NextResponse.json({ error: "Client not found." }, { status: 404 })
+  if (status !== existing.status && (status === "archived" || existing.status === "archived")) {
+    return NextResponse.json({ error: "Use the controlled offboarding workflow to archive or reactivate a client." }, { status: 409 })
+  }
+
   const [updated] = await db.update(clients).set({
     name,
     contactName: optionalString(body.contactName),

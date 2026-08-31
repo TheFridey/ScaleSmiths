@@ -3,7 +3,7 @@
 import { FormEvent, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Save } from "lucide-react"
+import { Archive, ArrowLeft, Save } from "lucide-react"
 import { CLIENT_SERVICE_TIER_OPTIONS, CLIENT_STATUS_OPTIONS } from "@/lib/clients"
 
 interface EditableClient {
@@ -100,6 +100,7 @@ export function EditClientForm({ client }: { client: EditableClient }) {
         {error ? <div role="alert" className="mt-5 rounded-lg border border-red/30 bg-red/10 px-4 py-3 font-dm text-sm text-t1">{error}</div> : null}
 
         <div className="mt-6 flex items-center justify-end gap-3">
+          <Link href={`/clients/${client.id}/offboarding`} className="mr-auto inline-flex items-center gap-2 rounded-lg border border-amber-500/30 px-4 py-2.5 font-dm text-sm text-amber-300"><Archive size={15} />Offboarding</Link>
           <Link href="/clients" className="rounded-lg border border-b2 px-4 py-2.5 font-dm text-sm text-t2 transition-colors hover:text-t1">Cancel</Link>
           <button disabled={saving} className="inline-flex items-center gap-2 rounded-lg bg-acc px-4 py-2.5 font-dm text-sm font-semibold text-white disabled:opacity-60">
             <Save size={15} aria-hidden="true" /> {saving ? "Saving..." : "Save changes"}

@@ -530,6 +530,12 @@
       "sha256": "6965d831975d914344d9ba1ac15d760bb21bd7a7ad7b4f903da4f4abb46fbfbf",
       "lifecycle": "forward",
       "reason": "Adds versioned operational evidence snapshots, explicit review and publication actors, publication audit history, and database-enforced immutability for published client reports."
+    },
+    {
+      "path": "admin/drizzle/0058_client_offboarding.sql",
+      "sha256": "1cb32af7251c082e33ca0f88a6ad912fd80f146bd80f29f8e3fe7488501714d6",
+      "lifecycle": "forward",
+      "reason": "Adds versioned client offboarding checklists, explicit destructive-action evidence, lifecycle state, retention review metadata, and an append-only audit trail without deleting retained records."
     }
   ],
   "journals": {
@@ -732,6 +738,13 @@
           "version": "7",
           "when": 1788123579543,
           "tag": "0057_brave_shaman",
+          "breakpoints": true
+        },
+        {
+          "idx": 58,
+          "version": "7",
+          "when": 1788451200000,
+          "tag": "0058_client_offboarding",
           "breakpoints": true
         }
       ]

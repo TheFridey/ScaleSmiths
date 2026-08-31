@@ -26,6 +26,7 @@ export async function POST(request: NextRequest) {
   }
   const domain = parseClientDomainFields(body)
   if (!domain.ok) return NextResponse.json({ error: domain.error }, { status: 400 })
+  if (domain.status === "archived") return NextResponse.json({ error: "Create the client first, then use the controlled offboarding workflow to archive it." }, { status: 409 })
 
   const mrr = Number.parseInt(String(body.mrr ?? "0"), 10)
   let invoiceClientCode: string

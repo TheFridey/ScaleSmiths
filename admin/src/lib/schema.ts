@@ -12,6 +12,7 @@ import { DEPLOYMENT_CANDIDATE_STATES } from "./forge-deployment-candidates"
 import { FORGE_PROJECT_STATES, FORGE_TASK_STATES } from "./forge-state-machine"
 import { INVOICE_STATUSES } from "./invoices"
 import { MONTHLY_REPORT_STATUSES } from "./monthly-reports"
+import type { ClientOffboardingItemStatus, ClientOffboardingStatus } from "./client-offboarding"
 import { PROPOSAL_PACKAGE_TYPES, PROPOSAL_STATUSES, PROSPECT_PRIORITIES, PROSPECT_SOURCES, PROSPECT_STAGES } from "./prospects"
 
 const bytea = customType<{ data: Buffer }>({ dataType: () => "bytea" })
@@ -773,6 +774,58 @@ export const clientServiceAssignments = pgTable("client_service_assignments", {
   uniqueIndex("client_service_assignments_id_client_idx").on(table.id, table.clientId),
   index("client_service_assignments_prospect_idx").on(table.sourceProspectId),
 ])
+
+export const clientOffboardingCases = pgTable("client_offboarding_cases", {
+  id: serial("id").primaryKey(),
+  clientId: integer("client_id").references(() => clients.id, { onDelete: "restrict" }).notNull(),
+  status: text("status").$type<ClientOffboardingStatus>().default("draft").notNull(),
+  checklistVersion: integer("checklist_version").notNull(),
+  assessmentSnapshot: jsonb("assessment_snapshot").$type<Record<string, unknown>>().default({}).notNull(),
+  commercialEndAt: timestamp("commercial_end_at", { withTimezone: true }),
+  retentionReviewAt: timestamp("retention_review_at", { withTimezone: true }),
+  retentionNotes: text("retention_notes"),
+  productionHandoffNotes: text("production_handoff_notes"),
+  createdBy: uuid("created_by").references(() => adminUsers.id, { onDelete: "set null" }),
+  completedBy: uuid("completed_by").references(() => adminUsers.id, { onDelete: "set null" }),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  reactivatedBy: uuid("reactivated_by").references(() => adminUsers.id, { onDelete: "set null" }),
+  reactivatedAt: timestamp("reactivated_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("client_offboarding_cases_client_idx").on(table.clientId, table.createdAt),
+  uniqueIndex("client_offboarding_cases_open_idx").on(table.clientId).where(sql`${table.status} in ('draft','in_progress','ready')`),
+])
+
+export const clientOffboardingItems = pgTable("client_offboarding_items", {
+  id: serial("id").primaryKey(),
+  caseId: integer("case_id").references(() => clientOffboardingCases.id, { onDelete: "restrict" }).notNull(),
+  itemKey: text("item_key").notNull(),
+  category: text("category").notNull(),
+  title: text("title").notNull(),
+  status: text("status").$type<ClientOffboardingItemStatus>().default("pending").notNull(),
+  destructive: boolean("destructive").default(false).notNull(),
+  blocker: text("blocker"),
+  evidence: text("evidence"),
+  completedBy: uuid("completed_by").references(() => adminUsers.id, { onDelete: "set null" }),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("client_offboarding_items_case_key_idx").on(table.caseId, table.itemKey),
+  index("client_offboarding_items_case_status_idx").on(table.caseId, table.status),
+  check("client_offboarding_items_blocker_check", sql`${table.status} <> 'blocked' or ${table.blocker} is not null`),
+  check("client_offboarding_items_completion_check", sql`(${table.status} = 'completed' and ${table.completedAt} is not null) or (${table.status} <> 'completed' and ${table.completedAt} is null)`),
+])
+
+export const clientOffboardingAuditLogs = pgTable("client_offboarding_audit_logs", {
+  id: serial("id").primaryKey(),
+  caseId: integer("case_id").references(() => clientOffboardingCases.id, { onDelete: "restrict" }).notNull(),
+  clientId: integer("client_id").references(() => clients.id, { onDelete: "restrict" }).notNull(),
+  actorUserId: uuid("actor_user_id").references(() => adminUsers.id, { onDelete: "set null" }),
+  action: text("action").notNull(),
+  metadataJson: jsonb("metadata_json").$type<Record<string, unknown>>().default({}).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [index("client_offboarding_audit_case_idx").on(table.caseId, table.createdAt)])
 
 export const outreachActivities = pgTable("outreach_activities", {
   id: serial("id").primaryKey(),

@@ -291,7 +291,7 @@ the new migration; `tsc --noEmit`, `lint`, `test`, `build` (admin); `test:integr
 
 - One admin migration creating `prospect_conversions` + `client_service_assignments`. Forward-only. No
   changes to existing columns (`prospects.convertedClientId` already exists).
-- Touches no web-owned table (`portal_client_accounts` is written only at runtime, as `createPortalUser`
+- Touches no web-owned table (`portal_client_accounts` is written only at runtime, as `provisionPortalAccount`
   already does).
 - Removing the legacy `convertToClient` action is safe: its only caller is the replaced UI button.
 

@@ -79,7 +79,7 @@ The root `.env` is supplied wholesale to Compose services. Ownership below descr
 | Forge jobs/rate limits | `FORGE_JOBS_MODE`, `FORGE_RATE_LIMIT_WINDOW_MS`, `FORGE_MUTATION_RATE_LIMIT`, `FORGE_TASK_RATE_LIMIT` |
 | Forge workspace/QA | `FORGE_MAX_REPAIR_ATTEMPTS`, `FORGE_ARTIFACT_MAX_VERSIONS`, `FORGE_ARTIFACT_MAX_CONTENT_BYTES`, `FORGE_QA_LOG_MAX_CHARS`, Lighthouse/console threshold variables |
 | Forge preview/sandbox | `FORGE_PREVIEW_HOST`, `FORGE_PREVIEW_PORT_BASE`, `FORGE_ALLOW_PUBLIC_PREVIEWS`, all `FORGE_SANDBOX_*` variables |
-| Future/external integrations | `WHATSAPP_*`, `R2_*`; these are documented/configurable but are not general browser credentials |
+| Server-only integrations | `R2_*` for client-document storage and future `WHATSAPP_*`; these are never browser credentials |
 
 Only `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_DISCOVERY_BOOKING_URL`, and `NEXT_PUBLIC_ADMIN_URL` are intended for client bundles. The booking value must be an HTTPS scheduling URL without embedded credentials; an invalid or empty value fails safely to the enquiry form. Provider, authentication, database, email, WhatsApp, and storage credentials are server-only. The environment hygiene check prevents real `.env*` files from entering the Git/archive surface, but does not validate secret strength or runtime completeness.
 

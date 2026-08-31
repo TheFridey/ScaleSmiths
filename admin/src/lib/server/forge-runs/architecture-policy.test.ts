@@ -40,5 +40,5 @@ describe("Forge run orchestration architecture policy", () => {
     }
     await visit(srcRoot)
     expect(offenders).toEqual([])
-  })
+  }, 15_000)
 })

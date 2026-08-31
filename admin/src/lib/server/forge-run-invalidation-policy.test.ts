@@ -1,13 +1,16 @@
+import { readFileSync } from "node:fs"
 import { describe, expect, it } from "vitest"
 
 describe("Forge run invalidation mode/policy", () => {
-  it("invalidation.ts imports forgeRuns table to read mode and policy (not hardcoded)", async () => {
+  it("reads invalidation mode and policy from the persisted Forge run", () => {
     // Verify the module can be imported without errors — the fix replaces
     // hardcoded mode:"standard" and policy:{} with a DB read from forgeRuns.
     // The module is `import "server-only"` so we verify it compiles and
     // its structural dependencies exist.
-    const mod = await import("./forge-runs/invalidation")
-    expect(typeof mod.invalidateDownstreamForChangedInput).toBe("function")
+    const source = readFileSync(new URL("./forge-runs/invalidation.ts", import.meta.url), "utf8")
+    expect(source).toMatch(/forgeRuns\.(?:mode|policyJson)/)
+    expect(source).toContain("eq(forgeRuns.id, runId)")
+    expect(source).not.toMatch(/mode:\s*["']standard["']|policy:\s*\{\}/)
   })
 
   it("invalidation.ts function signature accepts the correct parameters", async () => {

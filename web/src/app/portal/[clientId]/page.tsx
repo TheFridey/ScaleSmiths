@@ -21,9 +21,7 @@ interface PortalPageProps {
   searchParams: Promise<{ tab?: string }>
 }
 
-const SAFE_PLACEHOLDER_CLIENT = {
-  supportEmail: "hello@scalesmiths.co.uk",
-}
+const PORTAL_SUPPORT_EMAIL = "hello@scalesmiths.co.uk"
 
 export default async function PortalClientPage({ params, searchParams }: PortalPageProps) {
   const { clientId } = await params
@@ -118,7 +116,7 @@ function OverviewTab({
       websiteName={websiteName}
       planTier={planTier}
       currentStatus={clientStatus === "active" ? "Active workspace" : clientStatus}
-      supportEmail={SAFE_PLACEHOLDER_CLIENT.supportEmail}
+      supportEmail={PORTAL_SUPPORT_EMAIL}
       latestReport={latestReport}
       recentMessages={recentMessages}
     />

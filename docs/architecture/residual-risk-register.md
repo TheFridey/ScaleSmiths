@@ -1,6 +1,6 @@
 # Current residual-risk register
 
-**Assessment date:** 28 August 2026  
+**Assessment date:** 31 August 2026
 **Scope:** Re-evaluation of residual risks recorded by the July 2026 ScaleSmiths architecture, production-readiness, dependency, and security audits  
 **Authority:** Current-state classification; historical reports remain unchanged evidence of their audited revisions
 
@@ -34,6 +34,7 @@ flowchart LR
 | Production database grants and ownership | High: one credential and application-level isolation only | **PARTIALLY CLOSED** | Dedicated principals, exact web/delete/sequence/function policy, migration ownership, default ACLs, runtime Compose variable blanking, and a real PostgreSQL catalog verifier with injected-drift rejection | Removed admin Drizzle-schema access, narrowed web/read-only sequences and admin deletes, isolated tool environments, and added CI verification/repair proof | Run the non-mutating verifier against an isolated production-derived restore and the live target during an approved window; repository tests cannot prove live grants |
 | Client/database isolation | High: no role separation or RLS | **PARTIALLY CLOSED** | Narrow web grants; admin DML-only role; forced transaction-scoped RLS on analytics/optimisation tables; portal query ownership tests | Consolidated remaining gap under canonical tenant identity | Portal/report/request and Forge isolation remains application-level until external text and internal integer client identities are unified |
 | Mutable applied migration history | High: older SQL appeared modified | **CLOSED** | `migration-checksums.json`, history/consistency checks, proven historical prefixes, forward reconciliation migrations, clean and upgrade paths | Current docs use actual `0015`/`0050` endpoints and forward-only policy | Production-derived upgrade proof remains part of the backup drill, not a migration-history defect |
+| Fresh shared-database migration ordering | Release-blocking: web `0018` reads admin-owned `clients` before the admin history creates it | **STILL OPEN** | Local and current GitHub integration, least-privilege, and Forge E2E runs fail with `relation "clients" does not exist`; the test-only interleaving helper is compatibility scaffolding, not the production migrator | Classified the cascaded suite failures under one ordering defect | Add a checksum-preserving shared migration orchestrator or forward baseline strategy, update every clean/upgrade harness and runbook, then prove clean and production-derived upgrade paths |
 | Forge E2E repair cycle | Medium: local run timed out and left a child process | **CLOSED** | Guarded isolated Forge E2E, manual-worker mode, retries disabled, cancellation cleanup, persisted-cancellation checks, CI workflow | Retired the obsolete incomplete-run finding | Real providers and production visual/human acceptance remain deliberately separate gates |
 | Durable monitoring and log retention | Medium: stdout/no-op monitoring had no retention | **PARTIALLY CLOSED** | Structured redacted JSON logs, request IDs, Sentry adapters, Vector/log-shipping configuration, rotation settings and tests | Removed the obsolete “no adapter” implication | Prove production shipping, access controls, retention, alert routing, and failure notification |
 | Forge outbound DNS rebinding/TOCTOU | Medium: DNS checked before a separately resolved `fetch` | **STILL OPEN** | `safe-outbound.ts` validates protocols, redirects, credentials, addresses, sizes and timeouts but does not bind the HTTP connection to the validated address | Kept explicitly open in current architecture | Use a restricted egress proxy/resolver or validated-address connection while preserving TLS hostname verification |
@@ -60,6 +61,11 @@ flowchart LR
 
 ## Current open-risk summary
 
-The risks requiring new engineering implementation are DNS-pinned Forge egress, canonical tenant identity/RLS expansion, analytics retention, environment ownership validation, dedicated Forge worker isolation/operations, Auth.js and Drizzle development dependency exits, broader authorization/E2E coverage, workspace retention, and external synthetic monitoring.
+The risks requiring new engineering implementation are fresh shared-database migration ordering, DNS-pinned Forge egress, canonical tenant identity/RLS expansion, analytics retention, environment ownership validation, dedicated Forge worker isolation/operations, Auth.js and Drizzle development dependency exits, broader authorization/E2E coverage, workspace retention, and external synthetic monitoring.
 
 The risks requiring external or human evidence are repository protection/security settings, production monitoring/log shipping, Cloudflare/origin enforcement, production-derived restore, off-host backup controls, and production release validation. Repository tests must not report those external controls as active merely because their configuration is present.
+
+## Retired during the consolidation review
+
+- **Plaintext portal-password administration — CLOSED:** the obsolete test-account/generated-password API branch and its validation helper were removed. Portal enrolment and recovery now use only the hashed, expiring, single-use activation/reset lifecycle; internal administrator credential management remains a separate capability surface.
+- **R2 described as future-only — CLOSED:** current architecture and topology documentation now identify R2 as the implemented private client-document binary store, with PostgreSQL retaining scoped metadata, integrity, visibility, and audit records.

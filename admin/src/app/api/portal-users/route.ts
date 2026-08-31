@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { PortalUserError } from "@/lib/portal-users"
-import { createPortalUser, listPortalUsers, provisionPortalAccount } from "@/lib/server/portal-users"
+import { listPortalUsers, provisionPortalAccount } from "@/lib/server/portal-users"
 import { guardApiCapability } from "@/lib/server/rbac"
 
 export const dynamic = "force-dynamic"
@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     if (!body || typeof body !== "object" || Array.isArray(body)) throw new PortalUserError("Invalid portal user payload.")
     const input = body as Record<string, unknown>
     if (input.purpose === "reset") await guardApiCapability("portal_users.credentials.reset")
-    const user = input.testAccount === true ? await createPortalUser(input, true) : await provisionPortalAccount(input, actor)
+    const user = await provisionPortalAccount(input, actor)
     return NextResponse.json({ ok: true, user }, { status: 201 })
   } catch (error) { return portalError(error) }
 }

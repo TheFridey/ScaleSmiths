@@ -302,7 +302,7 @@ export function ClientRequestsQueue({ initialRequests, loadError, initialSelecte
         setRequests((current) => current.map((request) => (request.id === json.request.id ? { ...request, adminLastReadAt: json.request.adminLastReadAt } : request)))
       }
     }).catch(() => undefined)
-  }, [selectedId])
+  }, [requests, selectedId])
 
   const summary = useMemo(() => {
     const openRequests = requests.filter((request) => OPEN_STATUSES.has(request.status))

@@ -1,16 +1,11 @@
 import { describe, expect, it } from "vitest"
-import { normalizePortalEmail, PortalUserError, validateClientId, validatePortalEmail, validatePortalPassword } from "./portal-users"
+import { normalizePortalEmail, PortalUserError, validateClientId, validatePortalEmail } from "./portal-users"
 
 describe("portal user validation", () => {
   it("normalizes and validates portal emails", () => {
     expect(normalizePortalEmail(" Client@Example.COM ")).toBe("client@example.com")
     expect(validatePortalEmail("client@example.com")).toBe("client@example.com")
     expect(() => validatePortalEmail("invalid")).toThrow(PortalUserError)
-  })
-
-  it("requires strong-enough temporary passwords", () => {
-    expect(validatePortalPassword("twelve-chars!")).toBe("twelve-chars!")
-    expect(() => validatePortalPassword("too-short")).toThrow("at least 12 characters")
   })
 
   it("requires a positive integer client id", () => {

@@ -6,6 +6,8 @@ import { describe, expect, it } from "vitest"
 const projectProjection = readFileSync(new URL("./portal-projects.ts", import.meta.url), "utf8")
 const timelineRoute = readFileSync(new URL("../app/portal/api/timeline/route.ts", import.meta.url), "utf8")
 const portalAuth = readFileSync(new URL("./portal-auth.ts", import.meta.url), "utf8")
+const portalSession = readFileSync(new URL("./portal-session.ts", import.meta.url), "utf8")
+const portalLogin = readFileSync(new URL("../app/portal/api/login/route.ts", import.meta.url), "utf8")
 const portalRoot = new URL("../app/portal", import.meta.url)
 
 describe("client portal has zero Forge visibility or control", () => {
@@ -27,8 +29,9 @@ describe("client portal has zero Forge visibility or control", () => {
   })
   it("uses a portal-only cookie and secret rather than an admin identity", () => {
     expect(portalAuth).toContain('PORTAL_SESSION_COOKIE = "ss-client-session"')
-    expect(portalAuth).toContain("PORTAL_SECRET")
-    expect(portalAuth).not.toMatch(/AUTH_SECRET|next-auth|AdminRole|forge\./)
+    expect(portalSession).toContain("process.env.PORTAL_SECRET")
+    expect(portalLogin).toContain("process.env.PORTAL_SECRET")
+    expect(`${portalAuth}\n${portalSession}\n${portalLogin}`).not.toMatch(/AUTH_SECRET|next-auth|AdminRole|forge\./)
   })
 })
 

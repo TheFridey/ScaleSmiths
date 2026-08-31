@@ -169,25 +169,28 @@ These are merge/release evidence, not production deployment approval. GitHub enf
 | Let's Encrypt/TLS | Referenced by host Nginx certificate paths and managed at host level |
 | Off-host backup storage | Operator-configured through rclone with separate credentials and recommended object lock |
 | WhatsApp | Current Forge V1 produces `wa.me` behaviour; Cloud API variables are future-facing |
-| Cloudflare R2 | Environment contract exists for future storage work; it is not the current general document store |
+| Cloudflare R2 | Private binary storage for client documents; PostgreSQL retains scoped metadata, integrity fields and access audit records |
 
 ## 17. Current residual risks
 
 The authoritative finding-by-finding status, evidence, action, and remaining work are maintained in the [current residual-risk register](residual-risk-register.md). The following is a summary of current risks or unverified operational controls, not a claim that completed repository mechanisms are absent:
 
+The supported operational sequence for client provisioning, delivery, messaging, documents, reports, invoicing, and offboarding is maintained in [Client lifecycle operations](../operations/client-lifecycle.md).
+
 1. Strict `master` protection and GitHub-native secret/security settings require live repository configuration and verification.
-2. Historical `.freebuff/` desktop state remains in reachable Git history until a coordinated rewrite.
-3. Production-derived restore evidence and achieved RPO/RTO remain human operational gates.
-4. Monitoring/log-shipping activation, alert routing, and privacy/subprocessor alignment require production evidence.
-5. Portal text identity and admin integer client identity prevent a uniform RLS tenant model; most portal/Forge isolation remains application-enforced.
-6. Forge outbound URL validation still needs a connection-pinned or equivalent design to fully close DNS-rebinding risk.
-7. Auth.js v5 beta and the development-only Drizzle Kit advisory chain remain time-bounded dependency risks.
-8. Forge Docker execution shares the host kernel, and bridge-enabled install/preview operations rely on host egress controls.
-9. The Forge worker is in-process and uses the broad admin runtime role; operational visibility, retention, and dedicated-worker isolation remain improvement areas.
-10. Shared table declarations, client-request triage rules, and string-keyed Forge artifact/memory contracts can drift.
-11. Admin component/accessibility coverage and authenticated portal lifecycle E2E coverage are incomplete.
-12. Cloudflare, backup timers/off-host object lock, monitoring, and external post-release smoke monitoring cannot be confirmed from repository state alone.
-13. Invoice immutability is strong after issue, but retention, recovery, and any correction/credit-note policy remain operational/business controls that must preserve the immutable record.
+2. Fresh shared-database provisioning is release-blocked because web migration `0018` reads admin-owned `clients` before the admin history creates it; the checksum-locked histories need one supported shared orchestration path.
+3. Historical `.freebuff/` desktop state remains in reachable Git history until a coordinated rewrite.
+4. Production-derived restore evidence and achieved RPO/RTO remain human operational gates.
+5. Monitoring/log-shipping activation, alert routing, and privacy/subprocessor alignment require production evidence.
+6. Portal text identity and admin integer client identity prevent a uniform RLS tenant model; most portal/Forge isolation remains application-enforced.
+7. Forge outbound URL validation still needs a connection-pinned or equivalent design to fully close DNS-rebinding risk.
+8. Auth.js v5 beta and the development-only Drizzle Kit advisory chain remain time-bounded dependency risks.
+9. Forge Docker execution shares the host kernel, and bridge-enabled install/preview operations rely on host egress controls.
+10. The Forge worker is in-process and uses the broad admin runtime role; operational visibility, retention, and dedicated-worker isolation remain improvement areas.
+11. Shared table declarations, client-request triage rules, and string-keyed Forge artifact/memory contracts can drift.
+12. Admin component/accessibility coverage and authenticated portal lifecycle E2E coverage are incomplete.
+13. Cloudflare, backup timers/off-host object lock, monitoring, and external post-release smoke monitoring cannot be confirmed from repository state alone.
+14. Invoice immutability is strong after issue, but retention, recovery, and any correction/credit-note policy remain operational/business controls that must preserve the immutable record.
 
 The actionable backlog is grouped in the [engineering roadmap](../engineering-roadmap.md).
 

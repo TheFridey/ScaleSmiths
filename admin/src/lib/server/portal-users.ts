@@ -7,7 +7,7 @@ import { and, asc, desc, eq, isNull } from "drizzle-orm"
 import { boolean, integer, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core"
 import { db, type AdminDatabaseTransaction } from "@/lib/db"
 import { adminSecurityAudit, clients } from "@/lib/schema"
-import { PortalUserError, validateClientId, validatePortalEmail, validatePortalPassword } from "@/lib/portal-users"
+import { PortalUserError, validateClientId, validatePortalEmail } from "@/lib/portal-users"
 
 const PASSWORD_ROUNDS = 12
 
@@ -92,41 +92,6 @@ function hashToken(token: string) { return createHash("sha256").update(token).di
 export async function listPortalEligibleClients() {
   return db.select({ id: clients.id, name: clients.name, portalClientId: clients.portalClientId })
     .from(clients).orderBy(asc(clients.name))
-}
-
-export function generatePortalPassword() {
-  return `${randomBytes(15).toString("base64url")}!7a`
-}
-
-export async function createPortalUser(input: Record<string, unknown>, testAccount = false) {
-  const clientId = validateClientId(input.clientId)
-  const generatedPassword = testAccount || input.generatePassword === true
-  const password = generatedPassword ? generatePortalPassword() : validatePortalPassword(input.password)
-  const email = testAccount && !input.email
-    ? `portal-test+${Date.now()}@scalesmiths.co.uk`
-    : validatePortalEmail(input.email)
-
-  try {
-    const created = await db.transaction(async (tx) => {
-      const [client] = await tx.select({ id: clients.id, portalClientId: clients.portalClientId })
-        .from(clients).where(eq(clients.id, clientId)).for("update").limit(1)
-      if (!client) throw new PortalUserError("The selected client no longer exists.", 404, "client_not_found")
-      const portalClientId = client.portalClientId ?? `portal-client-${client.id}`
-      if (!client.portalClientId) await tx.update(clients).set({ portalClientId, updatedAt: new Date() }).where(eq(clients.id, client.id))
-      const [account] = await tx.insert(portalClientAccounts).values({
-        clientId: portalClientId,
-        email,
-        passwordHash: await bcrypt.hash(password, PASSWORD_ROUNDS),
-        active: true,
-      }).returning({ id: portalClientAccounts.id })
-      return account
-    })
-    return { id: created.id, email, password: generatedPassword || testAccount ? password : undefined }
-  } catch (error) {
-    if (error instanceof PortalUserError) throw error
-    if (isUniqueViolation(error)) throw new PortalUserError("That portal email is already in use.", 409, "duplicate_email")
-    throw error
-  }
 }
 
 export async function updatePortalUser(idValue: unknown, input: Record<string, unknown>, actor?: { id: string }) {

@@ -36,11 +36,10 @@ Priorities have the following meaning:
 
 | Priority | Issue | Outcome | Dependencies |
 | --- | --- | --- | --- |
-| P1 | [#68 Replace clipboard portal passwords with secure invitation and reset flows](https://github.com/TheFridey/ScaleSmiths/issues/68) | Portal account enrolment and recovery no longer depend on administrators copying temporary passwords. | Email delivery and authentication decisions; coordinate with #59. |
-| P1 | [#69 Publish real client project milestones and progress to the portal](https://github.com/TheFridey/ScaleSmiths/issues/69) | Static progress placeholders are replaced by authorised project data. | Canonical tenant mapping in #57. |
-| P1 | [#70 Add secure document and asset publication to the client portal](https://github.com/TheFridey/ScaleSmiths/issues/70) | Clients can access explicitly published files through an ownership-checked boundary. | Tenant mapping in #57 and storage/security design. |
-| P1 | [#71 Unify portal Messages with live request-thread communication](https://github.com/TheFridey/ScaleSmiths/issues/71) | The Messages experience uses the existing authenticated thread capability instead of a placeholder route. | Confirm the intended product model; reuse existing request-thread controls. |
-| P1 | [#72 Add end-to-end browser coverage for the authenticated client lifecycle](https://github.com/TheFridey/ScaleSmiths/issues/72) | Login, ownership, requests, reports, invoices, logout, and new lifecycle features are protected end to end. | Cover current flows first, then extend as #68–#71 land. |
+| P2 | [#69 Reconcile project publication issue](https://github.com/TheFridey/ScaleSmiths/issues/69) | Validate the implemented client-owned milestone/progress projection and close the stale implementation issue. | Clean shared-database migration path and #72 evidence. |
+| P2 | [#70 Reconcile document publication issue](https://github.com/TheFridey/ScaleSmiths/issues/70) | Validate the implemented R2-backed ownership-checked document path and close the stale implementation issue. | R2 staging evidence and #72. |
+| P2 | [#71 Reconcile portal messaging issue](https://github.com/TheFridey/ScaleSmiths/issues/71) | Validate the implemented request-thread messaging path and close the stale implementation issue. | Notification delivery evidence and #72. |
+| P1 | [#72 Add end-to-end browser coverage for the authenticated client lifecycle](https://github.com/TheFridey/ScaleSmiths/issues/72) | Login, ownership, activation/reset, requests, reports, invoices, documents, and logout are protected end to end. | Cover the current lifecycle and negative cross-client cases before expansion. |
 
 ## 4. Operational automation
 
@@ -51,11 +50,11 @@ Priorities have the following meaning:
 | P1 | [#65 Add external post-release synthetic smoke monitoring](https://github.com/TheFridey/ScaleSmiths/issues/65) | Releases are checked from outside the host for public and authorised critical paths. | Monitoring destination and escalation ownership from #56. |
 | P1 | [#66 Surface Forge queue, lease, retry and preview health in admin operations](https://github.com/TheFridey/ScaleSmiths/issues/66) | Operators can diagnose durable Forge state without direct database inspection. | Stable queue/artifact contracts; coordinate with #63 and #76. |
 | P2 | [#67 Define archival and retention policy for Forge jobs and dead letters](https://github.com/TheFridey/ScaleSmiths/issues/67) | Forge operational data has explicit lifecycle, evidence-retention, and deletion rules. | Privacy decisions in #60 and observability requirements in #66. |
-| P2 | [#76 Separate Forge worker execution into a dedicated service and database role](https://github.com/TheFridey/ScaleSmiths/issues/76) | Background execution and database privilege are isolated from the admin web process. | Operational visibility in #66 and deployment/topology review. |
+| P2 | [#76 Separate Forge worker execution into a dedicated process and database role](https://github.com/TheFridey/ScaleSmiths/issues/76) | Background execution and database privilege are isolated from the admin web process without creating a network microservice. | Operational visibility in #66 and deployment/topology review. |
 
 ## 5. Future expansion
 
-Future product or platform expansion should begin only after its relevant P0/P1 foundations above are closed. Near-term candidates are richer client collaboration built on #68–#72 and broader Forge execution capacity built on #63, #66, #67, #73, and #76. New roadmap entries need a validated current-code gap, an owner, and measurable acceptance criteria; aspirational features should not be mixed with residual-risk closure.
+Future product or platform expansion should begin only after its relevant P0/P1 foundations above are closed. Near-term candidates are richer client collaboration after #72 and broader Forge execution capacity built on #63, #66, #67, #73, and #76. New roadmap entries need a validated current-code gap, an owner, and measurable acceptance criteria; aspirational features should not be mixed with residual-risk closure.
 
 ## Retired stale findings
 
@@ -69,5 +68,6 @@ The review validated older audit claims against current executable sources. The 
 - Forge end-to-end orchestration coverage, durable jobs, database-backed rate limits, and managed previews are implemented.
 - Production dependency audits currently report no known vulnerabilities; the remaining moderate advisory is development-only and tracked by #75.
 - Host-Nginx topology has executable configuration and integration coverage.
+- Portal project/milestone publication, R2-backed document delivery, and live request-thread messaging are implemented; authenticated lifecycle E2E remains under #72.
 
 These retirements describe the reviewed repository state, not production activation. Operational claims still require the evidence requested by their linked issues.

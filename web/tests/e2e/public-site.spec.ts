@@ -473,8 +473,9 @@ test.describe("quote and contact forms", () => {
     await gotoReady(page, "/privacy")
     await expect(page.getByRole("heading", { name: "Privacy notice" })).toBeVisible()
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /index, follow/i)
-    await page.getByRole("button", { name: /turn off experience analytics/i }).click()
-    await expect(page.getByRole("status")).toContainText(/analytics is now off/i)
+    await page.getByRole("button", { name: /manage preferences/i }).click()
+    await expect(page.getByRole("checkbox", { name: "Analytics" })).not.toBeChecked()
+    await page.getByRole("button", { name: /save preferences/i }).click()
     await expect.poll(async () => (await page.context().cookies()).find((cookie) => cookie.name === "ss_analytics_opt_out")?.value).toBe("1")
     await expect(page.getByRole("link", { name: "Terms" }).last()).toHaveAttribute("href", "/terms")
 

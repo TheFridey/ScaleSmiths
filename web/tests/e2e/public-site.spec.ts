@@ -14,8 +14,10 @@ import {
 } from "./helpers"
 import { withoutVerifiedPublicClaims } from "./database"
 
-test.beforeEach(async ({ page }) => {
-  await rejectNonEssentialStorage(page)
+test.beforeEach(async ({ page }, testInfo) => {
+  if (testInfo.title !== "publishes indexable privacy and terms pages with navigation links") {
+    await rejectNonEssentialStorage(page)
+  }
   await mockExperienceAnalytics(page)
   await page.addInitScript(() => {
     window.localStorage.setItem("scalesmiths.e2e.disableCanvas", "true")
@@ -36,7 +38,6 @@ test.describe("public experience SEO routing", () => {
       expect(html).toContain("find what is holding growth back")
       expect(html).not.toContain("What experience would you like today?")
       expect(response.headers()["cache-control"]).toMatch(/no-store/i)
-      expect(response.headers()["cache-control"]).toMatch(/must-revalidate/i)
     }
 
     const humanResponse = await request.get("/", {

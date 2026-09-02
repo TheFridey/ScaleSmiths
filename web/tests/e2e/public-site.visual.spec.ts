@@ -2,7 +2,6 @@ import { expect, test } from "@playwright/test"
 import { chooseNormalExperience, clearV2State, disableVisualNoise, gotoReady, mockExperienceAnalytics, openInteractivePlan, rejectNonEssentialStorage, setExperience } from "./helpers"
 
 test.beforeEach(async ({ page }) => {
-  await rejectNonEssentialStorage(page)
   await page.emulateMedia({ reducedMotion: "reduce" })
   await mockExperienceAnalytics(page)
   await page.addInitScript(() => {
@@ -29,6 +28,7 @@ test("normal homepage visual baseline", async ({ page }, testInfo) => {
 })
 
 test("interactive plan visual baseline", async ({ page }, testInfo) => {
+  await rejectNonEssentialStorage(page)
   await openInteractivePlan(page)
   await disableVisualNoise(page)
 

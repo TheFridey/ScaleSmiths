@@ -5,7 +5,7 @@ This checklist is a release gate for the supported Docker Compose and host-Nginx
 ## Before deployment
 
 - [ ] CI, security workflows, migration verification, web/admin lint, tests and production builds pass for the exact commit.
-- [ ] The real PostgreSQL integration suite passes with web then admin migrations against a disposable empty database.
+- [ ] The real PostgreSQL integration suite passes with the shared migrator against a disposable empty database.
 - [ ] `npm audit --omit=dev --audit-level=high` reports no high or critical production vulnerabilities; reviewed lower findings are recorded.
 - [ ] Every generated-site deployment candidate shows a passing, unexpired dependency-admission report and its own SPDX 2.3 SBOM; report, SBOM, lockfile and workspace hashes agree.
 - [ ] No generated-site dependency gate override is present. Correct and recreate any candidate with a missing lockfile, prohibited package/source/licence, unreviewed native package, audit failure, or High/Critical finding.
@@ -28,7 +28,7 @@ This checklist is a release gate for the supported Docker Compose and host-Nginx
 
 ## Deployment and verification
 
-- [ ] Run web migrations then admin migrations; never run the two histories concurrently.
+- [ ] Run `database-migrate`; never invoke either history independently.
 - [ ] Prepare the inactive release, validate both internal health endpoints and inspect bounded container logs.
 - [ ] Test Nginx configuration before the atomic switch; preserve the previous healthy slot.
 - [ ] After switching, verify public routes, admin login/MFA, portal isolation, quote/contact flow and critical Forge read-only screens.

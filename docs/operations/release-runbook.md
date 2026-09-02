@@ -33,12 +33,11 @@ Before any production migration:
    ```bash
    cd /var/www/scalesmiths/ScaleSmiths
    docker compose -f docker-compose.host-nginx.yml --profile tools run --rm postgres-provision
-   docker compose -f docker-compose.host-nginx.yml --profile tools run --rm web-migrate
-   docker compose -f docker-compose.host-nginx.yml --profile tools run --rm admin-migrate
+   docker compose -f docker-compose.host-nginx.yml --profile tools run --rm database-migrate
    docker compose -f docker-compose.host-nginx.yml --profile tools run --rm postgres-provision
    ```
 
-Stop on any unexpected journal, schema, ownership or grant result. The web history always precedes the admin history because both applications share PostgreSQL. Runtime containers must not receive the migration or provisioning credentials. See [PostgreSQL least-privilege rollout](postgresql-least-privilege-rollout.md).
+Stop on any unexpected journal, schema, ownership or grant result. The shared runner preserves each app's internal order while interleaving the histories according to `scripts/shared-migration-plan.json`; it takes a PostgreSQL advisory lock and validates every recorded hash. Runtime containers must not receive the migration or provisioning credentials. See [PostgreSQL least-privilege rollout](postgresql-least-privilege-rollout.md).
 
 ## Prepare and release the canary
 

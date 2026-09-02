@@ -17,5 +17,5 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ ok: true, integration: await linkForgeToDeliveryProject(deliveryProjectId, { forgeProjectId, latestRunId: optionalId(body.latestRunId), deploymentCandidateId: optionalId(body.deploymentCandidateId), internalReleaseId: text(body.internalReleaseId), stagingDeploymentId: text(body.stagingDeploymentId), productionDeploymentId: text(body.productionDeploymentId), internalBuildStatus: text(body.internalBuildStatus), internalQaStatus: text(body.internalQaStatus), internalDeploymentStatus: text(body.internalDeploymentStatus) }, actor) })
   } catch (error) { return projectFailure(error) }
 }
-function optionalId(value: unknown) { if (value === undefined || value === null || value === "") return null; const parsed = Number(value); if (!Number.isInteger(parsed) || parsed <= 0) throw new DeliveryProjectError("Internal linkage ID is invalid."); return parsed }
-function text(value: unknown) { return typeof value === "string" && value.trim() ? value.trim().slice(0, 300) : null }
+function optionalId(value: unknown) { if (value === undefined || value === null || value === "") return undefined; const parsed = Number(value); if (!Number.isInteger(parsed) || parsed <= 0) throw new DeliveryProjectError("Internal linkage ID is invalid."); return parsed }
+function text(value: unknown) { return typeof value === "string" && value.trim() ? value.trim().slice(0, 300) : undefined }

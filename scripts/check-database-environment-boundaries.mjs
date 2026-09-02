@@ -27,7 +27,7 @@ export function validateDatabaseEnvironmentBoundaries(files) {
   }
 
   const host = files["docker-compose.host-nginx.yml"] ?? ""
-  for (const service of ["web-migrate", "admin-migrate"]) {
+  for (const service of ["database-migrate"]) {
     const block = serviceBlock(host, service)
     if (!block) { failures.push(`docker-compose.host-nginx.yml: missing ${service} service`); continue }
     if (/^\s+env_file:/m.test(block)) failures.push(`docker-compose.host-nginx.yml: ${service} must not inherit the root env file`)

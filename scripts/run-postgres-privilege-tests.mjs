@@ -43,8 +43,7 @@ try {
 
   waitForHostConnection(env.POSTGRES_PROVISIONING_DATABASE_URL)
   run(process.execPath, ["admin/scripts/provision-postgres-roles.mjs", "--confirm-provision"], { env })
-  run(process.execPath, [npmCli, "--prefix", "web", "run", "db:migrate"], { env })
-  run(process.execPath, [npmCli, "--prefix", "admin", "run", "db:migrate"], { env })
+  run(process.execPath, [npmCli, "run", "db:migrate"], { env })
   run(process.execPath, ["admin/scripts/provision-postgres-roles.mjs", "--confirm-provision"], { env })
   run(process.execPath, ["admin/scripts/verify-postgres-privileges.mjs"], { env })
 

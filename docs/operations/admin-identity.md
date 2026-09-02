@@ -7,7 +7,7 @@ ScaleSmiths admin identities are stored in PostgreSQL `admin_users`. There is no
 Run the admin migration before deploying the new authentication code, then bootstrap the existing configured admin:
 
 ```bash
-docker compose -f docker-compose.host-nginx.yml run --rm admin-migrate
+docker compose -f docker-compose.host-nginx.yml --profile tools run --rm database-migrate
 docker compose -f docker-compose.host-nginx.yml run --rm admin-bootstrap
 ```
 

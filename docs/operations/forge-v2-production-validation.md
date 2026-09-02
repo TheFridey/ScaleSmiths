@@ -19,7 +19,7 @@ This checklist is an operator record, not evidence until completed, timestamped,
 - [ ] Reconfirm target environment and exact SHA immediately before change.
 - [ ] Place the release in the approved maintenance/write-control state and pause new Forge work without discarding queued evidence.
 - [ ] Record pre-change worker heartbeat and queue depth; ensure workers cannot consume jobs during incompatible migration state.
-- [ ] Apply web migrations first and admin migrations second; capture both journal states and stop on any unexpected delta.
+- [ ] Run the shared migrator; capture both journal states and stop on any unexpected delta.
 - [ ] Start immutable web/admin images in the inactive slot and validate local health before traffic switching.
 - [ ] Run `nginx -t`, switch traffic only through the reviewed release procedure, then verify the effective upstream and TLS path.
 

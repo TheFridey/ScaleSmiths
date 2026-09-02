@@ -1,11 +1,14 @@
 # Migration history integrity and backup verification
 
-ScaleSmiths uses one PostgreSQL database with two independently owned Drizzle histories. The production order is always:
+ScaleSmiths uses one PostgreSQL database with two independently owned Drizzle histories. One shared plan coordinates them:
 
 1. `web/drizzle`, recorded in `drizzle.__drizzle_web_migrations`;
-2. `admin/drizzle`, recorded in `drizzle.__drizzle_migrations`.
+2. `admin/drizzle`, recorded in `drizzle.__drizzle_migrations`;
+3. `scripts/shared-migration-plan.json`, which preserves both internal orders and declares cross-history prerequisites.
 
-Do not combine the journals, reverse this order, or edit a locked migration. The repository does not contain evidence proving which historical SQL bytes ran against production, so this runbook deliberately makes no such claim.
+Do not combine the journals or edit a locked migration. Run only `npm run db:migrate`; app-local commands redirect to the same runner. It uses `MIGRATION_DATABASE_URL`, rejects runtime-only credentials in production, verifies journal hashes/prefixes, takes advisory lock `621908147`, and commits each migration plus its journal record in one transaction. A failed statement rolls back and stops the run.
+
+The deterministic fresh order is web `0000`-`0017`, admin `0000`-`0051`, web `0018`-`0020`, then admin `0052`-`0058`. Admin `0052` duplicates four columns already introduced by web `0017`; because neither immutable file may change, the runner verifies the existing column types/nullability before recording the untouched `0052` hash. Any structural mismatch fails closed.
 
 ## Established Git history
 
@@ -39,8 +42,8 @@ For a new migration, create a new numbered SQL file, append its owning journal, 
 
 The PostgreSQL integration suite has two distinct cases:
 
-- **clean database:** reset the disposable schema and apply current web migrations followed by current admin migrations;
-- **upgraded database:** apply locked web/admin fixture prefixes, model the known historical compatibility gaps and known modified `0012` journal hash, then apply the current histories. Only `0042` may be newly recorded, existing client-request data must survive, and repaired objects must exist.
+- **clean database:** reset the disposable schema and run the shared migrator to all 21 web and 59 admin entries;
+- **upgraded database:** apply locked fixture prefixes, model the known historical compatibility gaps and allowlisted `0012` journal hash, then run the shared migrator. It can advance admin `0042` before web `0017` when that forward repair is required; existing data must survive.
 
 Run `npm run test:integration` from the repository root. Its URL guard permits only a dedicated local/CI test database.
 
@@ -56,7 +59,7 @@ The verifier:
 - requires `--confirm-localhost-isolated` because localhost may be a production tunnel or proxy;
 - prints only the target host and database, never the URL or password;
 - captures public/Drizzle tables, columns, indexes, enums, and both journals before and after;
-- runs web migrations first and admin migrations second;
+- runs the same shared dependency planner used in production and CI;
 - writes a JSON report with schema digests, journal counts, and added/removed objects.
 
 Example for an isolated local restore:
@@ -75,3 +78,5 @@ The report path must not already exist, preventing accidental evidence replaceme
 ## Remaining human requirement
 
 No production backup was accessed while implementing this control, and no production-backup evidence has been fabricated. An authorised operator must still run the verifier against an isolated restore of the latest verified production backup, review the JSON comparison, and attach that evidence to the release approval.
+
+If a migration fails, preserve its error and both journal prefixes. Transactional migrations leave the prior prefix intact and are safe to retry after correcting the external cause. No current migration is declared non-transactional; a future migration containing `CREATE INDEX CONCURRENTLY`, transaction control, or equivalent must be rejected or explicitly documented in the plan with an operator recovery procedure before merge.

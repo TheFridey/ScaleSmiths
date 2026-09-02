@@ -9,7 +9,7 @@ Both applications use one PostgreSQL database. Drizzle ORM schema definitions an
 
 ## Decision
 
-Continue using PostgreSQL with Drizzle ORM and per-application migration directories. Production migrations run web first, then admin. Treat committed migration SQL and historical journal entries as immutable; record checksums and make schema corrections in new forward migrations.
+Continue using PostgreSQL with Drizzle ORM and per-application migration directories. Production migrations use the root shared dependency planner while retaining both Drizzle-compatible journals. Treat committed migration SQL and historical journal entries as immutable; record checksums and make schema corrections in new forward migrations.
 
 ## Alternatives Considered
 

@@ -8,7 +8,7 @@ All application objects in `public` and both Drizzle journals in `drizzle` are o
 
 | Principal | Database/schema | Tables and views | Sequences/functions | Explicitly forbidden |
 | --- | --- | --- | --- | --- |
-| Migration owner (`MIGRATION_DATABASE_URL`) | Owns the database plus `public`/`drizzle`; `CONNECT`, `CREATE`, `TEMPORARY`; creates and alters objects | Owns all application and journal relations; applies web then admin histories | Owns application sequences/functions/types | Long-running application use; provisioning roles; bypassing the ordered migration process |
+| Migration owner (`MIGRATION_DATABASE_URL`) | Owns the database plus `public`/`drizzle`; `CONNECT`, `CREATE`, `TEMPORARY`; creates and alters objects | Owns all application and journal relations; applies the shared dependency plan | Owns application sequences/functions/types | Long-running application use; provisioning roles; bypassing the ordered migration process |
 | Web runtime (`WEB_DATABASE_URL`) | `CONNECT`; `USAGE` on `public`; no `CREATE`, `TEMPORARY`, or `drizzle` access | Exact operations from `postgres-privilege-policy.mjs`; no private admin/Forge/journal access; no `DELETE`, `TRUNCATE`, `REFERENCES`, or `TRIGGER` | `USAGE`/`SELECT` only on sequences backing tables into which web inserts; no application-function execution | Ownership, DDL, role management, cross-domain access, migration access |
 | Admin runtime (`ADMIN_DATABASE_URL`) | `CONNECT`; `USAGE` on `public`; no `CREATE`, `TEMPORARY`, or `drizzle` access | `SELECT`, `INSERT`, `UPDATE` on public application relations; `DELETE` only on the five lifecycle tables declared in policy; no `TRUNCATE`, `REFERENCES`, or `TRIGGER` | `USAGE`/`SELECT` on public sequences; execute only the reviewed `digest` and `gen_random_uuid` functions when present | Ownership, DDL, role management, journal access, undeclared row deletion |
 | Forge worker | No separate principal today; the instrumentation-started worker is part of admin | Same admin DML boundary | Same admin sequence/function boundary | Generated workspaces receive no database URL; a future separate worker must have a new explicit policy before deployment |
@@ -47,8 +47,7 @@ Keep `POSTGRES_PROVISIONING_DATABASE_URL` out of long-running containers and ope
 4. Apply histories in the required order with the migration credential:
 
    ```bash
-   docker compose -f docker-compose.host-nginx.yml --profile tools run --rm web-migrate
-   docker compose -f docker-compose.host-nginx.yml --profile tools run --rm admin-migrate
+   docker compose -f docker-compose.host-nginx.yml --profile tools run --rm database-migrate
    ```
 
 5. Run `postgres-provision` again. This applies audited grants to objects introduced by the migrations and is safe to repeat.

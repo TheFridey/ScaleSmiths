@@ -1,9 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest"
 import { Pool } from "pg"
-import { drizzle } from "drizzle-orm/node-postgres"
-import { migrate } from "drizzle-orm/node-postgres/migrator"
-import path from "node:path"
 import { assertSafeIntegrationDatabaseUrl } from "../../src/lib/test-database-safety"
+import { migrateSharedTestDatabase } from "./shared-migration-harness"
 
 // Durable operational controls exercised against a real PostgreSQL: leased job
 // claiming (no double execution), expired-lease recovery, idempotency, and
@@ -32,11 +30,7 @@ beforeAll(async () => {
   await pool.query("DROP SCHEMA IF EXISTS drizzle CASCADE; DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public")
   const migrationPool = new Pool({ connectionString: url, max: 2 })
   try {
-    // Both apps share the public schema and admin migrations reference web tables,
-    // so apply the web history first, then admin.
-    const migrationDb = drizzle(migrationPool)
-    await migrate(migrationDb, { migrationsFolder: path.resolve("../web/drizzle"), migrationsTable: "__drizzle_web_migrations", migrationsSchema: "drizzle" })
-    await migrate(migrationDb, { migrationsFolder: path.resolve("drizzle") })
+    await migrateSharedTestDatabase(migrationPool)
   } finally {
     await migrationPool.end()
   }
@@ -111,7 +105,7 @@ describe("durable Forge job queue (real PostgreSQL)", () => {
     const { reapExpiredForgeJobLeases } = await import("../../src/lib/server/forge-job-queue")
 
     const outcome = await reapExpiredForgeJobLeases()
-    expect(outcome).toEqual({ requeued: 1, deadLettered: 1 })
+    expect(outcome).toEqual({ requeued: 1, deadLettered: 1, requeuedIds: [recoverable], deadLetteredIds: [exhausted] })
 
     const statuses = new Map((await pool.query("SELECT id, status, lease_owner FROM forge_jobs")).rows.map((r) => [r.id, r]))
     expect(statuses.get(recoverable)).toMatchObject({ status: "queued", lease_owner: null })
@@ -122,7 +116,7 @@ describe("durable Forge job queue (real PostgreSQL)", () => {
     const projectId = await createProject()
     await insertQueuedJob(projectId, { status: "running", attempts: 1, leaseOwner: "alive", leaseExpiresAt: new Date(Date.now() + 60_000) })
     const { reapExpiredForgeJobLeases } = await import("../../src/lib/server/forge-job-queue")
-    expect(await reapExpiredForgeJobLeases()).toEqual({ requeued: 0, deadLettered: 0 })
+    expect(await reapExpiredForgeJobLeases()).toEqual({ requeued: 0, deadLettered: 0, requeuedIds: [], deadLetteredIds: [] })
   })
 
   it("deduplicates enqueue by idempotency key", async () => {

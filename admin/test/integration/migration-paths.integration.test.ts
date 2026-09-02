@@ -6,6 +6,7 @@ import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promi
 import os from "node:os"
 import path from "node:path"
 import { assertSafeIntegrationDatabaseUrl } from "../../src/lib/test-database-safety"
+import { migrateSharedTestDatabase } from "./shared-migration-harness"
 
 const WEB_MIGRATIONS = path.resolve("../web/drizzle")
 const ADMIN_MIGRATIONS = path.resolve("drizzle")
@@ -40,10 +41,10 @@ afterAll(async () => {
 
 describe("migration installation paths", () => {
   it("applies every migration from zero in production order with separate journals", async () => {
-    await applyMigrations(WEB_MIGRATIONS, ADMIN_MIGRATIONS)
+    await migrateSharedTestDatabase(pool)
 
-    expect(await migrationCount("__drizzle_web_migrations")).toBe(17)
-    expect(await migrationCount("__drizzle_migrations")).toBe(52)
+    expect(await migrationCount("__drizzle_web_migrations")).toBe(21)
+    expect(await migrationCount("__drizzle_migrations")).toBe(59)
     expect(await columnExists("forge_artifacts", "content_bytes")).toBe(true)
     expect(await columnExists("forge_deployment_candidates", "dependency_report_json")).toBe(true)
     expect(await columnExists("forge_deployment_candidates", "dependency_sbom_hash")).toBe(true)
@@ -65,7 +66,7 @@ describe("migration installation paths", () => {
   })
 
   it("upgrades a locked historical fixture by applying only the forward reconciliation", async () => {
-    await applyMigrations(historicalWebMigrations, historicalAdminMigrations)
+    await applyFixtureMigrations(historicalWebMigrations, historicalAdminMigrations)
     expect(await migrationCount("__drizzle_web_migrations")).toBe(10)
     expect(await migrationCount("__drizzle_migrations")).toBe(HISTORICAL_ADMIN_COUNT)
 
@@ -84,10 +85,10 @@ describe("migration installation paths", () => {
     await pool.query("DROP INDEX forge_artifacts_version_idx")
     await pool.query("DROP TABLE client_request_messages CASCADE")
 
-    await applyMigrations(WEB_MIGRATIONS, ADMIN_MIGRATIONS)
+    await migrateSharedTestDatabase(pool)
 
-    expect(await migrationCount("__drizzle_web_migrations")).toBe(17)
-    expect(await migrationCount("__drizzle_migrations")).toBe(52)
+    expect(await migrationCount("__drizzle_web_migrations")).toBe(21)
+    expect(await migrationCount("__drizzle_migrations")).toBe(59)
     expect(await columnExists("forge_artifacts", "content_bytes")).toBe(true)
     expect(await columnExists("forge_deployment_candidates", "dependency_report_json")).toBe(true)
     expect(await constraintExists("forge_deployment_candidates_dependency_hashes_sha256")).toBe(true)
@@ -114,7 +115,7 @@ describe("migration installation paths", () => {
   })
 
   it("requires complete dependency evidence and freezes it after candidate submission", async () => {
-    await applyMigrations(WEB_MIGRATIONS, ADMIN_MIGRATIONS)
+    await migrateSharedTestDatabase(pool)
     const project = await pool.query<{ id: number }>("INSERT INTO forge_projects(name,business_name) VALUES('Evidence fixture','Evidence fixture') RETURNING id")
     const projectId = project.rows[0].id
     const hash = "a".repeat(64)
@@ -132,9 +133,20 @@ describe("migration installation paths", () => {
     )
     await expect(pool.query("UPDATE forge_deployment_candidates SET dependency_report_json = $1 WHERE id = $2", [{ status: "failed" }, created.rows[0].id])).rejects.toThrow(/snapshot is immutable/)
   })
+
+  it("serialises concurrent migration runners with the shared advisory lock", async () => {
+    const lockClient = await pool.connect()
+    try {
+      await lockClient.query("SELECT pg_advisory_lock($1)", [621908147])
+      await expect(migrateSharedTestDatabase(pool, path.resolve("."), { lockTimeoutMs: 200 })).rejects.toThrow(/Another migration runner is active/)
+    } finally {
+      await lockClient.query("SELECT pg_advisory_unlock($1)", [621908147])
+      lockClient.release()
+    }
+  })
 })
 
-async function applyMigrations(webFolder: string, adminFolder: string) {
+async function applyFixtureMigrations(webFolder: string, adminFolder: string) {
   const database = drizzle(pool)
   await migrate(database, {
     migrationsFolder: webFolder,

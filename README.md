@@ -156,8 +156,7 @@ database, while the existing host Nginx routes requests by `server_name`.
 4. **Start Postgres and run migrations**
    ```bash
    docker compose -f docker-compose.host-nginx.yml up -d postgres
-   docker compose -f docker-compose.host-nginx.yml run --rm web-migrate
-   docker compose -f docker-compose.host-nginx.yml run --rm admin-migrate
+   docker compose -f docker-compose.host-nginx.yml --profile tools run --rm database-migrate
    ```
 
 5. **Start the app containers on localhost-only ports**
@@ -260,7 +259,7 @@ Forge deploy checklist:
 3. Fill Forge env vars in `/var/www/scalesmiths/ScaleSmiths/.env`.
 4. Keep `FORGE_ENABLE_AI=false` for first boot unless provider keys are ready.
 5. Confirm AI budgets are set before enabling live providers.
-6. Run web migrations, then admin migrations.
+6. Run the canonical shared database migrator.
 7. Rebuild and start the admin container.
 8. Confirm `/forge` requires admin login.
 9. Confirm `generated-sites/` is writable by creating a Forge workspace from the UI.
@@ -538,16 +537,15 @@ The portal is a credible early-stage client workspace, not a full SaaS product. 
 
 ## Database migrations
 
-For local development, apply migrations in ownership order:
+For local development and production, run the repository's shared migrator:
 
 ```bash
-cd web && npm run db:migrate
-cd ../admin && npm run db:migrate
+npm run db:migrate
 ```
 
 The web app owns quote and portal tables. The admin app owns admin dashboard/client/kanban tables.
 
-The admin app reads `quote_requests` for lead review, but the web app owns the quote table migrations.
+The admin app reads `quote_requests` for lead review, but the web app owns the quote table migrations. `scripts/shared-migration-plan.json` interleaves both immutable histories and `scripts/migrate-database.mjs` is the only supported runner.
 
 Committed migration files and historical journal entries are checksum-locked. Run `npm run check:migration-history` and `npm run test:migration-consistency` before proposing a migration change; all corrections must be new forward migrations. The two disposable PostgreSQL paths and guarded isolated-backup procedure are documented in [migration history and backup verification](docs/operations/migration-history-and-backup-verification.md).
 

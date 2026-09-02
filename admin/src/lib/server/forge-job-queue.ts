@@ -300,7 +300,14 @@ export async function retryForgeJob(jobId: number): Promise<{ retried: boolean; 
  * Recovers jobs whose lease expired because the worker died: requeues those with
  * attempts remaining, dead-letters the rest. Returns how many of each.
  */
-export async function reapExpiredForgeJobLeases(now = new Date()): Promise<{ requeued: number; deadLettered: number; requeuedIds: number[]; deadLetteredIds: number[] }> {
+export interface ForgeLeaseRecoveryResult {
+  requeued: number
+  deadLettered: number
+  requeuedIds: number[]
+  deadLetteredIds: number[]
+}
+
+export async function reapExpiredForgeJobLeases(now = new Date()): Promise<ForgeLeaseRecoveryResult> {
   const requeued = await db
     .update(forgeJobs)
     .set({ status: "queued", leaseOwner: null, leaseExpiresAt: null, heartbeatAt: null, scheduledAt: now, failureReason: "Recovered after worker lease expired.", updatedAt: now })

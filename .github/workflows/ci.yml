@@ -323,6 +323,8 @@ jobs:
           node scripts/check-migrations.mjs 2>&1 | tee ci-artifacts/migration-consistency.log
           npm run check:migration-history 2>&1 | tee ci-artifacts/migration-history-integrity.log
           npm run test:migration-history 2>&1 | tee ci-artifacts/migration-history-tests.log
+          npm run check:migration-order 2>&1 | tee ci-artifacts/migration-order.log
+          npm run test:migration-order 2>&1 | tee ci-artifacts/migration-order-tests.log
 
       - name: Run real PostgreSQL integration suite
         working-directory: admin
@@ -574,8 +576,7 @@ jobs:
       - name: Use supported npm
         run: npm install --global npm@10.9.2
 
-      # Admin migrations reference web-owned tables, so the web history is applied
-      # first by scripts/run-forge-e2e-tests.mjs and web dependencies are required.
+      # The shared runner loads both immutable histories and the admin/web PostgreSQL dependency.
       - name: Install web dependencies
         working-directory: web
         run: npm ci --ignore-scripts --no-audit --no-fund

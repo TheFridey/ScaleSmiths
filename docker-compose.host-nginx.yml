@@ -75,12 +75,11 @@ services:
         max-file: "3"
     networks: [ss-net]
 
-  web-migrate:
-    image: ss-web-migrate
+  database-migrate:
+    image: ss-database-migrate
     build:
-      context: ./web
-      dockerfile: Dockerfile
-      target: builder
+      context: .
+      dockerfile: ops/shared-migrator.Dockerfile
     profiles: ["tools"]
     environment:
       NODE_ENV: production
@@ -90,33 +89,7 @@ services:
       DATABASE_URL: ""
       SENTRY_AUTH_TOKEN: ""
       LOG_SHIPPING_TOKEN: ""
-    command: npm run db:migrate
-    depends_on:
-      postgres:
-        condition: service_healthy
-    logging:
-      driver: json-file
-      options:
-        max-size: "20m"
-        max-file: "2"
-    networks: [ss-net]
-
-  admin-migrate:
-    image: ss-admin-migrate
-    build:
-      context: ./admin
-      dockerfile: Dockerfile
-      target: builder
-    profiles: ["tools"]
-    environment:
-      NODE_ENV: production
-      WEB_DATABASE_URL: ""
-      ADMIN_DATABASE_URL: ""
-      MIGRATION_DATABASE_URL: ${MIGRATION_DATABASE_URL:?MIGRATION_DATABASE_URL is required in production}
-      DATABASE_URL: ""
-      SENTRY_AUTH_TOKEN: ""
-      LOG_SHIPPING_TOKEN: ""
-    command: npm run db:migrate
+    command: node scripts/migrate-database.mjs
     depends_on:
       postgres:
         condition: service_healthy

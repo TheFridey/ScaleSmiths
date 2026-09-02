@@ -1,7 +1,5 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { Pool } from "pg";
-import { drizzle } from "drizzle-orm/node-postgres";
-import { migrate } from "drizzle-orm/node-postgres/migrator";
 import path from "node:path";
 import { promisify } from "node:util";
 import { execFile } from "node:child_process";
@@ -11,6 +9,7 @@ import { getTableName, is } from "drizzle-orm";
 import { PgTable } from "drizzle-orm/pg-core";
 import * as currentSchema from "../../src/lib/schema";
 import { assertSafeIntegrationDatabaseUrl } from "../../src/lib/test-database-safety";
+import { migrateSharedTestDatabase } from "./shared-migration-harness";
 
 const run = promisify(execFile);
 let pool: Pool;
@@ -26,7 +25,6 @@ beforeAll(async () => {
   process.env.DATABASE_URL = url;
   process.env.ADMIN_DATABASE_URL = adminUrl;
   process.env.MIGRATION_DATABASE_URL = migrationUrl;
-  process.env.NODE_ENV = "test";
   pool = new Pool({ connectionString: url, max: 8 });
   await pool.query(
     "DROP SCHEMA IF EXISTS drizzle CASCADE; DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public",
@@ -53,13 +51,7 @@ beforeAll(async () => {
   );
   const migrationPool = new Pool({ connectionString: migrationUrl, max: 2 });
   try {
-    const database = drizzle(migrationPool);
-    await migrate(database, {
-      migrationsFolder: path.resolve("../web/drizzle"),
-      migrationsTable: "__drizzle_web_migrations",
-      migrationsSchema: "drizzle",
-    });
-    await migrate(database, { migrationsFolder: path.resolve("drizzle") });
+    await migrateSharedTestDatabase(migrationPool);
   } finally {
     await migrationPool.end();
   }
@@ -291,8 +283,8 @@ describe("real PostgreSQL integration", () => {
       ).rows.map((r) => r.tablename),
     );
     const expectedTables = Object.values(currentSchema)
-      .filter((value): value is PgTable => is(value, PgTable))
-      .map(getTableName);
+      .map(drizzleTableName)
+      .filter((name): name is string => name !== null);
     expect(
       [...expectedTables].filter((name) => !actualTables.has(name)),
     ).toEqual([]);
@@ -1311,7 +1303,8 @@ describe("real PostgreSQL integration", () => {
   it("offboards without deleting financial or production-history records and supports controlled reactivation", async () => {
     const actor = (await pool.query("INSERT INTO admin_users(email,display_name,password_hash,role) VALUES('offboarding@example.test','Offboarding Owner','hash','owner') RETURNING id")).rows[0].id as string;
     const clientId = (await pool.query("INSERT INTO clients(name,portal_client_id,mrr) VALUES('Archive Me','archive-me',25000) RETURNING id")).rows[0].id as number;
-    await pool.query("INSERT INTO portal_client_accounts(client_id,email,password_hash,active,status) VALUES('archive-me','client@example.test','hash',true,'active')");
+    const portalAccountId = (await pool.query("INSERT INTO portal_client_accounts(client_id,email,password_hash,active,status) VALUES('archive-me','client@example.test','hash',true,'active') RETURNING id")).rows[0].id as number;
+    await pool.query("INSERT INTO portal_account_tokens(account_id,purpose,token_hash,expires_at) VALUES($1,'reset','offboarding-reset-token',now() + interval '1 day')", [portalAccountId]);
     const catalogueId = (await pool.query("INSERT INTO invoice_catalogue_items(name,default_unit_amount) VALUES('Retainer',25000) RETURNING id")).rows[0].id as number;
     await pool.query("INSERT INTO client_service_assignments(client_id,catalogue_item_id,active) VALUES($1,$2,true)", [clientId, catalogueId]);
     await pool.query("INSERT INTO client_analytics_configs(client_id,provider,display_name,consent_granted,retention_days,enabled,credentials_encrypted,source_attribution,created_by) VALUES($1,'google_analytics','GA4',true,30,true,'encrypted-secret','GA4','operator')", [clientId]);
@@ -1327,6 +1320,7 @@ describe("real PostgreSQL integration", () => {
 
     expect((await pool.query("SELECT status,mrr FROM clients WHERE id=$1", [clientId])).rows[0]).toEqual({ status: "archived", mrr: 0 });
     expect((await pool.query("SELECT active,status FROM portal_client_accounts WHERE client_id='archive-me'")).rows[0]).toEqual({ active: false, status: "disabled" });
+    expect((await pool.query("SELECT revoked_at IS NOT NULL AS revoked FROM portal_account_tokens WHERE account_id=$1", [portalAccountId])).rows[0].revoked).toBe(true);
     expect((await pool.query("SELECT status,client_visible FROM delivery_projects WHERE id=$1", [projectId])).rows[0]).toEqual({ status: "cancelled", client_visible: false });
     expect((await pool.query("SELECT count(*)::int count FROM invoices WHERE id=$1", [invoiceId])).rows[0].count).toBe(1);
     expect((await pool.query("SELECT enabled,credentials_encrypted FROM client_analytics_configs WHERE client_id=$1", [clientId])).rows[0]).toEqual({ enabled: false, credentials_encrypted: null });
@@ -1352,6 +1346,9 @@ async function insertArtifact(projectId: number, type: string, hash: string) {
       [projectId, type, hash],
     )
   ).rows[0].id as number;
+}
+function drizzleTableName(value: unknown): string | null {
+  return is(value, PgTable) ? getTableName(value) : null;
 }
 function roleUrl(base: string, username: string, password: string) {
   const value = new URL(base);

@@ -134,13 +134,12 @@ Web migrations live in `web/drizzle`. Admin migrations live in `admin/drizzle`. 
 - Do not hand-create schema in tests instead of applying real migrations.
 - Update schema definitions and migration SQL together.
 - Document operational order when a migration must run before code.
-- Production order is web migrations first, then admin migrations, unless a stage-specific document says otherwise.
+- Production, CI and local databases use `npm run db:migrate`, which calculates the next dependency-safe migration across both immutable histories.
 
 Typical production order:
 
 ```bash
-cd web && npm run db:migrate
-cd ../admin && npm run db:migrate
+npm run db:migrate
 ```
 
 When adding shared tables or enums, check both app schemas for drift and note any compatibility risk.

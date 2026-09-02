@@ -66,6 +66,7 @@ The review validated older audit claims against current executable sources. The 
 - Database roles are separated and analytics row-level security exists; the remaining mixed tenant-identity/RLS work is consolidated under #57.
 - Committed migrations are checksum-locked and corrected through forward migrations.
 - Forge end-to-end orchestration coverage, durable jobs, database-backed rate limits, and managed previews are implemented.
+- Shared PostgreSQL migration orchestration is implemented and fresh/historical fixture paths are certified; production-derived restore evidence and the remaining release gates are the closure work, not a second migration algorithm.
 - Production dependency audits currently report no known vulnerabilities; the remaining moderate advisory is development-only and tracked by #75.
 - Host-Nginx topology has executable configuration and integration coverage.
 - Portal project/milestone publication, R2-backed document delivery, and live request-thread messaging are implemented; authenticated lifecycle E2E remains under #72.

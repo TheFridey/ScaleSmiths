@@ -4,6 +4,7 @@ import { createRequire } from "node:module"
 import { lstat, mkdir, readFile, writeFile } from "node:fs/promises"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
+import { migrateSharedDatabase } from "./shared-migrator.mjs"
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const localHosts = new Set(["localhost", "127.0.0.1", "::1"])
@@ -90,8 +91,6 @@ export async function runVerification(options) {
   const target = validateTarget(options)
   const requireAdmin = createRequire(path.join(repositoryRoot, "admin", "package.json"))
   const { Pool } = requireAdmin("pg")
-  const { drizzle } = requireAdmin("drizzle-orm/node-postgres")
-  const { migrate } = requireAdmin("drizzle-orm/node-postgres/migrator")
   const startedAt = new Date().toISOString()
   const report = {
     version: 1,
@@ -99,7 +98,7 @@ export async function runVerification(options) {
     status: "running",
     target: { host: target.host, database: target.database },
     startedAt,
-    order: ["web", "admin"],
+    order: ["shared dependency plan"],
     before: null,
     after: null,
     comparison: null,
@@ -124,13 +123,7 @@ export async function runVerification(options) {
     }
 
     report.before = await captureDatabaseState(pool)
-    const database = drizzle(pool)
-    await migrate(database, {
-      migrationsFolder: path.join(repositoryRoot, "web", "drizzle"),
-      migrationsTable: "__drizzle_web_migrations",
-      migrationsSchema: "drizzle",
-    })
-    await migrate(database, { migrationsFolder: path.join(repositoryRoot, "admin", "drizzle") })
+    await migrateSharedDatabase({ pool, root: repositoryRoot })
     report.after = await captureDatabaseState(pool)
     report.comparison = compareStates(report.before, report.after)
     report.status = "passed"

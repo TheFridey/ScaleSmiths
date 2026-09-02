@@ -7,6 +7,7 @@ import {
   isForgeTaskEndpoint,
   resolveForgeRateLimitActor,
   resolveForgeRateLimitConfig,
+  type ForgeRateLimitStore,
 } from "./forge-security"
 
 describe("admin session current check (isAdminSessionCurrent)", () => {

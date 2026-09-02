@@ -79,6 +79,7 @@ export async function completeClientOffboarding(clientId: number, caseId: number
 
   return db.transaction(async (tx) => {
     const now = new Date()
+    await tx.execute(sql`select set_config('app.current_client_id', ${String(clientId)}, true)`)
     const projects = await tx.select({ id: deliveryProjects.id, forgeProjectId: deliveryProjects.forgeProjectId }).from(deliveryProjects).where(eq(deliveryProjects.clientId, clientId))
     const projectIds = projects.map((project) => project.id)
     const forgeIds = projects.map((project) => project.forgeProjectId).filter((id): id is number => id !== null)
@@ -127,7 +128,10 @@ async function assessClientOffboarding(clientId: number, portalClientId: string 
     projectIds.length ? db.select({ id: deliveryOnboardingItems.id }).from(deliveryOnboardingItems).where(and(inArray(deliveryOnboardingItems.projectId, projectIds), ne(deliveryOnboardingItems.status, "completed"), ne(deliveryOnboardingItems.status, "not_required"))) : Promise.resolve([]),
     db.select({ id: clientDocuments.id }).from(clientDocuments).where(eq(clientDocuments.clientId, clientId)),
     projectIds.length ? db.select({ id: deliveryResources.id }).from(deliveryResources).where(inArray(deliveryResources.projectId, projectIds)) : Promise.resolve([]),
-    db.select({ id: clientAnalyticsConfigs.id }).from(clientAnalyticsConfigs).where(and(eq(clientAnalyticsConfigs.clientId, clientId), sql`${clientAnalyticsConfigs.credentialsEncrypted} is not null`)),
+    db.transaction(async (tx) => {
+      await tx.execute(sql`select set_config('app.current_client_id', ${String(clientId)}, true)`)
+      return tx.select({ id: clientAnalyticsConfigs.id }).from(clientAnalyticsConfigs).where(and(eq(clientAnalyticsConfigs.clientId, clientId), sql`${clientAnalyticsConfigs.credentialsEncrypted} is not null`))
+    }),
   ])
   return { assessedAt: new Date().toISOString(), activePortalAccounts: Number(portalAccounts.rows[0]?.count ?? 0), activeServices: services.length, outstandingInvoices, activeProjects: activeProjects.length, activeRequests: activeRequests.length, futureTasks: futureTasks.length, hostedDocuments: documents.length, linkedResources: resources.length, storedCredentialConfigurations: credentialConfigs.length, productionResourcesWillNotBeModified: true }
 }

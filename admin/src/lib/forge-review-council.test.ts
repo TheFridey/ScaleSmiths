@@ -30,7 +30,7 @@ describe("Forge multi-perspective review council", () => {
 
   it("rejects out-of-remit or evidence-free reviewer findings", () => {
     const report = runDeterministicForgeCouncil(buildCanonicalApprovedProjectState([artifact(1, "copy_doc", "Business name: Example")]), [finding()]).reviews[0]
-    const invalid = { ...report, findings: [{ ...finding(), id: "bad", reviewer: "creative_director" as const, affectedArtifacts: [], category: "unsupported_claims", title: "Bad", recommendationRank: 1, scoreImpact: 1, uncertainty: null, highRiskDissent: false }] }
+    const invalid: ForgeReviewerReport = { ...report, findings: [{ ...finding(), id: "bad", reviewer: "creative_director" as const, affectedArtifacts: [], category: "unsupported_claims", title: "Bad", recommendation: "Remove the unsupported claim.", recommendationRank: 1, scoreImpact: 1, uncertainty: null, highRiskDissent: false, humanDecisionRequired: false }] }
     expect(validateReviewerReport(invalid).valid).toBe(false)
   })
 })

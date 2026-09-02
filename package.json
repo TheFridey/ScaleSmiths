@@ -7,6 +7,8 @@
     "npm": ">=10.9 <11"
   },
   "scripts": {
+    "db:migrate": "node --env-file-if-exists=.env scripts/migrate-database.mjs",
+    "check:migration-order": "node scripts/check-shared-migration-plan.mjs",
     "check:architecture-docs": "node scripts/check-architecture-docs.mjs",
     "check:authorization-policy": "npm --prefix admin run check:authorization-policy",
     "check:branch-protection-policy": "node scripts/check-branch-protection-policy.mjs",
@@ -30,6 +32,7 @@
     "test:nginx-config": "docker build -f tests/nginx/Dockerfile.config-check -t ss-nginx-config-check .",
     "test:nginx": "node scripts/run-nginx-tests.mjs",
     "test:migration-history": "node --test scripts/check-migration-history.test.mjs",
+    "test:migration-order": "node --test scripts/check-shared-migration-plan.test.mjs",
     "test:postgres-privileges": "node scripts/run-postgres-privilege-tests.mjs",
     "test:backup-migration-safety": "node --test scripts/verify-production-backup-migrations.test.mjs",
     "test:backup-framework": "bash scripts/backup/test-backup-framework.sh",

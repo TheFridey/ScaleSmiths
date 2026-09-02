@@ -95,8 +95,10 @@ async function enrich(row: ProspectConversionRow): Promise<ConversionRecordView>
   return { ...row, deliveryProject, draftInvoice }
 }
 
-function isPgUniqueViolation(error: unknown) {
-  return Boolean(error && typeof error === "object" && "code" in error && (error as { code?: string }).code === "23505")
+function isPgUniqueViolation(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false
+  if ("code" in error && (error as { code?: unknown }).code === "23505") return true
+  return "cause" in error && isPgUniqueViolation((error as { cause?: unknown }).cause)
 }
 
 export async function executeConversion(prospectId: number, actor: ConversionActor, rawOptions: unknown): Promise<ConversionRecordView> {

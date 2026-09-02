@@ -3,7 +3,7 @@ import { parseAndValidateStructuredJson, type ForgeJsonSchema } from "../forge-a
 import { AnthropicProviderAdapter, MockProviderAdapter, OpenAiProviderAdapter, ProviderAdapterError, type ForgeProviderAdapter } from "./forge-provider-adapters"
 
 const schema = { type:"object", additionalProperties:false, required:["ok"], properties:{ ok:{ type:"boolean" } } } as const satisfies ForgeJsonSchema
-const base = { taskType:"planning" as const, prompt:"test", systemPrompt:"safe", schema, schemaName:"contract", maxTokens:100, timeoutMs:100, env:{ FORGE_ENABLE_AI:"true", OPENAI_API_KEY:"openai-secret", ANTHROPIC_API_KEY:"anthropic-secret" } as NodeJS.ProcessEnv }
+const base = { taskType:"planning" as const, prompt:"test", systemPrompt:"safe", schema, schemaName:"contract", maxTokens:100, timeoutMs:100, env:{ NODE_ENV:"test" as const, FORGE_ENABLE_AI:"true", OPENAI_API_KEY:"openai-secret", ANTHROPIC_API_KEY:"anthropic-secret" } }
 afterEach(() => vi.unstubAllGlobals())
 
 describe.each([

@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "advisoryLockKey": 621908147,
+  "histories": {
+    "web": {
+      "journal": "web/drizzle/meta/_journal.json",
+      "directory": "web/drizzle",
+      "table": "__drizzle_web_migrations"
+    },
+    "admin": {
+      "journal": "admin/drizzle/meta/_journal.json",
+      "directory": "admin/drizzle",
+      "table": "__drizzle_migrations"
+    }
+  },
+  "order": [
+    { "owner": "web", "from": 0, "through": 17 },
+    { "owner": "admin", "from": 0, "through": 51 },
+    { "owner": "web", "from": 18, "through": 20 },
+    { "owner": "admin", "from": 52, "through": 58 }
+  ],
+  "crossHistoryDependencies": [
+    { "migration": "admin/0012_client_request_threads", "requires": "web/0005_client_requests", "objects": ["client_requests"] },
+    { "migration": "admin/0013_client_timeline_events", "requires": "web/0007_client_timeline_events", "objects": ["client_timeline_events"] },
+    { "migration": "admin/0014_monthly_reports", "requires": "web/0008_monthly_reports", "objects": ["monthly_reports"] },
+    { "migration": "admin/0023_quote_requests_schema_consistency", "requires": "web/0000_large_ironclad", "objects": ["quote_requests"] },
+    { "migration": "web/0018_unified_client_activity", "requires": "admin/0050_flippant_namor", "objects": ["clients.portal_client_id"] },
+    { "migration": "admin/0052_stiff_dazzler", "requires": "web/0017_client_request_read_state", "objects": ["client_request_messages.notification_email_status", "client_request_messages.notification_email_failure_reason", "client_requests.client_last_read_at", "client_requests.admin_last_read_at"], "equivalentDuplicate": true }
+  ],
+  "runtimeRequirements": {
+    "web/0017_client_request_read_state": [
+      { "kind": "table", "schema": "public", "name": "client_request_messages", "repairMigration": "admin/0042_historical_schema_reconciliation" }
+    ]
+  },
+  "equivalentMigrations": {
+    "admin/0052_stiff_dazzler": {
+      "satisfiedBy": "web/0017_client_request_read_state",
+      "columns": [
+        { "table": "client_request_messages", "column": "notification_email_status", "dataType": "text", "nullable": true },
+        { "table": "client_request_messages", "column": "notification_email_failure_reason", "dataType": "text", "nullable": true },
+        { "table": "client_requests", "column": "client_last_read_at", "dataType": "timestamp with time zone", "nullable": true },
+        { "table": "client_requests", "column": "admin_last_read_at", "dataType": "timestamp with time zone", "nullable": true }
+      ]
+    }
+  },
+  "acceptedHistoricalHashes": {
+    "admin/0009_known_iron_monger": [
+      "3ac23ee9550b45a4fe464033276fcc7b59d6997e014a2e0661f141d16c5d134d",
+      "bb94fec4eba38487dcfc0d057e73691db6408da3eead8f3d6161433741137b51"
+    ],
+    "admin/0012_client_request_threads": [
+      "d2b9bb3193d58a8030ad9fb9b15685beccb8f08917148c1b107ab668c65c1043",
+      "27a492feabbe2e781bc259c1ba64b614b32b8d3388e7844ae5ebbcb0e4e5e93b"
+    ]
+  }
+}

@@ -56,7 +56,7 @@ sudo -E node scripts/release-manager.mjs prepare \
 
 Then run the same command without `--dry-run`. Preparation fails closed if Compose validation, either version-tagged Docker build, container startup, or either health check fails. A release becomes switchable only after both health responses report the expected release identifier. Expected failures are terminalised as `failed`; an abrupt process/host failure leaves the last atomically checkpointed `preparing` stage for reconciliation and cannot be switched.
 
-Before preparing production, complete the immutable Forge deployment-candidate and release gates. Review migration compatibility separately. Database migrations must be backward-compatible with the retained previous application version; create an encrypted recovery bundle, provision the least-privilege roles, run `web-migrate` then `admin-migrate` with `MIGRATION_DATABASE_URL`, and rerun role provisioning to grant new objects. Follow the [least-privilege rollout](postgresql-least-privilege-rollout.md). The release manager intentionally does not run migrations, provision roles or restore backups.
+Before preparing production, complete the immutable Forge deployment-candidate and release gates. Review migration compatibility separately. Database migrations must be backward-compatible with the retained previous application version; create an encrypted recovery bundle, provision the least-privilege roles, run `database-migrate` with `MIGRATION_DATABASE_URL`, and rerun role provisioning to grant new objects. Follow the [least-privilege rollout](postgresql-least-privilege-rollout.md). The release manager intentionally does not run migrations, provision roles or restore backups.
 
 ## Manual traffic switch
 

@@ -20,7 +20,10 @@ let stage = "startup"
 
 try {
   await authenticate()
-  const client = await call("client.create", "/api/clients", { name: "Oak & Hearth Property Care", contactName: "Alex Morgan", contactEmail: "alex@oakandhearth.test", invoiceClientCode: "OAKTEST", tier: "growth" })
+  const malformedClient = await callRaw("/api/clients", { name: "Malformed Forge Client", invoiceClientCode: "BADTIER", tier: "growth" })
+  assert.equal(malformedClient.status, 400, "Forge must not bypass the canonical client service-tier contract")
+  assert.equal(malformedClient.body.error, "Select a valid client service tier.")
+  const client = await call("client.create", "/api/clients", { name: "Oak & Hearth Property Care", contactName: "Alex Morgan", contactEmail: "alex@oakandhearth.test", invoiceClientCode: "OAKTEST", tier: "Growth Partner" })
   const created = await call("project.create", "/api/forge/projects", { name: `Forge E2E ${Date.now()}`, businessName: "Oak & Hearth Property Care", clientId: client.clientId, industry: "Property maintenance", targetAudience: "Homeowners and landlords in Derbyshire", primaryGoal: "Generate qualified local repair enquiries" })
   const id = created.project.id
   await call("intake.start", `/api/forge/projects/${id}/intake`, { mode: "brief_start", prompt: "Oak & Hearth is a Derbyshire property maintenance business serving homeowners and landlords. Services include urgent repairs, planned maintenance, decorating and landlord reporting. The tone is calm, trustworthy and practical. The primary CTA is request a repair quote. Required pages are Home, Services, Landlord Maintenance, About and Contact." })

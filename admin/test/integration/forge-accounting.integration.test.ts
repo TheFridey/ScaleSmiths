@@ -1,12 +1,11 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest"
 import { Pool } from "pg"
-import { migrate } from "drizzle-orm/node-postgres/migrator"
-import { drizzle } from "drizzle-orm/node-postgres"
 import path from "node:path"
 import { execFile } from "node:child_process"
 import { promisify } from "node:util"
 import { assertSafeIntegrationDatabaseUrl } from "../../src/lib/test-database-safety"
 import { runWithForgeAttribution } from "../../src/lib/server/forge-attribution-context"
+import { migrateSharedTestDatabase } from "./shared-migration-harness"
 
 const runExec = promisify(execFile)
 let pool: Pool
@@ -25,18 +24,15 @@ beforeAll(async () => {
   adminUrl = roleUrl(url, "ss_test_admin", "admin-password")
   pool = new Pool({ connectionString: url, max: 8 })
   await pool.query("DROP SCHEMA IF EXISTS drizzle CASCADE; DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public")
-  const provisionEnv = { ...process.env, POSTGRES_PROVISIONING_DATABASE_URL: url, WEB_DATABASE_URL: roleUrl(url, "ss_test_web", "web-password"), ADMIN_DATABASE_URL: adminUrl, MIGRATION_DATABASE_URL: migrationUrl, READONLY_DATABASE_URL: roleUrl(url, "ss_test_readonly", "readonly-password"), NODE_ENV: "test" }
+  const provisionEnv: NodeJS.ProcessEnv = { ...process.env, POSTGRES_PROVISIONING_DATABASE_URL: url, WEB_DATABASE_URL: roleUrl(url, "ss_test_web", "web-password"), ADMIN_DATABASE_URL: adminUrl, MIGRATION_DATABASE_URL: migrationUrl, READONLY_DATABASE_URL: roleUrl(url, "ss_test_readonly", "readonly-password"), NODE_ENV: "test" }
   await runExec(process.execPath, [path.resolve("scripts/provision-postgres-roles.mjs"), "--confirm-provision"], { env: provisionEnv })
   const migrationPool = new Pool({ connectionString: migrationUrl, max: 2 })
   try {
-    const database = drizzle(migrationPool)
-    await migrate(database, { migrationsFolder: path.resolve("../web/drizzle"), migrationsTable: "__drizzle_web_migrations", migrationsSchema: "drizzle" })
-    await migrate(database, { migrationsFolder: path.resolve("drizzle") })
+    await migrateSharedTestDatabase(migrationPool)
   } finally { await migrationPool.end() }
   await runExec(process.execPath, [path.resolve("scripts/provision-postgres-roles.mjs"), "--confirm-provision"], { env: provisionEnv })
   process.env.ADMIN_DATABASE_URL = adminUrl
   process.env.DATABASE_URL = url
-  process.env.NODE_ENV = "test"
 }, 60000)
 
 beforeEach(async () => {
@@ -206,11 +202,11 @@ describe("Forge ALS attribution (persisted in DB)", () => {
     const { recordForgeAiUsage } = await import("../../src/lib/server/forge-ai-usage")
 
     const rowA = await runWithForgeAttribution({ projectId: project, runId: runA, jobId: jobA }, async () => {
-      await recordForgeAiUsage({ projectId: project, provider: "test", model: "test", usage: { inputTokens: 0, outputTokens: 0, totalTokens: 0 }, estimatedCost: 0.01, startedAt: new Date(), completedAt: new Date() })
+      await recordForgeAiUsage({ projectId: project, provider: "mock", model: "test", usage: { inputTokens: 0, outputTokens: 0, totalTokens: 0 }, estimatedCost: 0.01, startedAt: new Date(), completedAt: new Date() })
       return pool.query("SELECT run_id, job_id FROM forge_ai_usage WHERE job_id=$1", [jobA])
     })
     const rowB = await runWithForgeAttribution({ projectId: projectB, runId: runB, jobId: jobB }, async () => {
-      await recordForgeAiUsage({ projectId: projectB, provider: "test", model: "test", usage: { inputTokens: 0, outputTokens: 0, totalTokens: 0 }, estimatedCost: 0.02, startedAt: new Date(), completedAt: new Date() })
+      await recordForgeAiUsage({ projectId: projectB, provider: "mock", model: "test", usage: { inputTokens: 0, outputTokens: 0, totalTokens: 0 }, estimatedCost: 0.02, startedAt: new Date(), completedAt: new Date() })
       return pool.query("SELECT run_id, job_id FROM forge_ai_usage WHERE job_id=$1", [jobB])
     })
 

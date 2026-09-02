@@ -152,7 +152,7 @@ npm run test:nginx-config
 npm run test:nginx
 ```
 
-`test:integration` brings up Docker Compose/PostgreSQL and runs admin integration coverage after applying web migrations first.
+`test:integration` brings up Docker Compose/PostgreSQL and runs admin integration coverage after applying the canonical shared migration plan.
 
 `test:forge-e2e` exercises the complete Forge workflow and also depends on web migrations being applied before admin migrations.
 
@@ -200,19 +200,16 @@ Reading another app's table does **not** grant migration ownership.
 
 Migration order matters because both apps share one database.
 
-Always apply:
+Always apply through the repository root:
 
 ```powershell
-cd web
-npm run db:migrate
-
-cd ../admin
+cd ..
 npm run db:migrate
 ```
 
-Web migrations must run before admin migrations.
+The shared planner preserves each history and interleaves cross-history prerequisites.
 
-Do not run the admin migration batch in isolation when provisioning or validating the shared schema. Integration and Forge E2E harnesses depend on this ordering.
+Do not run either Drizzle batch in isolation when provisioning or validating the shared schema. Integration and Forge E2E use the same shared runner as production.
 
 Committed migration files and journal entries are checksum-locked.
 

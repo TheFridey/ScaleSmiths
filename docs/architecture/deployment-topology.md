@@ -28,17 +28,17 @@ Manual blue/green releases use `docker-compose.release.yml` and the two loopback
 
 ## Images and migrations
 
-Both production Dockerfiles build Next.js standalone runners on Node 22 Alpine and run as UID/GID 1001. Admin explicitly enables standalone output during its Linux builder stage. The host-Nginx Compose file also exposes builder-target `web-migrate` and `admin-migrate` services under the `tools` profile.
+Both production Dockerfiles build Next.js standalone runners on Node 22 Alpine and run as UID/GID 1001. Admin explicitly enables standalone output during its Linux builder stage. The host-Nginx Compose file exposes one root-context `database-migrate` image under the `tools` profile.
 
 Required production order:
 
 1. Start healthy PostgreSQL.
-2. Run web migrations.
-3. Run admin migrations.
+2. Run the shared database migrator.
+3. Verify both journals and database privileges.
 4. Build/start web and admin.
 5. Verify loopback endpoints, Nginx configuration, HTTPS hosts, and logs.
 
-This order is operationally significant because both migration histories target one database and overlap on shared tables/enums.
+The shared plan is operationally significant because both migration histories target one database and overlap on shared tables/enums. It preserves each history's order, waits for cross-history prerequisites, verifies the immutable `admin/0052` duplicate-column equivalence, and serialises runners with an advisory lock.
 
 Committed SQL and each journal's historical prefix are immutable under `scripts/migration-checksums.json`; corrective work is forward-only. Before a production migration, use `docs/operations/migration-history-and-backup-verification.md` to test an isolated restore of the latest verified production backup. The verifier never selects a database from the environment and does not authorise deployment.
 

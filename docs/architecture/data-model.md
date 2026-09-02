@@ -111,7 +111,7 @@ Important enums define quote status, request category/priority/status, message v
 - Web migrations `0000`-`0015` build quote capture, portal accounts/rate limits, request threads/timeline and notification reconciliation, reports, public experience analytics, the public claims registry/restricted view, enquiry intent, and the local-growth funnel classification.
 - Admin migrations `0000`-`0051` build operational CRM, identity/security, Forge workflow/provenance/economics, durable operational controls and run orchestration, client operations, analytics, finance/invoicing, release gates, the forward-only historical-schema reconciliation, generated-site dependency/SBOM evidence binding, and the client projects/delivery domain.
 
-The histories are independent. Their Drizzle journals do not provide a single global order, despite targeting the same database. Deployment compensates by always running web then admin migrations.
+The histories and Drizzle journals remain independent, but `scripts/shared-migration-plan.json` supplies the authoritative global dependency graph. `npm run db:migrate` reads both prefixes and executes the next legal migration; a complete web-then-admin batch is unsupported because web `0018` requires the admin-owned `clients.portal_client_id` established by admin `0050`.
 
 Every migration is SHA-256 locked in `scripts/migration-checksums.json`. Historical journal prefixes are verified against proven Git commits, while new forward migrations and journal appends are recorded separately. The clean and historical-upgrade PostgreSQL paths are exercised independently. See `docs/operations/migration-history-and-backup-verification.md`.
 

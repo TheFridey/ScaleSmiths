@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 import { evaluateForgeArtifactConsistency, type ForgeConsistencyArtifactInput } from "./forge-consistency"
 
 function artifact(overrides: Partial<ForgeConsistencyArtifactInput> & Pick<ForgeConsistencyArtifactInput, "id" | "type">): ForgeConsistencyArtifactInput {
-  return { id: overrides.id, type: overrides.type, title: overrides.type, version: 1, content: "", metadataJson: {}, outputHash: `hash-${overrides.id}`, upstreamArtifactIds: [], upstreamArtifactHashes: {}, qualityState: "validated", approvalState: "approved", supersededAt: null, ...overrides }
+  return { title: overrides.type, version: 1, content: "", metadataJson: {}, outputHash: `hash-${overrides.id}`, upstreamArtifactIds: [], upstreamArtifactHashes: {}, qualityState: "validated", approvalState: "approved", supersededAt: null, ...overrides }
 }
 
 describe("cross-artifact consistency evaluator", () => {

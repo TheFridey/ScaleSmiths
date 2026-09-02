@@ -60,6 +60,7 @@ test("4. approving the brief creates and starts a Forge Run", async ({ page }) =
     const body = response.body
     expect(body.run).toBeTruthy()
     runId = body.run.id
+    if (runId === undefined || !Number.isInteger(runId)) throw new Error("Current Forge run did not return a valid numeric ID.")
     createdRunIds.add(runId)
     expect(["running", "paused", "completed"]).toContain(body.run.status)
     let latest = { run: body.run.status as string | undefined, copy: undefined as string | undefined, code: undefined as string | undefined, workspaceCreated: false }

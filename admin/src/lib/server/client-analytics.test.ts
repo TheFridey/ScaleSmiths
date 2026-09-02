@@ -4,7 +4,7 @@ import { decryptAnalyticsCredentials, encryptAnalyticsCredentials } from "./clie
 
 describe("client analytics server helpers", () => {
   it("encrypts provider credentials without exposing plaintext", () => {
-    const env = { ANALYTICS_CREDENTIAL_ENCRYPTION_KEY: Buffer.alloc(32, 7).toString("base64") } as NodeJS.ProcessEnv
+    const env: NodeJS.ProcessEnv = { NODE_ENV: "test", ANALYTICS_CREDENTIAL_ENCRYPTION_KEY: Buffer.alloc(32, 7).toString("base64") }
     const encrypted = encryptAnalyticsCredentials({ token: "secret-token", propertyId: "site-1" }, env)
     expect(encrypted).not.toContain("secret-token")
     expect(decryptAnalyticsCredentials(encrypted, env)).toEqual({ token: "secret-token", propertyId: "site-1" })

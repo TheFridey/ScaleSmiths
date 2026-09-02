@@ -1,7 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { Pool } from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
-import { migrate } from "drizzle-orm/node-postgres/migrator";
 import path from "node:path";
 import { promisify } from "node:util";
 import { execFile } from "node:child_process";
@@ -9,8 +8,7 @@ import * as currentSchema from "../../src/lib/schema";
 import { assertSafeIntegrationDatabaseUrl } from "../../src/lib/test-database-safety";
 import { eq, sql } from "drizzle-orm";
 import { prospectConversions, clientServiceAssignments } from "../../src/lib/schema";
-import { prepareDisabledPortalAccount } from "../../src/lib/server/portal-users";
-import { executeConversion, previewConversion } from "../../src/lib/server/prospect-conversion"
+import { migrateSharedTestDatabase } from "./shared-migration-harness"
 
 const actor = { id: "00000000-0000-0000-0000-000000000001", email: "op@scalesmiths.co.uk", name: "Op" }
 
@@ -32,6 +30,11 @@ let url: string;
 let webUrl: string;
 let adminUrl: string;
 let migrationUrl: string;
+let prospectService: typeof import("../../src/lib/server/prospect-conversion")
+let portalUserService: typeof import("../../src/lib/server/portal-users")
+const originalDatabaseUrl = process.env.DATABASE_URL
+const originalAdminDatabaseUrl = process.env.ADMIN_DATABASE_URL
+const originalMigrationDatabaseUrl = process.env.MIGRATION_DATABASE_URL
 beforeAll(async () => {
   url = assertSafeIntegrationDatabaseUrl(process.env.TEST_DATABASE_URL);
   webUrl = roleUrl(url, "ss_test_web", "web-password");
@@ -40,6 +43,9 @@ beforeAll(async () => {
   process.env.DATABASE_URL = url;
   process.env.ADMIN_DATABASE_URL = adminUrl;
   process.env.MIGRATION_DATABASE_URL = migrationUrl;
+  await resetSharedDbClient()
+  prospectService = await import("../../src/lib/server/prospect-conversion")
+  portalUserService = await import("../../src/lib/server/portal-users")
   pool = new Pool({ connectionString: url, max: 8 });
   await pool.query(
     "DROP SCHEMA IF EXISTS drizzle CASCADE; DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public",
@@ -66,13 +72,7 @@ beforeAll(async () => {
   );
   const migrationPool = new Pool({ connectionString: migrationUrl, max: 2 });
   try {
-    const database = drizzle(migrationPool);
-    await migrate(database, {
-      migrationsFolder: path.resolve("../web/drizzle"),
-      migrationsTable: "__drizzle_web_migrations",
-      migrationsSchema: "drizzle",
-    });
-    await migrate(database, { migrationsFolder: path.resolve("drizzle") });
+    await migrateSharedTestDatabase(migrationPool);
   } finally {
     await migrationPool.end();
   }
@@ -98,9 +98,17 @@ beforeEach(async () => {
   await pool.query(
     "INSERT INTO invoice_supplier_settings(id,legal_name,address_line_1,city,postcode,country,payment_instructions) VALUES(1,'ScaleSmiths','1 Supplier Street','Leeds','LS1 1AA','United Kingdom','Pay by bank transfer')",
   );
+  await pool.query(
+    "INSERT INTO admin_users(id,email,display_name,password_hash,role) VALUES($1,$2,$3,'test-only-hash','owner')",
+    [actor.id, actor.email, actor.name],
+  );
 });
 afterAll(async () => {
   await pool?.end();
+  await resetSharedDbClient()
+  restoreEnvironment("DATABASE_URL", originalDatabaseUrl)
+  restoreEnvironment("ADMIN_DATABASE_URL", originalAdminDatabaseUrl)
+  restoreEnvironment("MIGRATION_DATABASE_URL", originalMigrationDatabaseUrl)
 });
 
 describe("prospect_conversions + client_service_assignments schema", () => {
@@ -125,10 +133,9 @@ describe("prospect_conversions + client_service_assignments schema", () => {
   })
 
   it("prepareDisabledPortalAccount links portalClientId and creates a disabled account", async () => {
-    process.env.ADMIN_DATABASE_URL = adminUrl
     const adminDb = drizzle(new Pool({ connectionString: adminUrl }))
     const [client] = await adminDb.insert(currentSchema.clients).values({ name: "Portalless", updatedAt: new Date() }).returning()
-    const result = await prepareDisabledPortalAccount(client.id)
+    const result = await portalUserService.prepareDisabledPortalAccount(client.id)
     expect(result.portalClientId).toBe(`portal-client-${client.id}`)
     const [updated] = await adminDb.select().from(currentSchema.clients).where(eq(currentSchema.clients.id, client.id))
     expect(updated.portalClientId).toBe(result.portalClientId)
@@ -145,7 +152,7 @@ describe("previewConversion", () => {
     const prospect = await seedWonProspect(adminDb)
     await adminDb.insert(currentSchema.clients).values({ name: "Acme Ltd", contactEmail: "x@y.z", updatedAt: new Date() })
     await adminDb.insert(currentSchema.invoiceCatalogueItems).values({ name: "Care Plan", defaultUnitAmount: 5000, updatedAt: new Date() })
-    const plan = await previewConversion(prospect.id, actor)
+    const plan = await prospectService.previewConversion(prospect.id, actor)
     expect(plan.defaults.tier).toBe("Retainer")
     expect(plan.defaults.mrr).toBe(500)
     expect(plan.matchCandidates[0]).toMatchObject({ matchedOn: ["name"] })
@@ -154,8 +161,7 @@ describe("previewConversion", () => {
     expect(plan.existingConversionId).toBeNull()
   })
   it("404s on a missing prospect", async () => {
-    process.env.ADMIN_DATABASE_URL = adminUrl
-    await expect(previewConversion(999999, actor)).rejects.toMatchObject({ status: 404 })
+    await expect(prospectService.previewConversion(999999, actor)).rejects.toMatchObject({ status: 404 })
   })
 })
 async function seedCatalogue(adminDb: ReturnType<typeof drizzle>) {
@@ -178,7 +184,7 @@ describe("executeConversion (atomic)", () => {
     const adminDb = drizzle(new Pool({ connectionString: adminUrl }))
     const prospect = await seedWonProspect(adminDb)
     const item = await seedCatalogue(adminDb)
-    const record = await executeConversion(prospect.id, actor, baseOptions([item.id]))
+    const record = await prospectService.executeConversion(prospect.id, actor, baseOptions([item.id]))
     expect(record.clientAction).toBe("created")
     expect(record.assignedTier).toBe("Retainer")
     expect(record.portalProvisioningPrepared).toBe(true)
@@ -212,8 +218,8 @@ describe("executeConversion (atomic)", () => {
     const adminDb = drizzle(new Pool({ connectionString: adminUrl }))
     const prospect = await seedWonProspect(adminDb)
     const item = await seedCatalogue(adminDb)
-    const first = await executeConversion(prospect.id, actor, baseOptions([item.id]))
-    const second = await executeConversion(prospect.id, actor, baseOptions([item.id]))
+    const first = await prospectService.executeConversion(prospect.id, actor, baseOptions([item.id]))
+    const second = await prospectService.executeConversion(prospect.id, actor, baseOptions([item.id]))
     expect(second.id).toBe(first.id)
     expect(await adminDb.select().from(currentSchema.clients)).toHaveLength(1)
     expect(await adminDb.select().from(currentSchema.deliveryMilestones)).toHaveLength(5)
@@ -226,7 +232,7 @@ describe("executeConversion (atomic)", () => {
     const prospect = await seedWonProspect(adminDb)
     const item = await seedCatalogue(adminDb)
     const [existing] = await adminDb.insert(currentSchema.clients).values({ name: "Acme Ltd", invoiceClientCode: "ACME2", updatedAt: new Date() }).returning()
-    const record = await executeConversion(prospect.id, actor, {
+    const record = await prospectService.executeConversion(prospect.id, actor, {
       client: { mode: "link", clientId: existing.id }, mrr: 0, catalogueItemIds: [item.id],
       createProject: false, onboardingTasks: false, createDraftInvoice: false, preparePortal: false,
     })
@@ -243,7 +249,7 @@ describe("executeConversion (atomic)", () => {
     // 1. fresh client (no tier, no invoiceClientCode) -> the guarded tx.update(clients) writes all three fields
     const prospectA = await seedWonProspect(adminDb)
     const [freshClient] = await adminDb.insert(currentSchema.clients).values({ name: "Fresh Co", updatedAt: new Date() }).returning()
-    const recordA = await executeConversion(prospectA.id, actor, {
+    const recordA = await prospectService.executeConversion(prospectA.id, actor, {
       client: { mode: "link", clientId: freshClient.id, tier: "Retainer", invoiceClientCode: "LINKA" },
       mrr: 750, catalogueItemIds: [item.id],
       createProject: false, onboardingTasks: false, createDraftInvoice: false, preparePortal: false,
@@ -257,7 +263,7 @@ describe("executeConversion (atomic)", () => {
     // 2. client already has a tier -> the guarded patch must NOT overwrite it, and assigned_tier must record what was kept
     const prospectB = await seedWonProspect(adminDb)
     const [tieredClient] = await adminDb.insert(currentSchema.clients).values({ name: "Tiered Co", tier: "Forge Build", updatedAt: new Date() }).returning()
-    const recordB = await executeConversion(prospectB.id, actor, {
+    const recordB = await prospectService.executeConversion(prospectB.id, actor, {
       client: { mode: "link", clientId: tieredClient.id, tier: "Retainer", invoiceClientCode: "LINKB" },
       mrr: 400, catalogueItemIds: [item.id],
       createProject: false, onboardingTasks: false, createDraftInvoice: false, preparePortal: false,
@@ -270,7 +276,7 @@ describe("executeConversion (atomic)", () => {
     const prospectC = await seedWonProspect(adminDb)
     await adminDb.insert(currentSchema.clients).values({ name: "Code Holder", invoiceClientCode: "TAKEN", updatedAt: new Date() })
     const [targetClient] = await adminDb.insert(currentSchema.clients).values({ name: "Wants Code", updatedAt: new Date() }).returning()
-    await expect(executeConversion(prospectC.id, actor, {
+    await expect(prospectService.executeConversion(prospectC.id, actor, {
       client: { mode: "link", clientId: targetClient.id, tier: "Retainer", invoiceClientCode: "TAKEN" },
       mrr: 0, catalogueItemIds: [item.id],
       createProject: false, onboardingTasks: false, createDraftInvoice: false, preparePortal: false,
@@ -282,7 +288,7 @@ describe("executeConversion (atomic)", () => {
     const adminDb = drizzle(new Pool({ connectionString: adminUrl }))
     const prospect = await seedWonProspect(adminDb)
     // catalogue id that does not exist -> the up-front active-catalogue check throws 409 before any write
-    await expect(executeConversion(prospect.id, actor, {
+    await expect(prospectService.executeConversion(prospect.id, actor, {
       client: { mode: "create", name: "Acme", tier: "Retainer", invoiceClientCode: "ACME3" },
       mrr: 100, catalogueItemIds: [999999],
       createProject: false, onboardingTasks: false, createDraftInvoice: true, preparePortal: false,
@@ -298,7 +304,7 @@ describe("executeConversion (atomic)", () => {
     process.env.ADMIN_DATABASE_URL = adminUrl
     const adminDb = drizzle(new Pool({ connectionString: adminUrl }))
     const [prospect] = await adminDb.insert(currentSchema.prospects).values({ businessName: "NotWon", stage: "proposal_sent" }).returning()
-    await expect(executeConversion(prospect.id, actor, {
+    await expect(prospectService.executeConversion(prospect.id, actor, {
       client: { mode: "create", name: "NotWon", tier: "Forge Build", invoiceClientCode: "NW1" },
       mrr: 0, catalogueItemIds: [], createProject: false, onboardingTasks: false, createDraftInvoice: false, preparePortal: false,
     })).rejects.toMatchObject({ status: 409 })
@@ -310,7 +316,7 @@ describe("executeConversion (atomic)", () => {
     const adminDb = drizzle(new Pool({ connectionString: adminUrl }))
     const prospect = await seedWonProspect(adminDb)
     const item = await seedCatalogue(adminDb)
-    const record = await executeConversion(prospect.id, actor, {
+    const record = await prospectService.executeConversion(prospect.id, actor, {
       client: { mode: "create", name: "Acme", tier: "Forge Build", invoiceClientCode: "ACME4" },
       mrr: 0, catalogueItemIds: [item.id],
       createProject: false, onboardingTasks: false, createDraftInvoice: false, preparePortal: false,
@@ -328,4 +334,16 @@ function roleUrl(base: string, username: string, password: string) {
   value.username = username;
   value.password = password;
   return value.toString();
+}
+
+function restoreEnvironment(name: string, value: string | undefined) {
+  if (value === undefined) delete process.env[name]
+  else process.env[name] = value
+}
+
+async function resetSharedDbClient() {
+  const shared = globalThis as unknown as { __scalesmithsPool?: { end: () => Promise<void> }; __scalesmithsDb?: unknown }
+  if (shared.__scalesmithsPool) await shared.__scalesmithsPool.end().catch(() => undefined)
+  shared.__scalesmithsPool = undefined
+  shared.__scalesmithsDb = undefined
 }

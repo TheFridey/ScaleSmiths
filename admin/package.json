@@ -33,7 +33,7 @@
     "admin:recover-owner": "node --env-file-if-exists=../.env scripts/bootstrap-admin.mjs --recover-owner",
     "lint": "eslint .",
     "db:generate": "node --env-file-if-exists=../.env ./node_modules/drizzle-kit/bin.cjs generate",
-    "db:migrate": "node --env-file-if-exists=../.env ./node_modules/drizzle-kit/bin.cjs migrate",
+    "db:migrate": "node --env-file-if-exists=../.env ../scripts/migrate-database.mjs",
     "db:studio": "node --env-file-if-exists=../.env ./node_modules/drizzle-kit/bin.cjs studio",
     "db:provision-roles": "node --env-file-if-exists=../.env scripts/provision-postgres-roles.mjs",
     "db:verify-privileges": "node --env-file-if-exists=../.env scripts/verify-postgres-privileges.mjs"

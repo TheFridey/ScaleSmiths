@@ -14,6 +14,7 @@ assertSafeTestDatabase(databaseUrl)
 const env = {
   ...process.env,
   DATABASE_URL: databaseUrl,
+  MIGRATION_DATABASE_URL: databaseUrl,
   TEST_DATABASE_URL: databaseUrl,
   NODE_ENV: "development",
   AUTH_SECRET: "forge-e2e-auth-secret-at-least-32-characters",
@@ -38,8 +39,7 @@ const env = {
 let server
 try {
   await command("docker", [...compose, "up", "-d", "--wait"], root, env)
-  await npm(["run", "db:migrate"], web, env)
-  await npm(["run", "db:migrate"], admin, env)
+  await npm(["run", "db:migrate"], root, env)
   await npm(["run", "admin:bootstrap"], admin, env)
   server = spawn(node(), ["./node_modules/next/dist/bin/next", "dev", "-p", "3301"], { cwd: admin, env, stdio: "inherit", windowsHide: true })
   await waitForServer(env.FORGE_E2E_BASE_URL)

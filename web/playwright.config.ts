@@ -31,10 +31,14 @@ export default defineConfig({
   },
   outputDir: "test-results",
   webServer: {
-    command: `npm run dev -- --hostname 127.0.0.1 --port ${port}`,
+    command: isCI
+      ? `node ./node_modules/next/dist/bin/next start --hostname 127.0.0.1 --port ${port}`
+      : `npm run dev -- --hostname 127.0.0.1 --port ${port}`,
     url: baseURL,
     reuseExistingServer: !isCI,
     timeout: 120_000,
+    stdout: "pipe",
+    stderr: "pipe",
   },
   projects: [
     {

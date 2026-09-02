@@ -2,8 +2,8 @@ services:
   web:
     image: ss-web-dev
     build:
-      context: ./web
-      dockerfile: Dockerfile.dev
+      context: .
+      dockerfile: web/Dockerfile.dev
     restart: unless-stopped
     ports:
       - "3000:3000"
@@ -11,8 +11,9 @@ services:
     environment:
       NODE_ENV: development
     volumes:
-      - ./web/src:/app/src
-      - ./web/public:/app/public
+      - ./domain:/workspace/domain:ro
+      - ./web/src:/workspace/web/src
+      - ./web/public:/workspace/web/public
     depends_on:
       postgres:
         condition: service_healthy
@@ -26,8 +27,8 @@ services:
   admin:
     image: ss-admin-dev
     build:
-      context: ./admin
-      dockerfile: Dockerfile.dev
+      context: .
+      dockerfile: admin/Dockerfile.dev
     restart: unless-stopped
     ports:
       - "3001:3001"
@@ -36,8 +37,10 @@ services:
       NODE_ENV: development
       FORGE_SANDBOX_RUNNER: local
     volumes:
-      - ./admin/src:/app/src
-      - ./admin/public:/app/public
+      - ./domain:/workspace/domain:ro
+      - ./scripts:/workspace/scripts:ro
+      - ./admin/src:/workspace/admin/src
+      - ./admin/public:/workspace/admin/public
     depends_on:
       postgres:
         condition: service_healthy

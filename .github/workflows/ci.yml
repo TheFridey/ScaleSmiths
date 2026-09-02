@@ -34,6 +34,7 @@ jobs:
     env:
       WEB_DATABASE_URL: postgresql://scalesmiths_web_test:local_ci_only@127.0.0.1:5432/scalesmiths_web_e2e
       MIGRATION_DATABASE_URL: postgresql://scalesmiths_web_test:local_ci_only@127.0.0.1:5432/scalesmiths_web_e2e
+      PORTAL_SECRET: local_ci_only_portal_session_secret_32_chars
       SCALESMITHS_TEST_ENVIRONMENT: forge-v2-e2e
     defaults:
       run:
@@ -78,7 +79,10 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Chromium journeys and visual regression
-        run: npm run test:e2e:chromium
+        run: |
+          mkdir -p ../ci-artifacts
+          set -o pipefail
+          npm run test:e2e:chromium 2>&1 | tee ../ci-artifacts/web-playwright.log
 
       - name: Upload Playwright failure evidence
         if: failure()
@@ -88,7 +92,8 @@ jobs:
           path: |
             web/test-results
             web/playwright-report
-          if-no-files-found: ignore
+            ci-artifacts/web-playwright.log
+          if-no-files-found: error
           retention-days: 14
 
       - name: Upload performance reports
@@ -423,7 +428,8 @@ jobs:
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version: 22
-          package-manager-cache: false
+          cache: npm
+          cache-dependency-path: admin/package-lock.json
 
       - name: Use supported npm
         run: npm install --global npm@10.9.2
@@ -475,6 +481,10 @@ jobs:
 
       - name: Test production topology consistency rules
         run: npm run test:production-topology
+
+      - name: Install shared migrator runtime dependency
+        working-directory: admin
+        run: npm ci --omit=dev --ignore-scripts --no-audit --no-fund
 
       - name: Test backup migration verifier safeguards
         run: npm run test:backup-migration-safety

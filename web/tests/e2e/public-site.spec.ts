@@ -8,12 +8,14 @@ import {
   mockQuoteApi,
   mockExperienceAnalytics,
   openInteractivePlan,
+  rejectNonEssentialStorage,
   setExperience,
   submitQuoteWizard,
 } from "./helpers"
 import { withoutVerifiedPublicClaims } from "./database"
 
 test.beforeEach(async ({ page }) => {
+  await rejectNonEssentialStorage(page)
   await mockExperienceAnalytics(page)
   await page.addInitScript(() => {
     window.localStorage.setItem("scalesmiths.e2e.disableCanvas", "true")
@@ -268,7 +270,9 @@ test.describe("public navigation and accessibility behaviours", () => {
 
     // Each custom-systems service card routes to the full brief; local-growth cards route to
     // the short check instead, so assert both journeys keep a working commercial next step.
+    await gotoReady(page, "/local-growth")
     await expect(page.getByRole("link", { name: /explore the business growth audit/i }).first()).toHaveAttribute("href", "/local-growth-check")
+    await gotoReady(page, "/custom-systems")
     const projectBriefLink = page.getByRole("link", { name: /start a project brief/i }).first()
     await expect(projectBriefLink).toHaveAttribute("href", "/quote")
     await projectBriefLink.click({ noWaitAfter: true })

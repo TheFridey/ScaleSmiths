@@ -2,8 +2,8 @@ services:
   web:
     image: ss-web-prod
     build:
-      context: ./web
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: web/Dockerfile
     restart: unless-stopped
     stop_grace_period: 30s
     env_file: .env
@@ -39,8 +39,8 @@ services:
   admin:
     image: ss-admin-prod
     build:
-      context: ./admin
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: admin/Dockerfile
     restart: unless-stopped
     stop_grace_period: 30s
     env_file: .env
@@ -103,8 +103,8 @@ services:
   admin-bootstrap:
     image: ss-admin-bootstrap
     build:
-      context: ./admin
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: admin/Dockerfile
       target: builder
     profiles: ["tools"]
     env_file: .env
@@ -130,8 +130,8 @@ services:
   postgres-provision:
     image: ss-admin-postgres-provision
     build:
-      context: ./admin
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: admin/Dockerfile
       target: builder
     profiles: ["tools"]
     environment:
@@ -159,8 +159,8 @@ services:
   postgres-verify:
     image: ss-admin-postgres-verify
     build:
-      context: ./admin
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: admin/Dockerfile
       target: builder
     profiles: ["tools"]
     environment:

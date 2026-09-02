@@ -3,8 +3,8 @@ FROM node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a55
 RUN apk add --no-cache libcrypto3=3.5.8-r0 libssl3=3.5.8-r0
 
 FROM node-base AS deps
-WORKDIR /app
-COPY package*.json ./
+WORKDIR /workspace/admin
+COPY admin/package*.json ./
 RUN --mount=type=cache,target=/root/.npm \
     npm ci --omit=dev --no-audit --no-fund \
       --fetch-retries=5 \
@@ -14,8 +14,8 @@ RUN --mount=type=cache,target=/root/.npm \
       --fetch-timeout=300000
 
 FROM node-base AS builder
-WORKDIR /app
-COPY package*.json ./
+WORKDIR /workspace/admin
+COPY admin/package*.json ./
 RUN --mount=type=cache,target=/root/.npm \
     npm ci --no-audit --no-fund \
       --fetch-retries=5 \
@@ -23,7 +23,9 @@ RUN --mount=type=cache,target=/root/.npm \
       --fetch-retry-mintimeout=20000 \
       --fetch-retry-maxtimeout=120000 \
       --fetch-timeout=300000
-COPY . .
+COPY domain /workspace/domain
+COPY scripts /workspace/scripts
+COPY admin /workspace/admin
 ARG ERROR_MONITORING_RELEASE
 ARG SENTRY_ORG
 ARG SENTRY_ADMIN_PROJECT
@@ -38,16 +40,16 @@ RUN --mount=type=secret,id=sentry_auth_token \
     npm run build
 
 FROM node-base AS runner
-WORKDIR /app
+WORKDIR /app/admin
 ENV NODE_ENV production
 RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nextjs \
     && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
-COPY --from=builder /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder /workspace/admin/public ./public
+COPY --from=builder --chown=nextjs:nodejs /workspace/admin/.next/standalone /app
+COPY --from=builder --chown=nextjs:nodejs /workspace/admin/.next/static ./.next/static
 # Next's file tracer can retain Drizzle Kit's build-only esbuild binary even though
 # no production route imports it. Keep the runtime image free of unused toolchain code.
-RUN rm -rf /app/node_modules/@esbuild /app/node_modules/esbuild
+RUN rm -rf /app/admin/node_modules/@esbuild /app/admin/node_modules/esbuild
 USER nextjs
 EXPOSE 3001
 ENV PORT 3001

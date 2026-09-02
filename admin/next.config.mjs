@@ -6,11 +6,10 @@ import { withSentryConfig } from "@sentry/nextjs"
 const isDev = process.env.NODE_ENV !== "production"
 
 // This admin app lives in a monorepo (ScaleSmiths root + web app + generated-sites).
-// Pin the file-tracing root to THIS app so `next build` does not walk the parent tree
-// (web/, .git/, generated-sites/, root node_modules). Tracing the whole monorepo makes the
-// trace/copy stall on unrelated or locked files (e.g. a generated-site preview holding
-// handles), which is what makes the build hang after page-data collection instead of exiting.
+// Trace from the repository root because both applications import the canonical root-owned
+// domain contracts. Explicit exclusions keep unrelated app and generated output out.
 const appDir = dirname(fileURLToPath(import.meta.url))
+const repositoryRoot = join(appDir, "..")
 
 // `output: "standalone"` copies node_modules into .next/standalone. That copy is what the
 // production Docker image needs, but on a local dev machine (especially Windows, where each
@@ -47,7 +46,7 @@ const securityHeaders = [
 
 const nextConfig = {
   ...(enableStandalone ? { output: "standalone" } : {}),
-  outputFileTracingRoot: appDir,
+  outputFileTracingRoot: repositoryRoot,
   outputFileTracingExcludes: {
     "*": [
       "../generated-sites/**",

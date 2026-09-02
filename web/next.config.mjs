@@ -1,7 +1,11 @@
 import { withSentryConfig } from "@sentry/nextjs"
+import { dirname, join } from "node:path"
+import { fileURLToPath } from "node:url"
 
 /** @type {import('next').NextConfig} */
 const isDev = process.env.NODE_ENV !== "production"
+const appDir = dirname(fileURLToPath(import.meta.url))
+const repositoryRoot = join(appDir, "..")
 
 const securityHeaders = [
   {
@@ -43,6 +47,7 @@ const agentDiscoveryLinkHeader = [
 
 const nextConfig = {
   output: "standalone",
+  outputFileTracingRoot: repositoryRoot,
   transpilePackages: ["@react-three/fiber", "three"],
   images: {
     formats: ["image/avif", "image/webp"],

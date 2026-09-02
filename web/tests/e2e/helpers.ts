@@ -1,7 +1,24 @@
 import { expect, type Page } from "@playwright/test"
+import { COOKIE_CONSENT_COOKIE, COOKIE_POLICY_VERSION } from "../../src/lib/cookie-consent"
 
 export const EXPERIENCE_KEY = "scalesmiths.experience"
 export const INDUSTRY_KEY = "scalesmiths.v2.industry"
+
+export async function rejectNonEssentialStorage(page: Page) {
+  await page.addInitScript(
+    ({ cookieName, policyVersion }) => {
+      const value = {
+        version: policyVersion,
+        functional: false,
+        analytics: false,
+        marketing: false,
+        decidedAt: "2026-09-02T00:00:00.000Z",
+      }
+      document.cookie = `${cookieName}=${encodeURIComponent(JSON.stringify(value))}; Path=/; SameSite=Lax`
+    },
+    { cookieName: COOKIE_CONSENT_COOKIE, policyVersion: COOKIE_POLICY_VERSION },
+  )
+}
 
 export async function installConsoleGuards(page: Page) {
   const messages: string[] = []

@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 FROM node:22-alpine
-WORKDIR /app
-COPY package*.json ./
+WORKDIR /workspace/admin
+COPY admin/package*.json ./
 RUN --mount=type=cache,target=/root/.npm \
     npm install --no-audit --no-fund \
       --fetch-retries=5 \
@@ -9,6 +9,8 @@ RUN --mount=type=cache,target=/root/.npm \
       --fetch-retry-mintimeout=20000 \
       --fetch-retry-maxtimeout=120000 \
       --fetch-timeout=300000
-COPY . .
+COPY domain /workspace/domain
+COPY scripts /workspace/scripts
+COPY admin /workspace/admin
 EXPOSE 3001
 CMD ["npm", "run", "dev"]

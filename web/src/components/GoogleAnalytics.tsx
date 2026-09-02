@@ -10,7 +10,7 @@ const PREFERENCES_CHANGED_EVENT = "scalesmiths:cookie-preferences-changed"
 type GoogleWindow = Window & {
   dataLayer?: unknown[][]
   gtag?: (...args: unknown[]) => void
-  [key: `ga-disable-${string}`]: boolean | undefined
+  "ga-disable-G-24NM2GTZ0C"?: boolean
 }
 
 export function GoogleAnalytics() {
@@ -19,7 +19,7 @@ export function GoogleAnalytics() {
   useEffect(() => {
     const googleWindow = window as GoogleWindow
     const applyPreference = (analytics: boolean) => {
-      googleWindow[`ga-disable-${GOOGLE_ANALYTICS_ID}`] = !analytics
+      googleWindow["ga-disable-G-24NM2GTZ0C"] = !analytics
       setEnabled(analytics)
 
       if (googleWindow.gtag) {

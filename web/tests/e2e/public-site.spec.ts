@@ -477,12 +477,12 @@ test.describe("quote and contact forms", () => {
     await expect(page.getByRole("checkbox", { name: "Analytics" })).not.toBeChecked()
     await page.getByRole("button", { name: /save preferences/i }).click()
     await expect.poll(async () => (await page.context().cookies()).find((cookie) => cookie.name === "ss_analytics_opt_out")?.value).toBe("1")
-    await expect(page.getByRole("link", { name: "Terms" }).last()).toHaveAttribute("href", "/terms")
+    await expect(page.getByRole("link", { name: "Terms" }).last()).toHaveAttribute("href", "/legal/website-terms")
 
     await page.getByRole("link", { name: "Terms" }).last().click()
     await expect(page.getByRole("heading", { name: "Website terms" })).toBeVisible()
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /index, follow/i)
-    await expect(page.getByRole("link", { name: "Privacy" }).last()).toHaveAttribute("href", "/privacy")
+    await expect(page.getByRole("link", { name: "Privacy" }).last()).toHaveAttribute("href", "/legal/privacy")
   })
 
   test("exits the interactive route back to the normal site", async ({ page }) => {

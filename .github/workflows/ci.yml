@@ -109,6 +109,9 @@ jobs:
     name: Cross-browser Smoke
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    env:
+      WEB_DATABASE_URL: postgresql://scalesmiths_cross_browser_test:local_ci_only@127.0.0.1:5432/scalesmiths_cross_browser_test
+      SCALESMITHS_TEST_ENVIRONMENT: cross-browser-smoke
     defaults:
       run:
         working-directory: web

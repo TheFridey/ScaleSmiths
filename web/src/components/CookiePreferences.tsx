@@ -52,7 +52,7 @@ export function CookiePreferences() {
       {manage && <div className="mt-5 space-y-3 border-y border-b1 py-5">
         <Preference label="Strictly necessary" description="Portal security and remembering this privacy choice." checked disabled onChange={() => undefined} />
         <Preference label="Functional" description="Remember experience and industry choices you make." checked={preferences.functional} onChange={(functional) => setPreferences((current) => ({ ...current, functional }))} />
-        <Preference label="Analytics" description="Privacy-minimised first-party journey statistics. No advertising or cross-site profiling." checked={preferences.analytics} onChange={(analytics) => setPreferences((current) => ({ ...current, analytics }))} />
+        <Preference label="Analytics" description="First-party journey statistics and Google Analytics website measurement. No advertising trackers." checked={preferences.analytics} onChange={(analytics) => setPreferences((current) => ({ ...current, analytics }))} />
       </div>}
       <p className="mt-4 text-xs leading-relaxed text-t3">Read the <Link href="/legal/cookies" className="underline underline-offset-2 hover:text-t1">Cookie Policy</Link>. You can change this choice later using Cookie Settings in the footer.</p>
       <div className="mt-5 grid gap-2 sm:grid-cols-3">

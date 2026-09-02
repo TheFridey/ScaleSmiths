@@ -1,4 +1,4 @@
-export const COOKIE_POLICY_VERSION = "2.0"
+export const COOKIE_POLICY_VERSION = "3.0"
 export const COOKIE_CONSENT_COOKIE = "ss_cookie_consent"
 export const COOKIE_CONSENT_MAX_AGE = 60 * 60 * 24 * 180
 
@@ -26,6 +26,7 @@ export const storageInventory = [
   { name: "scalesmiths.v2.industry", provider: "ScaleSmiths", purpose: "Remembers an industry explicitly selected in the interactive journey.", category: "Functional", duration: "Until cleared", party: "First party", consent: "Yes" },
   { name: "scalesmiths.analytics.session / scalesmiths.analytics.sent", provider: "ScaleSmiths", purpose: "Groups privacy-minimised first-party experience events and prevents duplicates within a browser tab.", category: "Analytics", duration: "Browser tab/session", party: "First party", consent: "Yes" },
   { name: "ss_exp_id / ss_exp_variant", provider: "ScaleSmiths", purpose: "Maintains an anonymous controlled-experience experiment assignment when an experiment is enabled.", category: "Analytics", duration: "Up to 90 days", party: "First party", consent: "Yes" },
+  { name: "_ga / _ga_*", provider: "Google Analytics", purpose: "Distinguishes anonymous visitors and sessions so website usage can be measured.", category: "Analytics", duration: "Up to 2 years", party: "First-party cookies set by a third-party service", consent: "Yes" },
 ] as const
 
 export function readCookiePreferences(cookieHeader: string | undefined): CookiePreferences | null {

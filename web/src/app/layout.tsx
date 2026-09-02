@@ -3,6 +3,7 @@ import { MotionProvider } from "@/components/MotionProvider"
 import { SiteChrome } from "@/components/SiteChrome"
 import { WebVitalsReporter } from "@/components/WebVitalsReporter"
 import { CookiePreferences } from "@/components/CookiePreferences"
+import { GoogleAnalytics } from "@/components/GoogleAnalytics"
 import { founders } from "@/lib/founders"
 import "./globals.css"
 
@@ -88,6 +89,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="bg-bg text-t1 font-dm">
+        <GoogleAnalytics />
         <WebVitalsReporter />
         <MotionProvider>
           <SiteChrome>{children}</SiteChrome>

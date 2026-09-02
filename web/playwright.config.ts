@@ -3,6 +3,7 @@ import { defineConfig, devices } from "@playwright/test"
 const port = Number(process.env.PLAYWRIGHT_PORT ?? 3210)
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? `http://127.0.0.1:${port}`
 const isCI = Boolean(process.env.CI)
+const useProductionServer = process.env.PLAYWRIGHT_SERVER_MODE === "production"
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -31,7 +32,7 @@ export default defineConfig({
   },
   outputDir: "test-results",
   webServer: {
-    command: isCI
+    command: useProductionServer
       ? `node ./node_modules/next/dist/bin/next start --hostname 127.0.0.1 --port ${port}`
       : `npm run dev -- --hostname 127.0.0.1 --port ${port}`,
     url: baseURL,

@@ -20,7 +20,7 @@ test.describe("about and founders page", () => {
     const rhys = page.locator("#rhys")
     await expect(rhys).toContainText(/co-founder/i)
     await expect(rhys.getByRole("link", { name: /glow tanning/i })).toHaveAttribute("href", "/work/glow-tanning")
-    await expect(rhys).toContainText("Engineering")
+    await expect(rhys).toContainText(/engineering/i)
 
     const trevor = page.locator("#trevor-newton-bradley")
     await expect(trevor.getByRole("link", { name: /the business circle/i })).toHaveAttribute(
@@ -55,7 +55,7 @@ test.describe("about and founders page", () => {
     await expect(page.locator("#trevor-newton-bradley")).toContainText(/commercial growth/i)
   })
 
-  test("uses monogram presentation rather than stock portraits", async ({ page }) => {
+  test("never shows stock or placeholder photographs before real founder photos are supplied", async ({ page }) => {
     await gotoReady(page, "/about")
 
     await expect(page.locator("#rhys img")).toHaveCount(0)
@@ -96,11 +96,11 @@ test.describe("about and founders page", () => {
     await gotoReady(page, "/work/glow-tanning")
 
     const credit = page.getByRole("link", { name: /founder contribution.*rhys/i })
-    await expect(credit).toHaveAttribute("href", "/about#rhys")
+    await expect(credit).toHaveAttribute("href", "/about/rhys")
     await credit.click({ noWaitAfter: true })
 
-    await page.waitForURL(/\/about#rhys$/, { timeout: 20_000, waitUntil: "domcontentloaded" })
-    await expect(page.locator("#rhys")).toBeVisible()
+    await page.waitForURL(/\/about\/rhys$/, { timeout: 20_000, waitUntil: "domcontentloaded" })
+    await expect(page.getByRole("heading", { level: 1, name: "Rhys", exact: true })).toBeVisible()
   })
 
   test("offers a founder-led call to action", async ({ page }) => {
@@ -148,5 +148,37 @@ test.describe("about and founders page", () => {
     await expect(focused).toHaveCSS("outline-style", /solid|auto/)
 
     await consoleGuard.expectClean()
+  })
+
+  for (const founder of [
+    { slug: "rhys", name: "Rhys", expertise: /software engineering/i, project: /glow tanning/i },
+    { slug: "trevor-newton-bradley", name: "Trevor Newton-Bradley", expertise: /client relationships/i, project: /the business circle/i },
+  ]) {
+    test(`publishes a founder profile for ${founder.name}`, async ({ page }) => {
+      await gotoReady(page, `/about/${founder.slug}`)
+
+      await expect(page.getByRole("heading", { level: 1 })).toHaveText(founder.name)
+      await expect(page).toHaveTitle(new RegExp(`${founder.name}.*\\| scalesmiths`, "i"))
+      await expect(page.getByRole("navigation", { name: /breadcrumb/i }).getByRole("link", { name: "About" })).toHaveAttribute("href", "/about")
+      await expect(page.locator("main")).toContainText(founder.expertise)
+      await expect(page.getByRole("link", { name: founder.project }).first()).toBeVisible()
+
+      const canonical = await page.locator('link[rel="canonical"]').getAttribute("href")
+      expect(new URL(canonical ?? "", "https://scalesmiths.co.uk").pathname).toBe(`/about/${founder.slug}`)
+
+      const structuredData = (await page.locator('script[type="application/ld+json"]').allTextContents()).join(" ")
+      expect(structuredData).toContain("ProfilePage")
+      expect(structuredData).toContain(`/about/${founder.slug}#person`)
+      expect(structuredData).toContain("worksFor")
+
+      for (const unsupported of [/years of experience/i, /award[- ]winning/i, /\d+\+?\s*clients/i, /(?:formerly|previously) at/i]) {
+        await expect(page.locator("main")).not.toContainText(unsupported)
+      }
+    })
+  }
+
+  test("returns not found for unknown founder profiles", async ({ page }) => {
+    const response = await page.goto("/about/not-a-founder")
+    expect(response?.status()).toBe(404)
   })
 })

@@ -1,5 +1,9 @@
 import type { Metadata } from "next"
 import { projects, type Project } from "./data"
+import { buildPageMetadata } from "./page-metadata"
+import { resolveConfiguredLinks, type ConfiguredLink, type PublicEnv, type PublicLink } from "./public-links"
+import { BUSINESS_LOCATION, founderProfilePath } from "./site-identity"
+import type { TeamImageKey } from "./team-images"
 
 /**
  * Founder content is centrally managed here so no biography copy is scattered through
@@ -8,6 +12,11 @@ import { projects, type Project } from "./data"
  *
  * Never add qualifications, employment history, client counts, revenue figures or awards
  * here without a verified public claim record (see `public-claims.ts`).
+ *
+ * TODO(founders): each founder can supply a first-person biography (background, why they
+ * started ScaleSmiths, how they work). Record the approval in docs/content/founder-profiles.md
+ * and add it to `biography` with that document as evidence. Until then the profile pages
+ * publish only the evidenced statements below.
  */
 
 export interface EvidencedStatement {
@@ -16,50 +25,61 @@ export interface EvidencedStatement {
   evidence: string
 }
 
-export interface FounderLinkConfig {
-  label: string
-  /** Environment variable supplying the URL. Unset or invalid means the link is not published. */
-  envVar: string
-}
-
-export interface FounderLink {
-  label: string
-  href: string
-}
+export type FounderLinkConfig = ConfiguredLink
+export type FounderLink = PublicLink
 
 export interface Founder {
   slug: string
   name: string
+  firstName: string
   /** Name as it already appears in project credits. */
   creditName: string
   monogram: string
+  photo: TeamImageKey
   role: EvidencedStatement
+  /** Short title used in article bylines and Person structured data. */
+  authorTitle: string
+  /** Short introduction used on the homepage and at the top of the profile page. */
+  summary: EvidencedStatement
   responsibilities: EvidencedStatement[]
   involvement: EvidencedStatement[]
   focusAreas: string[]
   /** Project slugs in `data.ts` whose credit line names this founder. */
   projectSlugs: string[]
+  relatedServices: Array<{ href: string; label: string }>
   linkConfig: FounderLinkConfig[]
   accent: string
 }
 
+const OWNER_BRIEF = "docs/content/founder-profiles.md (owner-supplied role brief, 15 September 2026)"
+
 export const FOUNDER_LOCATION = {
-  locality: "Hucknall",
-  region: "Nottinghamshire",
-  country: "United Kingdom",
-  evidence: "web/src/app/layout.tsx",
+  locality: BUSINESS_LOCATION.locality,
+  region: BUSINESS_LOCATION.region,
+  country: BUSINESS_LOCATION.country,
+  evidence: "web/src/lib/site-identity.ts",
 } as const
 
 export const founders: Founder[] = [
   {
     slug: "rhys",
+    // TODO(owner): confirm whether Rhys's surname should be published. A full name strengthens
+    // the Person entity; until confirmed, the credited first name is used everywhere.
     name: "Rhys",
+    firstName: "Rhys",
     creditName: "Rhys",
     monogram: "R",
+    photo: "rhys",
+    // Owner-supplied title (founder profile card, 15 September 2026).
+    authorTitle: "Co-founder & Technical Lead",
     accent: "#22d3ee",
     role: {
-      text: "Co-founder — strategy, engineering and delivery",
-      evidence: "web/src/lib/data.ts (project credits: \"Made by Rhys · ScaleSmiths co-founder\")",
+      text: "Co-founder — technical leadership, engineering and delivery",
+      evidence: `${OWNER_BRIEF} and web/src/lib/data.ts (project credits: "Made by Rhys · ScaleSmiths co-founder")`,
+    },
+    summary: {
+      text: "Rhys co-founded ScaleSmiths and leads its technical direction: strategy, software engineering, web systems, architecture, technical SEO implementation and delivery. Clients discuss the technical approach with the founder accountable for building it.",
+      evidence: OWNER_BRIEF,
     },
     responsibilities: [
       {
@@ -80,9 +100,27 @@ export const founders: Founder[] = [
         text: "Leads technical discovery, architecture and hands-on delivery across websites, custom applications, automation and production infrastructure.",
         evidence: "web/src/lib/data.ts (per-project credit lines)",
       },
+      {
+        text: "Owns technical SEO implementation — site architecture, structured data, performance and indexing — as part of the build rather than as a separate hand-off.",
+        evidence: OWNER_BRIEF,
+      },
     ],
-    focusAreas: ["Strategy", "Engineering", "Systems", "Infrastructure", "Technical architecture", "Delivery"],
+    focusAreas: [
+      "Technical leadership",
+      "Strategy",
+      "Software engineering",
+      "Web systems",
+      "Architecture",
+      "Technical SEO",
+      "Infrastructure",
+      "Delivery",
+    ],
     projectSlugs: ["glow-tanning", "pinkys-prints", "csds", "prymal", "veteranfinder"],
+    relatedServices: [
+      { href: "/custom-systems", label: "Custom Systems" },
+      { href: "/custom-web-app-development-uk", label: "Custom web app development" },
+      { href: "/next-js-agency-uk", label: "Next.js development" },
+    ],
     linkConfig: [
       { label: "GitHub", envVar: "NEXT_PUBLIC_FOUNDER_RHYS_GITHUB" },
       { label: "LinkedIn", envVar: "NEXT_PUBLIC_FOUNDER_RHYS_LINKEDIN" },
@@ -92,12 +130,20 @@ export const founders: Founder[] = [
   {
     slug: "trevor-newton-bradley",
     name: "Trevor Newton-Bradley",
+    firstName: "Trevor",
     creditName: "Trev",
     monogram: "TNB",
+    photo: "trevor",
+    // Owner-supplied title (founder profile card, 15 September 2026).
+    authorTitle: "Co-founder & Commercial Lead",
     accent: "#6366f1",
     role: {
-      text: "Co-founder — commercial growth and client partnerships",
-      evidence: "web/src/app/layout.tsx and admin/src/components/ProspectPipeline.tsx",
+      text: "Co-founder — commercial growth and client relationships",
+      evidence: `${OWNER_BRIEF}, web/src/app/layout.tsx and admin/src/components/ProspectPipeline.tsx`,
+    },
+    summary: {
+      text: "Trevor Newton-Bradley co-founded ScaleSmiths and leads its commercial side: growth, client relationships, sales, business development and account relationships. Clients discuss commercial priorities with a founder rather than a sales team working to someone else's brief.",
+      evidence: OWNER_BRIEF,
     },
     responsibilities: [
       {
@@ -114,9 +160,25 @@ export const founders: Founder[] = [
         text: "Connects commercial priorities and client context to the work ScaleSmiths diagnoses, proposes and delivers.",
         evidence: "admin/src/components/ProspectPipeline.tsx and web/src/lib/business-growth-audit.ts",
       },
+      {
+        text: "Looks after account relationships once work is under way, so clients keep a founder as their commercial point of contact.",
+        evidence: OWNER_BRIEF,
+      },
     ],
-    focusAreas: ["Commercial growth", "Client relationships", "Business development", "Sales", "Partnerships", "Commercial strategy"],
+    focusAreas: [
+      "Commercial growth",
+      "Client relationships",
+      "Sales",
+      "Business development",
+      "Account relationships",
+      "Partnerships",
+    ],
     projectSlugs: ["the-business-circle"],
+    relatedServices: [
+      { href: "/services/business-growth-audit", label: "Business Growth Audit" },
+      { href: "/digital-growth-partnership", label: "Digital Growth Partnership" },
+      { href: "/local-growth", label: "Local Growth" },
+    ],
     linkConfig: [
       { label: "LinkedIn", envVar: "NEXT_PUBLIC_FOUNDER_TREVOR_LINKEDIN" },
       { label: "Email", envVar: "NEXT_PUBLIC_FOUNDER_TREVOR_EMAIL_URL" },
@@ -132,7 +194,7 @@ export const originStatements: EvidencedStatement[] = [
   },
   {
     text: "It is based in Hucknall, Nottinghamshire, and works with clients across the UK and internationally.",
-    evidence: "web/src/lib/data.ts (FAQ) and web/src/app/layout.tsx (postal address)",
+    evidence: "web/src/lib/data.ts (FAQ) and web/src/lib/site-identity.ts (business location)",
   },
   {
     text: "The first published project was Glow Tanning — a Hucknall salon with no meaningful web presence and competitors already ahead of it online.",
@@ -193,108 +255,29 @@ export function founderBySlug(slug: string): Founder | undefined {
   return founders.find((founder) => founder.slug === slug)
 }
 
-/**
- * Optional contact links come from configuration only. An unset, blank or non-HTTP(S)
- * value publishes nothing rather than a broken or unsafe link.
- */
+export function founderProfileHref(founder: Founder): string {
+  return founderProfilePath(founder.slug)
+}
+
 export function founderLinks(
   founder: Founder,
-  env: Record<string, string | undefined> = process.env as Record<string, string | undefined>,
+  env: PublicEnv = process.env as PublicEnv,
 ): FounderLink[] {
-  return founder.linkConfig
-    .map((config) => ({ label: config.label, href: (env[config.envVar] ?? "").trim() }))
-    .filter((link): link is FounderLink => isPublishableLink(link.href))
+  return resolveConfiguredLinks(founder.linkConfig, env)
 }
 
-function isPublishableLink(value: string): boolean {
-  if (!value) return false
-  try {
-    const url = new URL(value)
-    return url.protocol === "https:" || url.protocol === "mailto:"
-  } catch {
-    return false
-  }
-}
-
-export const aboutMetadata: Metadata = {
+export const aboutMetadata: Metadata = buildPageMetadata({
   title: "About & Founders",
   description:
-    "Meet ScaleSmiths co-founders Rhys and Trevor Newton-Bradley: complementary commercial growth and technical engineering leadership from Hucknall, Nottinghamshire.",
-  alternates: { canonical: "/about" },
-  openGraph: {
-    title: "About & Founders | ScaleSmiths",
-    description:
-      "Founder-led business growth and engineering from Hucknall, Nottinghamshire, combining commercial thinking with serious technical execution.",
-    url: "/about",
-  },
-}
+    "Meet ScaleSmiths co-founders Rhys and Trevor Newton-Bradley, who lead engineering and commercial growth from Hucknall, Nottinghamshire.",
+  path: "/about",
+})
 
-export function buildAboutSchemas(
-  siteUrl = "https://scalesmiths.co.uk",
-  env: Record<string, string | undefined> = process.env as Record<string, string | undefined>,
-) {
-  const base = siteUrl.replace(/\/$/, "")
-  const url = `${base}/about`
-
-  const people = founders.map((founder) => {
-    const links = founderLinks(founder, env)
-      .map((link) => link.href)
-      .filter((href) => href.startsWith("https:"))
-    return {
-      "@context": "https://schema.org",
-      "@type": "Person",
-      "@id": `${url}#${founder.slug}`,
-      name: founder.name,
-      jobTitle: founder.role.text,
-      url,
-      worksFor: { "@id": `${base}/#org` },
-      knowsAbout: founderFocusAreas(founder),
-      address: {
-        "@type": "PostalAddress",
-        addressLocality: FOUNDER_LOCATION.locality,
-        addressRegion: FOUNDER_LOCATION.region,
-        addressCountry: "GB",
-      },
-      ...(links.length ? { sameAs: links } : {}),
-    }
+export function founderProfileMetadata(founder: Founder): Metadata {
+  return buildPageMetadata({
+    title: `${founder.name}, Co-founder`,
+    description: `${founder.name}, ${founder.authorTitle} of ScaleSmiths in Hucknall, Nottinghamshire: focus areas, credited projects and approach.`,
+    path: founderProfilePath(founder.slug),
+    type: "profile",
   })
-
-  return [
-    {
-      "@context": "https://schema.org",
-      "@type": "AboutPage",
-      name: "About ScaleSmiths and its founders",
-      description: String(aboutMetadata.description),
-      url,
-      isPartOf: { "@type": "WebSite", name: "ScaleSmiths", url: base },
-      about: { "@id": `${base}/#org` },
-    },
-    {
-      "@context": "https://schema.org",
-      "@type": ["Organization", "ProfessionalService"],
-      "@id": `${base}/#org`,
-      name: "ScaleSmiths",
-      url: base,
-      founder: founders.map((founder) => ({ "@id": `${url}#${founder.slug}` })),
-      foundingLocation: {
-        "@type": "Place",
-        name: `${FOUNDER_LOCATION.locality}, ${FOUNDER_LOCATION.region}`,
-        address: {
-          "@type": "PostalAddress",
-          addressLocality: FOUNDER_LOCATION.locality,
-          addressRegion: FOUNDER_LOCATION.region,
-          addressCountry: "GB",
-        },
-      },
-    },
-    ...people,
-    {
-      "@context": "https://schema.org",
-      "@type": "BreadcrumbList",
-      itemListElement: [
-        { "@type": "ListItem", position: 1, name: "Home", item: base },
-        { "@type": "ListItem", position: 2, name: "About", item: url },
-      ],
-    },
-  ]
 }

@@ -1,3 +1,5 @@
+import { organizationReference } from "./site-identity"
+
 export const managedBusinessEmail = {
   name: "ScaleSmiths Managed Business Email",
   shortName: "Managed Business Email",
@@ -49,7 +51,7 @@ export function buildManagedBusinessEmailSchema(baseUrl = "https://scalesmiths.c
       name: managedBusinessEmail.name,
       description: "Professional custom-domain email, configured, authenticated and supported by ScaleSmiths.",
       url,
-      provider: { "@type": "Organization", name: "ScaleSmiths", url: baseUrl },
+      provider: organizationReference(baseUrl.replace(/\/$/, "")),
       offers: {
         "@type": "Offer",
         priceCurrency: "GBP",

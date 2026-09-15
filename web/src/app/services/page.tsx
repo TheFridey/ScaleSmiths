@@ -9,7 +9,7 @@ import { businessGrowthAudit, formatAuditPrice } from "@/lib/business-growth-aud
 
 export const metadata: Metadata = {
   title: "Web Design, SEO, Apps & Automation Services",
-  description: "Explore ScaleSmiths services: conversion web design, local SEO, e-commerce, custom web apps, AI and business automation, hosting, support and Digital Growth Partnerships.",
+  description: "ScaleSmiths services: web design, local SEO, e-commerce, custom web apps, automation, hosting and ongoing Digital Growth Partnerships.",
   alternates: { canonical: "/services" },
 }
 

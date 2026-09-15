@@ -1,34 +1,13 @@
 import Link from "next/link"
 import { ArrowRight, ExternalLink } from "lucide-react"
+import { FounderPortrait } from "./FounderPortrait"
 import {
   founderFocusAreas,
   founderLinks,
+  founderProfileHref,
   founderProjects,
   type Founder,
 } from "@/lib/founders"
-
-/**
- * Premium typographic/monogram presentation — deliberately no stock portraits.
- * When a real founder photograph is confirmed, replace the monogram block only.
- */
-function Monogram({ founder }: { founder: Founder }) {
-  return (
-    <div
-      aria-hidden="true"
-      className="relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-b2 bg-s2 md:h-28 md:w-28"
-      style={{
-        backgroundImage: `radial-gradient(circle at 28% 22%, ${founder.accent}33, transparent 62%), linear-gradient(140deg, rgba(255,255,255,.06), rgba(0,0,0,.28))`,
-      }}
-    >
-      <span
-        className="font-syne text-[clamp(28px,6vw,38px)] font-black leading-none tracking-[-.04em]"
-        style={{ color: founder.accent }}
-      >
-        {founder.monogram}
-      </span>
-    </div>
-  )
-}
 
 export function FounderCard({ founder }: { founder: Founder }) {
   const projects = founderProjects(founder)
@@ -42,18 +21,33 @@ export function FounderCard({ founder }: { founder: Founder }) {
       aria-labelledby={headingId}
       className="scroll-mt-24 rounded-2xl border border-b1 bg-s1 p-6 md:p-8"
     >
-      <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-        <Monogram founder={founder} />
+      <div className="grid gap-6 sm:grid-cols-[180px_1fr] sm:items-end">
+        <FounderPortrait
+          image={founder.photo}
+          monogram={founder.monogram}
+          accent={founder.accent}
+          sizes="(min-width: 640px) 180px, 100vw"
+          className="max-w-[260px] sm:max-w-none"
+        />
         <div className="min-w-0">
           <h3 id={headingId} className="font-syne text-[clamp(24px,3.6vw,32px)] font-extrabold tracking-[-.03em]">
             {founder.name}
           </h3>
           <p className="mt-2 font-dm text-sm font-semibold text-acc">{founder.role.text}</p>
           <p className="mt-1 font-dm text-xs text-t3">Hucknall, Nottinghamshire</p>
+          <Link
+            href={founderProfileHref(founder)}
+            prefetch={false}
+            className="mt-4 inline-flex items-center gap-2 font-dm text-sm font-semibold text-t1 transition-colors hover:text-acc"
+          >
+            Read {founder.firstName}&apos;s full profile <ArrowRight size={14} aria-hidden="true" />
+          </Link>
         </div>
       </div>
 
-      <section aria-label={`${founder.name} responsibilities`} className="mt-7 border-t border-b1 pt-6">
+      <p className="mt-7 border-t border-b1 pt-6 font-dm text-sm leading-relaxed text-t2">{founder.summary.text}</p>
+
+      <section aria-label={`${founder.name} responsibilities`} className="mt-6">
         <h4 className="font-dm text-xs font-semibold uppercase tracking-[.12em] text-t3">Responsibilities</h4>
         <ul className="mt-4 flex flex-col gap-3">
           {founder.responsibilities.map((item) => (

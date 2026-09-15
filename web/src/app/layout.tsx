@@ -4,11 +4,15 @@ import { SiteChrome } from "@/components/SiteChrome"
 import { WebVitalsReporter } from "@/components/WebVitalsReporter"
 import { CookiePreferences } from "@/components/CookiePreferences"
 import { GoogleAnalytics } from "@/components/GoogleAnalytics"
-import { founders } from "@/lib/founders"
+import { JsonLd } from "@/components/JsonLd"
+import { siteBaseUrl } from "@/lib/site-identity"
+import { buildOrganizationSchema, buildWebsiteSchema } from "@/lib/structured-data"
 import "./globals.css"
 
+const siteUrl = siteBaseUrl()
+
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://scalesmiths.co.uk"),
+  metadataBase: new URL(siteUrl),
   title: {
     default: "ScaleSmiths | Digital Growth, Websites & Custom Systems",
     template: "%s | ScaleSmiths",
@@ -28,18 +32,15 @@ export const metadata: Metadata = {
     "business automation consultancy",
   ],
   authors: [{ name: "ScaleSmiths" }],
+  // Site-wide defaults only. Page titles, descriptions and URLs come from each route (see
+  // lib/page-metadata.ts) so inner pages never inherit the homepage's social copy or URL.
   openGraph: {
     type: "website",
     locale: "en_GB",
-    url: "https://scalesmiths.co.uk",
     siteName: "ScaleSmiths",
-    title: "ScaleSmiths | Forge Your Digital Edge",
-    description: "Strategy, websites, custom systems and ongoing digital growth for ambitious businesses.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "ScaleSmiths | Forge Your Digital Edge",
-    description: "Strategy, websites, custom systems and ongoing digital growth for ambitious businesses.",
   },
   robots: {
     index: true,
@@ -55,38 +56,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <head>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": ["Organization", "ProfessionalService"],
-              "@id": "https://scalesmiths.co.uk/#org",
-              "name": "ScaleSmiths",
-              "url": "https://scalesmiths.co.uk",
-              "description": "ScaleSmiths is a founder-led digital growth and engineering company based in Hucknall, Nottingham. We help businesses identify growth constraints, build websites and custom systems, automate workflows, and manage ongoing digital improvement.",
-              "slogan": "Forge Your Digital Edge",
-              "founder": founders.map((founder) => ({
-                "@type": "Person",
-                "@id": `https://scalesmiths.co.uk/about#${founder.slug}`,
-                "name": founder.name,
-                "jobTitle": founder.role.text,
-                "url": "https://scalesmiths.co.uk/about",
-              })),
-              "address": { "@type": "PostalAddress", "addressLocality": "Hucknall", "addressRegion": "Nottinghamshire", "postalCode": "NG15", "addressCountry": "GB" },
-              "geo": { "@type": "GeoCoordinates", "latitude": 53.0386, "longitude": -1.2042 },
-              "areaServed": [
-                { "@type": "City", "name": "Nottingham" },
-                { "@type": "City", "name": "Hucknall" },
-                { "@type": "AdministrativeArea", "name": "Nottinghamshire" },
-                { "@type": "AdministrativeArea", "name": "East Midlands" },
-                { "@type": "Country", "name": "United Kingdom" }
-              ],
-              "knowsAbout": ["Digital Growth Strategy", "Web Design", "Web Development", "E-Commerce Development", "AI Implementation", "Business Automation", "Conversion Optimisation", "SEO"],
-              "serviceType": ["Digital Growth Partnership", "Web Design", "Web Development", "E-Commerce Development", "AI Implementation Consultancy", "Business Automation Consultancy", "SaaS Development"],
-            }),
-          }}
-        />
+        <JsonLd data={[buildOrganizationSchema(siteUrl), buildWebsiteSchema(siteUrl)]} />
       </head>
       <body className="bg-bg text-t1 font-dm">
         <GoogleAnalytics />

@@ -22,6 +22,7 @@
     "test:db:reset": "node scripts/test-database.mjs reset",
     "test:e2e:cleanup": "node scripts/test-database.mjs cleanup",
     "check:performance-budgets": "node scripts/check-performance-budgets.mjs",
+    "work-media:sync": "node scripts/sync-work-media.mjs",
     "lint": "eslint .",
     "db:generate": "node --env-file-if-exists=../.env ./node_modules/drizzle-kit/bin.cjs generate",
     "db:migrate": "node --env-file-if-exists=../.env ../scripts/migrate-database.mjs",

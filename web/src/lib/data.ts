@@ -17,16 +17,41 @@ export interface Project {
   portfolioGroup: "client-work" | "product-platform"
   heroImage?: string
   thumbImage?: string
+  /**
+   * What the imagery actually shows. `cover-card` images are branded title cards rather than
+   * screenshots of the delivered work; replace them with approved screenshots named per
+   * docs/content/founder-profiles.md and update this field.
+   */
+  imageKind?: "screenshot" | "photograph" | "cover-card"
+  /** Natural description of the imagery. Defaults to a description derived from `imageKind`. */
+  imageAlt?: string
   blurDataURL?: string
   repoUrl?: string
+  /** Only a verified, live URL for the delivered work. */
   websiteUrl?: string
   screenshots?: string[]
+  /** Who the client is, restricted to facts already stated in this record. */
+  client: string
+  /** Scope delivered, as short labels for cards. Must be evidenced by `features`/`solution`. */
+  services: string[]
+  /** Verified problems with the previous site or systems. Omit rather than infer. */
+  startingPoint?: string[]
+  /** What ScaleSmiths set out to improve and why. Omit until written from real project records. */
+  strategy?: string[]
+  /** Measured results, each backed by a verified public claim (see case-study-metrics.ts). */
+  metrics?: Array<{ key: import("./case-study-metrics").MetricKey; claimId: string }>
+  /** Metrics being measured but not yet verified. Rendered as placeholders in development only. */
+  awaitingMetrics?: Array<import("./case-study-metrics").MetricKey>
+  /** A client quote, published only through a verified, client-approved public claim. */
+  quoteClaimId?: string
 }
 
 export const projects: Project[] = [
   {
     id: 7,
     slug: "precision-finish-plastering-rendering",
+    client: "A plastering and rendering business in Hucknall, Nottinghamshire, offering internal plastering, external rendering and specialist services across a wide service area.",
+    services: ["Website design & build", "Local SEO architecture", "Quote & lead capture", "Project galleries"],
     name: "Precision Finish Plastering & Rendering",
     type: "Local Trades Website",
     location: "Hucknall, Nottinghamshire",
@@ -48,6 +73,8 @@ export const projects: Project[] = [
     gradient: "from-amber-500/10 to-stone-500/5",
     heroImage: "/images/projects/precision-finish/hero.webp",
     thumbImage: "/images/projects/precision-finish/thumb.webp",
+    imageKind: "photograph",
+    imageAlt: "Plastered interior room with finishing trowels, from the Precision Finish Plastering & Rendering website built by ScaleSmiths",
     credit: "Built by ScaleSmiths",
     portfolioGroup: "client-work",
     websiteUrl: "https://precisionplasteringandrendering.co.uk",
@@ -55,6 +82,9 @@ export const projects: Project[] = [
   {
     id: 1,
     slug: "glow-tanning",
+    websiteUrl: "https://glowtanninghucknall.co.uk",
+    client: "A premium tanning salon in Hucknall, Nottinghamshire.",
+    services: ["Website design & build", "Booking integration", "Review aggregation", "Admin panel", "Self-hosting"],
     name: "Glow Tanning",
     type: "Local Business",
     location: "Hucknall, Nottinghamshire",
@@ -80,6 +110,7 @@ export const projects: Project[] = [
     gradient: "from-amber-500/10 to-orange-600/5",
     heroImage: "/images/projects/glow-tanning/hero.jpg",
     thumbImage: "/images/projects/glow-tanning/thumb.jpg",
+    imageKind: "cover-card",
     blurDataURL: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAGCAIAAAB1kpiRAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAxUlEQVR4nAG6AEX/AP7Lg//tn//cktmsbKB9S3pfOFdEJVZBIlxFJE06HgD+yYL/5Jf/x4GZdEV6XzVkTChSPR9kTCl3WzN5XDQAm3lIaE8rb1YxlX9bfmdGcVw/alc9SzkeRDEYXUYnADAkFD0sF1xHJ+rVtMq3nNjGp+TRtlpHLjcnFSUcEQAUDAB4aFF1YklWRjJ4aFJaSThfUkJLRT03LB0NAwAAFAgAQjQccVcznn1LyJ1jxJpgn39RZk80NCcbBAAEvVlDxw0IpsIAAAAASUVORK5CYII=",
     credit: "Made by Rhys · ScaleSmiths co-founder",
     portfolioGroup: "client-work",
@@ -87,6 +118,8 @@ export const projects: Project[] = [
   {
     id: 2,
     slug: "pinkys-prints",
+    client: "A UK e-commerce business selling a personalised product range, previously trading on Shopify.",
+    services: ["Custom e-commerce", "Shopify migration", "Product admin", "Self-hosted infrastructure"],
     name: "Pinkys Prints",
     type: "E-Commerce",
     location: "UK",
@@ -112,6 +145,7 @@ export const projects: Project[] = [
     gradient: "from-pink-500/10 to-rose-600/5",
     heroImage: "/images/projects/pinkys-prints/hero.jpg",
     thumbImage: "/images/projects/pinkys-prints/thumb.jpg",
+    imageKind: "cover-card",
     blurDataURL: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAGCAIAAAB1kpiRAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAxUlEQVR4nAG6AEX/AP+t1f/S///B7N+RtKZqhoJTaV85S1ozRmM5TFEsPgD/qdL/w+//qM+bYHx+TGRnOlBWL0JrQVV7SmF7R2QAoGeBcERYeEtgp36RkWp8hWRzeFhoTyk9RyQ6YjdUADslL0YoOV43S/bO4v/w//TO5e7G31k0TUEhOCoXKwAZDReHZYN+WXhbPFqDXYZiQmNrTW1WQWA8Iz0WBR4AGAcSSSk8dkdjo2aKy4GsyH+qpmmQb0JlOB48DwIeljBOWPR4kQUAAAAASUVORK5CYII=",
     credit: "Made by Rhys · ScaleSmiths co-founder",
     portfolioGroup: "client-work",
@@ -119,6 +153,9 @@ export const projects: Project[] = [
   {
     id: 3,
     slug: "csds",
+    websiteUrl: "https://csdshome.com",
+    client: "A computer repair firm in Pennsylvania, USA.",
+    services: ["Website design & build", "Multi-step quote system", "Quote admin panel"],
     name: "CSDS",
     type: "Service Business",
     location: "Pennsylvania, USA",
@@ -144,6 +181,7 @@ export const projects: Project[] = [
     gradient: "from-red-500/10 to-orange-600/5",
     heroImage: "/images/projects/csds/hero.jpg",
     thumbImage: "/images/projects/csds/thumb.jpg",
+    imageKind: "cover-card",
     blurDataURL: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAGCAIAAAB1kpiRAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAxUlEQVR4nAG6AEX/AP+jn//Fu/+0rdqGgaRlYn1LSVw1NFYvLl4zME8qKgD/oZv/trH+nZmnZ2V5REVlODVgOTZpPzx3RUN3QEIAnWBdbT8+cEE+Yjc2jGNhg19fRCMjSiAkYDM4ADUgIEMlJlUsLWE0NvvY2v/y81w0OEojKj8eJigSHAAYDg+AXWl9V2FrSVV6VGZbOkhzVWVTPk05HSkRABEAFwUFSCcqcD5CmFhcyXh8xHV5m1piaDpGNRooDQATqidBHlONUuYAAAAASUVORK5CYII=",
     credit: "Made by Rhys · ScaleSmiths co-founder",
     portfolioGroup: "client-work",
@@ -151,6 +189,9 @@ export const projects: Project[] = [
   {
     id: 4,
     slug: "the-business-circle",
+    websiteUrl: "https://thebusinesscircle.net",
+    client: "A UK founder community that needed its own membership platform.",
+    services: ["SaaS platform", "Subscription billing", "Video integration", "Member management"],
     name: "The Business Circle",
     type: "SaaS Platform",
     location: "UK",
@@ -176,6 +217,7 @@ export const projects: Project[] = [
     gradient: "from-violet-500/10 to-indigo-600/5",
     heroImage: "/images/projects/the-business-circle/hero.jpg",
     thumbImage: "/images/projects/the-business-circle/thumb.jpg",
+    imageKind: "cover-card",
     blurDataURL: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAGCAIAAAB1kpiRAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAxUlEQVR4nAG6AEX/ALiz/9jQ/8jA/5iU2HJtolZTfjw7XDY2Vjk3WzExTwC1r/3Nxv+lnutkYJVPTnlAP2QyMlI4N1xOS3ZPTX8AbWqbSUhtg4KoeXidcG6OZGN/XV54Y2OCLC1PPDtoACUlOC8vSsbF5+3s//j5/+7t/87P9svL8S4uUg8UNAARERtoappTVYZBQ3BjZZ9HSXdUV4M1OWImKU8GCSYACgoaLjBPT0x+aWajiYXQhoTPbmyuSUl/HyFLAgQmf55PpzTt9pEAAAAASUVORK5CYII=",
     credit: "Made by Trev",
     portfolioGroup: "product-platform",
@@ -183,6 +225,9 @@ export const projects: Project[] = [
   {
     id: 5,
     slug: "prymal",
+    websiteUrl: "https://prymal.io",
+    client: "A multi-agent AI operating system for business execution.",
+    services: ["AI SaaS platform", "Workflow orchestration", "Billing & usage", "Admin controls"],
     name: "Prymal",
     type: "AI SaaS Platform",
     location: "UK",
@@ -208,6 +253,7 @@ export const projects: Project[] = [
     gradient: "from-teal-500/10 to-cyan-600/5",
     heroImage: "/images/projects/prymal/hero.jpg",
     thumbImage: "/images/projects/prymal/thumb.jpg",
+    imageKind: "cover-card",
     blurDataURL: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAGCAIAAAB1kpiRAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAxUlEQVR4nAG6AEX/AJXa0Lr//K346nq5r1WIgj1pYiJDQB9CPyNJRBs8OACT1s2x/PGT1s1WiYM4ZF4qU00lRkMuVE81YVw5ZWMAUIF9L1ZSMlpULlRPVXdzSGhjGTY1Fzk3Fjk4Jk1PABMpJhk2NRo/PDBXU7bZ18Hl5SlNTxY5PBAyNQAcJAAADA5Mc3pFbnY4XWVGcH4rT1xEaXQrSlgQMDkABxgAAAoKGTk6NV9gUYKDda6tda+vVYaLNV1mDi05AAAW7Iw/N+zrhtQAAAAASUVORK5CYII=",
     credit: "Made by Rhys · ScaleSmiths co-founder",
     portfolioGroup: "product-platform",
@@ -216,6 +262,9 @@ export const projects: Project[] = [
   {
     id: 6,
     slug: "veteranfinder",
+    websiteUrl: "https://veteranfinder.co.uk",
+    client: "A veteran reconnection and community platform.",
+    services: ["Community platform", "Member & admin apps", "API & realtime services", "Deployment infrastructure"],
     name: "VeteranFinder",
     type: "Community Platform",
     location: "UK",
@@ -241,12 +290,20 @@ export const projects: Project[] = [
     gradient: "from-cyan-400/10 to-amber-200/5",
     heroImage: "/images/projects/veteranfinder/hero.jpg",
     thumbImage: "/images/projects/veteranfinder/thumb.jpg",
+    imageKind: "cover-card",
     blurDataURL: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAGCAIAAAB1kpiRAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAxUlEQVR4nAG6AEX/AJqq9LfH/6S0/3yJzVtpm0JNdi05WCQwUCc1VRwoSACUpvCsvf+RoexKV4s7SHIpNlsgLEsxPWA5R3A5RnYAV2SUMT1gPktxdoKlX2qKZW+LWGF+IixMFSFCKDRfAB0lNxkkQTI9X+/9/+v3/+/9/+Lu/yo3XBAeQQgXNAAKDxxebJlPXI00QW5ZZp8zQW9HVYA7SHAYJUoABSQAAAYYGydHOEVzU1+cbnfCcHjEWmamOER5EiBJAAEjv/BF0IdbfaYAAAAASUVORK5CYII=",
     credit: "Made by Rhys · ScaleSmiths co-founder",
     portfolioGroup: "product-platform",
     repoUrl: "https://github.com/TheFridey/VF",
   },
 ]
+
+export function projectImageAlt(project: Project): string {
+  if (project.imageAlt) return project.imageAlt
+  return project.imageKind === "screenshot"
+    ? `${project.name} ${project.type.toLowerCase()} designed and developed by ScaleSmiths`
+    : `${project.name} case study cover: ${project.type.toLowerCase()} work by ScaleSmiths`
+}
 
 export interface Service {
   tier: string

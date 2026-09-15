@@ -1,21 +1,26 @@
 import Link from "next/link"
 import { ArrowRight, CheckCircle2 } from "lucide-react"
 import { buildLandingPageSchemas, getLandingPageFaqs, landingPages, type LandingPage as LandingPageData } from "@/lib/landing-pages"
-import { projects } from "@/lib/data"
+import { ProjectCard } from "@/components/work/ProjectCard"
+import { caseStudiesForSlugs } from "@/lib/case-studies"
 import { buildLogs } from "@/lib/build-logs"
+import { FounderStrip } from "@/components/FounderStrip"
+import { InsightCard } from "@/components/insights/InsightCard"
+import { JsonLd } from "@/components/JsonLd"
+import { insightsForService } from "@/lib/insights"
+import { siteBaseUrl } from "@/lib/site-identity"
 
 export function LandingPage({ page }: { page: LandingPageData }) {
-  const proofProjects = page.proofLinks
-    .map((slug) => projects.find((project) => project.slug === slug))
-    .filter((project): project is (typeof projects)[number] => Boolean(project))
+  const proofStudies = caseStudiesForSlugs(page.proofLinks)
   const proofLogs = buildLogs.filter((log) => page.buildLogLinks.includes(log.slug))
   const relatedPages = page.relatedPages.map((slug) => landingPages[slug]).filter(Boolean)
-  const schemas = buildLandingPageSchemas(page, process.env.NEXT_PUBLIC_SITE_URL ?? "https://scalesmiths.co.uk")
+  const schemas = buildLandingPageSchemas(page, siteBaseUrl())
+  const articles = insightsForService(`/${page.slug}`)
   const faqs = getLandingPageFaqs(page)
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schemas) }} />
+      <JsonLd data={schemas} />
       <section className="px-6 py-20 md:px-12 md:py-28">
         <div className="mx-auto max-w-[1240px]">
           <div className="max-w-[820px]">
@@ -51,12 +56,31 @@ export function LandingPage({ page }: { page: LandingPageData }) {
         </div>
       </section>
 
+      {page.localContext ? (
+        <section aria-labelledby={`${page.slug}-local`} className="border-y border-b1 bg-s1/50 px-6 py-16 md:px-12">
+          <div className="mx-auto grid max-w-[1240px] gap-8 lg:grid-cols-[.7fr_1.3fr]">
+            <div>
+              <span className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">{page.location}</span>
+              <h2 id={`${page.slug}-local`} className="mt-2 font-syne text-[clamp(26px,3.6vw,38px)] font-extrabold tracking-[-.025em]">{page.localContext.heading}</h2>
+            </div>
+            <div className="grid gap-4">
+              {page.localContext.paragraphs.map((paragraph) => <p key={paragraph} className="font-dm text-base leading-relaxed text-t2">{paragraph}</p>)}
+              <p className="font-dm text-sm text-t3">
+                <Link href="/about" prefetch={false} className="text-t1 underline-offset-4 hover:underline">About ScaleSmiths</Link>
+                {" · "}
+                <Link href="/contact" prefetch={false} className="text-t1 underline-offset-4 hover:underline">Contact the founders</Link>
+              </p>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
       <section className="px-6 py-20 md:px-12">
         <div className="mx-auto grid max-w-[1240px] gap-8 lg:grid-cols-[0.85fr_1.15fr]">
           <div>
             <span className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">Fit signals</span>
             <h2 className="mt-2 max-w-[620px] font-syne text-[clamp(28px,4vw,44px)] font-extrabold tracking-[-0.025em]">
-              The problems this page is built to solve.
+              Signs this is the right service.
             </h2>
           </div>
           <div className="grid gap-3 md:grid-cols-2">
@@ -83,18 +107,8 @@ export function LandingPage({ page }: { page: LandingPageData }) {
               All case studies
             </Link>
           </div>
-          <div className="grid gap-3 md:grid-cols-3">
-            {proofProjects.map((project) => (
-              <Link key={project.slug} href={`/work/${project.slug}`} prefetch={false} className="rounded-2xl border border-b1 bg-s1 p-6 transition-colors hover:border-b2">
-                <h3 className="font-syne text-xl font-bold">{project.name}</h3>
-                <p className="mt-2 font-dm text-sm leading-relaxed text-t2">{project.headline}</p>
-                <div className="mt-5 flex flex-wrap gap-1.5">
-                  {project.tags.slice(0, 4).map((tag) => (
-                    <span key={tag} className="rounded border border-b1 bg-s2 px-2 py-1 font-dm text-[11px] text-t2">{tag}</span>
-                  ))}
-                </div>
-              </Link>
-            ))}
+          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+            {proofStudies.map((study) => <ProjectCard key={study.slug} study={study} size="compact" />)}
           </div>
         </div>
       </section>
@@ -122,7 +136,9 @@ export function LandingPage({ page }: { page: LandingPageData }) {
             <div className="mt-8 space-y-3">
               {proofLogs.map((log) => (
                 <article key={log.slug} className="rounded-2xl border border-b1 bg-s1 p-5">
-                  <h3 className="font-syne text-lg font-bold">{log.title}</h3>
+                  <h3 className="font-syne text-lg font-bold">
+                    <Link href={`/work/${log.slug}`} prefetch={false} className="hover:text-acc">{log.title}</Link>
+                  </h3>
                   <p className="mt-2 font-dm text-sm leading-relaxed text-t2">{log.summary}</p>
                 </article>
               ))}
@@ -155,6 +171,23 @@ export function LandingPage({ page }: { page: LandingPageData }) {
         </div>
       </section>
 
+      <FounderStrip
+        headingId={`${page.slug}-founders`}
+        intro={page.localContext
+          ? "ScaleSmiths is run by its two founders from Hucknall, Nottinghamshire. The people who scope your project are the people who design, build and support it."
+          : "ScaleSmiths is founder-led and works with businesses across the UK from Hucknall, Nottinghamshire. There is no hand-off from sales to an outsourced team."}
+      />
+
+      {articles.length > 0 ? (
+        <section aria-labelledby={`${page.slug}-reading`} className="px-6 pb-20 md:px-12">
+          <div className="mx-auto max-w-[1240px]">
+            <h2 id={`${page.slug}-reading`} className="font-syne text-[clamp(26px,3.6vw,38px)] font-extrabold tracking-[-.025em]">Further reading from the founders</h2>
+            <div className="mt-8 grid gap-4 md:grid-cols-3">
+              {articles.map((insight) => <InsightCard key={insight.slug} insight={insight} />)}
+            </div>
+          </div>
+        </section>
+      ) : null}
       <section className="px-6 py-20 md:px-12">
         <div className="mx-auto grid max-w-[1240px] gap-4 lg:grid-cols-[0.8fr_1.2fr]">
           <div>

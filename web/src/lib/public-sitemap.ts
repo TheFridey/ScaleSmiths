@@ -1,10 +1,12 @@
 import type { MetadataRoute } from "next"
 import { buildLogs } from "./build-logs"
+import { founders } from "./founders"
+import { publishedInsights } from "./insights"
 import { projects } from "./data"
 import { landingPages } from "./landing-pages"
 import { legalSitemapEntries } from "./legal"
 
-export const PUBLIC_CONTENT_LAST_MODIFIED_ISO = "2026-08-25T00:00:00.000Z"
+export const PUBLIC_CONTENT_LAST_MODIFIED_ISO = "2026-09-15T00:00:00.000Z"
 
 export function buildPublicSitemap(siteUrl = "https://scalesmiths.co.uk"): MetadataRoute.Sitemap {
   const base = siteUrl.replace(/\/$/, "")
@@ -19,6 +21,8 @@ export function buildPublicSitemap(siteUrl = "https://scalesmiths.co.uk"): Metad
     { url: `${base}/local-growth`, lastModified: lastModified(), changeFrequency: "monthly", priority: 0.9 },
     { url: `${base}/custom-systems`, lastModified: lastModified(), changeFrequency: "monthly", priority: 0.9 },
     { url: `${base}/about`,       lastModified: lastModified(), changeFrequency: "monthly", priority: 0.8 },
+    ...founders.map((founder) => ({ url: `${base}/about/${founder.slug}`, lastModified: lastModified(), changeFrequency: "monthly" as const, priority: 0.7 })),
+    { url: `${base}/contact`,     lastModified: lastModified(), changeFrequency: "yearly", priority: 0.6 },
     { url: `${base}/pricing`,     lastModified: lastModified(), changeFrequency: "monthly", priority: 0.8 },
     { url: `${base}/digital-growth-partnership`, lastModified: lastModified(), changeFrequency: "monthly", priority: 0.9 },
     { url: `${base}/quote`,       lastModified: lastModified(), changeFrequency: "yearly", priority: 0.7 },
@@ -35,6 +39,14 @@ export function buildPublicSitemap(siteUrl = "https://scalesmiths.co.uk"): Metad
       lastModified: lastModified(),
       changeFrequency: "monthly" as const,
       priority: 0.8,
+    })),
+    // The insights hub is only listed once it has published articles; drafts are never listed.
+    ...(publishedInsights().length ? [{ url: `${base}/insights`, lastModified: lastModified(), changeFrequency: "weekly" as const, priority: 0.7 }] : []),
+    ...publishedInsights().map((insight) => ({
+      url: `${base}/insights/${insight.slug}`,
+      lastModified: new Date(`${insight.dateModified ?? insight.datePublished}T00:00:00.000Z`),
+      changeFrequency: "yearly" as const,
+      priority: 0.7,
     })),
     ...buildLogs.map((log) => ({
       url: `${base}/work/${log.slug}`,

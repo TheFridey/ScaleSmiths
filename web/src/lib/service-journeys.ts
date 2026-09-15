@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { buildPageMetadata } from "./page-metadata"
 import { projects, type Project } from "./data"
 
 export type ServiceJourneySlug = "local-growth" | "custom-systems"
@@ -107,12 +108,10 @@ export function metadataForServiceJourney(journey: ServiceJourney): Metadata {
   const title = journey.slug === "local-growth"
     ? "Local Business Growth Websites & Support"
     : "Custom Systems, SaaS & AI Engineering"
-  return {
-    title,
-    description: journey.description,
-    alternates: { canonical: `/${journey.slug}` },
-    openGraph: { title: `${title} | ScaleSmiths`, description: journey.description, url: `/${journey.slug}` },
-  }
+  const description = journey.slug === "local-growth"
+    ? "Websites, local search and ongoing improvement for trades, clinics and service businesses that need to be easier to find, trust and contact."
+    : "Portals, e-commerce, SaaS, automation and integrations engineered for real operational complexity by a founder-led UK team."
+  return buildPageMetadata({ title, description, path: `/${journey.slug}` })
 }
 
 export function buildServiceJourneySchemas(journey: ServiceJourney, siteUrl = "https://scalesmiths.co.uk") {

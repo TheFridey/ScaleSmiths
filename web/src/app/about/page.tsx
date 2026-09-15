@@ -2,22 +2,33 @@ import Link from "next/link"
 import { ArrowRight, ChevronRight, MapPin } from "lucide-react"
 import { AnimateIn } from "@/components/AnimateIn"
 import { FounderCard } from "@/components/FounderCard"
-import {
-  aboutMetadata,
-  approachPillars,
-  buildAboutSchemas,
-  founders,
-  originStatements,
-} from "@/lib/founders"
+import { JsonLd } from "@/components/JsonLd"
+import { aboutMetadata, approachPillars, founders, originStatements } from "@/lib/founders"
+import { siteBaseUrl } from "@/lib/site-identity"
+import { buildAboutSchemas } from "@/lib/structured-data"
 
 export const metadata = aboutMetadata
 
+const whatWeBuild = [
+  { title: "Local growth websites", description: "Search-led sites that turn local demand into enquiries and bookings.", href: "/local-growth" },
+  { title: "E-commerce", description: "Custom storefronts and admin tooling when templates no longer fit the workflow.", href: "/e-commerce-development-nottingham" },
+  { title: "Custom systems and SaaS", description: "Web applications, portals, billing, automation and production infrastructure.", href: "/custom-systems" },
+  { title: "Ongoing improvement", description: "A scoped Digital Growth Partnership once the work is live.", href: "/digital-growth-partnership" },
+]
+
+const relationshipModel = [
+  { title: "A founder conversation first", description: "The first call is with the people who will shape and deliver the work, not a sales intermediary." },
+  { title: "Commercial and technical scoping together", description: "Trevor frames the commercial priorities; Rhys frames the technical approach, risks and delivery." },
+  { title: "Delivery by the people who scoped it", description: "No hand-off from sales to an account manager to an outsourced developer." },
+  { title: "Continuity after launch", description: "Where a Digital Growth Partnership continues the work, the roadmap stays with the same founders." },
+]
+
 export default function AboutPage() {
-  const schemas = buildAboutSchemas(process.env.NEXT_PUBLIC_SITE_URL)
+  const schemas = buildAboutSchemas(siteBaseUrl())
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schemas) }} />
+      <JsonLd data={schemas} />
 
       <section className="px-6 pb-14 pt-10 md:px-12 md:pb-20 md:pt-14">
         <div className="mx-auto max-w-[1240px]">
@@ -102,7 +113,44 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section aria-labelledby="about-approach" className="border-y border-b1 bg-s1/60 px-6 py-16 md:px-12 md:py-20">
+      <section aria-labelledby="about-builds" className="px-6 pb-16 md:px-12 md:pb-24">
+        <div className="mx-auto grid max-w-[1240px] gap-10 lg:grid-cols-2">
+          <div>
+            <span className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">What we build</span>
+            <h2 id="about-builds" className="mt-2 font-syne text-[clamp(28px,4vw,42px)] font-extrabold tracking-[-.03em]">Websites, platforms and the systems behind them.</h2>
+            <ul className="mt-6 grid gap-2">
+              {whatWeBuild.map((item) => (
+                <li key={item.href}>
+                  <Link href={item.href} prefetch={false} className="group flex items-start justify-between gap-4 rounded-xl border border-b1 bg-s1 p-4 transition-colors hover:border-b2">
+                    <span>
+                      <span className="block font-syne text-base font-bold">{item.title}</span>
+                      <span className="mt-1 block font-dm text-sm leading-relaxed text-t2">{item.description}</span>
+                    </span>
+                    <ArrowRight size={15} aria-hidden="true" className="mt-1 shrink-0 text-t3 transition-transform group-hover:translate-x-1 group-hover:text-acc" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <span className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">How clients work with us</span>
+            <h2 className="mt-2 font-syne text-[clamp(28px,4vw,42px)] font-extrabold tracking-[-.03em]">Founder-led from first call to ongoing roadmap.</h2>
+            <ol className="mt-6 grid gap-3">
+              {relationshipModel.map((step, index) => (
+                <li key={step.title} className="grid grid-cols-[36px_1fr] gap-3 border-t border-b1 pt-4">
+                  <span className="font-syne text-sm font-bold text-acc">0{index + 1}</span>
+                  <span>
+                    <span className="block font-syne text-base font-bold">{step.title}</span>
+                    <span className="mt-1 block font-dm text-sm leading-relaxed text-t2">{step.description}</span>
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="about-approach"className="border-y border-b1 bg-s1/60 px-6 py-16 md:px-12 md:py-20">
         <div className="mx-auto max-w-[1240px]">
           <div className="max-w-3xl">
             <span className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">The approach</span>

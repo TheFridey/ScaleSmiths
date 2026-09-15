@@ -10,9 +10,25 @@ import {
   normalizeStoredPreference,
 } from "@/lib/experience-experiment"
 
+const homeDescription =
+  "Websites, custom systems and ongoing digital growth from a founder-led team in Hucknall, Nottinghamshire, working with businesses across the UK."
+
 export const metadata: Metadata = {
+  description: homeDescription,
   alternates: { canonical: "/" },
-  openGraph: { url: "/" },
+  openGraph: {
+    type: "website",
+    locale: "en_GB",
+    siteName: "ScaleSmiths",
+    url: "/",
+    title: "ScaleSmiths | Forge Your Digital Edge",
+    description: homeDescription,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "ScaleSmiths | Forge Your Digital Edge",
+    description: homeDescription,
+  },
 }
 
 export default async function HomePage() {

@@ -2,11 +2,12 @@ import { describe, expect, it } from "vitest"
 import {
   aboutMetadata,
   approachPillars,
-  buildAboutSchemas,
   founderBySlug,
   founderFocusAreas,
   founderForProject,
   founderLinks,
+  founderProfileHref,
+  founderProfileMetadata,
   founderProjects,
   founders,
   originStatements,
@@ -18,6 +19,8 @@ const publishedCopy = [
   ...founders.flatMap((founder) => [
     founder.name,
     founder.role.text,
+    founder.summary.text,
+    founder.authorTitle,
     ...founder.responsibilities.map((item) => item.text),
     ...founder.involvement.map((item) => item.text),
   ]),
@@ -36,7 +39,7 @@ describe("founder data source", () => {
 
   it("cites repository evidence for every published statement", () => {
     for (const founder of founders) {
-      const statements = [founder.role, ...founder.responsibilities, ...founder.involvement]
+      const statements = [founder.role, founder.summary, ...founder.responsibilities, ...founder.involvement]
       for (const statement of statements) {
         expect(statement.text.length).toBeGreaterThan(0)
         expect(statement.evidence).toMatch(/^(web|admin|docs|scripts)\//)
@@ -81,8 +84,44 @@ describe("founder data source", () => {
   })
 
   it("publishes complementary commercial and technical focus areas", () => {
-    expect(founderFocusAreas(founderBySlug("rhys")!)).toContain("Engineering")
-    expect(founderFocusAreas(founderBySlug("trevor-newton-bradley")!)).toContain("Commercial growth")
+    expect(founderFocusAreas(founderBySlug("rhys")!)).toEqual(expect.arrayContaining(["Technical leadership", "Software engineering", "Architecture"]))
+    expect(founderFocusAreas(founderBySlug("trevor-newton-bradley")!)).toEqual(expect.arrayContaining(["Commercial growth", "Client relationships", "Sales"]))
+  })
+
+  it("gives each founder a byline title", () => {
+    expect(founderBySlug("rhys")?.authorTitle).toBe("Co-founder & Technical Lead")
+    expect(founderBySlug("trevor-newton-bradley")?.authorTitle).toBe("Co-founder & Commercial Lead")
+  })
+
+  it("links each founder to related services that exist in the public site", () => {
+    for (const founder of founders) {
+      expect(founder.relatedServices.length).toBeGreaterThan(0)
+      for (const service of founder.relatedServices) expect(service.href).toMatch(/^\/[a-z0-9/-]+$/)
+    }
+  })
+})
+
+describe("founder profile routes and metadata", () => {
+  it("gives each founder a canonical profile route", () => {
+    expect(founders.map(founderProfileHref)).toEqual(["/about/rhys", "/about/trevor-newton-bradley"])
+  })
+
+  it("publishes complete, founder-specific social metadata", () => {
+    for (const founder of founders) {
+      const metadata = founderProfileMetadata(founder)
+      expect(metadata.alternates?.canonical).toBe(founderProfileHref(founder))
+      expect(metadata.openGraph?.url).toBe(founderProfileHref(founder))
+      expect(String(metadata.openGraph?.title)).toContain(founder.name)
+      expect(String(metadata.description)).toContain(founder.name)
+      expect(String(metadata.description)).toContain("Hucknall, Nottinghamshire")
+      expect(String(metadata.description).length).toBeLessThanOrEqual(160)
+    }
+  })
+
+  it("keeps the about page canonical and titled for founders", () => {
+    expect(aboutMetadata.alternates?.canonical).toBe("/about")
+    expect(aboutMetadata.openGraph?.url).toBe("/about")
+    expect(String(aboutMetadata.title)).toMatch(/founders/i)
   })
 })
 
@@ -111,58 +150,5 @@ describe("founder contact links", () => {
     for (const value of ["http://example.com", "not a url", "//example.com"]) {
       expect(founderLinks(rhys, { NEXT_PUBLIC_FOUNDER_RHYS_GITHUB: value })).toEqual([])
     }
-  })
-})
-
-describe("about page metadata and structured data", () => {
-  it("declares a canonical /about route", () => {
-    expect(aboutMetadata.alternates?.canonical).toBe("/about")
-    expect(aboutMetadata.openGraph?.url).toBe("/about")
-    expect(String(aboutMetadata.title)).toMatch(/founders/i)
-  })
-
-  it("publishes AboutPage, Organization, Person and breadcrumb entities", () => {
-    const schemas = buildAboutSchemas("https://scalesmiths.co.uk/", {})
-    const types = schemas.map((schema) => JSON.stringify(schema["@type"]))
-
-    expect(types).toContain('"AboutPage"')
-    expect(types).toContain('["Organization","ProfessionalService"]')
-    expect(types.filter((type) => type === '"Person"')).toHaveLength(founders.length)
-    expect(types).toContain('"BreadcrumbList"')
-  })
-
-  it("links people to the shared organisation identifier consistently", () => {
-    const schemas = buildAboutSchemas("https://scalesmiths.co.uk", {})
-    const organisation = schemas.find((schema) => String(JSON.stringify(schema["@type"])).includes("Organization")) as Record<string, unknown>
-    const people = schemas.filter((schema) => schema["@type"] === "Person") as Array<Record<string, unknown>>
-
-    expect(organisation["@id"]).toBe("https://scalesmiths.co.uk/#org")
-    expect(organisation.founder).toEqual([
-      { "@id": "https://scalesmiths.co.uk/about#rhys" },
-      { "@id": "https://scalesmiths.co.uk/about#trevor-newton-bradley" },
-    ])
-    for (const person of people) {
-      expect(person.worksFor).toEqual({ "@id": "https://scalesmiths.co.uk/#org" })
-      expect(String(person["@id"])).toMatch(/^https:\/\/scalesmiths\.co\.uk\/about#/)
-      expect(person.sameAs).toBeUndefined()
-    }
-  })
-
-  it("only advertises configured https profiles as sameAs", () => {
-    const schemas = buildAboutSchemas("https://scalesmiths.co.uk", {
-      NEXT_PUBLIC_FOUNDER_RHYS_GITHUB: "https://github.com/TheFridey",
-      NEXT_PUBLIC_FOUNDER_RHYS_EMAIL_URL: "mailto:hello@scalesmiths.co.uk",
-    })
-    const rhys = schemas.find((schema) => schema["@id"] === "https://scalesmiths.co.uk/about#rhys") as Record<string, unknown>
-
-    expect(rhys.sameAs).toEqual(["https://github.com/TheFridey"])
-  })
-
-  it("records the Hucknall founding location", () => {
-    const schemas = buildAboutSchemas("https://scalesmiths.co.uk", {})
-    const organisation = schemas.find((schema) => String(JSON.stringify(schema["@type"])).includes("Organization")) as Record<string, unknown>
-
-    expect(JSON.stringify(organisation.foundingLocation)).toContain("Hucknall")
-    expect(JSON.stringify(organisation.foundingLocation)).toContain("Nottinghamshire")
   })
 })

@@ -1,3 +1,5 @@
+import { organizationReference } from "./site-identity"
+
 export const businessGrowthAudit = {
   name: "ScaleSmiths Business Growth Audit",
   shortName: "Business Growth Audit",
@@ -36,7 +38,7 @@ export function formatAuditPrice(minor = businessGrowthAudit.priceMinor) { retur
 export function buildBusinessGrowthAuditSchema(baseUrl = "https://scalesmiths.co.uk") {
   const base = baseUrl.replace(/\/$/, "")
   return [
-    { "@context": "https://schema.org", "@type": "Service", name: businessGrowthAudit.name, description: "A business-wide assessment of digital presence, customer journey, systems and growth opportunities, delivered with a prioritised roadmap.", provider: { "@type": "Organization", name: "ScaleSmiths", url: base }, url: `${base}${businessGrowthAudit.slug}`, offers: { "@type": "Offer", price: businessGrowthAudit.priceMinor / 100, priceCurrency: businessGrowthAudit.currency, description: "One-time Business Growth Audit" } },
+    { "@context": "https://schema.org", "@type": "Service", name: businessGrowthAudit.name, description: "A business-wide assessment of digital presence, customer journey, systems and growth opportunities, delivered with a prioritised roadmap.", provider: organizationReference(base), url: `${base}${businessGrowthAudit.slug}`, offers: { "@type": "Offer", price: businessGrowthAudit.priceMinor / 100, priceCurrency: businessGrowthAudit.currency, description: "One-time Business Growth Audit" } },
     { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: businessGrowthAudit.faq.map(({ q, a }) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })) },
   ]
 }

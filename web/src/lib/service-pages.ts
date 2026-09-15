@@ -1,4 +1,5 @@
 import { businessGrowthAudit, formatAuditPrice } from "./business-growth-audit"
+import { organizationReference } from "./site-identity"
 
 export const serviceHubItems = [
   {
@@ -87,6 +88,7 @@ export const pricingItems = [
 ]
 
 export function buildServiceHubSchema(baseUrl = "https://scalesmiths.co.uk") {
+  const provider = organizationReference(baseUrl.replace(/\/$/, ""))
   return {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
@@ -96,37 +98,32 @@ export function buildServiceHubSchema(baseUrl = "https://scalesmiths.co.uk") {
       "@type": "Service",
       name: item.title,
       description: item.outcome,
-      provider: { "@type": "Organization", name: "ScaleSmiths", url: baseUrl },
+      provider,
     })), {
       "@type": "Service",
       name: managedBusinessEmailService.title,
       description: managedBusinessEmailService.description,
-      provider: { "@type": "Organization", name: "ScaleSmiths", url: baseUrl },
+      provider,
     }, {
       "@type": "Service",
       name: businessGrowthAuditService.title,
       description: businessGrowthAuditService.description,
-      provider: { "@type": "Organization", name: "ScaleSmiths", url: baseUrl },
+      provider,
     }],
   }
 }
 
+export const pricingFaqs = [
+  { q: "How much does a ScaleSmiths project cost?", a: "Projects are scoped by business outcome and complexity. Any current verified guidance appears in the pricing cards; the final price follows a project-specific proposal." },
+  { q: "Do you offer a Digital Growth Partnership?", a: "Yes. A Digital Growth Partnership is a scoped, prioritised relationship for continued improvement. It can begin with an existing digital estate or continue after a ScaleSmiths build." },
+] as const
+
+/** FAQPage mirrors the questions rendered visibly on /pricing; keep both in this one array. */
 export function buildPricingSchema(baseUrl = "https://scalesmiths.co.uk") {
   return {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    mainEntity: [
-      {
-        "@type": "Question",
-        name: "How much does a ScaleSmiths project cost?",
-        acceptedAnswer: { "@type": "Answer", text: "Projects are scoped by business outcome and complexity. Any current verified guidance appears in the pricing cards; the final price follows a project-specific proposal." },
-      },
-      {
-        "@type": "Question",
-        name: "Do you offer a Digital Growth Partnership?",
-        acceptedAnswer: { "@type": "Answer", text: "Yes. A Digital Growth Partnership is a scoped, prioritised relationship for continued improvement. It can begin with an existing digital estate or continue after a ScaleSmiths build." },
-      },
-    ],
+    mainEntity: pricingFaqs.map((faq) => ({ "@type": "Question", name: faq.q, acceptedAnswer: { "@type": "Answer", text: faq.a } })),
     url: `${baseUrl}/pricing`,
   }
 }

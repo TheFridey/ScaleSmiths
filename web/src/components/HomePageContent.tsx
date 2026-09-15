@@ -1,6 +1,9 @@
+import { ClientTrustStrip } from "@/components/ClientTrustStrip"
 import { CTA } from "@/components/CTA"
 import { FAQ } from "@/components/FAQ"
+import { FeaturedCaseStudy } from "@/components/FeaturedCaseStudy"
 import { FitSection } from "@/components/FitSection"
+import { FoundersSection } from "@/components/FoundersSection"
 import { Hero } from "@/components/Hero"
 import { DigitalEstate } from "@/components/DigitalEstate"
 import { ClientPortalSection } from "@/components/ClientPortalSection"
@@ -29,19 +32,24 @@ export async function HomePageContent() {
     .filter((claim) => claim.attributionName && claim.attributionBusiness)
     .map((claim) => ({ id: claim.id, quote: claim.approvedWording, name: claim.attributionName as string, business: claim.attributionBusiness as string }))
 
+  // Proof-first order: who we build for and what we built, then what we offer, who does the
+  // work, how it runs, and the ongoing relationship.
   return (
     <>
       <Hero verifiedStats={heroStats} />
-      <ServiceRouteChooser compact />
+      <ClientTrustStrip />
       <Portfolio limit={2} />
-      <BuildProofBlocks />
-      <EntryProducts />
-      <Testimonials testimonials={testimonials} />
+      <ServiceRouteChooser compact />
       <Services claims={serviceClaims} />
+      <EntryProducts />
+      <FoundersSection />
+      <Testimonials testimonials={testimonials} />
+      <FeaturedCaseStudy />
+      <BuildProofBlocks />
+      <Process verifiedDeliveryClaim={processClaims.get("process.built-on-time")?.approvedWording} />
       <DigitalEstate />
       <ClientPortalSection />
       <FitSection />
-      <Process verifiedDeliveryClaim={processClaims.get("process.built-on-time")?.approvedWording} />
       <FAQ items={faqs.map((faq) => faq.q === "How much does a website cost?"
         ? { ...faq, a: verifiedPricingAnswer(faqClaims) }
         : faq.q === "How long does a project take?"

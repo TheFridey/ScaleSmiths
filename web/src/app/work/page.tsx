@@ -5,14 +5,14 @@ import { Portfolio } from "@/components/Portfolio"
 import { AnimateIn } from "@/components/AnimateIn"
 import { CTA } from "@/components/CTA"
 import { buildLogs } from "@/lib/build-logs"
+import { buildPageMetadata } from "@/lib/page-metadata"
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: "Web Design & Development Case Studies",
   description:
     "ScaleSmiths web design and development case studies across local SEO, lead generation, e-commerce, SaaS, AI platforms and custom business systems.",
-  alternates: { canonical: "/work" },
-  openGraph: { url: "/work" },
-}
+  path: "/work",
+})
 
 export default function WorkPage() {
   return (
@@ -21,10 +21,10 @@ export default function WorkPage() {
         <AnimateIn>
           <span className="font-dm text-xs text-acc tracking-[.14em] font-semibold uppercase">Work / Build Logs</span>
           <h1 className="font-syne text-[clamp(32px,5.5vw,60px)] font-extrabold tracking-[-0.025em] mt-2">
-            Proof without theatre.
+            Here is what we actually built.
           </h1>
-          <p className="font-dm text-base text-t2 leading-relaxed mt-3 max-w-[540px]">
-            Honest build logs from the ScaleSmiths platform and selected project work. No fake revenue claims, no invented testimonials.
+          <p className="font-dm text-base text-t2 leading-relaxed mt-3 max-w-[620px]">
+            Real businesses and platforms, the scope delivered for each, and the engineering notes behind the work. No fake revenue claims, no invented testimonials.
           </p>
         </AnimateIn>
       </div>
@@ -43,7 +43,7 @@ export default function WorkPage() {
                 <span className="inline-flex items-center gap-2 font-dm text-[11px] font-semibold uppercase tracking-[.14em] text-acc"><Terminal size={13} aria-hidden="true" />{log.status}</span>
                 <span className="font-dm text-[11px] text-t3">{log.system}</span>
               </div>
-              <h2 className="font-syne text-2xl font-bold">{log.title}</h2>
+              <h3 className="font-syne text-2xl font-bold">{log.title}</h3>
               <p className="mt-3 font-dm text-sm leading-relaxed text-t2">{log.summary}</p>
               <div className="mt-6 flex flex-wrap gap-1.5">{log.tags.slice(0, 3).map((tag) => <span key={tag} className="font-dm text-[11px] text-t3">#{tag.replaceAll(" ", "-").toLowerCase()}</span>)}</div>
               <span className="mt-6 inline-flex items-center gap-2 font-dm text-sm font-medium text-t2 transition-colors group-hover:text-t1">

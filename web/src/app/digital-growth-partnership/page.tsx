@@ -3,6 +3,7 @@ import Link from "next/link"
 import { ArrowRight, BarChart3, CheckCircle2, Search, ShieldCheck, Wrench } from "lucide-react"
 import { AnimateIn } from "@/components/AnimateIn"
 import { CTA } from "@/components/CTA"
+import { organizationReference } from "@/lib/site-identity"
 
 export const metadata: Metadata = {
   title: "Digital Growth Partnership",
@@ -37,7 +38,7 @@ export default function DigitalGrowthPartnershipPage() {
       name: "Digital Growth Partnership",
       serviceType: "Ongoing digital growth, SEO, conversion optimisation and web development",
       url: `${baseUrl}/digital-growth-partnership`,
-      provider: { "@type": "Organization", "@id": `${baseUrl}/#org`, name: "ScaleSmiths" },
+      provider: organizationReference(baseUrl),
       areaServed: ["Nottingham", "Nottinghamshire", "United Kingdom"],
       description: metadata.description,
     },

@@ -1,6 +1,6 @@
 # ScaleSmiths
 
-> ScaleSmiths is a founder-led business growth and engineering company based in Hucknall, Nottingham. We identify what is holding a business back, build the right digital solution, and can remain involved through a scoped Digital Growth Partnership.
+> ScaleSmiths is a founder-led business growth and engineering company based in Hucknall, Nottinghamshire. We identify what is holding a business back, build the right digital solution, and can remain involved through a scoped Digital Growth Partnership.
 
 ## What ScaleSmiths is
 
@@ -24,8 +24,13 @@ ScaleSmiths is strategy-led. Work spans conversion-focused websites, local SEO a
 
 - [Home](https://scalesmiths.co.uk/): Overview and positioning.
 - [Services](https://scalesmiths.co.uk/services): Web design, development, e-commerce, AI and automation.
+- [Web design in Nottingham](https://scalesmiths.co.uk/web-design-nottingham) and [in Hucknall](https://scalesmiths.co.uk/web-design-hucknall): Local website design with Nottinghamshire case studies.
 - [Work](https://scalesmiths.co.uk/work): Case studies and build logs.
-- [Pricing](https://scalesmiths.co.uk/pricing): Packages from £4,500.
+- [About & founders](https://scalesmiths.co.uk/about): Who runs ScaleSmiths and how clients work with them.
+- [Rhys](https://scalesmiths.co.uk/about/rhys): Co-founder — technical leadership, engineering and delivery.
+- [Trevor Newton-Bradley](https://scalesmiths.co.uk/about/trevor-newton-bradley): Co-founder — commercial growth and client relationships.
+- [Contact](https://scalesmiths.co.uk/contact): Enquiry routes and business details.
+- [Pricing](https://scalesmiths.co.uk/pricing): How projects and ongoing work are scoped and priced.
 - [Digital Growth Partnership](https://scalesmiths.co.uk/digital-growth-partnership): Direct-entry ongoing growth and engineering support.
 - [Get a quote](https://scalesmiths.co.uk/quote): Start a project.
 

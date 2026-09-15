@@ -1,201 +1,86 @@
 /* eslint-disable @next/next/no-html-link-for-pages */
 import type { Metadata } from "next"
-import { notFound }  from "next/navigation"
-import Image         from "next/image"
-import Link          from "next/link"
-import { ArrowLeft, ArrowRight, CheckCircle2, ExternalLink } from "lucide-react"
+import { notFound } from "next/navigation"
+import Link from "next/link"
+import type { ReactNode } from "react"
+import { ArrowLeft, ArrowRight, ArrowUpRight, ChevronRight } from "lucide-react"
 import { AnimateIn } from "@/components/AnimateIn"
-import { CTA }       from "@/components/CTA"
-import { Project, projects }  from "@/lib/data"
+import { ClientLogo } from "@/components/ClientLogo"
+import { CTA } from "@/components/CTA"
+import { JsonLd } from "@/components/JsonLd"
+import { BeforeAfterComparison, type ComparisonView } from "@/components/work/BeforeAfterComparison"
+import { CaseStudyResults, ClientQuote, hasResults } from "@/components/work/CaseStudyResults"
+import { CaseStudyGallery, ResponsiveShowcase, hasGalleryShots, hasResponsiveShots } from "@/components/work/CaseStudyVisuals"
+import { ProjectCard } from "@/components/work/ProjectCard"
+import { ProjectScreenshot, hostFromUrl, isDevelopment } from "@/components/work/ProjectScreenshot"
 import { getBuildLog, type BuildLog } from "@/lib/build-logs"
-import { founderForProject } from "@/lib/founders"
-import { publicClaimMap, type PublicClaim } from "@/lib/public-claims"
+import { getCaseStudy, primaryImage, relatedCaseStudies, relatedServicesForCaseStudy, type CaseStudy } from "@/lib/case-studies"
+import { resolveClientQuote, resolveOutcomes, resolveVerifiedMetrics } from "@/lib/case-study-metrics"
+import { logoForProject } from "@/lib/client-proof"
+import { founderProfileHref } from "@/lib/founders"
+import { InsightCard } from "@/components/insights/InsightCard"
+import { insightsForCaseStudy } from "@/lib/insights"
+import { buildPageMetadata } from "@/lib/page-metadata"
+import { publicClaimMap } from "@/lib/public-claims"
 import { getVerifiedPublicClaims } from "@/lib/public-claims.server"
+import { SITE_NAME, organizationId, siteBaseUrl } from "@/lib/site-identity"
+import { buildBreadcrumbSchema, buildCaseStudySchemas } from "@/lib/structured-data"
+import { SHOT_ASPECT, findShot } from "@/lib/work-media"
 
 interface Props { params: Promise<{ slug: string }> }
 export const dynamic = "force-dynamic"
-
-function ProjectShowcase({ project }: { project: Project }) {
-  const hasScreenshots = Boolean(project.screenshots?.length)
-
-  return (
-    <AnimateIn delay={0.12} className="mb-20">
-      <div
-        className="relative aspect-video overflow-hidden rounded-2xl border border-b1 bg-s1"
-        style={{
-          backgroundImage: `
-            radial-gradient(circle at 18% 16%, ${project.accentColor}33, transparent 28%),
-            radial-gradient(circle at 82% 24%, ${project.accentColor}22, transparent 24%),
-            radial-gradient(circle at 48% 88%, ${project.accentColor}26, transparent 34%),
-            linear-gradient(135deg, rgba(255,255,255,0.055), rgba(255,255,255,0.01) 44%, rgba(0,0,0,0.22))
-          `,
-        }}
-      >
-        <div
-          className="absolute inset-x-0 top-0 h-28"
-          style={{ background: `linear-gradient(180deg, ${project.accentColor}22, transparent)` }}
-          aria-hidden="true"
-        />
-
-        {project.heroImage ? (
-          <div className="relative z-10 h-full">
-            <Image
-              src={project.heroImage}
-              alt={`${project.name} project showcase`}
-              fill
-              sizes="(min-width: 768px) 90vw, 100vw"
-              priority
-              placeholder={project.blurDataURL ? "blur" : "empty"}
-              blurDataURL={project.blurDataURL}
-              className="object-cover"
-            />
-            <div
-              className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-white/5"
-              aria-hidden="true"
-            />
-            <span className="absolute left-5 top-5 rounded-full border border-white/15 bg-black/30 px-3 py-1 font-dm text-xs font-semibold text-white/80 backdrop-blur md:left-8 md:top-8">
-              {project.name}
-            </span>
-          </div>
-        ) : hasScreenshots ? (
-          <div className="relative z-10 grid h-full gap-4 p-4 md:grid-cols-[1.45fr_0.8fr] md:p-8">
-            {project.screenshots?.slice(0, 3).map((src, index) => (
-              <div
-                key={src}
-                className={index === 0 ? "relative overflow-hidden rounded-xl border border-white/10 bg-black/20 md:row-span-2" : "relative overflow-hidden rounded-xl border border-white/10 bg-black/20"}
-              >
-                <Image
-                  src={src}
-                  alt={`${project.name} screenshot ${index + 1}`}
-                  fill
-                  sizes={index === 0 ? "(min-width: 768px) 60vw, 100vw" : "(min-width: 768px) 30vw, 100vw"}
-                  className="object-cover"
-                />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="relative z-10 flex h-full items-center justify-center p-5 md:p-10">
-            <div className="absolute inset-0 flex items-center justify-center overflow-hidden" aria-hidden="true">
-              <span className="font-syne text-[clamp(64px,15vw,190px)] font-extrabold leading-none tracking-[-0.05em] text-white opacity-[0.06]">
-                {project.name}
-              </span>
-            </div>
-
-            <div className="grid w-full max-w-[980px] grid-cols-[1fr_0.72fr] gap-4 md:gap-6">
-              <div className="overflow-hidden rounded-xl border border-white/10 bg-black/30 shadow-2xl backdrop-blur">
-                <div className="flex h-9 items-center gap-2 border-b border-white/10 bg-white/[0.04] px-4">
-                  <span className="h-2.5 w-2.5 rounded-full bg-red/80" />
-                  <span className="h-2.5 w-2.5 rounded-full bg-amb/80" />
-                  <span className="h-2.5 w-2.5 rounded-full bg-grn/80" />
-                  <span className="ml-3 h-3 w-28 rounded-full bg-white/10" />
-                </div>
-                <div className="space-y-4 p-5">
-                  <div className="h-5 w-36 rounded-full" style={{ background: project.accentColor }} />
-                  <div className="grid grid-cols-3 gap-3">
-                    {[0.7, 0.45, 0.58].map((opacity, index) => (
-                      <div key={index} className="h-20 rounded-lg border border-white/10 bg-white/[0.035] p-3">
-                        <div className="mb-4 h-2 w-12 rounded-full bg-white/15" />
-                        <div className="h-6 rounded-md" style={{ background: `${project.accentColor}${Math.round(opacity * 255).toString(16).padStart(2, "0")}` }} />
-                      </div>
-                    ))}
-                  </div>
-                  <div className="grid grid-cols-[1fr_0.55fr] gap-3">
-                    <div className="h-28 rounded-lg border border-white/10 bg-white/[0.035] p-4">
-                      <div className="mb-3 h-2 w-3/4 rounded-full bg-white/15" />
-                      <div className="mb-2 h-2 w-1/2 rounded-full bg-white/10" />
-                      <div className="h-12 rounded-md" style={{ background: `linear-gradient(90deg, ${project.accentColor}88, transparent)` }} />
-                    </div>
-                    <div className="h-28 rounded-lg border border-white/10 bg-white/[0.035] p-4">
-                      <div className="mx-auto h-16 w-16 rounded-full border-[10px]" style={{ borderColor: `${project.accentColor}88` }} />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-4">
-                <div className="rounded-xl border border-white/10 bg-black/25 p-5 shadow-xl backdrop-blur">
-                  <div className="mb-4 h-2 w-20 rounded-full bg-white/15" />
-                  <div className="font-syne text-xl font-extrabold" style={{ color: project.accentColor }}>
-                    Case study
-                  </div>
-                  <div className="mt-2 h-2 w-full rounded-full bg-white/10" />
-                  <div className="mt-2 h-2 w-2/3 rounded-full bg-white/10" />
-                </div>
-                <div className="rounded-xl border border-white/10 bg-black/25 p-5 shadow-xl backdrop-blur">
-                  <div className="mb-4 flex items-center justify-between">
-                    <div className="h-2 w-24 rounded-full bg-white/15" />
-                    <div className="h-8 w-8 rounded-lg" style={{ background: `${project.accentColor}55` }} />
-                  </div>
-                  <div className="space-y-2">
-                    {[0.95, 0.72, 0.86, 0.62].map((width, index) => (
-                      <div key={index} className="h-2 rounded-full bg-white/10">
-                        <div className="h-full rounded-full" style={{ width: `${width * 100}%`, background: project.accentColor }} />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div className="hidden flex-1 rounded-xl border border-white/10 bg-black/25 p-5 shadow-xl backdrop-blur md:block">
-                  <div className="mb-4 h-2 w-16 rounded-full bg-white/15" />
-                  <div className="grid grid-cols-4 gap-2">
-                    {Array.from({ length: 16 }).map((_, index) => (
-                      <span
-                        key={index}
-                        className="aspect-square rounded"
-                        style={{ background: index % 3 === 0 ? `${project.accentColor}77` : "rgba(255,255,255,0.08)" }}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    </AnimateIn>
-  )
-}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
   const log = getBuildLog(slug)
   if (log) {
-    return {
+    return buildPageMetadata({
       title: log.title,
+      // Avoid "ScaleSmiths … | ScaleSmiths" when the note is about ScaleSmiths itself.
+      absoluteTitle: log.title.includes("ScaleSmiths") ? log.title : undefined,
       description: log.summary,
-      alternates: { canonical: `/work/${log.slug}` },
-      openGraph: { title: log.title, description: log.summary, url: `/work/${log.slug}` },
-    }
+      path: `/work/${log.slug}`,
+      type: "article",
+    })
   }
 
-  const p = projects.find((x) => x.slug === slug)
-  if (!p) return {}
-  return {
-    title: p.name,
-    description: p.headline,
-    alternates: { canonical: `/work/${p.slug}` },
-    openGraph: {
-      title: p.name,
-      description: p.headline,
-      url: `/work/${p.slug}`,
-      images: p.heroImage ? [{ url: p.heroImage }] : undefined,
-    },
-  }
+  const study = getCaseStudy(slug)
+  if (!study) return {}
+  const image = primaryImage(study)
+  return buildPageMetadata({
+    title: `${study.name} Case Study`,
+    description: study.summary ?? `${study.name} case study by ScaleSmiths.`,
+    path: `/work/${study.slug}`,
+    type: "article",
+    image: image ? { url: image.src, alt: image.alt } : undefined,
+    robots: study.status === "draft" ? { index: false, follow: false } : undefined,
+  })
 }
 
 function BuildLogPage({ log, verifiedBusinessValue, verifiedOutcome }: { log: BuildLog; verifiedBusinessValue?: string; verifiedOutcome?: string }) {
-  const schema = {
-    "@context": "https://schema.org",
-    "@type": "TechArticle",
-    headline: log.title,
-    description: log.summary,
-    url: `https://scalesmiths.co.uk/work/${log.slug}`,
-    author: { "@type": "Organization", name: "ScaleSmiths" },
-  }
+  const base = siteBaseUrl()
+  const schema = [
+    {
+      "@context": "https://schema.org",
+      "@type": "TechArticle",
+      headline: log.title,
+      description: log.summary,
+      url: `${base}/work/${log.slug}`,
+      mainEntityOfPage: `${base}/work/${log.slug}`,
+      inLanguage: "en-GB",
+      author: { "@id": organizationId(base), name: SITE_NAME },
+      publisher: { "@id": organizationId(base) },
+    },
+    buildBreadcrumbSchema(base, [
+      { name: "Home", path: "/" },
+      { name: "Work", path: "/work" },
+      { name: log.title, path: `/work/${log.slug}` },
+    ]),
+  ]
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
+      <JsonLd data={schema} />
       <div className="mx-auto max-w-[1080px] px-6 pt-10 md:px-12">
         <a href="/work" className="mb-12 inline-flex items-center gap-2 font-dm text-sm text-t2 transition-colors hover:text-t1">
           <ArrowLeft size={14} aria-hidden="true" /> Back to Work
@@ -241,7 +126,42 @@ function BuildLogPage({ log, verifiedBusinessValue, verifiedOutcome }: { log: Bu
   )
 }
 
-export default async function ProjectPage({ params }: Props) {
+function Section({ id, eyebrow, title, children, tinted = false }: { id: string; eyebrow: string; title: string; children: ReactNode; tinted?: boolean }) {
+  return (
+    <section aria-labelledby={id} className={tinted ? "border-y border-b1 bg-s1/40 px-6 py-20 md:px-12 md:py-24" : "px-6 py-20 md:px-12 md:py-24"}>
+      <div className="mx-auto max-w-[1240px]">
+        <AnimateIn className="mb-10 max-w-[760px]">
+          <span className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">{eyebrow}</span>
+          <h2 id={id} className="mt-2 font-syne text-[clamp(28px,4vw,46px)] font-extrabold tracking-[-.03em]">{title}</h2>
+        </AnimateIn>
+        {children}
+      </div>
+    </section>
+  )
+}
+
+/** Development-only marker for a draft case study's missing, unverified content. */
+function AwaitingContent({ study, what }: { study: CaseStudy; what: string }) {
+  if (study.status !== "draft" || !isDevelopment) return null
+  return <p className="rounded-lg border border-dashed border-b2 px-4 py-3 font-dm text-sm text-t3">Awaiting verified content: {what}</p>
+}
+
+function Prose({ paragraphs }: { paragraphs: string[] }) {
+  return <div className="grid max-w-[760px] gap-4">{paragraphs.map((text) => <p key={text} className="font-dm text-lg leading-relaxed text-t2">{text}</p>)}</div>
+}
+
+function comparisonViews(study: CaseStudy): ComparisonView[] {
+  return (["desktop", "mobile"] as const).flatMap((view) => {
+    const before = findShot(study.media, view, "before")
+    const after = findShot(study.media, view, "current")
+    if (!before || !after) return []
+    if (!(before.available && after.available) && !isDevelopment) return []
+    const image = (shot: typeof before) => ({ src: shot.src, alt: shot.alt, aspect: SHOT_ASPECT[view], available: shot.available })
+    return [{ view, before: image(before), after: image(after) }]
+  })
+}
+
+export default async function CaseStudyPage({ params }: Props) {
   const { slug } = await params
   const log = getBuildLog(slug)
   if (log) {
@@ -249,159 +169,199 @@ export default async function ProjectPage({ params }: Props) {
     return <BuildLogPage log={log} verifiedBusinessValue={claims.get(`build-log.${slug}.business-value`)?.approvedWording} verifiedOutcome={claims.get(`build-log.${slug}.outcome`)?.approvedWording} />
   }
 
-  const p = projects.find((x) => x.slug === slug)
-  if (!p) notFound()
-  const claims: ReadonlyMap<string, PublicClaim> = publicClaimMap(await getVerifiedPublicClaims({ route: `/work/${slug}`, component: "project_outcomes" }))
-  const verifiedOutcomes = p.outcomeClaimIds
-    .map((id) => claims.get(id)?.approvedWording)
-    .filter((value): value is string => Boolean(value))
+  const study = getCaseStudy(slug)
+  if (!study) notFound()
+
+  const claims = study.status === "published" ? await getVerifiedPublicClaims({ route: `/work/${slug}` }) : []
+  const outcomes = resolveOutcomes(study.outcomeClaimIds, claims)
+  const metrics = resolveVerifiedMetrics(study.metrics, claims)
+  const quote = resolveClientQuote(study.quoteClaimId, claims)
+  const results = { metrics, outcomes, awaiting: study.awaitingMetrics }
+
+  const base = siteBaseUrl()
+  const host = hostFromUrl(study.websiteUrl)
+  const hero = primaryImage(study)
+  const logo = logoForProject(study.slug)
+  const views = comparisonViews(study)
+  const relatedServices = relatedServicesForCaseStudy(study.slug)
+  const siblings = relatedCaseStudies(study.slug)
+  const articles = study.status === "published" ? insightsForCaseStudy(study.slug) : []
+  const meta = [study.industry, study.location, study.year].filter(Boolean).join(" · ")
 
   return (
     <>
-      {/* Back link */}
-      <div className="px-6 md:px-12 pt-10 max-w-[1240px] mx-auto">
-        <a href="/work" className="inline-flex items-center gap-2 font-dm text-sm text-t2 hover:text-t1 transition-colors mb-12">
-          <ArrowLeft size={14} aria-hidden="true" /> Back to Work
-        </a>
+      {study.project ? <JsonLd data={buildCaseStudySchemas(study.project, base, study.founder, hero)} /> : null}
 
-        {/* Hero */}
-        <AnimateIn>
-          {/* Personal badge — links to the founder responsible for this build */}
-          <p className="mb-2 font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">ScaleSmiths case study</p>
-          {founderForProject(p.slug) ? (
-            <Link
-              href={`/about#${founderForProject(p.slug)!.slug}`}
-              prefetch={false}
-              className="mb-6 inline-flex items-center gap-2 font-dm text-xs text-t3 transition-colors hover:text-t1"
-            >
-              <span>Founder contribution · {p.credit.replace("Made by ", "")}</span>
-              <ArrowRight size={12} aria-hidden="true" className="text-t3" />
-            </Link>
-          ) : (
-            <div className="mb-6 inline-flex items-center gap-2 font-dm text-xs text-t3">
-              <span>ScaleSmiths delivery · {p.credit}</span>
-            </div>
-          )}
+      <section className="px-6 pb-12 pt-10 md:px-12 md:pb-16 md:pt-14">
+        <div className="mx-auto max-w-[1240px]">
+          <nav aria-label="Breadcrumb" className="font-dm text-xs text-t3">
+            <ol className="flex flex-wrap items-center gap-2">
+              <li><Link href="/" className="hover:text-t1">Home</Link></li>
+              <li aria-hidden="true"><ChevronRight size={12} /></li>
+              <li><Link href="/work" className="hover:text-t1">Work</Link></li>
+              <li aria-hidden="true"><ChevronRight size={12} /></li>
+              <li aria-current="page" className="text-t1">{study.name}</li>
+            </ol>
+          </nav>
 
-          <div className="flex items-start justify-between gap-8 mb-6">
+          {study.status === "draft" ? (
+            <p className="mt-6 rounded-lg border border-dashed border-b2 bg-s1 px-4 py-3 font-dm text-sm text-t2">
+              Draft case study preview — visible in development only, never listed, linked or indexed. Sections fill in as verified content and screenshots are supplied.
+            </p>
+          ) : null}
+
+          <AnimateIn className="mt-10 grid gap-10 lg:grid-cols-[1.2fr_.8fr] lg:items-end">
             <div>
-              <h1 className="font-syne text-[clamp(36px,6vw,68px)] font-extrabold tracking-[-0.025em] leading-none">
-                {p.name}
-              </h1>
-              <div className="font-dm text-t2 text-lg mt-2">
-                {p.type} · {p.location}
+              {logo ? <ClientLogo name={study.name} logo={logo} height={36} className="mb-6" /> : null}
+              <p className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">ScaleSmiths case study</p>
+              <h1 className="mt-3 font-syne text-[clamp(40px,7vw,84px)] font-extrabold leading-[.98] tracking-[-.04em]">{study.name}</h1>
+              {meta ? <p className="mt-4 font-dm text-base text-t2">{meta}</p> : null}
+              {study.summary ? <p className="mt-6 max-w-[720px] font-dm text-[clamp(17px,2vw,21px)] leading-relaxed text-t1">{study.summary}</p> : <div className="mt-6"><AwaitingContent study={study} what="one-sentence project summary" /></div>}
+            </div>
+
+            <div className="grid gap-6">
+              {study.services.length > 0 ? (
+                <div>
+                  <h2 className="font-dm text-xs font-semibold uppercase tracking-[.12em] text-t3">Scope delivered</h2>
+                  <ul className="mt-3 flex flex-wrap gap-1.5">
+                    {study.services.map((service) => <li key={service} className="rounded-md border border-b1 bg-s1 px-2.5 py-1 font-dm text-xs text-t2">{service}</li>)}
+                  </ul>
+                </div>
+              ) : null}
+              <div className="flex flex-wrap items-center gap-3">
+                {study.websiteUrl ? (
+                  <a href={study.websiteUrl} target="_blank" rel="noopener noreferrer" className="btn-primary font-dm">
+                    Visit website <ArrowUpRight size={16} aria-hidden="true" /><span className="sr-only"> (opens {host} in a new tab)</span>
+                  </a>
+                ) : null}
+                <Link href="/quote" prefetch={false} className={study.websiteUrl ? "btn-ghost font-dm" : "btn-primary font-dm"}>Start a similar project</Link>
+              </div>
+              {study.founder ? (
+                <Link href={founderProfileHref(study.founder)} prefetch={false} className="inline-flex w-fit items-center gap-2 font-dm text-xs text-t3 transition-colors hover:text-t1">
+                  Founder contribution · {study.credit?.replace("Made by ", "")} <ArrowRight size={12} aria-hidden="true" />
+                </Link>
+              ) : study.credit ? <p className="font-dm text-xs text-t3">{study.credit}</p> : null}
+            </div>
+          </AnimateIn>
+
+          <AnimateIn delay={0.08} className="mt-12">
+            {hasResponsiveShots(study.media, { availableOnly: true }) || (!hero && hasResponsiveShots(study.media)) ? (
+              <ResponsiveShowcase media={study.media} host={host} />
+            ) : hero ? (
+              <ProjectScreenshot image={hero} sizes="(min-width: 1280px) 1240px, 100vw" priority />
+            ) : null}
+          </AnimateIn>
+        </div>
+      </section>
+
+      <Section id="case-client" eyebrow="The client" title={`Who ${study.name} are`} tinted>
+        <div className="grid gap-10 lg:grid-cols-2">
+          <div>
+            {study.client ? <p className="font-dm text-lg leading-relaxed text-t1">{study.client}</p> : <AwaitingContent study={study} what="who the client is" />}
+          </div>
+          <div>
+            <h3 className="font-dm text-xs font-semibold uppercase tracking-[.12em] text-t3">The starting point</h3>
+            {study.challenge ? <p className="mt-3 font-dm text-base leading-relaxed text-t2">{study.challenge}</p> : null}
+            {study.startingPoint.length > 0 ? (
+              <ul className="mt-5 grid gap-2">
+                {study.startingPoint.map((issue) => <li key={issue} className="border-t border-b1 pt-2 font-dm text-sm text-t2">{issue}</li>)}
+              </ul>
+            ) : null}
+            {!study.challenge && study.startingPoint.length === 0 ? <div className="mt-3"><AwaitingContent study={study} what="verified starting-point issues" /></div> : null}
+          </div>
+        </div>
+      </Section>
+
+      {views.length > 0 ? (
+        <Section id="case-before-after" eyebrow="Before and after" title="What changed, side by side">
+          <BeforeAfterComparison views={views} showPlaceholders={isDevelopment} />
+        </Section>
+      ) : null}
+
+      {study.strategy.length > 0 || study.status === "draft" ? (
+        <Section id="case-strategy" eyebrow="Strategy" title="What we set out to improve">
+          {study.strategy.length > 0 ? <Prose paragraphs={study.strategy} /> : <AwaitingContent study={study} what="strategy and reasoning" />}
+        </Section>
+      ) : null}
+
+      <Section id="case-build" eyebrow="The build" title="What ScaleSmiths built" tinted={views.length === 0}>
+        <div className="grid gap-12 lg:grid-cols-[1.1fr_.9fr]">
+          <div>{study.solution ? <Prose paragraphs={[study.solution]} /> : <AwaitingContent study={study} what="description of the delivered solution" />}</div>
+          {study.features.length > 0 ? (
+            <div>
+              <h3 className="font-dm text-xs font-semibold uppercase tracking-[.12em] text-t3">Production scope</h3>
+              <ol className="mt-4 grid border-t border-b1">
+                {study.features.map((feature, index) => (
+                  <li key={feature} className="grid grid-cols-[34px_1fr] border-b border-b1 py-3 font-dm text-sm text-t1"><span className="text-t3">{String(index + 1).padStart(2, "0")}</span>{feature}</li>
+                ))}
+              </ol>
+              {study.stack.length > 0 ? (
+                <>
+                  <h3 className="mt-8 font-dm text-xs font-semibold uppercase tracking-[.12em] text-t3">Stack & capabilities</h3>
+                  <ul className="mt-3 flex flex-wrap gap-1.5">
+                    {study.stack.map((item) => <li key={item} className="rounded-md border border-b1 bg-s1 px-2.5 py-1 font-dm text-xs text-t2">{item}</li>)}
+                  </ul>
+                </>
+              ) : null}
+              {study.repoUrl ? (
+                <a href={study.repoUrl} target="_blank" rel="noopener noreferrer" className="mt-6 inline-flex items-center gap-1.5 font-dm text-sm text-t2 hover:text-t1">
+                  View repository <ArrowUpRight size={14} aria-hidden="true" />
+                </a>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+      </Section>
+
+      {hasGalleryShots(study.media) ? (
+        <Section id="case-evidence" eyebrow="Visual evidence" title="Inside the delivered work" tinted>
+          <CaseStudyGallery media={study.media} host={host} />
+        </Section>
+      ) : null}
+
+      {hasResults(results) ? (
+        <Section id="case-results" eyebrow="Results" title="Verified results">
+          <CaseStudyResults {...results} />
+        </Section>
+      ) : null}
+
+      {quote ? (
+        <section aria-label="Client perspective" className="px-6 py-20 md:px-12">
+          <ClientQuote quote={quote} />
+        </section>
+      ) : null}
+
+      {relatedServices.length > 0 || siblings.length > 0 || articles.length > 0 ? (
+        <Section id="case-related" eyebrow="Related" title="Services and work behind this project" tinted>
+          {relatedServices.length > 0 ? (
+            <ul className="grid gap-3 md:grid-cols-3">
+              {relatedServices.map((service) => (
+                <li key={service.href}>
+                  <Link href={service.href} prefetch={false} className="group flex h-full flex-col rounded-2xl border border-b1 bg-bg/60 p-5 transition-colors hover:border-b2">
+                    <span className="font-syne text-lg font-bold">{service.label}</span>
+                    <span className="mt-2 line-clamp-3 font-dm text-sm leading-relaxed text-t2">{service.description}</span>
+                    <span className="mt-auto inline-flex items-center gap-2 pt-4 font-dm text-sm font-medium text-t1">Explore <ArrowRight size={14} aria-hidden="true" className="transition-transform group-hover:translate-x-0.5" /></span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          {articles.length > 0 ? (
+            <div className="mt-12">
+              <h3 className="font-dm text-xs font-semibold uppercase tracking-[.12em] text-t3">Articles drawing on this project</h3>
+              <div className="mt-5 grid gap-4 md:grid-cols-3">
+                {articles.map((insight) => <InsightCard key={insight.slug} insight={insight} headingLevel="h4" />)}
               </div>
             </div>
-          </div>
+          ) : null}
+          {siblings.length > 0 ? (
+            <div className="mt-12 grid gap-5 md:grid-cols-2">
+              {siblings.map((sibling) => <ProjectCard key={sibling.slug} study={sibling} size="compact" />)}
+            </div>
+          ) : null}
+        </Section>
+      ) : null}
 
-          <p className="font-dm text-[clamp(16px,2vw,20px)] text-t2 leading-relaxed max-w-[680px]">
-            {p.headline}
-          </p>
-        </AnimateIn>
-
-        {/* Tag strip */}
-        <AnimateIn delay={0.1} className="flex flex-wrap gap-2 mt-8 mb-16">
-          {p.tags.map((tag) => (
-            <span key={tag} className="font-dm text-xs text-t2 bg-s2 border border-b1 px-3 py-1.5 rounded-md tracking-[.03em]">
-              {tag}
-            </span>
-          ))}
-        </AnimateIn>
-
-        <ProjectShowcase project={p} />
-
-        {/* Body */}
-        <div className="grid md:grid-cols-[1fr_320px] gap-14 mb-24">
-          {/* Main content */}
-          <div>
-            <AnimateIn className="mb-12">
-              <p className="mb-2 font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">Context / challenge</p>
-              <h2 className="font-syne text-2xl font-bold mb-4 text-t1">The commercial constraint</h2>
-              <p className="font-dm text-base text-t2 leading-relaxed">{p.challenge}</p>
-            </AnimateIn>
-
-            <AnimateIn delay={0.05} className="mb-12">
-              <p className="mb-2 font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">What we built</p>
-              <h2 className="font-syne text-2xl font-bold mb-4 text-t1">The implemented system</h2>
-              <p className="font-dm text-base text-t2 leading-relaxed">{p.solution}</p>
-            </AnimateIn>
-
-            <AnimateIn delay={0.1} className="mb-12">
-              <h2 className="font-syne text-2xl font-bold mb-5 text-t1">{verifiedOutcomes.length ? "Verified outcomes" : "Delivered capabilities"}</h2>
-              <ul className="flex flex-col gap-3">
-                {(verifiedOutcomes.length ? verifiedOutcomes : p.features.slice(0, 3)).map((o) => (
-                  <li key={o} className="flex items-start gap-3">
-                    <CheckCircle2 size={16} className="text-success shrink-0 mt-0.5" aria-hidden="true" />
-                    <span className="font-dm text-base text-t1">{o}</span>
-                  </li>
-                ))}
-              </ul>
-            </AnimateIn>
-
-            <AnimateIn delay={0.12}>
-              <p className="mb-2 font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">Technical approach</p>
-              <h2 className="mb-5 font-syne text-2xl font-bold text-t1">Production scope</h2>
-              <div className="grid gap-3 sm:grid-cols-2">
-                {p.features.map((feature, index) => <div key={feature} className="border-t border-b1 py-3 font-dm text-sm text-t2"><span className="mr-3 text-t3">0{index + 1}</span>{feature}</div>)}
-              </div>
-            </AnimateIn>
-          </div>
-
-          {/* Sidebar */}
-          <aside>
-            <AnimateIn delay={0.15} className="bg-s1 border border-b1 rounded-2xl p-6 sticky top-24">
-              <h3 className="font-syne text-base font-bold mb-5">Key Features</h3>
-              <ul className="flex flex-col gap-2.5 mb-7">
-                {p.features.map((f) => (
-                  <li key={f} className="flex items-center gap-2.5 font-dm text-sm text-t2">
-                    <span
-                      className="w-1.5 h-1.5 rounded-full shrink-0"
-                      style={{ background: p.accentColor }}
-                      aria-hidden="true"
-                    />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <div className="border-t border-b1 pt-5">
-                <div className="font-dm text-xs text-t2 mb-1">Project Type</div>
-                <div className="font-syne text-sm font-semibold">{p.type}</div>
-              </div>
-              <div className="mt-4">
-                <div className="font-dm text-xs text-t2 mb-1">Location</div>
-                <div className="font-syne text-sm font-semibold">{p.location}</div>
-              </div>
-              <Link
-                href="/quote"
-                prefetch={false}
-                className="btn-primary mt-7 w-full justify-center font-dm text-sm"
-              >
-                Start a Similar Project
-              </Link>
-              {p.websiteUrl && (
-                <Link
-                  href={p.websiteUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-b2 px-5 py-2.5 font-dm text-sm font-medium text-t2 transition-colors hover:text-t1"
-                >
-                  Visit Live Website <ExternalLink size={14} aria-hidden="true" />
-                </Link>
-              )}
-              {p.repoUrl && (
-                <Link
-                  href={p.repoUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-3 inline-flex w-full items-center justify-center gap-2 border border-b2 text-t2 hover:text-t1 transition-colors px-5 py-2.5 rounded-lg font-dm text-sm font-medium"
-                >
-                  View Repository <ExternalLink size={14} aria-hidden="true" />
-                </Link>
-              )}
-            </AnimateIn>
-          </aside>
-        </div>
-      </div>
       <CTA />
     </>
   )

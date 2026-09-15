@@ -1,16 +1,22 @@
-import Image from "next/image"
 import Link from "next/link"
 import { ArrowRight, CheckCircle2, ChevronRight } from "lucide-react"
-import { buildServiceJourneySchemas, projectsForJourney, type ServiceJourney } from "@/lib/service-journeys"
+import { ProjectCard } from "@/components/work/ProjectCard"
+import { caseStudiesForSlugs } from "@/lib/case-studies"
+import { FounderStrip } from "@/components/FounderStrip"
+import { InsightCard } from "@/components/insights/InsightCard"
+import { JsonLd } from "@/components/JsonLd"
+import { insightsForService } from "@/lib/insights"
+import { buildServiceJourneySchemas, type ServiceJourney } from "@/lib/service-journeys"
 
 export function ServiceJourneyPage({ journey }: { journey: ServiceJourney }) {
-  const projects = projectsForJourney(journey)
+  const studies = caseStudiesForSlugs(journey.proofSlugs)
+  const articles = insightsForService(`/${journey.slug}`)
   const schemas = buildServiceJourneySchemas(journey, process.env.NEXT_PUBLIC_SITE_URL)
   const isLocal = journey.accent === "local"
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schemas) }} />
+      <JsonLd data={schemas} />
       <div className={isLocal ? "journey-local" : "journey-systems"}>
         <section className="px-6 pb-16 pt-10 md:px-12 md:pb-24 md:pt-14">
           <div className="mx-auto max-w-[1240px]">
@@ -68,18 +74,8 @@ export function ServiceJourneyPage({ journey }: { journey: ServiceJourney }) {
               <h2 id={`${journey.slug}-proof`} className="mt-2 font-syne text-[clamp(30px,4.5vw,48px)] font-extrabold">Work mapped to this journey.</h2>
               <p className="mt-3 font-dm text-sm leading-relaxed text-t2">{journey.proofIntro}</p>
             </div>
-            <div className={`mt-9 grid gap-3 ${projects.length > 2 ? "md:grid-cols-2" : "md:grid-cols-2"}`}>
-              {projects.map((project) => (
-                <Link key={project.slug} href={`/work/${project.slug}`} prefetch={false} className="group overflow-hidden rounded-2xl border border-b1 bg-s1 transition-colors hover:border-b2">
-                  {project.thumbImage && <div className="relative aspect-[16/8] overflow-hidden border-b border-b1 bg-s2"><Image src={project.thumbImage} alt={`${project.name} project preview`} fill sizes="(min-width: 768px) 50vw, 100vw" className="object-cover transition-transform duration-500 group-hover:scale-[1.025]" /></div>}
-                  <div className="p-6">
-                    <div className="font-dm text-xs font-semibold uppercase tracking-[.1em] text-acc">{project.type}</div>
-                    <h3 className="mt-2 font-syne text-2xl font-bold">{project.name}</h3>
-                    <p className="mt-3 font-dm text-sm leading-relaxed text-t2">{project.headline}</p>
-                    <span className="mt-5 inline-flex items-center gap-2 font-dm text-sm font-semibold text-t1">View project<ArrowRight size={14} aria-hidden="true" /></span>
-                  </div>
-                </Link>
-              ))}
+            <div className="mt-9 grid gap-5 md:grid-cols-2">
+              {studies.map((study) => <ProjectCard key={study.slug} study={study} size="compact" />)}
             </div>
           </div>
         </section>
@@ -97,6 +93,20 @@ export function ServiceJourneyPage({ journey }: { journey: ServiceJourney }) {
             </ol>
           </div>
         </section>
+
+        <FounderStrip
+          headingId={`${journey.slug}-founders`}
+          intro="ScaleSmiths is founder-led and based in Hucknall, Nottinghamshire. The people who scope the work stay responsible for designing, building and improving it."
+        />
+
+        {articles.length > 0 ? (
+          <section aria-labelledby={`${journey.slug}-reading`} className="px-6 pb-16 md:px-12">
+            <div className="mx-auto max-w-[1240px]">
+              <h2 id={`${journey.slug}-reading`} className="font-syne text-3xl font-extrabold">Further reading from the founders</h2>
+              <div className="mt-8 grid gap-4 md:grid-cols-3">{articles.map((insight) => <InsightCard key={insight.slug} insight={insight} />)}</div>
+            </div>
+          </section>
+        ) : null}
 
         <section aria-labelledby={`${journey.slug}-related`} className="border-y border-b1 bg-s1 px-6 py-14 md:px-12">
           <div className="mx-auto max-w-[1240px]">

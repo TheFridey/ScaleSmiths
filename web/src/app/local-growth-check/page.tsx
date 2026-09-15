@@ -7,10 +7,10 @@ import { DiscoveryCallLink } from "@/components/DiscoveryCallLink"
 import { businessGrowthAudit, formatAuditPrice } from "@/lib/business-growth-audit"
 
 export const metadata: Metadata = {
-  title: "Business Growth Audit for Hucknall & Nottingham Businesses | £395",
-  description: "A practical £395 business growth review for Hucknall, Nottingham and Nottinghamshire businesses, covering visibility, trust, enquiries, systems and what to fix first.",
+  title: "Local Business Growth Audit, Nottinghamshire",
+  description: "A £395 review for Hucknall and Nottinghamshire businesses covering visibility, trust, enquiries and systems, with a prioritised list of what to fix first.",
   alternates: { canonical: "/local-growth-check" },
-  openGraph: { title: "Local Business Growth Audit | ScaleSmiths", description: "Find what is actually holding your local business back, with clear findings and a prioritised roadmap.", url: "/local-growth-check" },
+  openGraph: { title: "Local Business Growth Audit, Nottinghamshire | ScaleSmiths", description: "Find what is actually holding your local business back, with clear findings and a prioritised roadmap.", url: "/local-growth-check" },
 }
 
 const problems = ["Plenty of website visits but very few enquiries", "Most work still comes through word of mouth", "People find competitors before they find you", "Customers cannot quickly see why they should choose you", "Enquiries arrive through several channels with no single process", "Quotes go out, but follow-up is inconsistent", "Nobody knows whether the old website is doing anything", "Hours disappear into admin that could be simpler"]

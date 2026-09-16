@@ -21,4 +21,8 @@ describe("portal request message boundary", () => {
   it("never lets a notification failure prevent the success response from reaching the client", () => {
     expect(route).toContain(".catch(() => undefined)")
   })
+
+  it("marks the owned thread read through the session client id", () => {
+    expect(route).toContain("markPortalRequestRead(session.clientId, id)")
+  })
 })

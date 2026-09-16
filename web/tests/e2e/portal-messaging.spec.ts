@@ -15,6 +15,28 @@ async function loginAsDemoClient(page: import("@playwright/test").Page) {
   await page.waitForURL(new RegExp(`/portal/${demoClientId}$`), { timeout: 15_000 })
 }
 
+test("unauthenticated visitors are redirected to the portal login before seeing messages", async ({ browser }) => {
+  const context = await browser.newContext({ storageState: { cookies: [], origins: [] } })
+  const page = await context.newPage()
+
+  await page.goto(`/portal/${demoClientId}?tab=messages`)
+  await expect(page).toHaveURL(/\/portal\/login/)
+
+  await context.close()
+})
+
+test("a signed-in client cannot open another client's messages tab by editing the URL", async ({ browser }) => {
+  const context = await browser.newContext({ storageState: { cookies: [], origins: [] } })
+  const page = await context.newPage()
+
+  await loginAsDemoClient(page)
+  await page.goto("/portal/some-other-client-id?tab=messages")
+  await expect(page).toHaveURL(new RegExp(`/portal/${demoClientId}`))
+  await expect(page.getByText("B-visible-secret")).toHaveCount(0)
+
+  await context.close()
+})
+
 test("sending a portal message stores it and shows it in the thread, with no mailto link on the happy path", async ({ browser }) => {
   const context = await browser.newContext({ storageState: { cookies: [], origins: [] } })
   const page = await context.newPage()

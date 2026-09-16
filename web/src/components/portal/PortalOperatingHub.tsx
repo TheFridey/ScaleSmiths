@@ -221,7 +221,7 @@ export function PortalOperatingHub({
                     <div className="font-dm text-[11px] text-t3">{formatDate(message.createdAt)}</div>
                   </div>
                   <p className="mt-2 line-clamp-3 font-dm text-sm leading-relaxed text-t2">{message.body}</p>
-                  <Link href={`/portal/${clientId}/requests/${message.requestId}`} className="mt-3 inline-flex items-center gap-1 font-dm text-xs font-semibold text-acc underline-offset-2 hover:underline">
+                  <Link href={`/portal/${clientId}?tab=messages&thread=${message.requestId}`} className="mt-3 inline-flex items-center gap-1 font-dm text-xs font-semibold text-acc underline-offset-2 hover:underline">
                     Open thread <ExternalLink size={12} aria-hidden="true" />
                   </Link>
                 </article>

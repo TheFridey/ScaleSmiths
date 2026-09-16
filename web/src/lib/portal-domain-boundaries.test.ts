@@ -15,8 +15,8 @@ describe("portal domain database boundaries", () => {
   })
 
   it("scopes every request-thread relation to the authenticated client", () => {
-    expect(requests.match(/eq\(clientRequests\.clientId, portalClientId\)/g)?.length).toBeGreaterThanOrEqual(4)
-    expect(requests.match(/"client_visible"/g)?.length).toBeGreaterThanOrEqual(3)
+    expect(requests.match(/eq\(clientRequests\.clientId, portalClientId\)/g)?.length).toBeGreaterThanOrEqual(6)
+    expect(requests.match(/"client_visible"/g)?.length).toBeGreaterThanOrEqual(5)
     expect(requests).toContain("Promise.all")
   })
 
@@ -24,5 +24,11 @@ describe("portal domain database boundaries", () => {
     for (const source of [portalPage, reportPage, requestPage]) {
       expect(source).not.toMatch(/@\/lib\/(?:db|schema)/)
     }
+  })
+
+  it("wires the Messages tab to the authorised request-thread inbox", () => {
+    expect(portalPage).toContain("listPortalMessageThreads")
+    expect(portalPage).toContain("parsePortalThreadSearchParam")
+    expect(portalPage).not.toMatch(/message history will appear/i)
   })
 })

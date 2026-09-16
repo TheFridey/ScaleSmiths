@@ -529,9 +529,20 @@ Export and deploy workflows should be added incrementally inside the admin app.
 
 ---
 
-## Portal limitations
+## Portal capabilities
 
-The portal is a credible early-stage client workspace, not a full SaaS product. It currently provides protected access, overview cards, current phase, next client action, key dates placeholder, document placeholder, support CTA, and visible logout. It does not yet publish real project messages, files, or roadmap records.
+The authenticated client portal is a session-scoped workspace for the linked client only. A signed-in client cannot open another client's portal by changing the URL.
+
+It currently provides:
+
+- Overview of delivery status, recent client-visible thread replies, published reports, and next actions
+- Board: published client-visible project milestones and progress
+- Files: documents published to the portal
+- Messages: authorised client-visible request-thread history. New messages are stored on the selected request thread, or they start the client's general support thread. Internal-only admin notes never appear. A `mailto:` fallback is shown only if sending fails.
+- Requests: submit and track work or support items, with a dedicated thread view
+- Reports and invoices: published records only
+
+Messages inbox MVP: the tab lists the 20 most recently active conversations and derives unread from the latest client-visible staff reply versus the thread's last-read time. Full history for a selected thread loads when it is opened; older threads remain available under Requests. There is no separate unread-receipts table or infinite-scroll inbox yet.
 
 ---
 

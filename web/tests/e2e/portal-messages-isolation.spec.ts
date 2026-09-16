@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto"
 import bcrypt from "bcryptjs"
 import { expect, test } from "@playwright/test"
 import { Client } from "pg"
+import { rejectNonEssentialStorage } from "./helpers"
 
 const enabled = process.env.SCALESMITHS_TEST_ENVIRONMENT === "forge-v2-e2e" && Boolean(process.env.WEB_DATABASE_URL)
 test.skip(!enabled, "Requires the guarded isolated PostgreSQL E2E environment.")
@@ -32,6 +33,7 @@ test("messages shows owned client-visible request-thread history and hides other
   await db.connect()
   const context = await browser.newContext({ storageState: { cookies: [], origins: [] } })
   const page = await context.newPage()
+  await rejectNonEssentialStorage(page)
 
   try {
     const marker = await db.query("select 1 from public.scalesmiths_test_environment where marker = 'scalesmiths-forge-v2-isolated-test-v1'")
@@ -92,6 +94,7 @@ test("messages shows owned client-visible request-thread history and hides other
     await expect(page.getByRole("link", { name: /contact form/i }).getByText("Unread", { exact: true })).toBeVisible()
 
     await page.getByRole("link", { name: /homepage copy/i }).click()
+    await expect(page).toHaveURL(new RegExp(`[?&]thread=${requestARead}(?:&|$)`))
     await expect(page.getByRole("heading", { name: "Homepage copy", exact: true })).toBeVisible()
     await expect(page.getByText(clientA.visible)).toBeVisible()
     await expect(page.getByText(clientA.internal)).toHaveCount(0)

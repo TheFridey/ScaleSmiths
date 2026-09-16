@@ -183,6 +183,7 @@ async function MessagesTab({ clientId, requestedThreadId }: { clientId: string; 
 
   return (
     <PortalMessagesPanel
+      key={selectedId ?? "new"}
       clientId={clientId}
       threads={includeSelectedInboxThread(inbox.threads, selectedInboxThread)}
       truncated={inbox.truncated}

@@ -1,6 +1,6 @@
 "use client"
 
-import { FormEvent, useMemo, useState } from "react"
+import { FormEvent, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { AlertCircle, CheckCircle2, Loader2, Mail, Send } from "lucide-react"
@@ -34,6 +34,18 @@ export function PortalMessagesPanel({
   const [showFallback, setShowFallback] = useState(false)
 
   const selectedId = thread?.id ?? null
+  const selectedRequestId = initialRequest?.id ?? null
+
+  useEffect(() => {
+    setThreads(initialThreads)
+    setThread(initialRequest)
+    setMessages(initialMessages)
+    setBody("")
+    setError("")
+    setShowFallback(false)
+    // Keep same-thread composer state; only reset when the selected request changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- selectedRequestId is the thread identity.
+  }, [selectedRequestId])
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()

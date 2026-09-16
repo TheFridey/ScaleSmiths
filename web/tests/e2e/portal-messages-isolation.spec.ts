@@ -21,7 +21,7 @@ test("messages shows owned client-visible request-thread history and hides other
     email: `portal-msg-a-${suffix}@example.test`,
     visible: `A-visible-${suffix}`,
     internal: `A-internal-secret-${suffix}`,
-    unread: `A-unread-${suffix}`,
+    unread: `A-staff-reply-${suffix}`,
   }
   const clientB = {
     id: `portal-msg-b-${suffix}`,
@@ -89,7 +89,7 @@ test("messages shows owned client-visible request-thread history and hides other
     await expect(page.getByText(clientB.visible)).toHaveCount(0)
     await expect(page.getByText(clientA.internal)).toHaveCount(0)
     await expect(page.getByText("Private B thread")).toHaveCount(0)
-    await expect(page.getByText("Unread")).toBeVisible()
+    await expect(page.getByRole("link", { name: /contact form/i }).getByText("Unread", { exact: true })).toBeVisible()
 
     await page.getByRole("link", { name: /homepage copy/i }).click()
     await expect(page.getByRole("heading", { name: "Homepage copy", exact: true })).toBeVisible()

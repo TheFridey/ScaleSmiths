@@ -13,7 +13,7 @@ test.describe("commercial landing pages", () => {
     await expect(page).toHaveTitle("Web Design Nottingham for Service Businesses | ScaleSmiths")
     await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1)
     await expect(page.getByRole("heading", { name: /working with nottingham businesses from hucknall/i })).toBeVisible()
-    await expect(page.getByRole("link", { name: /view case study: precision finish/i })).toHaveAttribute("href", "/work/precision-finish-plastering-rendering")
+    await expect(page.getByRole("link", { name: /view case study\s*:\s*precision finish/i })).toHaveAttribute("href", "/work/precision-finish-plastering-rendering")
     await expect(page.getByRole("link", { name: "Trevor Newton-Bradley" }).first()).toHaveAttribute("href", "/about/trevor-newton-bradley")
     await expect(page.locator("main")).not.toContainText(/city-centre office in|#1|best web agency|guaranteed rankings/i)
 

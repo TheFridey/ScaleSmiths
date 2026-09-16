@@ -589,7 +589,7 @@ npm exec tsc -- --noEmit
 npm run build
 ```
 
-`npm audit` currently reports the reviewed Moderate PostCSS advisory recorded by the dependency-governance policy. High and Critical production advisories remain blocking. Do not run forced audit fixes during routine deploys; follow [Dependency governance](docs/operations/dependency-governance.md) so unsafe downgrades and unrelated breaking changes are rejected.
+`npm audit --omit=dev --audit-level=high` currently reports zero production vulnerabilities in `web` and `admin`. High and Critical production advisories remain blocking. Do not run forced audit fixes during routine deploys; follow [Dependency governance](docs/operations/dependency-governance.md) so unsafe downgrades and unrelated breaking changes are rejected.
 
 ---
 

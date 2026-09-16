@@ -18,6 +18,7 @@ test.describe("work portfolio", () => {
     await expect(cards).toHaveCount(7)
 
     const precision = cards.filter({ has: page.getByRole("heading", { name: "Precision Finish Plastering & Rendering" }) })
+    // Card screenshots sit in an aria-hidden pointer-only link, so they are not exposed as img roles.
     await expect(precision.locator("img").first()).toBeVisible()
     await expect(precision).toContainText("Local SEO architecture")
     await expect(precision.getByRole("link", { name: /view case study/i })).toHaveAttribute("href", "/work/precision-finish-plastering-rendering")

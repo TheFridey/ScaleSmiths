@@ -18,7 +18,8 @@ test.describe("work portfolio", () => {
     await expect(cards).toHaveCount(7)
 
     const precision = cards.filter({ has: page.getByRole("heading", { name: "Precision Finish Plastering & Rendering" }) })
-    await expect(precision.getByRole("img").first()).toBeVisible()
+    // Card screenshots sit in an aria-hidden pointer-only link, so they are not exposed as img roles.
+    await expect(precision.locator("img").first()).toBeVisible()
     await expect(precision).toContainText("Local SEO architecture")
     await expect(precision.getByRole("link", { name: /view case study/i })).toHaveAttribute("href", "/work/precision-finish-plastering-rendering")
     await expect(precision.getByRole("link", { name: /visit website/i })).toHaveAttribute("href", "https://precisionplasteringandrendering.co.uk")
@@ -53,7 +54,7 @@ test.describe("work portfolio", () => {
 
   test("links service pages back to relevant case studies", async ({ page }) => {
     await gotoReady(page, "/local-growth")
-    await expect(page.getByRole("link", { name: /view case study: precision finish/i })).toHaveAttribute("href", "/work/precision-finish-plastering-rendering")
+    await expect(page.getByRole("link", { name: /view case study\s*:\s*precision finish/i })).toHaveAttribute("href", "/work/precision-finish-plastering-rendering")
   })
 
   test("never publishes the unfinished Confirm-A-Kill draft", async ({ page, request }) => {

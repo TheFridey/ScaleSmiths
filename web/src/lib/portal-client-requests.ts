@@ -1,9 +1,14 @@
 import "server-only"
 
-import { and, asc, desc, eq, notInArray } from "drizzle-orm"
+import { and, asc, desc, eq, inArray, notInArray, sql } from "drizzle-orm"
 import { serializeClientPortalMessage, serializeClientPortalRequest, TERMINAL_REQUEST_STATUSES } from "@/lib/client-requests"
 import { serializeClientPortalTimelineEvent } from "@/lib/client-timeline"
 import { db } from "@/lib/db"
+import {
+  collapsePortalMessageInbox,
+  PORTAL_MESSAGE_INBOX_LIMIT,
+  type PortalMessageInboxRow,
+} from "@/lib/portal-message-inbox"
 import { clientRequestMessages, clientRequests, clientTimelineEvents } from "@/lib/schema"
 
 export async function listRecentPortalThreadMessages(portalClientId: string, limit = 6) {
@@ -23,12 +28,82 @@ export async function listRecentPortalThreadMessages(portalClientId: string, lim
   return rows.map((row) => ({ ...row, createdAt: row.createdAt.toISOString() }))
 }
 
+export async function listPortalMessageThreads(portalClientId: string, limit = PORTAL_MESSAGE_INBOX_LIMIT) {
+  const latest = await db
+    .select({
+      requestId: clientRequestMessages.requestId,
+      lastId: sql<number>`max(${clientRequestMessages.id})`.as("last_id"),
+    })
+    .from(clientRequestMessages)
+    .innerJoin(clientRequests, eq(clientRequestMessages.requestId, clientRequests.id))
+    .where(and(eq(clientRequests.clientId, portalClientId), eq(clientRequestMessages.visibility, "client_visible")))
+    .groupBy(clientRequestMessages.requestId)
+    .orderBy(desc(sql`max(${clientRequestMessages.createdAt})`), desc(sql`max(${clientRequestMessages.id})`))
+    .limit(limit + 1)
+
+  const lastIds = latest.map((row) => Number(row.lastId)).filter((id) => Number.isInteger(id) && id > 0)
+  if (lastIds.length === 0) return collapsePortalMessageInbox([], limit)
+
+  const rows = await db
+    .select({
+      requestId: clientRequests.id,
+      title: clientRequests.title,
+      category: clientRequests.category,
+      status: clientRequests.status,
+      clientLastReadAt: clientRequests.clientLastReadAt,
+      messageId: clientRequestMessages.id,
+      senderType: clientRequestMessages.senderType,
+      senderName: clientRequestMessages.senderName,
+      body: clientRequestMessages.body,
+      createdAt: clientRequestMessages.createdAt,
+    })
+    .from(clientRequestMessages)
+    .innerJoin(clientRequests, eq(clientRequestMessages.requestId, clientRequests.id))
+    .where(and(
+      eq(clientRequests.clientId, portalClientId),
+      eq(clientRequestMessages.visibility, "client_visible"),
+      inArray(clientRequestMessages.id, lastIds),
+    ))
+
+  const byId = new Map(rows.map((row) => [row.messageId, row]))
+  const ordered: PortalMessageInboxRow[] = []
+  for (const item of latest) {
+    const row = byId.get(Number(item.lastId))
+    if (row) ordered.push(row)
+  }
+
+  return collapsePortalMessageInbox(ordered, limit)
+}
+
+export async function markPortalRequestRead(portalClientId: string, requestId: number, now = new Date()) {
+  await db.update(clientRequests)
+    .set({ clientLastReadAt: now })
+    .where(and(eq(clientRequests.id, requestId), eq(clientRequests.clientId, portalClientId)))
+}
+
+export async function findPortalGeneralMessageThreadId(portalClientId: string) {
+  const [existing] = await db
+    .select({ id: clientRequests.id })
+    .from(clientRequests)
+    .where(and(
+      eq(clientRequests.clientId, portalClientId),
+      eq(clientRequests.category, "general_support"),
+      eq(clientRequests.title, "Portal messages"),
+      notInArray(clientRequests.status, TERMINAL_REQUEST_STATUSES),
+    ))
+    .orderBy(desc(clientRequests.createdAt))
+    .limit(1)
+
+  return existing?.id ?? null
+}
+
 export async function getPortalRequestThread(portalClientId: string, requestId: number) {
   const [requests, messages, timeline] = await Promise.all([
     db.select({
       id: clientRequests.id, title: clientRequests.title, description: clientRequests.description,
       category: clientRequests.category, priority: clientRequests.priority, status: clientRequests.status,
       affectedUrl: clientRequests.affectedUrl, createdAt: clientRequests.createdAt, updatedAt: clientRequests.updatedAt,
+      clientLastReadAt: clientRequests.clientLastReadAt,
     }).from(clientRequests).where(and(eq(clientRequests.id, requestId), eq(clientRequests.clientId, portalClientId))).limit(1),
     db.select({
       id: clientRequestMessages.id, requestId: clientRequestMessages.requestId,
@@ -141,26 +216,11 @@ export async function appendClientMessage(portalClientId: string, requestId: num
 }
 
 export async function getPortalGeneralMessageThread(portalClientId: string) {
-  const [existing] = await db
-    .select({ id: clientRequests.id })
-    .from(clientRequests)
-    .where(and(
-      eq(clientRequests.clientId, portalClientId),
-      eq(clientRequests.category, "general_support"),
-      eq(clientRequests.title, "Portal messages"),
-      notInArray(clientRequests.status, TERMINAL_REQUEST_STATUSES),
-    ))
-    .orderBy(desc(clientRequests.createdAt))
-    .limit(1)
+  const existingId = await findPortalGeneralMessageThreadId(portalClientId)
+  if (!existingId) return null
 
-  if (!existing) return null
-
-  const thread = await getPortalRequestThread(portalClientId, existing.id)
+  const thread = await getPortalRequestThread(portalClientId, existingId)
   if (!thread) return null
-
-  await db.update(clientRequests)
-    .set({ clientLastReadAt: new Date() })
-    .where(and(eq(clientRequests.id, existing.id), eq(clientRequests.clientId, portalClientId)))
 
   return { request: thread.request, messages: thread.messages }
 }

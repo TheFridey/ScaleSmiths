@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server"
-import { and, eq } from "drizzle-orm"
+import { eq } from "drizzle-orm"
 import { db } from "@/lib/db"
 import {
   parseClientRequestMessageBody,
 } from "@/lib/client-requests"
 import { getClientSessionFromRequest, unauthorizedClientPortalResponse } from "@/lib/portal-session"
-import { appendClientMessage, getPortalRequestThread } from "@/lib/portal-client-requests"
-import { clientRequestMessages, clientRequests } from "@/lib/schema"
+import { appendClientMessage, getPortalRequestThread, markPortalRequestRead } from "@/lib/portal-client-requests"
+import { clientRequestMessages } from "@/lib/schema"
 import { resolveClientIp } from "@/lib/client-ip"
 import { rateLimitHeaders, webRateLimitKeys } from "@/lib/rate-limit-policy"
 import { checkWebRateLimit } from "@/lib/server/rate-limit"
@@ -39,9 +39,7 @@ export async function GET(request: NextRequest, { params }: RequestDetailContext
       return NextResponse.json({ error: "Request not found." }, { status: 404 })
     }
 
-    await db.update(clientRequests)
-      .set({ clientLastReadAt: new Date() })
-      .where(and(eq(clientRequests.id, id), eq(clientRequests.clientId, session.clientId)))
+    await markPortalRequestRead(session.clientId, id)
 
     return NextResponse.json({ ok: true, ...thread })
   } catch {

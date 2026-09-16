@@ -6,7 +6,7 @@ import { PortalRequestThread } from "@/components/portal/PortalRequestThread"
 import { PortalTimeline } from "@/components/portal/PortalTimeline"
 import { requireClientPortalAccess } from "@/lib/portal-session"
 import { loadPortalClientProfile } from "@/lib/portal-client-profile"
-import { getPortalRequestThread } from "@/lib/portal-client-requests"
+import { getPortalRequestThread, markPortalRequestRead } from "@/lib/portal-client-requests"
 
 interface PortalRequestPageProps {
   params: Promise<{ clientId: string; requestId: string }>
@@ -29,6 +29,7 @@ export default async function PortalRequestPage({ params }: PortalRequestPagePro
   if (!thread || !profile) {
     notFound()
   }
+  await markPortalRequestRead(session.clientId, id)
   const { request, messages, timeline } = thread
   return (
     <div className="flex min-h-screen flex-col bg-bg text-t1 md:flex-row">

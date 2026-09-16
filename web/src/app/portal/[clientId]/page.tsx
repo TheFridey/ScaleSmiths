@@ -9,16 +9,17 @@ import { PortalOperatingHub } from "@/components/portal/PortalOperatingHub"
 import { PortalRequestsPanel } from "@/components/portal/PortalRequestsPanel"
 import { formatReportPeriod } from "@/lib/monthly-reports"
 import { requireClientPortalAccess } from "@/lib/portal-session"
-import { getPortalGeneralMessageThread, listRecentPortalThreadMessages } from "@/lib/portal-client-requests"
+import { findPortalGeneralMessageThreadId, getPortalRequestThread, listPortalMessageThreads, listRecentPortalThreadMessages, markPortalRequestRead } from "@/lib/portal-client-requests"
 import { listPortalInvoices } from "@/lib/portal-invoices"
 import { INVOICE_STATUS_LABELS } from "@/lib/invoice-status"
 import { loadPortalClientProfile } from "@/lib/portal-client-profile"
 import { listPortalProjectProgress } from "@/lib/portal-projects"
 import { getLatestPublishedPortalReport, listPublishedPortalReports } from "@/lib/portal-reports"
+import { inboxThreadFromSelectedRequest, includeSelectedInboxThread, parsePortalThreadSearchParam, resolvePortalMessagesSelection } from "@/lib/portal-message-inbox"
 
 interface PortalPageProps {
   params: Promise<{ clientId: string }>
-  searchParams: Promise<{ tab?: string }>
+  searchParams: Promise<{ tab?: string; thread?: string }>
 }
 
 const PORTAL_SUPPORT_EMAIL = "hello@scalesmiths.co.uk"
@@ -64,7 +65,7 @@ export default async function PortalClientPage({ params, searchParams }: PortalP
         {tab === "files" ? (
           <DocumentsTab clientId={portalClientId} />
         ) : tab === "messages" ? (
-          <MessagesTab clientId={portalClientId} />
+          <MessagesTab clientId={portalClientId} requestedThreadId={parsePortalThreadSearchParam(resolvedSearchParams.thread)} />
         ) : tab === "board" ? (
           <ProgressTab clientId={portalClientId} />
         ) : tab === "requests" ? (
@@ -149,13 +150,44 @@ async function DocumentsTab({ clientId }: { clientId: string }) {
   )
 }
 
-async function MessagesTab({ clientId }: { clientId: string }) {
-  const thread = await getPortalGeneralMessageThread(clientId)
+async function MessagesTab({ clientId, requestedThreadId }: { clientId: string; requestedThreadId: number | null }) {
+  const [inbox, requestedThread, generalThreadId] = await Promise.all([
+    listPortalMessageThreads(clientId),
+    requestedThreadId ? getPortalRequestThread(clientId, requestedThreadId) : Promise.resolve(null),
+    findPortalGeneralMessageThreadId(clientId),
+  ])
+
+  const selectedId = resolvePortalMessagesSelection({
+    requestedThreadId,
+    requestedThreadOwned: Boolean(requestedThread),
+    generalThreadId,
+    newestThreadId: inbox.threads[0]?.requestId ?? null,
+  })
+  const selected = selectedId
+    ? (selectedId === requestedThread?.request.id ? requestedThread : await getPortalRequestThread(clientId, selectedId))
+    : null
+
+  if (selected) {
+    await markPortalRequestRead(clientId, selected.request.id)
+  }
+
+  const selectedInboxThread = selected
+    ? inboxThreadFromSelectedRequest({
+      requestId: selected.request.id,
+      title: selected.request.title,
+      category: selected.request.category,
+      status: selected.request.status,
+      messages: selected.messages,
+    })
+    : null
+
   return (
     <PortalMessagesPanel
       clientId={clientId}
-      initialRequest={thread?.request ?? null}
-      initialMessages={thread?.messages ?? []}
+      threads={includeSelectedInboxThread(inbox.threads, selectedInboxThread)}
+      truncated={inbox.truncated}
+      initialRequest={selected?.request ?? null}
+      initialMessages={selected?.messages ?? []}
     />
   )
 }

@@ -27,6 +27,18 @@ describe("portal general message thread scoping", () => {
     expect(source).toContain("eq(clientRequests.clientId, portalClientId)")
   })
 
+  it("lists the messages inbox with the same client and client-visible filters", () => {
+    expect(source).toContain("export async function listPortalMessageThreads")
+    expect(source).toContain('eq(clientRequestMessages.visibility, "client_visible")')
+    expect(source.match(/eq\(clientRequests\.clientId, portalClientId\)/g)?.length).toBeGreaterThanOrEqual(6)
+  })
+
+  it("marks a thread read only for the authenticated portal client", () => {
+    expect(source).toContain("export async function markPortalRequestRead")
+    expect(source).toContain("eq(clientRequests.id, requestId)")
+    expect(source).toContain("eq(clientRequests.clientId, portalClientId)")
+  })
+
   it("never selects internal-only fields into the portal projection", () => {
     for (const forbidden of [
       "internalNotes",

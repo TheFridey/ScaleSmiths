@@ -19,7 +19,7 @@ For each dependency change:
 3. Never run `npm audit fix --force` without reviewing its complete manifest and lockfile diff. Do not accept a framework downgrade merely to make the report empty.
 4. Record a lower-severity acceptance in `scripts/dependency-governance-policy.json` with advisory ID, severity, dependency source, reason and review date. Acceptance is temporary and must not suppress the audit output.
 
-The July 2026 review resolved the embedded PostCSS advisory with a scoped npm override while retaining the stable Next.js 15 line. The override and its removal condition are recorded in `docs/security/dependency-audit-2026-07.md`; it must not be replaced with npm's unsafe forced framework downgrade.
+The July 2026 review resolved the embedded PostCSS advisory with a scoped npm override while retaining the stable Next.js 15 line. The September 2026 production audit failures were closed by pinning Next.js 15.5.25, Sharp 0.35.4 and `fast-uri` 3.1.8; the PostCSS override remains because 15.5.25 still declares PostCSS 8.4.31. The override register and its removal conditions are recorded in `docs/security/dependency-audit-2026-07.md`; they must not be replaced with npm's unsafe forced framework downgrade.
 
 ## Framework patch process
 

@@ -74,7 +74,7 @@ export function Hero({ verifiedStats = [] }: { verifiedStats?: string[] }) {
       >
         <m.div variants={revealSoft} className="hero-badge font-dm" role="status">
           <span className="hero-badge-dot" aria-hidden="true" />
-          Strategy. Systems. Ongoing growth.
+          Find the next move. Build it properly. Keep improving.
         </m.div>
 
         <h1 className="mb-6 w-full">
@@ -91,12 +91,12 @@ export function Hero({ verifiedStats = [] }: { verifiedStats?: string[] }) {
         </h1>
 
         <m.p variants={revealSoft} className="font-dm font-light text-t2 w-full max-w-[620px] leading-relaxed text-[clamp(15px,1.8vw,18px)] mb-4">
-          ScaleSmiths helps ambitious businesses find what is holding growth back, build the right digital solution,
-          and keep improving it through one accountable long-term partnership.
+          ScaleSmiths helps businesses find what is holding growth back, build the right solution,
+          and keep improving it — across websites, visibility, systems, automation and ongoing digital growth.
         </m.p>
 
         <m.div variants={revealSoft} className="mb-5 flex max-w-[820px] flex-wrap justify-center gap-x-5 gap-y-2" aria-label="ScaleSmiths core offers">
-          {["Business Growth Audit", "Websites & local growth", "Custom systems", "Digital Growth Partnership"].map((offer) => (
+          {["Business Growth Audit", "Websites that convert", "Custom systems", "Digital Growth Partnership"].map((offer) => (
             <span key={offer} className="border-l border-b2 pl-3 font-dm text-[11px] font-medium tracking-[.02em] text-t2">
               {offer}
             </span>
@@ -115,7 +115,7 @@ export function Hero({ verifiedStats = [] }: { verifiedStats?: string[] }) {
             Start a Project <ArrowRight size={16} aria-hidden="true" />
           </Link>
           <Link href="/digital-growth-partnership" prefetch={false} className="btn-ghost font-dm">
-            Explore the Partnership <ArrowUpRight size={16} aria-hidden="true" />
+            Growth Partnership <ArrowUpRight size={16} aria-hidden="true" />
           </Link>
         </m.div>
 

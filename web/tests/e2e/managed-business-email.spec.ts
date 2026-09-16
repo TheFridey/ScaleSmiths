@@ -4,7 +4,7 @@ test.describe("Managed Business Email", () => {
   test("presents the confirmed offer and a credential-safe onboarding route", async ({ page }) => {
     await page.goto("/services/managed-business-email", { waitUntil: "domcontentloaded" })
     await expect(page.getByRole("heading", { level: 1, name: /Professional email/i })).toBeVisible()
-    await expect(page.getByText("£15", { exact: true })).toBeVisible()
+    await expect(page.getByText("£15/month", { exact: true })).toBeVisible()
     await expect(page.getByText("3", { exact: true })).toBeVisible()
     await expect(page.getByText("5GB", { exact: true })).toBeVisible()
     await expect(page.getByText(/Initial setup included/i).first()).toBeVisible()

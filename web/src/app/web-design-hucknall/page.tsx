@@ -1,7 +1,8 @@
 import { LandingPage, getLandingPage } from "@/components/LandingPage"
 import { metadataForLandingPage } from "@/lib/landing-pages"
 
-const page = getLandingPage("web-design-hucknall")
+const basePage = getLandingPage("web-design-hucknall")
+const page = { ...basePage, proofLinks: ["precision-finish-plastering-rendering", "glow-tanning"] }
 
 export const metadata = metadataForLandingPage(page)
 

@@ -16,7 +16,7 @@ test("entry products remain ordered and readable on mobile", async ({ page }) =>
   await page.setViewportSize({ width: 390, height: 844 })
   await page.emulateMedia({ reducedMotion: "reduce" })
   await page.goto("/?experience=normal", { waitUntil: "domcontentloaded" })
-  const entryProducts = page.getByRole("region", { name: "Two focused ways to begin." })
+  const entryProducts = page.getByRole("region", { name: "Start with the problem, not a predetermined service." })
   const audit = entryProducts.getByRole("heading", { name: "Business Growth Audit" })
   const email = entryProducts.getByRole("heading", { name: "Managed Business Email" })
   await expect(audit).toBeVisible()

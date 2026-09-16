@@ -45,7 +45,7 @@ export const serviceJourneys: Record<ServiceJourneySlug, ServiceJourney> = {
       { title: "Find", description: "We examine the customer journey, public pages, local signals, mobile contact routes and the commercial goal before recommending work." },
       { title: "Fix", description: "The answer may be a focused repair, clearer content, a growth website, a better booking route or something more operational." },
       { title: "Measure", description: "Approved work is delivered with analytics foundations and practical post-launch checks so decisions are tied to useful evidence." },
-      { title: "Grow", description: "Businesses that want ongoing improvement can move into a Digital Growth Partnership with an agreed roadmap, cadence and scope." },
+      { title: "Grow", description: "Businesses that want ongoing improvement can move into a Digital Growth Partnership with an agreed roadmap, cadence and scope. It can begin around an existing site or after a ScaleSmiths build." },
     ],
     proofSlugs: ["precision-finish-plastering-rendering", "glow-tanning", "csds"],
     proofIntro: "Start with real local proof: a Hucknall trades business and a Hucknall appointment-led business, followed by broader service-sector work. Public outcome claims appear only when separately verified.",

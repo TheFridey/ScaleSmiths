@@ -23,7 +23,7 @@ describe("service and pricing schemas", () => {
     const publicSurface = JSON.stringify({ schema, pricingItems })
 
     expect(emailService?.description).toContain("custom-domain")
-    expect(pricingItems.find((item) => item.name === managedBusinessEmailService.title)?.range).toBe("From £15")
+    expect(pricingItems.find((item) => item.name === managedBusinessEmailService.title)?.range).toBe("£15/month")
     expect(publicSurface).toContain("Three professional 5GB mailboxes")
     expect(publicSurface).not.toMatch(/mailcow|sogo|smtp infrastructure topology/i)
   })

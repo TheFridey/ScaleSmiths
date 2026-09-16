@@ -65,7 +65,7 @@ Controls are layered:
 1. Per-task requested token ceiling.
 2. Process-memory daily token and USD ledger.
 3. Database-backed project and monthly estimated-cost ceilings.
-4. Persisted `forge_ai_usage` rows containing provider, model, token counts, estimated cost, latency timestamps, and project/task links.
+4. Persisted `forge_ai_usage` rows containing provider, model, token counts, estimated cost, latency timestamps, project/task links, and exact run/step/job foreign keys when the call ran inside a Forge job. Run and step totals are summed by those relationships, never by overlapping time windows.
 5. Retry limits, request timeout, safe error messages, secret-safe system prompt, and strict schema validation.
 
 Usage views and CSV export are authenticated admin endpoints. Cost values are estimates based on hard-coded pricing and can drift from provider billing.

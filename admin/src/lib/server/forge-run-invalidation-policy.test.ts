@@ -10,6 +10,7 @@ describe("Forge run invalidation mode/policy", () => {
     const source = readFileSync(new URL("./forge-runs/invalidation.ts", import.meta.url), "utf8")
     expect(source).toMatch(/forgeRuns\.(?:mode|policyJson)/)
     expect(source).toContain("eq(forgeRuns.id, runId)")
+    expect(source).toContain("selectStagesToInvalidate")
     expect(source).not.toMatch(/mode:\s*["']standard["']|policy:\s*\{\}/)
   })
 

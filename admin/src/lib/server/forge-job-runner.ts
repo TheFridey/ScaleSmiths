@@ -34,6 +34,7 @@ import { requestLogger } from "./request-context"
 import { addMonitoringBreadcrumb, captureMonitoringException, captureMonitoringMessage, withMonitoringScope } from "./monitoring"
 import { isForgeE2EManualWorkerMode } from "./forge-e2e-isolation"
 import { runWithForgeAttribution } from "./forge-attribution-context"
+import { resolveForgeJobAttribution } from "./forge-job-attribution"
 
 export class ForgeJobError extends Error {
   safeMessage: string
@@ -280,10 +281,14 @@ export async function runClaimedForgeJob(claimed: ForgeJobRow, owner: string, op
   if (typeof heartbeat.unref === "function") heartbeat.unref()
 
   try {
+    // Attribution is resolved from the job's own row and the run step that owns it, so AI
+    // spend recorded anywhere inside this handler lands on the correct run, step and job
+    // even when several jobs for one project run concurrently.
+    const linked = await resolveForgeJobAttribution(claimed.id, claimed.projectId, payload)
     const attribution = {
       projectId: claimed.projectId,
-      runId: typeof payload.forgeRunId === "number" ? payload.forgeRunId : null,
-      runStepId: typeof payload.forgeRunStepId === "number" ? payload.forgeRunStepId : null,
+      runId: linked.runId,
+      runStepId: linked.runStepId,
       jobId: claimed.id,
       taskId: typeof payload.commandTaskId === "number" ? payload.commandTaskId : null,
     }

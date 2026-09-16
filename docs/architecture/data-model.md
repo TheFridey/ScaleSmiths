@@ -96,7 +96,7 @@ Shared tables are duplicated in TypeScript rather than imported from one package
 | `forge_integration_configs` | Per-project non-secret integration configuration |
 | `forge_activity_logs` | Append-oriented actor/action/message audit trail |
 | `forge_memories` | Key/value JSON-like state for workspace, preview, command chat and stage context |
-| `forge_ai_usage` | Provider/model/token/cost/timing record linked to project/task where available |
+| `forge_ai_usage` | Provider/model/token/cost/timing record linked to project/task and, when the call ran inside a Forge job, nullable `run_id` / `run_step_id` / `job_id` (`ON DELETE SET NULL`) |
 | `forge_deployment_candidates` | Immutable workspace/artifact snapshot with generated-site dependency report, SPDX SBOM, policy/version/timestamp and manifest/lock/report/SBOM hashes |
 | `forge_release_gate_decisions` | Candidate-specific manual approvals, revocations and only the explicitly permitted owner overrides |
 

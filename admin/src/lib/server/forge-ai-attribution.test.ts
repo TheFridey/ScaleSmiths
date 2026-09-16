@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { runWithForgeAttribution, currentForgeAttribution, type ForgeAttribution } from "./forge-attribution-context"
+import { runWithForgeAttribution, currentForgeAttribution, resolveForgeAttribution, type ForgeAttribution } from "./forge-attribution-context"
 
 describe("Forge AI attribution context", () => {
   const EMPTY: ForgeAttribution = { projectId: null, runId: null, runStepId: null, jobId: null, taskId: null }
@@ -70,14 +70,36 @@ describe("Forge AI attribution context", () => {
   it("ignores non-integer id-like values", () => {
     runWithForgeAttribution({
       projectId: 1,
-      runId: 0, // zero should be treated as absent in practice
+      runId: 0,
       runStepId: -5,
       jobId: 3.14,
     } as Partial<ForgeAttribution>, () => {
-      const attr = currentForgeAttribution()
-      expect(attr.projectId).toBe(1)
-      // The store preserves raw values; normalise-at-write is done in recordForgeAiUsage
-      expect(typeof attr.runId).toBe("number")
+      expect(currentForgeAttribution()).toEqual({
+        projectId: 1,
+        runId: null,
+        runStepId: null,
+        jobId: null,
+        taskId: null,
+      })
+    })
+  })
+
+  it("lets an explicit value win over ambient scope", () => {
+    runWithForgeAttribution({ projectId: 1, runId: 10, jobId: 100 }, () => {
+      expect(resolveForgeAttribution({ jobId: 200 })).toEqual({
+        projectId: 1,
+        runId: 10,
+        runStepId: null,
+        jobId: 200,
+        taskId: null,
+      })
+      expect(resolveForgeAttribution({ runId: null })).toEqual({
+        projectId: 1,
+        runId: null,
+        runStepId: null,
+        jobId: 100,
+        taskId: null,
+      })
     })
   })
 })

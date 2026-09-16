@@ -1,7 +1,7 @@
 # Dependency and CI security audit — July 2026
 
 - Date: 2026-07-29
-- Last updated: 2026-08-01 (dependency and CI runtime modernisation)
+- Last updated: 2026-09-16 (production Next.js 15.5.25 / sharp 0.35.4 / fast-uri 3.1.8 security patches)
 - Scope: `web`, `admin`, dependency governance, security CI, and the disposable backup/restore drill
 - Baseline: Node.js 22.14.0 and npm 10.9.2
 
@@ -21,6 +21,25 @@ Both production dependency trees now report zero vulnerabilities. Both full tree
 | Upstream-only | Webpack reports large cache-string serialization during the web production build. | Retained; it is a framework cache-performance diagnostic with no application-safe remediation. |
 
 CodeQL 3.37.4 remains on `node20` even though it is the current official stable action release. Its runner warning is therefore upstream-only; no compatibility override is enabled.
+
+## 2026-09-16 production advisory remediation
+
+Required Security CI checks `npm Audit (web)`, `npm Audit (admin)`, `Image Security (web)` and `Image Security (admin)` started failing after new high/critical advisories landed against the previously reviewed 15.5.22 production tree. Reproduction:
+
+- `npm audit --omit=dev --audit-level=high` in both apps reported `next` (critical: GHSA-p293-qw3h-jr36, GHSA-2xp9-vwfh-vxw4), `sharp` (high: GHSA-rgj7-g3m4-5g8c) and `fast-uri` 3.1.5 (high: GHSA-5jgf-p345-68v8 and related URI-normalization advisories).
+- Trivy HIGH/CRITICAL image scans with `ignore-unfixed: true` reported the same Node packages in both application images. No fixed OS-package HIGH/CRITICAL findings were present on the current `node:22-alpine` digest.
+
+Remediation kept the supported Next.js 15 line and did not run `npm audit fix --force`:
+
+| Package | From | To | Why |
+| --- | --- | --- | --- |
+| `next` and `eslint-config-next` | 15.5.22 | 15.5.25 | 15.5.24 is the Maintenance LTS security release; 15.5.25 re-enables AVIF optimisation once patched `sharp` is installed. |
+| `sharp` (scoped `next` override) | 0.35.0 | 0.35.4 | Closes GHSA-rgj7-g3m4-5g8c (`libheif`). Next 15.5.25 still optionally allows `^0.34.3`, so the override remains required. |
+| `fast-uri` (global override) | 3.1.5 | 3.1.8 | 3.1.6 is the first patched 3.x; 3.1.8 is the current 3.x line. |
+
+Governance policy `reviewedFrameworkVersion` was updated to 15.5.25 in both apps. The PostCSS override remains because Next.js 15.5.25 still declares PostCSS 8.4.31. OS base-image pins were left unchanged because Trivy did not report a fixed HIGH/CRITICAL OS finding.
+
+After the lockfile updates, `npm audit --omit=dev --audit-level=high` reports zero production vulnerabilities in web and admin. Remaining full-tree findings stay in development tooling (`drizzle-kit` / esbuild, plus unrelated lint/CSS tooling) and are excluded by `--omit=dev`.
 
 The Recharts audit found one import surface, the admin command-centre MRR-by-tier chart. Its responsive container, axis, tooltip and bar meaning are preserved. Recharts 3 accessibility support is explicit, the chart has an accessible name, and an empty-data message replaces a blank plot.
 
@@ -49,7 +68,7 @@ The retained machine-readable results are:
 
 ### Production transitive
 
-- Next.js 15.5.22 still declares PostCSS 8.4.31 and Sharp below the audited safe release. The `overrides.next` entries narrowly resolve only Next.js's nested dependencies to PostCSS 8.5.25 and Sharp 0.35.0.
+- Next.js 15.5.25 still declares PostCSS 8.4.31 and optionally allows Sharp `^0.34.3`. The `overrides.next` entries narrowly resolve only Next.js's nested dependencies to PostCSS 8.5.25 and Sharp 0.35.4.
 - `brace-expansion` is overridden to 5.0.8 because npm's advisory range includes all earlier supported branches and the dependency graph cannot otherwise select a non-vulnerable release.
 - Safe npm lockfile remediation also updated vulnerable `fast-uri` transitive resolutions.
 
@@ -75,9 +94,10 @@ No High or Critical finding is being accepted as contextually non-exploitable. T
 
 | Override | Reason | Removal condition |
 | --- | --- | --- |
-| `next > postcss = 8.5.25` | Next.js 15.5.22 embeds vulnerable PostCSS 8.4.31. | Remove when a supported stable Next.js 15 patch declares an audit-safe PostCSS and both CSS/build/E2E gates pass without it. |
-| `next > sharp = 0.35.0` | The Next.js optional Sharp range otherwise resolves below the audited safe release. | Remove when the supported Next.js line declares Sharp 0.35.0 or newer and production audit remains clean. |
-| `brace-expansion = 5.0.8` | All earlier dependency branches fall inside the npm advisory range. | Remove when every declared dependency range resolves an audit-safe release without a global override. |
+| `next > postcss = 8.5.25` | Next.js 15.5.25 still embeds vulnerable PostCSS 8.4.31. | Remove when a supported stable Next.js 15 patch declares an audit-safe PostCSS and both CSS/build/E2E gates pass without it. |
+| `next > sharp = 0.35.4` | Next.js 15.5.25 optionally allows Sharp `^0.34.3`, which remains inside GHSA-rgj7-g3m4-5g8c. | Remove when the supported Next.js line declares Sharp 0.35.4 or newer as the only optional range and production audit remains clean. |
+| `fast-uri = 3.1.8` | Transitive AJV/schema-utils resolutions otherwise stay on 3.1.5, which is inside the 2026 URI-normalization advisory range. | Remove when every declared dependency range resolves `fast-uri` >= 3.1.6 without a global override. |
+| `brace-expansion = 5.0.9` | All earlier dependency branches fall inside the npm advisory range. | Remove when every declared dependency range resolves an audit-safe release without a global override. |
 
 The overrides are identical in web and admin so framework behavior remains aligned.
 

@@ -3,9 +3,9 @@ import { buildManagedBusinessEmailSchema, managedBusinessEmail, managedBusinessE
 
 describe("Managed Business Email commercial source of truth", () => {
   it("keeps the confirmed standalone offer together", () => {
-    expect(managedBusinessEmailPriceLabel()).toBe("£15")
+    expect(managedBusinessEmailPriceLabel()).toBe("£15/month")
     expect(managedBusinessEmail.standalone).toMatchObject({ mailboxes: 3, storagePerMailboxGb: 5, setupIncluded: true })
-    expect(managedBusinessEmail.standalone.billingCadence).toBeNull()
+    expect(managedBusinessEmail.standalone.billingCadence).toBe("month")
   })
 
   it("emits visible FAQ and service schema without exposing infrastructure", () => {

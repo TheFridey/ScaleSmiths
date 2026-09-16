@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest"
+import { COOKIE_POLICY_VERSION } from "./cookie-consent"
 import { sanitizeExperienceEvent, shouldRespectPrivacyOptOut, summarizeExperienceEvents } from "./experience-analytics"
 
 describe("experience analytics privacy and taxonomy", () => {
@@ -34,7 +35,7 @@ describe("experience analytics privacy and taxonomy", () => {
     expect(shouldRespectPrivacyOptOut(new Headers({ dnt: "1" }))).toBe(true)
     expect(shouldRespectPrivacyOptOut(new Headers({ cookie: "other=value; ss_analytics_opt_out=1" }))).toBe(true)
     expect(shouldRespectPrivacyOptOut(new Headers())).toBe(true)
-    const consent = encodeURIComponent(JSON.stringify({ version: "2.0", functional: false, analytics: true, marketing: false, decidedAt: "2026-08-14T00:00:00.000Z" }))
+    const consent = encodeURIComponent(JSON.stringify({ version: COOKIE_POLICY_VERSION, functional: false, analytics: true, marketing: false, decidedAt: "2026-08-14T00:00:00.000Z" }))
     expect(shouldRespectPrivacyOptOut(new Headers({ cookie: `ss_cookie_consent=${consent}` }))).toBe(false)
   })
 

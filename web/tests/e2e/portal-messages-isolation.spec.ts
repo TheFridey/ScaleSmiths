@@ -86,8 +86,8 @@ test("messages shows owned client-visible request-thread history and hides other
 
     await page.goto(`/portal/${clientA.id}?tab=messages&thread=${requestB}`)
     await expect(page.getByRole("heading", { name: "Messages", exact: true })).toBeVisible()
-    await expect(page.getByText(clientA.unread)).toBeVisible()
-    await expect(page.getByText(clientA.visible)).toBeVisible()
+    await expect(page.getByRole("link", { name: /contact form/i }).getByText(clientA.unread, { exact: true })).toBeVisible()
+    await expect(page.getByRole("link", { name: /homepage copy/i }).getByText(clientA.visible, { exact: true })).toBeVisible()
     await expect(page.getByText(clientB.visible)).toHaveCount(0)
     await expect(page.getByText(clientA.internal)).toHaveCount(0)
     await expect(page.getByText("Private B thread")).toHaveCount(0)
@@ -96,14 +96,14 @@ test("messages shows owned client-visible request-thread history and hides other
     await page.getByRole("link", { name: /homepage copy/i }).click()
     await expect(page).toHaveURL(new RegExp(`[?&]thread=${requestARead}(?:&|$)`))
     await expect(page.getByRole("heading", { name: "Homepage copy", exact: true })).toBeVisible()
-    await expect(page.getByText(clientA.visible)).toBeVisible()
-    await expect(page.getByText(clientA.internal)).toHaveCount(0)
+    await expect(page.getByRole("article").getByText(clientA.visible, { exact: true })).toBeVisible()
+    await expect(page.getByRole("article").getByText(clientA.internal)).toHaveCount(0)
     await expect(page.locator('a[href^="mailto:"]')).toHaveCount(0)
 
     const reply = `A-reply-${suffix}`
     await page.getByLabel("Message", { exact: true }).fill(reply)
     await page.getByRole("button", { name: /send message/i }).click()
-    await expect(page.getByText(reply)).toBeVisible()
+    await expect(page.getByRole("article").getByText(reply, { exact: true })).toBeVisible()
     await expect(page.locator('a[href^="mailto:"]')).toHaveCount(0)
   } finally {
     await context.close()

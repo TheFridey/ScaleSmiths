@@ -24,7 +24,45 @@ export function classifyAddress(address: string): AddressClassification {
 }
 
 export function isForbiddenAddress(address: string): boolean {
-  return !classifyAddress(address).safe
+  return !classifyAddress(stripIpv6Zone(address)).safe
+}
+
+// Canonical form used to compare a pinned destination with a connected socket
+// address. IPv4-mapped IPv6 collapses to dotted-decimal IPv4 so ::ffff:a.b.c.d
+// cannot be treated as a different host from a.b.c.d. Returns null when the
+// input is not an IP.
+export function normalizeIpAddress(address: string): string | null {
+  const trimmed = stripIpv6Zone(address)
+  const version = isIP(trimmed)
+  if (version === 4) return trimmed
+  if (version === 6) {
+    const hextets = expandIpv6(trimmed)
+    if (!hextets) return null
+    if (isZero(hextets, 0, 4) && hextets[5] === 0xffff) return embeddedIpv4(hextets).join(".")
+    return hextets.map((hextet) => hextet.toString(16).padStart(4, "0")).join(":")
+  }
+  return null
+}
+
+export function addressesReferToSameHost(left: string, right: string): boolean {
+  const a = normalizeIpAddress(left)
+  const b = normalizeIpAddress(right)
+  return a !== null && a === b
+}
+
+// Fail-closed check for the address a socket actually connected to. Missing
+// remotes, private/loopback/link-local/metadata remotes, and remotes that do
+// not match the pinned destination are all disallowed.
+export function isDisallowedConnectedAddress(remote: string | undefined, pinned: string): boolean {
+  if (!remote) return true
+  if (isForbiddenAddress(remote) || isForbiddenAddress(pinned)) return true
+  return !addressesReferToSameHost(remote, pinned)
+}
+
+function stripIpv6Zone(address: string): string {
+  const withoutBrackets = address.startsWith("[") && address.endsWith("]") ? address.slice(1, -1) : address
+  const zone = withoutBrackets.indexOf("%")
+  return zone === -1 ? withoutBrackets : withoutBrackets.slice(0, zone)
 }
 
 function classifyIpv4(octets: number[]): AddressClassification {

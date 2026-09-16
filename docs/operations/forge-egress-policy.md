@@ -18,18 +18,25 @@ it:
 - normalises the hostname (the URL parser applies IDNA punycode and canonicalises
   IPv4 decimal/octal/hex and IPv6 literals; a trailing dot is stripped);
 - resolves **all** A and AAAA records and rejects the whole answer set if **any**
-  address is private, loopback, link-local, multicast, reserved, unspecified,
-  CGNAT, or cloud-metadata (`169.254.169.254` and its IPv6-mapped forms);
-- **pins** one validated address onto an undici dispatcher whose custom `lookup`
-  can only return that address, so DNS cannot rebind the socket between
-  validation and connection — validation and the connection use the same address;
-- preserves TLS: the original hostname stays the TLS servername and `Host`, so
+  address is private, loopback, link-local, unique-local, multicast, reserved,
+  unspecified, CGNAT, or cloud-metadata (`169.254.169.254`, `fd00:ec2::254`, and
+  IPv4-mapped / NAT64 forms);
+- **binds TCP to one validated address** via an undici connector: the socket is
+  opened to that IP, a custom `lookup` can only return that IP, and Happy
+  Eyeballs is disabled so a second family cannot be chosen;
+- **revalidates the connected socket**: `remoteAddress` must match the pin
+  (IPv4-mapped IPv6 is treated as the embedded IPv4) and must not be a
+  forbidden range; mismatch destroys the socket before request bytes are written;
+- preserves TLS: the original hostname stays the TLS `servername` and `Host`, so
   certificate verification is unchanged and **never disabled**;
+- uses undici's own `fetch` with the pinned dispatcher so validation and the
+  HTTP stack are the same library copy;
 - enforces response-size, timeout and redirect-count limits.
 
 The address classifier (`admin/src/lib/server/address-safety.ts`) is pure and
-exhaustively unit-tested; rebinding and unsafe-redirect behaviour is covered by
-`safe-outbound.test.ts`.
+exhaustively unit-tested. Deterministic rebinding and unsafe-redirect tests in
+`safe-outbound.test.ts` execute the production fetch boundary (real sockets,
+production dispatcher, a system-resolver rebind to loopback/metadata).
 
 This layer travels with the code and protects every environment, including local
 development where no network egress controls exist.
@@ -38,7 +45,8 @@ development where no network egress controls exist.
 
 The admin container should not be able to reach internal networks or the cloud
 metadata endpoint even if a future code path bypassed the client. Apply the
-strongest control your platform supports:
+strongest control your platform supports. Layer two is operator-owned; the
+in-process client does not replace it.
 
 ### Cloud metadata
 
@@ -74,7 +82,9 @@ egress so it can reach the public internet but not RFC1918 / link-local ranges:
 
 For the strongest posture, route Forge egress through an outbound proxy that
 allowlists destinations and re-checks DNS. The in-process client still applies —
-the proxy is additive, not a replacement.
+the proxy is additive, not a replacement. If a proxy is configured, it must fail
+closed on resolver errors and must not forward to private, loopback, link-local,
+or metadata destinations.
 
 ## What is intentionally allowed
 
@@ -82,9 +92,26 @@ the proxy is additive, not a replacement.
 - Documentation ranges (RFC 5737 / RFC 3849) are treated as safe by the
   classifier: they are not internal and are used as public stand-ins in tests.
 
-## Failure visibility
+## Safe failure behaviour
+
+The client is fail-closed. Any ambiguous or hostile answer is a denial, not a
+best-effort fetch:
+
+| Condition | Result | Caller-visible `code` |
+| --- | --- | --- |
+| Invalid URL, credentials, non-http(s), disallowed port | No DNS, no connect | `invalid_url` / `credentials_in_url` / `disallowed_scheme` / `disallowed_port` |
+| Resolver error or empty answer set | No connect | `dns_failure` |
+| Any A/AAAA record is private, loopback, link-local, unique-local, metadata, or otherwise forbidden | No connect; mixed safe/unsafe sets are treated as hostile | `blocked_address` |
+| Redirect `Location` missing, invalid, over limit, or independently forbidden | Hop aborted; later hops never start | `redirect_no_location` / `invalid_url` / `redirect_limit` / `blocked_address` |
+| Connected `remoteAddress` missing, mismatched, or forbidden | Socket destroyed before request bytes | `blocked_address` (or `request_failed` if the HTTP stack wraps the error) |
+| TLS certificate mismatch or untrusted issuer | Handshake aborted; verification is never disabled | `request_failed` |
+| Timeout, connect failure, or other transport error | Generic failure; no internal address is returned | `timeout` / `request_failed` |
+| Response over the byte limit | Stream aborted | `response_too_large` |
+
+Messages never contain a resolved internal address or resolver output. A
+policy denial does not fall back to the global `fetch`, to an unpinned
+dispatcher, or to a different address from the same DNS answer.
 
 Crawl failures are returned to Forge in the site-inventory `failures` array and,
-for autofill, cause the page to be skipped. Messages are generic and never
-contain a resolved internal address; security blocks additionally emit a concise
-server log keyed by host and a stable reason code (never an IP).
+for autofill, cause the page to be skipped. Security blocks may also emit a
+concise server log keyed by host and a stable reason code (never an IP).

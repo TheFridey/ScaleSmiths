@@ -1,8 +1,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 import http from "node:http"
 import https from "node:https"
-import type { AddressInfo } from "node:net"
+import dns from "node:dns"
+import { execFile } from "node:child_process"
+import { promisify } from "node:util"
+import { isIP, type AddressInfo } from "node:net"
 import { createSafeOutboundClient, buildPinnedDispatcher, SafeOutboundError, type SafeOutboundCode } from "./safe-outbound"
+
+const execFileAsync = promisify(execFile)
 
 // A self-signed cert (CN=localhost) used only to prove TLS verification stays on.
 const SELF_SIGNED_CERT = `-----BEGIN CERTIFICATE-----
@@ -55,8 +60,13 @@ trqQMEf6vrMaZSDK3t0lIQ==
 -----END PRIVATE KEY-----`
 
 const PUBLIC_IP = "203.0.113.5" // Documentation range — a safe public stand-in.
+const TEST_NET_V4 = "203.0.113.10"
+const TEST_NET_V6 = "2001:db8::1"
 
 const servers: Array<http.Server | https.Server> = []
+const testNetV4 = await ensureLocalAddress(TEST_NET_V4, 4)
+const testNetV6 = await ensureLocalAddress(TEST_NET_V6, 6)
+
 afterEach(async () => {
   while (servers.length) await new Promise<void>((resolve) => servers.pop()!.close(() => resolve()))
   vi.restoreAllMocks()
@@ -65,6 +75,68 @@ afterEach(async () => {
 function listen(server: http.Server | https.Server): Promise<number> {
   servers.push(server)
   return new Promise((resolve) => server.listen(0, "127.0.0.1", () => resolve((server.address() as AddressInfo).port)))
+}
+
+function listenOn(server: http.Server | https.Server, host: string): Promise<number> {
+  servers.push(server)
+  return new Promise((resolve, reject) => {
+    server.once("error", reject)
+    server.listen(0, host, () => resolve((server.address() as AddressInfo).port))
+  })
+}
+
+async function canBind(address: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    const server = http.createServer()
+    server.once("error", () => resolve(false))
+    server.listen(0, address, () => {
+      server.close(() => resolve(true))
+    })
+  })
+}
+
+async function ensureLocalAddress(address: string, family: 4 | 6): Promise<boolean> {
+  if (await canBind(address)) return true
+  const commands: Array<[string, string[]]> =
+    family === 4
+      ? [
+          ["ifconfig", ["lo:0", address, "netmask", "255.255.255.255", "up"]],
+          ["sudo", ["-n", "ifconfig", "lo:0", address, "netmask", "255.255.255.255", "up"]],
+          ["ip", ["addr", "add", `${address}/32`, "dev", "lo"]],
+          ["sudo", ["-n", "ip", "addr", "add", `${address}/32`, "dev", "lo"]],
+        ]
+      : [
+          ["ifconfig", ["lo", "inet6", "add", `${address}/128`]],
+          ["sudo", ["-n", "ifconfig", "lo", "inet6", "add", `${address}/128`]],
+          ["ip", ["-6", "addr", "add", `${address}/128`, "dev", "lo"]],
+          ["sudo", ["-n", "ip", "-6", "addr", "add", `${address}/128`, "dev", "lo"]],
+        ]
+  for (const [command, args] of commands) {
+    try {
+      await execFileAsync(command, args)
+    } catch {
+      continue
+    }
+    if (await canBind(address)) return true
+  }
+  return canBind(address)
+}
+
+function rebindSystemLookup(address: string, family: 4 | 6) {
+  const original = dns.lookup.bind(dns)
+  return vi.spyOn(dns, "lookup").mockImplementation(((hostname: string, options: unknown, callback?: unknown) => {
+    if (isIP(String(hostname))) {
+      return original(hostname, options as never, callback as never)
+    }
+    const cb = (typeof options === "function" ? options : callback) as (
+      err: NodeJS.ErrnoException | null,
+      address: string | Array<{ address: string; family: number }>,
+      family?: number,
+    ) => void
+    const opts = typeof options === "function" ? undefined : (options as { all?: boolean } | undefined)
+    if (opts?.all) cb(null, [{ address, family }])
+    else cb(null, address, family)
+  }) as typeof dns.lookup)
 }
 
 async function expectCode(promise: Promise<unknown>, code: SafeOutboundCode) {
@@ -110,7 +182,15 @@ describe("safe-outbound validation", () => {
   it("blocks private/loopback/metadata IP literals without resolving", async () => {
     const resolve = vi.fn(async () => [PUBLIC_IP])
     const client = createSafeOutboundClient({ resolve })
-    for (const host of ["http://127.0.0.1/", "http://10.0.0.1/", "http://169.254.169.254/", "http://[::1]/"]) {
+    for (const host of [
+      "http://127.0.0.1/",
+      "http://10.0.0.1/",
+      "http://169.254.169.254/",
+      "http://[::1]/",
+      "http://[fc00::1]/",
+      "http://[fe80::1]/",
+      "http://[fd00:ec2::254]/",
+    ]) {
       await expectCode(client(host), "blocked_address")
     }
     expect(resolve).not.toHaveBeenCalled()
@@ -156,18 +236,28 @@ describe("safe-outbound validation", () => {
   })
 
   it("pins the exact validated address onto the dispatcher", async () => {
-    const built: Array<{ address: string; family: number }> = []
+    const built: Array<{ address: string; family: number; hostname: string }> = []
     const { impl } = fetchSequence([new Response("ok")])
     const client = createSafeOutboundClient({
       resolve: async () => [PUBLIC_IP],
       fetchImpl: impl,
-      buildDispatcher: (address, family) => {
-        built.push({ address, family })
+      buildDispatcher: (address, family, hostname) => {
+        built.push({ address, family, hostname })
         return { close: async () => {} } as never
       },
     })
     await client("https://example.test/")
-    expect(built).toEqual([{ address: PUBLIC_IP, family: 4 }])
+    expect(built).toEqual([{ address: PUBLIC_IP, family: 4, hostname: "example.test" }])
+  })
+
+  it("rejects a mixed IPv6 public/link-local answer set", async () => {
+    const { impl } = fetchSequence([new Response("ok")])
+    const client = createSafeOutboundClient({
+      resolve: async () => ["2001:db8::1", "fe80::1"],
+      fetchImpl: impl,
+    })
+    await expectCode(client("https://rebind6.example/"), "blocked_address")
+    expect(impl).not.toHaveBeenCalled()
   })
 })
 
@@ -225,30 +315,52 @@ describe("safe-outbound limits", () => {
   })
 })
 
-describe("safe-outbound end to end (real socket, pinned to loopback)", () => {
-  it("connects only to the pinned address and reads a bounded body", async () => {
-    const server = http.createServer((req, res) => {
-      if (req.url === "/next") {
-        res.writeHead(200, { "content-type": "text/html" })
-        res.end("<title>Final</title>")
-        return
-      }
-      res.writeHead(302, { location: `http://example.test:${port}/next` })
-      res.end()
+describe("safe-outbound production fetch boundary", () => {
+  it("does not follow a DNS rebind to IPv4 loopback", async () => {
+    const decoyHits: string[] = []
+    const decoy = http.createServer((req, res) => {
+      decoyHits.push(req.url || "")
+      res.writeHead(200)
+      res.end("REBOUND")
     })
-    const port = await listen(server)
+    const port = await listen(decoy)
+    const lookup = rebindSystemLookup("127.0.0.1", 4)
 
-    // The name resolves to a public address (validation passes); the dispatcher
-    // pins the loopback test server. The socket can only go where we pinned it.
-    const client = createSafeOutboundClient({
-      resolve: async () => [PUBLIC_IP],
-      buildDispatcher: () => buildPinnedDispatcher("127.0.0.1", 4),
+    const client = createSafeOutboundClient({ resolve: async () => [testNetV4 ? TEST_NET_V4 : PUBLIC_IP] })
+    await expectCode(client(`http://rebind.example:${port}/secret`, { allowedPorts: { http: [String(port)], https: [] }, timeoutMs: 1000 }), "request_failed")
+    expect(decoyHits).toEqual([])
+    expect(lookup.mock.calls.some((call) => String(call[0]) === "rebind.example")).toBe(false)
+  })
+
+  it("does not follow a DNS rebind to IPv6 loopback", async () => {
+    const decoyHits: string[] = []
+    const decoy = http.createServer((req, res) => {
+      decoyHits.push(req.url || "")
+      res.writeHead(200)
+      res.end("REBOUND")
     })
-    const result = await client(`http://example.test:${port}/`, { allowedPorts: { http: [String(port)], https: [] } })
-    expect(result.status).toBe(200)
-    expect(result.body).toContain("Final")
-    expect(result.redirects).toHaveLength(1)
-    expect(result.url).toBe(`http://example.test:${port}/next`)
+    servers.push(decoy)
+    const port = await new Promise<number>((resolve) => decoy.listen(0, "::1", () => resolve((decoy.address() as AddressInfo).port)))
+    rebindSystemLookup("::1", 6)
+
+    const client = createSafeOutboundClient({ resolve: async () => ["2001:db8::1"] })
+    await expectCode(client(`http://rebind6.example:${port}/secret`, { allowedPorts: { http: [String(port)], https: [] }, timeoutMs: 1000 }), "request_failed")
+    expect(decoyHits).toEqual([])
+  })
+
+  it("does not follow a DNS rebind to the IPv4 metadata endpoint", async () => {
+    const decoyHits: string[] = []
+    const decoy = http.createServer((req, res) => {
+      decoyHits.push(req.url || "")
+      res.writeHead(200)
+      res.end("METADATA")
+    })
+    const port = await listen(decoy)
+    rebindSystemLookup("169.254.169.254", 4)
+
+    const client = createSafeOutboundClient({ resolve: async () => [testNetV4 ? TEST_NET_V4 : PUBLIC_IP] })
+    await expectCode(client(`http://metadata.example:${port}/latest/meta-data/`, { allowedPorts: { http: [String(port)], https: [] }, timeoutMs: 1000 }), "request_failed")
+    expect(decoyHits).toEqual([])
   })
 
   it("keeps TLS verification intact against an untrusted certificate", async () => {
@@ -260,13 +372,78 @@ describe("safe-outbound end to end (real socket, pinned to loopback)", () => {
 
     const client = createSafeOutboundClient({
       resolve: async () => [PUBLIC_IP],
-      buildDispatcher: () => buildPinnedDispatcher("127.0.0.1", 4),
+      // TLS fails during handshake, before the connected-address check, so a
+      // loopback pin is enough to prove rejectUnauthorized stays enabled.
+      buildDispatcher: () => buildPinnedDispatcher("127.0.0.1", 4, "example.test"),
     })
-    // The self-signed cert is untrusted and its name does not match; because we
-    // never disable verification, the request fails instead of returning "secret".
     await expectCode(
       client(`https://example.test:${port}/`, { allowedPorts: { http: [], https: [String(port)] } }),
       "request_failed",
     )
+  })
+
+  it.skipIf(!testNetV4)("connects to the pinned documentation-range address through the production dispatcher", async () => {
+    const server = http.createServer((req, res) => {
+      if (req.url === "/next") {
+        res.writeHead(200, { "content-type": "text/html" })
+        res.end("<title>Final</title>")
+        return
+      }
+      res.writeHead(302, { location: `http://example.test:${port}/next` })
+      res.end()
+    })
+    const port = await listenOn(server, TEST_NET_V4)
+    rebindSystemLookup("127.0.0.1", 4)
+
+    const client = createSafeOutboundClient({ resolve: async () => [TEST_NET_V4] })
+    const result = await client(`http://example.test:${port}/`, { allowedPorts: { http: [String(port)], https: [] } })
+    expect(result.status).toBe(200)
+    expect(result.body).toContain("Final")
+    expect(result.redirects).toHaveLength(1)
+    expect(result.url).toBe(`http://example.test:${port}/next`)
+  })
+
+  it.skipIf(!testNetV4)("revalidates a redirect to a metadata host on the production fetch boundary", async () => {
+    const decoyHits: string[] = []
+    const decoy = http.createServer((req, res) => {
+      decoyHits.push(req.url || "")
+      res.writeHead(200)
+      res.end("METADATA")
+    })
+    await listen(decoy)
+
+    const server = http.createServer((_req, res) => {
+      res.writeHead(302, { location: "http://169.254.169.254/latest/meta-data/" })
+      res.end()
+    })
+    const port = await listenOn(server, TEST_NET_V4)
+
+    const client = createSafeOutboundClient({ resolve: async () => [TEST_NET_V4] })
+    await expectCode(client(`http://example.test:${port}/`, { allowedPorts: { http: [String(port), "80"], https: [] } }), "blocked_address")
+    expect(decoyHits).toEqual([])
+  })
+
+  it.skipIf(!testNetV4)("revalidates a redirect to a private hostname on the production fetch boundary", async () => {
+    const server = http.createServer((_req, res) => {
+      res.writeHead(301, { location: "http://internal.example/" })
+      res.end()
+    })
+    const port = await listenOn(server, TEST_NET_V4)
+    const client = createSafeOutboundClient({
+      resolve: async (host) => (host === "internal.example" ? ["10.0.0.9"] : [TEST_NET_V4]),
+    })
+    await expectCode(client(`http://example.test:${port}/`, { allowedPorts: { http: [String(port), "80"], https: [] } }), "blocked_address")
+  })
+
+  it.skipIf(!testNetV6)("connects to a pinned IPv6 documentation-range address", async () => {
+    const server = http.createServer((_req, res) => {
+      res.writeHead(200)
+      res.end("v6-ok")
+    })
+    const port = await listenOn(server, TEST_NET_V6)
+    const client = createSafeOutboundClient({ resolve: async () => [TEST_NET_V6] })
+    const result = await client(`http://ipv6.example:${port}/`, { allowedPorts: { http: [String(port)], https: [] } })
+    expect(result.status).toBe(200)
+    expect(result.body).toBe("v6-ok")
   })
 })

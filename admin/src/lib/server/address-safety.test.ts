@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest"
-import { classifyAddress, isForbiddenAddress } from "./address-safety"
+import {
+  addressesReferToSameHost,
+  classifyAddress,
+  isDisallowedConnectedAddress,
+  isForbiddenAddress,
+  normalizeIpAddress,
+} from "./address-safety"
 
 describe("address-safety classifier", () => {
   const forbidden = [
@@ -40,6 +46,7 @@ describe("address-safety classifier", () => {
     "64:ff9b::7f00:1", // NAT64 loopback
     "64:ff9b::a9fe:a9fe", // NAT64 metadata
     "::7f00:1", // deprecated IPv4-compatible loopback
+    "fd00:ec2::254", // AWS IPv6 metadata (unique-local)
   ]
 
   const safe = [
@@ -80,5 +87,25 @@ describe("address-safety classifier", () => {
       expect(result.reason).toBe("link_local")
       expect(result.reason).not.toContain("169")
     }
+  })
+
+  it("normalises IPv4-mapped IPv6 to the embedded IPv4", () => {
+    expect(normalizeIpAddress("::ffff:203.0.113.10")).toBe("203.0.113.10")
+    expect(normalizeIpAddress("::ffff:7f00:1")).toBe("127.0.0.1")
+    expect(addressesReferToSameHost("::ffff:8.8.8.8", "8.8.8.8")).toBe(true)
+    expect(addressesReferToSameHost("2001:db8::1", "2001:db8:0:0:0:0:0:1")).toBe(true)
+    expect(addressesReferToSameHost("203.0.113.10", "127.0.0.1")).toBe(false)
+  })
+
+  it("rejects a missing, mismatched, or forbidden connected address", () => {
+    expect(isDisallowedConnectedAddress(undefined, "203.0.113.10")).toBe(true)
+    expect(isDisallowedConnectedAddress("203.0.113.10", "203.0.113.10")).toBe(false)
+    expect(isDisallowedConnectedAddress("::ffff:203.0.113.10", "203.0.113.10")).toBe(false)
+    expect(isDisallowedConnectedAddress("127.0.0.1", "203.0.113.10")).toBe(true)
+    expect(isDisallowedConnectedAddress("169.254.169.254", "203.0.113.10")).toBe(true)
+    expect(isDisallowedConnectedAddress("10.0.0.5", "10.0.0.5")).toBe(true)
+    expect(isDisallowedConnectedAddress("::1", "2001:db8::1")).toBe(true)
+    expect(isDisallowedConnectedAddress("fe80::1", "2001:db8::1")).toBe(true)
+    expect(isDisallowedConnectedAddress("fd00:ec2::254", "2001:db8::1")).toBe(true)
   })
 })

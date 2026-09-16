@@ -98,13 +98,13 @@ test("messages shows owned client-visible request-thread history and hides other
     await expect(page.getByRole("heading", { name: "Homepage copy", exact: true })).toBeVisible()
     await expect(page.getByRole("article").getByText(clientA.visible, { exact: true })).toBeVisible()
     await expect(page.getByRole("article").getByText(clientA.internal)).toHaveCount(0)
-    await expect(page.locator('a[href^="mailto:"]')).toHaveCount(0)
+    await expect(page.getByRole("link", { name: /if this keeps failing, email us directly instead/i })).toHaveCount(0)
 
     const reply = `A-reply-${suffix}`
     await page.getByLabel("Message", { exact: true }).fill(reply)
     await page.getByRole("button", { name: /send message/i }).click()
     await expect(page.getByRole("article").getByText(reply, { exact: true })).toBeVisible()
-    await expect(page.locator('a[href^="mailto:"]')).toHaveCount(0)
+    await expect(page.getByRole("link", { name: /if this keeps failing, email us directly instead/i })).toHaveCount(0)
   } finally {
     await context.close()
     await db.query("delete from client_requests where client_id = any($1::text[])", [[clientA.id, clientB.id]]).catch(() => undefined)

@@ -216,3 +216,106 @@ describe("Forge ALS attribution (persisted in DB)", () => {
     expect(rowB.rows[0].job_id).toBe(jobB)
   })
 })
+
+describe("exact Forge AI reporting totals", () => {
+  it("overlapping jobs keep separate job and step totals", async () => {
+    const project = await createProject()
+    const run = await createRun(project)
+    const stepA = await createStep(run, project, "research", 1)
+    const stepB = await createStep(run, project, "copy", 2)
+    const jobA = await createJob(project, "research")
+    const jobB = await createJob(project, "copy")
+    const started = new Date().toISOString()
+    await insertAiUsage({ project_id: project, run_id: run, run_step_id: stepA, job_id: jobA, estimated_cost: "1.500000", started_at: started, completed_at: started })
+    await insertAiUsage({ project_id: project, run_id: run, run_step_id: stepB, job_id: jobB, estimated_cost: "2.250000", started_at: started, completed_at: started })
+
+    const { sumForgeJobCost, sumForgeRunStepCost } = await import("../../src/lib/server/forge-ai-usage")
+    expect(await sumForgeJobCost(jobA)).toBe(1.5)
+    expect(await sumForgeJobCost(jobB)).toBe(2.25)
+    expect(await sumForgeRunStepCost(stepA)).toBe(1.5)
+    expect(await sumForgeRunStepCost(stepB)).toBe(2.25)
+  })
+
+  it("gives a retry only its own job cost while the step still carries every attempt", async () => {
+    const project = await createProject()
+    const run = await createRun(project)
+    const step = await createStep(run, project, "research", 1)
+    const firstJob = await createJob(project, "research")
+    const retryJob = await createJob(project, "research")
+    await insertAiUsage({ project_id: project, run_id: run, run_step_id: step, job_id: firstJob, estimated_cost: "0.400000" })
+    await insertAiUsage({ project_id: project, run_id: run, run_step_id: step, job_id: retryJob, estimated_cost: "0.100000" })
+
+    const { sumForgeJobCost, sumForgeRunStepCost } = await import("../../src/lib/server/forge-ai-usage")
+    expect(await sumForgeJobCost(retryJob)).toBe(0.1)
+    expect(await sumForgeJobCost(firstJob)).toBe(0.4)
+    expect(await sumForgeRunStepCost(step)).toBe(0.5)
+  })
+
+  it("run totals include every linked step and satisfy the consistency assertion", async () => {
+    const project = await createProject()
+    const run = await createRun(project)
+    const stepA = await createStep(run, project, "research", 1)
+    const stepB = await createStep(run, project, "copy", 2)
+    await insertAiUsage({ project_id: project, run_id: run, run_step_id: stepA, estimated_cost: "0.750000" })
+    await insertAiUsage({ project_id: project, run_id: run, run_step_id: stepB, estimated_cost: "1.250000" })
+    await insertAiUsage({ project_id: project, run_id: run, estimated_cost: "0.500000" })
+
+    const { assertForgeRunCostConsistency, loadForgeRunCostBreakdown, sumForgeRunCost } = await import("../../src/lib/server/forge-ai-usage")
+    expect(await sumForgeRunCost(run)).toBe(2.5)
+    const consistency = await assertForgeRunCostConsistency(run)
+    expect(consistency).toMatchObject({ stepTotal: 2, nonStepRunTotal: 0.5, runTotal: 2.5, consistent: true, difference: 0 })
+    const breakdown = await loadForgeRunCostBreakdown(run, project)
+    expect(breakdown.unattributedProjectCost).toBe(0)
+    expect(breakdown.steps).toHaveLength(2)
+  })
+
+  it("never assigns unattributed legacy usage to a run", async () => {
+    const project = await createProject()
+    const run = await createRun(project)
+    const job = await createJob(project)
+    const step = await createStep(run, project, "research", 1)
+    await insertAiUsage({ project_id: project, run_id: run, run_step_id: step, job_id: job, estimated_cost: "1.000000" })
+    await insertAiUsage({ project_id: project, estimated_cost: "9.000000" })
+    await insertAiUsage({ project_id: project, estimated_cost: "3.000000" })
+
+    const { loadForgeRunCostBreakdown, sumForgeJobCost, sumForgeRunCost, sumForgeRunStepCost } = await import("../../src/lib/server/forge-ai-usage")
+    expect(await sumForgeRunCost(run)).toBe(1)
+    expect(await sumForgeRunStepCost(step)).toBe(1)
+    expect(await sumForgeJobCost(job)).toBe(1)
+    const breakdown = await loadForgeRunCostBreakdown(run, project)
+    expect(breakdown.runTotal).toBe(1)
+    expect(breakdown.unattributedProjectCost).toBe(12)
+    expect(breakdown.consistent).toBe(true)
+  })
+})
+
+describe("job attribution resolution", () => {
+  it("prefers the run step linked by job_id over a stale payload hint", async () => {
+    const project = await createProject()
+    const other = await createProject("Other Site")
+    const run = await createRun(project)
+    const otherRun = await createRun(other)
+    const job = await createJob(project)
+    const step = await createStep(run, project, "research", 1)
+    const otherStep = await createStep(otherRun, other, "research", 1)
+    await pool.query("UPDATE forge_run_steps SET job_id=$1 WHERE id=$2", [job, step])
+
+    const { resolveForgeJobAttribution } = await import("../../src/lib/server/forge-job-attribution")
+    await expect(resolveForgeJobAttribution(job, project, { forgeRunStepId: otherStep })).resolves.toEqual({ runId: run, runStepId: step })
+  })
+
+  it("uses a payload hint only when the step is not yet linked and belongs to the job project", async () => {
+    const project = await createProject()
+    const other = await createProject("Hint Other")
+    const run = await createRun(project)
+    const otherRun = await createRun(other)
+    const job = await createJob(project)
+    const step = await createStep(run, project, "copy", 1)
+    const otherStep = await createStep(otherRun, other, "copy", 1)
+
+    const { resolveForgeJobAttribution } = await import("../../src/lib/server/forge-job-attribution")
+    await expect(resolveForgeJobAttribution(job, project, { forgeRunStepId: step })).resolves.toEqual({ runId: run, runStepId: step })
+    await expect(resolveForgeJobAttribution(job, project, { forgeRunStepId: otherStep })).resolves.toEqual({ runId: null, runStepId: null })
+    await expect(resolveForgeJobAttribution(job, project, { forgeRunStepId: "1" })).resolves.toEqual({ runId: null, runStepId: null })
+  })
+})

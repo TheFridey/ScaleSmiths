@@ -1,6 +1,7 @@
 import "server-only"
 import { and, eq, inArray, isNull } from "drizzle-orm"
 import { db } from "@/lib/db"
+import { selectStagesToInvalidate } from "@/lib/forge-run-invalidation"
 import { forgeArtifacts, forgeRuns, forgeRunSteps } from "@/lib/schema"
 import { getForgeRunStage, type ForgeRunMode, type ForgeRunPolicy, type ForgeRunStage } from "@/lib/forge-run-stages"
 import { recordRunEvent } from "./events"
@@ -16,9 +17,12 @@ export async function invalidateDownstreamForChangedInput(runId: number, project
   const policy = (run.policyJson as ForgeRunPolicy) ?? {}
   const context = await loadStageContext(projectId, mode, policy)
   const steps = await db.select().from(forgeRunSteps).where(and(eq(forgeRunSteps.runId, runId), inArray(forgeRunSteps.stage, definition.invalidatedDownstreamStages)))
-  const invalid = steps.filter((step) => {
-    const stage = getForgeRunStage(step.stage)
-    return stage && step.inputHash && step.inputHash !== computeInputHash(context, stage.requiredInputs) && ["completed", "awaiting_approval"].includes(step.status)
+  const invalid = selectStagesToInvalidate({
+    changedStage: stageKey,
+    steps,
+    context,
+    policy,
+    currentInputHash: (requiredInputs) => computeInputHash(context, requiredInputs),
   })
   if (!invalid.length) return
   const invalidStages = invalid.map((step) => step.stage)

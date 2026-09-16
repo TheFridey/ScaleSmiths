@@ -1,5 +1,5 @@
 import "server-only"
-import { and, desc, eq, gte, sql, type SQL } from "drizzle-orm"
+import { and, desc, eq, gte, isNull, sql, type SQL } from "drizzle-orm"
 import { db } from "@/lib/db"
 import {
   buildForgeAiBudgetStatus,
@@ -17,8 +17,8 @@ import {
   type ForgeStageCost,
 } from "@/lib/forge-cost-quality"
 import type { ForgeQaArtifactState } from "@/lib/forge-qa"
-import { forgeActivityLogs, forgeAiUsage, forgeProjects, forgeTasks } from "@/lib/schema"
-import { currentForgeAttribution } from "./forge-attribution-context"
+import { forgeActivityLogs, forgeAiUsage, forgeProjects, forgeRunSteps, forgeTasks } from "@/lib/schema"
+import { resolveForgeAttribution } from "./forge-attribution-context"
 
 export interface ForgeAiUsageInput {
   projectId?: number | null
@@ -86,19 +86,22 @@ export async function recordForgeAiUsage(input: ForgeAiUsageInput) {
   const completionTokens = Math.max(0, input.usage.outputTokens ?? 0)
   const totalTokens = Math.max(0, input.usage.totalTokens ?? promptTokens + completionTokens)
   const estimatedCost = roundCost(Math.max(0, input.estimatedCost ?? 0))
-  const ambient = currentForgeAttribution()
-
-  const projectId = input.projectId ?? ambient.projectId
-  const runId = input.runId ?? ambient.runId
-  const runStepId = input.runStepId ?? ambient.runStepId
-  const jobId = input.jobId ?? ambient.jobId
+  // Explicit values win; anything omitted falls back to the job runner's server-derived
+  // scope. Never time-window inference.
+  const attribution = resolveForgeAttribution({
+    projectId: input.projectId,
+    taskId: input.taskId,
+    runId: input.runId,
+    runStepId: input.runStepId,
+    jobId: input.jobId,
+  })
 
   await db.insert(forgeAiUsage).values({
-    projectId: projectId ?? null,
-    taskId: input.taskId ?? ambient.taskId,
-    runId: runId ?? null,
-    runStepId: runStepId ?? null,
-    jobId: jobId ?? null,
+    projectId: attribution.projectId,
+    taskId: attribution.taskId,
+    runId: attribution.runId,
+    runStepId: attribution.runStepId,
+    jobId: attribution.jobId,
     provider: input.provider,
     model: input.model,
     promptTokens,
@@ -109,11 +112,11 @@ export async function recordForgeAiUsage(input: ForgeAiUsageInput) {
     completedAt: input.completedAt,
   })
 
-  if (projectId) {
-    const budgets = await loadForgeAiUsageBudgetSnapshot(projectId)
+  if (attribution.projectId) {
+    const budgets = await loadForgeAiUsageBudgetSnapshot(attribution.projectId)
     if (budgets.project.warning || budgets.monthly.warning) {
       await db.insert(forgeActivityLogs).values({
-        projectId,
+        projectId: attribution.projectId,
         actor: "system",
         action: "ai_budget_warning",
         message: budgets.project.blocked || budgets.monthly.blocked
@@ -340,6 +343,8 @@ export async function exportForgeAiUsageCsv(projectId?: number | null) {
       runId: forgeAiUsage.runId,
       runStepId: forgeAiUsage.runStepId,
       jobId: forgeAiUsage.jobId,
+      // Makes the legacy/unattributed distinction survive outside the application.
+      attributed: sql<boolean>`(${forgeAiUsage.runId} is not null)`,
       provider: forgeAiUsage.provider,
       model: forgeAiUsage.model,
       promptTokens: forgeAiUsage.promptTokens,
@@ -364,6 +369,7 @@ export async function exportForgeAiUsageCsv(projectId?: number | null) {
     "runId",
     "runStepId",
     "jobId",
+    "attributed",
     "provider",
     "model",
     "promptTokens",
@@ -378,6 +384,104 @@ export async function exportForgeAiUsageCsv(projectId?: number | null) {
     header.join(","),
     ...rows.map((row) => header.map((key) => csvCell(row[key as keyof typeof row])).join(",")),
   ].join("\n")
+}
+
+// ---------------------------------------------------------------------------
+// Exact relationship-based attribution.
+//
+// These are the only supported way to cost a run, step or job. Time-window
+// attribution is gone: overlapping jobs on one project each absorbed the other's spend,
+// and a retry absorbed the whole attempt history. Sums stay in PostgreSQL numeric so
+// money is never added in JavaScript floating point.
+// ---------------------------------------------------------------------------
+
+/** Exact spend for one run step: usage explicitly linked to that step. */
+export async function sumForgeRunStepCost(runStepId: number) {
+  return sumUsageCost(eq(forgeAiUsage.runStepId, runStepId))
+}
+
+/** Exact spend for one run, including run-linked usage not tied to a single step. */
+export async function sumForgeRunCost(runId: number) {
+  return sumUsageCost(eq(forgeAiUsage.runId, runId))
+}
+
+/** Exact spend for one job. */
+export async function sumForgeJobCost(jobId: number) {
+  return sumUsageCost(eq(forgeAiUsage.jobId, jobId))
+}
+
+export interface ForgeRunCostConsistency {
+  runId: number
+  stepTotal: number
+  nonStepRunTotal: number
+  runTotal: number
+  consistent: boolean
+  difference: number
+}
+
+/**
+ * Asserts sum(step costs) + run-level non-step usage == run total.
+ *
+ * Run-linked usage with a null `run_step_id` is legitimate — a run can spend outside any
+ * single step — so it is reported explicitly rather than hidden. Tolerance matches the
+ * column scale of numeric(12,6).
+ */
+export async function assertForgeRunCostConsistency(runId: number): Promise<ForgeRunCostConsistency> {
+  const [stepRow] = await db
+    .select({ total: sql<string>`coalesce(sum(${forgeAiUsage.estimatedCost}), 0)` })
+    .from(forgeAiUsage)
+    .where(and(eq(forgeAiUsage.runId, runId), sql`${forgeAiUsage.runStepId} is not null`))
+  const [nonStepRow] = await db
+    .select({ total: sql<string>`coalesce(sum(${forgeAiUsage.estimatedCost}), 0)` })
+    .from(forgeAiUsage)
+    .where(and(eq(forgeAiUsage.runId, runId), isNull(forgeAiUsage.runStepId)))
+
+  const stepTotal = toCost(stepRow?.total)
+  const nonStepRunTotal = toCost(nonStepRow?.total)
+  const runTotal = await sumForgeRunCost(runId)
+  const difference = roundCost(runTotal - (stepTotal + nonStepRunTotal))
+
+  return {
+    runId,
+    stepTotal,
+    nonStepRunTotal,
+    runTotal,
+    consistent: Math.abs(difference) <= 0.000001 && stepTotal <= runTotal + 0.000001,
+    difference,
+  }
+}
+
+export interface ForgeRunCostBreakdown extends ForgeRunCostConsistency {
+  steps: Array<{ runStepId: number; stage: string; costUsd: number }>
+  /**
+   * Project spend that carries no run linkage at all — usage recorded before migration
+   * 0049, and legitimate non-run usage such as intake or triage. Reported separately and
+   * never folded into a run total.
+   */
+  unattributedProjectCost: number
+}
+
+export async function loadForgeRunCostBreakdown(runId: number, projectId: number): Promise<ForgeRunCostBreakdown> {
+  const [consistency, stepRows, unattributed] = await Promise.all([
+    assertForgeRunCostConsistency(runId),
+    db
+      .select({
+        runStepId: forgeAiUsage.runStepId,
+        stage: forgeRunSteps.stage,
+        costUsd: sql<string>`coalesce(sum(${forgeAiUsage.estimatedCost}), 0)`,
+      })
+      .from(forgeAiUsage)
+      .innerJoin(forgeRunSteps, eq(forgeRunSteps.id, forgeAiUsage.runStepId))
+      .where(eq(forgeAiUsage.runId, runId))
+      .groupBy(forgeAiUsage.runStepId, forgeRunSteps.stage),
+    sumUsageCost(and(eq(forgeAiUsage.projectId, projectId), isNull(forgeAiUsage.runId))),
+  ])
+
+  return {
+    ...consistency,
+    steps: stepRows.map((row) => ({ runStepId: row.runStepId as number, stage: row.stage, costUsd: toCost(row.costUsd) })),
+    unattributedProjectCost: unattributed,
+  }
 }
 
 async function loadGlobalMonthlyBudgetSnapshot(): Promise<ForgeAiUsageBudgetSnapshot> {

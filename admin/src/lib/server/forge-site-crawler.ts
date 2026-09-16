@@ -32,9 +32,10 @@ interface CrawlerDependencies {
 export async function crawlForgeExistingSite(start: string, options: ForgeSiteCrawlerOptions = {}, dependencies: CrawlerDependencies = {}): Promise<ForgeSiteInventory> {
   const now = dependencies.now ?? (() => new Date())
   // Every request and redirect goes through the shared safe outbound client,
-  // which resolves and pins the validated address, revalidates redirects,
-  // preserves TLS, and enforces the size/timeout/redirect/port limits. The
-  // crawler layers its own domain allowlist on top via assertHop.
+  // which pins the validated address onto the connection, revalidates redirects
+  // and the connected socket, preserves TLS, and enforces the size/timeout/
+  // redirect/port limits. The crawler layers its own domain allowlist on top via
+  // assertHop.
   const request = createSafeOutboundClient({ fetchImpl: dependencies.fetch, resolve: dependencies.resolve })
   const startUrl = normalizeUrl(start)
   const allowedDomains = new Set((options.allowedDomains?.length ? options.allowedDomains : [startUrl.hostname]).map(normalizeDomain))

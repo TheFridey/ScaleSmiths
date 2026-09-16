@@ -12,9 +12,9 @@ const MAX_PAGE_CHARS = 18000
 const REQUEST_TIMEOUT_MS = 12000
 const MAX_PAGE_BYTES = 2_000_000
 
-// Every outbound request shares the SSRF-hardened client: validated address
-// pinned to the connection, redirects revalidated, TLS preserved. See
-// docs/operations/forge-egress-policy.md.
+// Every outbound request shares the SSRF-hardened client: TCP connects to the
+// validated address, TLS hostname verification is preserved, redirects and the
+// connected socket are revalidated. See docs/operations/forge-egress-policy.md.
 const safeRequest = createSafeOutboundClient()
 
 export interface ForgeUrlAutofillResult extends Record<string, JsonValue> {

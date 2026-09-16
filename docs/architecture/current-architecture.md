@@ -183,7 +183,7 @@ The supported operational sequence for client provisioning, delivery, messaging,
 4. Production-derived restore evidence and achieved RPO/RTO remain human operational gates.
 5. Monitoring/log-shipping activation, alert routing, and privacy/subprocessor alignment require production evidence.
 6. Portal text identity and admin integer client identity prevent a uniform RLS tenant model; most portal/Forge isolation remains application-enforced.
-7. Forge outbound URL validation still needs a connection-pinned or equivalent design to fully close DNS-rebinding risk.
+7. Forge outbound fetches pin the validated address (TLS hostname preserved) and revalidate redirects and the connected socket; production firewall/proxy denial of private and metadata networks remains an operator defence-in-depth control.
 8. Auth.js v5 beta and the development-only Drizzle Kit advisory chain remain time-bounded dependency risks.
 9. Forge Docker execution shares the host kernel, and bridge-enabled install/preview operations rely on host egress controls.
 10. The Forge worker is in-process and uses the broad admin runtime role; operational visibility, retention, and dedicated-worker isolation remain improvement areas.
@@ -206,7 +206,7 @@ Relative to the July snapshots, the current repository has retired or materially
 - Forge has deterministic authenticated E2E journeys and durable lease/recovery coverage.
 - Host-Nginx routing, headers, unknown-host handling, generated-site refusal, and Cloudflare trust behaviour have a disposable request-level test harness.
 - Backup creation, encryption, validation, guarded restore, retention, timers, and synthetic drills exist. Real production-derived recovery proof remains open.
-- Finance now includes transactional invoice issuance, immutable snapshots/PDFs, audited lifecycle changes, delivery operations, and ownership-checked portal publication.
+- Forge outbound crawls and autofill bind TCP to a validated public address, preserve TLS hostname verification, revalidate every redirect and connected socket, and fail closed. Production firewall/proxy controls remain operator defence in depth.
 
 Historical documents are not edited to erase their original findings. Their banners and follow-up notes should direct readers here for the current baseline.
 

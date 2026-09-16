@@ -1,19 +1,29 @@
 import "server-only"
-import { Agent, type Dispatcher } from "undici"
+import { Agent, buildConnector, fetch as undiciFetch, type Dispatcher } from "undici"
 import { isIP } from "node:net"
 import { resolve4, resolve6 } from "node:dns/promises"
-import { isForbiddenAddress } from "./address-safety"
+import { isDisallowedConnectedAddress, isForbiddenAddress } from "./address-safety"
 
 // One shared, reviewed outbound HTTP client for every Forge-controlled crawl.
 //
 // The security property is that VALIDATION AND THE CONNECTION USE THE SAME
-// APPROVED ADDRESS. For each request and each redirect independently we resolve
-// all A/AAAA records, reject the whole answer set if any address is forbidden,
-// then pin one validated address onto an undici dispatcher whose custom `lookup`
-// can only ever return that address. DNS cannot rebind the socket to a private
-// or metadata host between the check and the fetch. TLS is untouched: undici
-// keeps the original hostname as the TLS servername and Host header, so
-// certificate verification is unchanged and never disabled.
+// APPROVED ADDRESS, and the socket is checked again after connect:
+//
+// 1. For each request and each redirect independently we resolve all A/AAAA
+//    records and reject the whole answer set if any address is forbidden.
+// 2. TCP is opened to that pinned IP. The original hostname stays on the
+//    request URL (Host header) and is set as TLS `servername`, so certificate
+//    verification is unchanged and never disabled.
+// 3. A custom lookup can only ever return the pinned address, so even if the
+//    HTTP stack tries to resolve again it cannot rebind to a private or
+//    metadata host.
+// 4. After connect, the socket's remoteAddress must match the pin and must
+//    not be private, loopback, link-local, or metadata. Mismatch destroys
+//    the socket before any request bytes are written.
+//
+// The client uses undici's own fetch so the Agent and the HTTP stack are the
+// same library copy. Failures are fail-closed and never include resolved
+// internal addresses.
 
 const REDIRECT_STATUS = new Set([301, 302, 303, 307, 308])
 
@@ -65,13 +75,18 @@ export interface SafeOutboundResponse {
   redirects: Array<{ from: string; to: string; status: number }>
 }
 
+export type SafeOutboundFetch = (
+  input: string | URL,
+  init?: RequestInit & { dispatcher?: Dispatcher },
+) => Promise<Response>
+
 export interface SafeOutboundDependencies {
   /** Resolve a hostname to all of its A and AAAA addresses. */
   resolve: (hostname: string) => Promise<string[]>
   /** The fetch implementation; the pinned dispatcher is supplied per request. */
-  fetchImpl: typeof fetch
+  fetchImpl: SafeOutboundFetch
   /** Build the address-pinning dispatcher. Overridable for tests. */
-  buildDispatcher: (address: string, family: 4 | 6) => Dispatcher
+  buildDispatcher: (address: string, family: 4 | 6, hostname: string, connectTimeoutMs?: number) => Dispatcher
 }
 
 const DEFAULT_ALLOWED_PORTS = { http: ["80"], https: ["443"] }
@@ -79,7 +94,7 @@ const DEFAULT_ALLOWED_PORTS = { http: ["80"], https: ["443"] }
 export function createSafeOutboundClient(dependencies: Partial<SafeOutboundDependencies> = {}) {
   const deps: SafeOutboundDependencies = {
     resolve: dependencies.resolve ?? defaultResolve,
-    fetchImpl: dependencies.fetchImpl ?? fetch,
+    fetchImpl: dependencies.fetchImpl ?? (undiciFetch as unknown as SafeOutboundFetch),
     buildDispatcher: dependencies.buildDispatcher ?? buildPinnedDispatcher,
   }
   return (rawUrl: string | URL, options: SafeOutboundOptions = {}) => safeFetch(rawUrl, options, deps)
@@ -100,8 +115,8 @@ async function safeFetch(rawUrl: string | URL, options: SafeOutboundOptions, dep
   const redirects: SafeOutboundResponse["redirects"] = []
 
   for (let hop = 0; ; hop += 1) {
-    const { address, family } = await resolveAndPin(current, deps.resolve)
-    const dispatcher = deps.buildDispatcher(address, family)
+    const { address, family, hostname } = await resolveAndPin(current, deps.resolve)
+    const dispatcher = deps.buildDispatcher(address, family, hostname, config.timeoutMs)
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), config.timeoutMs)
 
@@ -112,12 +127,12 @@ async function safeFetch(rawUrl: string | URL, options: SafeOutboundOptions, dep
         headers: { ...config.headers },
         redirect: "manual",
         signal: controller.signal,
-        // @ts-expect-error Node's fetch accepts an undici dispatcher at runtime.
         dispatcher,
       })
-    } catch {
+    } catch (error) {
       clearTimeout(timer)
       await closeDispatcher(dispatcher)
+      if (error instanceof SafeOutboundError) throw error
       if (controller.signal.aborted) throw new SafeOutboundError("timeout", "The request timed out.")
       // Deliberately generic: never surface connect errors that could reveal
       // internal network reachability.
@@ -174,14 +189,17 @@ function parseAndValidate(rawUrl: string | URL, allowedPorts: { http: string[]; 
   return url
 }
 
-async function resolveAndPin(url: URL, resolve: (hostname: string) => Promise<string[]>): Promise<{ address: string; family: 4 | 6 }> {
-  const host = normalizeHost(url.hostname)
+async function resolveAndPin(
+  url: URL,
+  resolve: (hostname: string) => Promise<string[]>,
+): Promise<{ address: string; family: 4 | 6; hostname: string }> {
+  const hostname = normalizeHost(url.hostname)
   let addresses: string[]
-  if (isIP(host)) {
-    addresses = [host]
+  if (isIP(hostname)) {
+    addresses = [hostname]
   } else {
     try {
-      addresses = await resolve(host)
+      addresses = await resolve(hostname)
     } catch {
       throw new SafeOutboundError("dns_failure", "The host could not be resolved.")
     }
@@ -194,7 +212,7 @@ async function resolveAndPin(url: URL, resolve: (hostname: string) => Promise<st
   }
   const address = addresses[0]
   const family = isIP(address) === 6 ? 6 : 4
-  return { address, family }
+  return { address, family, hostname }
 }
 
 // Strip brackets from IPv6 literals and a single trailing dot from names.
@@ -211,25 +229,57 @@ async function defaultResolve(hostname: string): Promise<string[]> {
   return addresses
 }
 
-export function buildPinnedDispatcher(address: string, family: 4 | 6): Dispatcher {
+function pinnedLookup(address: string, family: 4 | 6) {
+  return (
+    _hostname: string,
+    options: { all?: boolean },
+    callback: (err: NodeJS.ErrnoException | null, address: string | Array<{ address: string; family: number }>, family?: number) => void,
+  ) => {
+    if (options && options.all) {
+      callback(null, [{ address, family }])
+    } else {
+      callback(null, address, family)
+    }
+  }
+}
+
+export function buildPinnedDispatcher(address: string, family: 4 | 6, hostname: string, connectTimeoutMs = 10_000): Dispatcher {
+  const tlsServername = isIP(hostname) ? undefined : hostname
+  const connector = buildConnector({
+    // Explicit: certificate verification is never disabled.
+    rejectUnauthorized: true,
+    // Happy Eyeballs must not open a second family that we did not pin.
+    autoSelectFamily: false,
+    family,
+    timeout: connectTimeoutMs,
+    lookup: pinnedLookup(address, family),
+  })
+
   return new Agent({
     maxRedirections: 0,
-    connect: {
-      // The pinned address is the only place this connection can ever go. undici
-      // still uses the original hostname for TLS servername + Host, so
-      // certificate verification stays intact. rejectUnauthorized is left at its
-      // secure default — never disabled.
-      lookup(
-        _hostname: string,
-        options: { all?: boolean },
-        callback: (err: NodeJS.ErrnoException | null, address: string | Array<{ address: string; family: number }>, family?: number) => void,
-      ) {
-        if (options && options.all) {
-          callback(null, [{ address, family }])
-        } else {
-          callback(null, address, family)
-        }
-      },
+    connections: 1,
+    pipelining: 0,
+    connect(options, callback) {
+      connector(
+        {
+          ...options,
+          hostname: address,
+          ...(tlsServername ? { servername: tlsServername } : {}),
+        },
+        (error, socket) => {
+          if (error || !socket) {
+            callback(error ?? new Error("connect_failed"), null)
+            return
+          }
+          const remote = "remoteAddress" in socket && typeof socket.remoteAddress === "string" ? socket.remoteAddress : undefined
+          if (isDisallowedConnectedAddress(remote, address)) {
+            socket.destroy()
+            callback(new SafeOutboundError("blocked_address", "The host resolved to a disallowed network address."), null)
+            return
+          }
+          callback(null, socket)
+        },
+      )
     },
   })
 }

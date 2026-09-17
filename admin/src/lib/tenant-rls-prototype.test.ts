@@ -25,6 +25,7 @@ describe("tenant RLS prototype artefacts", () => {
 
   it("keeps admin runtime internal write distinct from tenant context and BYPASSRLS", () => {
     expect(db).toContain("internal_write")
+    expect(db).toContain("options:")
     expect(db).toContain("TENANT_ACCESS_MODE.tenant")
     expect(db).toContain("withInternalAggregate")
     expect(db).not.toContain("BYPASSRLS")

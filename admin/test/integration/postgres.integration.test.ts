@@ -352,6 +352,10 @@ describe("real PostgreSQL integration", () => {
             "INSERT INTO client_requests(client_id,title,description) VALUES('portal-b','Cross write','Should fail')",
           ),
         ).rejects.toMatchObject({ code: "42501" });
+        await webClient.query("ROLLBACK");
+        await webClient.query("BEGIN");
+        await webClient.query("SELECT set_config('app.access_mode','tenant',true)");
+        await webClient.query("SELECT set_config('app.current_client_id',$1,true)", [String(first)]);
         await expect(
           webClient.query("UPDATE client_requests SET title='stolen' WHERE client_id='portal-b'"),
         ).resolves.toMatchObject({ rowCount: 0 });

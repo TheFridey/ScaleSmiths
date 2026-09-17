@@ -28,26 +28,21 @@ export const TENANT_ACCESS_MODE = {
   internalWrite: "internal_write",
 } as const
 
-function attachInternalWriteDefault(target: Pool) {
-  target.on("connect", (client) => {
-    void client.query("select set_config('app.access_mode', 'internal_write', false)")
-  })
-}
-
 function createPool() {
   const connectionString = resolveAdminDatabaseUrl()
   if (!connectionString) {
     throw new Error("ADMIN_DATABASE_URL is required for admin database access.")
   }
 
-  const created = new Pool({
+  return new Pool({
     connectionString,
     allowExitOnIdle: true,
     connectionTimeoutMillis: 10_000,
     idleTimeoutMillis: 10_000,
+    // Session default for the admin modular monolith: explicit internal write
+    // mode, not BYPASSRLS. Tenant-scoped helpers override this transaction-locally.
+    options: `-c app.access_mode=${TENANT_ACCESS_MODE.internalWrite}`,
   })
-  attachInternalWriteDefault(created)
-  return created
 }
 
 function createUnavailableDb(): NodePgDatabase<typeof schema> {

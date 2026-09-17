@@ -36,9 +36,10 @@ beforeAll(async () => {
   const migrationPool = new Pool({ connectionString: migrationUrl, max: 2 })
   try { await migrateSharedTestDatabase(migrationPool) } finally { await migrationPool.end() }
   await run(process.execPath, [path.resolve("scripts/provision-postgres-roles.mjs"), "--confirm-provision"], { env: provisionEnv })
-  adminPool = new Pool({ connectionString: adminUrl, max: 5 })
-  adminPool.on("connect", (client) => {
-    void client.query("select set_config('app.access_mode', 'internal_write', false)")
+  adminPool = new Pool({
+    connectionString: adminUrl,
+    max: 5,
+    options: "-c app.access_mode=internal_write",
   })
   webPool = new Pool({ connectionString: webUrl, max: 2 })
   adminDb = drizzle(adminPool)

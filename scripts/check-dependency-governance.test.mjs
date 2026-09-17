@@ -9,7 +9,7 @@ const policy = {
     admin: { next: "15.5.22", "eslint-config-next": "15.5.22", react: "18.3.1", "react-dom": "18.3.1", "next-auth": "5.0.0-beta.32" },
   },
   acceptedAdvisories: [{ id: "GHSA-example", severity: "moderate" }],
-  preReleaseExceptions: [{ app: "admin", package: "next-auth", version: "5.0.0-beta.32", decision: "retain", reason: "Reviewed v5 dependency.", reviewBy: "2026-10-30", record: "docs/security/authjs-beta-risk-acceptance.md" }],
+  preReleaseExceptions: [{ app: "admin", package: "next-auth", version: "5.0.0-beta.32", decision: "retain", reason: "Reviewed v5 dependency.", reviewBy: "2099-12-31", record: "docs/security/authjs-beta-risk-acceptance.md" }],
 }
 
 function app(dependencies, devDependencies = {}) {
@@ -44,6 +44,21 @@ test("reports unpinned critical dependencies and manifest-lock drift", () => {
   const report = inspectDependencyGovernance({ web, admin }, policy)
   assert(report.errors.some((error) => error.includes("differs between package.json")))
   assert(report.errors.some((error) => error.includes("must use an exact version")))
+})
+
+test("reports an expired or invalid pre-release review date", () => {
+  const web = app({ next: "15.5.22", react: "18.3.1", "react-dom": "18.3.1" }, { "eslint-config-next": "15.5.22" })
+  const admin = app({ next: "15.5.22", react: "18.3.1", "react-dom": "18.3.1", "next-auth": "5.0.0-beta.32" }, { "eslint-config-next": "15.5.22" })
+  const expired = inspectDependencyGovernance({ web, admin }, {
+    ...policy,
+    preReleaseExceptions: [{ ...policy.preReleaseExceptions[0], reviewBy: "2026-01-01" }],
+  }, { now: new Date("2026-09-17T00:00:00.000Z") })
+  assert(expired.errors.some((error) => error.includes("expired on 2026-01-01")))
+  const invalid = inspectDependencyGovernance({ web, admin }, {
+    ...policy,
+    preReleaseExceptions: [{ ...policy.preReleaseExceptions[0], reviewBy: "2027/01/30" }],
+  }, { now: new Date("2026-09-17T00:00:00.000Z") })
+  assert(invalid.errors.some((error) => error.includes("invalid reviewBy date")))
 })
 
 test("reports mismatched Next.js ecosystem and React versions", () => {

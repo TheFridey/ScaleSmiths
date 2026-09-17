@@ -56,7 +56,7 @@ The UI calls authenticated route handlers in `admin/src/app/api`. Domain code is
 
 ### Admin
 
-Auth.js v5 uses a credentials provider in `admin/auth.ts`, persistent `admin_users`, and JWT sessions with an eight-hour lifetime. There is no signup route. Passwords are bcrypt hashes. Roles and session versions are embedded in the JWT, while Node middleware reloads the database identity on protected requests so disabled accounts and revoked sessions fail closed. Login attempts use database-backed rate-limit rows. Middleware also applies a process-local Forge mutation/task limiter.
+Auth.js v5 uses a credentials provider in `admin/auth.ts`, persistent `admin_users`, and JWT sessions with an eight-hour lifetime. There is no signup route. Passwords are bcrypt hashes. Roles and session versions are embedded in the JWT, while Node middleware reloads the database identity on protected requests so disabled accounts and revoked sessions fail closed. Login attempts use database-backed rate-limit rows. Middleware also applies a process-local Forge mutation/task limiter. The `next-auth@5.0.0-beta.32` pin is a renewed, time-limited risk acceptance (next review 2027-01-30) because no stable v5 release exists.
 
 ### Client portal
 

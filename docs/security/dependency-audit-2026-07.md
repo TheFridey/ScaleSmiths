@@ -1,7 +1,7 @@
 # Dependency and CI security audit — July 2026
 
 - Date: 2026-07-29
-- Last updated: 2026-09-16 (production Next.js 15.5.25 / sharp 0.35.4 / fast-uri 3.1.8 security patches)
+- Last updated: 2026-09-17 (Auth.js v5 beta risk acceptance renewed; no stable next-auth 5.0.0)
 - Scope: `web`, `admin`, dependency governance, security CI, and the disposable backup/restore drill
 - Baseline: Node.js 22.14.0 and npm 10.9.2
 
@@ -56,6 +56,10 @@ The retained machine-readable results are:
 - `audit-results/web-full.json`
 - `audit-results/admin-production.json`
 - `audit-results/admin-full.json`
+
+## 2026-09-17 Auth.js beta risk review
+
+Issue #59 required a scheduled review of the `next-auth@5.0.0-beta.32` acceptance due 2026-10-30. Registry evidence on 2026-09-17 showed npm `latest` still at `4.24.15`, npm `beta` still at `5.0.0-beta.32`, and no `next-auth@5.0.0` stable release. The admin lockfile already resolved this exact pin and `@auth/core@0.41.3` with registry-matching integrity, so it was left unchanged. The July 2026 Auth.js advisories remain patched in this pin. The acceptance is renewed through 2027-01-30; see `docs/security/authjs-beta-risk-acceptance.md`.
 
 ## Finding classification and remediation
 

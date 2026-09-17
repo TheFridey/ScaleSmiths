@@ -43,9 +43,10 @@ describe("migration installation paths", () => {
   it("applies every migration from zero in production order with separate journals", async () => {
     await migrateSharedTestDatabase(pool)
 
-    expect(await migrationCount("__drizzle_web_migrations")).toBe(21)
-    expect(await migrationCount("__drizzle_migrations")).toBe(60)
+    expect(await migrationCount("__drizzle_web_migrations")).toBe(22)
+    expect(await migrationCount("__drizzle_migrations")).toBe(61)
     expect(await columnExists("forge_artifacts", "content_bytes")).toBe(true)
+    expect(await columnExists("client_requests", "client_record_id")).toBe(true)
     expect(await columnExists("forge_deployment_candidates", "dependency_report_json")).toBe(true)
     expect(await columnExists("forge_deployment_candidates", "dependency_sbom_hash")).toBe(true)
     expect(await constraintExists("forge_deployment_candidates_dependency_evidence_complete")).toBe(true)
@@ -89,9 +90,10 @@ describe("migration installation paths", () => {
 
     await migrateSharedTestDatabase(pool)
 
-    expect(await migrationCount("__drizzle_web_migrations")).toBe(21)
-    expect(await migrationCount("__drizzle_migrations")).toBe(60)
+    expect(await migrationCount("__drizzle_web_migrations")).toBe(22)
+    expect(await migrationCount("__drizzle_migrations")).toBe(61)
     expect(await columnExists("forge_artifacts", "content_bytes")).toBe(true)
+    expect(await columnExists("client_requests", "client_record_id")).toBe(true)
     expect(await columnExists("forge_deployment_candidates", "dependency_report_json")).toBe(true)
     expect(await constraintExists("forge_deployment_candidates_dependency_hashes_sha256")).toBe(true)
     expect(await tableExists("client_request_messages")).toBe(true)

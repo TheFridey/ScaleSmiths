@@ -113,7 +113,7 @@ afterAll(async () => {
 
 describe("prospect_conversions + client_service_assignments schema", () => {
   it("accepts a minimal conversion row and enforces the prospect unique index", async () => {
-    const adminDb = drizzle(new Pool({ connectionString: adminUrl }))
+    const adminDb = createAdminDb()
     const [prospect] = await adminDb.insert(currentSchema.prospects).values({ businessName: "Acme", stage: "won" }).returning()
     const [client] = await adminDb.insert(currentSchema.clients).values({ name: "Acme", updatedAt: new Date() }).returning()
     await adminDb.insert(prospectConversions).values({ prospectId: prospect.id, clientId: client.id, clientAction: "created" })
@@ -123,7 +123,7 @@ describe("prospect_conversions + client_service_assignments schema", () => {
   })
 
   it("enforces client_service_assignments uniqueness per (client, catalogue item)", async () => {
-    const adminDb = drizzle(new Pool({ connectionString: adminUrl }))
+    const adminDb = createAdminDb()
     const [client] = await adminDb.insert(currentSchema.clients).values({ name: "Beta", updatedAt: new Date() }).returning()
     const [item] = await adminDb.insert(currentSchema.invoiceCatalogueItems).values({ name: "Care Plan", defaultUnitAmount: 5000, updatedAt: new Date() }).returning()
     await adminDb.insert(clientServiceAssignments).values({ clientId: client.id, catalogueItemId: item.id })
@@ -133,7 +133,7 @@ describe("prospect_conversions + client_service_assignments schema", () => {
   })
 
   it("prepareDisabledPortalAccount links portalClientId and creates a disabled account", async () => {
-    const adminDb = drizzle(new Pool({ connectionString: adminUrl }))
+    const adminDb = createAdminDb()
     const [client] = await adminDb.insert(currentSchema.clients).values({ name: "Portalless", updatedAt: new Date() }).returning()
     const result = await portalUserService.prepareDisabledPortalAccount(client.id)
     expect(result.portalClientId).toBe(`portal-client-${client.id}`)
@@ -148,7 +148,7 @@ describe("prospect_conversions + client_service_assignments schema", () => {
 describe("previewConversion", () => {
   it("returns defaults, catalogue, dedupe candidates, no blocking warnings", async () => {
     process.env.ADMIN_DATABASE_URL = adminUrl
-    const adminDb = drizzle(new Pool({ connectionString: adminUrl }))
+    const adminDb = createAdminDb()
     const prospect = await seedWonProspect(adminDb)
     await adminDb.insert(currentSchema.clients).values({ name: "Acme Ltd", contactEmail: "x@y.z", updatedAt: new Date() })
     await adminDb.insert(currentSchema.invoiceCatalogueItems).values({ name: "Care Plan", defaultUnitAmount: 5000, updatedAt: new Date() })
@@ -181,7 +181,7 @@ describe("executeConversion (atomic)", () => {
 
   it("creates every artifact in one transaction", async () => {
     process.env.ADMIN_DATABASE_URL = adminUrl
-    const adminDb = drizzle(new Pool({ connectionString: adminUrl }))
+    const adminDb = createAdminDb()
     const prospect = await seedWonProspect(adminDb)
     const item = await seedCatalogue(adminDb)
     const record = await prospectService.executeConversion(prospect.id, actor, baseOptions([item.id]))
@@ -215,7 +215,7 @@ describe("executeConversion (atomic)", () => {
 
   it("is idempotent: a second call returns the same record, no duplicates", async () => {
     process.env.ADMIN_DATABASE_URL = adminUrl
-    const adminDb = drizzle(new Pool({ connectionString: adminUrl }))
+    const adminDb = createAdminDb()
     const prospect = await seedWonProspect(adminDb)
     const item = await seedCatalogue(adminDb)
     const first = await prospectService.executeConversion(prospect.id, actor, baseOptions([item.id]))
@@ -228,7 +228,7 @@ describe("executeConversion (atomic)", () => {
 
   it("links an existing client without creating one", async () => {
     process.env.ADMIN_DATABASE_URL = adminUrl
-    const adminDb = drizzle(new Pool({ connectionString: adminUrl }))
+    const adminDb = createAdminDb()
     const prospect = await seedWonProspect(adminDb)
     const item = await seedCatalogue(adminDb)
     const [existing] = await adminDb.insert(currentSchema.clients).values({ name: "Acme Ltd", invoiceClientCode: "ACME2", updatedAt: new Date() }).returning()
@@ -243,7 +243,7 @@ describe("executeConversion (atomic)", () => {
 
   it("link mode: applies the guarded client patch, preserves an existing tier, and rejects a duplicate invoice code", async () => {
     process.env.ADMIN_DATABASE_URL = adminUrl
-    const adminDb = drizzle(new Pool({ connectionString: adminUrl }))
+    const adminDb = createAdminDb()
     const item = await seedCatalogue(adminDb)
 
     // 1. fresh client (no tier, no invoiceClientCode) -> the guarded tx.update(clients) writes all three fields
@@ -285,7 +285,7 @@ describe("executeConversion (atomic)", () => {
 
   it("rolls back everything when a step fails", async () => {
     process.env.ADMIN_DATABASE_URL = adminUrl
-    const adminDb = drizzle(new Pool({ connectionString: adminUrl }))
+    const adminDb = createAdminDb()
     const prospect = await seedWonProspect(adminDb)
     // catalogue id that does not exist -> the up-front active-catalogue check throws 409 before any write
     await expect(prospectService.executeConversion(prospect.id, actor, {
@@ -302,7 +302,7 @@ describe("executeConversion (atomic)", () => {
 
   it("rejects conversion when the prospect is not won", async () => {
     process.env.ADMIN_DATABASE_URL = adminUrl
-    const adminDb = drizzle(new Pool({ connectionString: adminUrl }))
+    const adminDb = createAdminDb()
     const [prospect] = await adminDb.insert(currentSchema.prospects).values({ businessName: "NotWon", stage: "proposal_sent" }).returning()
     await expect(prospectService.executeConversion(prospect.id, actor, {
       client: { mode: "create", name: "NotWon", tier: "Forge Build", invoiceClientCode: "NW1" },
@@ -313,7 +313,7 @@ describe("executeConversion (atomic)", () => {
 
   it("minimal options: client + one service only", async () => {
     process.env.ADMIN_DATABASE_URL = adminUrl
-    const adminDb = drizzle(new Pool({ connectionString: adminUrl }))
+    const adminDb = createAdminDb()
     const prospect = await seedWonProspect(adminDb)
     const item = await seedCatalogue(adminDb)
     const record = await prospectService.executeConversion(prospect.id, actor, {
@@ -328,6 +328,15 @@ describe("executeConversion (atomic)", () => {
     expect(await adminDb.select().from(currentSchema.kanbanCards)).toHaveLength(0)
   })
 })
+
+function createAdminDb() {
+  return drizzle(
+    new Pool({
+      connectionString: adminUrl,
+      options: "-c app.access_mode=internal_write",
+    }),
+  )
+}
 
 function roleUrl(base: string, username: string, password: string) {
   const value = new URL(base);

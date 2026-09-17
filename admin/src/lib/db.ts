@@ -40,7 +40,8 @@ function createPool() {
     connectionTimeoutMillis: 10_000,
     idleTimeoutMillis: 10_000,
     // Session default for the admin modular monolith: explicit internal write
-    // mode, not BYPASSRLS. Tenant-scoped helpers override this transaction-locally.
+    // mode, not a row-security bypass. Tenant-scoped helpers override this
+    // transaction-locally.
     options: `-c app.access_mode=${TENANT_ACCESS_MODE.internalWrite}`,
   })
 }

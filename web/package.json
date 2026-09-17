@@ -13,6 +13,7 @@
     "start": "node --env-file-if-exists=../.env ./node_modules/next/dist/bin/next start -p 3000",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "test:e2e:portal": "playwright test --project=portal",
     "test:e2e:chromium": "playwright test --project=chromium --project=chromium-tablet --project=chromium-mobile",
     "test:e2e:cross-browser": "playwright test public-site.cross-browser.spec.ts --project=firefox-smoke --project=webkit-smoke",
     "test:e2e:update": "playwright test --update-snapshots",

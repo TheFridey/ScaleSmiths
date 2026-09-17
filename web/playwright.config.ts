@@ -43,8 +43,13 @@ export default defineConfig({
   },
   projects: [
     {
+      name: "portal",
+      testMatch: /portal-lifecycle\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 1000 } },
+    },
+    {
       name: "chromium",
-      testIgnore: /.*\.cross-browser\.spec\.ts/,
+      testIgnore: [/.*\.cross-browser\.spec\.ts/, /portal-lifecycle\.spec\.ts/],
       use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 1000 } },
     },
     {

@@ -77,6 +77,7 @@ The root `.env` is supplied wholesale to Compose services. Ownership below descr
 | Forge provider routing | `FORGE_ENABLE_AI`, `FORGE_DEFAULT_AI_PROVIDER`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` |
 | Forge token/cost controls | `FORGE_AI_MAX_TOKENS_PER_TASK`, `FORGE_AI_DAILY_TOKEN_BUDGET`, `FORGE_AI_DAILY_USD_BUDGET`, `FORGE_MAX_PROJECT_AI_COST`, `FORGE_MAX_MONTHLY_AI_COST` |
 | Forge jobs/rate limits | `FORGE_JOBS_MODE`, `FORGE_RATE_LIMIT_WINDOW_MS`, `FORGE_MUTATION_RATE_LIMIT`, `FORGE_TASK_RATE_LIMIT` |
+| Forge operations health | Optional `FORGE_OPS_*` queue, lease, retry, dead-letter and preview alert thresholds |
 | Forge workspace/QA | `FORGE_MAX_REPAIR_ATTEMPTS`, `FORGE_ARTIFACT_MAX_VERSIONS`, `FORGE_ARTIFACT_MAX_CONTENT_BYTES`, `FORGE_QA_LOG_MAX_CHARS`, Lighthouse/console threshold variables |
 | Forge preview/sandbox | `FORGE_PREVIEW_HOST`, `FORGE_PREVIEW_PORT_BASE`, `FORGE_ALLOW_PUBLIC_PREVIEWS`, all `FORGE_SANDBOX_*` variables |
 | Server-only integrations | `R2_*` for client-document storage and future `WHATSAPP_*`; these are never browser credentials |

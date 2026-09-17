@@ -22,7 +22,7 @@ The executable source of truth is `admin/src/lib/authorization-policy.ts`. The c
 | Forge projects/workflows | `projects.*`, `forge.*` | Project, run, job, task and artifact graph |
 | Configuration/audit | `forge.configure`, `audit.read` | Project or filtered global data |
 | Release/deployment | `deployments.execute`, action-specific `forge.approve` | Project candidate evidence |
-| Operations | `projects.read/write` | Internal project data |
+| Operations | `projects.read/write`; Forge ops health is `audit.read` / `forge.configure` | Internal project data; Forge queue/preview recovery is configuration-authority |
 
 Every resolved operation carries its route, method, domain, capability, scope rule, authentication expectation, and allow/deny behaviour. Protected identifiers such as `clients.portal_client_id` and invoice client codes are absent from generic client update DTOs. Credential reset operations use dedicated capabilities and cannot be mixed with ordinary account edits.
 

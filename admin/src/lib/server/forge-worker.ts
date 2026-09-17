@@ -7,6 +7,7 @@ import { buildForgeJobOwner, cleanupTerminalForgeJobs } from "./forge-job-queue"
 import { reapExpiredForgeJobLeases, runDueForgeJobs } from "./forge-job-runner"
 import { reconcileForgeResources } from "./forge-reconciliation"
 import { runAnalyticsRetentionJob } from "./analytics-retention"
+import { reportForgeOpsThresholdAlerts } from "./forge-ops-health"
 import { cleanupExpiredRateLimitCounters, cleanupExpiredWebRateLimits } from "./rate-limit-store"
 import { requestLogger } from "./request-context"
 import { captureMonitoringException } from "./monitoring"
@@ -63,7 +64,10 @@ export function startForgeWorker(): ForgeWorkerState | null {
     try {
       const recovered = await reapExpiredForgeJobLeases()
       state.recoveredLeases += recovered.requeued + recovered.deadLettered
-      if (state.ticks === 0 || state.ticks % PREVIEW_RECONCILE_EVERY_TICKS === 0) await reconcileForgeResources({ dryRun: false })
+      if (state.ticks === 0 || state.ticks % PREVIEW_RECONCILE_EVERY_TICKS === 0) {
+        await reconcileForgeResources({ dryRun: false })
+        await reportForgeOpsThresholdAlerts({ owner: state.owner })
+      }
       await runDueForgeJobs(BATCH, state.owner)
       state.ticks += 1
       await recordWorkerHeartbeat(state)

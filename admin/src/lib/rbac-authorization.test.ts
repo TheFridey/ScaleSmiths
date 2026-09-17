@@ -380,6 +380,17 @@ describe("RBAC — Forge specific sensitive routes", () => {
       }
     }
   })
+
+  it("Forge operations health is audit.read to inspect and forge.configure to recover", () => {
+    expect(requiredCapabilityForRequest({ pathname: "/operations/forge", method: "GET" })).toBe("audit.read")
+    expect(requiredCapabilityForRequest({ pathname: "/api/operations/forge-health", method: "GET" })).toBe("audit.read")
+    expect(requiredCapabilityForRequest({ pathname: "/api/operations/forge-health", method: "POST" })).toBe("forge.configure")
+    for (const role of ADMIN_ROLES) {
+      expect(authorizeRequest(role, { pathname: "/operations/forge", method: "GET" })).toMatchObject({ allowed: auditReadRoles.includes(role), capability: "audit.read" })
+      expect(authorizeRequest(role, { pathname: "/api/operations/forge-health", method: "GET" })).toMatchObject({ allowed: auditReadRoles.includes(role), capability: "audit.read" })
+      expect(authorizeRequest(role, { pathname: "/api/operations/forge-health", method: "POST" })).toMatchObject({ allowed: ownerAdminPMDev.includes(role), capability: "forge.configure" })
+    }
+  })
 })
 
 describe("RBAC — sales proposals", () => {

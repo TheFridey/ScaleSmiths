@@ -6,6 +6,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { signOut } from "next-auth/react"
 import {
+  Activity,
   BadgeCheck,
   BarChart3,
   CalendarClock,
@@ -41,6 +42,7 @@ const NAV: Array<{ href: string; label: string; Icon: typeof LayoutDashboard; ca
   { href: "/forge", label: "Forge", Icon: Gauge, capability: "forge.read" },
   { href: "/operations/brief", label: "Brief", Icon: CalendarClock, capability: "projects.read" },
   { href: "/operations/capacity", label: "Capacity", Icon: CalendarClock, capability: "projects.read" },
+  { href: "/operations/forge", label: "Forge ops", Icon: Activity, capability: "audit.read" },
   { href: "/operations/experience-analytics", label: "Experience", Icon: BarChart3, capability: "leads.read" },
   { href: "/operations/analytics-retention", label: "Retention", Icon: BarChart3, capability: "analytics.read" },
   { href: "/roadmap", label: "Roadmap", Icon: GitBranch, capability: "projects.read" },

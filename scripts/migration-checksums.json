@@ -542,6 +542,18 @@
       "sha256": "946274bdab57b6fcffc283f2527fe973da6c8af43d84fe0e60781715ddca4110",
       "lifecycle": "forward",
       "reason": "Locks analytics retention_days to 30-730 and adds durable singleton job state for tenant-scoped analytics pruning, last-success/failure observability, and lease coordination."
+    },
+    {
+      "path": "web/drizzle/0021_tenant_identity_mapping.sql",
+      "sha256": "7196450826fd70e9a13c97a87c0467d588ee28e7706c361c0f1ac91c747cc4db",
+      "lifecycle": "forward",
+      "reason": "Adds additive client_record_id mapping from existing portal text IDs onto canonical clients.id, with a fill trigger so current insert paths remain valid."
+    },
+    {
+      "path": "admin/drizzle/0060_tenant_rls_prototype.sql",
+      "sha256": "0b3caa59fd32379b8499f4f5bfe3678acce53da4b33656789eeed1cf1800e268",
+      "lifecycle": "forward",
+      "reason": "Prototypes fail-closed FORCE RLS on portal request, report and timeline tables with separate tenant, internal-aggregate SELECT and internal-write policies."
     }
   ],
   "journals": {
@@ -625,6 +637,13 @@
           "version": "7",
           "when": 1788364800000,
           "tag": "0020_monthly_report_evidence",
+          "breakpoints": true
+        },
+        {
+          "idx": 21,
+          "version": "7",
+          "when": 1788537600000,
+          "tag": "0021_tenant_identity_mapping",
           "breakpoints": true
         }
       ]
@@ -758,6 +777,13 @@
           "version": "7",
           "when": 1789603200000,
           "tag": "0059_analytics_retention_jobs",
+          "breakpoints": true
+        },
+        {
+          "idx": 60,
+          "version": "7",
+          "when": 1789689600000,
+          "tag": "0060_tenant_rls_prototype",
           "breakpoints": true
         }
       ]

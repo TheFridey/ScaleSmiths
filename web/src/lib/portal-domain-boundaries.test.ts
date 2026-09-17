@@ -11,13 +11,14 @@ describe("portal domain database boundaries", () => {
   it("keeps published-report lifecycle and client scope in the reporting API", () => {
     expect(reports.match(/eq\(monthlyReports\.clientId, portalClientId\)/g)?.length).toBe(3)
     expect(reports.match(/eq\(monthlyReports\.status, "published"\)/g)?.length).toBe(3)
+    expect(reports).toContain("withPortalTenant")
     expect(reportPage).toContain("getPublishedPortalReport(session.clientId, id)")
   })
 
   it("scopes every request-thread relation to the authenticated client", () => {
     expect(requests.match(/eq\(clientRequests\.clientId, portalClientId\)/g)?.length).toBeGreaterThanOrEqual(6)
     expect(requests.match(/"client_visible"/g)?.length).toBeGreaterThanOrEqual(5)
-    expect(requests).toContain("Promise.all")
+    expect(requests).toContain("withPortalTenant")
   })
 
   it("keeps portal pages free of direct database table knowledge", () => {

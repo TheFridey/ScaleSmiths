@@ -1,6 +1,6 @@
 import process from "node:process"
 import { Client } from "pg"
-import { ADMIN_DELETE_TABLES, ADMIN_FUNCTION_GRANTS, APPLICATION_SCHEMAS, RUNTIME_FORBIDDEN_TABLE_PRIVILEGES, WEB_INSERT_TABLES, WEB_TABLE_GRANTS } from "./postgres-privilege-policy.mjs"
+import { ADMIN_DELETE_TABLES, ADMIN_FUNCTION_GRANTS, APPLICATION_SCHEMAS, RUNTIME_FORBIDDEN_TABLE_PRIVILEGES, TENANT_RLS_FUNCTION_GRANTS, WEB_INSERT_TABLES, WEB_TABLE_GRANTS } from "./postgres-privilege-policy.mjs"
 
 const provisioning = requiredPrincipal("POSTGRES_PROVISIONING_DATABASE_URL")
 const roles = {
@@ -124,7 +124,7 @@ async function verifyFunctions() {
   for (const fn of result.rows) {
     if (fn.owner !== roles.migration.name) failures.push(`function-owner: ${fn.signature} is owned by ${fn.owner}, expected ${roles.migration.name}`)
     for (const [kind, role] of presentRoles().filter(([name]) => name !== "migration")) {
-      const expected = kind === "admin" && ADMIN_FUNCTION_GRANTS.some((grant) => grant.schema === fn.schema && grant.name === fn.name && normalizeArguments(grant.arguments) === normalizeArguments(fn.arguments))
+      const expected = expectedFunctionExecute(kind, fn.schema, fn.name, fn.arguments)
       compare(`${kind}: ${fn.signature} EXECUTE`, await scalar("SELECT has_function_privilege($1,$2::regprocedure,'EXECUTE')", [role.name, fn.signature]), expected)
     }
   }
@@ -163,8 +163,25 @@ async function sequencesForTables(schema, tables) {
 async function scalar(query, params) { const row=(await client.query(query, params)).rows[0]; return row ? Object.values(row)[0] : undefined }
 
 function compare(label, actual, expected) { if (actual !== expected) failures.push(`${label}: expected ${expected}, found ${actual}`) }
+function expectedFunctionExecute(kind, schema, name, argumentsList) {
+  const normalised = normalizeArguments(argumentsList)
+  const adminGrant = ADMIN_FUNCTION_GRANTS.some((grant) => grant.schema === schema && grant.name === name && normalizeArguments(grant.arguments) === normalised)
+  const tenantGrant = TENANT_RLS_FUNCTION_GRANTS.some((grant) => grant.schema === schema && grant.name === name && normalizeArguments(grant.arguments) === normalised)
+  if (kind === "admin") return adminGrant || tenantGrant
+  if (kind === "web" || kind === "readonly") return tenantGrant
+  return false
+}
 function defaultKey(row) { return `${row.schema}:${row.object_type}:${row.grantee}:${row.privilege}:${row.is_grantable}` }
-function normalizeArguments(value) { return String(value).replaceAll(/\s+/g, "").toLowerCase() }
+function normalizeArguments(value) {
+  return String(value)
+    .split(",")
+    .map((part) => {
+      const tokens = part.trim().split(/\s+/).filter(Boolean)
+      return tokens.at(-1) ?? ""
+    })
+    .join(",")
+    .toLowerCase()
+}
 function presentRoles() { return Object.entries(roles).filter(([, role]) => Boolean(role)) }
 
 function requiredPrincipal(name) {

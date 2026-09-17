@@ -79,6 +79,7 @@ export async function completeClientOffboarding(clientId: number, caseId: number
 
   return db.transaction(async (tx) => {
     const now = new Date()
+    await tx.execute(sql`select set_config('app.access_mode', 'tenant', true)`)
     await tx.execute(sql`select set_config('app.current_client_id', ${String(clientId)}, true)`)
     const projects = await tx.select({ id: deliveryProjects.id, forgeProjectId: deliveryProjects.forgeProjectId }).from(deliveryProjects).where(eq(deliveryProjects.clientId, clientId))
     const projectIds = projects.map((project) => project.id)
@@ -129,6 +130,7 @@ async function assessClientOffboarding(clientId: number, portalClientId: string 
     db.select({ id: clientDocuments.id }).from(clientDocuments).where(eq(clientDocuments.clientId, clientId)),
     projectIds.length ? db.select({ id: deliveryResources.id }).from(deliveryResources).where(inArray(deliveryResources.projectId, projectIds)) : Promise.resolve([]),
     db.transaction(async (tx) => {
+      await tx.execute(sql`select set_config('app.access_mode', 'tenant', true)`)
       await tx.execute(sql`select set_config('app.current_client_id', ${String(clientId)}, true)`)
       return tx.select({ id: clientAnalyticsConfigs.id }).from(clientAnalyticsConfigs).where(and(eq(clientAnalyticsConfigs.clientId, clientId), sql`${clientAnalyticsConfigs.credentialsEncrypted} is not null`))
     }),

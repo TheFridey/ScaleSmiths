@@ -116,16 +116,16 @@ Important enums define quote status, request category/priority/status, message v
 
 ## Migration inventory
 
-- Web migrations `0000`-`0020` build quote capture, portal accounts/rate limits, request threads/timeline and notification reconciliation, reports, public experience analytics, the public claims registry/restricted view, enquiry intent, the local-growth funnel classification, unified client activity, portal activation tokens, and published report evidence.
-- Admin migrations `0000`-`0059` build operational CRM, identity/security, Forge workflow/provenance/economics, durable operational controls and run orchestration, client operations, analytics ingestion and retention jobs, finance/invoicing, release gates, the forward-only historical-schema reconciliation, generated-site dependency/SBOM evidence binding, the client projects/delivery domain, and client offboarding.
+- Web migrations `0000`-`0021` build quote capture, portal accounts/rate limits, request threads/timeline and notification reconciliation, reports, public experience analytics, the public claims registry/restricted view, enquiry intent, the local-growth funnel classification, unified client activity, portal activation tokens, published report evidence, and additive tenant `client_record_id` mapping.
+- Admin migrations `0000`-`0060` build operational CRM, identity/security, Forge workflow/provenance/economics, durable operational controls and run orchestration, client operations, analytics ingestion and retention jobs, finance/invoicing, release gates, the forward-only historical-schema reconciliation, generated-site dependency/SBOM evidence binding, the client projects/delivery domain, client offboarding, and the fail-closed request/report/timeline RLS prototype.
 
-The histories and Drizzle journals remain independent, but `scripts/shared-migration-plan.json` supplies the authoritative global dependency graph. `npm run db:migrate` reads both prefixes and executes the next legal migration; a complete web-then-admin batch is unsupported because web `0018` requires the admin-owned `clients.portal_client_id` established by admin `0050`.
+The histories and Drizzle journals remain independent, but `scripts/shared-migration-plan.json` supplies the authoritative global dependency graph. `npm run db:migrate` reads both prefixes and executes the next legal migration; a complete web-then-admin batch is unsupported because web `0018` and `0021` require the admin-owned `clients.portal_client_id` established by admin `0050`.
 
 Every migration is SHA-256 locked in `scripts/migration-checksums.json`. Historical journal prefixes are verified against proven Git commits, while new forward migrations and journal appends are recorded separately. The clean and historical-upgrade PostgreSQL paths are exercised independently. See `docs/operations/migration-history-and-backup-verification.md`.
 
 ## Integrity and lifecycle gaps
 
-- `client_requests.client_id`, reports, and timeline client IDs are text identifiers without an FK to admin `clients`; portal identity and admin integer client identity are separate concepts.
+- `client_requests.client_id`, reports, and timeline still store the external text portal ID for compatibility; additive `client_record_id` FKs map them onto canonical `clients.id`. Unmapped rows are invisible to tenant RLS until `clients.portal_client_id` is repaired. See [Canonical tenant identity](tenant-identity.md).
 - `client_timeline_events.project_id` is a logical delivery-project reference rather than a foreign key because the timeline table is web-migration-owned. Delivery services alone publish project events into it.
 - Forge memories are flexible strings with application-validated JSON; the database cannot enforce value schemas or unique semantic keys unless migrations add constraints not represented as relations.
 - Artifact consumers depend on title/type/metadata conventions and can read stale or incompatible records if those conventions drift.

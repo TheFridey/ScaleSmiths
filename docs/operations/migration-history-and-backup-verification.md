@@ -8,7 +8,7 @@ ScaleSmiths uses one PostgreSQL database with two independently owned Drizzle hi
 
 Do not combine the journals or edit a locked migration. Run only `npm run db:migrate`; app-local commands redirect to the same runner. It uses `MIGRATION_DATABASE_URL`, rejects runtime-only credentials in production, verifies journal hashes/prefixes, takes advisory lock `621908147`, and commits each migration plus its journal record in one transaction. A failed statement rolls back and stops the run.
 
-The deterministic fresh order is web `0000`-`0017`, admin `0000`-`0051`, web `0018`-`0020`, then admin `0052`-`0059`. Admin `0052` duplicates four columns already introduced by web `0017`; because neither immutable file may change, the runner verifies the existing column types/nullability before recording the untouched `0052` hash. Any structural mismatch fails closed.
+The deterministic fresh order is web `0000`-`0017`, admin `0000`-`0051`, web `0018`-`0021`, then admin `0052`-`0060`. Admin `0052` duplicates four columns already introduced by web `0017`; because neither immutable file may change, the runner verifies the existing column types/nullability before recording the untouched `0052` hash. Any structural mismatch fails closed.
 
 ## Established Git history
 
@@ -42,7 +42,7 @@ For a new migration, create a new numbered SQL file, append its owning journal, 
 
 The PostgreSQL integration suite has two distinct cases:
 
-- **clean database:** reset the disposable schema and run the shared migrator to all 21 web and 60 admin entries;
+- **clean database:** reset the disposable schema and run the shared migrator to all 22 web and 61 admin entries;
 - **upgraded database:** apply locked fixture prefixes, model the known historical compatibility gaps and allowlisted `0012` journal hash, then run the shared migrator. It can advance admin `0042` before web `0017` when that forward repair is required; existing data must survive.
 
 Run `npm run test:integration` from the repository root. Its URL guard permits only a dedicated local/CI test database.

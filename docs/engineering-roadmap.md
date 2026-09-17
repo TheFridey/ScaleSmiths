@@ -21,7 +21,7 @@ Priorities have the following meaning:
 
 | Priority | Issue | Outcome | Dependencies |
 | --- | --- | --- | --- |
-| P1 | [#57 Design canonical tenant identity mapping and extend database isolation](https://github.com/TheFridey/ScaleSmiths/issues/57) | Portal, report, request, and Forge tenant boundaries can be enforced consistently at the database layer. | Schema design precedes policy rollout; coordinate with #62. |
+| P1 | [#57 Design canonical tenant identity mapping and extend database isolation](https://github.com/TheFridey/ScaleSmiths/issues/57) | Portal, report, request, and Forge tenant boundaries can be enforced consistently at the database layer. | Prototype mapping + request/report RLS is in repository; Forge/invoice/delivery RLS and production-derived restore remain (#55). |
 | P1 | [#58 Eliminate DNS rebinding risk in Forge outbound fetches](https://github.com/TheFridey/ScaleSmiths/issues/58) | Outbound validation and connection use the same approved destination. | None. |
 | P1 | [#59 Review and exit the Auth.js v5 beta risk acceptance](https://github.com/TheFridey/ScaleSmiths/issues/59) | Authentication no longer relies indefinitely on a time-limited beta exception. | Upstream Auth.js release/migration options. |
 | P1 | [#60 Resolve legal entity, subprocessor and production privacy decisions](https://github.com/TheFridey/ScaleSmiths/issues/60) | Legal and privacy text reflects approved production reality rather than unresolved TODOs. | Business/legal decisions; informs #56. |
@@ -63,7 +63,7 @@ The review validated older audit claims against current executable sources. The 
 - Generated-site dependency admission and per-site SBOM generation are fail-closed and covered by release checks.
 - Monitoring adapters and log-shipping configuration exist; only environment activation and evidence remain under #56.
 - Backup scheduling, integrity checks, retention scripts, and synthetic restore tests exist; only the production-derived drill remains under #55.
-- Database roles are separated and analytics row-level security exists; the remaining mixed tenant-identity/RLS work is consolidated under #57.
+- Database roles are separated and analytics plus portal request/report/timeline row-level security exist under the canonical `clients.id` mapping; Forge/invoice/delivery RLS and production-derived restore remain under #57/#55.
 - Committed migrations are checksum-locked and corrected through forward migrations.
 - Forge end-to-end orchestration coverage, durable jobs, database-backed rate limits, and managed previews are implemented.
 - Shared PostgreSQL migration orchestration is implemented and fresh/historical fixture paths are certified; production-derived restore evidence and the remaining release gates are the closure work, not a second migration algorithm.

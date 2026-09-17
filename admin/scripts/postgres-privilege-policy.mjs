@@ -39,6 +39,15 @@ export const ADMIN_FUNCTION_GRANTS = [
   { schema: "public", name: "gen_random_uuid", arguments: "" },
 ]
 
+export const TENANT_RLS_FUNCTION_GRANTS = [
+  { schema: "public", name: "app_current_tenant_id", arguments: "" },
+  { schema: "public", name: "app_access_mode", arguments: "" },
+  { schema: "public", name: "app_is_internal_aggregate", arguments: "" },
+  { schema: "public", name: "app_is_internal_write", arguments: "" },
+  { schema: "public", name: "app_client_owned_visible", arguments: "integer" },
+  { schema: "public", name: "app_forge_row_visible", arguments: "integer" },
+]
+
 export const ADMIN_DELETE_TABLES = [
   "delivery_forge_integrations",
   "forge_jobs",

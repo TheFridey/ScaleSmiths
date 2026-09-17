@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { and, desc, eq } from "drizzle-orm"
 import { serializeClientPortalTimelineEvent } from "@/lib/client-timeline"
-import { db } from "@/lib/db"
+import { withPortalTenant } from "@/lib/db"
 import { getClientSessionFromRequest, unauthorizedClientPortalResponse } from "@/lib/portal-session"
 import { clientTimelineEvents } from "@/lib/schema"
 
@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const rows = await db
+    const rows = await withPortalTenant(session.clientId, async (tx) => tx
       .select({
         id: clientTimelineEvents.id,
         clientId: clientTimelineEvents.clientId,
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
         eq(clientTimelineEvents.visibility, "client_visible"),
       ))
       .orderBy(desc(clientTimelineEvents.occurredAt), desc(clientTimelineEvents.id))
-      .limit(20)
+      .limit(20))
 
     return NextResponse.json({
       ok: true,

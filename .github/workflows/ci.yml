@@ -79,6 +79,12 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
+      - name: Authenticated portal lifecycle
+        run: |
+          mkdir -p ../ci-artifacts
+          set -o pipefail
+          npm run test:e2e:portal 2>&1 | tee ../ci-artifacts/web-portal-playwright.log
+
       - name: Chromium journeys and visual regression
         run: |
           mkdir -p ../ci-artifacts
@@ -94,6 +100,7 @@ jobs:
             web/test-results
             web/playwright-report
             ci-artifacts/web-playwright.log
+            ci-artifacts/web-portal-playwright.log
           if-no-files-found: error
           retention-days: 14
 

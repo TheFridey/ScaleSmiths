@@ -10,7 +10,7 @@ type VerifiedClaimSnapshot = {
   status: string
 }
 
-function guardedDatabaseUrl() {
+export function guardedDatabaseUrl() {
   if (process.env.SCALESMITHS_TEST_ENVIRONMENT !== REQUIRED_ENVIRONMENT) {
     throw new Error(`SCALESMITHS_TEST_ENVIRONMENT=${REQUIRED_ENVIRONMENT} is required for database-mutating E2E tests.`)
   }
@@ -27,12 +27,24 @@ function guardedDatabaseUrl() {
   return value
 }
 
-async function assertFixtureMarker(client: Client) {
+export async function assertFixtureMarker(client: Client) {
   const result = await client.query<{ marker: string }>(
     "select marker from public.scalesmiths_test_environment where marker = $1",
     [REQUIRED_MARKER],
   )
   if (result.rowCount !== 1) throw new Error("Isolated E2E database marker is missing.")
+}
+
+export async function connectGuardedE2eDatabase() {
+  const client = new Client({ connectionString: guardedDatabaseUrl() })
+  await client.connect()
+  try {
+    await assertFixtureMarker(client)
+    return client
+  } catch (error) {
+    await client.end().catch(() => undefined)
+    throw error
+  }
 }
 
 export async function withoutVerifiedPublicClaims<T>(run: () => Promise<T>): Promise<T> {

@@ -24,6 +24,7 @@ const REQUIRED_CONTENT = {
     "npm run test",
     "npm run build",
     "npm run test:e2e:chromium",
+    "npm run test:e2e:portal",
     "npm run test:e2e:cross-browser",
     "node scripts/check-migrations.mjs",
     "npm run check:migration-history",

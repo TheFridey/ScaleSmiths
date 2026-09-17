@@ -16,6 +16,19 @@ cd web
 npm run test:e2e:cross-browser
 ```
 
+Authenticated client-portal coverage is a focused Chromium project:
+
+```bash
+cd web
+SCALESMITHS_TEST_ENVIRONMENT=forge-v2-e2e \
+WEB_DATABASE_URL=postgresql://scalesmiths_web_test:local_ci_only@127.0.0.1:5432/scalesmiths_web_e2e \
+MIGRATION_DATABASE_URL=postgresql://scalesmiths_web_test:local_ci_only@127.0.0.1:5432/scalesmiths_web_e2e \
+PORTAL_SECRET=local_ci_only_portal_session_secret_32_chars \
+npm run test:e2e:portal
+```
+
+The portal project seeds two disposable clients plus an invitation account in the guarded PostgreSQL fixture, then covers login/logout, disabled/reset sessions, requests/replies, reports, invoices/PDF, timeline, milestones, documents, and negative IDOR cases. Prepare the isolated database the same way the Web CI job does (`test:db:prepare`, `db:migrate`, `test:db:seed`, `test:db:assert`) before running it.
+
 `npm run test:e2e` remains available for an intentionally broad local run of every configured project.
 
 The Playwright config starts the web app on `127.0.0.1:3210` by default. Override with:
@@ -70,6 +83,6 @@ environment before CI passes.
 
 ## CI
 
-CI runs the Chromium functional journeys plus desktop, tablet and mobile visual projects. Visual snapshots remain Chromium-only. Traces, videos, screenshots and the HTML report are retained when Playwright fails.
+CI's Web job runs the focused portal lifecycle suite first (`npm run test:e2e:portal`), then the Chromium functional journeys plus desktop, tablet and mobile visual projects. Visual snapshots remain Chromium-only. Traces, videos, screenshots, the HTML report and both Playwright logs are retained when Playwright fails.
 
 A separate pull-request job runs the focused first-time chooser and stored interactive-preference paths in Firefox and WebKit. It does not execute visual regression, which avoids browser-specific snapshot noise and keeps the cross-browser gate small.

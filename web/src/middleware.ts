@@ -33,7 +33,9 @@ export function middleware(request: NextRequest) {
   }
 
   if (request.nextUrl.pathname === "/traditional") {
-    return correlated(NextResponse.redirect(traditionalHomepageRedirectUrl(request.nextUrl), 308))
+    // NextResponse.redirect() requires an absolute URL. Cloning request.nextUrl
+    // bakes the host-nginx loopback origin (https://localhost:3100) into Location.
+    return correlated(NextResponse.redirect(traditionalHomepageRedirectUrl(request), 308))
   }
 
   if (request.nextUrl.pathname === "/") {

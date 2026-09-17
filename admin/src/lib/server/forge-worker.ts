@@ -6,6 +6,7 @@ import { forgeJobs, forgeWorkerHeartbeats } from "@/lib/schema"
 import { buildForgeJobOwner, cleanupTerminalForgeJobs } from "./forge-job-queue"
 import { reapExpiredForgeJobLeases, runDueForgeJobs } from "./forge-job-runner"
 import { reconcileForgeResources } from "./forge-reconciliation"
+import { runAnalyticsRetentionJob } from "./analytics-retention"
 import { cleanupExpiredRateLimitCounters, cleanupExpiredWebRateLimits } from "./rate-limit-store"
 import { requestLogger } from "./request-context"
 import { captureMonitoringException } from "./monitoring"
@@ -70,6 +71,7 @@ export function startForgeWorker(): ForgeWorkerState | null {
         await cleanupExpiredRateLimitCounters()
         await cleanupExpiredWebRateLimits()
         await cleanupTerminalForgeJobs()
+        await runAnalyticsRetentionJob({ owner: `${state.owner}:analytics-retention` })
       }
     } catch (error) {
       log.error("Forge worker tick failed", { error })

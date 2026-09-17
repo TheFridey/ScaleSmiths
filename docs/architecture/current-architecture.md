@@ -75,7 +75,7 @@ Admin uses the Auth.js v5 credentials provider with persistent `admin_users` and
 
 Privileged production identities require TOTP MFA outside a bounded bootstrap grace period. TOTP secrets are encrypted with AES-256-GCM using the dedicated MFA key. Recovery codes are salted scrypt hashes, consumed transactionally once, and never stored in plaintext. Enrolment, challenge failure, recovery use, reset, and disablement produce security audit events. See [Admin identity](../operations/admin-identity.md) and [Admin MFA](../operations/admin-mfa.md).
 
-Auth.js remains on an explicitly time-limited v5 beta risk acceptance; it is not an undocumented exception.
+Auth.js remains on an explicitly time-limited v5 beta risk acceptance (`next-auth@5.0.0-beta.32`, renewed 2026-09-17 through 2027-01-30); it is not an undocumented exception. See [Auth.js beta risk acceptance](../security/authjs-beta-risk-acceptance.md).
 
 ## 7. Authorization model
 
@@ -184,7 +184,7 @@ The supported operational sequence for client provisioning, delivery, messaging,
 5. Monitoring/log-shipping activation, alert routing, and privacy/subprocessor alignment require production evidence.
 6. Canonical tenant identity maps portal text IDs onto `clients.id`; FORCE RLS now covers requests/reports/timeline as well as analytics. Forge, invoice and delivery table RLS, and production-derived restore proof, remain open.
 7. Forge outbound fetches pin the validated address (TLS hostname preserved) and revalidate redirects and the connected socket; production firewall/proxy denial of private and metadata networks remains an operator defence-in-depth control.
-8. Auth.js v5 beta and the development-only Drizzle Kit advisory chain remain time-bounded dependency risks.
+8. Auth.js v5 beta (`5.0.0-beta.32`) and the development-only Drizzle Kit advisory chain remain time-bounded dependency risks; the Auth.js acceptance was renewed on 2026-09-17 until 2027-01-30 because no stable v5 release exists.
 9. Forge Docker execution shares the host kernel, and bridge-enabled install/preview operations rely on host egress controls.
 10. The Forge worker is in-process and uses the broad admin runtime role; operational visibility, retention, and dedicated-worker isolation remain improvement areas.
 11. Shared table declarations, client-request triage rules, and string-keyed Forge artifact/memory contracts can drift.

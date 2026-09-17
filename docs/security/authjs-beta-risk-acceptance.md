@@ -1,11 +1,12 @@
 # Auth.js beta risk acceptance
 
-- Status: accepted with monitoring
-- Dependency: `next-auth@5.0.0-beta.32`
-- Owner: ScaleSmiths repository owner
+- Status: **renewed** — stable Auth.js / next-auth v5 migration remains unavailable
+- Dependency: `next-auth@5.0.0-beta.32` (transitive `@auth/core@0.41.3`)
+- Owner: ScaleSmiths repository owner (`@TheFridey`)
 - Recorded: 2026-07-30
-- Last reviewed: 2026-08-28 (API inventory, upgrade checklist and regression coverage reviewed)
-- Review by: 2026-10-30
+- Last reviewed: 2026-09-17 (GitHub issue #59: stable-release check, advisory review, pin and lockfile inspection)
+- Review by: 2027-01-30
+- Decision: **renew** the time-limited acceptance. Do not migrate to `next-auth@latest` (v4) and do not rewrite onto Better Auth in this review.
 
 ## Why this version is used
 
@@ -20,6 +21,55 @@ is the v4 line, which is not API-compatible with this v5 App Router implementati
 There is no stable v5 release to adopt at this review date. The exact pin is therefore
 retained deliberately; the beta label alone is not a reason to perform a backwards or
 speculative authentication migration.
+
+## 2026-09-17 review (issue #59)
+
+This review answers the scheduled 2026-10-30 acceptance deadline early. The question
+was whether a compatible **stable** Auth.js / next-auth release exists that can replace
+the beta pin without weakening credentials, MFA, RBAC or session-version invalidation.
+
+### Registry evidence (queried 2026-09-17)
+
+| Channel | Resolved version | Meaning for ScaleSmiths |
+| --- | --- | --- |
+| npm `latest` | `4.24.15` (published 2026-07-20) | v4 LTS. Not API-compatible with `admin/auth.ts`, middleware `NextAuth()`, or the App Router credentials provider. Adopting it would be a backwards migration. |
+| npm `beta` | `5.0.0-beta.32` (published 2026-07-20) | Current v5 line. Matches the existing exact pin. |
+| npm `next-auth@5` / `5.0.0` | **404 — no such version** | There is still no stable v5 release. Published v5 versions are `5.0.0-beta.0` through `5.0.0-beta.32` only. |
+| `@auth/core` | `0.41.3` (exact dependency of beta.32) | Already the lockfile resolution. |
+
+Lockfile inspection was deliberate and produced **no change**:
+
+- `admin/package.json` already exact-pins `next-auth@5.0.0-beta.32`.
+- `admin/package-lock.json` resolves `next-auth` to `5.0.0-beta.32` with integrity `sha512-CGlChIEWZ6LltNVxrE5yiySMID+Idpmry47JYA5lLwgD8Sx02a8M65VL0TWVz9nbnOioS/tCW/rP/0+mE7Qp4Q==`, matching the npm registry tarball.
+- Transitive `@auth/core` remains `0.41.3` with integrity `sha512-sJ3JMHHkXMD3aOjopv7mOBTO1Ocw4b0fAEXJBz6k7YHLpYQI6C40jCUPc5fNvUKxXRXNE1/sRISA15UrwWJBTw==`.
+- Peer range on this pin is `next@^14 \|\| ^15 \|\| ^16` and `react@^18.2 \|\| ^19`, which covers the governed Next.js 15.5.25 / React 18.3.1 runtime.
+
+Upstream still documents v5 installation as `next-auth@beta`. The GitHub release for `next-auth@5.0.0-beta.32` is marked pre-release. Maintainer discussion (`nextauthjs/next-auth#13382`) continues to describe v5 as production-used but not stably tagged.
+
+### Advisory evidence
+
+The July 2026 Auth.js cycle is the latest published advisory set for this pin. All four items are **patched in `5.0.0-beta.32` / `@auth/core@0.41.3`**. No newer Auth.js advisory requiring a later pin was listed against this exact version at review time.
+
+| Advisory | Severity | Reachable in ScaleSmiths? | Status on current pin |
+| --- | --- | --- | --- |
+| [GHSA-7rqj-j65f-68wh](https://github.com/advisories/GHSA-7rqj-j65f-68wh) (CVE-2026-73420) — email normalizer homoglyph `@` bypass | High | No. Admin uses the credentials provider, not Auth.js email/magic-link. | Patched |
+| [GHSA-xmf8-cvqr-rfgj](https://github.com/nextauthjs/next-auth/security/advisories/GHSA-xmf8-cvqr-rfgj) (CVE-2026-73418) — `getToken()` throws on malformed Bearer headers | High | No. The inventory below does not call `getToken`. | Patched |
+| [GHSA-x445-f3h2-j279](https://github.com/advisories/GHSA-x445-f3h2-j279) — OAuth check cookies not bound to the issuing provider | Medium | No. No OAuth provider is configured. | Patched |
+| [GHSA-8fpg-xm3f-6cx3](https://github.com/advisories/GHSA-8fpg-xm3f-6cx3) — auth checks fail open on provider configuration errors | Low | Yes in principle: admin middleware uses `auth` / `!!session`. Beta.32 fails closed (non-OK session yields no session). | Patched |
+
+Production `npm audit --omit=dev --audit-level=high` remains a required release gate. This acceptance does not waive High/Critical production findings.
+
+### Alternatives considered and rejected
+
+- **Migrate to `next-auth@4.24.15` (`latest`).** Rejected. It would replace the v5 App Router `NextAuth()` / `handlers` / middleware-`auth` contract with the v4 Pages Router API and drop the beta.32 fail-closed middleware fix that exists only on the v5 line.
+- **Rewrite onto Better Auth.** Rejected for this review. Auth.js maintainers now recommend Better Auth for *new* projects except where stateless sessions without a database are required. ScaleSmiths uses exactly that model: JWT sessions, no Auth.js adapter, application-owned MFA, RBAC and `sessionVersion` revocation. A rewrite would be a new authentication programme, not a pin migration, and would risk weakening those boundaries.
+- **Reject the risk and remove Auth.js without a replacement.** Rejected. Admin authentication cannot be left without a reviewed session implementation.
+
+### Decision
+
+**Renew** the acceptance on the existing exact pin through **2027-01-30**. Owner remains the ScaleSmiths repository owner. Review sooner if a stable suitable v5 (or compatible successor) is published, or if a security, correctness or support defect affects `5.0.0-beta.32`.
+
+The machine-readable exception in `scripts/dependency-governance-policy.json` must keep `version`, `decision`, `reviewBy` and `record` aligned with this document. Governance now fails CI if `reviewBy` is missing, malformed, or in the past.
 
 ## Auth.js API inventory
 
@@ -76,9 +126,10 @@ or legacy `withAuth` API is used.
 The current automated suite covers password authentication helpers, persistent admin
 identity, session-version invalidation, protected-route behaviour, RBAC filtering, MFA
 policy and recovery-code logic. The admin production dependency audit reports zero known
-vulnerabilities as of 2026-08-28.
+vulnerabilities as of 2026-08-28. This 2026-09-17 review does not claim a new empty
+audit artifact; High/Critical production audit remains a merge/release gate.
 
-Focused contract tests now also execute the shared Auth.js cookie/session callbacks and
+Focused contract tests execute the shared Auth.js cookie/session callbacks and
 the real `admin/auth.ts` composition with controlled dependencies. They verify credential
 normalisation, rate-limit short-circuiting, MFA success/failure hand-off, successful-login
 recording, authorization claims, persisted-role refresh and session-version revocation.
@@ -166,9 +217,11 @@ suitable Auth.js/next-auth version is available; compatibility with every relied
 and custom boundary above is confirmed; the login, MFA, session, RBAC and end-to-end suite
 passes against production code; and the protected-area security review is completed.
 
-Review sooner if a security, correctness or support defect affects the exact pin. A new
-beta alone may be adopted only to address a confirmed issue or after the same compatibility
-and regression review; it does not satisfy the stable-version exit criterion.
+The 2026-09-17 review found the first condition still false, so the exception is renewed
+rather than removed. Review sooner if a security, correctness or support defect affects
+the exact pin. A new beta alone may be adopted only to address a confirmed issue or after
+the same compatibility and regression review; it does not satisfy the stable-version exit
+criterion.
 
 ## Rollback strategy
 
@@ -177,3 +230,7 @@ If an authentication regression is detected before schema-incompatible changes, 
 traffic back through the release manager. Preserve authentication diagnostics, invalidate
 affected sessions when required, and do not downgrade or rewrite admin identity data
 without a separately reviewed migration and verified backup.
+
+This renewal does not change runtime authentication code, cookies, secrets or identity
+data. Reverting the documentation and governance `reviewBy` date restores the previous
+acceptance record if the written decision must be withdrawn.

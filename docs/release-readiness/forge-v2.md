@@ -71,7 +71,7 @@ Public desktop, tablet, and mobile snapshots passed unchanged. The authenticated
 | CodeQL | run `30705635970`, job `91384129599` | **Passed** |
 | Secret scan, Dockerfile lint, sandbox fixtures | Security run `30705635964` | **Passed** |
 
-The Auth.js beta remains a documented accepted risk under `docs/security/authjs-beta-risk-acceptance.md`; this ledger does not broaden that acceptance. The four Moderate development findings remain confined to Drizzle Kit's `@esbuild-kit/*`/esbuild tooling path, are absent from production installs, and retain the time-limited acceptance in `docs/security/dependency-audit-2026-07.md`.
+The Auth.js beta remains a documented accepted risk under `docs/security/authjs-beta-risk-acceptance.md` (renewed 2026-09-17 through 2027-01-30); this ledger does not broaden that acceptance. The four Moderate development findings remain confined to Drizzle Kit's `@esbuild-kit/*`/esbuild tooling path, are absent from production installs, and retain the time-limited acceptance in `docs/security/dependency-audit-2026-07.md`.
 
 ## Remaining warnings
 

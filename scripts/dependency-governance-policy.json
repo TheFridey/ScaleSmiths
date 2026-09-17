@@ -29,8 +29,9 @@
       "package": "next-auth",
       "version": "5.0.0-beta.32",
       "decision": "retain",
-      "reason": "The admin application depends on the Auth.js v5 App Router API. The current beta is exact-pinned, reviewed, and contains the security fixes unavailable in beta.30 and beta.31; moving to the v4 latest tag would be a backwards migration.",
-      "reviewBy": "2026-10-30",
+      "reason": "2026-09-17 #59 review: npm latest is still next-auth 4.24.15; beta remains 5.0.0-beta.32 with no 5.0.0 stable. The exact pin and lockfile (@auth/core 0.41.3) are retained; moving to latest would be a v4 backwards migration. July 2026 advisories are patched in this pin. See docs/security/authjs-beta-risk-acceptance.md.",
+      "lastReviewed": "2026-09-17",
+      "reviewBy": "2027-01-30",
       "record": "docs/security/authjs-beta-risk-acceptance.md"
     }
   ]

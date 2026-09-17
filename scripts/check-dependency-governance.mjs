@@ -5,10 +5,16 @@ import { fileURLToPath } from "node:url"
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const EXACT_VERSION = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
 
-export function inspectDependencyGovernance(apps, policy) {
+function utcDateString(value) {
+  return value.toISOString().slice(0, 10)
+}
+
+export function inspectDependencyGovernance(apps, policy, options = {}) {
   const errors = []
   const details = []
+  const today = utcDateString(options.now instanceof Date ? options.now : new Date())
   for (const [appName, app] of Object.entries(apps)) {
     const rootPackage = app.lock.packages?.[""]
     if (!rootPackage) {
@@ -57,6 +63,8 @@ export function inspectDependencyGovernance(apps, policy) {
     const declared = apps[exception.app]?.manifest.dependencies?.[exception.package] ?? apps[exception.app]?.manifest.devDependencies?.[exception.package]
     if (declared !== exception.version) errors.push(`${exception.app}: pre-release exception for ${exception.package}@${exception.version} does not match declared ${declared ?? "missing"}.`)
     if (!exception.reason || !exception.reviewBy || !exception.record) errors.push(`${exception.app}: pre-release exception for ${exception.package} is incomplete.`)
+    else if (!ISO_DATE.test(exception.reviewBy)) errors.push(`${exception.app}: pre-release exception for ${exception.package} has an invalid reviewBy date.`)
+    else if (exception.reviewBy < today) errors.push(`${exception.app}: pre-release exception for ${exception.package} expired on ${exception.reviewBy}.`)
   }
 
   return { errors, details, acceptedAdvisories: policy.acceptedAdvisories ?? [], preReleaseExceptions: policy.preReleaseExceptions ?? [] }

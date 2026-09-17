@@ -1,6 +1,6 @@
 import process from "node:process"
 import { Client } from "pg"
-import { ADMIN_DELETE_TABLES, ADMIN_FUNCTION_GRANTS, APPLICATION_SCHEMAS, WEB_INSERT_TABLES, WEB_TABLE_GRANTS } from "./postgres-privilege-policy.mjs"
+import { ADMIN_DELETE_TABLES, ADMIN_FUNCTION_GRANTS, APPLICATION_SCHEMAS, TENANT_RLS_FUNCTION_GRANTS, WEB_INSERT_TABLES, WEB_TABLE_GRANTS } from "./postgres-privilege-policy.mjs"
 
 if (!process.argv.includes("--confirm-provision")) {
   throw new Error("Refusing to change PostgreSQL roles without --confirm-provision.")
@@ -60,6 +60,11 @@ try {
   for (const table of ADMIN_DELETE_TABLES) if (await tableExists("public", table)) await client.query(`GRANT DELETE ON TABLE public.${identifier(table)} TO ${identifier(admin.name)}`)
   await client.query(`GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO ${identifier(admin.name)}`)
   for (const fn of ADMIN_FUNCTION_GRANTS) await grantFunctionIfPresent(fn.schema, fn.name, fn.arguments, admin.name)
+  for (const fn of TENANT_RLS_FUNCTION_GRANTS) {
+    await grantFunctionIfPresent(fn.schema, fn.name, fn.arguments, web.name)
+    await grantFunctionIfPresent(fn.schema, fn.name, fn.arguments, admin.name)
+    if (readonly) await grantFunctionIfPresent(fn.schema, fn.name, fn.arguments, readonly.name)
+  }
   for (const [table, operations] of WEB_TABLE_GRANTS) {
     if (await tableExists("public", table)) await client.query(`GRANT ${operations.join(", ")} ON TABLE public.${identifier(table)} TO ${identifier(web.name)}`)
   }

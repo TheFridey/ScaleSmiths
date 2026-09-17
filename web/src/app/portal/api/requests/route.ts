@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { and, desc, eq } from "drizzle-orm"
-import { db } from "@/lib/db"
+import { db, withPortalTenant } from "@/lib/db"
 import { parseClientRequestPayload, serializeClientPortalRequest } from "@/lib/client-requests"
 import { serializeClientPortalTimelineEvent } from "@/lib/client-timeline"
 import {
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const rows = await db
+    const rows = await withPortalTenant(session.clientId, async (tx) => tx
       .select({
         id: clientRequests.id,
         title: clientRequests.title,
@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
       })
       .from(clientRequests)
       .where(eq(clientRequests.clientId, session.clientId))
-      .orderBy(desc(clientRequests.updatedAt), desc(clientRequests.createdAt))
+      .orderBy(desc(clientRequests.updatedAt), desc(clientRequests.createdAt)))
 
     return NextResponse.json({ ok: true, requests: rows.map(serializeClientPortalRequest) })
   } catch {
@@ -123,11 +123,12 @@ export async function POST(request: NextRequest) {
       affectedUrl: parsed.data.affectedUrl,
       clientContext: session.clientId,
     })
-    const { requestRow: created, timelineEvent } = await db.transaction(async (tx) => {
+    const { requestRow: created, timelineEvent } = await withPortalTenant(session.clientId, async (tx, tenant) => {
       const [requestRow] = await tx
         .insert(clientRequests)
         .values({
           clientId: session.clientId,
+          clientRecordId: tenant.clientRecordId,
           title: parsed.data.title,
           description: parsed.data.description,
           category: parsed.data.category,
@@ -165,6 +166,7 @@ export async function POST(request: NextRequest) {
         .insert(clientTimelineEvents)
         .values({
           clientId: session.clientId,
+          clientRecordId: tenant.clientRecordId,
           requestId: requestRow.id,
           type: "request_submitted",
           title: "Request submitted",
@@ -204,16 +206,20 @@ export async function POST(request: NextRequest) {
         priority: parsed.data.priority,
         affectedUrl: parsed.data.affectedUrl,
       })
-      await db.update(clientRequests).set({
-        notificationEmailStatus: notificationResult.status,
-        notificationEmailFailureReason: notificationResult.failureReason ?? null,
-      }).where(eq(clientRequests.id, created.id))
+      await withPortalTenant(session.clientId, async (tx) => {
+        await tx.update(clientRequests).set({
+          notificationEmailStatus: notificationResult.status,
+          notificationEmailFailureReason: notificationResult.failureReason ?? null,
+        }).where(eq(clientRequests.id, created.id))
+      })
     } catch {
       console.warn("[request-notifications] unexpected warning. Request creation was not blocked.")
-      await db.update(clientRequests).set({
-        notificationEmailStatus: "failed",
-        notificationEmailFailureReason: "delivery",
-      }).where(eq(clientRequests.id, created.id)).catch(() => undefined)
+      await withPortalTenant(session.clientId, async (tx) => {
+        await tx.update(clientRequests).set({
+          notificationEmailStatus: "failed",
+          notificationEmailFailureReason: "delivery",
+        }).where(eq(clientRequests.id, created.id))
+      }).catch(() => undefined)
     }
 
     return NextResponse.json({

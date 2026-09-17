@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { eq } from "drizzle-orm"
-import { db } from "@/lib/db"
+import { withPortalTenant } from "@/lib/db"
 import { parseClientRequestMessageBody } from "@/lib/client-requests"
 import { getClientSessionFromRequest, unauthorizedClientPortalResponse } from "@/lib/portal-session"
 import { appendClientMessage, resolveGeneralMessageThreadId } from "@/lib/portal-client-requests"
@@ -63,16 +63,20 @@ export async function POST(request: NextRequest) {
         requestTitle: result.requestTitle,
         messageBody: result.message.body,
       })
-      await db.update(clientRequestMessages).set({
-        notificationEmailStatus: notificationResult.status,
-        notificationEmailFailureReason: notificationResult.failureReason ?? null,
-      }).where(eq(clientRequestMessages.id, result.message.id))
+      await withPortalTenant(session.clientId, async (tx) => {
+        await tx.update(clientRequestMessages).set({
+          notificationEmailStatus: notificationResult.status,
+          notificationEmailFailureReason: notificationResult.failureReason ?? null,
+        }).where(eq(clientRequestMessages.id, result.message.id))
+      })
     } catch {
       console.warn("[request-notifications] unexpected warning on new portal message. Message was not lost.")
-      await db.update(clientRequestMessages).set({
-        notificationEmailStatus: "failed",
-        notificationEmailFailureReason: "delivery",
-      }).where(eq(clientRequestMessages.id, result.message.id)).catch(() => undefined)
+      await withPortalTenant(session.clientId, async (tx) => {
+        await tx.update(clientRequestMessages).set({
+          notificationEmailStatus: "failed",
+          notificationEmailFailureReason: "delivery",
+        }).where(eq(clientRequestMessages.id, result.message.id))
+      }).catch(() => undefined)
     }
 
     return NextResponse.json({ ok: true, requestId, message: result.message }, { status: 201 })

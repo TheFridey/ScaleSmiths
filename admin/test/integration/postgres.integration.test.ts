@@ -270,6 +270,157 @@ describe("real PostgreSQL integration", () => {
     }
   });
 
+  it("enforces fail-closed tenant RLS on requests, reports and timeline", async () => {
+    const protectedTables = [
+      "client_requests",
+      "client_request_messages",
+      "client_timeline_events",
+      "monthly_reports",
+      "monthly_report_audit_logs",
+    ];
+    const rls = await pool.query(
+      "SELECT c.relname,c.relrowsecurity,c.relforcerowsecurity,count(p.policyname)::int policies FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace LEFT JOIN pg_policies p ON p.schemaname=n.nspname AND p.tablename=c.relname WHERE n.nspname='public' AND c.relname=ANY($1::text[]) GROUP BY c.relname,c.relrowsecurity,c.relforcerowsecurity",
+      [protectedTables],
+    );
+    expect(rls.rows).toHaveLength(protectedTables.length);
+    expect(
+      rls.rows.every(
+        (row) =>
+          row.relrowsecurity && row.relforcerowsecurity && row.policies === 3,
+      ),
+    ).toBe(true);
+
+    const first = (
+      await pool.query(
+        "INSERT INTO clients(name, portal_client_id) VALUES('Tenant A','portal-a') RETURNING id",
+      )
+    ).rows[0].id as number;
+    const second = (
+      await pool.query(
+        "INSERT INTO clients(name, portal_client_id) VALUES('Tenant B','portal-b') RETURNING id",
+      )
+    ).rows[0].id as number;
+    await pool.query(
+      "INSERT INTO portal_client_accounts(client_id,email,password_hash,active,status) VALUES('portal-a','a@example.test','hash',true,'active'),('portal-b','b@example.test','hash',true,'active')",
+    );
+    const requestA = (
+      await pool.query(
+        "INSERT INTO client_requests(client_id,title,description) VALUES('portal-a','A request','Visible to A') RETURNING id, client_record_id",
+      )
+    ).rows[0];
+    const requestB = (
+      await pool.query(
+        "INSERT INTO client_requests(client_id,title,description) VALUES('portal-b','B request','Visible to B') RETURNING id, client_record_id",
+      )
+    ).rows[0];
+    expect(requestA.client_record_id).toBe(first);
+    expect(requestB.client_record_id).toBe(second);
+    await pool.query(
+      "INSERT INTO client_request_messages(request_id,sender_type,sender_name,body,visibility) VALUES($1,'client','A','Secret A','client_visible'),($2,'client','B','Secret B','client_visible')",
+      [requestA.id, requestB.id],
+    );
+    await pool.query(
+      "INSERT INTO client_timeline_events(client_id,client_record_id,request_id,type,title,description,visibility,created_by) VALUES('portal-a',$1,$2,'request_submitted','A event','A timeline','client_visible','test'),('portal-b',$3,$4,'request_submitted','B event','B timeline','client_visible','test')",
+      [first, requestA.id, second, requestB.id],
+    );
+    await pool.query(
+      "INSERT INTO monthly_reports(client_id,month,year,title,summary,html_content,status,generated_by,version) VALUES('portal-a',9,2026,'A report','A summary','<p>A</p>','published','manual',1),('portal-b',9,2026,'B report','B summary','<p>B</p>','published','manual',1)",
+    );
+
+    const webPool = new Pool({ connectionString: webUrl });
+    const adminPool = new Pool({ connectionString: adminUrl });
+    try {
+      expect((await webPool.query("SELECT id FROM client_requests")).rowCount).toBe(0);
+      expect((await webPool.query("SELECT id FROM monthly_reports")).rowCount).toBe(0);
+      expect((await adminPool.query("SELECT id FROM client_requests")).rowCount).toBe(0);
+
+      const webClient = await webPool.connect();
+      try {
+        await webClient.query("BEGIN");
+        await webClient.query("SELECT set_config('app.access_mode','tenant',true)");
+        await webClient.query("SELECT set_config('app.current_client_id',$1,true)", [String(first)]);
+        const visibleRequests = await webClient.query("SELECT title FROM client_requests ORDER BY id");
+        expect(visibleRequests.rows).toEqual([{ title: "A request" }]);
+        const crossRead = await webClient.query("SELECT title FROM client_requests WHERE client_id='portal-b'");
+        expect(crossRead.rowCount).toBe(0);
+        const visibleReports = await webClient.query("SELECT title FROM monthly_reports ORDER BY id");
+        expect(visibleReports.rows).toEqual([{ title: "A report" }]);
+        const visibleMessages = await webClient.query("SELECT body FROM client_request_messages ORDER BY id");
+        expect(visibleMessages.rows).toEqual([{ body: "Secret A" }]);
+        await expect(
+          webClient.query(
+            "INSERT INTO client_requests(client_id,title,description) VALUES('portal-b','Cross write','Should fail')",
+          ),
+        ).rejects.toMatchObject({ code: "42501" });
+        await expect(
+          webClient.query("UPDATE client_requests SET title='stolen' WHERE client_id='portal-b'"),
+        ).resolves.toMatchObject({ rowCount: 0 });
+        const ownWrite = await webClient.query(
+          "INSERT INTO client_requests(client_id,title,description) VALUES('portal-a','A follow-up','Allowed') RETURNING client_record_id",
+        );
+        expect(ownWrite.rows[0].client_record_id).toBe(first);
+        await webClient.query("ROLLBACK");
+      } finally {
+        webClient.release();
+      }
+
+      const aggregate = await adminPool.connect();
+      try {
+        await aggregate.query("BEGIN");
+        await aggregate.query("SELECT set_config('app.access_mode','internal_aggregate',true)");
+        expect((await aggregate.query("SELECT count(*)::int count FROM client_requests")).rows[0].count).toBe(2);
+        await expect(
+          aggregate.query(
+            "INSERT INTO client_requests(client_id,title,description) VALUES('portal-a','Aggregate write','Should fail')",
+          ),
+        ).rejects.toMatchObject({ code: "42501" });
+        await aggregate.query("ROLLBACK");
+      } finally {
+        aggregate.release();
+      }
+
+      const tenantAdmin = await adminPool.connect();
+      try {
+        await tenantAdmin.query("BEGIN");
+        await tenantAdmin.query("SELECT set_config('app.access_mode','tenant',true)");
+        await tenantAdmin.query("SELECT set_config('app.current_client_id',$1,true)", [String(first)]);
+        expect((await tenantAdmin.query("SELECT title FROM monthly_reports ORDER BY id")).rows).toEqual([
+          { title: "A report" },
+        ]);
+        await expect(
+          tenantAdmin.query(
+            "INSERT INTO monthly_reports(client_id,month,year,title,summary,html_content,status,generated_by,version) VALUES('portal-b',10,2026,'Cross report','Nope','<p>B</p>','draft','manual',1)",
+          ),
+        ).rejects.toMatchObject({ code: "42501" });
+        await tenantAdmin.query("ROLLBACK");
+      } finally {
+        tenantAdmin.release();
+      }
+
+      const predicates = await adminPool.connect();
+      try {
+        await predicates.query("BEGIN");
+        expect((await predicates.query("SELECT app_client_owned_visible($1) AS ok", [first])).rows[0].ok).toBe(false);
+        expect((await predicates.query("SELECT app_forge_row_visible($1) AS ok", [first])).rows[0].ok).toBe(false);
+        await predicates.query("SELECT set_config('app.access_mode','tenant',true)");
+        await predicates.query("SELECT set_config('app.current_client_id',$1,true)", [String(first)]);
+        expect((await predicates.query("SELECT app_client_owned_visible($1) AS ok", [first])).rows[0].ok).toBe(true);
+        expect((await predicates.query("SELECT app_client_owned_visible($1) AS ok", [second])).rows[0].ok).toBe(false);
+        expect((await predicates.query("SELECT app_forge_row_visible($1) AS ok", [first])).rows[0].ok).toBe(true);
+        expect((await predicates.query("SELECT app_forge_row_visible($1) AS ok", [second])).rows[0].ok).toBe(false);
+        expect((await predicates.query("SELECT app_forge_row_visible(NULL) AS ok")).rows[0].ok).toBe(false);
+        await predicates.query("SELECT set_config('app.access_mode','internal_aggregate',true)");
+        expect((await predicates.query("SELECT app_forge_row_visible(NULL) AS ok")).rows[0].ok).toBe(true);
+        await predicates.query("ROLLBACK");
+      } finally {
+        predicates.release();
+      }
+    } finally {
+      await webPool.end();
+      await adminPool.end();
+    }
+  });
+
   it("migrates an empty database and matches the current Drizzle table surface", async () => {
     const migrations = await pool.query(
       "SELECT count(*)::int count FROM drizzle.__drizzle_migrations",

@@ -371,6 +371,7 @@ export const messages = pgTable("messages", {
 export const clientRequests = pgTable("client_requests", {
   id: serial("id").primaryKey(),
   clientId: text("client_id").notNull(),
+  clientRecordId: integer("client_record_id").references(() => clients.id, { onDelete: "restrict" }),
   title: text("title").notNull(),
   description: text("description").notNull(),
   category: clientRequestCategory("category").default("general_support").notNull(),
@@ -392,6 +393,7 @@ export const clientRequests = pgTable("client_requests", {
   adminLastReadAt: timestamp("admin_last_read_at", { withTimezone: true }),
 }, (table) => [
   index("client_requests_client_id_idx").on(table.clientId),
+  index("client_requests_client_record_idx").on(table.clientRecordId),
   index("client_requests_status_idx").on(table.status),
   index("client_requests_priority_idx").on(table.priority),
   index("client_requests_category_idx").on(table.category),
@@ -613,6 +615,7 @@ export const deliveryProjectProgress = pgView("delivery_project_progress", {
 export const monthlyReports = pgTable("monthly_reports", {
   id: serial("id").primaryKey(),
   clientId: text("client_id").notNull(),
+  clientRecordId: integer("client_record_id").references(() => clients.id, { onDelete: "restrict" }),
   month: integer("month").notNull(),
   year: integer("year").notNull(),
   title: text("title").notNull(),
@@ -630,6 +633,7 @@ export const monthlyReports = pgTable("monthly_reports", {
   publishedAt: timestamp("published_at", { withTimezone: true }),
 }, (table) => [
   index("monthly_reports_client_id_idx").on(table.clientId),
+  index("monthly_reports_client_record_idx").on(table.clientRecordId),
   index("monthly_reports_period_idx").on(table.clientId, table.year, table.month),
   uniqueIndex("monthly_reports_period_version_idx").on(table.clientId, table.year, table.month, table.version),
   index("monthly_reports_status_idx").on(table.status),
@@ -727,6 +731,7 @@ export const monthlyReportAuditLogs = pgTable("monthly_report_audit_logs", {
   id: serial("id").primaryKey(),
   reportId: integer("report_id").references(() => monthlyReports.id, { onDelete: "restrict" }).notNull(),
   clientId: text("client_id").notNull(),
+  clientRecordId: integer("client_record_id").references(() => clients.id, { onDelete: "restrict" }),
   action: text("action").notNull(),
   actor: text("actor").notNull(),
   metadataJson: jsonb("metadata_json").$type<Record<string, unknown>>().default({}).notNull(),
@@ -734,6 +739,7 @@ export const monthlyReportAuditLogs = pgTable("monthly_report_audit_logs", {
 }, (table) => [
   index("monthly_report_audit_report_idx").on(table.reportId, table.createdAt),
   index("monthly_report_audit_client_idx").on(table.clientId, table.createdAt),
+  index("monthly_report_audit_client_record_idx").on(table.clientRecordId, table.createdAt),
 ])
 
 export const deliveryOnboardingItems = pgTable("delivery_onboarding_items", {

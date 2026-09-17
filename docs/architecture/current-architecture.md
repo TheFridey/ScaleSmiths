@@ -89,7 +89,7 @@ Web owns migrations for public acquisition and portal-facing structures, includi
 
 Admin owns internal identity, CRM, clients, delivery/kanban, sales proposals, analytics, finance/invoicing, and all Forge tables. Cross-application TypeScript declarations exist for some shared tables and require coordinated compatibility; there is not yet a common schema package.
 
-The current histories contain 16 web migrations (`0000`–`0015`) and 51 admin migrations (`0000`–`0050`). Both target the same database but retain separate Drizzle journals. Web migrations must always be applied before admin migrations. Committed migration SQL and journal entries are checksum-locked; corrections are forward-only.
+The current histories contain 22 web migrations (`0000`–`0021`) and 61 admin migrations (`0000`–`0060`). Both target the same database but retain separate Drizzle journals. The shared planner interleaves them; web `0018` and `0021` require admin-owned `clients.portal_client_id`. Committed migration SQL and journal entries are checksum-locked; corrections are forward-only.
 
 ## 9. Database roles and principals
 
@@ -108,9 +108,9 @@ Production uses distinct credentials:
 
 ## 10. Client isolation
 
-Portal isolation is currently enforced in application queries using the verified external text `clientId`; portal resources are filtered by that identifier and internal-only thread messages are excluded. Client analytics and optimisation tables use forced PostgreSQL RLS with transaction-local `app.current_client_id`, preventing missing or cross-client contexts from reading or writing rows.
+Portal isolation is enforced twice: application queries still filter by the authenticated text portal `clientId`, and PostgreSQL FORCE RLS on requests, request messages, timeline events and monthly reports compares integer `client_record_id` to transaction-local `app.current_client_id`. Missing mapping or missing tenant context returns no rows and rejects writes. Portal helpers call `withPortalTenant`, which resolves `clients.portal_client_id` to `clients.id` and sets `app.access_mode=tenant`.
 
-Portal/request/report client IDs are external text identifiers while admin CRM clients use integer primary keys, with an explicit unique portal identifier mapping on clients. General RLS for portal and Forge records remains deferred until this tenant identity is made canonical and legitimate internal aggregate access is designed. Therefore current portal isolation is strong application-level ownership enforcement, but not a general database tenant boundary.
+Admin connections default to explicit `internal_write` (not `BYPASSRLS`) so internal list/mutation paths keep working. `internal_aggregate` is SELECT-only across clients. Analytics/optimisation tables remain tenant-only via `withClientTenant`. Forge table RLS is not enabled yet; `app_forge_row_visible` encodes the intended predicate. See [Canonical tenant identity](tenant-identity.md) and [PostgreSQL access boundaries](database-access-boundaries.md).
 
 ## 11. Invoice and document immutability
 
@@ -182,7 +182,7 @@ The supported operational sequence for client provisioning, delivery, messaging,
 3. Historical `.freebuff/` desktop state remains in reachable Git history until a coordinated rewrite.
 4. Production-derived restore evidence and achieved RPO/RTO remain human operational gates.
 5. Monitoring/log-shipping activation, alert routing, and privacy/subprocessor alignment require production evidence.
-6. Portal text identity and admin integer client identity prevent a uniform RLS tenant model; most portal/Forge isolation remains application-enforced.
+6. Canonical tenant identity maps portal text IDs onto `clients.id`; FORCE RLS now covers requests/reports/timeline as well as analytics. Forge, invoice and delivery table RLS, and production-derived restore proof, remain open.
 7. Forge outbound fetches pin the validated address (TLS hostname preserved) and revalidate redirects and the connected socket; production firewall/proxy denial of private and metadata networks remains an operator defence-in-depth control.
 8. Auth.js v5 beta and the development-only Drizzle Kit advisory chain remain time-bounded dependency risks.
 9. Forge Docker execution shares the host kernel, and bridge-enabled install/preview operations rely on host egress controls.
@@ -233,7 +233,7 @@ Strengthen the modular monolith before considering extraction:
 
 The current ownership map, dependency rules, implemented dashboard read boundaries, and deliberately retained exceptions are recorded in [Domain ownership](domain-ownership.md).
 
-1. Establish a canonical tenant identity mapping shared by portal, CRM, analytics, reports, invoices, requests, and Forge, then extend RLS only where the access model is explicit.
+1. Extend the accepted tenant identity mapping ([Canonical tenant identity](tenant-identity.md)) with FORCE RLS on Forge, invoice and delivery tables after wrapping those write paths, then prove the policies on an isolated production-derived restore (#55).
 2. Create a narrow shared-contract package or generated compatibility boundary for genuinely shared tables/enums; keep each domain's migration ownership explicit.
 3. Keep identity/RBAC, finance, portal, and Forge as separately testable server modules with route handlers acting as adapters.
 4. Replace stringly typed Forge memory/artifact dependencies with versioned typed contracts and explicit lineage.

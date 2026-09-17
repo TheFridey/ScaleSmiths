@@ -37,6 +37,9 @@ beforeAll(async () => {
   try { await migrateSharedTestDatabase(migrationPool) } finally { await migrationPool.end() }
   await run(process.execPath, [path.resolve("scripts/provision-postgres-roles.mjs"), "--confirm-provision"], { env: provisionEnv })
   adminPool = new Pool({ connectionString: adminUrl, max: 5 })
+  adminPool.on("connect", (client) => {
+    void client.query("select set_config('app.access_mode', 'internal_write', false)")
+  })
   webPool = new Pool({ connectionString: webUrl, max: 2 })
   adminDb = drizzle(adminPool)
   await runGoldenLifecycle()
@@ -80,11 +83,21 @@ describe("ScaleSmiths Golden Path", () => {
     expect(report.status).toBe("published")
     await expect(adminPool.query("update monthly_reports set summary='mutated' where id=$1", [report.id])).rejects.toThrow(/immutable/)
     const portalInvoices = await webPool.query("select invoice_number from invoices i join clients c on c.id=i.client_id where c.portal_client_id=$1 and i.portal_published_at is not null", [state.portalClientId])
-    const portalReports = await webPool.query("select title from monthly_reports where client_id=$1 and status='published'", [state.portalClientId])
-    const foreignReports = await webPool.query("select title from monthly_reports where client_id=$1 and status='published'", [state.foreignPortalClientId])
+    expect((await webPool.query("select title from monthly_reports where client_id=$1 and status='published'", [state.portalClientId])).rowCount).toBe(0)
+    const portal = await webPool.connect()
+    try {
+      await portal.query("BEGIN")
+      await portal.query("SELECT set_config('app.access_mode','tenant',true)")
+      await portal.query("SELECT set_config('app.current_client_id',$1,true)", [String(state.clientId)])
+      const portalReports = await portal.query("select title from monthly_reports where client_id=$1 and status='published'", [state.portalClientId])
+      const foreignReports = await portal.query("select title from monthly_reports where client_id=$1 and status='published'", [state.foreignPortalClientId])
+      expect(portalReports.rows).toHaveLength(1)
+      expect(foreignReports.rows).toHaveLength(0)
+      await portal.query("ROLLBACK")
+    } finally {
+      portal.release()
+    }
     expect(portalInvoices.rows).toEqual([{ invoice_number: "SS-GOLD-0001" }])
-    expect(portalReports.rows).toHaveLength(1)
-    expect(foreignReports.rows).toHaveLength(0)
     await expect(webPool.query("select * from invoice_audit_logs")).rejects.toMatchObject({ code: "42501" })
   })
 

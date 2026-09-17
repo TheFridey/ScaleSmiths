@@ -52,7 +52,7 @@ Forge mutation/task rate limiting uses atomic PostgreSQL fixed-window counters k
 
 ## Database boundary
 
-Production database access is separated between web runtime, admin runtime and migration-owner credentials. Runtime containers do not receive the migration URL, cannot create schema objects and do not own either migration journal. Client analytics and optimisation rows additionally enforce transaction-scoped PostgreSQL RLS. See [PostgreSQL access boundaries](database-access-boundaries.md).
+Production database access is separated between web runtime, admin runtime and migration-owner credentials. Runtime containers do not receive the migration URL, cannot create schema objects and do not own either migration journal. Client analytics/optimisation rows and portal request/report/timeline rows enforce transaction-scoped PostgreSQL RLS. Portal access uses mapped `clients.id` via `withPortalTenant`; admin internal work uses an explicit aggregate or write mode rather than `BYPASSRLS`. See [PostgreSQL access boundaries](database-access-boundaries.md) and [Canonical tenant identity](tenant-identity.md).
 
 ## AI boundary
 

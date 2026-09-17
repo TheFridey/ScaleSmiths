@@ -10,9 +10,11 @@ ScaleSmiths keeps one PostgreSQL database and two independently ordered Drizzle 
 | Admin runtime | `ADMIN_DATABASE_URL` | Select/insert/update across public application relations, delete only on explicitly declared lifecycle tables, and public sequence use | No schema/database ownership, DDL, role management, migration-journal writes, truncate/reference/trigger rights, or undeclared delete |
 | Migration runner | `MIGRATION_DATABASE_URL` | Owns the database application schemas and their objects; creates/alters/drops objects; applies web history first and admin history second | Not supplied to long-running web/admin containers |
 | Backup operator | `BACKUP_DATABASE_URL` | Select-only database/schema access and `BYPASSRLS` so `pg_dump` captures protected tenant rows | No DML, DDL, role management or application runtime use |
-| Read-only operator | `READONLY_DATABASE_URL` | Select application and migration metadata; RLS-protected analytics requires an explicit transaction-local client context | No DML, DDL, sequence privileges or RLS bypass |
+| Read-only operator | `READONLY_DATABASE_URL` | Select application and migration metadata; RLS-protected analytics and request/report/timeline rows require an explicit tenant or aggregate context | No DML, DDL, sequence privileges or RLS bypass |
 | Analytics ingestion | Admin runtime plus transaction-local `app.current_client_id` | Per-client config read/update, metric insert and audit insert | Cannot see or write another client's protected analytics rows |
 | Analytics retention | Admin runtime plus transaction-local `app.current_client_id` | Bounded deletes of expired metrics, audits and derived proposals; credential nulling for non-ingestible connections | No cross-tenant delete; no delete without tenant context; no age-delete of connection rows |
+| Portal tenant runtime | Web runtime plus transaction-local `app.access_mode=tenant` | Request/report/timeline rows whose `client_record_id` matches the mapped CRM client | Missing mapping, missing GUC, or another client's rows |
+| Internal aggregate | Admin runtime plus `app.access_mode=internal_aggregate` | SELECT across client-owned request/report/timeline rows | Writes; analytics tables (still tenant-only) |
 | Forge workers | Admin runtime | Forge project/task/artifact/job/budget/provider/activity DML and necessary CRM references | Generated workspaces receive no database URL; workers do not own schema or migrations |
 
 The admin grant is intentionally broader than an individual feature because the internal application contains the CRM, identity, Forge, finance and operations surfaces. It is still materially constrained: it cannot access DDL, own objects, manage roles or alter either migration journal. A future out-of-process Forge worker can receive a narrower fourth runtime role without changing the application schemas.
@@ -26,9 +28,15 @@ Migration `0044_client_analytics_tenant_rls` enables and forces row-level securi
 - `client_analytics_audit_logs`
 - `client_optimisation_proposals`
 
-Every policy compares `client_id` with `current_setting('app.current_client_id', true)`. Missing context returns no rows and rejects writes. `withClientTenant` validates a positive client ID, opens a transaction, and sets the value with transaction-local `set_config`; pooled connections cannot retain it after commit or rollback. Analytics routes pass the route client ID into ingestion and additionally match the requested configuration ID.
+Every analytics policy compares integer `client_id` with `current_setting('app.current_client_id', true)`. Missing context returns no rows and rejects writes. `withClientTenant` validates a positive client ID, opens a transaction, and sets `app.access_mode=tenant` plus the client id with transaction-local `set_config`; pooled connections cannot retain tenant context after commit or rollback.
 
-RLS was evaluated but deferred for portal requests, reports and Forge records. Portal ownership currently uses external text client identifiers while admin CRM clients use integer IDs, and Forge project access includes legitimate cross-client internal reporting. Applying reliable policies there requires an explicit identity-to-tenant mapping and separate internal aggregate access, not a permissive bypass policy.
+Migration `0060_tenant_rls_prototype` (after web `0021_tenant_identity_mapping`) extends the same fail-closed model to portal-owned request, message, timeline and monthly-report tables. Policies compare `client_record_id` (filled from `clients.portal_client_id`) and require an explicit access mode:
+
+- `tenant` — portal `withPortalTenant` and tenant-scoped admin work
+- `internal_aggregate` — SELECT-only cross-client internal reporting
+- `internal_write` — explicit admin operational DML (session default on the admin pool; not `BYPASSRLS`)
+
+Unmapped or missing context is deny-all. Forge table RLS is intentionally not enabled yet; `app_forge_row_visible` is the tested predicate for that follow-up. The accepted identity model is [Canonical tenant identity](tenant-identity.md). Forward-only rollout and the #55 restore residual are in [Tenant RLS migration plan](../operations/tenant-rls-migration-plan.md).
 
 Analytics retention enumerates integer `clients.id` values then prunes each tenant inside `withClientTenant`. It does not introduce a second identity scheme. Operator job state has no personal data. See [Client analytics retention](../operations/client-analytics-retention.md).
 

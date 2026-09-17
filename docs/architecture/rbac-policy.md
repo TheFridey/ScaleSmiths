@@ -29,7 +29,7 @@ Internal identities are available at `/users` and `/api/admin-users*`; external 
 
 ## Enforcement
 
-Node middleware reloads the persisted user, validates session version/active status, maps the request path and method to a capability, and rejects denied APIs with 403 before the handler runs. Denied pages redirect to the dashboard. Sensitive path rules for audit exports, Forge integrations, approvals, deployment, and analytics retention execute before generic domain rules. Body-dependent actions additionally call `guardApiCapability` inside the handler.
+Node middleware reloads the persisted user, validates session version/active status, maps the request path and method to a capability, and rejects denied APIs with 403 before the handler runs. Denied pages redirect to the dashboard. Sensitive path rules for audit exports, Forge integrations, approvals, deployment, Forge operations health, and analytics retention execute before generic domain rules. Body-dependent actions additionally call `guardApiCapability` inside the handler.
 
 Server helpers:
 

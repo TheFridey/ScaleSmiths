@@ -53,7 +53,7 @@ Two mechanisms recover abandoned work:
    drains due jobs. Drive it from an external scheduler (e.g. a systemd timer) as
    defence in depth, especially if `FORGE_WORKER_DISABLED=true`.
 
-Manually inspect the queue:
+Manually inspect the queue from `/operations/forge` (requires `audit.read`). The page is the supported operator surface for queue depth, oldest queued age, active and expired leases, retry storms, dead letters and preview ownership. SQL remains valid for deep investigation:
 
 ```sql
 SELECT status, count(*) FROM forge_jobs GROUP BY status;                 -- queue depth by state
@@ -64,12 +64,17 @@ SELECT id, kind, lease_owner, lease_expires_at FROM forge_jobs
 SELECT id, kind, failure_reason FROM forge_jobs WHERE status='dead_letter'; -- dead letters
 ```
 
-Re-drive a dead-lettered job by resetting it (after fixing the cause):
+Documented recovery actions on `/operations/forge` require `forge.configure`, an exact confirmation phrase, and write Forge activity audit entries:
 
-```sql
-UPDATE forge_jobs SET status='queued', attempts=0, scheduled_at=now(),
-  failure_reason=NULL, lease_owner=NULL, lease_expires_at=NULL WHERE id=$1;
-```
+| Action | Confirmation | Effect |
+|---|---|---|
+| Retry dead letter | `RETRY JOB <id>` | Requeues one `dead_letter` job after the cause is corrected |
+| Reap expired leases | `REAP EXPIRED LEASES` | Requeues running jobs whose lease expired, or dead-letters those with no attempts left |
+| Reconcile abandoned previews | `RECONCILE PREVIEWS` | Stops recorded containers and marks starting/running previews whose ownership lease expired |
+
+Never clear a live lease. An inaccessible preview owner (another instance still holds a valid lease but has no healthy heartbeat) cannot be taken over until that lease expires; wait, then reconcile. The same recovery verbs are available at `POST /api/operations/forge-health`.
+
+Thresholds (`FORGE_OPS_*` in `.env.example`) drive the dashboard alerts and structured worker logs. They can be attached to Sentry or log-shipping later; they do not require a paid monitoring provider to display or to emit redacted log events.
 
 ## Scaling to multiple replicas
 
@@ -141,9 +146,6 @@ workspace simply to clear an alert.
 
 ## Documented follow-up
 
-- **Operational dashboards UI**: surface queue depth, oldest queued job, active
-  leases, retries, dead letters, and abandoned previews in the admin dashboard.
-  The SQL above is the data source; the metrics are already queryable.
 - **Long-term evidence retention**: approve per-state archival/deletion windows
   for dead letters, artifacts, deployment candidates and workspaces before
   adding destructive cleanup for them.

@@ -62,6 +62,12 @@ Create alerts in Sentry or the durable log destination and link each to an owned
 | Repeated 5xx | Five server errors for one application/route in five minutes, or an error-rate anomaly | Sentry `application`, `routePath`, `errorCategory=unhandled_request`, release and request ID; check health, database and latest release. |
 | Quote email delivery | Any `emailOperation=quote_notification` and `errorCategory=email_delivery`; warning after two configuration events | Confirm the stored quote remains present, inspect Resend status without copying form content, and arrange manual follow-up. |
 | Failed Forge jobs | Any failed job event; page after three in ten minutes or one deployment/QA integrity job | Use `projectId`, `taskId`, `jobId`, `forgeStage` and release; keep task quality and release gates blocked. |
+| Forge queue depth | `errorCategory=forge_ops_queue_depth` at `FORGE_OPS_QUEUE_DEPTH_WARNING` / `_CRITICAL` | Open `/operations/forge`; inspect oldest queued age and worker heartbeats. Do not raise the threshold to hide a stalled worker. |
+| Oldest queued job | `errorCategory=forge_ops_oldest_queued_age` at the warning/critical age thresholds | Confirm workers are claiming jobs; use documented recovery only after the cause is understood. |
+| Expired job leases | Any `errorCategory=forge_ops_expired_leases` | Confirm the owning worker is gone, then `REAP EXPIRED LEASES`. Never clear a live lease. |
+| Retry storms | `errorCategory=forge_ops_retry_storm` when in-flight jobs at or above `FORGE_OPS_RETRY_STORM_MIN_ATTEMPTS` reach the warning count | Inspect dead letters and provider health; do not blindly retry every job. |
+| Dead letters | Any `errorCategory=forge_ops_dead_letters` | Read the sanitised operator summary, fix the cause, then `RETRY JOB <id>` from `/operations/forge`. |
+| Abandoned / inaccessible previews | `errorCategory=forge_ops_abandoned_previews` or `forge_ops_inaccessible_previews` | Wait out an active lease on an unreachable owner; after expiry, `RECONCILE PREVIEWS`. |
 | Exhausted AI budgets | Any `errorCategory=budget_exceeded`; warn at configured dashboard threshold before exhaustion | Verify database reservations/reconciliation and intended limits. Never raise a hard limit during incident triage without authorised approval. |
 | Sandbox failures | Any `sandboxRunner` failure; page on repeated failures across projects | Inspect bounded QA logs and host capacity. Never switch production from Docker to local execution. |
 | Deployment failure | Any non-zero release-manager operation, failed health/Nginx validation, or missing success record after a scheduled change | Preserve the previous slot, deployment log and images; follow canary rollback. |
@@ -69,6 +75,8 @@ Create alerts in Sentry or the durable log destination and link each to an owned
 | Backup failure | Any `BACKUP_FAILURE_HOOK` event, missed verified point beyond RPO, off-host failure, or overdue restore drill | Follow backup/restore runbook; do not claim recovery until an isolated restore is evidenced. |
 
 Alert notifications must contain identifiers and links, not event bodies or client data. Route paging to the current operator/owner, define a secondary contact, test notification delivery quarterly, and review noisy alerts with a recorded threshold change.
+
+Forge queue, lease, retry and preview thresholds are evaluated in-process by the admin worker and rendered at `/operations/forge` even when `ERROR_MONITORING_PROVIDER=none`. Enabling Sentry later only has to route the existing `forge_ops_*` categories; it is not a prerequisite for the dashboard.
 
 ## Durable logs
 

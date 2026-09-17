@@ -51,6 +51,8 @@ Accepting a proposal is approval to progress the proposal through delivery plann
 
 Proposal actions write to the client analytics audit log. Audit metadata explicitly records that no automatic website change occurred.
 
+Stored proposals follow the reporting-owned analytics retention window. See [Client analytics retention](client-analytics-retention.md).
+
 The proposal layer must not:
 
 - deploy changes;

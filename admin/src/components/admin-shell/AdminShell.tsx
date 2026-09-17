@@ -42,6 +42,7 @@ const NAV: Array<{ href: string; label: string; Icon: typeof LayoutDashboard; ca
   { href: "/operations/brief", label: "Brief", Icon: CalendarClock, capability: "projects.read" },
   { href: "/operations/capacity", label: "Capacity", Icon: CalendarClock, capability: "projects.read" },
   { href: "/operations/experience-analytics", label: "Experience", Icon: BarChart3, capability: "leads.read" },
+  { href: "/operations/analytics-retention", label: "Retention", Icon: BarChart3, capability: "analytics.read" },
   { href: "/roadmap", label: "Roadmap", Icon: GitBranch, capability: "projects.read" },
   { href: "/messages", label: "Messages", Icon: MessageSquare, capability: "clients.read" },
   { href: "/portal-users", label: "Portal users", Icon: Users, capability: "portal_users.read" },

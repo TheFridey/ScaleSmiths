@@ -12,6 +12,7 @@ ScaleSmiths keeps one PostgreSQL database and two independently ordered Drizzle 
 | Backup operator | `BACKUP_DATABASE_URL` | Select-only database/schema access and `BYPASSRLS` so `pg_dump` captures protected tenant rows | No DML, DDL, role management or application runtime use |
 | Read-only operator | `READONLY_DATABASE_URL` | Select application and migration metadata; RLS-protected analytics requires an explicit transaction-local client context | No DML, DDL, sequence privileges or RLS bypass |
 | Analytics ingestion | Admin runtime plus transaction-local `app.current_client_id` | Per-client config read/update, metric insert and audit insert | Cannot see or write another client's protected analytics rows |
+| Analytics retention | Admin runtime plus transaction-local `app.current_client_id` | Bounded deletes of expired metrics, audits and derived proposals; credential nulling for non-ingestible connections | No cross-tenant delete; no delete without tenant context; no age-delete of connection rows |
 | Forge workers | Admin runtime | Forge project/task/artifact/job/budget/provider/activity DML and necessary CRM references | Generated workspaces receive no database URL; workers do not own schema or migrations |
 
 The admin grant is intentionally broader than an individual feature because the internal application contains the CRM, identity, Forge, finance and operations surfaces. It is still materially constrained: it cannot access DDL, own objects, manage roles or alter either migration journal. A future out-of-process Forge worker can receive a narrower fourth runtime role without changing the application schemas.
@@ -28,6 +29,8 @@ Migration `0044_client_analytics_tenant_rls` enables and forces row-level securi
 Every policy compares `client_id` with `current_setting('app.current_client_id', true)`. Missing context returns no rows and rejects writes. `withClientTenant` validates a positive client ID, opens a transaction, and sets the value with transaction-local `set_config`; pooled connections cannot retain it after commit or rollback. Analytics routes pass the route client ID into ingestion and additionally match the requested configuration ID.
 
 RLS was evaluated but deferred for portal requests, reports and Forge records. Portal ownership currently uses external text client identifiers while admin CRM clients use integer IDs, and Forge project access includes legitimate cross-client internal reporting. Applying reliable policies there requires an explicit identity-to-tenant mapping and separate internal aggregate access, not a permissive bypass policy.
+
+Analytics retention enumerates integer `clients.id` values then prunes each tenant inside `withClientTenant`. It does not introduce a second identity scheme. Operator job state has no personal data. See [Client analytics retention](../operations/client-analytics-retention.md).
 
 ## Production isolation
 

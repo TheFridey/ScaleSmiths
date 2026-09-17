@@ -19,7 +19,7 @@ Public notice version: 1.0
 | Monitoring | Sentry adapter is server-side and optional; double redaction/allowlists remove form bodies, cookies and secrets | Safe error details, release/environment, request ID and approved operational IDs | Production Sentry retention must be explicitly configured and recorded. |
 | PostgreSQL/backups | Application records use separate least-privilege runtime roles; backup framework encrypts recovery bundles | Hosted database and operator-controlled encrypted backup destination | Backup retention is separately documented. Record deletion does not instantly remove data from already-created recovery points. |
 | Hosting/Cloudflare | Docker/VPS with host Nginx; Cloudflare may proxy and protect public/admin origins | Network metadata such as IP, request headers and security events | Confirm actual Cloudflare plan/log settings and host log retention before publication. |
-| Client analytics | Admin ingests daily aggregate metrics only after per-client consent/configuration | Provider attribution, aggregate metrics, encrypted connection credentials | Configurable 30–730 days, default 395. The schema stores the policy but scheduled pruning is not implemented. |
+| Client analytics | Admin ingests daily aggregate metrics only after per-client consent/configuration | Provider attribution, aggregate metrics, encrypted connection credentials | Configurable 30–730 days, default 395. Reporting owns scheduled tenant-scoped pruning of metrics, audits, unused encrypted credentials and derived optimisation proposals. See [Client analytics retention](../operations/client-analytics-retention.md). |
 
 ## Browser storage inventory
 

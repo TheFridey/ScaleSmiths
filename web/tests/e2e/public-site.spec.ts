@@ -49,9 +49,12 @@ test.describe("public experience SEO routing", () => {
 
   test("permanently redirects the legacy normal route and honours it over an interactive preference", async ({ page, request }) => {
     const redirect = await request.get("/traditional", { maxRedirects: 0 })
+    const location = redirect.headers().location ?? ""
+    const resolved = new URL(location, "https://scalesmiths.co.uk")
     expect(redirect.status()).toBe(308)
-    expect(new URL(redirect.headers().location).pathname).toBe("/")
-    expect(new URL(redirect.headers().location).searchParams.get("experience")).toBe("normal")
+    expect(location).not.toMatch(/localhost:3100/i)
+    expect(resolved.pathname).toBe("/")
+    expect(resolved.searchParams.get("experience")).toBe("normal")
 
     await setExperience(page, "interactive")
     await gotoReady(page, "/traditional")

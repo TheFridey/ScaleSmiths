@@ -17,7 +17,7 @@
     { "owner": "web", "from": 0, "through": 17 },
     { "owner": "admin", "from": 0, "through": 51 },
     { "owner": "web", "from": 18, "through": 20 },
-    { "owner": "admin", "from": 52, "through": 58 }
+    { "owner": "admin", "from": 52, "through": 59 }
   ],
   "crossHistoryDependencies": [
     { "migration": "admin/0012_client_request_threads", "requires": "web/0005_client_requests", "objects": ["client_requests"] },

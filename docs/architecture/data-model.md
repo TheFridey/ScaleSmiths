@@ -38,6 +38,9 @@ erDiagram
   CLIENT_REQUESTS ||--o{ CLIENT_TIMELINE_EVENTS : emits
   PUBLIC_CLAIMS ||--o| PUBLIC_CLAIM_EVIDENCE : supported_by
   PUBLIC_CLAIMS ||--o{ PUBLIC_CLAIM_AUDIT_LOGS : reviewed_through
+  CLIENTS ||--o{ CLIENT_ANALYTICS_CONFIGS : configures
+  CLIENT_ANALYTICS_CONFIGS ||--o{ CLIENT_ANALYTICS_DAILY_METRICS : measures
+  CLIENTS ||--o{ CLIENT_OPTIMISATION_PROPOSALS : derives
 ```
 
 ## Public/shared operational tables
@@ -82,6 +85,11 @@ Shared tables are duplicated in TypeScript rather than imported from one package
 - `delivery_resources`: HTTP(S) file/link references with explicit internal or client-visible publication state.
 - `delivery_decisions`: open/resolved/cancelled choices required from a named party; client visibility is explicit and resolution is lifecycle-validated.
 - `delivery_project_audit_logs`: append-only material project, milestone, deliverable, resource and decision changes.
+- `client_analytics_configs`: per-client provider connection, consent, encrypted credentials and `retentionDays` (30–730, default 395).
+- `client_analytics_daily_metrics`: daily minimised aggregate metrics; pruned by the reporting-owned retention job.
+- `client_analytics_audit_logs`: analytics connection/ingest/proposal activity; pruned on the same window.
+- `client_optimisation_proposals`: derived optimisation recommendations; pruned using the client's longest valid analytics retention.
+- `analytics_retention_job_state`: singleton lease and last-success/failure counts with no personal data.
 
 `client_timeline_events` is deliberately not an audit-log mirror. Domain services emit only meaningful business events through the client-activity recorder, with a stable source reference and unique idempotency key so retries do not duplicate the feed. Admin views may read both visibility levels; portal queries require the authenticated portal client scope and `client_visible` visibility. Operational, security and Forge detail remains in its owning audit tables.
 
@@ -108,8 +116,8 @@ Important enums define quote status, request category/priority/status, message v
 
 ## Migration inventory
 
-- Web migrations `0000`-`0015` build quote capture, portal accounts/rate limits, request threads/timeline and notification reconciliation, reports, public experience analytics, the public claims registry/restricted view, enquiry intent, and the local-growth funnel classification.
-- Admin migrations `0000`-`0051` build operational CRM, identity/security, Forge workflow/provenance/economics, durable operational controls and run orchestration, client operations, analytics, finance/invoicing, release gates, the forward-only historical-schema reconciliation, generated-site dependency/SBOM evidence binding, and the client projects/delivery domain.
+- Web migrations `0000`-`0020` build quote capture, portal accounts/rate limits, request threads/timeline and notification reconciliation, reports, public experience analytics, the public claims registry/restricted view, enquiry intent, the local-growth funnel classification, unified client activity, portal activation tokens, and published report evidence.
+- Admin migrations `0000`-`0059` build operational CRM, identity/security, Forge workflow/provenance/economics, durable operational controls and run orchestration, client operations, analytics ingestion and retention jobs, finance/invoicing, release gates, the forward-only historical-schema reconciliation, generated-site dependency/SBOM evidence binding, the client projects/delivery domain, and client offboarding.
 
 The histories and Drizzle journals remain independent, but `scripts/shared-migration-plan.json` supplies the authoritative global dependency graph. `npm run db:migrate` reads both prefixes and executes the next legal migration; a complete web-then-admin batch is unsupported because web `0018` requires the admin-owned `clients.portal_client_id` established by admin `0050`.
 

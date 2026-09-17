@@ -44,7 +44,7 @@ describe("migration installation paths", () => {
     await migrateSharedTestDatabase(pool)
 
     expect(await migrationCount("__drizzle_web_migrations")).toBe(21)
-    expect(await migrationCount("__drizzle_migrations")).toBe(59)
+    expect(await migrationCount("__drizzle_migrations")).toBe(60)
     expect(await columnExists("forge_artifacts", "content_bytes")).toBe(true)
     expect(await columnExists("forge_deployment_candidates", "dependency_report_json")).toBe(true)
     expect(await columnExists("forge_deployment_candidates", "dependency_sbom_hash")).toBe(true)
@@ -63,6 +63,8 @@ describe("migration installation paths", () => {
     expect(await tableExists("delivery_milestones")).toBe(true)
     expect(await viewExists("delivery_project_progress")).toBe(true)
     expect(await constraintExists("delivery_projects_forge_project_id_forge_projects_id_fk")).toBe(true)
+    expect(await tableExists("analytics_retention_job_state")).toBe(true)
+    expect(await constraintExists("client_analytics_configs_retention_days_check")).toBe(true)
   })
 
   it("upgrades a locked historical fixture by applying only the forward reconciliation", async () => {
@@ -88,7 +90,7 @@ describe("migration installation paths", () => {
     await migrateSharedTestDatabase(pool)
 
     expect(await migrationCount("__drizzle_web_migrations")).toBe(21)
-    expect(await migrationCount("__drizzle_migrations")).toBe(59)
+    expect(await migrationCount("__drizzle_migrations")).toBe(60)
     expect(await columnExists("forge_artifacts", "content_bytes")).toBe(true)
     expect(await columnExists("forge_deployment_candidates", "dependency_report_json")).toBe(true)
     expect(await constraintExists("forge_deployment_candidates_dependency_hashes_sha256")).toBe(true)

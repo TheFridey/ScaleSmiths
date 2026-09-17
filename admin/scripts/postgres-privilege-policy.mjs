@@ -49,6 +49,10 @@ export const ADMIN_DELETE_TABLES = [
   // Pruned by the admin worker on behalf of the web runtime, which holds no
   // DELETE privilege of its own.
   "web_rate_limits",
+  // Client analytics retention job. Deletes are tenant-scoped through RLS.
+  "client_analytics_daily_metrics",
+  "client_analytics_audit_logs",
+  "client_optimisation_proposals",
 ]
 
 export const RUNTIME_FORBIDDEN_TABLE_PRIVILEGES = ["TRUNCATE", "REFERENCES", "TRIGGER"]

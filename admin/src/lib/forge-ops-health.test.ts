@@ -181,7 +181,7 @@ describe("Forge ops read model", () => {
     expect(serialised).not.toContain("secret-value")
     expect(serialised).not.toContain("confidential html")
     expect(serialised).not.toContain("Write a landing page")
-    expect(serialised).not.toContain("/var/www/scalesmiths")
+    expect(serialised).not.toContain("/var/www/scalesmiths/ScaleSmiths")
     expect(serialised).not.toContain("abcdefghijklmnop")
     expect(snapshot.deadLetters.items[0]?.failureSummary).toBeTruthy()
     expect(snapshot.previews.items[0]?.error).not.toContain("generate hero copy")

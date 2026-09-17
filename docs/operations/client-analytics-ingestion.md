@@ -60,4 +60,4 @@ Run the normal Drizzle migration flow. This stage adds:
 
 ## Retention
 
-Each connection has a configurable `retentionDays` value. The schema stores the policy; scheduled pruning can be added by deleting `client_analytics_daily_metrics` rows older than the connection’s retention window.
+Each connection has a configurable `retentionDays` value (30–730, default 395). Scheduled pruning is implemented by the reporting-owned job documented in [Client analytics retention and deletion](client-analytics-retention.md). The job deletes expired metrics and audits, nulls unused encrypted credentials, and deletes derived optimisation proposals using PostgreSQL `now()`, tenant-scoped RLS, and bounded batches. Operator last-success/failure state is on **Operations → Retention**.

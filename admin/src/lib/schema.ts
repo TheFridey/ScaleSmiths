@@ -1172,6 +1172,7 @@ export const clientAnalyticsConfigs = pgTable("client_analytics_configs", {
 }, (table) => [
   index("client_analytics_configs_client_idx").on(table.clientId),
   index("client_analytics_configs_provider_idx").on(table.provider, table.enabled),
+  check("client_analytics_configs_retention_days_check", sql`${table.retentionDays} BETWEEN 30 AND 730`),
 ])
 
 export const clientAnalyticsDailyMetrics = pgTable("client_analytics_daily_metrics", {
@@ -1245,6 +1246,31 @@ export const clientOptimisationProposals = pgTable("client_optimisation_proposal
 }, (table) => [
   index("client_optimisation_proposals_client_idx").on(table.clientId, table.status),
   uniqueIndex("client_optimisation_proposals_key_idx").on(table.clientId, table.proposalKey),
+])
+
+export const analyticsRetentionJobState = pgTable("analytics_retention_job_state", {
+  id: integer("id").primaryKey().default(1),
+  leaseOwner: text("lease_owner"),
+  leaseExpiresAt: timestamp("lease_expires_at", { withTimezone: true }),
+  cursorClientId: integer("cursor_client_id").default(0).notNull(),
+  lastStartedAt: timestamp("last_started_at", { withTimezone: true }),
+  lastFinishedAt: timestamp("last_finished_at", { withTimezone: true }),
+  lastSuccessAt: timestamp("last_success_at", { withTimezone: true }),
+  lastFailureAt: timestamp("last_failure_at", { withTimezone: true }),
+  lastStatus: text("last_status"),
+  lastErrorCategory: text("last_error_category"),
+  lastTenantsScanned: integer("last_tenants_scanned").default(0).notNull(),
+  lastTenantsFailed: integer("last_tenants_failed").default(0).notNull(),
+  lastMetricsDeleted: integer("last_metrics_deleted").default(0).notNull(),
+  lastAuditsDeleted: integer("last_audits_deleted").default(0).notNull(),
+  lastCredentialsCleared: integer("last_credentials_cleared").default(0).notNull(),
+  lastProposalsDeleted: integer("last_proposals_deleted").default(0).notNull(),
+  lastBatches: integer("last_batches").default(0).notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  check("analytics_retention_job_state_singleton", sql`${table.id} = 1`),
+  check("analytics_retention_job_state_status_check", sql`${table.lastStatus} IS NULL OR ${table.lastStatus} IN ('success','failure','partial','running','skipped')`),
+  index("analytics_retention_job_state_lease_idx").on(table.leaseExpiresAt),
 ])
 
 export const experienceEvents = pgTable("experience_events", {

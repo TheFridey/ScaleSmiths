@@ -38,7 +38,7 @@ This runbook controls the end of a ScaleSmiths client relationship. Offboarding 
 - Active or paused delivery projects are closed as cancelled and hidden from the portal; staging links are no longer published.
 - Linked Forge project records are archived, preventing further generation/deployment activity.
 
-Completion does not delete production sites, Forge workspaces, deployment evidence, client documents, monthly reports, analytics history, invoices or payments.
+Completion does not delete production sites, Forge workspaces, deployment evidence, client documents, monthly reports, analytics history, invoices or payments. Remaining analytics metrics, audits and derived proposals continue under the reporting-owned retention job in [Client analytics retention](client-analytics-retention.md).
 
 ## Reactivation
 

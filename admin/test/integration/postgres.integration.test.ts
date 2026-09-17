@@ -1331,6 +1331,111 @@ describe("real PostgreSQL integration", () => {
     expect((await pool.query("SELECT active FROM portal_client_accounts WHERE client_id='archive-me'")).rows[0].active).toBe(false);
     expect((await pool.query("SELECT active FROM client_service_assignments WHERE client_id=$1", [clientId])).rows[0].active).toBe(false);
   });
+
+  it("prunes expired analytics data with tenant isolation, boundary dates, retries and concurrent ingestion", async () => {
+    const { pruneClientAnalyticsRetention, runAnalyticsRetentionJob } = await import("../../src/lib/server/analytics-retention");
+    const first = (await pool.query("INSERT INTO clients(name,status) VALUES('Retention A','archived') RETURNING id")).rows[0].id as number;
+    const second = (await pool.query("INSERT INTO clients(name,status) VALUES('Retention B','active') RETURNING id")).rows[0].id as number;
+    const firstConfig = (await pool.query(
+      "INSERT INTO client_analytics_configs(client_id,provider,display_name,consent_granted,retention_days,enabled,credentials_encrypted,source_attribution,created_by) VALUES($1,'manual','A',false,30,false,'secret-a','Manual','operator') RETURNING id",
+      [first],
+    )).rows[0].id as number;
+    const secondConfig = (await pool.query(
+      "INSERT INTO client_analytics_configs(client_id,provider,display_name,consent_granted,retention_days,enabled,credentials_encrypted,source_attribution,created_by) VALUES($1,'manual','B',true,730,true,'secret-b','Manual','operator') RETURNING id",
+      [second],
+    )).rows[0].id as number;
+
+    await pool.query(
+      `INSERT INTO client_analytics_daily_metrics(client_id,config_id,metric_date,source,source_attribution,sessions)
+       VALUES
+         ($1,$2,now() - interval '31 days','manual','Manual',11),
+         ($1,$2,now() - interval '29 days','manual','Manual',12),
+         ($1,$2,now() - interval '1 day','manual','Manual',13),
+         ($3,$4,now() - interval '31 days','manual','Manual',21),
+         ($3,$4,now() - interval '1 day','manual','Manual',22)`,
+      [first, firstConfig, second, secondConfig],
+    );
+    await pool.query(
+      `INSERT INTO client_analytics_audit_logs(client_id,config_id,actor,action,message,created_at)
+       VALUES
+         ($1,$2,'operator','analytics_ingested','old a', now() - interval '31 days'),
+         ($3,$4,'operator','analytics_ingested','old b', now() - interval '1 day')`,
+      [first, firstConfig, second, secondConfig],
+    );
+    await pool.query(
+      `INSERT INTO client_optimisation_proposals(client_id,proposal_key,title,expected_impact,confidence,estimated_effort,risk,proposed_change,validation_method,rollback_plan,required_approval,target_metric,updated_at)
+       VALUES
+         ($1,'old-a','Old A','impact','low','s','low','change','validate','rollback','human','sessions', now() - interval '31 days'),
+         ($1,'new-a','New A','impact','low','s','low','change','validate','rollback','human','sessions', now() - interval '1 day'),
+         ($2,'old-b','Old B','impact','low','s','low','change','validate','rollback','human','sessions', now() - interval '31 days')`,
+      [first, second],
+    );
+
+    const firstPass = await pruneClientAnalyticsRetention(first, { rowBatch: 50, maxBatchesPerTenant: 2 });
+    expect(firstPass.metricsDeleted).toBe(1);
+    expect(firstPass.auditsDeleted).toBe(1);
+    expect(firstPass.credentialsCleared).toBe(1);
+    expect(firstPass.proposalsDeleted).toBe(1);
+
+    const retry = await pruneClientAnalyticsRetention(first, { rowBatch: 50, maxBatchesPerTenant: 2 });
+    expect(retry.metricsDeleted).toBe(0);
+    expect(retry.auditsDeleted).toBe(0);
+    expect(retry.credentialsCleared).toBe(0);
+    expect(retry.proposalsDeleted).toBe(0);
+
+    const remainingA = await pool.query(
+      "SELECT sessions FROM client_analytics_daily_metrics WHERE client_id=$1 ORDER BY sessions",
+      [first],
+    );
+    expect(remainingA.rows.map((row) => row.sessions)).toEqual([12, 13]);
+    expect((await pool.query("SELECT credentials_encrypted FROM client_analytics_configs WHERE id=$1", [firstConfig])).rows[0].credentials_encrypted).toBeNull();
+    expect((await pool.query("SELECT proposal_key FROM client_optimisation_proposals WHERE client_id=$1", [first])).rows).toEqual([{ proposal_key: "new-a" }]);
+
+    const remainingB = await pool.query(
+      "SELECT sessions FROM client_analytics_daily_metrics WHERE client_id=$1 ORDER BY sessions",
+      [second],
+    );
+    expect(remainingB.rows.map((row) => row.sessions)).toEqual([21, 22]);
+    expect((await pool.query("SELECT credentials_encrypted FROM client_analytics_configs WHERE id=$1", [secondConfig])).rows[0].credentials_encrypted).toBe("secret-b");
+    expect((await pool.query("SELECT proposal_key FROM client_optimisation_proposals WHERE client_id=ANY($1) ORDER BY proposal_key", [[first, second]])).rows.map((row) => row.proposal_key)).toEqual(["new-a", "old-b"]);
+
+    const adminPool = new Pool({ connectionString: adminUrl });
+    try {
+      expect((await adminPool.query("DELETE FROM client_analytics_daily_metrics")).rowCount).toBe(0);
+    } finally {
+      await adminPool.end();
+    }
+    await expect(pruneClientAnalyticsRetention(0)).rejects.toThrow(/positive client tenant id/i);
+
+    await Promise.all([
+      pruneClientAnalyticsRetention(second, { rowBatch: 50, maxBatchesPerTenant: 2 }),
+      pool.query(
+        "INSERT INTO client_analytics_daily_metrics(client_id,config_id,metric_date,source,source_attribution,sessions) VALUES($1,$2,now(),'manual','Manual',23)",
+        [second, secondConfig],
+      ),
+      pool.query(
+        "INSERT INTO client_analytics_daily_metrics(client_id,config_id,metric_date,source,source_attribution,sessions) VALUES($1,$2,now() - interval '800 days','manual','Manual',24)",
+        [second, secondConfig],
+      ),
+    ]);
+    await pruneClientAnalyticsRetention(second, { rowBatch: 50, maxBatchesPerTenant: 4 });
+    const afterConcurrent = await pool.query(
+      "SELECT sessions FROM client_analytics_daily_metrics WHERE client_id=$1 ORDER BY sessions",
+      [second],
+    );
+    expect(afterConcurrent.rows.map((row) => row.sessions)).toEqual([21, 22, 23]);
+
+    await pool.query("INSERT INTO analytics_retention_job_state (id) VALUES (1) ON CONFLICT (id) DO NOTHING");
+    await pool.query("UPDATE analytics_retention_job_state SET lease_owner='held', lease_expires_at=now() + interval '10 minutes' WHERE id=1");
+    const skipped = await runAnalyticsRetentionJob({ owner: "integration-b", force: true });
+    expect(skipped).toMatchObject({ skipped: true, status: "skipped" });
+    await pool.query("UPDATE analytics_retention_job_state SET lease_owner=NULL, lease_expires_at=NULL WHERE id=1");
+    const ran = await runAnalyticsRetentionJob({ owner: "integration-a", force: true });
+    expect(ran.status).toBe("success");
+    expect(ran.counts.tenantsFailed).toBe(0);
+    expect(JSON.stringify(ran.publicState)).not.toMatch(/secret-|Retention A|Retention B|@/);
+    expect((await pool.query("SELECT last_status, last_error_category FROM analytics_retention_job_state WHERE id=1")).rows[0]).toEqual({ last_status: "success", last_error_category: null });
+  });
 });
 async function createProject() {
   return (

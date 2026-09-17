@@ -16,7 +16,7 @@ ScaleSmiths remains a modular monolith. A domain boundary is an in-process TypeS
 | Delivery/projects | Requests, timeline, kanban, project state and delivery capacity | `portal-client-requests.ts`, `server/delivery-read-service.ts`, and existing delivery/request modules |
 | Finance | Invoice catalogue/settings, invoice lifecycle, immutable documents, delivery and audit | `portal-invoices.ts`, `server/invoices.ts`, invoice delivery/document modules, `server/finance-read-service.ts` and finance validation |
 | Sales | Prospects, outreach, proposal tracking and sales proposals | `server/sales-read-service.ts`, `server/sales-lead-context.ts`, proposal generator and sales validation |
-| Reporting | Monthly reports and client analytics | `portal-reports.ts`, `server/reporting-read-service.ts`, report/analytics modules and validation |
+| Reporting | Monthly reports and client analytics | `portal-reports.ts`, `server/reporting-read-service.ts`, report/analytics modules and validation; analytics retention/deletion is reporting-owned (`server/analytics-retention.ts`) |
 | Forge | Forge projects, runs, tasks, jobs, artifacts, memories, AI budgets, workspaces, QA and release evidence | Stable `server/forge-run-orchestrator.ts` facade and focused Forge server modules |
 
 Public boundaries are deliberately small functions. They may return use-case-specific read models rather than leaking Drizzle tables or query builders. Route handlers and Server Component pages are adapters/composition roots: they enforce authentication/authorization, call domain APIs, and shape transport/UI responses.

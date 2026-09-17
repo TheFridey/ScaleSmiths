@@ -536,6 +536,12 @@
       "sha256": "1cb32af7251c082e33ca0f88a6ad912fd80f146bd80f29f8e3fe7488501714d6",
       "lifecycle": "forward",
       "reason": "Adds versioned client offboarding checklists, explicit destructive-action evidence, lifecycle state, retention review metadata, and an append-only audit trail without deleting retained records."
+    },
+    {
+      "path": "admin/drizzle/0059_analytics_retention_jobs.sql",
+      "sha256": "946274bdab57b6fcffc283f2527fe973da6c8af43d84fe0e60781715ddca4110",
+      "lifecycle": "forward",
+      "reason": "Locks analytics retention_days to 30-730 and adds durable singleton job state for tenant-scoped analytics pruning, last-success/failure observability, and lease coordination."
     }
   ],
   "journals": {
@@ -745,6 +751,13 @@
           "version": "7",
           "when": 1788451200000,
           "tag": "0058_client_offboarding",
+          "breakpoints": true
+        },
+        {
+          "idx": 59,
+          "version": "7",
+          "when": 1789603200000,
+          "tag": "0059_analytics_retention_jobs",
           "breakpoints": true
         }
       ]

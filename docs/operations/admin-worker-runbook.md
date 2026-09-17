@@ -97,9 +97,10 @@ for never locking admins out of Forge during a database hiccup.
 
 ## Retention / cleanup
 
-The worker periodically prunes expired `rate_limit_counters` and old
-completed/cancelled `forge_jobs` (`FORGE_JOB_RETENTION_DAYS`). Failed and
-dead-lettered jobs are retained for investigation.
+The worker periodically prunes expired `rate_limit_counters`, expired public `web_rate_limits`, old
+completed/cancelled `forge_jobs` (`FORGE_JOB_RETENTION_DAYS`), and client analytics records that are
+outside each connection's retention window. See [Client analytics retention](client-analytics-retention.md).
+Failed and dead-lettered Forge jobs are retained for investigation.
 
 ## Resource reconciliation
 
@@ -123,6 +124,7 @@ resource failed reconciliation and needs operator attention.
 | Running run/step | No state update for five minutes (`FORGE_RUN_RECONCILE_AFTER_MS`) | If its durable job is missing, cancelled or terminal, reset or apply the outcome and continue the run state machine |
 | Completed/cancelled job | 14 days by default (`FORGE_JOB_RETENTION_DAYS`) | Delete in normal retention cleanup |
 | Failed/dead-letter job | No automatic expiry | Retain for investigation |
+| Client analytics metrics/audits/proposals | Per-connection 30–730 days, default 395 | Tenant-scoped prune job; credentials nulled when the connection is not ingestible |
 | Workspace, artifact, deployment candidate | No orphan-deletion threshold | Retain as project, provenance and release evidence |
 | External provider job | Not applicable today | Provider calls are synchronous; no external asynchronous handle is persisted |
 

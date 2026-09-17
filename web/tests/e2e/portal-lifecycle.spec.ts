@@ -6,6 +6,7 @@ import {
   disablePortalAccount,
   loginToPortal,
   markPortalAccountResetRequired,
+  portalApiRequest,
   withPortalLifecycleFixture,
 } from "./portal-fixture"
 
@@ -131,7 +132,7 @@ test("requests, replies, reports, invoices, PDF and timeline stay on the authent
     await expect(page.getByRole("heading", { name: fixture.clientA.publishedInvoiceNumber })).toBeVisible()
     await expect(page.getByText("Published care")).toBeVisible()
 
-    const pdf = await page.request.get(`/portal/api/invoices/${encodeURIComponent(fixture.clientA.publishedInvoiceNumber)}/pdf`)
+    const pdf = await portalApiRequest(page, `/portal/api/invoices/${encodeURIComponent(fixture.clientA.publishedInvoiceNumber)}/pdf`)
     expect(pdf.status()).toBe(200)
     expect(pdf.headers()["content-type"]).toContain("application/pdf")
     expect(Buffer.from(await pdf.body()).subarray(0, 5).toString()).toBe("%PDF-")
@@ -158,7 +159,7 @@ test("published milestones and documents appear while unpublished assets stay hi
     await expect(page.getByText(fixture.clientA.archivedDocumentTitle)).toHaveCount(0)
     await expect(page.getByText(fixture.clientB.visibleDocumentTitle)).toHaveCount(0)
 
-    const document = await page.request.get(`/portal/api/documents/${fixture.clientA.visibleDocumentId}`, { maxRedirects: 0 })
+    const document = await portalApiRequest(page, `/portal/api/documents/${fixture.clientA.visibleDocumentId}`, { maxRedirects: 0 })
     expect(document.status()).toBeGreaterThanOrEqual(300)
     expect(document.status()).toBeLessThan(400)
     expect(document.headers().location).toBe(fixture.clientA.visibleDocumentUrl)
@@ -197,18 +198,18 @@ test("direct URLs cannot cross client boundaries or expose unpublished records",
     await expect(page.getByRole("heading", { name: "Page not found." })).toBeVisible()
     await expect(page.getByText(fixture.clientA.unpublishedInvoiceNumber)).toHaveCount(0)
 
-    const foreignPdf = await page.request.get(`/portal/api/invoices/${encodeURIComponent(fixture.clientB.publishedInvoiceNumber)}/pdf`)
+    const foreignPdf = await portalApiRequest(page, `/portal/api/invoices/${encodeURIComponent(fixture.clientB.publishedInvoiceNumber)}/pdf`)
     expect(foreignPdf.status()).toBe(404)
     expect(await foreignPdf.json()).toMatchObject({ error: "Invoice not found." })
 
-    const unpublishedPdf = await page.request.get(`/portal/api/invoices/${encodeURIComponent(fixture.clientA.unpublishedInvoiceNumber)}/pdf`)
+    const unpublishedPdf = await portalApiRequest(page, `/portal/api/invoices/${encodeURIComponent(fixture.clientA.unpublishedInvoiceNumber)}/pdf`)
     expect(unpublishedPdf.status()).toBe(404)
 
-    const foreignDocument = await page.request.get(`/portal/api/documents/${fixture.clientB.visibleDocumentId}`)
+    const foreignDocument = await portalApiRequest(page, `/portal/api/documents/${fixture.clientB.visibleDocumentId}`)
     expect(foreignDocument.status()).toBe(404)
     expect(await foreignDocument.json()).toMatchObject({ error: "Not found." })
 
-    const unpublishedDocument = await page.request.get(`/portal/api/documents/${fixture.clientA.unpublishedDocumentId}`)
+    const unpublishedDocument = await portalApiRequest(page, `/portal/api/documents/${fixture.clientA.unpublishedDocumentId}`)
     expect(unpublishedDocument.status()).toBe(404)
   }, browser)
 })

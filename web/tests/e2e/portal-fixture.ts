@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from "node:crypto"
 import bcrypt from "bcryptjs"
-import { type Browser, type BrowserContext, type Page } from "@playwright/test"
+import { type APIRequestContext, type Browser, type BrowserContext, type Page } from "@playwright/test"
 import { Client } from "pg"
 import { hashPortalActivationToken } from "../../src/lib/portal-activation"
 import { connectGuardedE2eDatabase } from "./database"
@@ -69,6 +69,28 @@ export async function loginToPortal(page: Page, email: string, password: string)
   await page.getByLabel("Email", { exact: true }).fill(email)
   await page.getByLabel("Password", { exact: true }).fill(password)
   await page.getByRole("button", { name: /enter portal/i }).click()
+}
+
+/**
+ * Playwright's APIRequestContext does not send Secure cookies over HTTP, even
+ * though Chromium document navigations do for 127.0.0.1. CI runs the portal
+ * suite against `next start` (`NODE_ENV=production`), so the session cookie is
+ * Secure. Copy the browser jar onto the request instead of dropping Secure.
+ */
+export async function portalApiRequest(
+  page: Page,
+  url: string,
+  options: Parameters<APIRequestContext["fetch"]>[1] = {},
+) {
+  const cookies = await page.context().cookies()
+  const cookieHeader = cookies.map((cookie) => `${cookie.name}=${cookie.value}`).join("; ")
+  return page.request.fetch(url, {
+    ...options,
+    headers: {
+      ...options?.headers,
+      ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+    },
+  })
 }
 
 export async function clearPortalRateLimits(db: Client) {

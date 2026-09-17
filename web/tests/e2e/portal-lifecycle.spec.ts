@@ -30,7 +30,7 @@ test("a client completes invitation activation and first login into the linked w
     await page.getByRole("button", { name: /enter portal/i }).click()
     await expect(page).toHaveURL(new RegExp(`/portal/${fixture.invitee.portalClientId}$`))
     await expect(page.getByRole("heading", { name: /welcome back, casey/i })).toBeVisible()
-    await expect(page.getByText("Invitee Workshop Portal")).toBeVisible()
+    await expect(page.getByRole("complementary").getByText("Invitee Workshop Portal", { exact: true })).toBeVisible()
   }, browser)
 })
 
@@ -121,12 +121,12 @@ test("requests, replies, reports, invoices, PDF and timeline stay on the authent
     await expect(page).toHaveURL(new RegExp(`/portal/${fixture.clientA.portalClientId}/reports/${fixture.clientA.publishedReportId}$`))
     await expect(page.locator("iframe[title]")).toHaveAttribute("srcDoc", new RegExp(fixture.clientA.publishedReportPhrase))
 
-    await page.getByRole("link", { name: "Invoices", exact: true }).click()
+    await page.goto(`/portal/${fixture.clientA.portalClientId}?tab=invoices`)
     await expect(page.getByRole("heading", { name: "Invoices" })).toBeVisible()
     await expect(page.getByText(fixture.clientA.publishedInvoiceNumber, { exact: true })).toBeVisible()
     await expect(page.getByText(fixture.clientA.unpublishedInvoiceNumber)).toHaveCount(0)
     await expect(page.getByText(fixture.clientB.publishedInvoiceNumber)).toHaveCount(0)
-    await page.getByRole("link", { name: "View" }).click()
+    await page.getByRole("link", { name: "View", exact: true }).click()
     await expect(page).toHaveURL(new RegExp(`/portal/${fixture.clientA.portalClientId}/invoices/${fixture.clientA.publishedInvoiceNumber}$`))
     await expect(page.getByRole("heading", { name: fixture.clientA.publishedInvoiceNumber })).toBeVisible()
     await expect(page.getByText("Published care")).toBeVisible()

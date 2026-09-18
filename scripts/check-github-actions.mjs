@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { existsSync } from "node:fs"
+import { existsSync, readFileSync } from "node:fs"
 import { readFile } from "node:fs/promises"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
@@ -165,6 +165,25 @@ export function validateWorkflowSet(workflows, repositoryRoot) {
     failures.push("[trivy-evidence-order] security.yml must upload Trivy/SBOM evidence before enforcing scan failure")
   }
 
+  failures.push(...validateForgeE2eHarness(repositoryRoot))
+
+  return failures
+}
+
+export function validateForgeE2eHarness(repositoryRoot) {
+  const runnerPath = path.join(repositoryRoot, "scripts/run-forge-e2e-tests.mjs")
+  if (!existsSync(runnerPath)) return ["[forge-e2e-harness] missing scripts/run-forge-e2e-tests.mjs"]
+  const runner = readFileSync(runnerPath, "utf8")
+  const failures = []
+  if (!/\bFORGE_JOBS_MODE:\s*"inline"/.test(runner)) {
+    failures.push('[forge-e2e-harness] scripts/run-forge-e2e-tests.mjs must set FORGE_JOBS_MODE: "inline"')
+  }
+  if (!/\bFORGE_WORKER_DISABLED:\s*"true"/.test(runner)) {
+    failures.push('[forge-e2e-harness] scripts/run-forge-e2e-tests.mjs must set FORGE_WORKER_DISABLED: "true" so the in-process worker cannot steal inline jobs')
+  }
+  if (/\bFORGE_JOB_MODE:/.test(runner)) {
+    failures.push("[forge-e2e-harness] scripts/run-forge-e2e-tests.mjs must not set the unused FORGE_JOB_MODE alias; the product env is FORGE_JOBS_MODE")
+  }
   return failures
 }
 

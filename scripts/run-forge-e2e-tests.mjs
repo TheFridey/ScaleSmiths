@@ -24,7 +24,12 @@ const env = {
   ADMIN_DISPLAY_NAME: "Forge E2E Owner",
   FORGE_ENABLE_AI: "false",
   FORGE_DEFAULT_AI_PROVIDER: "mock",
-  FORGE_JOB_MODE: "inline",
+  // Inline route responses are the Forge workflow E2E contract. The product env is
+  // FORGE_JOBS_MODE (plural). Disable the in-process worker so a 5s tick cannot
+  // claim a just-queued job and leave the HTTP handler returning `{ ok: true }`
+  // without the artifact payload the later PATCH approvals require.
+  FORGE_JOBS_MODE: "inline",
+  FORGE_WORKER_DISABLED: "true",
   FORGE_SANDBOX_RUNNER: "local",
   FORGE_MAX_REPAIR_ATTEMPTS: "10",
   FORGE_E2E_CONTROLLED_QA: "true",

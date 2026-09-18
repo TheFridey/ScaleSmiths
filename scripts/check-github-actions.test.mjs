@@ -2,9 +2,9 @@ import test from "node:test"
 import assert from "node:assert/strict"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { mkdtemp, rm, writeFile } from "node:fs/promises"
+import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises"
 import os from "node:os"
-import { loadWorkflowSet, validateSetupNodeCaching, validateWorkflowSet } from "./check-github-actions.mjs"
+import { loadWorkflowSet, validateForgeE2eHarness, validateSetupNodeCaching, validateWorkflowSet } from "./check-github-actions.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 
@@ -160,4 +160,23 @@ test("rejects Trivy enforcement before evidence upload", async () => {
     content: workflow.content.replace("- name: Enforce HIGH and CRITICAL image vulnerability threshold", "- name: Upload container scan and SBOM duplicate marker"),
   } : workflow)
   assert(validateWorkflowSet(mutated, root).some((failure) => failure.startsWith("[trivy-evidence-order]")))
+})
+
+test("accepts the Forge workflow E2E harness inline-job isolation", () => {
+  assert.deepEqual(validateForgeE2eHarness(root), [])
+})
+
+test("rejects a Forge workflow E2E harness that leaves the worker enabled or misspells the job mode", async () => {
+  const temporaryRoot = await mkdtemp(path.join(os.tmpdir(), "scalesmiths-forge-e2e-harness-"))
+  try {
+    const scriptsDir = path.join(temporaryRoot, "scripts")
+    await mkdir(scriptsDir)
+    await writeFile(path.join(scriptsDir, "run-forge-e2e-tests.mjs"), "const env = { FORGE_JOB_MODE: \"inline\" }\n")
+    const failures = validateForgeE2eHarness(temporaryRoot)
+    assert(failures.some((failure) => failure.includes("FORGE_JOBS_MODE")))
+    assert(failures.some((failure) => failure.includes("FORGE_WORKER_DISABLED")))
+    assert(failures.some((failure) => failure.includes("FORGE_JOB_MODE")))
+  } finally {
+    await rm(temporaryRoot, { recursive: true, force: true })
+  }
 })

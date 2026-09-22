@@ -554,6 +554,12 @@
       "sha256": "0b3caa59fd32379b8499f4f5bfe3678acce53da4b33656789eeed1cf1800e268",
       "lifecycle": "forward",
       "reason": "Prototypes fail-closed FORCE RLS on portal request, report and timeline tables with separate tenant, internal-aggregate SELECT and internal-write policies."
+    },
+    {
+      "path": "admin/drizzle/0061_venture_lab_core.sql",
+      "sha256": "cb60958bb0320afe760b2c2355446663c3b4fb8d79351932d95d02f333ae1262",
+      "lifecycle": "forward",
+      "reason": "Adds the Nova Venture Lab Experiment #000 PostgreSQL governance core: protected/experimental budget envelopes, exact immutable approvals, database-authoritative reservations, append-only audit and double-entry ledger history, service-account revocation, and emergency STOP state."
     }
   ],
   "journals": {
@@ -784,6 +790,13 @@
           "version": "7",
           "when": 1789689600000,
           "tag": "0060_tenant_rls_prototype",
+          "breakpoints": true
+        },
+        {
+          "idx": 61,
+          "version": "7",
+          "when": 1790112600000,
+          "tag": "0061_venture_lab_core",
           "breakpoints": true
         }
       ]

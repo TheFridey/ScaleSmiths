@@ -1857,3 +1857,207 @@ export const forgeMemoryRelations = relations(forgeMemories, ({ one }) => ({
     references: [forgeProjects.id],
   }),
 }))
+
+
+/* ── Nova Venture Lab ─────────────────────────────────────────────── */
+
+export const ventureRuntimeState = pgTable("venture_runtime_state", {
+  id: integer("id").primaryKey().default(1),
+  paused: boolean("paused").default(false).notNull(),
+  pausedAt: timestamp("paused_at", { withTimezone: true }),
+  pausedBy: uuid("paused_by").references(() => adminUsers.id, { onDelete: "restrict" }),
+  pauseReason: text("pause_reason"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  check("venture_runtime_state_singleton_check", sql`${table.id} = 1`),
+  check("venture_runtime_state_pause_check", sql`
+    (${table.paused} = false and ${table.pausedAt} is null and ${table.pausedBy} is null and ${table.pauseReason} is null)
+    or
+    (${table.paused} = true and ${table.pausedAt} is not null and ${table.pausedBy} is not null and length(trim(${table.pauseReason})) > 0)
+  `),
+])
+
+export const ventureServiceAccounts = pgTable("venture_service_accounts", {
+  id: text("id").primaryKey(),
+  displayName: text("display_name").notNull(),
+  active: boolean("active").default(true).notNull(),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  tokenVersion: integer("token_version").default(1).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  check("venture_service_accounts_token_version_check", sql`${table.tokenVersion} > 0`),
+  check("venture_service_accounts_revocation_check", sql`
+    (${table.active} = true and ${table.revokedAt} is null)
+    or
+    (${table.active} = false and ${table.revokedAt} is not null)
+  `),
+])
+
+export const ventureExperiments = pgTable("venture_experiments", {
+  id: serial("id").primaryKey(),
+  code: text("code").notNull(),
+  name: text("name").notNull(),
+  mode: text("mode").$type<"SIMULATED" | "REAL">().default("SIMULATED").notNull(),
+  status: text("status").$type<"PREPARING" | "RUNNING" | "PASSED" | "FAILED" | "BLOCKED" | "COMPLETE">().default("PREPARING").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("venture_experiments_code_idx").on(table.code),
+  check("venture_experiments_mode_check", sql`${table.mode} in ('SIMULATED','REAL')`),
+  check("venture_experiments_status_check", sql`${table.status} in ('PREPARING','RUNNING','PASSED','FAILED','BLOCKED','COMPLETE')`),
+])
+
+export const ventureBudgetEnvelopes = pgTable("venture_budget_envelopes", {
+  id: serial("id").primaryKey(),
+  experimentId: integer("experiment_id").references(() => ventureExperiments.id, { onDelete: "restrict" }).notNull(),
+  kind: text("kind").$type<"protected_reserve" | "experiment">().notNull(),
+  currency: text("currency").default("GBP").notNull(),
+  allocatedMinor: integer("allocated_minor").default(0).notNull(),
+  reservedMinor: integer("reserved_minor").default(0).notNull(),
+  spentMinor: integer("spent_minor").default(0).notNull(),
+  spendable: boolean("spendable").default(false).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("venture_budget_envelopes_experiment_kind_idx").on(table.experimentId, table.kind),
+  check("venture_budget_envelopes_kind_check", sql`${table.kind} in ('protected_reserve','experiment')`),
+  check("venture_budget_envelopes_currency_check", sql`${table.currency} = 'GBP'`),
+  check("venture_budget_envelopes_amount_check", sql`${table.allocatedMinor} >= 0 and ${table.reservedMinor} >= 0 and ${table.spentMinor} >= 0`),
+  check("venture_budget_envelopes_capacity_check", sql`${table.reservedMinor} + ${table.spentMinor} <= ${table.allocatedMinor}`),
+  check("venture_budget_envelopes_protected_check", sql`${table.kind} <> 'protected_reserve' or (${table.spendable} = false and ${table.reservedMinor} = 0 and ${table.spentMinor} = 0)`),
+])
+
+export const ventureApprovalRequests = pgTable("venture_approval_requests", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  experimentId: integer("experiment_id").references(() => ventureExperiments.id, { onDelete: "restrict" }).notNull(),
+  action: text("action").notNull(),
+  amountMinor: integer("amount_minor").notNull(),
+  currency: text("currency").default("GBP").notNull(),
+  target: text("target").notNull(),
+  purpose: text("purpose").notNull(),
+  payloadHash: text("payload_hash").notNull(),
+  payloadJson: jsonb("payload_json").$type<Record<string, unknown>>().notNull(),
+  status: text("status").$type<"REQUESTED" | "APPROVED" | "REJECTED" | "EXPIRED" | "CANCELLED" | "CONSUMED">().default("REQUESTED").notNull(),
+  requestIdempotencyKey: text("request_idempotency_key").notNull(),
+  requestedByService: text("requested_by_service").references(() => ventureServiceAccounts.id, { onDelete: "restrict" }).notNull(),
+  approvedBy: uuid("approved_by").references(() => adminUsers.id, { onDelete: "restrict" }),
+  requestedAt: timestamp("requested_at", { withTimezone: true }).defaultNow().notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  approvedAt: timestamp("approved_at", { withTimezone: true }),
+  consumedAt: timestamp("consumed_at", { withTimezone: true }),
+  resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+  decisionReason: text("decision_reason"),
+}, (table) => [
+  uniqueIndex("venture_approval_requests_idempotency_idx").on(table.requestIdempotencyKey),
+  index("venture_approval_requests_status_expiry_idx").on(table.status, table.expiresAt),
+  check("venture_approval_requests_status_check", sql`${table.status} in ('REQUESTED','APPROVED','REJECTED','EXPIRED','CANCELLED','CONSUMED')`),
+  check("venture_approval_requests_amount_check", sql`${table.amountMinor} > 0`),
+  check("venture_approval_requests_currency_check", sql`${table.currency} = 'GBP'`),
+  check("venture_approval_requests_expiry_check", sql`${table.expiresAt} > ${table.requestedAt}`),
+  check("venture_approval_requests_hash_check", sql`${table.payloadHash} ~ '^[0-9a-f]{64}$'`),
+])
+
+export const ventureApprovalEvents = pgTable("venture_approval_events", {
+  id: serial("id").primaryKey(),
+  approvalId: uuid("approval_id").references(() => ventureApprovalRequests.id, { onDelete: "restrict" }).notNull(),
+  eventType: text("event_type").notNull(),
+  actorType: text("actor_type").$type<"human" | "service" | "system">().notNull(),
+  actorKey: text("actor_key").notNull(),
+  metadataJson: jsonb("metadata_json").$type<Record<string, unknown>>().default({}).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("venture_approval_events_approval_created_idx").on(table.approvalId, table.createdAt),
+  check("venture_approval_events_actor_type_check", sql`${table.actorType} in ('human','service','system')`),
+])
+
+export const ventureBudgetReservations = pgTable("venture_budget_reservations", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  envelopeId: integer("envelope_id").references(() => ventureBudgetEnvelopes.id, { onDelete: "restrict" }).notNull(),
+  approvalId: uuid("approval_id").references(() => ventureApprovalRequests.id, { onDelete: "restrict" }).notNull(),
+  requestedByService: text("requested_by_service").references(() => ventureServiceAccounts.id, { onDelete: "restrict" }).notNull(),
+  idempotencyKey: text("idempotency_key").notNull(),
+  amountMinor: integer("amount_minor").notNull(),
+  currency: text("currency").default("GBP").notNull(),
+  target: text("target").notNull(),
+  purpose: text("purpose").notNull(),
+  status: text("status").$type<"RESERVED" | "SETTLED" | "RELEASED" | "EXPIRED">().default("RESERVED").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  settledAt: timestamp("settled_at", { withTimezone: true }),
+  releasedAt: timestamp("released_at", { withTimezone: true }),
+}, (table) => [
+  uniqueIndex("venture_budget_reservations_idempotency_idx").on(table.idempotencyKey),
+  uniqueIndex("venture_budget_reservations_approval_idx").on(table.approvalId),
+  index("venture_budget_reservations_envelope_status_idx").on(table.envelopeId, table.status),
+  check("venture_budget_reservations_amount_check", sql`${table.amountMinor} > 0`),
+  check("venture_budget_reservations_currency_check", sql`${table.currency} = 'GBP'`),
+  check("venture_budget_reservations_status_check", sql`${table.status} in ('RESERVED','SETTLED','RELEASED','EXPIRED')`),
+  check("venture_budget_reservations_terminal_check", sql`
+    (${table.status} = 'RESERVED' and ${table.settledAt} is null and ${table.releasedAt} is null)
+    or (${table.status} = 'SETTLED' and ${table.settledAt} is not null and ${table.releasedAt} is null)
+    or (${table.status} in ('RELEASED','EXPIRED') and ${table.releasedAt} is not null and ${table.settledAt} is null)
+  `),
+])
+
+export const ventureLedgerAccounts = pgTable("venture_ledger_accounts", {
+  id: serial("id").primaryKey(),
+  code: text("code").notNull(),
+  name: text("name").notNull(),
+  kind: text("kind").$type<"asset" | "liability" | "equity" | "revenue" | "expense">().notNull(),
+  currency: text("currency").default("GBP").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("venture_ledger_accounts_code_idx").on(table.code),
+  check("venture_ledger_accounts_kind_check", sql`${table.kind} in ('asset','liability','equity','revenue','expense')`),
+  check("venture_ledger_accounts_currency_check", sql`${table.currency} = 'GBP'`),
+])
+
+export const ventureLedgerJournals = pgTable("venture_ledger_journals", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  experimentId: integer("experiment_id").references(() => ventureExperiments.id, { onDelete: "restrict" }).notNull(),
+  approvalId: uuid("approval_id").references(() => ventureApprovalRequests.id, { onDelete: "restrict" }),
+  idempotencyKey: text("idempotency_key").notNull(),
+  description: text("description").notNull(),
+  actorType: text("actor_type").$type<"human" | "service" | "system">().notNull(),
+  actorKey: text("actor_key").notNull(),
+  sealed: boolean("sealed").default(false).notNull(),
+  sealedAt: timestamp("sealed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("venture_ledger_journals_idempotency_idx").on(table.idempotencyKey),
+  uniqueIndex("venture_ledger_journals_approval_idx").on(table.approvalId),
+  check("venture_ledger_journals_actor_type_check", sql`${table.actorType} in ('human','service','system')`),
+  check("venture_ledger_journals_seal_check", sql`(${table.sealed} = false and ${table.sealedAt} is null) or (${table.sealed} = true and ${table.sealedAt} is not null)`),
+])
+
+export const ventureLedgerPostings = pgTable("venture_ledger_postings", {
+  id: serial("id").primaryKey(),
+  journalId: uuid("journal_id").references(() => ventureLedgerJournals.id, { onDelete: "restrict" }).notNull(),
+  accountId: integer("account_id").references(() => ventureLedgerAccounts.id, { onDelete: "restrict" }).notNull(),
+  debitMinor: integer("debit_minor").default(0).notNull(),
+  creditMinor: integer("credit_minor").default(0).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("venture_ledger_postings_journal_idx").on(table.journalId),
+  check("venture_ledger_postings_amount_check", sql`
+    (${table.debitMinor} > 0 and ${table.creditMinor} = 0)
+    or (${table.creditMinor} > 0 and ${table.debitMinor} = 0)
+  `),
+])
+
+export const ventureAuditEvents = pgTable("venture_audit_events", {
+  id: serial("id").primaryKey(),
+  experimentId: integer("experiment_id").references(() => ventureExperiments.id, { onDelete: "restrict" }),
+  actorType: text("actor_type").$type<"human" | "service" | "system">().notNull(),
+  actorKey: text("actor_key").notNull(),
+  action: text("action").notNull(),
+  reason: text("reason"),
+  metadataJson: jsonb("metadata_json").$type<Record<string, unknown>>().default({}).notNull(),
+  approvalId: uuid("approval_id").references(() => ventureApprovalRequests.id, { onDelete: "restrict" }),
+  journalId: uuid("journal_id").references(() => ventureLedgerJournals.id, { onDelete: "restrict" }),
+  requestId: text("request_id"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("venture_audit_events_experiment_created_idx").on(table.experimentId, table.createdAt),
+  check("venture_audit_events_actor_type_check", sql`${table.actorType} in ('human','service','system')`),
+])

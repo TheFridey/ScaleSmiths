@@ -1610,6 +1610,29 @@ describe("real PostgreSQL integration", () => {
       [experimentId, "0".repeat(64), serviceId, owner],
     )).rejects.toThrow(/must enter the system as unapproved requests/);
 
+    const developer = (await pool.query(
+      "INSERT INTO admin_users(email,display_name,password_hash,role) VALUES('venture-developer@example.test','Venture Developer','hash','developer') RETURNING id",
+    )).rows[0].id as string;
+    const developerBlocked = await service.createVentureSpendApprovalRequest({
+      action: "VALIDATION_SPEND",
+      amountMinor: 25,
+      target: "developer-blocked",
+      purpose: "Authority boundary test",
+      metadata: { experiment: "EXP-000" },
+      requestedByService: serviceId,
+      requestIdempotencyKey: "request:developer-blocked",
+      expiresAt: new Date(Date.now() + 60_000),
+    });
+    await expect(service.approveVentureSpendRequest({
+      approvalId: developerBlocked.id,
+      actorUserId: developer,
+      reason: "Developer must not release capital",
+    })).rejects.toThrow(/requires an active authoritative human identity/);
+    expect((await pool.query(
+      "SELECT status,approved_by FROM venture_approval_requests WHERE id=$1",
+      [developerBlocked.id],
+    )).rows[0]).toEqual({ status: "REQUESTED", approved_by: null });
+
     const requestAndApprove = async (key: string, amountMinor: number, target: string, purpose = "Experiment #000 validation") => {
       const approval = await service.createVentureSpendApprovalRequest({
         action: "VALIDATION_SPEND",

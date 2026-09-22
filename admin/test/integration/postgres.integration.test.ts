@@ -1687,7 +1687,7 @@ describe("real PostgreSQL integration", () => {
 
     await expect(pool.query(
       "UPDATE venture_budget_envelopes SET spendable=true WHERE kind='protected_reserve'",
-    )).rejects.toThrow(/Protected Venture Lab reserve cannot be mutated/);
+    )).rejects.toThrow(/budget-envelope identity, allocation and spendability are immutable/);
 
     await expect(pool.query(
       "UPDATE venture_budget_envelopes SET allocated_minor=10000 WHERE kind='experiment'",

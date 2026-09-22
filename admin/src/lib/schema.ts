@@ -1992,7 +1992,7 @@ export const ventureBudgetReservations = pgTable("venture_budget_reservations", 
   uniqueIndex("venture_budget_reservations_approval_idx").on(table.approvalId),
   index("venture_budget_reservations_envelope_status_idx").on(table.envelopeId, table.status),
   check("venture_budget_reservations_amount_check", sql`${table.amountMinor} > 0`),
-  check("venture_budget_reservations_hash_check", sql`${table.payloadHash} ~ '^[0-9a-f]{64}
+  check("venture_budget_reservations_hash_check", sql`${table.payloadHash} ~ '^[0-9a-f]{64}$'`),
   check("venture_budget_reservations_status_check", sql`${table.status} in ('RESERVED','SETTLED','RELEASED','EXPIRED')`),
   check("venture_budget_reservations_terminal_check", sql`
     (${table.status} = 'RESERVED' and ${table.settledAt} is null and ${table.releasedAt} is null)

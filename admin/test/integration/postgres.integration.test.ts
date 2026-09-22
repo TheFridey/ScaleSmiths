@@ -1600,6 +1600,16 @@ describe("real PostgreSQL integration", () => {
     const serviceId = "grok-integration";
     await service.initializeExperimentZero({ serviceAccountId: serviceId, serviceAccountName: "Grok Integration" });
 
+    const experimentId = (await pool.query("SELECT id FROM venture_experiments WHERE code='EXP-000'")).rows[0].id;
+    await expect(pool.query(
+      `INSERT INTO venture_approval_requests(
+        experiment_id,action,amount_minor,currency,target,purpose,payload_hash,payload_json,status,
+        request_idempotency_key,requested_by_service,approved_by,requested_at,expires_at,approved_at
+      ) VALUES($1,'VALIDATION_SPEND',100,'GBP','fake-target','fake pre-approved row',$2,'{}'::jsonb,'APPROVED',
+        'request:fake-preapproved',$3,$4,now(),now()+interval '1 minute',now())`,
+      [experimentId, "0".repeat(64), serviceId, owner],
+    )).rejects.toThrow(/must enter the system as unapproved requests/);
+
     const requestAndApprove = async (key: string, amountMinor: number, target: string, purpose = "Experiment #000 validation") => {
       const approval = await service.createVentureSpendApprovalRequest({
         action: "VALIDATION_SPEND",
@@ -1648,6 +1658,21 @@ describe("real PostgreSQL integration", () => {
     )).rejects.toThrow(/Protected Venture Lab reserve cannot be mutated/);
 
     const exact = await requestAndApprove("exact", 99, "exact-target", "Exact payload");
+    const exactEnvelopeId = (await pool.query(
+      "SELECT id FROM venture_budget_envelopes WHERE experiment_id=$1 AND kind='experiment'",
+      [experimentId],
+    )).rows[0].id;
+    const exactHash = (await pool.query(
+      "SELECT payload_hash FROM venture_approval_requests WHERE id=$1",
+      [exact.id],
+    )).rows[0].payload_hash;
+    await expect(pool.query(
+      `INSERT INTO venture_budget_reservations(
+        envelope_id,approval_id,requested_by_service,idempotency_key,action,payload_hash,amount_minor,currency,target,purpose
+      ) VALUES($1,$2,$3,'reservation:exact-direct','VALIDATION_SPEND',$4,99,'GBP','changed-target','Exact payload')`,
+      [exactEnvelopeId, exact.id, serviceId, exactHash],
+    )).rejects.toThrow(/does not match its approval payload/);
+
     await expect(service.reserveApprovedVentureBudget({
       approvalId: exact.id,
       requestedByService: serviceId,
@@ -1831,6 +1856,20 @@ describe("real PostgreSQL integration", () => {
     await service.approveVentureSpendRequest({ approvalId: approval.id, actorUserId: owner, reason: "Prepare STOP test" });
 
     await service.activateVentureEmergencyStop({ actorUserId: owner, reason: "Experiment #000 emergency containment" });
+    const stoppedEnvelopeId = (await pool.query(
+      "SELECT id FROM venture_budget_envelopes WHERE kind='experiment'",
+    )).rows[0].id;
+    const stoppedHash = (await pool.query(
+      "SELECT payload_hash FROM venture_approval_requests WHERE id=$1",
+      [approval.id],
+    )).rows[0].payload_hash;
+    await expect(pool.query(
+      `INSERT INTO venture_budget_reservations(
+        envelope_id,approval_id,requested_by_service,idempotency_key,action,payload_hash,amount_minor,currency,target,purpose
+      ) VALUES($1,$2,$3,'reservation:stopped-direct','VALIDATION_SPEND',$4,100,'GBP','stop-target','STOP test')`,
+      [stoppedEnvelopeId, approval.id, serviceId, stoppedHash],
+    )).rejects.toThrow(/Venture Lab is paused/);
+
     await expect(service.reserveApprovedVentureBudget({
       approvalId: approval.id,
       requestedByService: serviceId,
@@ -1850,6 +1889,13 @@ describe("real PostgreSQL integration", () => {
       actorUserId: owner,
       reason: "Experiment #000 credential revocation",
     });
+    await expect(pool.query(
+      `INSERT INTO venture_budget_reservations(
+        envelope_id,approval_id,requested_by_service,idempotency_key,action,payload_hash,amount_minor,currency,target,purpose
+      ) VALUES($1,$2,$3,'reservation:revoked-direct','VALIDATION_SPEND',$4,100,'GBP','stop-target','STOP test')`,
+      [stoppedEnvelopeId, approval.id, serviceId, stoppedHash],
+    )).rejects.toThrow(/service account is revoked or unavailable/);
+
     await expect(service.reserveApprovedVentureBudget({
       approvalId: approval.id,
       requestedByService: serviceId,

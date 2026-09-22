@@ -111,11 +111,16 @@ const before = (view: ShotView): ShotPlan => ({ file: `before-${view}-home`, vie
 export const projectMediaPlans: Record<string, ProjectMedia> = {
   "confirm-a-kill": plan("confirm-a-kill", "Confirm-A-Kill", [
     home("desktop"), home("tablet"), home("mobile"),
-    { file: "desktop-service", view: "desktop", section: "service-pages", title: "Service page", describes: "service page" },
-    { file: "desktop-location", view: "desktop", section: "location-pages", title: "Location page", describes: "location page" },
-    { file: "mobile-contact", view: "mobile", section: "conversion", title: "Contact route · mobile", describes: "mobile contact page" },
+    { file: "desktop-services", view: "desktop", section: "service-pages", title: "Pest selection", describes: "pest and service selection" },
+    { file: "desktop-service", view: "desktop", section: "service-pages", title: "Wasp nest removal", describes: "wasp nest removal service page" },
+    { file: "mobile-service", view: "mobile", section: "service-pages", title: "Service journey · mobile", describes: "mobile service page" },
+    { file: "desktop-location", view: "desktop", section: "location-pages", title: "Nottinghamshire coverage", describes: "Nottinghamshire service coverage" },
+    { file: "desktop-advice", view: "desktop", section: "inner-pages", title: "Advice hub", describes: "searchable pest advice hub" },
+    { file: "desktop-article", view: "desktop", section: "inner-pages", title: "Advice article", describes: "individual pest advice article" },
+    { file: "desktop-quote", view: "desktop", section: "conversion", title: "Personal quote journey", describes: "personal quote enquiry journey" },
+    { file: "mobile-contact", view: "mobile", section: "conversion", title: "Quote journey · mobile", describes: "mobile quote enquiry journey" },
+    { file: "desktop-trust", view: "desktop", section: "integrations", title: "Verified review presentation", describes: "Google review trust section" },
     before("desktop"), before("mobile"),
-    { file: "crm-dashboard", view: "desktop", section: "crm", title: "CRM dashboard", describes: "CRM dashboard" },
   ]),
   "precision-finish-plastering-rendering": plan("precision-finish", "Precision Finish Plastering & Rendering", [
     home("desktop"), home("mobile"),

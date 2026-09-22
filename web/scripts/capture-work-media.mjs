@@ -44,12 +44,21 @@ export const captureConfig = {
       { file: "mobile-quote", view: "mobile", path: "/", anchor: "#quote", offset: 72 },
     ],
   },
-  // The live confirmakill.co.uk site predates the ScaleSmiths rebuild, so it is captured as "before".
   "confirm-a-kill": {
     origin: "https://www.confirmakill.co.uk",
     shots: [
-      { file: "before-desktop-home", view: "desktop", path: "/" },
-      { file: "before-mobile-home", view: "mobile", path: "/" },
+      { file: "desktop-home", view: "desktop", path: "/" },
+      { file: "tablet-home", view: "tablet", path: "/" },
+      { file: "mobile-home", view: "mobile", path: "/" },
+      { file: "desktop-services", view: "desktop", path: "/", anchor: "#pest-help", offset: 32 },
+      { file: "desktop-trust", view: "desktop", path: "/", anchor: ".reviews-section", offset: 32 },
+      { file: "desktop-service", view: "desktop", path: "/services/wasp-nest-removal/" },
+      { file: "desktop-location", view: "desktop", path: "/services/rat-control/", anchorText: "Serving Nottinghamshire", offset: 32 },
+      { file: "desktop-advice", view: "desktop", path: "/news-views/" },
+      { file: "desktop-article", view: "desktop", path: "/how-to-ged-rid-of-a-wasp-nest/" },
+      { file: "desktop-quote", view: "desktop", path: "/free-local-pest-control-quote/" },
+      { file: "mobile-contact", view: "mobile", path: "/free-local-pest-control-quote/" },
+      { file: "mobile-service", view: "mobile", path: "/services/wasp-nest-removal/" },
     ],
   },
   "glow-tanning": {
@@ -160,14 +169,16 @@ async function captureShot(browser, config, folder, shot) {
     await settle(page)
     await dismissConsent(page)
 
-    if (shot.anchor) {
-      const found = await page.evaluate(({ anchor, offset }) => {
-        const element = document.querySelector(anchor)
+    if (shot.anchor || shot.anchorText) {
+      const found = await page.evaluate(({ anchor, anchorText, offset }) => {
+        const element = anchor
+          ? document.querySelector(anchor)
+          : [...document.querySelectorAll("h1, h2, h3")].find((candidate) => candidate.textContent?.trim() === anchorText)
         if (!element) return false
         window.scrollTo(0, element.getBoundingClientRect().top + window.scrollY - (offset ?? 0))
         return true
-      }, { anchor: shot.anchor, offset: shot.offset })
-      if (!found) throw new Error(`Anchor ${shot.anchor} not found on ${shot.path}`)
+      }, { anchor: shot.anchor, anchorText: shot.anchorText, offset: shot.offset })
+      if (!found) throw new Error(`Anchor ${shot.anchor ?? shot.anchorText} not found on ${shot.path}`)
       await page.waitForTimeout(1200)
     }
 

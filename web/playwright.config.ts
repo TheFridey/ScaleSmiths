@@ -23,6 +23,9 @@ export default defineConfig({
   reporter: isCI ? [["list"], ["html", { open: "never" }]] : [["list"], ["html", { open: "never" }]],
   use: {
     baseURL,
+    ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE
+      ? { launchOptions: { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE } }
+      : {}),
     actionTimeout: 10_000,
     navigationTimeout: 30_000,
     trace: "retain-on-failure",

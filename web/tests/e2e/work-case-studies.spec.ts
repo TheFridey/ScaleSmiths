@@ -15,7 +15,7 @@ test.describe("work portfolio", () => {
     await gotoReady(page, "/work")
 
     const cards = page.getByRole("article")
-    await expect(cards).toHaveCount(7)
+    await expect(cards).toHaveCount(8)
 
     const precision = cards.filter({ has: page.getByRole("heading", { name: "Precision Finish Plastering & Rendering" }) })
     // Card screenshots sit in an aria-hidden pointer-only link, so they are not exposed as img roles.
@@ -25,7 +25,7 @@ test.describe("work portfolio", () => {
     await expect(precision.getByRole("link", { name: /visit website/i })).toHaveAttribute("href", "https://precisionplasteringandrendering.co.uk")
 
     // Only projects with a confirmed live URL offer "Visit website" (every project except Pinkys Prints).
-    await expect(page.getByRole("link", { name: /visit website/i })).toHaveCount(6)
+    await expect(page.getByRole("link", { name: /visit website/i })).toHaveCount(7)
     const pinkys = cards.filter({ has: page.getByRole("heading", { name: "Pinkys Prints" }) })
     await expect(pinkys.getByRole("link", { name: /visit website/i })).toHaveCount(0)
     // Screenshot placeholders are a development aid and never ship.
@@ -57,14 +57,40 @@ test.describe("work portfolio", () => {
     await expect(page.getByRole("link", { name: /view case study\s*:\s*precision finish/i })).toHaveAttribute("href", "/work/precision-finish-plastering-rendering")
   })
 
-  test("never publishes the unfinished Confirm-A-Kill draft", async ({ page, request }) => {
+  test("publishes the Confirm-A-Kill flagship with baseline and live links", async ({ page, request }) => {
     const response = await request.get("/work/confirm-a-kill")
-    expect(response.status()).toBe(404)
-
-    await gotoReady(page, "/work")
-    await expect(page.locator("main")).not.toContainText(/confirm-a-kill/i)
-
+    expect(response.ok()).toBe(true)
+    await gotoReady(page, "/work/confirm-a-kill")
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Confirm-A-Kill")
+    await expect(page.getByText("57.9K", { exact: true })).toBeVisible()
+    await expect(page.getByText("0.3%", { exact: true })).toBeVisible()
+    await expect(page.getByText(/no post-launch uplift is claimed yet/i)).toBeVisible()
+    await expect(page.getByRole("link", { name: /visit website/i }).first()).toHaveAttribute("href", "https://www.confirmakill.co.uk/")
     const sitemap = await (await request.get("/sitemap.xml")).text()
-    expect(sitemap).not.toContain("confirm-a-kill")
+    expect(sitemap).toContain("/work/confirm-a-kill")
+  })
+
+  test("keeps the Confirm-A-Kill case study responsive and error-free", async ({ page }) => {
+    const errors: string[] = []
+    page.on("console", (message) => { if (message.type() === "error") errors.push(message.text()) })
+    page.on("pageerror", (error) => errors.push(error.message))
+
+    for (const viewport of [
+      { width: 320, height: 720 },
+      { width: 390, height: 844 },
+      { width: 768, height: 1024 },
+      { width: 1024, height: 768 },
+      { width: 1440, height: 1000 },
+    ]) {
+      await page.setViewportSize(viewport)
+      await gotoReady(page, "/work/confirm-a-kill")
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
+      expect(overflow, `${viewport.width}px viewport overflow`).toBeLessThanOrEqual(1)
+      await expect(page.locator('img[alt*="Confirm-A-Kill"]').first()).toBeVisible()
+    }
+
+    await expect(page).toHaveTitle(/Confirm-A-Kill Case Study.*Custom Website.*SEO.*ScaleSmiths/i)
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", /\/work\/confirm-a-kill$/)
+    expect(errors).toEqual([])
   })
 })

@@ -7,7 +7,7 @@ import { projects } from "@/lib/data"
 import { founderForProject, founderProfileHref } from "@/lib/founders"
 
 /** A platform build complements the client websites already shown in Selected Work. */
-export const FEATURED_CASE_STUDY_SLUG = "the-business-circle"
+export const FEATURED_CASE_STUDY_SLUG = "confirm-a-kill"
 
 export function FeaturedCaseStudy({ slug = FEATURED_CASE_STUDY_SLUG }: { slug?: string }) {
   const project = projects.find((candidate) => candidate.slug === slug)

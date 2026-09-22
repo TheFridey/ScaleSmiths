@@ -37,18 +37,11 @@ describe("case study publishing", () => {
     expect(publishedCaseStudies().every((study) => study.status === "published")).toBe(true)
   })
 
-  it("keeps the Confirm-A-Kill flagship draft out of production", () => {
+  it("publishes the completed Confirm-A-Kill flagship", () => {
     expect(draftPreviewEnabled({ NODE_ENV: "production" })).toBe(false)
-    expect(getCaseStudy("confirm-a-kill", { includeDrafts: false })).toBeUndefined()
-    expect(caseStudiesForSlugs(["confirm-a-kill"])).toEqual([])
-
-    const draft = getCaseStudy("confirm-a-kill", { includeDrafts: true })
-    expect(draft?.status).toBe("draft")
-    // No facts are invented for a draft: every factual field is empty until supplied.
-    for (const field of ["client", "challenge", "solution", "summary", "websiteUrl", "industry", "location", "year", "quoteClaimId"] as const) {
-      expect(draft?.[field], field).toBeUndefined()
-    }
-    expect(draft).toMatchObject({ startingPoint: [], strategy: [], features: [], services: [], metrics: [], outcomeClaimIds: [] })
+    const study = getCaseStudy("confirm-a-kill", { includeDrafts: false })
+    expect(study).toMatchObject({ status: "published", websiteUrl: "https://www.confirmakill.co.uk/" })
+    expect(caseStudiesForSlugs(["confirm-a-kill"])).toHaveLength(1)
   })
 
   it("only offers a Visit Website link for a recorded live URL", () => {

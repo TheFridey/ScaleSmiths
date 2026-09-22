@@ -11,6 +11,7 @@ import { JsonLd } from "@/components/JsonLd"
 import { BeforeAfterComparison, type ComparisonView } from "@/components/work/BeforeAfterComparison"
 import { CaseStudyResults, ClientQuote, hasResults } from "@/components/work/CaseStudyResults"
 import { CaseStudyGallery, ResponsiveShowcase, hasGalleryShots, hasResponsiveShots } from "@/components/work/CaseStudyVisuals"
+import { ConfirmAKillStory } from "@/components/work/ConfirmAKillStory"
 import { ProjectCard } from "@/components/work/ProjectCard"
 import { ProjectScreenshot, hostFromUrl, isDevelopment } from "@/components/work/ProjectScreenshot"
 import { getBuildLog, type BuildLog } from "@/lib/build-logs"
@@ -48,8 +49,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!study) return {}
   const image = primaryImage(study)
   return buildPageMetadata({
-    title: `${study.name} Case Study`,
-    description: study.summary ?? `${study.name} case study by ScaleSmiths.`,
+    title: study.slug === "confirm-a-kill" ? "Confirm-A-Kill Case Study | Custom Website & SEO" : `${study.name} Case Study`,
+    description: study.slug === "confirm-a-kill"
+      ? "See how ScaleSmiths rebuilt Confirm-A-Kill's pest-control website around local search, conversion, structured content, analytics and long-term growth."
+      : study.summary ?? `${study.name} case study by ScaleSmiths.`,
     path: `/work/${study.slug}`,
     type: "article",
     image: image ? { url: image.src, alt: image.alt } : undefined,
@@ -277,6 +280,8 @@ export default async function CaseStudyPage({ params }: Props) {
           <BeforeAfterComparison views={views} showPlaceholders={isDevelopment} />
         </Section>
       ) : null}
+
+      {study.slug === "confirm-a-kill" ? <ConfirmAKillStory /> : null}
 
       {study.strategy.length > 0 || study.status === "draft" ? (
         <Section id="case-strategy" eyebrow="Strategy" title="What we set out to improve">

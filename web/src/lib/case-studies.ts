@@ -47,30 +47,7 @@ export interface CaseStudyImage {
   blurDataURL?: string
 }
 
-/**
- * Case studies whose structure is ready but whose facts, imagery and results have not been
- * supplied. They are never listed, linked, indexed or routable in production.
- *
- * TODO(owner): Confirm-A-Kill — supply who the client is, verified starting-point issues,
- * strategy, scope delivered, the live URL and screenshots, then move it into `data.ts`.
- */
-const draftCaseStudies: CaseStudy[] = [
-  {
-    slug: "confirm-a-kill",
-    name: "Confirm-A-Kill",
-    status: "draft",
-    startingPoint: [],
-    strategy: [],
-    features: [],
-    stack: [],
-    services: [],
-    accentColor: "#22d3ee",
-    media: mediaForProject("confirm-a-kill"),
-    outcomeClaimIds: [],
-    metrics: [],
-    awaitingMetrics: ["organic-impressions", "organic-clicks", "enquiries", "conversion-rate", "performance-score", "indexed-pages"],
-  },
-]
+const draftCaseStudies: CaseStudy[] = []
 
 export function draftPreviewEnabled(env: Record<string, string | undefined> = process.env as Record<string, string | undefined>) {
   return env.NODE_ENV !== "production"

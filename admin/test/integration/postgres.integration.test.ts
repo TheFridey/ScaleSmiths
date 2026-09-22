@@ -1600,6 +1600,15 @@ describe("real PostgreSQL integration", () => {
     const serviceId = "grok-integration";
     await service.initializeExperimentZero({ serviceAccountId: serviceId, serviceAccountName: "Grok Integration" });
 
+    const ventureWebPool = new Pool({ connectionString: webUrl });
+    try {
+      await expect(ventureWebPool.query("SELECT * FROM venture_budget_envelopes")).rejects.toMatchObject({ code: "42501" });
+      await expect(ventureWebPool.query("SELECT * FROM venture_approval_requests")).rejects.toMatchObject({ code: "42501" });
+      await expect(ventureWebPool.query("SELECT * FROM venture_audit_events")).rejects.toMatchObject({ code: "42501" });
+    } finally {
+      await ventureWebPool.end();
+    }
+
     const experimentId = (await pool.query("SELECT id FROM venture_experiments WHERE code='EXP-000'")).rows[0].id;
     await expect(pool.query(
       `INSERT INTO venture_approval_requests(

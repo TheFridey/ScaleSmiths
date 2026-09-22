@@ -1591,6 +1591,289 @@ describe("real PostgreSQL integration", () => {
     expect(JSON.stringify(ran.publicState)).not.toMatch(/secret-|Retention A|Retention B|@/);
     expect((await pool.query("SELECT last_status, last_error_category FROM analytics_retention_job_state WHERE id=1")).rows[0]).toEqual({ last_status: "success", last_error_category: null });
   });
+
+  it("enforces database-authoritative Venture Lab concurrency, protected reserve, exact approvals and idempotency", async () => {
+    const service = await import("../../src/lib/server/venture-lab-persistence");
+    const owner = (await pool.query(
+      "INSERT INTO admin_users(email,display_name,password_hash,role) VALUES('venture-owner@example.test','Venture Owner','hash','owner') RETURNING id",
+    )).rows[0].id as string;
+    const serviceId = "grok-integration";
+    await service.initializeExperimentZero({ serviceAccountId: serviceId, serviceAccountName: "Grok Integration" });
+
+    const requestAndApprove = async (key: string, amountMinor: number, target: string, purpose = "Experiment #000 validation") => {
+      const approval = await service.createVentureSpendApprovalRequest({
+        action: "VALIDATION_SPEND",
+        amountMinor,
+        target,
+        purpose,
+        metadata: { experiment: "EXP-000" },
+        requestedByService: serviceId,
+        requestIdempotencyKey: `request:${key}`,
+        expiresAt: new Date(Date.now() + 60_000),
+      });
+      await service.approveVentureSpendRequest({ approvalId: approval.id, actorUserId: owner, reason: "Experiment #000 test approval" });
+      return approval;
+    };
+
+    const first = await requestAndApprove("race-a", 2_000, "supplier-a");
+    const second = await requestAndApprove("race-b", 2_000, "supplier-b");
+    const reserveInput = (approval: typeof first, suffix: string, target: string) => ({
+      approvalId: approval.id,
+      requestedByService: serviceId,
+      idempotencyKey: `reservation:${suffix}`,
+      action: "VALIDATION_SPEND",
+      amountMinor: 2_000,
+      target,
+      purpose: "Experiment #000 validation",
+      metadata: { experiment: "EXP-000" },
+    });
+
+    const raced = await Promise.allSettled([
+      service.reserveApprovedVentureBudget(reserveInput(first, "race-a", "supplier-a")),
+      service.reserveApprovedVentureBudget(reserveInput(second, "race-b", "supplier-b")),
+    ]);
+    expect(raced.filter((result) => result.status === "fulfilled")).toHaveLength(1);
+    expect(raced.filter((result) => result.status === "rejected")).toHaveLength(1);
+
+    const envelopes = await pool.query(
+      "SELECT kind,allocated_minor,reserved_minor,spent_minor,spendable FROM venture_budget_envelopes ORDER BY kind",
+    );
+    expect(envelopes.rows).toEqual([
+      { kind: "experiment", allocated_minor: 2500, reserved_minor: 2000, spent_minor: 0, spendable: true },
+      { kind: "protected_reserve", allocated_minor: 7500, reserved_minor: 0, spent_minor: 0, spendable: false },
+    ]);
+
+    await expect(pool.query(
+      "UPDATE venture_budget_envelopes SET spendable=true WHERE kind='protected_reserve'",
+    )).rejects.toThrow(/Protected Venture Lab reserve cannot be mutated/);
+
+    const exact = await requestAndApprove("exact", 99, "exact-target", "Exact payload");
+    await expect(service.reserveApprovedVentureBudget({
+      approvalId: exact.id,
+      requestedByService: serviceId,
+      idempotencyKey: "reservation:exact-wrong",
+      action: "VALIDATION_SPEND",
+      amountMinor: 99,
+      target: "changed-target",
+      purpose: "Exact payload",
+      metadata: { experiment: "EXP-000" },
+    })).rejects.toMatchObject({ code: "approval_mismatch" });
+    expect((await pool.query("SELECT status FROM venture_approval_requests WHERE id=$1", [exact.id])).rows[0].status).toBe("APPROVED");
+
+    const duplicateA = await requestAndApprove("dup-a", 100, "duplicate-target");
+    const duplicateB = await requestAndApprove("dup-b", 100, "duplicate-target");
+    await service.reserveApprovedVentureBudget({
+      approvalId: duplicateA.id,
+      requestedByService: serviceId,
+      idempotencyKey: "reservation:duplicate",
+      action: "VALIDATION_SPEND",
+      amountMinor: 100,
+      target: "duplicate-target",
+      purpose: "Experiment #000 validation",
+      metadata: { experiment: "EXP-000" },
+    });
+    await expect(service.reserveApprovedVentureBudget({
+      approvalId: duplicateB.id,
+      requestedByService: serviceId,
+      idempotencyKey: "reservation:duplicate",
+      action: "VALIDATION_SPEND",
+      amountMinor: 100,
+      target: "duplicate-target",
+      purpose: "Experiment #000 validation",
+      metadata: { experiment: "EXP-000" },
+    })).rejects.toMatchObject({ code: "duplicate_reservation" });
+
+    expect((await pool.query(
+      "SELECT count(*)::int count FROM venture_budget_reservations WHERE idempotency_key='reservation:duplicate'",
+    )).rows[0].count).toBe(1);
+    expect((await pool.query(
+      "SELECT reserved_minor FROM venture_budget_envelopes WHERE kind='experiment'",
+    )).rows[0].reserved_minor).toBe(2100);
+    expect((await pool.query("SELECT status FROM venture_approval_requests WHERE id=$1", [duplicateB.id])).rows[0].status).toBe("APPROVED");
+
+    await expect(service.reserveApprovedVentureBudget({
+      approvalId: duplicateA.id,
+      requestedByService: serviceId,
+      idempotencyKey: "reservation:single-use-replay",
+      action: "VALIDATION_SPEND",
+      amountMinor: 100,
+      target: "duplicate-target",
+      purpose: "Experiment #000 validation",
+      metadata: { experiment: "EXP-000" },
+    })).rejects.toMatchObject({ code: "approval_mismatch" });
+
+    const oldRequested = new Date(Date.now() - 60_000);
+    const expired = await service.createVentureSpendApprovalRequest({
+      action: "VALIDATION_SPEND",
+      amountMinor: 50,
+      target: "expired-target",
+      purpose: "Expired approval",
+      metadata: { experiment: "EXP-000" },
+      requestedByService: serviceId,
+      requestIdempotencyKey: "request:expired",
+      requestedAt: oldRequested,
+      expiresAt: new Date(Date.now() - 1_000),
+    });
+    await expect(service.approveVentureSpendRequest({
+      approvalId: expired.id,
+      actorUserId: owner,
+      reason: "Should fail",
+    })).rejects.toMatchObject({ code: "approval_not_requestable" });
+
+    await expect(pool.query(
+      "UPDATE venture_approval_requests SET target='tampered' WHERE id=$1",
+      [exact.id],
+    )).rejects.toThrow(/approval payload is immutable/);
+  });
+
+  it("keeps Venture Lab ledger and audit history append-only and balanced", async () => {
+    const service = await import("../../src/lib/server/venture-lab-persistence");
+    const owner = (await pool.query(
+      "INSERT INTO admin_users(email,display_name,password_hash,role) VALUES('venture-ledger@example.test','Ledger Owner','hash','owner') RETURNING id",
+    )).rows[0].id as string;
+    const serviceId = "grok-ledger";
+    await service.initializeExperimentZero({ serviceAccountId: serviceId, serviceAccountName: "Grok Ledger" });
+    const approval = await service.createVentureSpendApprovalRequest({
+      action: "VALIDATION_SPEND",
+      amountMinor: 499,
+      target: "domain.example",
+      purpose: "Validation domain",
+      metadata: { experiment: "EXP-000" },
+      requestedByService: serviceId,
+      requestIdempotencyKey: "request:ledger",
+      expiresAt: new Date(Date.now() + 60_000),
+    });
+    await service.approveVentureSpendRequest({ approvalId: approval.id, actorUserId: owner, reason: "Approved for ledger test" });
+    const reservation = await service.reserveApprovedVentureBudget({
+      approvalId: approval.id,
+      requestedByService: serviceId,
+      idempotencyKey: "reservation:ledger",
+      action: "VALIDATION_SPEND",
+      amountMinor: 499,
+      target: "domain.example",
+      purpose: "Validation domain",
+      metadata: { experiment: "EXP-000" },
+    });
+    const settled = await service.settleSimulatedVentureSpend({ reservationId: reservation.id, actorUserId: owner });
+
+    const totals = await pool.query(
+      "SELECT sum(debit_minor)::int debit, sum(credit_minor)::int credit FROM venture_ledger_postings WHERE journal_id=$1",
+      [settled.journal.id],
+    );
+    expect(totals.rows[0]).toEqual({ debit: 499, credit: 499 });
+    expect((await pool.query(
+      "SELECT reserved_minor,spent_minor FROM venture_budget_envelopes WHERE kind='experiment'",
+    )).rows[0]).toEqual({ reserved_minor: 0, spent_minor: 499 });
+
+    await expect(pool.query(
+      "UPDATE venture_ledger_journals SET description='rewrite history' WHERE id=$1",
+      [settled.journal.id],
+    )).rejects.toThrow(/immutable|append-only/);
+    const postingId = (await pool.query(
+      "SELECT id FROM venture_ledger_postings WHERE journal_id=$1 LIMIT 1",
+      [settled.journal.id],
+    )).rows[0].id;
+    await expect(pool.query("UPDATE venture_ledger_postings SET debit_minor=1 WHERE id=$1", [postingId]))
+      .rejects.toThrow(/append-only/);
+    const auditId = (await pool.query(
+      "SELECT id FROM venture_audit_events WHERE journal_id=$1 LIMIT 1",
+      [settled.journal.id],
+    )).rows[0].id;
+    await expect(pool.query("DELETE FROM venture_audit_events WHERE id=$1", [auditId]))
+      .rejects.toThrow(/append-only/);
+    const eventId = (await pool.query(
+      "SELECT id FROM venture_approval_events WHERE approval_id=$1 LIMIT 1",
+      [approval.id],
+    )).rows[0].id;
+    await expect(pool.query("DELETE FROM venture_approval_events WHERE id=$1", [eventId]))
+      .rejects.toThrow(/append-only/);
+
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      const experimentId = (await client.query("SELECT id FROM venture_experiments WHERE code='EXP-000'")).rows[0].id;
+      const cashId = (await client.query("SELECT id FROM venture_ledger_accounts WHERE code='simulated_cash'")).rows[0].id;
+      const journalId = (await client.query(
+        "INSERT INTO venture_ledger_journals(experiment_id,idempotency_key,description,actor_type,actor_key) VALUES($1,'attack:unbalanced','attack','system','red-team') RETURNING id",
+        [experimentId],
+      )).rows[0].id;
+      await client.query(
+        "INSERT INTO venture_ledger_postings(journal_id,account_id,debit_minor,credit_minor) VALUES($1,$2,10,0)",
+        [journalId, cashId],
+      );
+      await expect(client.query(
+        "UPDATE venture_ledger_journals SET sealed=true,sealed_at=now() WHERE id=$1",
+        [journalId],
+      )).rejects.toThrow(/must balance before sealing/);
+      await client.query("ROLLBACK");
+    } finally {
+      client.release();
+    }
+  });
+
+  it("fails Venture Lab mutations closed under emergency STOP and irreversible service revocation", async () => {
+    const service = await import("../../src/lib/server/venture-lab-persistence");
+    const owner = (await pool.query(
+      "INSERT INTO admin_users(email,display_name,password_hash,role) VALUES('venture-stop@example.test','Stop Owner','hash','owner') RETURNING id",
+    )).rows[0].id as string;
+    const serviceId = "grok-stop";
+    await service.initializeExperimentZero({ serviceAccountId: serviceId, serviceAccountName: "Grok Stop" });
+    const approval = await service.createVentureSpendApprovalRequest({
+      action: "VALIDATION_SPEND",
+      amountMinor: 100,
+      target: "stop-target",
+      purpose: "STOP test",
+      metadata: { experiment: "EXP-000" },
+      requestedByService: serviceId,
+      requestIdempotencyKey: "request:stop",
+      expiresAt: new Date(Date.now() + 60_000),
+    });
+    await service.approveVentureSpendRequest({ approvalId: approval.id, actorUserId: owner, reason: "Prepare STOP test" });
+
+    await service.activateVentureEmergencyStop({ actorUserId: owner, reason: "Experiment #000 emergency containment" });
+    await expect(service.reserveApprovedVentureBudget({
+      approvalId: approval.id,
+      requestedByService: serviceId,
+      idempotencyKey: "reservation:stopped",
+      action: "VALIDATION_SPEND",
+      amountMinor: 100,
+      target: "stop-target",
+      purpose: "STOP test",
+      metadata: { experiment: "EXP-000" },
+    })).rejects.toMatchObject({ code: "venture_paused" });
+    expect((await pool.query("SELECT count(*)::int count FROM venture_budget_reservations")).rows[0].count).toBe(0);
+    expect((await pool.query("SELECT status FROM venture_approval_requests WHERE id=$1", [approval.id])).rows[0].status).toBe("APPROVED");
+
+    await service.resumeVentureLab({ actorUserId: owner, reason: "Continue revocation test" });
+    await service.revokeVentureServiceAccount({
+      serviceAccountId: serviceId,
+      actorUserId: owner,
+      reason: "Experiment #000 credential revocation",
+    });
+    await expect(service.reserveApprovedVentureBudget({
+      approvalId: approval.id,
+      requestedByService: serviceId,
+      idempotencyKey: "reservation:revoked",
+      action: "VALIDATION_SPEND",
+      amountMinor: 100,
+      target: "stop-target",
+      purpose: "STOP test",
+      metadata: { experiment: "EXP-000" },
+    })).rejects.toMatchObject({ code: "service_revoked" });
+
+    await expect(pool.query(
+      "UPDATE venture_service_accounts SET active=true,revoked_at=NULL WHERE id=$1",
+      [serviceId],
+    )).rejects.toThrow(/cannot be reactivated/);
+    expect((await pool.query(
+      "SELECT active,revoked_at IS NOT NULL AS revoked,token_version FROM venture_service_accounts WHERE id=$1",
+      [serviceId],
+    )).rows[0]).toEqual({ active: false, revoked: true, token_version: 2 });
+    expect((await pool.query(
+      "SELECT reserved_minor,spent_minor FROM venture_budget_envelopes WHERE kind='experiment'",
+    )).rows[0]).toEqual({ reserved_minor: 0, spent_minor: 0 });
+  });
+
 });
 async function createProject() {
   return (

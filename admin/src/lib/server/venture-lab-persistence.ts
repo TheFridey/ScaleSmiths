@@ -289,6 +289,7 @@ export async function reserveApprovedVentureBudget(input: {
   const currency = (input.currency ?? "GBP").trim().toUpperCase()
   const target = requiredText(input.target, "target")
   const purpose = requiredText(input.purpose, "purpose")
+  if (currency !== "GBP") throw new VentureLabPersistenceError("Experiment #000 currently supports GBP only.", "currency_not_allowed")
 
   return db.transaction(async (tx) => {
     await assertAgentMutationAllowed(tx, requestedByService)
@@ -299,13 +300,13 @@ export async function reserveApprovedVentureBudget(input: {
       .limit(1)
     if (duplicate) throw new VentureLabPersistenceError("This spend reservation has already been processed.", "duplicate_reservation")
 
-    const [currentApproval] = await tx.select().from(ventureApprovalRequests)
+    const [approval] = await tx.select().from(ventureApprovalRequests)
       .where(eq(ventureApprovalRequests.id, input.approvalId)).limit(1)
-    if (!currentApproval) throw new VentureLabPersistenceError("Approval request not found.", "approval_missing")
+    if (!approval) throw new VentureLabPersistenceError("Approval request not found.", "approval_missing")
 
     const expectedPayload: ApprovalPayload = {
       action,
-      experimentId: currentApproval.experimentId,
+      experimentId: approval.experimentId,
       amountMinor,
       currency,
       target,
@@ -313,61 +314,67 @@ export async function reserveApprovedVentureBudget(input: {
       metadata: input.metadata ?? null,
     }
     const expectedHash = hashApprovalPayload(expectedPayload)
-
-    const [approval] = await tx.update(ventureApprovalRequests).set({
-      status: "CONSUMED",
-      consumedAt: sql`CURRENT_TIMESTAMP`,
-      resolvedAt: sql`CURRENT_TIMESTAMP`,
-      decisionReason: "Consumed by budget reservation.",
-    }).where(and(
-      eq(ventureApprovalRequests.id, input.approvalId),
-      eq(ventureApprovalRequests.status, "APPROVED"),
-      gt(ventureApprovalRequests.expiresAt, sql`CURRENT_TIMESTAMP`),
-      eq(ventureApprovalRequests.requestedByService, requestedByService),
-      eq(ventureApprovalRequests.action, action),
-      eq(ventureApprovalRequests.amountMinor, amountMinor),
-      eq(ventureApprovalRequests.currency, currency),
-      eq(ventureApprovalRequests.target, target),
-      eq(ventureApprovalRequests.purpose, purpose),
-      eq(ventureApprovalRequests.payloadHash, expectedHash),
-    )).returning()
-
-    if (!approval) {
+    if (
+      approval.status !== "APPROVED"
+      || approval.requestedByService !== requestedByService
+      || approval.action !== action
+      || approval.amountMinor !== amountMinor
+      || approval.currency !== currency
+      || approval.target !== target
+      || approval.purpose !== purpose
+      || approval.payloadHash !== expectedHash
+    ) {
       throw new VentureLabPersistenceError("Approval is expired, consumed, or does not exactly match this spend payload.", "approval_mismatch")
     }
 
-    const [envelope] = await tx.update(ventureBudgetEnvelopes).set({
-      reservedMinor: sql`${ventureBudgetEnvelopes.reservedMinor} + ${amountMinor}`,
-      updatedAt: sql`CURRENT_TIMESTAMP`,
-    }).where(and(
+    const [envelope] = await tx.select().from(ventureBudgetEnvelopes).where(and(
       eq(ventureBudgetEnvelopes.experimentId, approval.experimentId),
       eq(ventureBudgetEnvelopes.kind, "experiment"),
       eq(ventureBudgetEnvelopes.spendable, true),
-      sql`${ventureBudgetEnvelopes.reservedMinor} + ${ventureBudgetEnvelopes.spentMinor} + ${amountMinor} <= ${ventureBudgetEnvelopes.allocatedMinor}`,
-    )).returning()
+    )).limit(1)
+    if (!envelope) throw new VentureLabPersistenceError("Experiment budget is unavailable.", "budget_unavailable")
 
-    if (!envelope) {
-      throw new VentureLabPersistenceError("Experiment budget is exhausted or unavailable.", "budget_exceeded")
+    let reservation
+    try {
+      ;[reservation] = await tx.insert(ventureBudgetReservations).values({
+        envelopeId: envelope.id,
+        approvalId: approval.id,
+        requestedByService,
+        idempotencyKey,
+        action,
+        payloadHash: expectedHash,
+        amountMinor,
+        currency,
+        target,
+        purpose,
+        status: "RESERVED",
+      }).returning()
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      if (/budget would be exceeded/i.test(message)) {
+        throw new VentureLabPersistenceError("Experiment budget is exhausted or unavailable.", "budget_exceeded")
+      }
+      if (/approval is not consumable|consumed or expired concurrently/i.test(message)) {
+        throw new VentureLabPersistenceError("Approval is expired or has already been consumed.", "approval_mismatch")
+      }
+      if (/reservation does not match its approval payload/i.test(message)) {
+        throw new VentureLabPersistenceError("Reservation does not exactly match its approval.", "approval_mismatch")
+      }
+      if (/paused/i.test(message)) {
+        throw new VentureLabPersistenceError("Venture Lab is paused. Mutating execution is blocked.", "venture_paused")
+      }
+      if (/service account is revoked or unavailable/i.test(message)) {
+        throw new VentureLabPersistenceError("Venture Lab service account is revoked or unavailable.", "service_revoked")
+      }
+      throw error
     }
-
-    const [reservation] = await tx.insert(ventureBudgetReservations).values({
-      envelopeId: envelope.id,
-      approvalId: approval.id,
-      requestedByService,
-      idempotencyKey,
-      amountMinor,
-      currency,
-      target,
-      purpose,
-      status: "RESERVED",
-    }).returning()
 
     await tx.insert(ventureApprovalEvents).values({
       approvalId: approval.id,
       eventType: "CONSUMED",
       actorType: "service",
       actorKey: requestedByService,
-      metadataJson: { reservationId: reservation.id, idempotencyKey },
+      metadataJson: { reservationId: reservation.id, idempotencyKey, payloadHash: expectedHash },
     })
     await tx.insert(ventureAuditEvents).values({
       experimentId: approval.experimentId,
@@ -375,7 +382,7 @@ export async function reserveApprovedVentureBudget(input: {
       actorKey: requestedByService,
       action: "budget_reserved",
       reason: purpose,
-      metadataJson: { reservationId: reservation.id, amountMinor, currency, target },
+      metadataJson: { reservationId: reservation.id, amountMinor, currency, target, payloadHash: expectedHash },
       approvalId: approval.id,
       requestId: idempotencyKey,
     })

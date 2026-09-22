@@ -557,7 +557,7 @@
     },
     {
       "path": "admin/drizzle/0061_venture_lab_core.sql",
-      "sha256": "cb60958bb0320afe760b2c2355446663c3b4fb8d79351932d95d02f333ae1262",
+      "sha256": "3328ad46669b3724dcb6851aa8e8fe833cb2275910121919ad093109833eda3e",
       "lifecycle": "forward",
       "reason": "Adds the Nova Venture Lab Experiment #000 PostgreSQL governance core: protected/experimental budget envelopes, exact immutable approvals, database-authoritative reservations, append-only audit and double-entry ledger history, service-account revocation, and emergency STOP state."
     }

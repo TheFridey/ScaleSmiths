@@ -8,6 +8,9 @@ export const CAPABILITIES = [
   "projects.read", "projects.write", "forge.read", "forge.execute", "forge.approve",
   "forge.configure", "finance.read", "finance.write", "settings.manage", "audit.read",
   "deployments.execute", "analytics.read", "analytics.write", "claims.read", "claims.manage",
+  "venture.read", "venture.write", "venture.finance.read", "venture.finance.request", "venture.finance.approve",
+  "venture.experiment.manage", "venture.launch.request", "venture.launch.approve", "venture.policy.manage",
+  "venture.integration.manage", "venture.emergency_stop", "venture.audit.read",
 ] as const
 export type Capability = (typeof CAPABILITIES)[number]
 
@@ -16,7 +19,7 @@ export const ROLE_CAPABILITIES: Readonly<Record<AdminRole, readonly Capability[]
   administrator: CAPABILITIES.filter((capability) => capability !== "admin_users.credentials.reset" && capability !== "admin_users.owner.assign"),
   sales: ["leads.read", "leads.write", "prospects.convert", "clients.read", "projects.read", "finance.read", "analytics.read"],
   project_manager: ["portal_users.read", "portal_users.manage", "leads.read", "prospects.convert", "clients.read", "clients.write", "projects.read", "projects.write", "forge.read", "forge.execute", "forge.approve", "forge.configure", "finance.read", "audit.read", "analytics.read", "analytics.write"],
-  developer: ["clients.read", "projects.read", "projects.write", "forge.read", "forge.execute", "forge.approve", "forge.configure", "audit.read", "deployments.execute", "analytics.read"],
+  developer: ["clients.read", "projects.read", "projects.write", "forge.read", "forge.execute", "forge.approve", "forge.configure", "audit.read", "deployments.execute", "analytics.read", "venture.read", "venture.audit.read", "venture.integration.manage", "venture.emergency_stop"],
   finance: ["leads.read", "clients.read", "projects.read", "finance.read", "finance.write", "audit.read", "analytics.read"],
   viewer: ["leads.read", "clients.read", "projects.read", "forge.read", "finance.read", "analytics.read"],
 }
@@ -52,6 +55,7 @@ export function requiredCapabilityForRequest({ pathname, method }: RbacRequest):
   if (pathname === "/clients" || pathname.startsWith("/clients/") || pathname.startsWith("/api/clients")) return write ? "clients.write" : "clients.read"
   if (pathname === "/requests" || pathname.startsWith("/requests/") || pathname.startsWith("/api/client-requests")) return write ? "clients.write" : "clients.read"
   if (pathname === "/messages" || pathname.startsWith("/messages/")) return "clients.read"
+  if (pathname === "/venture-lab" || pathname.startsWith("/venture-lab/")) return "venture.read"
   if (pathname.startsWith("/api/forge/ai-usage")) return "audit.read"
   if (pathname === "/api/forge/reconciliation") return write ? "forge.configure" : "audit.read"
   if (pathname === "/operations/forge" || pathname.startsWith("/operations/forge/") || pathname === "/api/operations/forge-health") return write ? "forge.configure" : "audit.read"

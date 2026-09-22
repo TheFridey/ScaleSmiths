@@ -361,6 +361,77 @@ CREATE TRIGGER "venture_approval_requests_guard" BEFORE UPDATE OR DELETE ON "ven
 --> statement-breakpoint
 
 
+CREATE OR REPLACE FUNCTION "venture_prepare_budget_reservation"() RETURNS trigger
+LANGUAGE plpgsql AS $
+DECLARE
+  runtime_paused boolean;
+  service_active boolean;
+  approval_record venture_approval_requests%ROWTYPE;
+  envelope_record venture_budget_envelopes%ROWTYPE;
+BEGIN
+  SELECT paused INTO runtime_paused FROM venture_runtime_state WHERE id = 1 FOR SHARE;
+  IF runtime_paused IS DISTINCT FROM false THEN
+    RAISE EXCEPTION 'Venture Lab is paused; reservation rejected';
+  END IF;
+
+  SELECT active INTO service_active FROM venture_service_accounts WHERE id = NEW.requested_by_service FOR SHARE;
+  IF service_active IS DISTINCT FROM true THEN
+    RAISE EXCEPTION 'Venture Lab service account is revoked or unavailable';
+  END IF;
+
+  SELECT * INTO approval_record FROM venture_approval_requests WHERE id = NEW.approval_id FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Venture Lab approval does not exist';
+  END IF;
+  IF approval_record.status <> 'APPROVED' OR approval_record.expires_at <= CURRENT_TIMESTAMP THEN
+    RAISE EXCEPTION 'Venture Lab approval is not consumable';
+  END IF;
+  IF approval_record.requested_by_service <> NEW.requested_by_service
+    OR approval_record.amount_minor <> NEW.amount_minor
+    OR approval_record.currency <> NEW.currency
+    OR approval_record.target <> NEW.target
+    OR approval_record.purpose <> NEW.purpose
+  THEN
+    RAISE EXCEPTION 'Venture Lab reservation does not match its approval payload';
+  END IF;
+
+  SELECT * INTO envelope_record FROM venture_budget_envelopes WHERE id = NEW.envelope_id FOR UPDATE;
+  IF NOT FOUND
+    OR envelope_record.experiment_id <> approval_record.experiment_id
+    OR envelope_record.kind <> 'experiment'
+    OR envelope_record.spendable <> true
+  THEN
+    RAISE EXCEPTION 'Venture Lab budget envelope is not spendable for this approval';
+  END IF;
+
+  UPDATE venture_budget_envelopes
+    SET reserved_minor = reserved_minor + NEW.amount_minor,
+        updated_at = CURRENT_TIMESTAMP
+    WHERE id = NEW.envelope_id
+      AND reserved_minor + spent_minor + NEW.amount_minor <= allocated_minor;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Venture Lab experiment budget would be exceeded';
+  END IF;
+
+  UPDATE venture_approval_requests
+    SET status = 'CONSUMED',
+        consumed_at = CURRENT_TIMESTAMP,
+        resolved_at = CURRENT_TIMESTAMP,
+        decision_reason = 'Consumed by budget reservation.'
+    WHERE id = NEW.approval_id
+      AND status = 'APPROVED'
+      AND expires_at > CURRENT_TIMESTAMP;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Venture Lab approval was consumed or expired concurrently';
+  END IF;
+
+  RETURN NEW;
+END;
+$;
+--> statement-breakpoint
+CREATE TRIGGER "venture_budget_reservations_prepare" BEFORE INSERT ON "venture_budget_reservations" FOR EACH ROW EXECUTE FUNCTION "venture_prepare_budget_reservation"();
+--> statement-breakpoint
+
 CREATE OR REPLACE FUNCTION "venture_guard_budget_reservation"() RETURNS trigger
 LANGUAGE plpgsql AS $
 BEGIN

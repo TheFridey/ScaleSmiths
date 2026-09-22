@@ -287,7 +287,7 @@ CREATE TRIGGER "venture_service_accounts_guard" BEFORE UPDATE OR DELETE ON "vent
 --> statement-breakpoint
 
 CREATE OR REPLACE FUNCTION "venture_guard_experiment"() RETURNS trigger
-LANGUAGE plpgsql AS $
+LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'DELETE' THEN
     RAISE EXCEPTION 'Venture Lab experiments cannot be deleted';
@@ -302,7 +302,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$;
+$$;
 --> statement-breakpoint
 CREATE TRIGGER "venture_experiments_guard" BEFORE UPDATE OR DELETE ON "venture_experiments" FOR EACH ROW EXECUTE FUNCTION "venture_guard_experiment"();
 --> statement-breakpoint
@@ -336,7 +336,7 @@ CREATE TRIGGER "venture_budget_envelopes_guard" BEFORE UPDATE OR DELETE ON "vent
 --> statement-breakpoint
 
 CREATE OR REPLACE FUNCTION "venture_guard_approval_insert"() RETURNS trigger
-LANGUAGE plpgsql AS $
+LANGUAGE plpgsql AS $$
 BEGIN
   IF NEW.status <> 'REQUESTED'
     OR NEW.approved_by IS NOT NULL
@@ -348,13 +348,13 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$;
+$$;
 --> statement-breakpoint
 CREATE TRIGGER "venture_approval_requests_insert_guard" BEFORE INSERT ON "venture_approval_requests" FOR EACH ROW EXECUTE FUNCTION "venture_guard_approval_insert"();
 --> statement-breakpoint
 
 CREATE OR REPLACE FUNCTION "venture_guard_approval_request"() RETURNS trigger
-LANGUAGE plpgsql AS $
+LANGUAGE plpgsql AS $$
 DECLARE
   approver_role text;
   approver_active boolean;
@@ -420,7 +420,7 @@ CREATE TRIGGER "venture_approval_requests_guard" BEFORE UPDATE OR DELETE ON "ven
 
 
 CREATE OR REPLACE FUNCTION "venture_prepare_budget_reservation"() RETURNS trigger
-LANGUAGE plpgsql AS $
+LANGUAGE plpgsql AS $$
 DECLARE
   runtime_paused boolean;
   service_active boolean;
@@ -487,13 +487,13 @@ BEGIN
 
   RETURN NEW;
 END;
-$;
+$$;
 --> statement-breakpoint
 CREATE TRIGGER "venture_budget_reservations_prepare" BEFORE INSERT ON "venture_budget_reservations" FOR EACH ROW EXECUTE FUNCTION "venture_prepare_budget_reservation"();
 --> statement-breakpoint
 
 CREATE OR REPLACE FUNCTION "venture_guard_budget_reservation"() RETURNS trigger
-LANGUAGE plpgsql AS $
+LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'DELETE' THEN
     RAISE EXCEPTION 'Venture Lab budget reservations cannot be deleted';
@@ -527,17 +527,17 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$;
+$$;
 --> statement-breakpoint
 CREATE TRIGGER "venture_budget_reservations_guard" BEFORE UPDATE OR DELETE ON "venture_budget_reservations" FOR EACH ROW EXECUTE FUNCTION "venture_guard_budget_reservation"();
 --> statement-breakpoint
 
 CREATE OR REPLACE FUNCTION "venture_guard_ledger_account"() RETURNS trigger
-LANGUAGE plpgsql AS $
+LANGUAGE plpgsql AS $$
 BEGIN
   RAISE EXCEPTION 'Venture Lab ledger accounts are immutable';
 END;
-$;
+$$;
 --> statement-breakpoint
 CREATE TRIGGER "venture_ledger_accounts_guard" BEFORE UPDATE OR DELETE ON "venture_ledger_accounts" FOR EACH ROW EXECUTE FUNCTION "venture_guard_ledger_account"();
 --> statement-breakpoint

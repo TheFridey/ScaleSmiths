@@ -305,6 +305,24 @@ $$;
 CREATE TRIGGER "venture_budget_envelopes_guard" BEFORE UPDATE OR DELETE ON "venture_budget_envelopes" FOR EACH ROW EXECUTE FUNCTION "venture_guard_budget_envelope"();
 --> statement-breakpoint
 
+CREATE OR REPLACE FUNCTION "venture_guard_approval_insert"() RETURNS trigger
+LANGUAGE plpgsql AS $
+BEGIN
+  IF NEW.status <> 'REQUESTED'
+    OR NEW.approved_by IS NOT NULL
+    OR NEW.approved_at IS NOT NULL
+    OR NEW.consumed_at IS NOT NULL
+    OR NEW.resolved_at IS NOT NULL
+  THEN
+    RAISE EXCEPTION 'Venture Lab approvals must enter the system as unapproved requests';
+  END IF;
+  RETURN NEW;
+END;
+$;
+--> statement-breakpoint
+CREATE TRIGGER "venture_approval_requests_insert_guard" BEFORE INSERT ON "venture_approval_requests" FOR EACH ROW EXECUTE FUNCTION "venture_guard_approval_insert"();
+--> statement-breakpoint
+
 CREATE OR REPLACE FUNCTION "venture_guard_approval_request"() RETURNS trigger
 LANGUAGE plpgsql AS $$
 BEGIN

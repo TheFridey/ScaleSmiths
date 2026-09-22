@@ -360,6 +360,45 @@ $$;
 CREATE TRIGGER "venture_approval_requests_guard" BEFORE UPDATE OR DELETE ON "venture_approval_requests" FOR EACH ROW EXECUTE FUNCTION "venture_guard_approval_request"();
 --> statement-breakpoint
 
+
+CREATE OR REPLACE FUNCTION "venture_guard_budget_reservation"() RETURNS trigger
+LANGUAGE plpgsql AS $
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    RAISE EXCEPTION 'Venture Lab budget reservations cannot be deleted';
+  END IF;
+  IF OLD.id IS DISTINCT FROM NEW.id
+    OR OLD.envelope_id IS DISTINCT FROM NEW.envelope_id
+    OR OLD.approval_id IS DISTINCT FROM NEW.approval_id
+    OR OLD.requested_by_service IS DISTINCT FROM NEW.requested_by_service
+    OR OLD.idempotency_key IS DISTINCT FROM NEW.idempotency_key
+    OR OLD.amount_minor IS DISTINCT FROM NEW.amount_minor
+    OR OLD.currency IS DISTINCT FROM NEW.currency
+    OR OLD.target IS DISTINCT FROM NEW.target
+    OR OLD.purpose IS DISTINCT FROM NEW.purpose
+    OR OLD.created_at IS DISTINCT FROM NEW.created_at
+  THEN
+    RAISE EXCEPTION 'Venture Lab budget reservation identity is immutable';
+  END IF;
+
+  IF OLD.status = 'RESERVED' AND NEW.status = 'SETTLED' THEN
+    IF NEW.settled_at IS NULL OR NEW.released_at IS NOT NULL THEN
+      RAISE EXCEPTION 'Invalid Venture Lab reservation settlement';
+    END IF;
+  ELSIF OLD.status = 'RESERVED' AND NEW.status IN ('RELEASED','EXPIRED') THEN
+    IF NEW.released_at IS NULL OR NEW.settled_at IS NOT NULL THEN
+      RAISE EXCEPTION 'Invalid Venture Lab reservation release';
+    END IF;
+  ELSE
+    RAISE EXCEPTION 'Invalid Venture Lab reservation state transition: % -> %', OLD.status, NEW.status;
+  END IF;
+  RETURN NEW;
+END;
+$;
+--> statement-breakpoint
+CREATE TRIGGER "venture_budget_reservations_guard" BEFORE UPDATE OR DELETE ON "venture_budget_reservations" FOR EACH ROW EXECUTE FUNCTION "venture_guard_budget_reservation"();
+--> statement-breakpoint
+
 CREATE OR REPLACE FUNCTION "venture_guard_ledger_journal"() RETURNS trigger
 LANGUAGE plpgsql AS $$
 DECLARE

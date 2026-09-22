@@ -1689,6 +1689,13 @@ describe("real PostgreSQL integration", () => {
       "UPDATE venture_budget_envelopes SET spendable=true WHERE kind='protected_reserve'",
     )).rejects.toThrow(/Protected Venture Lab reserve cannot be mutated/);
 
+    await expect(pool.query(
+      "UPDATE venture_budget_envelopes SET allocated_minor=10000 WHERE kind='experiment'",
+    )).rejects.toThrow(/allocation and spendability are immutable/);
+    await expect(pool.query(
+      "UPDATE venture_experiments SET mode='REAL' WHERE code='EXP-000'",
+    )).rejects.toThrow(/experiment identity and mode are immutable/);
+
     const exact = await requestAndApprove("exact", 99, "exact-target", "Exact payload");
     const exactEnvelopeId = (await pool.query(
       "SELECT id FROM venture_budget_envelopes WHERE experiment_id=$1 AND kind='experiment'",
@@ -1852,6 +1859,9 @@ describe("real PostgreSQL integration", () => {
       "UPDATE venture_ledger_journals SET description='rewrite history' WHERE id=$1",
       [settled.journal.id],
     )).rejects.toThrow(/immutable|append-only/);
+    await expect(pool.query(
+      "UPDATE venture_ledger_accounts SET name='Rewritten' WHERE code='simulated_cash'",
+    )).rejects.toThrow(/ledger accounts are immutable/);
     const postingId = (await pool.query(
       "SELECT id FROM venture_ledger_postings WHERE journal_id=$1 LIMIT 1",
       [settled.journal.id],

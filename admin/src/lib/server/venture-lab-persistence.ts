@@ -237,38 +237,48 @@ export async function approveVentureSpendRequest(input: {
   const actorUserId = requiredText(input.actorUserId, "actorUserId")
   const reason = requiredText(input.reason, "reason")
 
-  return db.transaction(async (tx) => {
-    const [approval] = await tx.update(ventureApprovalRequests).set({
-      status: "APPROVED",
-      approvedBy: actorUserId,
-      approvedAt: sql`CURRENT_TIMESTAMP`,
-      decisionReason: reason,
-    }).where(and(
-      eq(ventureApprovalRequests.id, input.approvalId),
-      eq(ventureApprovalRequests.status, "REQUESTED"),
-      gt(ventureApprovalRequests.expiresAt, sql`CURRENT_TIMESTAMP`),
-    )).returning()
+  try {
+    return await db.transaction(async (tx) => {
+      const [approval] = await tx.update(ventureApprovalRequests).set({
+        status: "APPROVED",
+        approvedBy: actorUserId,
+        approvedAt: sql`CURRENT_TIMESTAMP`,
+        decisionReason: reason,
+      }).where(and(
+        eq(ventureApprovalRequests.id, input.approvalId),
+        eq(ventureApprovalRequests.status, "REQUESTED"),
+        gt(ventureApprovalRequests.expiresAt, sql`CURRENT_TIMESTAMP`),
+      )).returning()
 
-    if (!approval) throw new VentureLabPersistenceError("Approval request is missing, expired, or no longer requestable.", "approval_not_requestable")
+      if (!approval) throw new VentureLabPersistenceError("Approval request is missing, expired, or no longer requestable.", "approval_not_requestable")
 
-    await tx.insert(ventureApprovalEvents).values({
-      approvalId: approval.id,
-      eventType: "APPROVED",
-      actorType: "human",
-      actorKey: actorUserId,
-      metadataJson: { reason },
-    })
-    await tx.insert(ventureAuditEvents).values({
-      experimentId: approval.experimentId,
-      actorType: "human",
-      actorKey: actorUserId,
-      action: "spend_approval_approved",
-      reason,
-      approvalId: approval.id,
-    })
+      await tx.insert(ventureApprovalEvents).values({
+        approvalId: approval.id,
+        eventType: "APPROVED",
+        actorType: "human",
+        actorKey: actorUserId,
+        metadataJson: { reason },
+      })
+      await tx.insert(ventureAuditEvents).values({
+        experimentId: approval.experimentId,
+        actorType: "human",
+        actorKey: actorUserId,
+        action: "spend_approval_approved",
+        reason,
+        approvalId: approval.id,
+      })
 
-    return approval
-  }, { isolationLevel: "serializable" })
+      return approval
+    }, { isolationLevel: "serializable" })
+  } catch (error) {
+    if (errorChainText(error).includes("Venture Lab financial approval requires an active authoritative human identity")) {
+      throw new VentureLabPersistenceError(
+        "Venture Lab financial approval requires an active owner or administrator.",
+        "approval_authority_denied",
+      )
+    }
+    throw error
+  }
 }
 
 export async function reserveApprovedVentureBudget(input: {
@@ -606,6 +616,23 @@ function positiveMinor(value: number) {
   assertMinorUnits(value)
   if (value <= 0) throw new VentureLabPersistenceError("Amount must be greater than zero.", "invalid_amount")
   return value
+}
+
+function errorChainText(error: unknown): string {
+  const messages: string[] = []
+  let current: unknown = error
+  const seen = new Set<unknown>()
+  while (current && !seen.has(current)) {
+    seen.add(current)
+    if (current instanceof Error) {
+      messages.push(current.message)
+      current = (current as Error & { cause?: unknown }).cause
+    } else {
+      messages.push(String(current))
+      break
+    }
+  }
+  return messages.join("\n")
 }
 
 function requiredText(value: string, field: string) {

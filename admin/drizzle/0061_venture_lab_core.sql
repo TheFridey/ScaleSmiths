@@ -324,7 +324,10 @@ CREATE TRIGGER "venture_approval_requests_insert_guard" BEFORE INSERT ON "ventur
 --> statement-breakpoint
 
 CREATE OR REPLACE FUNCTION "venture_guard_approval_request"() RETURNS trigger
-LANGUAGE plpgsql AS $$
+LANGUAGE plpgsql AS $
+DECLARE
+  approver_role text;
+  approver_active boolean;
 BEGIN
   IF TG_OP = 'DELETE' THEN
     RAISE EXCEPTION 'Venture Lab approval requests cannot be deleted';
@@ -350,6 +353,10 @@ BEGIN
   IF OLD.status = 'REQUESTED' AND NEW.status = 'APPROVED' THEN
     IF NEW.approved_by IS NULL OR NEW.approved_at IS NULL OR NEW.expires_at <= CURRENT_TIMESTAMP OR NEW.consumed_at IS NOT NULL OR NEW.resolved_at IS NOT NULL THEN
       RAISE EXCEPTION 'Invalid Venture Lab approval transition';
+    END IF;
+    SELECT role::text, active INTO approver_role, approver_active FROM admin_users WHERE id = NEW.approved_by;
+    IF approver_active IS DISTINCT FROM true OR approver_role NOT IN ('owner','administrator') THEN
+      RAISE EXCEPTION 'Venture Lab financial approval requires an active authoritative human identity';
     END IF;
   ELSIF OLD.status = 'REQUESTED' AND NEW.status IN ('REJECTED','CANCELLED') THEN
     IF NEW.resolved_at IS NULL OR NEW.consumed_at IS NOT NULL OR NEW.approved_by IS NOT NULL OR NEW.approved_at IS NOT NULL THEN

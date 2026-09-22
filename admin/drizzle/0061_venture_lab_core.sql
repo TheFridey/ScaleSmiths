@@ -148,7 +148,6 @@ CREATE TABLE "venture_budget_reservations" (
   "released_at" timestamp with time zone,
   CONSTRAINT "venture_budget_reservations_amount_check" CHECK ("amount_minor" > 0),
   CONSTRAINT "venture_budget_reservations_hash_check" CHECK ("payload_hash" ~ '^[0-9a-f]{64}
-  CONSTRAINT "venture_budget_reservations_currency_check" CHECK ("currency" = 'GBP'),
   CONSTRAINT "venture_budget_reservations_status_check" CHECK ("status" IN ('RESERVED','SETTLED','RELEASED','EXPIRED')),
   CONSTRAINT "venture_budget_reservations_terminal_check" CHECK (
     ("status" = 'RESERVED' AND "settled_at" IS NULL AND "released_at" IS NULL)
@@ -737,6 +736,24 @@ $$;
 CREATE TRIGGER "venture_budget_envelopes_guard" BEFORE UPDATE OR DELETE ON "venture_budget_envelopes" FOR EACH ROW EXECUTE FUNCTION "venture_guard_budget_envelope"();
 --> statement-breakpoint
 
+CREATE OR REPLACE FUNCTION "venture_guard_approval_insert"() RETURNS trigger
+LANGUAGE plpgsql AS $
+BEGIN
+  IF NEW.status <> 'REQUESTED'
+    OR NEW.approved_by IS NOT NULL
+    OR NEW.approved_at IS NOT NULL
+    OR NEW.consumed_at IS NOT NULL
+    OR NEW.resolved_at IS NOT NULL
+  THEN
+    RAISE EXCEPTION 'Venture Lab approvals must enter the system as unapproved requests';
+  END IF;
+  RETURN NEW;
+END;
+$;
+--> statement-breakpoint
+CREATE TRIGGER "venture_approval_requests_insert_guard" BEFORE INSERT ON "venture_approval_requests" FOR EACH ROW EXECUTE FUNCTION "venture_guard_approval_insert"();
+--> statement-breakpoint
+
 CREATE OR REPLACE FUNCTION "venture_guard_approval_request"() RETURNS trigger
 LANGUAGE plpgsql AS $$
 BEGIN
@@ -822,6 +839,8 @@ BEGIN
     RAISE EXCEPTION 'Venture Lab approval is not consumable';
   END IF;
   IF approval_record.requested_by_service <> NEW.requested_by_service
+    OR approval_record.action <> NEW.action
+    OR approval_record.payload_hash <> NEW.payload_hash
     OR approval_record.amount_minor <> NEW.amount_minor
     OR approval_record.currency <> NEW.currency
     OR approval_record.target <> NEW.target
@@ -878,6 +897,8 @@ BEGIN
     OR OLD.approval_id IS DISTINCT FROM NEW.approval_id
     OR OLD.requested_by_service IS DISTINCT FROM NEW.requested_by_service
     OR OLD.idempotency_key IS DISTINCT FROM NEW.idempotency_key
+    OR OLD.action IS DISTINCT FROM NEW.action
+    OR OLD.payload_hash IS DISTINCT FROM NEW.payload_hash
     OR OLD.amount_minor IS DISTINCT FROM NEW.amount_minor
     OR OLD.currency IS DISTINCT FROM NEW.currency
     OR OLD.target IS DISTINCT FROM NEW.target

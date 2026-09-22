@@ -9,7 +9,7 @@ const expected: Record<(typeof ADMIN_ROLES)[number], Capability[]> = {
   administrator: CAPABILITIES.filter((capability) => capability !== "admin_users.credentials.reset" && capability !== "admin_users.owner.assign"),
   sales: ["leads.read", "leads.write", "prospects.convert", "clients.read", "projects.read", "finance.read", "analytics.read"],
   project_manager: ["portal_users.read", "portal_users.manage", "leads.read", "prospects.convert", "clients.read", "clients.write", "projects.read", "projects.write", "forge.read", "forge.execute", "forge.approve", "forge.configure", "finance.read", "audit.read", "analytics.read", "analytics.write"],
-  developer: ["clients.read", "projects.read", "projects.write", "forge.read", "forge.execute", "forge.approve", "forge.configure", "audit.read", "deployments.execute", "analytics.read"],
+  developer: ["clients.read", "projects.read", "projects.write", "forge.read", "forge.execute", "forge.approve", "forge.configure", "audit.read", "deployments.execute", "analytics.read", "venture.read", "venture.audit.read", "venture.integration.manage", "venture.emergency_stop"],
   finance: ["leads.read", "clients.read", "projects.read", "finance.read", "finance.write", "audit.read", "analytics.read"],
   viewer: ["leads.read", "clients.read", "projects.read", "forge.read", "finance.read", "analytics.read"],
 }
@@ -65,6 +65,16 @@ describe("server request enforcement", () => {
     expect(authorizeRequest("project_manager", { pathname: "/api/forge/projects/9/design", method: "PATCH" }).allowed).toBe(true)
     expect(authorizeRequest("project_manager", { pathname: "/api/portal-users/9", method: "PATCH" })).toMatchObject({ allowed: true, capability: "portal_users.manage" })
     expect(authorizeRequest("project_manager", { pathname: "/api/admin-users/user-id", method: "GET" })).toMatchObject({ allowed: false, capability: "admin_users.read" })
+  })
+
+  it("protects Venture Lab and grants Rhys-style technical containment without capital approval", () => {
+    expect(requiredCapabilityForRequest({ pathname: "/venture-lab", method: "GET" })).toBe("venture.read")
+    expect(authorizeRequest("developer", { pathname: "/venture-lab", method: "GET" })).toMatchObject({ allowed: true, capability: "venture.read" })
+    expect(authorizeRequest("viewer", { pathname: "/venture-lab", method: "GET" })).toMatchObject({ allowed: false, capability: "venture.read" })
+    expect(hasCapability("developer", "venture.emergency_stop")).toBe(true)
+    expect(hasCapability("developer", "venture.integration.manage")).toBe(true)
+    expect(hasCapability("developer", "venture.finance.approve")).toBe(false)
+    expect(hasCapability("developer", "venture.policy.manage")).toBe(false)
   })
 
   it("maps sensitive routes before generic Forge execution", () => {

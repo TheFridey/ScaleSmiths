@@ -1708,6 +1708,17 @@ describe("real PostgreSQL integration", () => {
       metadata: { experiment: "EXP-000" },
     })).rejects.toMatchObject({ code: "duplicate_reservation" });
 
+    const duplicateBHash = (await pool.query(
+      "SELECT payload_hash FROM venture_approval_requests WHERE id=$1",
+      [duplicateB.id],
+    )).rows[0].payload_hash;
+    await expect(pool.query(
+      `INSERT INTO venture_budget_reservations(
+        envelope_id,approval_id,requested_by_service,idempotency_key,action,payload_hash,amount_minor,currency,target,purpose
+      ) VALUES($1,$2,$3,'reservation:duplicate','VALIDATION_SPEND',$4,100,'GBP','duplicate-target','Experiment #000 validation')`,
+      [exactEnvelopeId, duplicateB.id, serviceId, duplicateBHash],
+    )).rejects.toThrow(/duplicate key value/);
+
     expect((await pool.query(
       "SELECT count(*)::int count FROM venture_budget_reservations WHERE idempotency_key='reservation:duplicate'",
     )).rows[0].count).toBe(1);
@@ -1727,6 +1738,17 @@ describe("real PostgreSQL integration", () => {
       metadata: { experiment: "EXP-000" },
     })).rejects.toMatchObject({ code: "approval_mismatch" });
 
+    const duplicateAHash = (await pool.query(
+      "SELECT payload_hash FROM venture_approval_requests WHERE id=$1",
+      [duplicateA.id],
+    )).rows[0].payload_hash;
+    await expect(pool.query(
+      `INSERT INTO venture_budget_reservations(
+        envelope_id,approval_id,requested_by_service,idempotency_key,action,payload_hash,amount_minor,currency,target,purpose
+      ) VALUES($1,$2,$3,'reservation:single-use-direct','VALIDATION_SPEND',$4,100,'GBP','duplicate-target','Experiment #000 validation')`,
+      [exactEnvelopeId, duplicateA.id, serviceId, duplicateAHash],
+    )).rejects.toThrow(/approval is not consumable/);
+
     const oldRequested = new Date(Date.now() - 60_000);
     const expired = await service.createVentureSpendApprovalRequest({
       action: "VALIDATION_SPEND",
@@ -1744,6 +1766,10 @@ describe("real PostgreSQL integration", () => {
       actorUserId: owner,
       reason: "Should fail",
     })).rejects.toMatchObject({ code: "approval_not_requestable" });
+    await expect(pool.query(
+      "UPDATE venture_approval_requests SET status='APPROVED',approved_by=$2,approved_at=now(),decision_reason='Force expired approval' WHERE id=$1",
+      [expired.id, owner],
+    )).rejects.toThrow(/Invalid Venture Lab approval transition/);
 
     await expect(pool.query(
       "UPDATE venture_approval_requests SET target='tampered' WHERE id=$1",

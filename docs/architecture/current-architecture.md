@@ -53,6 +53,7 @@ Shared PostgreSQL does not mean unrestricted cross-domain data access. Runtime p
 - **CRM and delivery:** clients, prospects, outreach, messages, requests, proposals, kanban, reports, and project state.
 - **Finance:** invoice settings/catalogue, invoice drafting/issuance/voiding/payment/delivery, portal publication, document snapshots, and audit history.
 - **Forge:** projects, workflows/runs, jobs, agents, artifacts, memories, AI usage/budgets, previews, QA, dependency admission, deployment candidates, and release gates.
+- **Venture Lab:** governed opportunity/evidence/experiment lifecycle, simulated treasury, exact approvals, emergency STOP, venture audit and future restricted external-agent adapters. Experiment #000 is simulation-only and carries no autonomous payment execution.
 - **Operations:** migrations, database roles, backup/restore, release switching, health checks, Nginx, monitoring adapters, and incident/recovery procedures.
 
 ## 5. Trust boundaries
@@ -79,7 +80,7 @@ Auth.js remains on an explicitly time-limited v5 beta risk acceptance (`next-aut
 
 ## 7. Authorization model
 
-`admin/src/lib/rbac.ts` is the central admin authorization policy. Roles are owner, administrator, sales, project manager, developer, finance, and viewer. Capabilities cover identity management, leads, clients, projects, Forge read/execute/approve/configure, finance, settings, audit, and deployment. Middleware maps paths and methods to capabilities; handlers and server actions add body/resource-sensitive guards. Navigation visibility is convenience, never the security boundary.
+`admin/src/lib/rbac.ts` is the central admin authorization policy. Roles are owner, administrator, sales, project manager, developer, finance, and viewer. Capabilities cover identity management, leads, clients, projects, Forge read/execute/approve/configure, Venture Lab authority boundaries, finance, settings, audit, and deployment. Middleware maps paths and methods to capabilities; handlers and server actions add body/resource-sensitive guards. Navigation visibility is convenience, never the security boundary.
 
 Owner-only identity operations and the final-active-owner invariant remain in the identity domain. Current internal business data has global-or-none admin scope because records do not carry per-admin ownership. Portal authorization is a separate client-ownership model, not an admin RBAC role. See [RBAC policy](rbac-policy.md).
 

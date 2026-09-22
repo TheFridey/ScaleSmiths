@@ -334,7 +334,7 @@ export async function reserveApprovedVentureBudget(input: {
     )).limit(1)
     if (!envelope) throw new VentureLabPersistenceError("Experiment budget is unavailable.", "budget_unavailable")
 
-    let reservation
+    let reservation: typeof ventureBudgetReservations.$inferSelect | undefined
     try {
       ;[reservation] = await tx.insert(ventureBudgetReservations).values({
         envelopeId: envelope.id,
@@ -368,6 +368,7 @@ export async function reserveApprovedVentureBudget(input: {
       }
       throw error
     }
+    if (!reservation) throw new VentureLabPersistenceError("Reservation insert returned no row.", "reservation_missing")
 
     await tx.insert(ventureApprovalEvents).values({
       approvalId: approval.id,

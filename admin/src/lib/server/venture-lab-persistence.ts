@@ -164,7 +164,7 @@ export async function createVentureSpendApprovalRequest(input: {
   if (currency !== "GBP") throw new VentureLabPersistenceError("Experiment #000 currently supports GBP only.", "currency_not_allowed")
 
   const requestedAt = input.requestedAt ?? new Date()
-  if (!(input.expiresAt instanceof Date) || Number.isNaN(input.expiresAt.getTime()) || input.expiresAt <= requestedAt) {
+  if (!(input.expiresAt instanceof Date) || Number.isNaN(input.expiresAt.getTime()) || input.expiresAt.getTime() <= requestedAt.getTime()) {
     throw new VentureLabPersistenceError("Approval expiry must be after the request timestamp.", "invalid_expiry")
   }
 

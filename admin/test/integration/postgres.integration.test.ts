@@ -1816,6 +1816,60 @@ describe("real PostgreSQL integration", () => {
     )).rejects.toThrow(/approval payload is immutable/);
   });
 
+  it("consumes one approved Venture Lab request exactly once under concurrency", async () => {
+    const service = await import("../../src/lib/server/venture-lab-persistence");
+    const owner = (await pool.query(
+      "INSERT INTO admin_users(email,display_name,password_hash,role) VALUES('venture-single-use@example.test','Single Use Owner','hash','owner') RETURNING id",
+    )).rows[0].id as string;
+    const serviceId = "grok-single-use";
+    await service.initializeExperimentZero({ serviceAccountId: serviceId, serviceAccountName: "Grok Single Use" });
+
+    const approval = await service.createVentureSpendApprovalRequest({
+      action: "VALIDATION_SPEND",
+      amountMinor: 100,
+      target: "single-use-target",
+      purpose: "Concurrent single-use test",
+      metadata: { experiment: "EXP-000" },
+      requestedByService: serviceId,
+      requestIdempotencyKey: "request:single-use-race",
+      expiresAt: new Date(Date.now() + 60_000),
+    });
+    await service.approveVentureSpendRequest({
+      approvalId: approval.id,
+      actorUserId: owner,
+      reason: "Approved for concurrent single-use test",
+    });
+
+    const reserve = (idempotencyKey: string) => service.reserveApprovedVentureBudget({
+      approvalId: approval.id,
+      requestedByService: serviceId,
+      idempotencyKey,
+      action: "VALIDATION_SPEND",
+      amountMinor: 100,
+      target: "single-use-target",
+      purpose: "Concurrent single-use test",
+      metadata: { experiment: "EXP-000" },
+    });
+
+    const outcomes = await Promise.allSettled([
+      reserve("reservation:single-use-a"),
+      reserve("reservation:single-use-b"),
+    ]);
+    expect(outcomes.filter((result) => result.status === "fulfilled")).toHaveLength(1);
+    expect(outcomes.filter((result) => result.status === "rejected")).toHaveLength(1);
+    expect((await pool.query(
+      "SELECT count(*)::int count FROM venture_budget_reservations WHERE approval_id=$1",
+      [approval.id],
+    )).rows[0].count).toBe(1);
+    expect((await pool.query(
+      "SELECT status FROM venture_approval_requests WHERE id=$1",
+      [approval.id],
+    )).rows[0].status).toBe("CONSUMED");
+    expect((await pool.query(
+      "SELECT reserved_minor,spent_minor FROM venture_budget_envelopes WHERE kind='experiment'",
+    )).rows[0]).toEqual({ reserved_minor: 100, spent_minor: 0 });
+  });
+
   it("keeps Venture Lab ledger and audit history append-only and balanced", async () => {
     const service = await import("../../src/lib/server/venture-lab-persistence");
     const owner = (await pool.query(

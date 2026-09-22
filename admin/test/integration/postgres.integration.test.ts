@@ -1636,7 +1636,7 @@ describe("real PostgreSQL integration", () => {
       approvalId: developerBlocked.id,
       actorUserId: developer,
       reason: "Developer must not release capital",
-    })).rejects.toThrow(/requires an active authoritative human identity/);
+    })).rejects.toMatchObject({ code: "approval_authority_denied" });
     expect((await pool.query(
       "SELECT status,approved_by FROM venture_approval_requests WHERE id=$1",
       [developerBlocked.id],

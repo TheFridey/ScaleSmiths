@@ -286,14 +286,44 @@ $$;
 CREATE TRIGGER "venture_service_accounts_guard" BEFORE UPDATE OR DELETE ON "venture_service_accounts" FOR EACH ROW EXECUTE FUNCTION "venture_guard_service_account"();
 --> statement-breakpoint
 
+CREATE OR REPLACE FUNCTION "venture_guard_experiment"() RETURNS trigger
+LANGUAGE plpgsql AS $
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    RAISE EXCEPTION 'Venture Lab experiments cannot be deleted';
+  END IF;
+  IF OLD.id IS DISTINCT FROM NEW.id
+    OR OLD.code IS DISTINCT FROM NEW.code
+    OR OLD.name IS DISTINCT FROM NEW.name
+    OR OLD.mode IS DISTINCT FROM NEW.mode
+    OR OLD.created_at IS DISTINCT FROM NEW.created_at
+  THEN
+    RAISE EXCEPTION 'Venture Lab experiment identity and mode are immutable';
+  END IF;
+  RETURN NEW;
+END;
+$;
+--> statement-breakpoint
+CREATE TRIGGER "venture_experiments_guard" BEFORE UPDATE OR DELETE ON "venture_experiments" FOR EACH ROW EXECUTE FUNCTION "venture_guard_experiment"();
+--> statement-breakpoint
+
 CREATE OR REPLACE FUNCTION "venture_guard_budget_envelope"() RETURNS trigger
 LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'DELETE' THEN
     RAISE EXCEPTION 'Venture Lab budget envelopes cannot be deleted';
   END IF;
-  IF OLD.experiment_id IS DISTINCT FROM NEW.experiment_id OR OLD.kind IS DISTINCT FROM NEW.kind OR OLD.currency IS DISTINCT FROM NEW.currency OR OLD.created_at IS DISTINCT FROM NEW.created_at THEN
-    RAISE EXCEPTION 'Venture Lab budget-envelope identity is immutable';
+  IF OLD.experiment_id IS DISTINCT FROM NEW.experiment_id
+    OR OLD.kind IS DISTINCT FROM NEW.kind
+    OR OLD.currency IS DISTINCT FROM NEW.currency
+    OR OLD.allocated_minor IS DISTINCT FROM NEW.allocated_minor
+    OR OLD.spendable IS DISTINCT FROM NEW.spendable
+    OR OLD.created_at IS DISTINCT FROM NEW.created_at
+  THEN
+    RAISE EXCEPTION 'Venture Lab budget-envelope identity, allocation and spendability are immutable';
+  END IF;
+  IF NEW.spent_minor < OLD.spent_minor THEN
+    RAISE EXCEPTION 'Venture Lab spent budget cannot move backwards';
   END IF;
   IF OLD.kind = 'protected_reserve' AND NEW IS DISTINCT FROM OLD THEN
     RAISE EXCEPTION 'Protected Venture Lab reserve cannot be mutated';
@@ -500,6 +530,16 @@ END;
 $;
 --> statement-breakpoint
 CREATE TRIGGER "venture_budget_reservations_guard" BEFORE UPDATE OR DELETE ON "venture_budget_reservations" FOR EACH ROW EXECUTE FUNCTION "venture_guard_budget_reservation"();
+--> statement-breakpoint
+
+CREATE OR REPLACE FUNCTION "venture_guard_ledger_account"() RETURNS trigger
+LANGUAGE plpgsql AS $
+BEGIN
+  RAISE EXCEPTION 'Venture Lab ledger accounts are immutable';
+END;
+$;
+--> statement-breakpoint
+CREATE TRIGGER "venture_ledger_accounts_guard" BEFORE UPDATE OR DELETE ON "venture_ledger_accounts" FOR EACH ROW EXECUTE FUNCTION "venture_guard_ledger_account"();
 --> statement-breakpoint
 
 CREATE OR REPLACE FUNCTION "venture_guard_ledger_journal"() RETURNS trigger

@@ -2066,6 +2066,8 @@ describe("real PostgreSQL integration", () => {
     expect(director.scopes.sort()).toEqual([...access.VENTURE_DIRECTOR_SCOPES].sort());
 
     const issued = await access.issueVentureServiceCredential(director.id);
+    await expect(access.authenticateVentureServiceToken(null)).rejects.toMatchObject({ code: "unauthorized" });
+    await expect(access.authenticateVentureServiceToken(`Bearer ${issued.token}tampered`)).rejects.toMatchObject({ code: "unauthorized" });
     const actor = await access.authenticateVentureServiceToken(`Bearer ${issued.token}`);
     expect(actor.id).toBe(director.id);
 

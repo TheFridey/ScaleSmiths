@@ -2125,6 +2125,195 @@ describe("real PostgreSQL integration", () => {
     }
   });
 
+  it("keeps Cursor OAuth PKCE bound to an MFA Venture Controller, STOP and service revocation", async () => {
+    const service = await import("../../src/lib/server/venture-lab-persistence");
+    const oauth = await import("../../src/lib/server/venture-lab-oauth");
+    const mcp = await import("../../src/lib/server/venture-lab-mcp");
+    const previousAuthUrl = process.env.AUTH_URL;
+    const previousStaticToken = process.env.VENTURE_DIRECTOR_MCP_TOKEN;
+    process.env.AUTH_URL = "https://admin.scalesmiths.co.uk";
+    delete process.env.VENTURE_DIRECTOR_MCP_TOKEN;
+
+    const controller = (await pool.query(
+      "INSERT INTO admin_users(email,display_name,password_hash,role,mfa_enabled) VALUES('cursor-controller@example.test','Cursor Controller','hash','venture_controller',true) RETURNING id",
+    )).rows[0].id as string;
+    const developer = (await pool.query(
+      "INSERT INTO admin_users(email,display_name,password_hash,role,mfa_enabled) VALUES('cursor-developer@example.test','Cursor Developer','hash','developer',true) RETURNING id",
+    )).rows[0].id as string;
+    await service.initializeExperimentZero({ serviceAccountId: "venture-director", serviceAccountName: "Venture Director" });
+
+    try {
+      const clientId = oauth.VENTURE_OAUTH_CLIENT_ID;
+      await pool.query(
+        "INSERT INTO venture_oauth_clients(client_id,client_name,redirect_uris) VALUES($1,'Cursor / Grok Bot Venture Director',$2::jsonb)",
+        [clientId, JSON.stringify([...oauth.CURSOR_OAUTH_REDIRECT_URIS])],
+      );
+      const seededClient = (await pool.query(
+        "SELECT client_id,client_name,redirect_uris,active FROM venture_oauth_clients WHERE client_id=$1",
+        [clientId],
+      )).rows[0];
+      expect(seededClient).toEqual({
+        client_id: "cursor-venture-lab",
+        client_name: "Cursor / Grok Bot Venture Director",
+        redirect_uris: [
+          "cursor://anysphere.cursor-mcp/oauth/callback",
+          "https://www.cursor.com/agents/mcp/oauth/callback",
+          "http://localhost:8787/callback",
+        ],
+        active: true,
+      });
+
+      await expect(pool.query(
+        "INSERT INTO venture_oauth_clients(client_id,client_name,redirect_uris) VALUES('attacker-client','Attacker','[\"cursor://anysphere.cursor-mcp/oauth/callback\",\"https://www.cursor.com/agents/mcp/oauth/callback\",\"http://localhost:8787/callback\"]'::jsonb)",
+      )).rejects.toThrow(/check constraint/i);
+      await expect(pool.query(
+        "UPDATE venture_oauth_clients SET redirect_uris='[\"cursor://anysphere.cursor-mcp/oauth/callback\",\"https://evil.example/callback\",\"http://localhost:8787/callback\"]'::jsonb WHERE client_id=$1",
+        [clientId],
+      )).rejects.toThrow(/immutable|check constraint/i);
+
+      expect(oauth.registerCursorOauthClient({
+        client_name: "Grok Bot",
+        redirect_uris: [...oauth.CURSOR_OAUTH_REDIRECT_URIS],
+        token_endpoint_auth_method: "none",
+        grant_types: ["authorization_code", "refresh_token"],
+        response_types: ["code"],
+      })).toMatchObject({
+        client_id: "cursor-venture-lab",
+        token_endpoint_auth_method: "none",
+        redirect_uris: [...oauth.CURSOR_OAUTH_REDIRECT_URIS],
+      });
+      expect(() => oauth.registerCursorOauthClient({
+        redirect_uris: ["https://www.cursor.com/agents/mcp/oauth/callback", "http://localhost:8787/callback"],
+        token_endpoint_auth_method: "none",
+      })).toThrow(/redirect URIs/i);
+      expect(() => oauth.registerCursorOauthClient({
+        redirect_uris: [...oauth.CURSOR_OAUTH_REDIRECT_URIS],
+        token_endpoint_auth_method: "client_secret_post",
+      })).toThrow(/public PKCE clients/i);
+
+      const verifier = "cursor-pkce-verifier-000000000000000000000000000000000000000000000000";
+      const challenge = createHash("sha256").update(verifier).digest("base64url");
+      const redirectUri = "https://www.cursor.com/agents/mcp/oauth/callback";
+      const baseAuthorization = {
+        clientId: clientId,
+        redirectUri,
+        responseType: "code",
+        codeChallenge: challenge,
+        codeChallengeMethod: "S256",
+        scope: "venture",
+        resource: "https://admin.scalesmiths.co.uk/api/venture-lab/mcp",
+        state: "cursor-state-001",
+      };
+
+      await expect(oauth.createCursorAuthorizationCode({
+        ...baseAuthorization,
+        clientId: "unregistered-client",
+        actorId: controller,
+      })).rejects.toMatchObject({ code: "unauthorized_client" });
+      await expect(oauth.createCursorAuthorizationCode({
+        ...baseAuthorization,
+        redirectUri: "https://evil.example/callback",
+        actorId: controller,
+      })).rejects.toMatchObject({ code: "invalid_request" });
+
+      await expect(oauth.createCursorAuthorizationCode({
+        ...baseAuthorization,
+        actorId: developer,
+      })).rejects.toMatchObject({ code: "access_denied" });
+
+      await pool.query("UPDATE admin_users SET mfa_enabled=false WHERE id=$1", [controller]);
+      await expect(oauth.createCursorAuthorizationCode({
+        ...baseAuthorization,
+        actorId: controller,
+      })).rejects.toMatchObject({ code: "access_denied" });
+      await pool.query("UPDATE admin_users SET mfa_enabled=true WHERE id=$1", [controller]);
+
+      const authorization = await oauth.createCursorAuthorizationCode({
+        ...baseAuthorization,
+        actorId: controller,
+      });
+
+      const wrongVerifier = new URLSearchParams({
+        grant_type: "authorization_code",
+        client_id: clientId,
+        code: authorization.code,
+        redirect_uri: redirectUri,
+        code_verifier: "wrong-verifier-0000000000000000000000000000000000000000000",
+        resource: "https://admin.scalesmiths.co.uk/api/venture-lab/mcp",
+      });
+      await expect(oauth.exchangeCursorOauthToken(wrongVerifier)).rejects.toMatchObject({ code: "invalid_grant" });
+
+      const tokenForm = new URLSearchParams({
+        grant_type: "authorization_code",
+        client_id: clientId,
+        code: authorization.code,
+        redirect_uri: redirectUri,
+        code_verifier: verifier,
+        resource: "https://admin.scalesmiths.co.uk/api/venture-lab/mcp",
+      });
+      const firstTokens = await oauth.exchangeCursorOauthToken(tokenForm);
+      expect(firstTokens.access_token).toMatch(/^vlat_/);
+      expect(firstTokens.refresh_token).toMatch(/^vlrt_/);
+      await expect(oauth.exchangeCursorOauthToken(tokenForm)).rejects.toMatchObject({ code: "invalid_grant" });
+
+      expect(await oauth.authenticateVentureOauthAccessToken(firstTokens.access_token)).toEqual({ serviceId: "venture-director" });
+      await expect(mcp.authenticateVentureDirector(new Headers({
+        authorization: `Bearer ${firstTokens.access_token}`,
+      }))).resolves.toMatchObject({ id: "venture-director" });
+
+      const stored = (await pool.query(
+        "SELECT access_token_hash,refresh_token_hash FROM venture_oauth_tokens ORDER BY created_at DESC LIMIT 1",
+      )).rows[0];
+      expect(stored.access_token_hash).toMatch(/^[0-9a-f]{64}$/);
+      expect(stored.refresh_token_hash).toMatch(/^[0-9a-f]{64}$/);
+      expect(stored.access_token_hash).not.toBe(firstTokens.access_token);
+      expect(stored.refresh_token_hash).not.toBe(firstTokens.refresh_token);
+
+      const refreshed = await oauth.exchangeCursorOauthToken(new URLSearchParams({
+        grant_type: "refresh_token",
+        client_id: clientId,
+        refresh_token: firstTokens.refresh_token,
+        resource: "https://admin.scalesmiths.co.uk/api/venture-lab/mcp",
+      }));
+      expect(await oauth.authenticateVentureOauthAccessToken(firstTokens.access_token)).toBeNull();
+      expect(await oauth.authenticateVentureOauthAccessToken(refreshed.access_token)).toEqual({ serviceId: "venture-director" });
+
+      await pool.query("UPDATE admin_users SET mfa_enabled=false WHERE id=$1", [controller]);
+      expect(await oauth.authenticateVentureOauthAccessToken(refreshed.access_token)).toBeNull();
+      await expect(oauth.exchangeCursorOauthToken(new URLSearchParams({
+        grant_type: "refresh_token",
+        client_id: clientId,
+        refresh_token: refreshed.refresh_token,
+      }))).rejects.toMatchObject({ code: "invalid_grant" });
+      await pool.query("UPDATE admin_users SET mfa_enabled=true WHERE id=$1", [controller]);
+
+      await service.activateVentureEmergencyStop({ actorUserId: controller, reason: "Cursor OAuth STOP test" });
+      await expect(mcp.authenticateVentureDirector(new Headers({
+        authorization: `Bearer ${refreshed.access_token}`,
+      }))).rejects.toMatchObject({ code: "venture_paused" });
+      await service.resumeVentureLab({ actorUserId: controller, reason: "Resume Cursor OAuth test" });
+
+      await service.revokeVentureServiceAccount({
+        serviceAccountId: "venture-director",
+        actorUserId: controller,
+        reason: "Cursor OAuth service revocation test",
+      });
+      expect(await oauth.authenticateVentureOauthAccessToken(refreshed.access_token)).toBeNull();
+      await expect(mcp.authenticateVentureDirector(new Headers({
+        authorization: `Bearer ${refreshed.access_token}`,
+      }))).rejects.toMatchObject({ code: "mcp_unauthorized" });
+
+      await expect(pool.query(
+        "UPDATE venture_oauth_tokens SET revoked_at=NULL WHERE revoked_at IS NOT NULL",
+      )).rejects.toThrow(/cannot be reactivated/);
+    } finally {
+      if (previousAuthUrl === undefined) delete process.env.AUTH_URL;
+      else process.env.AUTH_URL = previousAuthUrl;
+      if (previousStaticToken === undefined) delete process.env.VENTURE_DIRECTOR_MCP_TOKEN;
+      else process.env.VENTURE_DIRECTOR_MCP_TOKEN = previousStaticToken;
+    }
+  });
+
 });
 async function createProject() {
   return (

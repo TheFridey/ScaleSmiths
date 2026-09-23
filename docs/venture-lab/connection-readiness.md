@@ -206,3 +206,82 @@ The first production Grok connection proved:
 - Cycle 001 began with web research enabled, but xAI's free Grok Build usage limit interrupted the cycle before any genuine portfolio opportunity/evidence/experiment record was persisted.
 
 The xAI usage limit is an external service constraint, not a Venture Lab security/control failure.
+
+
+## Cursor Pro / Grok Bot OAuth connector
+
+The persistent Grok Bot path does **not** receive the production `VENTURE_DIRECTOR_MCP_TOKEN`.
+
+Cursor connects to:
+
+```text
+https://admin.scalesmiths.co.uk/api/venture-lab/mcp
+```
+
+through OAuth 2.1 authorization-code + PKCE (S256) using one fixed public client:
+
+```text
+client_id: cursor-venture-lab
+scope: venture
+```
+
+Approved callback URIs are fixed in PostgreSQL and source:
+
+- `https://www.cursor.com/agents/mcp/oauth/callback`
+- `http://localhost:8787/callback`
+
+There is no Dynamic Client Registration endpoint and no client secret.
+
+### Human authorization boundary
+
+An OAuth authorization code can be issued only when the approving Admin identity is:
+
+- active;
+- role `venture_controller`;
+- MFA enabled;
+- using the fixed client id;
+- using an approved callback URI;
+- presenting PKCE S256 and an OAuth state value;
+- requesting only the `venture` scope and the exact Venture Lab MCP resource.
+
+The consent page explicitly states that the connector has no financial, payment, secret, deployment, policy or arbitrary-Admin authority.
+
+### Token handling
+
+- authorization codes expire after 5 minutes and are single-use;
+- access tokens expire after 1 hour;
+- refresh tokens expire after 30 days;
+- refresh rotates the entire token pair and revokes the prior row;
+- only SHA-256 token hashes are persisted;
+- raw access/refresh tokens are returned only to the OAuth client;
+- disabling the OAuth client is irreversible;
+- disabling/removing MFA from the authorizing Venture Controller makes access and refresh fail closed;
+- revoking `venture-director` makes OAuth-derived access unusable immediately;
+- emergency STOP remains checked by the MCP layer independently of OAuth.
+
+OAuth changes authentication transport only. It does not add any MCP tool or alter the seven-tool read/proposal allowlist.
+
+
+### Cursor static-OAuth configuration
+
+For Cursor IDE/CLI, the connector can be represented as:
+
+```json
+{
+  "mcpServers": {
+    "venture-lab": {
+      "url": "https://admin.scalesmiths.co.uk/api/venture-lab/mcp",
+      "auth": {
+        "CLIENT_ID": "cursor-venture-lab",
+        "scopes": ["venture"]
+      }
+    }
+  }
+}
+```
+
+No `CLIENT_SECRET` is used. The client is public and protected by PKCE.
+
+For Grok Bot, add the same public HTTPS MCP endpoint from Settings → Plugins and use the static client id `cursor-venture-lab` with scope `venture` when prompted. OAuth discovery is available at the standard root endpoints and the MCP 401 challenge advertises the protected-resource metadata URL.
+
+The first authorization must be completed by Trev while signed into ScaleSmiths Admin as the MFA-enabled Venture Controller. Cursor receives the OAuth result; it never receives Trev's password, TOTP secret, recovery codes, or the production `VENTURE_DIRECTOR_MCP_TOKEN`.

@@ -52,7 +52,7 @@ export default auth(async (req) => {
   if (pathname.startsWith("/login")) {
     if (req.auth) {
       const url = req.nextUrl.clone()
-      url.pathname = "/dashboard"
+      url.pathname = req.auth.user.role === "venture_controller" ? "/venture-lab" : "/dashboard"
       return correlated(NextResponse.redirect(url))
     }
 
@@ -85,7 +85,7 @@ export default auth(async (req) => {
     captureMonitoringMessage("RBAC access denied", "warning", { ...auditContext, errorCategory: "rbac_denied" })
     if (pathname.startsWith("/api/")) return correlated(NextResponse.json({ error: "Forbidden.", requiredCapability: authorization.capability }, { status: 403 }))
     const url = req.nextUrl.clone()
-    url.pathname = "/dashboard"
+    url.pathname = req.auth.user.role === "venture_controller" ? "/venture-lab" : "/dashboard"
     url.searchParams.set("reason", "forbidden")
     return correlated(NextResponse.redirect(url))
   }

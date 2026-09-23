@@ -69,6 +69,7 @@ describe("authoritative authorization policy", () => {
 
   it("maps Venture OAuth browser and discovery routes explicitly", () => {
     expect(authorizationExpectation("/.well-known/oauth-authorization-server", "GET")).toMatchObject({ id: "venture.oauth.metadata", authenticated: false, capability: null })
+    expect(authorizationExpectation("/.well-known/oauth-protected-resource", "GET")).toMatchObject({ id: "venture.oauth.metadata", authenticated: false, capability: null })
     expect(authorizationExpectation("/.well-known/oauth-protected-resource/venture-lab", "GET")).toMatchObject({ id: "venture.oauth.metadata", authenticated: false, capability: null })
     expect(authorizationExpectation("/venture-lab/oauth/authorize", "GET")).toMatchObject({ id: "venture.oauth.authorize", authenticated: true, capability: "venture.integration.manage" })
   })

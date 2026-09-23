@@ -17,6 +17,7 @@ flowchart LR
 | --- | --- |
 | owner | all capabilities |
 | administrator | internal admin read/manage; portal read/manage/credential reset; all other capabilities except internal owner assignment and internal credential reset; cannot bypass final-owner invariants |
+| venture_controller | Venture Lab read/write, finance read/request/approve, experiment manage, launch request/approve, integration manage, emergency STOP, audit read; no unrelated ScaleSmiths admin authority |
 | sales | leads read/write, prospects convert, clients read, projects read, finance read |
 | project_manager | portal users read/manage, leads read, prospects convert, clients read/write, projects read/write, Forge read/execute/approve/configure, finance read, audit read |
 | developer | clients read, projects read/write, Forge read/execute/approve/configure, audit read, deployments execute, Venture Lab read/audit/integration-manage/emergency-STOP |

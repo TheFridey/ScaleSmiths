@@ -20,6 +20,7 @@ export default async function VentureLabPage() {
   }
 
   const { experiment, runtime, treasury, opportunities, evidence, proposals, approvals, ledger, audit, control, services } = snapshot
+  const canReadFinance = hasCapability(actor.role, "venture.finance.read")
 
   return (
     <main className="space-y-8 p-6">
@@ -36,15 +37,21 @@ export default async function VentureLabPage() {
         </div>
       </header>
 
-      <section className="grid gap-4 md:grid-cols-3">
-        <Metric label="Simulated founding capital" value={formatGbpMinor(treasury.foundingCapitalMinor)} />
-        <Metric label="Protected reserve" value={formatGbpMinor(treasury.protectedReserve?.allocatedMinor ?? 0)} detail="Not spendable" />
-        <Metric
-          label="Experiment allocation"
-          value={formatGbpMinor(treasury.experimentBudget?.allocatedMinor ?? 0)}
-          detail={`${formatGbpMinor(treasury.experimentBudget?.reservedMinor ?? 0)} reserved · ${formatGbpMinor(treasury.experimentBudget?.spentMinor ?? 0)} spent`}
-        />
-      </section>
+      {canReadFinance ? (
+              <section className="grid gap-4 md:grid-cols-3">
+                <Metric label="Simulated founding capital" value={formatGbpMinor(treasury.foundingCapitalMinor)} />
+                <Metric label="Protected reserve" value={formatGbpMinor(treasury.protectedReserve?.allocatedMinor ?? 0)} detail="Not spendable" />
+                <Metric
+                  label="Experiment allocation"
+                  value={formatGbpMinor(treasury.experimentBudget?.allocatedMinor ?? 0)}
+                  detail={`${formatGbpMinor(treasury.experimentBudget?.reservedMinor ?? 0)} reserved · ${formatGbpMinor(treasury.experimentBudget?.spentMinor ?? 0)} spent`}
+                />
+              </section>
+      ) : (
+        <section className="rounded-xl border border-zinc-200 bg-white p-5">
+          <p className="text-sm text-zinc-600">Financial state is restricted to identities with <code>venture.finance.read</code>.</p>
+        </section>
+      )}
 
       <section className="grid gap-4 lg:grid-cols-2">
         <Panel title="Current blocker">
@@ -59,19 +66,19 @@ export default async function VentureLabPage() {
         <Metric label="Opportunities" value={String(opportunities.length)} />
         <Metric label="Evidence records" value={String(evidence.length)} />
         <Metric label="Pending proposals" value={String(proposals.filter((item) => item.status === "PENDING").length)} />
-        <Metric label="Approval requests" value={String(approvals.length)} />
+        <Metric label="Approval requests" value={canReadFinance ? String(approvals.length) : "Restricted"} />
       </section>
 
       <VentureLabControls
         paused={runtime.paused}
-        approvals={approvals.map((item) => ({
+        approvals={canReadFinance ? approvals.map((item) => ({
           id: item.id,
           action: item.action,
           amountMinor: item.amountMinor,
           target: item.target,
           purpose: item.purpose,
           status: item.status,
-        }))}
+        })) : []}
         services={services.map((item) => ({
           id: item.id,
           displayName: item.displayName,
@@ -100,26 +107,28 @@ export default async function VentureLabPage() {
         </Panel>
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-2">
-        <Panel title="Approvals">
-          <Table
-            headers={["Action", "Amount", "Status"]}
-            rows={approvals.map((item) => [item.action, formatGbpMinor(item.amountMinor), item.status])}
-            empty="No approval requests."
-          />
-        </Panel>
-        <Panel title="Ledger">
-          <div className="mb-4 grid grid-cols-2 gap-3">
-            <Metric label="Debits" value={formatGbpMinor(ledger.debitMinor)} compact />
-            <Metric label="Credits" value={formatGbpMinor(ledger.creditMinor)} compact />
-          </div>
-          <Table
-            headers={["Journal", "State", "Created"]}
-            rows={ledger.journals.map((item) => [item.description, item.sealed ? "SEALED" : "OPEN", formatDate(item.createdAt)])}
-            empty="No ledger journals."
-          />
-        </Panel>
-      </section>
+      {canReadFinance ? (
+              <section className="grid gap-6 xl:grid-cols-2">
+                <Panel title="Approvals">
+                  <Table
+                    headers={["Action", "Amount", "Status"]}
+                    rows={approvals.map((item) => [item.action, formatGbpMinor(item.amountMinor), item.status])}
+                    empty="No approval requests."
+                  />
+                </Panel>
+                <Panel title="Ledger">
+                  <div className="mb-4 grid grid-cols-2 gap-3">
+                    <Metric label="Debits" value={formatGbpMinor(ledger.debitMinor)} compact />
+                    <Metric label="Credits" value={formatGbpMinor(ledger.creditMinor)} compact />
+                  </div>
+                  <Table
+                    headers={["Journal", "State", "Created"]}
+                    rows={ledger.journals.map((item) => [item.description, item.sealed ? "SEALED" : "OPEN", formatDate(item.createdAt)])}
+                    empty="No ledger journals."
+                  />
+                </Panel>
+              </section>
+      ) : null}
 
       <section className="grid gap-6 xl:grid-cols-2">
         <Panel title="Service identities">

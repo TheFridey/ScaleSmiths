@@ -79,7 +79,7 @@ export function consumeRecoveryCode(code: string, hashes: StoredMfaState["recove
 }
 
 export function isMfaRequired(role: AdminRole, env: NodeJS.ProcessEnv = process.env, now = Date.now()) {
-  if (env.NODE_ENV !== "production" || (role !== "owner" && role !== "administrator")) return false
+  if (env.NODE_ENV !== "production" || (role !== "owner" && role !== "administrator" && role !== "venture_controller")) return false
   const graceUntil = Date.parse(env.ADMIN_MFA_BOOTSTRAP_GRACE_UNTIL ?? "")
   return !Number.isFinite(graceUntil) || graceUntil <= now
 }

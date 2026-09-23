@@ -8,10 +8,17 @@ CREATE TABLE "venture_oauth_clients" (
   "updated_at" timestamp with time zone DEFAULT now() NOT NULL,
   CONSTRAINT "venture_oauth_clients_client_id_unique" UNIQUE("client_id"),
   CONSTRAINT "venture_oauth_clients_name_check" CHECK (char_length("client_name") BETWEEN 1 AND 200),
-  CONSTRAINT "venture_oauth_clients_redirects_check" CHECK (jsonb_typeof("redirect_uris") = 'array' AND jsonb_array_length("redirect_uris") BETWEEN 1 AND 3)
+  CONSTRAINT "venture_oauth_clients_redirects_check" CHECK (jsonb_typeof("redirect_uris") = 'array' AND jsonb_array_length("redirect_uris") = 2),
+  CONSTRAINT "venture_oauth_clients_static_id_check" CHECK ("client_id" = 'cursor-venture-lab'),
+  CONSTRAINT "venture_oauth_clients_static_redirects_check" CHECK ("redirect_uris" = '["https://www.cursor.com/agents/mcp/oauth/callback","http://localhost:8787/callback"]'::jsonb)
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX "venture_oauth_clients_active_redirects_idx" ON "venture_oauth_clients" ((redirect_uris::text)) WHERE active = true;
+INSERT INTO "venture_oauth_clients" ("client_id","client_name","redirect_uris")
+VALUES (
+  'cursor-venture-lab',
+  'Cursor / Grok Bot Venture Director',
+  '["https://www.cursor.com/agents/mcp/oauth/callback","http://localhost:8787/callback"]'::jsonb
+);
 --> statement-breakpoint
 
 CREATE TABLE "venture_oauth_codes" (

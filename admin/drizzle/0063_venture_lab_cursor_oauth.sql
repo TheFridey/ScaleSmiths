@@ -11,6 +11,8 @@ CREATE TABLE "venture_oauth_clients" (
   CONSTRAINT "venture_oauth_clients_redirects_check" CHECK (jsonb_typeof("redirect_uris") = 'array' AND jsonb_array_length("redirect_uris") BETWEEN 1 AND 3)
 );
 --> statement-breakpoint
+CREATE UNIQUE INDEX "venture_oauth_clients_active_redirects_idx" ON "venture_oauth_clients" ((redirect_uris::text)) WHERE active = true;
+--> statement-breakpoint
 
 CREATE TABLE "venture_oauth_codes" (
   "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,

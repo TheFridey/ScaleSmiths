@@ -58,7 +58,15 @@ export default auth(async (req) => {
 
   // The endpoint performs its own constant-time token check. Keep it outside
   // interactive authentication so infrastructure can check the container.
-  if (pathname === "/api/health" || pathname === "/api/monitoring/self-test" || pathname === "/api/venture-lab/mcp") {
+  if (
+    pathname === "/api/health"
+    || pathname === "/api/monitoring/self-test"
+    || pathname === "/api/venture-lab/mcp"
+    || pathname === "/api/venture-lab/oauth/register"
+    || pathname === "/api/venture-lab/oauth/token"
+    || pathname === "/.well-known/oauth-authorization-server"
+    || pathname === "/.well-known/oauth-protected-resource/venture-lab"
+  ) {
     return next()
   }
 
@@ -77,6 +85,11 @@ export default auth(async (req) => {
     }
 
     const url = redirectUrl("/login")
+    if (pathname === "/venture-lab/oauth/authorize") {
+      const callbackUrl = `${req.nextUrl.pathname}${req.nextUrl.search}`
+      url.search = ""
+      url.searchParams.set("callbackUrl", callbackUrl)
+    }
     return correlated(NextResponse.redirect(url))
   }
 

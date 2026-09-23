@@ -586,3 +586,41 @@ describe("RBAC — no route mapping throws", () => {
     }
   })
 })
+
+describe("RBAC — Venture Lab controller and MCP boundary", () => {
+  it("keeps Venture Lab pages scoped to venture.read", () => {
+    expect(requiredCapabilityForRequest({ pathname: "/venture-lab", method: "GET" })).toBe("venture.read")
+    expect(authorizeRequest("venture_controller", { pathname: "/venture-lab", method: "GET" })).toMatchObject({ allowed: true, capability: "venture.read" })
+    expect(authorizeRequest("developer", { pathname: "/venture-lab", method: "GET" })).toMatchObject({ allowed: true, capability: "venture.read" })
+    expect(authorizeRequest("viewer", { pathname: "/venture-lab", method: "GET" })).toMatchObject({ allowed: false, capability: "venture.read" })
+  })
+
+  it("isolates financial approval to the Venture Controller", () => {
+    const route = { pathname: "/api/venture-lab/approvals/request-1/approve", method: "POST" as const }
+    expect(requiredCapabilityForRequest(route)).toBe("venture.finance.approve")
+    for (const role of ADMIN_ROLES) {
+      expect(authorizeRequest(role, route).allowed).toBe(role === "venture_controller")
+    }
+  })
+
+  it("allows emergency STOP to controller and developer but not unrelated roles", () => {
+    const route = { pathname: "/api/venture-lab/runtime", method: "POST" as const }
+    expect(requiredCapabilityForRequest(route)).toBe("venture.emergency_stop")
+    for (const role of ADMIN_ROLES) {
+      expect(authorizeRequest(role, route).allowed).toBe(["owner", "administrator", "venture_controller", "developer"].includes(role))
+    }
+  })
+
+  it("maps service revocation to integration management", () => {
+    const route = { pathname: "/api/venture-lab/service-accounts/venture-director/revoke", method: "POST" as const }
+    expect(requiredCapabilityForRequest(route)).toBe("venture.integration.manage")
+    expect(authorizeRequest("venture_controller", route).allowed).toBe(true)
+    expect(authorizeRequest("developer", route).allowed).toBe(true)
+    expect(authorizeRequest("viewer", route).allowed).toBe(false)
+  })
+
+  it("keeps the MCP endpoint outside interactive Admin-session authority", () => {
+    expect(requiredCapabilityForRequest({ pathname: "/api/venture-lab/mcp", method: "POST" })).toBeNull()
+  })
+})
+

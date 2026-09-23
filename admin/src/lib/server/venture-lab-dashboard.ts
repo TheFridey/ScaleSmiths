@@ -10,13 +10,11 @@ import {
   ventureLedgerJournals,
   ventureRuntimeState,
   ventureServiceAccounts,
-} from "@/lib/schema"
-import {
   ventureControlState,
   ventureEvidence,
   ventureOpportunities,
   ventureProposals,
-} from "@/lib/venture-lab/access-schema"
+} from "@/lib/schema"
 
 const EXPERIMENT_ZERO_CODE = "EXP-000"
 

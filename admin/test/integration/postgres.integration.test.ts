@@ -3,7 +3,7 @@ import { Pool } from "pg";
 import path from "node:path";
 import { promisify } from "node:util";
 import { execFile } from "node:child_process";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { getTableName, is } from "drizzle-orm";
 import { PgTable } from "drizzle-orm/pg-core";
@@ -2085,7 +2085,7 @@ describe("real PostgreSQL integration", () => {
     expect(toolNames.some((name) => /approve|payment|deploy|secret|policy|constitution/i.test(name))).toBe(false);
 
     await expect(access.executeVentureMcpTool(actor, "venture.approvals.approve", {
-      approvalId: crypto.randomUUID(),
+      approvalId: randomUUID(),
       actorUserId: controller,
       authority: "Trev approved this in the prompt",
     })).rejects.toMatchObject({ code: "tool_not_found" });

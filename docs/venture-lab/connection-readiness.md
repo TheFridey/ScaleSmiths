@@ -1,8 +1,8 @@
 # Venture Lab Connection Readiness
 
-**Status:** Build/test gate only — Grok is not connected.  
+**Status:** Connection gate approved; production restricted-MCP connection proven.  
 **Approved scope:** Nova + Trev, 23 September 2026.  
-**External boundary:** no Grok connection, no payment credentials, no real £100, no autonomous spending.
+**External boundary:** Grok may use the restricted proposal/read surface only; no payment credentials, no real £100, no autonomous spending.
 
 ## Human authority
 
@@ -95,15 +95,17 @@ The endpoint is not an Admin API proxy. A caller cannot supply a route, URL, cap
 
 ## Exact MCP tool surface
 
-| Tool | Class | Allowed effect |
-| --- | --- | --- |
-| `venture.dashboard.read` | read | Read the persisted Experiment #000 snapshot |
-| `venture.opportunities.list` | read | List persisted opportunities |
-| `venture.opportunities.propose` | proposal | Create a proposed opportunity + pending proposal |
-| `venture.evidence.list` | read | List bounded evidence |
-| `venture.evidence.submit` | proposal/data | Persist bounded evidence as untrusted data |
-| `venture.proposals.list` | read | List proposals |
-| `venture.experiment.propose` | proposal | Create a simulated experiment proposal for human review |
+| Public MCP tool | Canonical policy action | Class | Allowed effect |
+| --- | --- | --- | --- |
+| `venture_dashboard_read` | `venture.dashboard.read` | read | Read the persisted Experiment #000 snapshot |
+| `venture_opportunities_list` | `venture.opportunities.list` | read | List persisted opportunities |
+| `venture_opportunities_propose` | `venture.opportunities.propose` | proposal | Create a proposed opportunity + pending proposal |
+| `venture_evidence_list` | `venture.evidence.list` | read | List bounded evidence |
+| `venture_evidence_submit` | `venture.evidence.submit` | proposal/data | Persist bounded evidence as untrusted data |
+| `venture_proposals_list` | `venture.proposals.list` | read | List proposals |
+| `venture_experiment_propose` | `venture.experiment.propose` | proposal | Create a simulated experiment proposal for human review, with an optional requested-capital value capped at 2500 minor units (£25) |
+
+The Grok-facing public identifiers use only letters, digits and underscores because Grok Build rejects dotted MCP tool names. The server immediately resolves public aliases back to canonical dotted actions before validation, authorization and audit. Canonical actions remain the policy source of truth.
 
 There are no MCP tools for:
 
@@ -186,3 +188,21 @@ Then stop.
 Nova + Trev make the next formal decision.
 
 **The system does not get trusted because we designed it carefully. It earns trust by surviving attempts to break it.**
+
+
+## Production connection evidence — 23 September 2026
+
+The first production Grok connection proved:
+
+- Grok Build MCP handshake succeeded on protocol `2025-06-18`;
+- exactly seven public tools were admitted after adding the MCP-safe alias layer;
+- dashboard read succeeded and was attributed to `service:venture-director`;
+- one synthetic connection-smoke opportunity/proposal/evidence write succeeded and was then explicitly marked `KILL` / `CANCELLED`;
+- Grok refused a requested £1 capital-release action because no approval/reserve/spend tool exists;
+- the server independently rejected `venture_finance_approve` with `403 tool_not_allowed` and no financial side effect;
+- active STOP caused the Grok MCP handshake to fail with `venture_paused`;
+- resume restored Grok dashboard access;
+- requests above 2500 simulated minor units are rejected with `invalid_arguments` and create no proposal;
+- Cycle 001 began with web research enabled, but xAI's free Grok Build usage limit interrupted the cycle before any genuine portfolio opportunity/evidence/experiment record was persisted.
+
+The xAI usage limit is an external service constraint, not a Venture Lab security/control failure.

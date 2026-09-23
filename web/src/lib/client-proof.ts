@@ -7,9 +7,8 @@ import { projects, type Project } from "./data"
  * - Client names are shown as typographic wordmarks. A real logo is only shown once the
  *   business has approved its use: add the asset under `public/images/clients/` and
  *   register it in `approvedClientLogos`.
- * - TODO(owner): Confirm-A-Kill is a known ScaleSmiths project but has no published case
- *   study or approved logo in the repository, so it is deliberately not listed. Add a
- *   case study to `data.ts` (with real screenshots) and it will appear automatically.
+ * - Confirm-A-Kill is now a published case study and therefore appears automatically
+ *   through the same project-derived trust-entry path as the rest of the portfolio.
  */
 
 export interface ClientLogo {

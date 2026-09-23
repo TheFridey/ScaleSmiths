@@ -210,8 +210,14 @@ test.describe("public navigation and accessibility behaviours", () => {
     await gotoReady(page, "/services")
 
     const mainNavigation = page.getByRole("navigation", { name: /main navigation/i })
-    await expect(mainNavigation.getByRole("link", { name: "Local Growth", exact: true })).toHaveAttribute("href", "/local-growth")
-    await expect(mainNavigation.getByRole("link", { name: "Custom Systems", exact: true })).toHaveAttribute("href", "/custom-systems")
+    const servicesTrigger = mainNavigation.getByRole("button", { name: "Services", exact: true })
+    await expect(servicesTrigger).toHaveAttribute("aria-expanded", "false")
+    await servicesTrigger.click()
+    await expect(servicesTrigger).toHaveAttribute("aria-expanded", "true")
+    await expect(mainNavigation.getByRole("link", { name: /^Local growth/ })).toHaveAttribute("href", "/local-growth")
+    await expect(mainNavigation.getByRole("link", { name: /^Custom systems/ })).toHaveAttribute("href", "/custom-systems")
+    await page.keyboard.press("Escape")
+    await expect(servicesTrigger).toHaveAttribute("aria-expanded", "false")
     await expect(page.getByRole("heading", { name: /different problems need different buying journeys/i })).toBeVisible()
 
     await gotoReady(page, "/local-growth")
@@ -241,8 +247,10 @@ test.describe("public navigation and accessibility behaviours", () => {
 
     await page.getByRole("button", { name: /open menu/i }).click()
     const mobileHeader = page.getByRole("banner")
-    await expect(mobileHeader.getByRole("link", { name: "Local Growth", exact: true }).last()).toBeVisible()
-    await expect(mobileHeader.getByRole("link", { name: "Custom Systems", exact: true }).last()).toBeVisible()
+    await expect(mobileHeader.getByRole("link", { name: "Local growth", exact: true }).last()).toBeVisible()
+    await expect(mobileHeader.getByRole("link", { name: "Custom systems", exact: true }).last()).toBeVisible()
+    await expect(mobileHeader.getByRole("link", { name: "FAQ", exact: true }).last()).toBeVisible()
+    await expect(mobileHeader.getByRole("link", { name: "Insights", exact: true }).last()).toBeVisible()
   })
 
   test("supports keyboard navigation and visible focus states", async ({ page }) => {

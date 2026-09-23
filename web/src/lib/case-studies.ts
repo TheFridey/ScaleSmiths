@@ -1,7 +1,9 @@
 import { projectImageAlt, projects, type Project } from "./data"
 import type { MetricKey } from "./case-study-metrics"
 import { founderForProject, type Founder } from "./founders"
+import { getInsight, insightsForCaseStudy } from "./insights"
 import { landingPages } from "./landing-pages"
+import { serviceRouteCatalogue } from "./service-routes"
 import { serviceJourneys } from "./service-journeys"
 import { findShot, mediaForProject, SHOT_ASPECT, type ProjectMedia } from "./work-media"
 
@@ -22,6 +24,7 @@ export interface CaseStudy {
   startingPoint: string[]
   strategy: string[]
   solution?: string
+  technicalImplementation: Array<{ title: string; detail: string }>
   features: string[]
   stack: string[]
   services: string[]
@@ -67,6 +70,7 @@ function fromProject(project: Project): CaseStudy {
     startingPoint: project.startingPoint ?? [],
     strategy: project.strategy ?? [],
     solution: project.solution,
+    technicalImplementation: project.technicalImplementation ?? [],
     features: project.features,
     stack: project.tags,
     services: project.services,
@@ -130,14 +134,53 @@ export interface ServiceLink {
  * Service pages that already cite this case study as proof. Using the curated proof lists
  * keeps service → case study and case study → service links symmetrical and relevant.
  */
-export function relatedServicesForCaseStudy(slug: string, limit = 3): ServiceLink[] {
+export function relatedServicesForCaseStudy(slug: string, limit = 4): ServiceLink[] {
+  const project = projects.find((candidate) => candidate.slug === slug)
+  const catalogue = serviceRouteCatalogue()
+  // Curated cluster links first, so a case study lands in the topic cluster it actually evidences.
+  const curated = (project?.relatedServiceHrefs ?? []).flatMap((href) => {
+    const route = catalogue.get(href)
+    return route ? [{ href, label: route.label, description: route.description }] : []
+  })
   const journeyLinks = Object.values(serviceJourneys)
     .filter((journey) => journey.proofSlugs.includes(slug))
     .map((journey) => ({ href: `/${journey.slug}`, label: journey.eyebrow, description: journey.description }))
   const landingLinks = Object.values(landingPages)
     .filter((page) => page.proofLinks.includes(slug))
     .map((page) => ({ href: `/${page.slug}`, label: page.title, description: page.description }))
-  return [...journeyLinks, ...landingLinks].slice(0, limit)
+  const seen = new Set<string>()
+  return [...curated, ...journeyLinks, ...landingLinks].filter((link) => {
+    if (seen.has(link.href)) return false
+    seen.add(link.href)
+    return true
+  }).slice(0, limit)
+}
+
+/**
+ * Articles that belong in this project's topic cluster: the curated list where one exists, then
+ * any published article that cites the project as first-hand evidence.
+ */
+export function relatedInsightsForCaseStudy(slug: string, limit = 3) {
+  const project = projects.find((candidate) => candidate.slug === slug)
+  const curated = (project?.relatedInsightSlugs ?? [])
+    .map((insightSlug) => getInsight(insightSlug, { includeDrafts: false }))
+    .filter((insight): insight is NonNullable<typeof insight> => Boolean(insight))
+  const seen = new Set(curated.map((insight) => insight.slug))
+  return [...curated, ...insightsForCaseStudy(slug, Number.POSITIVE_INFINITY).filter((insight) => !seen.has(insight.slug))].slice(0, limit)
+}
+
+/**
+ * The case studies either side of this one, in portfolio order, so a reader always has somewhere
+ * to go next. Wraps around, because a single-ended list strands the first and last projects.
+ */
+export function adjacentCaseStudies(slug: string): { previous?: CaseStudy; next?: CaseStudy } {
+  const studies = publishedCaseStudies()
+  const index = studies.findIndex((study) => study.slug === slug)
+  if (index === -1 || studies.length < 2) return {}
+  return {
+    previous: studies[(index - 1 + studies.length) % studies.length],
+    next: studies[(index + 1) % studies.length],
+  }
 }
 
 /** Other case studies cited by the same service pages. */

@@ -52,8 +52,9 @@ export async function waitForAppReady(page: Page) {
 }
 
 export async function gotoReady(page: Page, path: string) {
-  await page.goto(path, { waitUntil: "domcontentloaded" })
+  const response = await page.goto(path, { waitUntil: "domcontentloaded" })
   await waitForAppReady(page)
+  return response
 }
 
 export async function clearV2State(page: Page) {

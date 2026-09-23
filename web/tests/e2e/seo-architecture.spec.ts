@@ -41,10 +41,13 @@ test.describe("commercial landing pages", () => {
 })
 
 test.describe("insights", () => {
-  test("does not expose an empty insights hub or unpublished drafts", async ({ request }) => {
-    expect((await request.get("/insights")).status()).toBe(404)
+  // The hub is published, so the guard is now the inverse: it must serve real articles while
+  // never exposing an unwritten slug or listing one in the sitemap.
+  test("serves the published hub and never an unpublished article", async ({ request }) => {
+    expect((await request.get("/insights")).status()).toBe(200)
     expect((await request.get("/insights/what-a-website-rebuild-should-preserve-for-seo")).status()).toBe(404)
     const sitemap = await (await request.get("/sitemap.xml")).text()
-    expect(sitemap).not.toContain("/insights")
+    expect(sitemap).toContain("/insights")
+    expect(sitemap).not.toContain("/insights/what-a-website-rebuild-should-preserve-for-seo")
   })
 })

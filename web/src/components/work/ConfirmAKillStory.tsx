@@ -1,5 +1,7 @@
 import Link from "next/link"
 import { ArrowRight, BarChart3, Check, Search, Workflow } from "lucide-react"
+import { ProjectCard } from "@/components/work/ProjectCard"
+import { caseStudiesForSlugs } from "@/lib/case-studies"
 import { AnimateIn } from "@/components/AnimateIn"
 
 const baseline = [
@@ -27,7 +29,27 @@ const platformLayers = [
   },
 ]
 
+
+const scope = [
+  { title: "Complete website rebuild", detail: "A full custom Astro build replacing the previous WordPress presentation — new templates, new content structure and new enquiry journeys, not a theme reskin over the same site." },
+  { title: "Modern responsive front end", detail: "Mobile-first pest and service selection, with the delivered experience captured across desktop, tablet and mobile rather than described." },
+  { title: "Page and service architecture", detail: "Separate domestic and commercial service journeys, Nottinghamshire coverage pages and a searchable advice hub, each with an explicit route to a quote." },
+  { title: "SEO foundations", detail: "Established advice URLs preserved, canonical metadata and structured data applied across service, coverage and article routes, with a deliberate internal-link architecture between them." },
+  { title: "Technical optimisation", detail: "Static-first delivery with interactivity added only where a journey needs it, so the pages that matter to search and to customers load without unnecessary weight." },
+  { title: "Custom business functionality", detail: "A private, role-controlled CRM holding customers, properties, quotations, appointments, jobs, visits and commercial service records behind the public site." },
+]
+
+const launchSteps = [
+  { title: "Record the baseline", detail: "Three months of Search Console data captured from the previous website, so the rebuild could later be judged against evidence rather than impression." },
+  { title: "Preserve what already ranked", detail: "Established service and advice URLs mapped into the new structure before any content was rewritten." },
+  { title: "Rebuild the public experience", detail: "Service, coverage, advice and quote journeys designed and built around how customers actually choose a pest-control provider." },
+  { title: "Connect the operating layer", detail: "Enquiries wired into the private CRM so a new lead becomes a customer, property, quotation and job without re-keying." },
+  { title: "Launch with measurement in place", detail: "Consent-aware first-party analytics and GA4 live from day one, against the recorded pre-launch baseline." },
+  { title: "Improve under the partnership", detail: "Search, content, conversion and platform work continues month to month rather than stopping at handover." },
+]
+
 export function ConfirmAKillStory() {
+  const siblings = caseStudiesForSlugs(["precision-finish-plastering-rendering", "glow-tanning"])
   return (
     <>
       <section aria-labelledby="cak-baseline" className="border-y border-b1 bg-s1/40 px-6 py-20 md:px-12 md:py-24">
@@ -91,12 +113,60 @@ export function ConfirmAKillStory() {
         </div>
       </section>
 
+      <section aria-labelledby="cak-scope" className="border-t border-b1 px-6 py-20 md:px-12 md:py-24">
+        <div className="mx-auto max-w-[1240px]">
+          <AnimateIn className="max-w-[780px]">
+            <p className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">Scope delivered</p>
+            <h2 id="cak-scope" className="mt-2 font-syne text-[clamp(30px,4vw,48px)] font-extrabold tracking-[-.03em]">Everything that was actually replaced.</h2>
+            <p className="mt-5 font-dm text-lg leading-relaxed text-t2">Six strands of work, delivered together. Each one is visible in the live site or the operating system behind it.</p>
+          </AnimateIn>
+          <ol className="mt-10 grid gap-px overflow-hidden rounded-2xl border border-b1 bg-b1 md:grid-cols-2">
+            {scope.map((item, index) => (
+              <li key={item.title} className="bg-bg p-6 md:p-7">
+                <span className="font-dm text-xs font-semibold tabular-nums text-acc">{String(index + 1).padStart(2, "0")}</span>
+                <h3 className="mt-3 font-syne text-xl font-bold">{item.title}</h3>
+                <p className="mt-2 font-dm text-sm leading-relaxed text-t2">{item.detail}</p>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      <section aria-labelledby="cak-launch" className="border-t border-b1 bg-s1/40 px-6 py-20 md:px-12 md:py-24">
+        <div className="mx-auto grid max-w-[1240px] gap-10 lg:grid-cols-[.7fr_1.3fr]">
+          <AnimateIn>
+            <p className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">Launch process</p>
+            <h2 id="cak-launch" className="mt-2 font-syne text-[clamp(30px,4vw,44px)] font-extrabold tracking-[-.03em]">Replacing a site that already ranked.</h2>
+            <p className="mt-5 font-dm text-sm leading-relaxed text-t2">A rebuild is the moment a business is most likely to lose ground in search. The sequence below existed to make that risk manageable, and to make the result measurable afterwards.</p>
+          </AnimateIn>
+          <ol className="grid border-t border-b1">
+            {launchSteps.map((step, index) => (
+              <AnimateIn key={step.title} delay={index * 0.04} className="grid gap-2 border-b border-b1 py-5 md:grid-cols-[48px_1fr] md:gap-6">
+                <span className="font-dm text-sm font-semibold tabular-nums text-acc">{String(index + 1).padStart(2, "0")}</span>
+                <div>
+                  <h3 className="font-syne text-lg font-bold">{step.title}</h3>
+                  <p className="mt-1.5 max-w-[640px] font-dm text-sm leading-relaxed text-t2">{step.detail}</p>
+                </div>
+              </AnimateIn>
+            ))}
+          </ol>
+        </div>
+      </section>
+
       <section aria-labelledby="cak-status" className="border-y border-b1 bg-s1/40 px-6 py-20 md:px-12">
         <AnimateIn className="mx-auto max-w-[1240px] text-center">
           <p className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">Current status</p>
           <h2 id="cak-status" className="mt-3 font-syne text-[clamp(38px,7vw,76px)] font-extrabold tracking-[-.045em]">Live. Measured. Improving.</h2>
           <p className="mx-auto mt-5 max-w-[720px] font-dm text-base leading-relaxed text-t2">The platform is in production. Post-launch search and conversion data is now accumulating, while the website, content and operating systems continue to improve under the Growth Partnership.</p>
         </AnimateIn>
+        {siblings.length > 0 ? (
+          <div className="mx-auto mt-14 max-w-[1240px]">
+            <h3 className="font-dm text-xs font-semibold uppercase tracking-[.12em] text-t3">Other Nottinghamshire local-growth work</h3>
+            <div className="mt-6 grid gap-5 md:grid-cols-2">
+              {siblings.map((study) => <ProjectCard key={study.slug} study={study} size="compact" />)}
+            </div>
+          </div>
+        ) : null}
       </section>
     </>
   )

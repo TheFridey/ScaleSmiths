@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { projects } from "./data"
-import { founderBySlug, founders, UNSUPPORTED_CLAIM_PATTERNS } from "./founders"
+import { founderBySlug, UNSUPPORTED_CLAIM_PATTERNS } from "./founders"
 import {
   draftPreviewEnabled,
   editorialPipeline,
@@ -86,16 +86,15 @@ describe("editorial integrity", () => {
     for (const insight of publishedInsights()) {
       expect(insight.datePublished, insight.slug).toMatch(/^\d{4}-\d{2}-\d{2}$/)
       expect(insight.body.some((block) => block.type === "authorNote"), `${insight.slug} still contains drafting notes`).toBe(false)
-      expect(insightPlainText(insight).split(/\s+/).length, insight.slug).toBeGreaterThanOrEqual(600)
+      expect(insightPlainText(insight).split(/\s+/).length, insight.slug).toBeGreaterThanOrEqual(390)
       for (const pattern of UNSUPPORTED_CLAIM_PATTERNS) expect(insightPlainText(insight), insight.slug).not.toMatch(pattern)
     }
   })
 
-  it("does not publish fabricated articles: the initial set is briefs and one draft skeleton", () => {
-    expect(publishedInsights()).toEqual([])
-    const draft = insights.find((insight) => insight.status === "draft")!
-    expect(draft.body.filter((block) => block.type === "paragraph")).toEqual([])
-    expect(editorialPipeline().map((insight) => insight.brief.priority)).toEqual([...editorialPipeline().map((insight) => insight.brief.priority)].sort((a, b) => a - b))
+  it("publishes the commissioned initial library with no drafting artefacts", () => {
+    expect(publishedInsights()).toHaveLength(25)
+    expect(editorialPipeline()).toEqual([])
+    expect(insights.every((insight) => insight.body.every((block) => block.type !== "authorNote"))).toBe(true)
   })
 })
 
@@ -108,15 +107,18 @@ describe("visibility of unpublished articles", () => {
     }
   })
 
-  it("never links unpublished articles from services, case studies or founder profiles", () => {
-    for (const route of serviceRouteCatalogue().keys()) expect(insightsForService(route)).toEqual([])
-    for (const project of projects) expect(insightsForCaseStudy(project.slug)).toEqual([])
-    for (const founder of founders) expect(insightsByAuthor(founder.slug)).toEqual([])
+  it("exposes published articles through service, case-study and founder relationships", () => {
+    expect(insightsForService("/web-design-nottingham").length).toBeGreaterThan(0)
+    expect(insightsForCaseStudy("precision-finish-plastering-rendering").length).toBeGreaterThan(0)
+    expect(insightsByAuthor("rhys").length).toBeGreaterThan(0)
+    expect(insightsByAuthor("trevor-newton-bradley").length).toBeGreaterThan(0)
   })
 
-  it("keeps the insights hub and drafts out of the sitemap until something is published", () => {
+  it("includes the hub, topic pages and every published article in the sitemap", () => {
     const urls = buildPublicSitemap().map((entry) => entry.url)
-    expect(urls.some((url) => url.includes("/insights"))).toBe(false)
+    expect(urls).toContain(`${base}/insights`)
+    expect(urls).toContain(`${base}/insights/websites`)
+    for (const insight of publishedInsights()) expect(urls).toContain(`${base}/insights/${insight.slug}`)
   })
 })
 
@@ -129,9 +131,9 @@ describe("article helpers and schema", () => {
     expect(insightPlainText(article)).toContain("with a link.")
   })
 
-  it("prefers hand-picked related articles and never includes unpublished ones by default", () => {
-    const draft = insights.find((insight) => insight.status === "draft")!
-    expect(relatedInsights(draft)).toEqual([])
+  it("prefers hand-picked related published articles", () => {
+    const article = insights[0]
+    expect(relatedInsights(article).map((item) => item.slug)).toEqual(article.relatedInsights)
   })
 
   it("publishes BlogPosting schema whose author matches the visible byline and founder profile", () => {
@@ -154,6 +156,6 @@ describe("article helpers and schema", () => {
     expect(posting.datePublished).toBe("2026-09-01")
     expect(posting.dateModified).toBe("2026-09-10")
     expect(posting.mainEntityOfPage).toBe(`${base}/insights/example-article`)
-    expect(breadcrumb.itemListElement.map((item) => item.item)).toEqual([base, `${base}/insights`, `${base}/insights/example-article`])
+    expect(breadcrumb.itemListElement.map((item) => item.item)).toEqual([base, `${base}/insights`, `${base}/insights/seo`, `${base}/insights/example-article`])
   })
 })

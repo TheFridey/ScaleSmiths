@@ -43,6 +43,17 @@ describe("landing pages", () => {
       expect(getLandingPageFaqs(page).length).toBeGreaterThanOrEqual(6)
     }
   })
+
+  it("publishes the complete high-intent commercial set with substantive delivery detail", () => {
+    const required = ["web-design-nottingham", "website-redesign-nottingham", "local-seo-nottingham", "website-maintenance-nottingham", "e-commerce-development-nottingham", "web-development-nottingham", "custom-software-development-uk", "business-automation-nottingham", "seo-website-audit", "managed-website-hosting", "next-js-agency-uk"]
+    for (const slug of required) {
+      const page = landingPages[slug]
+      expect(page, slug).toBeDefined()
+      expect(page.included?.length, slug).toBeGreaterThanOrEqual(4)
+      expect(page.process?.length, slug).toBeGreaterThanOrEqual(4)
+      expect(page.considerations?.length, slug).toBeGreaterThanOrEqual(2)
+    }
+  })
 })
 
 describe("landing page search quality", () => {

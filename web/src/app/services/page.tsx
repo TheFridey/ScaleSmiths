@@ -3,9 +3,11 @@ import Link from "next/link"
 import { ArrowRight, CheckCircle2, Mail, ServerCog, Wrench } from "lucide-react"
 import { AnimateIn } from "@/components/AnimateIn"
 import { CTA } from "@/components/CTA"
+import { JsonLd } from "@/components/JsonLd"
 import { ServiceRouteChooser } from "@/components/ServiceRouteChooser"
 import { buildServiceHubSchema, serviceHubItems } from "@/lib/service-pages"
 import { businessGrowthAudit, formatAuditPrice } from "@/lib/business-growth-audit"
+import { routeLabel } from "@/lib/service-routes"
 
 export const metadata: Metadata = {
   title: "Web Design, SEO, Apps & Automation Services",
@@ -18,7 +20,7 @@ export default function ServicesPage() {
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
+      <JsonLd data={schema} />
       <section className="mx-auto max-w-[1240px] px-6 py-20 md:px-12">
         <AnimateIn className="max-w-[760px]">
           <span className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">Services</span>
@@ -72,7 +74,7 @@ export default function ServicesPage() {
                   {service.journey === "local-growth" ? "Explore the Business Growth Audit" : "Start a Project Brief"}
                 </Link>
                 {service.links.map((href) => (
-                  <Link key={href} href={href} prefetch={false} className="btn-ghost font-dm text-sm">{href.replace("/", "").replaceAll("-", " ")}</Link>
+                  <Link key={href} href={href} prefetch={false} className="btn-ghost font-dm text-sm">{routeLabel(href)}</Link>
                 ))}
               </div>
             </article>

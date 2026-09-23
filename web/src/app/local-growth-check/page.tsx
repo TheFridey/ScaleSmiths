@@ -3,6 +3,7 @@ import Link from "next/link"
 import { ArrowRight, Check, Compass, MapPin, SearchCheck } from "lucide-react"
 import { AnimateIn } from "@/components/AnimateIn"
 import { AuditAcquisitionLink } from "@/components/AuditAcquisitionLink"
+import { JsonLd } from "@/components/JsonLd"
 import { DiscoveryCallLink } from "@/components/DiscoveryCallLink"
 import { businessGrowthAudit, formatAuditPrice } from "@/lib/business-growth-audit"
 
@@ -28,7 +29,7 @@ export default function LocalGrowthCheckPage() {
   const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://scalesmiths.co.uk").replace(/\/$/, "")
   const schema = { "@context": "https://schema.org", "@type": "WebPage", name: "Business Growth Audit for local businesses", url: `${baseUrl}/local-growth-check`, description: metadata.description, about: { "@type": "Service", name: businessGrowthAudit.name, url: `${baseUrl}${businessGrowthAudit.slug}` }, areaServed: ["Hucknall", "Nottingham", "Nottinghamshire", "United Kingdom"] }
   return <main>
-    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
+    <JsonLd data={schema} />
     <section className="px-6 py-16 md:px-12 md:py-24"><div className="mx-auto grid max-w-[1240px] gap-10 lg:grid-cols-[1.15fr_.85fr] lg:items-end">
       <AnimateIn><span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[.15em] text-acc"><MapPin size={14} aria-hidden="true" /> Local business growth</span><h1 className="mt-5 max-w-[850px] font-syne text-[clamp(46px,7vw,88px)] font-extrabold leading-[.92] tracking-[-.05em]">What&apos;s actually holding your business back?</h1><p className="mt-7 max-w-[720px] text-lg leading-relaxed text-t2">You do not need another agency telling you to rebuild everything. We look at how your business is found, trusted, contacted and operated—then show you where the biggest opportunities actually are.</p><div className="mt-8 flex flex-wrap gap-3"><AuditAcquisitionLink source="local_growth_check" start className="btn-primary">Start my Growth Audit <ArrowRight size={16} aria-hidden="true" /></AuditAcquisitionLink><a href="#included" className="btn-ghost">See what&apos;s included</a></div></AnimateIn>
       <AnimateIn delay={.08} className="rounded-3xl border border-acc/20 bg-s1 p-7 md:p-9"><p className="text-xs font-semibold uppercase tracking-[.14em] text-acc">ScaleSmiths Business Growth Audit</p><p className="mt-4 font-syne text-6xl font-extrabold">{formatAuditPrice()}</p><p className="mt-1 text-xs font-semibold uppercase tracking-[.12em] text-t3">One-time</p><p className="mt-6 border-t border-b1 pt-5 text-sm leading-relaxed text-t2">For local businesses in Hucknall, Nottingham and beyond. The full {formatAuditPrice(businessGrowthAudit.buildCreditMinor)} is credited against an eligible subsequent ScaleSmiths build.</p></AnimateIn>

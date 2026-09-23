@@ -15,12 +15,11 @@ import { ConfirmAKillStory } from "@/components/work/ConfirmAKillStory"
 import { ProjectCard } from "@/components/work/ProjectCard"
 import { ProjectScreenshot, hostFromUrl, isDevelopment } from "@/components/work/ProjectScreenshot"
 import { getBuildLog, type BuildLog } from "@/lib/build-logs"
-import { getCaseStudy, primaryImage, relatedCaseStudies, relatedServicesForCaseStudy, type CaseStudy } from "@/lib/case-studies"
+import { adjacentCaseStudies, getCaseStudy, primaryImage, relatedCaseStudies, relatedInsightsForCaseStudy, relatedServicesForCaseStudy, type CaseStudy } from "@/lib/case-studies"
 import { resolveClientQuote, resolveOutcomes, resolveVerifiedMetrics } from "@/lib/case-study-metrics"
 import { logoForProject } from "@/lib/client-proof"
 import { founderProfileHref } from "@/lib/founders"
 import { InsightCard } from "@/components/insights/InsightCard"
-import { insightsForCaseStudy } from "@/lib/insights"
 import { buildPageMetadata } from "@/lib/page-metadata"
 import { publicClaimMap } from "@/lib/public-claims"
 import { getVerifiedPublicClaims } from "@/lib/public-claims.server"
@@ -188,7 +187,8 @@ export default async function CaseStudyPage({ params }: Props) {
   const views = comparisonViews(study)
   const relatedServices = relatedServicesForCaseStudy(study.slug)
   const siblings = relatedCaseStudies(study.slug)
-  const articles = study.status === "published" ? insightsForCaseStudy(study.slug) : []
+  const articles = study.status === "published" ? relatedInsightsForCaseStudy(study.slug) : []
+  const { previous, next } = adjacentCaseStudies(study.slug)
   const meta = [study.industry, study.location, study.year].filter(Boolean).join(" · ")
 
   return (
@@ -318,6 +318,20 @@ export default async function CaseStudyPage({ params }: Props) {
         </div>
       </Section>
 
+      {study.technicalImplementation.length > 0 ? (
+        <Section id="case-technical" eyebrow="Under the hood" title="How it was built">
+          <div className="grid gap-3 md:grid-cols-2">
+            {study.technicalImplementation.map((item, index) => (
+              <AnimateIn key={item.title} delay={index * 0.04} className="rounded-2xl border border-b1 bg-s1/50 p-6">
+                <span className="font-dm text-xs font-semibold tabular-nums text-acc">{String(index + 1).padStart(2, "0")}</span>
+                <h3 className="mt-3 font-syne text-xl font-bold">{item.title}</h3>
+                <p className="mt-2 font-dm text-sm leading-relaxed text-t2">{item.detail}</p>
+              </AnimateIn>
+            ))}
+          </div>
+        </Section>
+      ) : null}
+
       {hasGalleryShots(study.media) ? (
         <Section id="case-evidence" eyebrow="Visual evidence" title="Inside the delivered work" tinted>
           <CaseStudyGallery media={study.media} host={host} />
@@ -365,6 +379,36 @@ export default async function CaseStudyPage({ params }: Props) {
             </div>
           ) : null}
         </Section>
+      ) : null}
+
+      {previous || next ? (
+        <nav aria-label="More case studies" className="border-t border-b1 px-6 py-12 md:px-12">
+          <div className="mx-auto grid max-w-[1240px] gap-3 md:grid-cols-2">
+            {previous ? (
+              <Link href={`/work/${previous.slug}`} prefetch={false} className="group rounded-2xl border border-b1 bg-s1/40 p-6 transition-colors hover:border-b2">
+                <span className="inline-flex items-center gap-2 font-dm text-xs font-semibold uppercase tracking-[.14em] text-t3">
+                  <ArrowLeft size={13} aria-hidden="true" className="transition-transform group-hover:-translate-x-0.5" /> Previous case study
+                </span>
+                <span className="mt-3 block font-syne text-xl font-bold">{previous.name}</span>
+                {previous.industry ? <span className="mt-1 block font-dm text-sm text-t2">{previous.industry}</span> : null}
+              </Link>
+            ) : null}
+            {next ? (
+              <Link href={`/work/${next.slug}`} prefetch={false} className="group rounded-2xl border border-b1 bg-s1/40 p-6 transition-colors hover:border-b2 md:col-start-2 md:text-right">
+                <span className="inline-flex items-center gap-2 font-dm text-xs font-semibold uppercase tracking-[.14em] text-t3">
+                  Next case study <ArrowRight size={13} aria-hidden="true" className="transition-transform group-hover:translate-x-0.5" />
+                </span>
+                <span className="mt-3 block font-syne text-xl font-bold">{next.name}</span>
+                {next.industry ? <span className="mt-1 block font-dm text-sm text-t2">{next.industry}</span> : null}
+              </Link>
+            ) : null}
+          </div>
+          <div className="mx-auto mt-6 max-w-[1240px]">
+            <Link href="/work" prefetch={false} className="inline-flex items-center gap-2 font-dm text-sm text-t2 transition-colors hover:text-t1">
+              All case studies <ArrowRight size={14} aria-hidden="true" />
+            </Link>
+          </div>
+        </nav>
       ) : null}
 
       <CTA />

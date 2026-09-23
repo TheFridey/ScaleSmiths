@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { buildPageMetadata } from "./page-metadata"
 import { projects, type Project } from "./data"
+import type { FaqId } from "./faq-library"
 
 export type ServiceJourneySlug = "local-growth" | "custom-systems"
 
@@ -23,6 +24,8 @@ export interface ServiceJourney {
   serviceType: string
   areaServed: string
   accent: "local" | "systems"
+  /** Shared knowledge-base answers relevant to this journey; rendered by ContextualFaqs. */
+  faqLibrary: readonly FaqId[]
 }
 
 export const serviceJourneys: Record<ServiceJourneySlug, ServiceJourney> = {
@@ -59,6 +62,7 @@ export const serviceJourneys: Record<ServiceJourneySlug, ServiceJourney> = {
     serviceType: "Local business growth websites and digital growth partnership services",
     areaServed: "Nottinghamshire and the United Kingdom",
     accent: "local",
+    faqLibrary: ["cost", "timeline", "what-is-local-seo", "seo-in-build", "rebuilds", "website-ownership", "support", "outside-nottingham"],
   },
   "custom-systems": {
     slug: "custom-systems",
@@ -93,6 +97,7 @@ export const serviceJourneys: Record<ServiceJourneySlug, ServiceJourney> = {
     serviceType: "Custom software systems and product engineering",
     areaServed: "United Kingdom",
     accent: "systems",
+    faqLibrary: ["custom-software", "crm", "customer-portals", "integrations", "stripe", "replace-spreadsheets", "phases", "software-scaling", "code-ownership"],
   },
 }
 

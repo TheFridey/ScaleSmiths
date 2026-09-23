@@ -5,6 +5,8 @@ import { caseStudiesForSlugs } from "@/lib/case-studies"
 import { FounderStrip } from "@/components/FounderStrip"
 import { InsightCard } from "@/components/insights/InsightCard"
 import { JsonLd } from "@/components/JsonLd"
+import { ContextualFaqs } from "@/components/faq/ContextualFaqs"
+import { contextualFaqs, faqHubHashFor } from "@/lib/faq-knowledge-base"
 import { insightsForService } from "@/lib/insights"
 import { buildServiceJourneySchemas, type ServiceJourney } from "@/lib/service-journeys"
 
@@ -93,6 +95,16 @@ export function ServiceJourneyPage({ journey }: { journey: ServiceJourney }) {
             </ol>
           </div>
         </section>
+
+        <ContextualFaqs
+          id={`${journey.slug}-faqs`}
+          eyebrow="Before you enquire"
+          title="Questions this route usually raises."
+          intro="The same answers appear in the FAQ knowledge base, alongside everything else buyers ask."
+          items={contextualFaqs(journey.faqLibrary)}
+          hubHash={faqHubHashFor(journey.faqLibrary)}
+          className="border-t border-b1 bg-s1/40"
+        />
 
         <FounderStrip
           headingId={`${journey.slug}-founders`}

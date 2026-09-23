@@ -1,6 +1,8 @@
 "use client"
 import { useState } from "react"
+import Link from "next/link"
 import { AnimatePresence, m, useReducedMotion } from "motion/react"
+import { ArrowRight } from "lucide-react"
 import { AnimateIn } from "./AnimateIn"
 
 export function FAQ({ items }: { items: Array<{ q: string; a: string }> }) {
@@ -14,6 +16,10 @@ export function FAQ({ items }: { items: Array<{ q: string; a: string }> }) {
           <h2 className="font-syne text-[clamp(28px,4vw,44px)] font-extrabold tracking-[-0.025em] mt-2">
             Common questions.
           </h2>
+          <Link href="/faq" prefetch={false} className="group mt-5 inline-flex items-center gap-2 font-dm text-sm font-medium text-t1">
+            Browse the full FAQ knowledge base
+            <ArrowRight size={14} aria-hidden="true" className="text-acc transition-transform group-hover:translate-x-0.5" />
+          </Link>
         </AnimateIn>
         <AnimateIn delay={0.1} className="bg-s1 border border-b1 rounded-2xl overflow-hidden">
           {items.map((faq, i) => (

@@ -15,6 +15,10 @@ export interface PageMetadataInput {
   type?: "website" | "article" | "profile"
   image?: { url: string; width?: number; height?: number; alt: string }
   robots?: Metadata["robots"]
+  authors?: Array<{ name: string; url?: string }>
+  publishedTime?: string
+  modifiedTime?: string
+  section?: string
 }
 
 /**
@@ -22,8 +26,15 @@ export interface PageMetadataInput {
  * Next.js replaces (rather than merges) nested `openGraph`/`twitter` objects, so each page
  * must supply complete values or it silently inherits the homepage's social copy.
  */
-export function buildPageMetadata({ title, absoluteTitle, description, path, type = "website", image, robots }: PageMetadataInput): Metadata {
+export function buildPageMetadata({ title, absoluteTitle, description, path, type = "website", image, robots, authors, publishedTime, modifiedTime, section }: PageMetadataInput): Metadata {
   const socialTitle = absoluteTitle ?? `${title} | ${SITE_NAME}`
+  const socialImage = image ?? { url: "/opengraph-image", width: 1200, height: 630, alt: `${SITE_NAME} â€” Forge Your Digital Edge` }
+  const article = type === "article" ? {
+    ...(publishedTime ? { publishedTime } : {}),
+    ...(modifiedTime ? { modifiedTime } : {}),
+    ...(section ? { section } : {}),
+    ...(authors?.length ? { authors: authors.map((author) => author.name) } : {}),
+  } : {}
   return {
     title: absoluteTitle ? { absolute: absoluteTitle } : title,
     description,
@@ -35,14 +46,16 @@ export function buildPageMetadata({ title, absoluteTitle, description, path, typ
       url: path,
       title: socialTitle,
       description,
-      ...(image ? { images: [image] } : {}),
+      images: [socialImage],
+      ...article,
     },
     twitter: {
       card: "summary_large_image",
       title: socialTitle,
       description,
-      ...(image ? { images: [image.url] } : {}),
+      images: [socialImage.url],
     },
+    ...(authors?.length ? { authors } : {}),
     ...(robots ? { robots } : {}),
   }
 }

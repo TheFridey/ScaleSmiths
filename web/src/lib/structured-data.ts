@@ -1,6 +1,6 @@
 import { projectImageAlt, type Project } from "./data"
 import { aboutMetadata, founderFocusAreas, founderLinks, founders, type Founder } from "./founders"
-import { INSIGHT_CATEGORIES, insightAuthor, insightWordCount, type Insight } from "./insights"
+import { INSIGHT_CATEGORIES, INSIGHT_TOPIC_CLUSTERS, insightAuthor, insightWordCount, type Insight } from "./insights"
 import { legalEntity } from "./legal"
 import { sameAsUrls, type PublicEnv } from "./public-links"
 import {
@@ -106,6 +106,31 @@ export function buildBreadcrumbSchema(base: string, trail: Array<{ name: string;
   }
 }
 
+export function buildWebPageSchema(base: string, input: { name: string; description: string; path: string; type?: "WebPage" | "CollectionPage" | "FAQPage" }) {
+  const url = input.path === "/" ? base : `${base}${input.path}`
+  return {
+    "@context": CONTEXT,
+    "@type": input.type ?? "WebPage",
+    name: input.name,
+    description: input.description,
+    url,
+    isPartOf: { "@id": websiteId(base) },
+    about: { "@id": organizationId(base) },
+  }
+}
+
+export function buildFaqSchema(items: readonly { q: string; a: string }[]) {
+  return {
+    "@context": CONTEXT,
+    "@type": "FAQPage",
+    mainEntity: items.map((item) => ({
+      "@type": "Question",
+      name: item.q,
+      acceptedAnswer: { "@type": "Answer", text: item.a },
+    })),
+  }
+}
+
 export function buildPersonSchema(founder: Founder, base: string, env?: PublicEnv) {
   const sameAs = sameAsUrls(founderLinks(founder, env))
   const photo = teamImages[founder.photo]
@@ -178,6 +203,9 @@ export function buildInsightSchemas(insight: Insight, base: string) {
   const path = `/insights/${insight.slug}`
   const url = `${base}${path}`
   const author = insightAuthor(insight)
+  const topic = Object.entries(INSIGHT_TOPIC_CLUSTERS).find(([, cluster]) => (cluster.categories as readonly string[]).includes(insight.category))
+  const topicPath = topic ? `/insights/${topic[0]}` : "/insights"
+  const topicName = topic ? topic[1].label : "Insights"
   return [
     {
       "@context": CONTEXT,
@@ -206,6 +234,7 @@ export function buildInsightSchemas(insight: Insight, base: string) {
     buildBreadcrumbSchema(base, [
       { name: "Home", path: "/" },
       { name: "Insights", path: "/insights" },
+      { name: topicName, path: topicPath },
       { name: insight.title, path },
     ]),
   ]

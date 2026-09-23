@@ -38,6 +38,19 @@ export interface Project {
   startingPoint?: string[]
   /** What ScaleSmiths set out to improve and why. Omit until written from real project records. */
   strategy?: string[]
+  /**
+   * How the solution was actually built: the notable engineering decisions behind it. Descriptive
+   * only — never performance, ranking or commercial claims, which belong in verified public
+   * claims (see case-study-metrics.ts).
+   */
+  technicalImplementation?: Array<{ title: string; detail: string }>
+  /**
+   * Topic-cluster links curated for this project, in the order they should appear. Service hrefs
+   * must exist in serviceRouteCatalogue(); insight slugs must be published. Anything omitted
+   * falls back to the links derived from service-page proof lists and article references.
+   */
+  relatedServiceHrefs?: string[]
+  relatedInsightSlugs?: string[]
   /** Measured results, each backed by a verified public claim (see case-study-metrics.ts). */
   metrics?: Array<{ key: import("./case-study-metrics").MetricKey; claimId: string }>
   /** Metrics being measured but not yet verified. Rendered as placeholders in development only. */
@@ -81,6 +94,25 @@ export const projects: Project[] = [
       "Private CRM for customers, properties, quotes, appointments and jobs",
       "Commercial contracts, monitoring and service records",
     ],
+    technicalImplementation: [
+      { title: "Astro static-first front end", detail: "The public site is a full custom Astro build rather than a theme reskin, so pages ship as static HTML with interactivity added only where a journey needs it." },
+      { title: "Preserved URL architecture", detail: "Established service and advice URLs were carried into the new structure, with canonical metadata and structured data applied deliberately across service, coverage and article routes." },
+      { title: "PostgreSQL operating layer", detail: "A private, role-controlled CRM holds customers, properties, quotations, appointments, jobs, visits and commercial service records behind the public site." },
+      { title: "Consent-aware measurement", detail: "First-party event capture and GA4 integration run behind consent, so post-launch behaviour can be compared with the recorded pre-launch Search Console baseline." },
+      { title: "Versioned enquiry flow", detail: "The public enquiry path records the privacy version in force when a submission is made, so consent evidence stays attached to the record." },
+    ],
+    relatedServiceHrefs: [
+      "/website-redesign-nottingham",
+      "/local-seo-nottingham",
+      "/website-maintenance-nottingham",
+      "/seo-website-audit",
+    ],
+    relatedInsightSlugs: [
+      "signs-your-business-website-needs-rebuilding",
+      "website-redesign-vs-website-refresh",
+      "local-seo-nottingham-businesses-guide",
+      "why-your-website-isnt-showing-on-google",
+    ],
     accentColor: "#f4cb38",
     gradient: "from-yellow-400/10 to-cyan-500/5",
     imageKind: "screenshot",
@@ -111,6 +143,26 @@ export const projects: Project[] = [
       "Property-type and advice content hubs",
       "Local trust and review presentation",
       "Responsive, search-ready website",
+    ],
+    strategy: [
+      "Organise a broad plastering and rendering offer around how customers actually search: the specific service, the property type and the area they are in, with a page for each that says something distinct rather than repeating a place name.",
+      "Make the first enquiry useful to both sides. A photo-led quote request captures the job context the team needs to qualify work, instead of leaving a phone number as the only route in.",
+    ],
+    technicalImplementation: [
+      { title: "Service and area route architecture", detail: "Separate pages for internal plastering, external rendering and specialist services, plus property-type and service-area routes, each with its own metadata and its own route to a quote." },
+      { title: "Photo-led quote capture", detail: "The enquiry journey accepts image uploads and a preferred contact method, so the team receives job context with the first message." },
+      { title: "Filterable project gallery", detail: "Completed work is presented as a filterable gallery with individual project pages, so proof is browsable by service rather than buried in one album." },
+      { title: "Responsive, search-ready build", detail: "Mobile-first layouts, local trust and review presentation, and an advice hub supporting the service pages." },
+    ],
+    relatedServiceHrefs: [
+      "/web-design-nottingham",
+      "/local-seo-nottingham",
+      "/web-design-hucknall",
+    ],
+    relatedInsightSlugs: [
+      "local-seo-nottingham-businesses-guide",
+      "website-seo-checklist-uk-small-businesses",
+      "what-is-local-seo-and-do-you-need-it",
     ],
     accentColor: "#caa46a",
     gradient: "from-amber-500/10 to-stone-500/5",
@@ -149,6 +201,27 @@ export const projects: Project[] = [
       "Sharp WebP image pipeline",
       "Self-hosted behind Nginx on VPS",
     ],
+    strategy: [
+      "Give a salon with no meaningful web presence a credible digital home that could be found, trusted and booked from a phone, at a point where local competitors were already established online.",
+      "Remove operational drag rather than adding it: bring scattered Google and Facebook reviews into one display, connect booking to the existing Salon Tracker system, and hand content control to the salon instead of creating a permanent dependency.",
+    ],
+    technicalImplementation: [
+      { title: "Node.js and Express application", detail: "A server-rendered Express application, self-hosted behind Nginx on a VPS." },
+      { title: "Canvas API hero animation", detail: "The animated sun-ray hero is drawn with the Canvas API rather than assembled from stock video or a heavyweight animation library." },
+      { title: "Salon Tracker booking integration", detail: "Booking is embedded from the salon's existing Salon Tracker system, so the website never becomes a second source of truth for availability." },
+      { title: "Review aggregation pipeline", detail: "A pipeline configured for the Google Places API and Facebook brings reviews from both sources into a single display." },
+      { title: "Sharp image pipeline and admin panel", detail: "Imagery is processed to WebP with Sharp, and a JWT-secured admin panel lets the salon manage its own content." },
+    ],
+    relatedServiceHrefs: [
+      "/web-design-hucknall",
+      "/web-development-nottingham",
+      "/local-seo-nottingham",
+    ],
+    relatedInsightSlugs: [
+      "what-is-local-seo-and-do-you-need-it",
+      "why-scalesmiths-builds-custom-websites",
+      "website-hosting-explained",
+    ],
     accentColor: "#f59e0b",
     gradient: "from-amber-500/10 to-orange-600/5",
     heroImage: "/images/projects/glow-tanning/hero.jpg",
@@ -183,6 +256,25 @@ export const projects: Project[] = [
       "PostgreSQL with Docker Compose",
       "VPS self-hosted",
       "Supabase to self-hosted migration",
+    ],
+    strategy: [
+      "Replace a templated storefront that could not present a personalised product range properly, and admin tooling too generic for the way the business actually works.",
+      "Move off managed cloud services whose costs were climbing, onto infrastructure the business controls, without losing the catalogue or the storefront during the move.",
+    ],
+    technicalImplementation: [
+      { title: "React and Vite storefront", detail: "A custom storefront with a product catalogue supporting variants, and mega-menu navigation built for a wide personalised range." },
+      { title: "Purpose-built product admin", detail: "An admin panel shaped around the product-management workflow rather than a generic commerce back office." },
+      { title: "PostgreSQL on Docker Compose", detail: "The data layer runs on PostgreSQL, with the whole stack deployed through Docker Compose on a VPS." },
+      { title: "Platform migration", detail: "Catalogue and storefront were migrated off Shopify, and hosting moved from managed Vercel and Supabase services to the self-hosted stack." },
+    ],
+    relatedServiceHrefs: [
+      "/e-commerce-development-nottingham",
+      "/managed-website-hosting",
+    ],
+    relatedInsightSlugs: [
+      "custom-website-vs-wordpress-vs-wix",
+      "website-hosting-explained",
+      "why-cheap-websites-often-become-expensive",
     ],
     accentColor: "#ec4899",
     gradient: "from-pink-500/10 to-rose-600/5",
@@ -220,6 +312,26 @@ export const projects: Project[] = [
       "TypeScript throughout",
       "Deployed on Vercel",
     ],
+    strategy: [
+      "Separate a computer repair firm from a market saturated with generic “we fix computers” templates, using design that reflects the precision behind the work.",
+      "Turn enquiries into manageable jobs: capture what a repair actually involves up front, and give the owner one place to track and respond to every request.",
+    ],
+    technicalImplementation: [
+      { title: "Next.js and TypeScript build", detail: "A Next.js application written in TypeScript throughout and deployed on Vercel." },
+      { title: "Custom editorial design system", detail: "Electric red accents on near-black surfaces with bold typography, designed for this brand rather than adapted from a theme." },
+      { title: "Multi-step quote request", detail: "A staged quote form captures device, fault and contact detail progressively instead of presenting one long form." },
+      { title: "Quote management admin panel", detail: "A separate admin panel backed by PostgreSQL lets the owner manage, respond to and track every incoming job." },
+    ],
+    relatedServiceHrefs: [
+      "/web-development-nottingham",
+      "/next-js-agency-uk",
+      "/business-automation-nottingham",
+    ],
+    relatedInsightSlugs: [
+      "what-is-a-web-application",
+      "why-scalesmiths-builds-custom-websites",
+      "what-should-a-professional-business-website-include",
+    ],
     accentColor: "#ef4444",
     gradient: "from-red-500/10 to-orange-600/5",
     heroImage: "/images/projects/csds/hero.jpg",
@@ -255,6 +367,26 @@ export const projects: Project[] = [
       "PostgreSQL + Drizzle ORM",
       "Member management system",
       "Docker Compose on VPS",
+    ],
+    strategy: [
+      "Give a founder community its own platform rather than continuing inside a chat group: tiered membership, native video and member management under one roof.",
+      "Build billing and access control as production concerns from the start, so the community could charge and grow without needing a rebuild first.",
+    ],
+    technicalImplementation: [
+      { title: "Next.js 15 with Auth.js v5", detail: "Multi-role authentication supports the different membership levels and administrative access." },
+      { title: "Stripe subscription billing", detail: "Tiered memberships are billed through Stripe subscriptions rather than handled manually." },
+      { title: "LiveKit video rooms", detail: "Video is native to the platform rather than a link out to a third-party meeting tool." },
+      { title: "PostgreSQL with Drizzle ORM", detail: "The data layer uses Drizzle ORM over PostgreSQL, deployed through Docker Compose on a VPS." },
+    ],
+    relatedServiceHrefs: [
+      "/custom-web-app-development-uk",
+      "/next-js-agency-uk",
+      "/custom-software-development-uk",
+    ],
+    relatedInsightSlugs: [
+      "what-is-a-web-application",
+      "when-does-a-business-need-custom-software",
+      "nextjs-vs-wordpress-for-business-websites",
     ],
     accentColor: "#6366f1",
     gradient: "from-violet-500/10 to-indigo-600/5",
@@ -292,6 +424,24 @@ export const projects: Project[] = [
       "SENTINEL QA gate",
       "Stripe seats and credits",
     ],
+    strategy: [
+      "Move beyond a single AI chat interface to a system that coordinates specialist agents, grounds answers in organisational knowledge, and enforces quality checks before output reaches a user.",
+      "Treat billing, usage, governance and admin as real product surfaces rather than concerns deferred until after launch.",
+    ],
+    technicalImplementation: [
+      { title: "Vite and React workspace over a Hono API", detail: "The front end is a Vite and React application; the API layer is built with Hono." },
+      { title: "PostgreSQL with pgvector", detail: "LORE organisational memory is backed by pgvector alongside the relational data." },
+      { title: "Orchestration and safeguards", detail: "NEXUS orchestrates multi-agent workflows, WARDEN scans input, and SENTINEL applies a QA review gate before risky output is returned." },
+      { title: "Commercial and governance surfaces", detail: "Clerk authentication, Stripe plans, team seats and execution credits are part of the product rather than bolted on afterwards." },
+    ],
+    relatedServiceHrefs: [
+      "/custom-software-development-uk",
+      "/custom-web-app-development-uk",
+    ],
+    relatedInsightSlugs: [
+      "when-does-a-business-need-custom-software",
+      "what-is-a-web-application",
+    ],
     accentColor: "#14b8a6",
     gradient: "from-teal-500/10 to-cyan-600/5",
     heroImage: "/images/projects/prymal/hero.jpg",
@@ -328,6 +478,25 @@ export const projects: Project[] = [
       "PostgreSQL and Redis",
       "Realtime gateway foundation",
       "CI and deployment runbooks",
+    ],
+    strategy: [
+      "Build a veteran reconnection service as a real product: a member-facing experience, a dedicated administrative console and the services behind them, rather than a brochure site with a contact form.",
+      "Make deployment and operations part of delivery, so a live community platform can actually be run and supported instead of handed over as source code.",
+    ],
+    technicalImplementation: [
+      { title: "Monorepo with separate applications", detail: "A Next.js public and member app, a separate Next.js admin console, a NestJS API and shared services live in one production-focused monorepo." },
+      { title: "Prisma over PostgreSQL with Redis", detail: "The data model is defined in Prisma over PostgreSQL, with Redis-backed services and realtime gateway foundations." },
+      { title: "Secure cookie-based authentication", detail: "Sessions use secure cookies across the member and admin surfaces rather than tokens held in browser storage." },
+      { title: "CI and deployment runbooks", detail: "CI workflows, Nginx proxying, PM2 runbooks and container deployment documentation ship alongside the code." },
+    ],
+    relatedServiceHrefs: [
+      "/custom-web-app-development-uk",
+      "/custom-software-development-uk",
+      "/next-js-agency-uk",
+    ],
+    relatedInsightSlugs: [
+      "what-is-a-web-application",
+      "when-does-a-business-need-custom-software",
     ],
     accentColor: "#22d3ee",
     gradient: "from-cyan-400/10 to-amber-200/5",

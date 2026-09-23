@@ -5,6 +5,7 @@ import { Portfolio } from "@/components/Portfolio"
 import { AnimateIn } from "@/components/AnimateIn"
 import { CTA } from "@/components/CTA"
 import { buildLogs } from "@/lib/build-logs"
+import { RelatedQuestions, RelatedServices } from "@/components/RelatedContent"
 import { buildPageMetadata } from "@/lib/page-metadata"
 
 export const metadata: Metadata = buildPageMetadata({
@@ -54,6 +55,21 @@ export default function WorkPage() {
           </div>
         </div>
       </section>
+      <section aria-label="Where to go next" className="px-6 py-20 md:px-12">
+        <div className="mx-auto grid max-w-[1240px] gap-14">
+          <RelatedServices items={[
+            { href: "/local-growth", eyebrow: "Service route", title: "Local growth", description: "Websites and search work for businesses that sell in a place." },
+            { href: "/custom-systems", eyebrow: "Service route", title: "Custom systems", description: "Applications, portals, integrations and the operating layer behind them." },
+            { href: "/digital-growth-partnership", eyebrow: "After launch", title: "Digital Growth Partnership", description: "How the work continues once a build is live, as it does for Confirm-A-Kill." },
+          ]} />
+          <RelatedQuestions items={[
+            { href: "/faq#web-design", eyebrow: "FAQ", title: "What a website build involves", description: "Cost, timescale, ownership, technology and what we need before starting." },
+            { href: "/faq#custom-development", eyebrow: "FAQ", title: "CRMs, portals and integrations", description: "When custom software is justified, and when an existing tool is the better buy." },
+            { href: "/faq#commercial", eyebrow: "FAQ", title: "Working with ScaleSmiths", description: "Pricing, payment terms, code ownership and the kinds of business we work with." },
+          ]} />
+        </div>
+      </section>
+
       <CTA />
     </>
   )

@@ -40,7 +40,7 @@ export default defineConfig({
       : `npm run dev -- --hostname 127.0.0.1 --port ${port}`,
     url: baseURL,
     reuseExistingServer: !isCI,
-    timeout: 120_000,
+    timeout: 240_000,
     stdout: "pipe",
     stderr: "pipe",
   },

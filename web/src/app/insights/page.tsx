@@ -1,113 +1,43 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { notFound } from "next/navigation"
-import { ChevronRight } from "lucide-react"
-import { AnimateIn } from "@/components/AnimateIn"
+import { ArrowRight } from "lucide-react"
+import { Breadcrumbs } from "@/components/Breadcrumbs"
 import { InsightCard } from "@/components/insights/InsightCard"
 import { JsonLd } from "@/components/JsonLd"
-import { INSIGHT_CATEGORIES, draftPreviewEnabled, editorialPipeline, insightAuthor, publishedInsights } from "@/lib/insights"
+import { INSIGHT_TOPIC_CLUSTERS, publishedInsights, type InsightTopicSlug } from "@/lib/insights"
 import { buildPageMetadata } from "@/lib/page-metadata"
 import { siteBaseUrl, websiteId, organizationId } from "@/lib/site-identity"
 import { buildBreadcrumbSchema } from "@/lib/structured-data"
 
-export function generateMetadata(): Metadata {
-  return buildPageMetadata({
-    title: "Insights from the Founders",
-    description: "Articles written by ScaleSmiths founders Rhys and Trevor Newton-Bradley on web development, technical SEO, local growth and business systems.",
-    path: "/insights",
-    // Never index the hub until it has published articles to show.
-    robots: publishedInsights().length ? undefined : { index: false, follow: true },
-  })
-}
+const baseMetadata = buildPageMetadata({
+  title: "Insights",
+  absoluteTitle: "Insights on Websites, SEO & Development | ScaleSmiths",
+  description: "Practical guidance from ScaleSmiths on websites, SEO, development, automation, hosting and business email, written by the founders doing the work.",
+  path: "/insights",
+})
+export const metadata: Metadata = { ...baseMetadata, alternates: { ...baseMetadata.alternates, types: { "application/rss+xml": "/feed.xml" } } }
 
 export default function InsightsPage() {
-  const published = publishedInsights()
-  const preview = draftPreviewEnabled()
-  // Production has no empty hub: the route only exists once something is published.
-  if (published.length === 0 && !preview) notFound()
-
+  const articles = publishedInsights()
+  const featured = articles.find((article) => article.featured) ?? articles[0]
+  const latest = articles.filter((article) => article.slug !== featured.slug).slice(0, 8)
+  const topics = Object.entries(INSIGHT_TOPIC_CLUSTERS) as Array<[InsightTopicSlug, (typeof INSIGHT_TOPIC_CLUSTERS)[InsightTopicSlug]]>
   const base = siteBaseUrl()
-  const schema = [
-    {
-      "@context": "https://schema.org",
-      "@type": "CollectionPage",
-      name: "ScaleSmiths Insights",
-      url: `${base}/insights`,
-      isPartOf: { "@id": websiteId(base) },
-      publisher: { "@id": organizationId(base) },
-      hasPart: published.map((insight) => ({ "@type": "BlogPosting", headline: insight.title, url: `${base}/insights/${insight.slug}` })),
-    },
-    buildBreadcrumbSchema(base, [
-      { name: "Home", path: "/" },
-      { name: "Insights", path: "/insights" },
-    ]),
-  ]
-  const categories = (Object.keys(INSIGHT_CATEGORIES) as Array<keyof typeof INSIGHT_CATEGORIES>).filter((category) => published.some((insight) => insight.category === category))
+  return <>
+    <JsonLd data={[
+      { "@context": "https://schema.org", "@type": "CollectionPage", name: "ScaleSmiths Insights", description: String(metadata.description), url: `${base}/insights`, isPartOf: { "@id": websiteId(base) }, publisher: { "@id": organizationId(base) }, hasPart: articles.map((article) => ({ "@type": "BlogPosting", headline: article.title, url: `${base}/insights/${article.slug}` })) },
+      buildBreadcrumbSchema(base, [{ name: "Home", path: "/" }, { name: "Insights", path: "/insights" }]),
+    ]} />
+    <main>
+      <header className="px-6 pb-16 pt-10 md:px-12 md:pb-24 md:pt-14"><div className="mx-auto max-w-[1240px]"><Breadcrumbs items={[{ name: "Home", href: "/" }, { name: "Insights" }]} /><div className="mt-10 max-w-[860px]"><p className="text-xs font-semibold uppercase tracking-[.14em] text-acc">Insights</p><h1 className="mt-3 font-syne text-[clamp(40px,7vw,78px)] font-black leading-[1.02] tracking-[-.04em]">Useful answers from the people doing the work.</h1><p className="mt-6 max-w-[760px] text-lg leading-relaxed text-t2">Websites, search, development and infrastructure explained without inflated promises. Each article connects the decision to relevant services, delivery evidence and the next useful question.</p><Link href="/feed.xml" className="mt-6 inline-flex text-sm font-semibold text-acc hover:underline">Subscribe via RSS</Link></div></div></header>
 
-  return (
-    <>
-      <JsonLd data={schema} />
-      <section className="px-6 pb-16 pt-10 md:px-12 md:pb-24 md:pt-14">
-        <div className="mx-auto max-w-[1240px]">
-          <nav aria-label="Breadcrumb" className="font-dm text-xs text-t3">
-            <ol className="flex flex-wrap items-center gap-2">
-              <li><Link href="/" className="hover:text-t1">Home</Link></li>
-              <li aria-hidden="true"><ChevronRight size={12} /></li>
-              <li aria-current="page" className="text-t1">Insights</li>
-            </ol>
-          </nav>
+      <section aria-labelledby="featured-insight" className="border-y border-b1 bg-s1/40 px-6 py-16 md:px-12"><div className="mx-auto grid max-w-[1240px] gap-8 lg:grid-cols-[.72fr_1.28fr] lg:items-center"><div><p className="text-xs font-semibold uppercase tracking-[.14em] text-acc">Featured insight</p><h2 id="featured-insight" className="mt-3 font-syne text-[clamp(30px,4.5vw,52px)] font-extrabold tracking-[-.03em]">{featured.title}</h2><p className="mt-5 max-w-[680px] text-base leading-relaxed text-t2">{featured.description}</p><Link href={`/insights/${featured.slug}`} prefetch={false} className="btn-primary mt-7">Read the guide <ArrowRight size={16} aria-hidden="true" /></Link></div><div className="rounded-3xl border border-acc/20 bg-gradient-to-br from-s2 to-acc/5 p-8 md:p-12"><p className="font-syne text-2xl font-bold">A practical starting point</p><p className="mt-4 text-sm leading-[1.8] text-t2">Start with scope, ownership and the problem the website or system must solve. The related guides below help you compare platforms, timelines and ongoing responsibilities without pretending one answer fits every business.</p><div className="mt-7 flex flex-wrap gap-3"><Link href="/services" className="btn-ghost">Explore services</Link><Link href="/work" className="btn-ghost">See delivered work</Link></div></div></div></section>
 
-          <AnimateIn className="mt-10 max-w-[820px]">
-            <span className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">Insights</span>
-            <h1 className="mt-3 font-syne text-[clamp(38px,6.5vw,72px)] font-black leading-[1.02] tracking-[-.04em]">Written by the people doing the work.</h1>
-            <p className="mt-6 font-dm text-lg leading-relaxed text-t2">
-              Articles from ScaleSmiths&apos; founders on web development, technical SEO, local growth and business systems, drawn from projects we have actually delivered.
-            </p>
-          </AnimateIn>
+      <section aria-labelledby="insight-topics" className="px-6 py-20 md:px-12"><div className="mx-auto max-w-[1240px]"><div className="max-w-[720px]"><p className="text-xs font-semibold uppercase tracking-[.14em] text-acc">Topic library</p><h2 id="insight-topics" className="mt-2 font-syne text-[clamp(30px,4vw,46px)] font-extrabold">Browse by the decision in front of you.</h2></div><nav aria-label="Insight categories" className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">{topics.map(([slug, topic]) => <Link key={slug} href={`/insights/${slug}`} prefetch={false} className="group rounded-2xl border border-b1 bg-s1 p-6 transition-colors hover:border-b2"><h3 className="font-syne text-xl font-bold">{topic.label}</h3><p className="mt-3 text-sm leading-relaxed text-t2">{topic.description}</p><span className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-acc">View {topic.label.toLowerCase()} insights <ArrowRight size={14} aria-hidden="true" className="transition-transform group-hover:translate-x-1" /></span></Link>)}</nav></div></section>
 
-          {categories.length > 1 ? (
-            <ul aria-label="Categories" className="mt-10 flex flex-wrap gap-2">
-              {categories.map((category) => (
-                <li key={category}><a href={`#${category}`} className="inline-flex rounded-md border border-b1 bg-s1 px-3 py-1.5 font-dm text-sm text-t2 hover:text-t1">{INSIGHT_CATEGORIES[category].label}</a></li>
-              ))}
-            </ul>
-          ) : null}
+      <section aria-labelledby="latest-insights" className="px-6 py-20 md:px-12"><div className="mx-auto max-w-[1240px]"><div className="flex flex-wrap items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-[.14em] text-acc">Latest</p><h2 id="latest-insights" className="mt-2 font-syne text-[clamp(30px,4vw,46px)] font-extrabold">Recently published guidance.</h2></div><span className="text-sm text-t3">{articles.length} published articles</span></div><div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">{latest.map((article) => <InsightCard key={article.slug} insight={article} headingLevel="h3" />)}</div></div></section>
 
-          {published.length > 0 ? (
-            <div className="mt-12 grid gap-16">
-              {categories.map((category) => (
-                <section key={category} id={category} aria-labelledby={`${category}-heading`} className="scroll-mt-28">
-                  <h2 id={`${category}-heading`} className="border-b border-b1 pb-3 font-syne text-2xl font-bold">{INSIGHT_CATEGORIES[category].label}</h2>
-                  <p className="mt-2 font-dm text-sm text-t3">{INSIGHT_CATEGORIES[category].description}</p>
-                  <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {published.filter((insight) => insight.category === category).map((insight) => <InsightCard key={insight.slug} insight={insight} />)}
-                  </div>
-                </section>
-              ))}
-            </div>
-          ) : null}
-
-          {preview ? (
-            <section aria-labelledby="pipeline-heading" className="mt-16 rounded-2xl border border-dashed border-b2 p-6 md:p-8">
-              <h2 id="pipeline-heading" className="font-syne text-2xl font-bold">Editorial pipeline <span className="font-dm text-sm font-normal text-t3">· development only</span></h2>
-              <p className="mt-2 max-w-[760px] font-dm text-sm text-t3">Planned and draft articles in priority order. None of these are listed, linked or indexed in production until published by their author.</p>
-              <ol className="mt-6 grid gap-3">
-                {editorialPipeline().map((insight) => (
-                  <li key={insight.slug} className="grid gap-2 rounded-xl border border-b1 bg-s1 p-4 md:grid-cols-[48px_1fr_auto] md:items-start">
-                    <span className="font-syne text-lg font-bold text-acc">{insight.brief.priority}</span>
-                    <div>
-                      <Link href={`/insights/${insight.slug}`} prefetch={false} className="font-syne text-lg font-bold hover:text-acc">{insight.title}</Link>
-                      <p className="mt-1 font-dm text-sm text-t2">{insight.brief.angle}</p>
-                      <p className="mt-2 font-dm text-xs text-t3">Target query: {insight.brief.targetQuery} · Evidence needed: {insight.brief.firstHandEvidence.join("; ")}</p>
-                    </div>
-                    <span className="font-dm text-xs uppercase tracking-[.1em] text-t3">{insight.status} · {insightAuthor(insight).firstName}</span>
-                  </li>
-                ))}
-              </ol>
-            </section>
-          ) : null}
-        </div>
-      </section>
-    </>
-  )
+      <section className="px-6 pb-24 md:px-12"><div className="mx-auto grid max-w-[1240px] gap-7 rounded-3xl border border-acc/20 bg-s1 p-8 md:grid-cols-[1fr_auto] md:items-center md:p-10"><div><p className="text-xs font-semibold uppercase tracking-[.14em] text-acc">Apply the guidance</p><h2 className="mt-3 font-syne text-3xl font-extrabold">Need the website or system reviewed in context?</h2><p className="mt-3 max-w-[720px] text-sm leading-relaxed text-t2">Explore ScaleSmiths services or start a project brief with the business problem, current estate and evidence you already have.</p></div><Link href="/quote" prefetch={false} className="btn-primary justify-center">Start a project brief <ArrowRight size={16} aria-hidden="true" /></Link></div></section>
+    </main>
+  </>
 }

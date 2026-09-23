@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
 import {
+  adjacentCaseStudies,
   cardImage,
   caseStudiesForSlugs,
   draftPreviewEnabled,
@@ -7,12 +8,15 @@ import {
   primaryImage,
   publishedCaseStudies,
   relatedCaseStudies,
+  relatedInsightsForCaseStudy,
   relatedServicesForCaseStudy,
 } from "./case-studies"
 import { resolveClientQuote, resolveOutcomes, resolveVerifiedMetrics } from "./case-study-metrics"
 import { approvedClientLogos } from "./client-proof"
 import { projects } from "./data"
+import { getInsight } from "./insights"
 import { landingPages } from "./landing-pages"
+import { serviceRouteCatalogue } from "./service-routes"
 import type { PublicClaim } from "./public-claims"
 import { serviceJourneys } from "./service-journeys"
 
@@ -118,5 +122,47 @@ describe("case study results and quotes", () => {
   it("keeps outcome wording in the configured order and drops unverified outcomes", () => {
     const claims = [claim({ id: "b", approvedWording: "B", permittedComponents: ["project_outcomes"] }), claim({ id: "a", approvedWording: "A", permittedComponents: ["project_outcomes"] })]
     expect(resolveOutcomes(["a", "missing", "b"], claims)).toEqual(["A", "B"])
+  })
+})
+
+describe("case study depth and continuity", () => {
+  it("describes how every published project was built", () => {
+    for (const study of publishedCaseStudies()) {
+      expect(study.technicalImplementation.length, `${study.slug} has no technical implementation`).toBeGreaterThan(2)
+      expect(study.strategy.length, `${study.slug} has no stated approach`).toBeGreaterThan(0)
+      for (const item of study.technicalImplementation) {
+        expect(item.title.length).toBeGreaterThan(3)
+        expect(item.detail.length).toBeGreaterThan(40)
+      }
+    }
+  })
+
+  it("keeps curated cluster links pointing at routes and articles that exist", () => {
+    const catalogue = serviceRouteCatalogue()
+    for (const project of projects) {
+      for (const href of project.relatedServiceHrefs ?? []) {
+        expect(catalogue.get(href), `${project.slug} -> ${href}`).toBeDefined()
+      }
+      for (const slug of project.relatedInsightSlugs ?? []) {
+        expect(getInsight(slug, { includeDrafts: false }), `${project.slug} -> ${slug}`).toBeDefined()
+      }
+    }
+  })
+
+  it("puts curated articles first in a case study topic cluster", () => {
+    const precision = relatedInsightsForCaseStudy("precision-finish-plastering-rendering").map((insight) => insight.slug)
+    expect(precision[0]).toBe("local-seo-nottingham-businesses-guide")
+    expect(precision).toContain("website-seo-checklist-uk-small-businesses")
+  })
+
+  it("gives every case study a previous and next route", () => {
+    for (const study of publishedCaseStudies()) {
+      const { previous, next } = adjacentCaseStudies(study.slug)
+      expect(previous?.slug, `${study.slug} has no previous`).toBeDefined()
+      expect(next?.slug, `${study.slug} has no next`).toBeDefined()
+      expect(previous?.slug).not.toBe(study.slug)
+      expect(next?.slug).not.toBe(study.slug)
+    }
+    expect(adjacentCaseStudies("not-a-case-study")).toEqual({})
   })
 })

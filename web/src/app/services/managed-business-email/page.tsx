@@ -2,8 +2,10 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { ArrowRight, Check, Mail, MonitorSmartphone, ShieldCheck, Wrench } from "lucide-react"
 import { AnimateIn } from "@/components/AnimateIn"
-import { FAQ } from "@/components/FAQ"
+import { ContextualFaqs } from "@/components/faq/ContextualFaqs"
+import { JsonLd } from "@/components/JsonLd"
 import { buildManagedBusinessEmailSchema, managedBusinessEmail, managedBusinessEmailPriceLabel } from "@/lib/managed-business-email"
+import { contextualFaqs } from "@/lib/faq-knowledge-base"
 
 export const metadata: Metadata = {
   title: "Managed Business Email",
@@ -21,7 +23,7 @@ export default function ManagedBusinessEmailPage() {
   const spec = managedBusinessEmail.standalone
   return (
     <>
-      {schema.map((item, index) => <script key={index} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(item) }} />)}
+      <JsonLd data={schema} />
       <main>
         <section className="px-6 py-20 md:px-12 md:py-28">
           <div className="mx-auto grid max-w-[1240px] gap-12 lg:grid-cols-[1.2fr_.8fr] lg:items-end">
@@ -36,7 +38,7 @@ export default function ManagedBusinessEmailPage() {
             </AnimateIn>
             <AnimateIn delay={0.08} className="rounded-3xl border border-acc/20 bg-s1 p-7 md:p-9">
               <p className="text-xs font-semibold uppercase tracking-[.14em] text-acc">Monthly service</p>
-              <div className="mt-4 font-syne text-6xl font-extrabold">{managedBusinessEmailPriceLabel()}</div>
+              <div className="mt-4 font-syne text-[clamp(34px,10vw,60px)] font-extrabold leading-none">{managedBusinessEmailPriceLabel()}</div>
               <p className="mt-2 text-sm text-t3">Initial setup included</p>
               <div className="mt-7 grid grid-cols-2 gap-4 border-y border-b1 py-6">
                 <Spec value={String(spec.mailboxes)} label="professional mailboxes" />
@@ -81,7 +83,23 @@ export default function ManagedBusinessEmailPage() {
           </div>
         </section>
 
-        <FAQ items={[...managedBusinessEmail.faq]} />
+        <ContextualFaqs
+          id="managed-email-faqs"
+          eyebrow="Service questions"
+          title="What the service covers."
+          items={managedBusinessEmail.faq}
+          hubHash="infrastructure"
+        />
+
+        <ContextualFaqs
+          id="email-authentication-faqs"
+          eyebrow="Email authentication"
+          title="SPF, DKIM, DMARC and deliverability."
+          intro="The records ScaleSmiths configures for you, and why mail still ends up in spam without them."
+          items={contextualFaqs(["spf", "dkim", "dmarc", "email-spam", "dns", "domains"])}
+          hubHash="infrastructure"
+          className="bg-s1/40"
+        />
 
         <section className="px-6 pb-28 md:px-12">
           <div className="mx-auto max-w-[1240px] rounded-3xl border border-acc/20 bg-s1 p-8 md:p-12">

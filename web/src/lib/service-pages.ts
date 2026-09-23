@@ -8,7 +8,7 @@ export const serviceHubItems = [
     for: "Founder-led businesses that need the website to create qualified enquiries, not just exist.",
     includes: "Messaging, UX, responsive build, analytics foundations, quote CTA paths, and launch support.",
     outcome: "Clearer positioning and a stronger route from visitor to enquiry.",
-    links: ["/web-design-hucknall", "/web-development-nottingham"],
+    links: ["/web-design-nottingham", "/website-redesign-nottingham", "/local-seo-nottingham"],
   },
   {
     journey: "local-growth" as const,
@@ -16,7 +16,7 @@ export const serviceHubItems = [
     for: "Service businesses in Hucknall, Nottingham, and across the UK that need local trust and visibility.",
     includes: "Local SEO structure, service pages, conversion copy, fast pages, and Google-ready metadata.",
     outcome: "A credible local web presence that supports calls, bookings, and enquiries.",
-    links: ["/web-design-hucknall", "/web-development-nottingham"],
+    links: ["/locations/nottingham", "/locations/hucknall", "/web-design-hucknall"],
   },
   {
     journey: "custom-systems" as const,
@@ -56,7 +56,7 @@ export const serviceHubItems = [
     for: "Teams losing time to repeated admin, disconnected tools, manual hand-offs or poorly governed AI experiments.",
     includes: "Workflow discovery, data and permission design, integrations, human review points, AI implementation and operational safeguards.",
     outcome: "A dependable workflow that reduces avoidable manual effort without hiding risk behind a demo.",
-    links: ["/custom-systems", "/custom-web-app-development-uk"],
+    links: ["/business-automation-nottingham", "/custom-software-development-uk"],
   },
   {
     journey: "local-growth" as const,
@@ -64,7 +64,7 @@ export const serviceHubItems = [
     for: "Clients who want production hosting, deployment support, backups, and someone accountable.",
     includes: "VPS or managed deployment, uptime checks, SSL, dependency updates, and incident support.",
     outcome: "Fewer platform surprises and a clear owner for the technical estate.",
-    links: ["/pricing"],
+    links: ["/managed-website-hosting", "/website-maintenance-nottingham"],
   },
 ]
 

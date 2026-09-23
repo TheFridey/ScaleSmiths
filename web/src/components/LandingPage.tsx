@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { ArrowRight, CheckCircle2 } from "lucide-react"
-import { buildLandingPageSchemas, getLandingPageFaqs, landingPages, type LandingPage as LandingPageData } from "@/lib/landing-pages"
+import { buildLandingPageSchemas, getLandingPageFaqs, landingPageFaqHubHash, landingPages, type LandingPage as LandingPageData } from "@/lib/landing-pages"
+import { ContextualFaqs } from "@/components/faq/ContextualFaqs"
 import { ProjectCard } from "@/components/work/ProjectCard"
 import { caseStudiesForSlugs } from "@/lib/case-studies"
 import { buildLogs } from "@/lib/build-logs"
@@ -9,6 +10,7 @@ import { InsightCard } from "@/components/insights/InsightCard"
 import { JsonLd } from "@/components/JsonLd"
 import { insightsForService } from "@/lib/insights"
 import { siteBaseUrl } from "@/lib/site-identity"
+import { Breadcrumbs } from "@/components/Breadcrumbs"
 
 export function LandingPage({ page }: { page: LandingPageData }) {
   const proofStudies = caseStudiesForSlugs(page.proofLinks)
@@ -23,7 +25,8 @@ export function LandingPage({ page }: { page: LandingPageData }) {
       <JsonLd data={schemas} />
       <section className="px-6 py-20 md:px-12 md:py-28">
         <div className="mx-auto max-w-[1240px]">
-          <div className="max-w-[820px]">
+          <Breadcrumbs items={[{ name: "Home", href: "/" }, { name: "Services", href: "/services" }, { name: page.title }]} />
+          <div className="mt-10 max-w-[820px]">
             <span className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">{page.eyebrow}</span>
             <h1 className="mt-3 font-syne text-[clamp(42px,8vw,86px)] font-extrabold leading-none tracking-[-0.035em]">
               {page.h1}
@@ -93,6 +96,38 @@ export function LandingPage({ page }: { page: LandingPageData }) {
           </div>
         </div>
       </section>
+
+      {page.included?.length ? (
+        <section aria-labelledby={`${page.slug}-included`} className="border-y border-b1 bg-s1/40 px-6 py-20 md:px-12">
+          <div className="mx-auto max-w-[1240px]">
+            <span className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">What is included</span>
+            <h2 id={`${page.slug}-included`} className="mt-2 max-w-[760px] font-syne text-[clamp(28px,4vw,44px)] font-extrabold tracking-[-.025em]">A scope built around the actual job.</h2>
+            <div className="mt-8 grid gap-4 md:grid-cols-2">
+              {page.included.map((item) => <article key={item.title} className="rounded-2xl border border-b1 bg-s1 p-6"><h3 className="font-syne text-xl font-bold">{item.title}</h3><p className="mt-3 font-dm text-sm leading-[1.75] text-t2">{item.description}</p></article>)}
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {page.process?.length ? (
+        <section aria-labelledby={`${page.slug}-process`} className="px-6 py-20 md:px-12">
+          <div className="mx-auto max-w-[1240px]">
+            <span className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">Process</span>
+            <h2 id={`${page.slug}-process`} className="mt-2 font-syne text-[clamp(28px,4vw,44px)] font-extrabold tracking-[-.025em]">From evidence to a dependable release.</h2>
+            <ol className="mt-8 grid gap-4 lg:grid-cols-4">
+              {page.process.map((item, index) => <li key={item.title} className="rounded-2xl border border-b1 bg-s1 p-6"><span className="font-dm text-xs font-semibold text-acc">0{index + 1}</span><h3 className="mt-4 font-syne text-lg font-bold">{item.title}</h3><p className="mt-3 font-dm text-sm leading-[1.75] text-t2">{item.description}</p></li>)}
+            </ol>
+          </div>
+        </section>
+      ) : null}
+
+      {page.considerations?.length ? (
+        <section aria-label="Commercial and technical considerations" className="px-6 py-20 md:px-12">
+          <div className="mx-auto grid max-w-[1240px] gap-5 lg:grid-cols-2">
+            {page.considerations.map((item) => <article key={item.title} className="rounded-3xl border border-b1 bg-s1 p-7 md:p-9"><h2 className="font-syne text-2xl font-bold">{item.title}</h2><div className="mt-5 space-y-4">{item.paragraphs.map((paragraph) => <p key={paragraph} className="font-dm text-sm leading-[1.8] text-t2">{paragraph}</p>)}</div></article>)}
+          </div>
+        </section>
+      ) : null}
 
       <section className="px-6 py-20 md:px-12">
         <div className="mx-auto max-w-[1240px]">
@@ -188,24 +223,12 @@ export function LandingPage({ page }: { page: LandingPageData }) {
           </div>
         </section>
       ) : null}
-      <section className="px-6 py-20 md:px-12">
-        <div className="mx-auto grid max-w-[1240px] gap-4 lg:grid-cols-[0.8fr_1.2fr]">
-          <div>
-            <span className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">Buyer FAQs</span>
-            <h2 className="mt-2 font-syne text-[clamp(28px,4vw,44px)] font-extrabold tracking-[-0.025em]">
-              Direct answers before the call.
-            </h2>
-          </div>
-          <div className="rounded-2xl border border-b1 bg-s1">
-            {faqs.map((faq, index) => (
-              <div key={faq.q} className={`p-6 ${index < faqs.length - 1 ? "border-b border-b1" : ""}`}>
-                <h3 className="font-syne text-lg font-bold">{faq.q}</h3>
-                <p className="mt-2 font-dm text-sm leading-relaxed text-t2">{faq.a}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <ContextualFaqs
+        id={`${page.slug}-faqs`}
+        intro="The questions buyers actually ask about this work, answered the same way here as everywhere else on the site."
+        items={faqs}
+        hubHash={landingPageFaqHubHash(page)}
+      />
 
       <section className="px-6 py-16 md:px-12">
         <div className="mx-auto max-w-[1240px]">
@@ -222,6 +245,9 @@ export function LandingPage({ page }: { page: LandingPageData }) {
             </Link>
             <Link href="/work" prefetch={false} className="rounded-lg border border-b1 bg-s1 px-4 py-2.5 font-dm text-sm text-t2 transition-colors hover:text-t1">
               Work
+            </Link>
+            <Link href="/faq" prefetch={false} className="rounded-lg border border-b1 bg-s1 px-4 py-2.5 font-dm text-sm text-t2 transition-colors hover:text-t1">
+              Frequently asked questions
             </Link>
             <Link href="/quote" prefetch={false} className="rounded-lg border border-b1 bg-s1 px-4 py-2.5 font-dm text-sm text-t2 transition-colors hover:text-t1">
               Request a quote

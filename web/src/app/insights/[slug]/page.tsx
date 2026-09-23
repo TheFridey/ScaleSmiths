@@ -14,6 +14,8 @@ import {
   INSIGHT_CATEGORIES,
   getInsight,
   insightAuthor,
+  insightTopic,
+  INSIGHT_TOPIC_CLUSTERS,
   publishedInsights,
   readingTimeMinutes,
   relatedInsights,
@@ -37,14 +39,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!insight) return {}
   return {
     ...buildPageMetadata({
-      title: insight.title,
+      title: insight.seoTitle ?? insight.title,
       description: insight.description,
       path: `/insights/${insight.slug}`,
       type: "article",
       image: insight.heroImage ? { url: insight.heroImage.src, width: insight.heroImage.width, height: insight.heroImage.height, alt: insight.heroImage.alt } : undefined,
       robots: insight.status === "published" ? undefined : { index: false, follow: false },
+      authors: [{ name: insightAuthor(insight).name, url: `/about/${insight.authorSlug}` }],
+      publishedTime: insight.datePublished,
+      modifiedTime: insight.dateModified ?? insight.datePublished,
+      section: INSIGHT_CATEGORIES[insight.category].label,
     }),
-    authors: [{ name: insightAuthor(insight).name, url: `/about/${insight.authorSlug}` }],
   }
 }
 
@@ -53,6 +58,7 @@ export default async function InsightPage({ params }: Props) {
   if (!insight) notFound()
 
   const author = insightAuthor(insight)
+  const topic = insightTopic(insight)
   const toc = tableOfContents(insight)
   const isPublished = insight.status === "published"
   const related = relatedInsights(insight, { includeDrafts: !isPublished })
@@ -71,6 +77,8 @@ export default async function InsightPage({ params }: Props) {
                 <li><Link href="/" className="hover:text-t1">Home</Link></li>
                 <li aria-hidden="true"><ChevronRight size={12} /></li>
                 <li><Link href="/insights" className="hover:text-t1">Insights</Link></li>
+                <li aria-hidden="true"><ChevronRight size={12} /></li>
+                <li><Link href={`/insights/${topic}`} className="hover:text-t1">{INSIGHT_TOPIC_CLUSTERS[topic].label}</Link></li>
                 <li aria-hidden="true"><ChevronRight size={12} /></li>
                 <li aria-current="page" className="text-t1">{insight.title}</li>
               </ol>
@@ -120,6 +128,7 @@ export default async function InsightPage({ params }: Props) {
               <div className="mt-14">
                 <AuthorCard founder={author} />
               </div>
+              {services[0] ? <aside className="mt-8 rounded-2xl border border-acc/20 bg-s1 p-6 md:p-8"><p className="text-xs font-semibold uppercase tracking-[.14em] text-acc">A useful next step</p><h2 className="mt-3 font-syne text-2xl font-bold">Apply this to your own website or system.</h2><p className="mt-3 text-sm leading-relaxed text-t2">Explore {services[0].label.toLowerCase()} or bring the current situation to ScaleSmiths for a scoped conversation.</p><Link href={services[0].href} prefetch={false} className="btn-primary mt-6">Explore {services[0].label} <ArrowRight size={16} aria-hidden="true" /></Link></aside> : null}
             </div>
             {toc.length >= 3 ? (
               <div className="hidden lg:block">

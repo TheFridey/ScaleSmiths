@@ -4,7 +4,6 @@ import { createHash, randomBytes } from "node:crypto"
 import { and, eq, sql } from "drizzle-orm"
 import { db } from "@/lib/db"
 import {
-  adminUsers,
   ventureAuditEvents,
   ventureExperiments,
   ventureOauthClients,
@@ -138,7 +137,7 @@ export async function registerCursorOauthClient(input: unknown) {
   }
 }
 
-export async function createCursorAuthorizationCode(input: {
+export interface CursorAuthorizationInput {
   clientId: string
   redirectUri: string
   codeChallenge: string
@@ -148,7 +147,46 @@ export async function createCursorAuthorizationCode(input: {
   resource?: string | null
   state?: string | null
   actor: { id: string; role: string; active: boolean; mfaEnabled: boolean }
-}) {
+}
+
+export async function inspectCursorAuthorizationRequest(input: CursorAuthorizationInput) {
+  const validated = await validateCursorAuthorizationRequest(input)
+  return {
+    clientName: validated.client.clientName,
+    clientId: validated.client.clientId,
+    redirectUri: input.redirectUri,
+    scope: validated.scope,
+    resource: validated.resource,
+    state: input.state!,
+  }
+}
+
+export async function createCursorAuthorizationCode(input: CursorAuthorizationInput) {
+  const validated = await validateCursorAuthorizationRequest(input)
+  const rawCode = `vlc_${randomBytes(32).toString("base64url")}`
+  const expiresAt = new Date(Date.now() + CODE_TTL_MS)
+  await db.insert(ventureOauthCodes).values({
+    codeHash: sha256(rawCode),
+    clientId: validated.client.id,
+    redirectUri: input.redirectUri,
+    codeChallenge: input.codeChallenge,
+    scope: validated.scope,
+    resource: validated.resource,
+    approvedBy: input.actor.id,
+    expiresAt,
+  })
+
+  await auditHuman(input.actor.id, "oauth_connector_authorized", "Authorized Cursor Grok Bot to use the restricted Venture Director MCP identity.", {
+    clientId: validated.client.clientId,
+    redirectUri: input.redirectUri,
+    scope: validated.scope,
+    resource: validated.resource,
+  })
+
+  return { code: rawCode, state: input.state! }
+}
+
+async function validateCursorAuthorizationRequest(input: CursorAuthorizationInput) {
   if (!input.actor.active || input.actor.role !== "venture_controller" || !input.actor.mfaEnabled) {
     throw new VentureOauthError(403, "access_denied", "An active MFA-enabled Venture Controller must authorize this connector.")
   }
@@ -165,27 +203,7 @@ export async function createCursorAuthorizationCode(input: {
   if (!client) throw new VentureOauthError(400, "unauthorized_client", "OAuth client is not registered or is disabled.")
   if (!client.redirectUris.includes(input.redirectUri)) throw new VentureOauthError(400, "invalid_request", "redirect_uri does not match the registered client.")
 
-  const rawCode = `vlc_${randomBytes(32).toString("base64url")}`
-  const expiresAt = new Date(Date.now() + CODE_TTL_MS)
-  await db.insert(ventureOauthCodes).values({
-    codeHash: sha256(rawCode),
-    clientId: client.id,
-    redirectUri: input.redirectUri,
-    codeChallenge: input.codeChallenge,
-    scope,
-    resource,
-    approvedBy: input.actor.id,
-    expiresAt,
-  })
-
-  await auditHuman(input.actor.id, "oauth_connector_authorized", "Authorized Cursor Grok Bot to use the restricted Venture Director MCP identity.", {
-    clientId: client.clientId,
-    redirectUri: input.redirectUri,
-    scope,
-    resource,
-  })
-
-  return { code: rawCode, state: input.state }
+  return { client, scope, resource }
 }
 
 export async function exchangeCursorOauthToken(form: URLSearchParams) {

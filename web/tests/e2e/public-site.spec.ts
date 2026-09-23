@@ -274,7 +274,11 @@ test.describe("public navigation and accessibility behaviours", () => {
 
     await expect(page.getByRole("link", { name: /explore local growth/i })).toHaveAttribute("href", "/local-growth")
     await expect(page.getByRole("link", { name: /explore custom systems/i })).toHaveAttribute("href", "/custom-systems")
-    const partnershipLink = page.getByRole("navigation", { name: /main navigation/i }).getByRole("link", { name: /growth partnership/i })
+    const mainNavigation = page.getByRole("navigation", { name: /main navigation/i })
+    const servicesTrigger = mainNavigation.getByRole("button", { name: "Services", exact: true })
+    await servicesTrigger.click()
+    await expect(servicesTrigger).toHaveAttribute("aria-expanded", "true")
+    const partnershipLink = mainNavigation.getByRole("link", { name: /digital growth partnership/i })
     await expect(partnershipLink).toHaveAttribute("href", "/digital-growth-partnership")
     await partnershipLink.click({ noWaitAfter: true })
     await page.waitForURL(/\/digital-growth-partnership$/, { timeout: 20_000, waitUntil: "domcontentloaded" })

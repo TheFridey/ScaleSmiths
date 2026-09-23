@@ -8,6 +8,10 @@ import {
   ventureExperiments,
   ventureRuntimeState,
   ventureServiceAccounts,
+  ventureControlState,
+  ventureEvidence,
+  ventureOpportunities,
+  ventureProposals,
 } from "@/lib/schema"
 import {
   ventureEvidence,

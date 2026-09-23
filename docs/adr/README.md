@@ -19,6 +19,7 @@ The [current architecture baseline](../architecture/current-architecture.md) des
 - [ADR 0011: Multi-Perspective Review](0011-multi-perspective-review.md)
 - [ADR 0012: Adaptive Workflow Boundaries](0012-adaptive-workflow-boundaries.md)
 - [ADR 0013: Canonical Tenant Identity and Fail-Closed RLS](0013-canonical-tenant-identity.md)
+- [ADR 0014: Nova Venture Lab as an Admin bounded domain](0014-venture-lab-bounded-domain.md)
 
 ## Format
 

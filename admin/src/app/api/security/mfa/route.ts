@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { AdminIdentityError } from "@/lib/admin-users"
 import { isMfaRequired, readStoredMfaState } from "@/lib/server/mfa"
 import { activateAdminMfa, beginAdminMfaSetup } from "@/lib/server/admin-users"
-import { requireCapability } from "@/lib/server/rbac"
+import { requireCurrentAdminUser } from "@/lib/server/admin-session"
 import { checkDurableRateLimit } from "@/lib/server/rate-limit-store"
 
 export const dynamic = "force-dynamic"
@@ -13,7 +13,7 @@ const MFA_ACTIVATION_WINDOW_MS = 10 * 60 * 1000
 
 export async function GET() {
   try {
-    const user = await requireCapability("settings.manage")
+    const user = await requireCurrentAdminUser()
     const state = readStoredMfaState(user.mfaState)
     return NextResponse.json({ enabled: user.mfaEnabled, pending: state?.status === "pending", required: isMfaRequired(user.role), graceUntil: process.env.ADMIN_MFA_BOOTSTRAP_GRACE_UNTIL ?? null, remainingRecoveryCodes: state?.status === "active" ? state.recoveryCodeHashes.length : null })
   } catch (error) { return responseError(error) }
@@ -21,7 +21,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const user = await requireCapability("settings.manage")
+    const user = await requireCurrentAdminUser()
     const body = await request.json().catch(() => null) as { action?: unknown; code?: unknown } | null
     if (body?.action === "begin") return NextResponse.json(await beginAdminMfaSetup(user.id))
     if (body?.action === "verify" && typeof body.code === "string") {

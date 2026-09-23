@@ -468,9 +468,9 @@ describe("RBAC — monthly reports", () => {
 })
 
 describe("RBAC — operations and kanban/roadmap", () => {
-  it("operations read is all roles", () => {
+  it("operations read excludes the Venture Controller", () => {
     for (const pathname of ["/operations/daily-brief", "/api/operations/brief", "/roadmap", "/api/kanban"]) {
-      for (const role of ADMIN_ROLES) {
+      for (const role of generalAdminRoles) {
         const result = authorizeRequest(role, { pathname, method: "GET" })
         expect(result.allowed).toBe(true)
         expect(result.capability).toBe("projects.read")
@@ -490,9 +490,9 @@ describe("RBAC — operations and kanban/roadmap", () => {
 })
 
 describe("RBAC — analytics", () => {
-  it("analytics read is all roles with analytics.read", () => {
+  it("analytics read excludes the Venture Controller", () => {
     for (const pathname of ["/clients/1/analytics", "/api/clients/1/analytics"]) {
-      for (const role of ADMIN_ROLES) {
+      for (const role of generalAdminRoles) {
         const result = authorizeRequest(role, { pathname, method: "GET" })
         expect(result.allowed).toBe(true)
         expect(result.capability).toBe("analytics.read")
@@ -532,7 +532,6 @@ describe("RBAC — viewer restrictions", () => {
       { pathname: "/api/client-requests", method: "POST" },
       { pathname: "/api/invoices", method: "POST" },
       { pathname: "/api/admin-users", method: "POST" },
-      { pathname: "/api/security/mfa", method: "POST" },
       { pathname: "/api/forge/projects", method: "POST" },
       { pathname: "/api/forge/projects/1/research", method: "POST" },
       { pathname: "/api/forge/projects/1/deploy", method: "POST" },
@@ -549,10 +548,9 @@ describe("RBAC — viewer restrictions", () => {
     }
   })
 
-  it("viewer cannot access admin user management or security settings", () => {
-    for (const route of [{ pathname: "/api/admin-users", method: "GET" }, { pathname: "/api/security/mfa", method: "GET" }]) {
-      expect(authorizeRequest("viewer", route).allowed).toBe(false)
-    }
+  it("viewer cannot access admin user management but may manage only its own MFA", () => {
+    expect(authorizeRequest("viewer", { pathname: "/api/admin-users", method: "GET" }).allowed).toBe(false)
+    expect(authorizeRequest("viewer", { pathname: "/api/security/mfa", method: "GET" })).toMatchObject({ allowed: true, capability: null })
   })
 })
 

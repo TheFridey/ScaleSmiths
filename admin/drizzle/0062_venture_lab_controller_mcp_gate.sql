@@ -1,4 +1,4 @@
-ALTER TYPE "admin_user_role" ADD VALUE IF NOT EXISTS 'venture_controller';
+ALTER TYPE "admin_user_role" ADD VALUE IF NOT EXISTS 'venture_controller' AFTER 'administrator';
 --> statement-breakpoint
 
 CREATE TABLE "venture_opportunities" (

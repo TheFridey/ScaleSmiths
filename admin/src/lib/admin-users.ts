@@ -1,4 +1,4 @@
-export const ADMIN_ROLES = ["owner", "administrator", "sales", "project_manager", "developer", "finance", "viewer"] as const
+export const ADMIN_ROLES = ["owner", "administrator", "venture_controller", "sales", "project_manager", "developer", "finance", "viewer"] as const
 export type AdminRole = (typeof ADMIN_ROLES)[number]
 
 export class AdminIdentityError extends Error {

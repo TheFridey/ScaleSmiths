@@ -15,6 +15,7 @@ const ownerAdminPMDev: AdminRole[] = ["owner", "administrator", "project_manager
 const ownerAdminDev: AdminRole[] = ["owner", "administrator", "developer"]
 const forgeReadRoles: AdminRole[] = ["owner", "administrator", "project_manager", "developer", "viewer"]
 const auditReadRoles: AdminRole[] = ["owner", "administrator", "project_manager", "developer", "finance"]
+const generalAdminRoles: AdminRole[] = ADMIN_ROLES.filter((role) => role !== "venture_controller")
 
 describe("RBAC — bypass paths (no capability required)", () => {
   const bypassPaths = [
@@ -54,13 +55,14 @@ describe("RBAC — logout", () => {
 })
 
 describe("RBAC — dashboard and root", () => {
-  it("dashboard and / are readable by every role", () => {
+  it("keeps the Venture Controller out of the general dashboard", () => {
     for (const pathname of ["/dashboard", "/"]) {
-      for (const role of ADMIN_ROLES) {
+      for (const role of generalAdminRoles) {
         const result = authorizeRequest(role, { pathname, method: "GET" })
         expect(result.allowed).toBe(true)
         expect(result.capability).toBe("projects.read")
       }
+      expect(authorizeRequest("venture_controller", { pathname, method: "GET" })).toMatchObject({ allowed: false, capability: "projects.read" })
     }
   })
 })
@@ -106,23 +108,19 @@ describe("RBAC — portal user management", () => {
 })
 
 describe("RBAC — security settings", () => {
-  const routes = [
-    { pathname: "/security", method: "GET" },
-    { pathname: "/security/mfa", method: "POST" },
-    { pathname: "/api/security/mfa", method: "POST" },
-  ]
-
-  it("restricted to owner and administrator", () => {
-    for (const route of routes) {
+  it("keeps broad security settings restricted to owner and administrator", () => {
+    for (const route of [{ pathname: "/security", method: "GET" }, { pathname: "/security/mfa", method: "POST" }]) {
       for (const role of ADMIN_ROLES) {
         const result = authorizeRequest(role, route)
-        if (role === "owner" || role === "administrator") {
-          expect(result.allowed).toBe(true)
-        } else {
-          expect(result.allowed).toBe(false)
-        }
+        expect(result.allowed).toBe(role === "owner" || role === "administrator")
         expect(result.capability).toBe("settings.manage")
       }
+    }
+  })
+
+  it("allows every authenticated identity to manage only its own MFA", () => {
+    for (const role of ADMIN_ROLES) {
+      expect(authorizeRequest(role, { pathname: "/api/security/mfa", method: "POST" })).toMatchObject({ allowed: true, capability: null })
     }
   })
 })
@@ -188,9 +186,9 @@ describe("RBAC — prospect conversion", () => {
 })
 
 describe("RBAC — clients", () => {
-  it("clients read is accessible by all roles", () => {
+  it("clients read is available to general admin roles, not the Venture Controller", () => {
     for (const pathname of ["/clients", "/clients/1", "/api/clients", "/api/clients/1"]) {
-      for (const role of ADMIN_ROLES) {
+      for (const role of generalAdminRoles) {
         const result = authorizeRequest(role, { pathname, method: "GET" })
         expect(result.allowed).toBe(true)
         expect(result.capability).toBe("clients.read")
@@ -220,9 +218,9 @@ describe("RBAC — clients", () => {
 })
 
 describe("RBAC — client requests", () => {
-  it("client requests read is all roles", () => {
+  it("client requests read excludes the Venture Controller", () => {
     for (const pathname of ["/requests", "/requests/1", "/api/client-requests"]) {
-      for (const role of ADMIN_ROLES) {
+      for (const role of generalAdminRoles) {
         const result = authorizeRequest(role, { pathname, method: "GET" })
         expect(result.allowed).toBe(true)
         expect(result.capability).toBe("clients.read")
@@ -246,9 +244,9 @@ describe("RBAC — client requests", () => {
 })
 
 describe("RBAC — messages", () => {
-  it("messages are readable by all roles", () => {
+  it("messages are readable by general admin roles", () => {
     for (const pathname of ["/messages", "/messages/1"]) {
-      for (const role of ADMIN_ROLES) {
+      for (const role of generalAdminRoles) {
         const result = authorizeRequest(role, { pathname, method: "GET" })
         expect(result.allowed).toBe(true)
         expect(result.capability).toBe("clients.read")
@@ -265,9 +263,9 @@ describe("RBAC — Forge projects (base CRUD)", () => {
     expect(requiredCapabilityForRequest({ pathname: "/api/forge/projects/1", method: "PATCH" })).toBe("projects.write")
   })
 
-  it("projects.read is available to all roles", () => {
+  it("projects.read excludes the Venture Controller", () => {
     for (const pathname of ["/api/forge/projects", "/api/forge/projects/1"]) {
-      for (const role of ADMIN_ROLES) {
+      for (const role of generalAdminRoles) {
         const result = authorizeRequest(role, { pathname, method: "GET" })
         expect(result.allowed).toBe(true)
         expect(result.capability).toBe("projects.read")

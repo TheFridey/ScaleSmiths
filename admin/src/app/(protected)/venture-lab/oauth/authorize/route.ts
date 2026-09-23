@@ -51,7 +51,7 @@ export async function POST(request: Request) {
 
 function authorizationInput(
   params: URLSearchParams,
-  actor: { id: string; role: string; active: boolean; mfaEnabled: boolean },
+  actor: { id: string },
 ): CursorAuthorizationInput {
   return {
     clientId: required(params, "client_id"),
@@ -62,7 +62,7 @@ function authorizationInput(
     scope: params.get("scope"),
     resource: params.get("resource"),
     state: params.get("state"),
-    actor,
+    actorId: actor.id,
   }
 }
 

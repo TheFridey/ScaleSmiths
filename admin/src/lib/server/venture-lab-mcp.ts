@@ -8,16 +8,10 @@ import {
   ventureExperiments,
   ventureRuntimeState,
   ventureServiceAccounts,
-  ventureControlState,
   ventureEvidence,
   ventureOpportunities,
   ventureProposals,
 } from "@/lib/schema"
-import {
-  ventureEvidence,
-  ventureOpportunities,
-  ventureProposals,
-} from "@/lib/venture-lab/access-schema"
 import { getVentureLabDashboardSnapshot } from "@/lib/server/venture-lab-dashboard"
 import {
   isVentureMcpToolName,

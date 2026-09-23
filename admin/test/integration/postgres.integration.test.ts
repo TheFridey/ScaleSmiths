@@ -2144,6 +2144,10 @@ describe("real PostgreSQL integration", () => {
 
     try {
       const clientId = oauth.VENTURE_OAUTH_CLIENT_ID;
+      await pool.query(
+        "INSERT INTO venture_oauth_clients(client_id,client_name,redirect_uris) VALUES($1,'Cursor / Grok Bot Venture Director',$2::jsonb)",
+        [clientId, JSON.stringify([...oauth.CURSOR_OAUTH_REDIRECT_URIS])],
+      );
       const seededClient = (await pool.query(
         "SELECT client_id,client_name,redirect_uris,active FROM venture_oauth_clients WHERE client_id=$1",
         [clientId],

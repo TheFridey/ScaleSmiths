@@ -38,6 +38,19 @@ export default auth(async (req) => {
     response.headers.set("Cache-Control", PRIVATE_NO_STORE)
     return response
   }
+  const redirectUrl = (targetPathname: string) => {
+    const configuredOrigin = process.env.AUTH_URL?.trim()
+    const forwardedHost = req.headers.get("x-forwarded-host")?.split(",")[0]?.trim() || req.headers.get("host")?.trim()
+    const forwardedProto = req.headers.get("x-forwarded-proto")?.split(",")[0]?.trim()
+    const origin = configuredOrigin
+      ? new URL(configuredOrigin).origin
+      : forwardedHost
+        ? `${forwardedProto === "http" ? "http" : "https"}://${forwardedHost}`
+        : req.nextUrl.origin
+    const url = new URL(req.nextUrl.pathname + req.nextUrl.search, origin)
+    url.pathname = targetPathname
+    return url
+  }
 
   if (pathname.startsWith("/api/auth")) {
     return next()
@@ -51,8 +64,7 @@ export default auth(async (req) => {
 
   if (pathname.startsWith("/login")) {
     if (req.auth) {
-      const url = req.nextUrl.clone()
-      url.pathname = req.auth.user.role === "venture_controller" ? "/venture-lab" : "/dashboard"
+      const url = redirectUrl(req.auth.user.role === "venture_controller" ? "/venture-lab" : "/dashboard")
       return correlated(NextResponse.redirect(url))
     }
 
@@ -64,16 +76,14 @@ export default auth(async (req) => {
       return correlated(NextResponse.json({ error: "Unauthorized." }, { status: 401 }))
     }
 
-    const url = req.nextUrl.clone()
-    url.pathname = "/login"
+    const url = redirectUrl("/login")
     return correlated(NextResponse.redirect(url))
   }
 
   const persistedUser = req.auth.user?.id ? await findAdminUserById(req.auth.user.id).catch(() => null) : null
   if (!persistedUser || !isAdminSessionCurrent(persistedUser, req.auth.user.sessionVersion)) {
     if (pathname.startsWith("/api/")) return correlated(NextResponse.json({ error: "Session revoked or account disabled." }, { status: 401 }))
-    const url = req.nextUrl.clone()
-    url.pathname = "/login"
+    const url = redirectUrl("/login")
     url.searchParams.set("reason", "session")
     return correlated(NextResponse.redirect(url))
   }
@@ -84,8 +94,7 @@ export default auth(async (req) => {
     requestLogger({ component: "rbac", ...auditContext }).warn("RBAC access denied")
     captureMonitoringMessage("RBAC access denied", "warning", { ...auditContext, errorCategory: "rbac_denied" })
     if (pathname.startsWith("/api/")) return correlated(NextResponse.json({ error: "Forbidden.", requiredCapability: authorization.capability }, { status: 403 }))
-    const url = req.nextUrl.clone()
-    url.pathname = req.auth.user.role === "venture_controller" ? "/venture-lab" : "/dashboard"
+    const url = redirectUrl(req.auth.user.role === "venture_controller" ? "/venture-lab" : "/dashboard")
     url.searchParams.set("reason", "forbidden")
     return correlated(NextResponse.redirect(url))
   }

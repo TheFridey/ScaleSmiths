@@ -18,8 +18,8 @@ test.describe("homepage proof and trust", () => {
     await expect(trust).toBeVisible()
     await expect(trust.getByRole("link", { name: /precision finish/i })).toHaveAttribute("href", "/work/precision-finish-plastering-rendering")
     await expect(trust.getByRole("link", { name: /glow tanning/i })).toHaveAttribute("href", "/work/glow-tanning")
-    // Only businesses with a published case study are named.
-    await expect(trust).not.toContainText(/confirm-a-kill/i)
+    // Every named business must resolve to a published case study.
+    await expect(trust.getByRole("link", { name: /confirm-a-kill/i })).toHaveAttribute("href", "/work/confirm-a-kill")
 
     const order = await page.evaluate(() => {
       const top = (selector: string) => document.querySelector(selector)?.getBoundingClientRect().top ?? Number.POSITIVE_INFINITY
@@ -48,7 +48,7 @@ test.describe("homepage proof and trust", () => {
   test("features a case study and publishes the organisation entity once", async ({ page }) => {
     await gotoReady(page, "/")
 
-    await expect(page.getByRole("region", { name: "The Business Circle" }).getByRole("link", { name: /read the case study/i })).toHaveAttribute("href", "/work/the-business-circle")
+    await expect(page.getByRole("region", { name: "Confirm-A-Kill" }).getByRole("link", { name: /read the case study/i })).toHaveAttribute("href", "/work/confirm-a-kill")
 
     const blocks = await page.locator('script[type="application/ld+json"]').allTextContents()
     const organisations = blocks.join(" ").match(/"@type":\["Organization","ProfessionalService"\]/g) ?? []

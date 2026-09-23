@@ -119,7 +119,16 @@ describe("server request enforcement", () => {
     const routeFiles = walk(apiRoot).filter((file) => file.endsWith("route.ts"))
     const unmapped = routeFiles.map((file) => `/${path.relative(path.resolve("src", "app"), path.dirname(file)).replaceAll("\\", "/").replace(/\[[^/]+\]/g, "resource")}`)
       // Auth, self-service logout, health and monitoring self-test authenticate with dedicated protocol-specific controls.
-      .filter((pathname) => !pathname.startsWith("/api/auth") && pathname !== "/api/security/logout" && pathname !== "/api/security/mfa" && pathname !== "/api/health" && pathname !== "/api/monitoring/self-test" && pathname !== "/api/venture-lab/mcp" && requiredCapabilityForRequest({ pathname, method: "GET" }) === null && requiredCapabilityForRequest({ pathname, method: "POST" }) === null)
+      .filter((pathname) => !pathname.startsWith("/api/auth")
+        && pathname !== "/api/security/logout"
+        && pathname !== "/api/security/mfa"
+        && pathname !== "/api/health"
+        && pathname !== "/api/monitoring/self-test"
+        && pathname !== "/api/venture-lab/mcp"
+        && pathname !== "/api/venture-lab/oauth/register"
+        && pathname !== "/api/venture-lab/oauth/token"
+        && requiredCapabilityForRequest({ pathname, method: "GET" }) === null
+        && requiredCapabilityForRequest({ pathname, method: "POST" }) === null)
     expect(unmapped).toEqual([])
   })
 })

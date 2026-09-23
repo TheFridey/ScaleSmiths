@@ -13,6 +13,7 @@ import {
   ClipboardList,
   Gauge,
   ReceiptText,
+  FlaskConical,
   FolderKanban,
   GitBranch,
   LayoutDashboard,
@@ -34,6 +35,7 @@ import { AdminShellProvider, useAdminShell } from "./AdminShellContext"
 
 const NAV: Array<{ href: string; label: string; Icon: typeof LayoutDashboard; capability: Capability }> = [
   { href: "/dashboard", label: "Dashboard", Icon: LayoutDashboard, capability: "projects.read" },
+  { href: "/venture-lab", label: "Venture Lab", Icon: FlaskConical, capability: "venture.read" },
   { href: "/clients", label: "Clients", Icon: Users, capability: "clients.read" },
   { href: "/projects", label: "Projects", Icon: FolderKanban, capability: "projects.read" },
   { href: "/finance/invoices", label: "Invoices", Icon: ReceiptText, capability: "finance.read" },
@@ -49,7 +51,7 @@ const NAV: Array<{ href: string; label: string; Icon: typeof LayoutDashboard; ca
   { href: "/messages", label: "Messages", Icon: MessageSquare, capability: "clients.read" },
   { href: "/portal-users", label: "Portal users", Icon: Users, capability: "portal_users.read" },
   { href: "/users", label: "Admin users", Icon: UserCog, capability: "admin_users.read" },
-  { href: "/security", label: "Security", Icon: ShieldCheck, capability: "settings.manage" },
+  { href: "/security", label: "Security", Icon: ShieldCheck, capability: "security.mfa.self" },
   { href: "/claims", label: "Claims", Icon: BadgeCheck, capability: "claims.read" },
 ]
 

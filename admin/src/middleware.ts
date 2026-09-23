@@ -43,9 +43,9 @@ export default auth(async (req) => {
     return next()
   }
 
-  // The endpoint performs its own constant-time token check. Keep it outside
-  // interactive authentication so infrastructure can check the container.
-  if (pathname === "/api/health" || pathname === "/api/monitoring/self-test") {
+  // These endpoints perform their own dedicated authentication. Keep them outside
+  // interactive Auth.js while exposing no other Admin API surface.
+  if (pathname === "/api/health" || pathname === "/api/monitoring/self-test" || pathname === "/api/venture-lab/mcp") {
     return next()
   }
 

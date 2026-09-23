@@ -348,19 +348,6 @@ function requiredForm(form: URLSearchParams, key: string) {
   return value
 }
 
-async function auditSystem(action: string, reason: string, metadataJson: Record<string, unknown>) {
-  const [experiment] = await db.select({ id: ventureExperiments.id }).from(ventureExperiments).where(eq(ventureExperiments.code, "EXP-000")).limit(1)
-  if (!experiment) return
-  await db.insert(ventureAuditEvents).values({
-    experimentId: experiment.id,
-    actorType: "system",
-    actorKey: "venture-oauth",
-    action,
-    reason,
-    metadataJson,
-  })
-}
-
 async function auditHuman(actorId: string, action: string, reason: string, metadataJson: Record<string, unknown>) {
   const [experiment] = await db.select({ id: ventureExperiments.id }).from(ventureExperiments).where(eq(ventureExperiments.code, "EXP-000")).limit(1)
   if (!experiment) return

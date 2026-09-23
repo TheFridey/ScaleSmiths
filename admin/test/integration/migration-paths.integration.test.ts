@@ -91,7 +91,7 @@ describe("migration installation paths", () => {
     await migrateSharedTestDatabase(pool)
 
     expect(await migrationCount("__drizzle_web_migrations")).toBe(22)
-    expect(await migrationCount("__drizzle_migrations")).toBe(62)
+    expect(await migrationCount("__drizzle_migrations")).toBe(63)
     expect(await columnExists("forge_artifacts", "content_bytes")).toBe(true)
     expect(await columnExists("client_requests", "client_record_id")).toBe(true)
     expect(await columnExists("forge_deployment_candidates", "dependency_report_json")).toBe(true)

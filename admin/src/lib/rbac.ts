@@ -33,6 +33,7 @@ export function requireRoleCapability(role: AdminRole, capability: Capability) {
 }
 export function isNavigationVisible(role: AdminRole, capability: Capability) { return hasCapability(role, capability) }
 export function canUseControl(role: AdminRole, capability: Capability) { return hasCapability(role, capability) }
+export function homePathForRole(role: AdminRole) { return role === "venture_controller" ? "/venture-lab" : "/dashboard" }
 export function isPrivilegeReduction(currentRole: AdminRole, nextRole: AdminRole) {
   return ROLE_CAPABILITIES[currentRole].some((capability) => !ROLE_CAPABILITIES[nextRole].includes(capability))
 }

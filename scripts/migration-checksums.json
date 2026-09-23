@@ -566,6 +566,12 @@
       "sha256": "a68f22f7ec9cf3826871957844a4720f8d3c00a8c1719047b7fa971953fc8f96",
       "lifecycle": "forward",
       "reason": "Adds the least-privilege Venture Controller role, persisted Venture Lab opportunity/evidence/proposal state, connection-readiness control state and controller-only approval enforcement."
+    },
+    {
+      "path": "admin/drizzle/0063_venture_lab_cursor_oauth.sql",
+      "sha256": "e93afdfcc9a25a7a5f95ef89a3a0edb8cc3fabb626b923b3491087e4a6f4634e",
+      "lifecycle": "forward",
+      "reason": "Adds Cursor-compatible OAuth 2.1 PKCE client registration, single-use authorization codes, opaque access/refresh token hashes, and irreversible OAuth client/token guards for the restricted Venture Director MCP."
     }
   ],
   "journals": {
@@ -810,6 +816,13 @@
           "version": "7",
           "when": 1790158200000,
           "tag": "0062_venture_lab_controller_mcp_gate",
+          "breakpoints": true
+        },
+        {
+          "idx": 63,
+          "version": "7",
+          "when": 1790170200000,
+          "tag": "0063_venture_lab_cursor_oauth",
           "breakpoints": true
         }
       ]

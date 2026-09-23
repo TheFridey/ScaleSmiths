@@ -566,6 +566,12 @@
       "sha256": "b91673be0ab31154878464a80dc4a1c56a05394f999f87325e58444bc050b1eb",
       "lifecycle": "forward",
       "reason": "Adds least-privilege Venture Controller authority, immutable service scopes and hashed service credentials, persisted Venture Lab opportunity/evidence/proposal/gate state, and the restricted MCP access boundary."
+    },
+    {
+      "path": "admin/drizzle/0063_venture_lab_runtime_authority.sql",
+      "sha256": "d87a6675fc15859e44a9b3159c2bf556d2a74648c39545593f737fb50cf430d4",
+      "lifecycle": "forward",
+      "reason": "Enforces database-authoritative asymmetric STOP/resume identity, records runtime transition actors, and provisions the immutable Venture Director service identity without issuing a credential."
     }
   ],
   "journals": {

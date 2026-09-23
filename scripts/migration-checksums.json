@@ -560,6 +560,18 @@
       "sha256": "296d34d4d5ab8bb9b494412775def8701afe0beffc41632e6fb17b84dd2178e3",
       "lifecycle": "forward",
       "reason": "Adds the Nova Venture Lab Experiment #000 PostgreSQL governance core: protected/experimental budget envelopes, exact immutable approvals, database-authoritative reservations, append-only audit and double-entry ledger history, service-account revocation, and emergency STOP state."
+    },
+    {
+      "path": "admin/drizzle/0062_venture_lab_access_gateway.sql",
+      "sha256": "b91673be0ab31154878464a80dc4a1c56a05394f999f87325e58444bc050b1eb",
+      "lifecycle": "forward",
+      "reason": "Adds least-privilege Venture Controller authority, immutable service scopes and hashed service credentials, persisted Venture Lab opportunity/evidence/proposal/gate state, and the restricted MCP access boundary."
+    },
+    {
+      "path": "admin/drizzle/0063_venture_lab_runtime_authority.sql",
+      "sha256": "d87a6675fc15859e44a9b3159c2bf556d2a74648c39545593f737fb50cf430d4",
+      "lifecycle": "forward",
+      "reason": "Enforces database-authoritative asymmetric STOP/resume identity, records runtime transition actors, and provisions the immutable Venture Director service identity without issuing a credential."
     }
   ],
   "journals": {

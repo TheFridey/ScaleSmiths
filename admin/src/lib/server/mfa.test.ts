@@ -36,6 +36,7 @@ describe("TOTP MFA", () => {
   it("requires privileged production MFA after the bootstrap grace period", () => {
     expect(isMfaRequired("owner", { NODE_ENV: "production" } as NodeJS.ProcessEnv, 100)).toBe(true)
     expect(isMfaRequired("administrator", { NODE_ENV: "production", ADMIN_MFA_BOOTSTRAP_GRACE_UNTIL: new Date(200).toISOString() } as NodeJS.ProcessEnv, 100)).toBe(false)
+    expect(isMfaRequired("venture_controller", { NODE_ENV: "production" } as NodeJS.ProcessEnv, 100)).toBe(true)
     expect(isMfaRequired("developer", { NODE_ENV: "production" } as NodeJS.ProcessEnv, 100)).toBe(false)
   })
 

@@ -273,7 +273,7 @@ export async function approveVentureSpendRequest(input: {
   } catch (error) {
     if (errorChainText(error).includes("Venture Lab financial approval requires an active authoritative human identity")) {
       throw new VentureLabPersistenceError(
-        "Venture Lab financial approval requires an active owner or administrator.",
+        "Venture Lab financial approval requires an active owner, administrator, or Venture Controller.",
         "approval_authority_denied",
       )
     }
@@ -508,6 +508,8 @@ export async function activateVentureEmergencyStop(input: {
       pausedAt: sql`CURRENT_TIMESTAMP`,
       pausedBy: actorUserId,
       pauseReason: reason,
+      lastTransitionBy: actorUserId,
+      lastTransitionAt: sql`CURRENT_TIMESTAMP`,
       updatedAt: sql`CURRENT_TIMESTAMP`,
     }).where(and(eq(ventureRuntimeState.id, 1), eq(ventureRuntimeState.paused, false))).returning()
 
@@ -538,6 +540,8 @@ export async function resumeVentureLab(input: {
       pausedAt: null,
       pausedBy: null,
       pauseReason: null,
+      lastTransitionBy: actorUserId,
+      lastTransitionAt: sql`CURRENT_TIMESTAMP`,
       updatedAt: sql`CURRENT_TIMESTAMP`,
     }).where(and(eq(ventureRuntimeState.id, 1), eq(ventureRuntimeState.paused, true))).returning()
 

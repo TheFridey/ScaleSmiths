@@ -12,7 +12,7 @@ import { checkDurableRateLimit } from "@/lib/server/rate-limit-store"
 import { resolveClientIp } from "@/lib/client-ip"
 import { isAdminSessionCurrent } from "@/lib/admin-users"
 import { findAdminUserById } from "@/lib/server/admin-users"
-import { authorizeRequest } from "@/lib/rbac"
+import { authorizeRequest, homePathForRole } from "@/lib/rbac"
 import { requestLogger } from "@/lib/server/request-context"
 import { captureMonitoringMessage } from "@/lib/server/monitoring"
 
@@ -43,17 +43,20 @@ export default auth(async (req) => {
     return next()
   }
 
-  // The endpoint performs its own constant-time token check. Keep it outside
-  // interactive authentication so infrastructure can check the container.
-  if (pathname === "/api/health" || pathname === "/api/monitoring/self-test") {
+  // These endpoints perform their own dedicated authentication. Keep them outside
+  // interactive Auth.js while exposing no other Admin API surface.
+  if (pathname === "/api/health" || pathname === "/api/monitoring/self-test" || pathname === "/api/venture-lab/mcp") {
     return next()
   }
 
   if (pathname.startsWith("/login")) {
-    if (req.auth) {
-      const url = req.nextUrl.clone()
-      url.pathname = "/dashboard"
-      return correlated(NextResponse.redirect(url))
+    if (req.auth?.user?.id) {
+      const persistedUser = await findAdminUserById(req.auth.user.id).catch(() => null)
+      if (persistedUser && isAdminSessionCurrent(persistedUser, req.auth.user.sessionVersion)) {
+        const url = req.nextUrl.clone()
+        url.pathname = homePathForRole(persistedUser.role)
+        return correlated(NextResponse.redirect(url))
+      }
     }
 
     return next()
@@ -85,7 +88,7 @@ export default auth(async (req) => {
     captureMonitoringMessage("RBAC access denied", "warning", { ...auditContext, errorCategory: "rbac_denied" })
     if (pathname.startsWith("/api/")) return correlated(NextResponse.json({ error: "Forbidden.", requiredCapability: authorization.capability }, { status: 403 }))
     const url = req.nextUrl.clone()
-    url.pathname = "/dashboard"
+    url.pathname = homePathForRole(persistedUser.role)
     url.searchParams.set("reason", "forbidden")
     return correlated(NextResponse.redirect(url))
   }

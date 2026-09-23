@@ -1,6 +1,6 @@
 # Admin MFA and session security
 
-ScaleSmiths supports optional RFC 6238 TOTP MFA for privileged admin identities. In production it is mandatory for `owner` and `administrator` after the configured bootstrap grace deadline.
+ScaleSmiths supports optional RFC 6238 TOTP MFA for privileged admin identities. In production it is mandatory for `owner`, `administrator`, and `venture_controller` after the configured bootstrap grace deadline.
 
 ## Cryptography and storage
 
@@ -26,7 +26,7 @@ Before deploying mandatory MFA, set a short future ISO-8601 deadline:
 ADMIN_MFA_BOOTSTRAP_GRACE_UNTIL=2026-07-11T18:00:00Z
 ```
 
-During that window an owner/administrator without active MFA can sign in with a password and enrol at `/security`. Setup returns a manual Base32 secret, an `otpauth://` URI, and recovery codes. MFA remains inactive until a valid authenticator code verifies the secret. Activation increments the session version and signs the operator out; the next login must include TOTP or a recovery code.
+During that window an owner/administrator/Venture Controller without active MFA can sign in with a password and enrol at `/security`. Setup returns a manual Base32 secret, an `otpauth://` URI, and recovery codes. MFA remains inactive until a valid authenticator code verifies the secret. Activation increments the session version and signs the operator out; the next login must include TOTP or a recovery code.
 
 After all privileged users have enrolled, remove the grace variable or set it in the past and restart admin. Do not deploy with an expired/missing grace value before at least one owner has active MFA.
 

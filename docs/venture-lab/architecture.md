@@ -94,15 +94,40 @@ DISCOVERED
 
 There is no generic unrestricted status update. Transitions are explicit server-side domain actions that validate prerequisites.
 
+## Human-control boundary
+
+`venture_controller` is the least-privilege authenticated role intended for Trev's Venture Lab operating identity. It receives Venture Lab finance/launch approval, experiment-management, integration-management, STOP and audit authority without inheriting unrelated ScaleSmiths client, Forge, deployment, settings, general finance-write or admin-user-management capabilities. Production MFA is mandatory for this role.
+
+Rhys's `developer` identity retains technical containment: it may activate STOP and revoke Venture Lab service access, but it cannot approve capital or launch proposals and cannot resume Venture Lab after STOP.
+
 ## External agent boundary
 
-Grok receives only a scoped service identity and narrow MCP methods. Human approval operations, policy mutation, secret access, payment execution and production deployment are not exposed to Grok.
+The dedicated service identity is `venture-director`. Its scopes are persisted in PostgreSQL and immutable after creation. The service identity is provisioned without a credential until a later Nova + Trev connection gate.
+
+The only gateway route is `POST /api/venture-lab/mcp`. It authenticates a version-bound bearer credential whose secret is never stored; only its SHA-256 hash is persisted. The credential resolves service identity and scopes from PostgreSQL. Request bodies and prompts cannot select or impersonate a human actor.
+
+The current MCP tool surface is read/propose only:
+
+- `venture.status.get`;
+- `venture.opportunities.list`;
+- `venture.opportunities.propose`;
+- `venture.evidence.list`;
+- `venture.evidence.propose`;
+- `venture.experiments.list`;
+- `venture.approvals.list`;
+- `venture.ledger.list`;
+- `venture.audit.list`;
+- `venture.proposals.create`.
+
+There is no MCP tool for human approval, capital release, payment, secret access, production deployment, policy mutation, constitution mutation, STOP/resume or service-permission changes. SPEND and LAUNCH items submitted by the service are proposals only and require separate authenticated human resolution.
 
 ## Emergency STOP
 
-A global pause control must fail closed for agent-originated mutating actions. Rhys and Trev may activate STOP. STOP revokes or blocks Grok/MCP execution while preserving read-only audit visibility.
+A global pause control fails closed for service-originated mutating actions while preserving read-only audit visibility. Owner, administrator, Venture Controller and developer identities may activate STOP for containment.
 
-STOP does not alter ledger history, approvals already recorded or capital ownership. Resume must be an explicit authenticated human action and must create an audit event.
+Resume is intentionally asymmetric: only owner, administrator or Venture Controller may resume. The PostgreSQL runtime-state trigger independently enforces that asymmetry and records the human transition actor. A developer identity cannot restart the system after containing it.
+
+STOP does not alter ledger history, approvals already recorded or capital ownership. Service credentials can also be revoked independently; service-account revocation advances token version and cannot be reversed.
 
 ## Payment boundary
 

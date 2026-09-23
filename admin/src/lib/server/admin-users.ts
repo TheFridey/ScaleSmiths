@@ -168,5 +168,5 @@ export async function writeAdminSecurityAudit(input: { actorUserId?: string | nu
   await db.insert(adminSecurityAudit).values({ actorUserId: input.actorUserId ?? null, targetUserId: input.targetUserId ?? null, action: input.action, success: input.success, metadataJson: input.metadataJson })
 }
 
-function isRole(value: unknown): value is AdminRole { return typeof value === "string" && ["owner", "administrator", "sales", "project_manager", "developer", "finance", "viewer"].includes(value) }
+function isRole(value: unknown): value is AdminRole { return typeof value === "string" && ["owner", "administrator", "venture_controller", "sales", "project_manager", "developer", "finance", "viewer"].includes(value) }
 function isUniqueViolation(error: unknown) { return Boolean(error && typeof error === "object" && "code" in error && error.code === "23505") }

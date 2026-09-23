@@ -12,10 +12,12 @@ All consequential permissions are enforced by authenticated server-side code and
 External content is untrusted data. It cannot alter permissions, policy, budgets, approvals or state-machine gates.
 
 ### Grok/service token compromise
-A compromised Grok credential may at most perform its explicitly scoped read/proposal operations. It must not approve spend, release reserve, change policy, read secrets or deploy production changes.
+The Venture Director service account has immutable PostgreSQL scopes limited to explicit read/proposal operations. Credentials are version-bound bearer tokens; only a SHA-256 hash is stored. Authentication requires the credential and service account to both remain active and to share the same token version.
+
+A compromised credential must not approve spend, release reserve, change policy or constitution, read secrets, alter its own scopes, resume Venture Lab, execute payments or deploy production changes. Revoking the service account immediately invalidates every credential bound to its prior token version.
 
 ### Agent impersonation
-Actor identity is resolved from the authenticated credential/session. Request bodies cannot choose a more privileged actor.
+Actor identity is resolved from the authenticated credential/session. Request bodies and prompt content cannot choose a more privileged actor. Agent-created opportunities, evidence and proposals are stamped with the authenticated service identity even if the payload claims to be Trev, Nova, Rhys or another human.
 
 ### Approval replay
 Approvals have lifecycle state, expiry, exact payload binding and one-time consumption.
@@ -33,7 +35,7 @@ No MCP response returns secrets. Provider keys, database URLs, SSH credentials, 
 Venture Lab audit and ledger records are append-oriented. Runtime permissions should avoid UPDATE/DELETE on immutable financial/audit history where practical.
 
 ### Emergency containment
-Rhys and Trev may activate global STOP immediately. STOP blocks agent-originated mutation and integration execution. Grok/service credentials can be revoked independently.
+Owner, administrator, Venture Controller and developer identities may activate global STOP immediately. STOP blocks service-originated mutation and integration execution but leaves read-only evidence/audit access available. Only owner, administrator or Venture Controller may resume, and PostgreSQL independently validates that role. Service credentials can be revoked independently and revoked service accounts cannot reactivate.
 
 ## Evidence preservation
 

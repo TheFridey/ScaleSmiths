@@ -6,7 +6,7 @@ export const CAPABILITIES = [
   "portal_users.read", "portal_users.manage", "portal_users.credentials.reset",
   "leads.read", "leads.write", "prospects.convert", "clients.read", "clients.write",
   "projects.read", "projects.write", "forge.read", "forge.execute", "forge.approve",
-  "forge.configure", "finance.read", "finance.write", "settings.manage", "audit.read",
+  "forge.configure", "finance.read", "finance.write", "security.mfa.self", "settings.manage", "audit.read",
   "deployments.execute", "analytics.read", "analytics.write", "claims.read", "claims.manage",
   "venture.read", "venture.write", "venture.finance.read", "venture.finance.request", "venture.finance.approve",
   "venture.experiment.manage", "venture.launch.request", "venture.launch.approve", "venture.policy.manage",
@@ -17,6 +17,7 @@ export type Capability = (typeof CAPABILITIES)[number]
 export const ROLE_CAPABILITIES: Readonly<Record<AdminRole, readonly Capability[]>> = {
   owner: CAPABILITIES,
   administrator: CAPABILITIES.filter((capability) => capability !== "admin_users.credentials.reset" && capability !== "admin_users.owner.assign"),
+  venture_controller: ["security.mfa.self", "venture.read", "venture.write", "venture.finance.read", "venture.finance.request", "venture.finance.approve", "venture.experiment.manage", "venture.launch.request", "venture.launch.approve", "venture.integration.manage", "venture.emergency_stop", "venture.audit.read"],
   sales: ["leads.read", "leads.write", "prospects.convert", "clients.read", "projects.read", "finance.read", "analytics.read"],
   project_manager: ["portal_users.read", "portal_users.manage", "leads.read", "prospects.convert", "clients.read", "clients.write", "projects.read", "projects.write", "forge.read", "forge.execute", "forge.approve", "forge.configure", "finance.read", "audit.read", "analytics.read", "analytics.write"],
   developer: ["clients.read", "projects.read", "projects.write", "forge.read", "forge.execute", "forge.approve", "forge.configure", "audit.read", "deployments.execute", "analytics.read", "venture.read", "venture.audit.read", "venture.integration.manage", "venture.emergency_stop"],
@@ -32,6 +33,7 @@ export function requireRoleCapability(role: AdminRole, capability: Capability) {
 }
 export function isNavigationVisible(role: AdminRole, capability: Capability) { return hasCapability(role, capability) }
 export function canUseControl(role: AdminRole, capability: Capability) { return hasCapability(role, capability) }
+export function homePathForRole(role: AdminRole) { return role === "venture_controller" ? "/venture-lab" : "/dashboard" }
 export function isPrivilegeReduction(currentRole: AdminRole, nextRole: AdminRole) {
   return ROLE_CAPABILITIES[currentRole].some((capability) => !ROLE_CAPABILITIES[nextRole].includes(capability))
 }
@@ -43,7 +45,7 @@ export function requiredCapabilityForRequest({ pathname, method }: RbacRequest):
   const write = !["GET", "HEAD", "OPTIONS"].includes(method.toUpperCase())
   if (pathname.startsWith("/api/auth") || pathname.startsWith("/login")) return null
   if (pathname === "/api/security/logout") return null
-  if (pathname === "/security" || pathname.startsWith("/security/") || pathname.startsWith("/api/security")) return "settings.manage"
+  if (pathname === "/security" || pathname.startsWith("/security/") || pathname.startsWith("/api/security")) return "security.mfa.self"
   if (pathname === "/users" || pathname.startsWith("/users/") || pathname.startsWith("/api/admin-users")) return write ? "admin_users.manage" : "admin_users.read"
   if (pathname === "/portal-users" || pathname.startsWith("/portal-users/") || pathname.startsWith("/api/portal-users")) return write ? "portal_users.manage" : "portal_users.read"
   if (pathname === "/claims" || pathname.startsWith("/claims/") || pathname.startsWith("/api/claims")) return write ? "claims.manage" : "claims.read"

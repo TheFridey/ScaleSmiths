@@ -66,6 +66,18 @@ describe("authoritative authorization policy", () => {
     expect(authorizationExpectation("/api/prospects/5", "PATCH")?.capability).toBe("leads.write")
   })
 
+
+  it("keeps Venture Director MCP isolated from human and arbitrary Admin authority", () => {
+    expect(authorizationExpectation("/api/venture-lab/mcp", "POST")).toMatchObject({ capability: null, authenticated: false, id: "venture.mcp" })
+    expect(authorizationExpectation("/api/venture-lab/approval", "POST")?.capability).toBe("venture.finance.approve")
+    expect(authorizationExpectation("/api/venture-lab/runtime", "POST")?.capability).toBe("venture.emergency_stop")
+    expect(authorizationExpectation("/api/venture-lab/service", "POST")?.capability).toBe("venture.integration.manage")
+    expect(authorizationExpectation("/api/venture-lab/launch", "POST")?.capability).toBe("venture.launch.approve")
+    expect(authorizationExpectation("/api/venture-lab/gate", "POST")?.capability).toBe("venture.experiment.manage")
+    expect(authorizationExpectation("/api/clients/policy-test-id", "GET")?.capability).toBe("clients.read")
+    expect(authorizationExpectation("/api/forge/projects/policy-test-id/deploy", "POST")?.capability).toBe("deployments.execute")
+  })
+
   it("fails closed for an unregistered API operation", () => {
     expect(authorizeRequest("owner", { pathname: "/api/unregistered-sensitive-route", method: "POST" })).toMatchObject({ allowed: false, capability: null, reason: "unmapped_api_operation" })
   })

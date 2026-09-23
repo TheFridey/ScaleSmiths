@@ -4,6 +4,8 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { signIn } from "next-auth/react"
 import { Logo } from "@/components/Logo"
+import { homePathForRole } from "@/lib/rbac"
+import type { AdminRole } from "@/lib/admin-users"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -35,7 +37,7 @@ export default function LoginPage() {
 
       const sessionResponse = await fetch("/api/auth/session", { cache: "no-store" })
       const session = await sessionResponse.json().catch(() => null)
-      const destination = session?.user?.role === "venture_controller" ? "/venture-lab" : "/dashboard"
+      const destination = session?.user?.role ? homePathForRole(session.user.role as AdminRole) : "/dashboard"
       router.push(destination)
       router.refresh()
     } catch {

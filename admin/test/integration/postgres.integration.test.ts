@@ -2143,35 +2143,34 @@ describe("real PostgreSQL integration", () => {
     await service.initializeExperimentZero({ serviceAccountId: "venture-director", serviceAccountName: "Venture Director" });
 
     try {
-      await expect(oauth.registerCursorOauthClient({
-        client_name: "Untrusted redirect",
-        redirect_uris: ["https://evil.example/callback"],
-      })).rejects.toMatchObject({ code: "invalid_redirect_uri" });
+      const clientId = oauth.VENTURE_OAUTH_CLIENT_ID;
+      const seededClient = (await pool.query(
+        "SELECT client_id,client_name,redirect_uris,active FROM venture_oauth_clients WHERE client_id=$1",
+        [clientId],
+      )).rows[0];
+      expect(seededClient).toEqual({
+        client_id: "cursor-venture-lab",
+        client_name: "Cursor / Grok Bot Venture Director",
+        redirect_uris: [
+          "https://www.cursor.com/agents/mcp/oauth/callback",
+          "http://localhost:8787/callback",
+        ],
+        active: true,
+      });
 
-      const registration = await oauth.registerCursorOauthClient({
-        client_name: "Cursor Grok Bot",
-        redirect_uris: [
-          "https://www.cursor.com/agents/mcp/oauth/callback",
-          "cursor://anysphere.cursor-mcp/oauth/callback",
-        ],
-        grant_types: ["authorization_code", "refresh_token"],
-        response_types: ["code"],
-        token_endpoint_auth_method: "none",
-      });
-      const duplicate = await oauth.registerCursorOauthClient({
-        client_name: "Cursor duplicate registration",
-        redirect_uris: [
-          "cursor://anysphere.cursor-mcp/oauth/callback",
-          "https://www.cursor.com/agents/mcp/oauth/callback",
-        ],
-      });
-      expect(duplicate.client_id).toBe(registration.client_id);
+      await expect(pool.query(
+        "INSERT INTO venture_oauth_clients(client_id,client_name,redirect_uris) VALUES('attacker-client','Attacker','[\"https://www.cursor.com/agents/mcp/oauth/callback\",\"http://localhost:8787/callback\"]'::jsonb)",
+      )).rejects.toThrow(/check constraint/i);
+      await expect(pool.query(
+        "UPDATE venture_oauth_clients SET redirect_uris='[\"https://evil.example/callback\",\"http://localhost:8787/callback\"]'::jsonb WHERE client_id=$1",
+        [clientId],
+      )).rejects.toThrow(/immutable|check constraint/i);
 
       const verifier = "cursor-pkce-verifier-000000000000000000000000000000000000000000000000";
       const challenge = createHash("sha256").update(verifier).digest("base64url");
       const redirectUri = "https://www.cursor.com/agents/mcp/oauth/callback";
       const baseAuthorization = {
-        clientId: registration.client_id,
+        clientId: clientId,
         redirectUri,
         responseType: "code",
         codeChallenge: challenge,
@@ -2180,6 +2179,17 @@ describe("real PostgreSQL integration", () => {
         resource: "https://admin.scalesmiths.co.uk/api/venture-lab/mcp",
         state: "cursor-state-001",
       };
+
+      await expect(oauth.createCursorAuthorizationCode({
+        ...baseAuthorization,
+        clientId: "unregistered-client",
+        actorId: controller,
+      })).rejects.toMatchObject({ code: "unauthorized_client" });
+      await expect(oauth.createCursorAuthorizationCode({
+        ...baseAuthorization,
+        redirectUri: "https://evil.example/callback",
+        actorId: controller,
+      })).rejects.toMatchObject({ code: "invalid_request" });
 
       await expect(oauth.createCursorAuthorizationCode({
         ...baseAuthorization,
@@ -2200,7 +2210,7 @@ describe("real PostgreSQL integration", () => {
 
       const wrongVerifier = new URLSearchParams({
         grant_type: "authorization_code",
-        client_id: registration.client_id,
+        client_id: clientId,
         code: authorization.code,
         redirect_uri: redirectUri,
         code_verifier: "wrong-verifier-0000000000000000000000000000000000000000000",
@@ -2210,7 +2220,7 @@ describe("real PostgreSQL integration", () => {
 
       const tokenForm = new URLSearchParams({
         grant_type: "authorization_code",
-        client_id: registration.client_id,
+        client_id: clientId,
         code: authorization.code,
         redirect_uri: redirectUri,
         code_verifier: verifier,
@@ -2236,7 +2246,7 @@ describe("real PostgreSQL integration", () => {
 
       const refreshed = await oauth.exchangeCursorOauthToken(new URLSearchParams({
         grant_type: "refresh_token",
-        client_id: registration.client_id,
+        client_id: clientId,
         refresh_token: firstTokens.refresh_token,
         resource: "https://admin.scalesmiths.co.uk/api/venture-lab/mcp",
       }));
@@ -2247,7 +2257,7 @@ describe("real PostgreSQL integration", () => {
       expect(await oauth.authenticateVentureOauthAccessToken(refreshed.access_token)).toBeNull();
       await expect(oauth.exchangeCursorOauthToken(new URLSearchParams({
         grant_type: "refresh_token",
-        client_id: registration.client_id,
+        client_id: clientId,
         refresh_token: refreshed.refresh_token,
       }))).rejects.toMatchObject({ code: "invalid_grant" });
       await pool.query("UPDATE admin_users SET mfa_enabled=true WHERE id=$1", [controller]);

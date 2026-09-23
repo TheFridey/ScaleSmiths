@@ -35,7 +35,9 @@ test.describe("commercial landing pages", () => {
       const blocks = await page.locator('script[type="application/ld+json"]').allTextContents()
       const questions = blocks.flatMap((block) => [...block.matchAll(/"@type":"Question","name":"([^"]+)"/g)].map((match) => match[1]))
       expect(questions.length, path).toBeGreaterThan(0)
-      for (const question of questions) await expect(page.getByText(question, { exact: true }).first()).toBeVisible()
+      for (const question of questions) {
+        await expect(page.locator("summary, dt").filter({ hasText: question }).first()).toBeVisible()
+      }
     }
   })
 })

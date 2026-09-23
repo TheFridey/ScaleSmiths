@@ -46,7 +46,7 @@ export async function POST(request: Request) {
   } catch (error) {
     if (error instanceof VentureMcpError) {
       if (error.code === "mcp_unauthorized") {
-        const resourceMetadata = `${ventureOauthOrigin()}/.well-known/oauth-protected-resource/venture-lab`
+        const resourceMetadata = `${ventureOauthOrigin()}/.well-known/oauth-protected-resource`
         return rpcError(id, -32000, error.safeMessage, error.status, error.code, {
           "WWW-Authenticate": `Bearer resource_metadata="${resourceMetadata}", scope="venture"`,
         })

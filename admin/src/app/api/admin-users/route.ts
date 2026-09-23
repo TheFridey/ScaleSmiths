@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     const actor = await guardApiCapability("admin_users.manage")
     const body = await request.json().catch(() => null)
     if (!body || typeof body !== "object" || Array.isArray(body)) throw new AdminIdentityError("Invalid user payload.")
-    if ((body as Record<string, unknown>).role === "owner" && !hasCapability(actor.role, "admin_users.owner.assign")) throw new AdminIdentityError("Only an owner can create another owner.", 403, "owner_required")
+    if (["owner", "venture_controller"].includes(String((body as Record<string, unknown>).role ?? "")) && !hasCapability(actor.role, "admin_users.owner.assign")) throw new AdminIdentityError("Only an owner can create an owner or Venture Controller.", 403, "owner_required")
     const created = await createAdminUser(body as Record<string, unknown>)
     return NextResponse.json({ ok: true, userId: created.id }, { status: 201 })
   } catch (error) { return identityError(error) }

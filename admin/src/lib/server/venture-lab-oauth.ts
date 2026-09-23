@@ -4,6 +4,7 @@ import { createHash, randomBytes } from "node:crypto"
 import { and, eq, sql } from "drizzle-orm"
 import { db } from "@/lib/db"
 import {
+  adminUsers,
   ventureAuditEvents,
   ventureExperiments,
   ventureOauthClients,
@@ -146,7 +147,7 @@ export interface CursorAuthorizationInput {
   scope?: string | null
   resource?: string | null
   state?: string | null
-  actor: { id: string; role: string; active: boolean; mfaEnabled: boolean }
+  actorId: string
 }
 
 export async function inspectCursorAuthorizationRequest(input: CursorAuthorizationInput) {
@@ -172,11 +173,11 @@ export async function createCursorAuthorizationCode(input: CursorAuthorizationIn
     codeChallenge: input.codeChallenge,
     scope: validated.scope,
     resource: validated.resource,
-    approvedBy: input.actor.id,
+    approvedBy: input.actorId,
     expiresAt,
   })
 
-  await auditHuman(input.actor.id, "oauth_connector_authorized", "Authorized Cursor Grok Bot to use the restricted Venture Director MCP identity.", {
+  await auditHuman(input.actorId, "oauth_connector_authorized", "Authorized Cursor Grok Bot to use the restricted Venture Director MCP identity.", {
     clientId: validated.client.clientId,
     redirectUri: input.redirectUri,
     scope: validated.scope,
@@ -187,7 +188,13 @@ export async function createCursorAuthorizationCode(input: CursorAuthorizationIn
 }
 
 async function validateCursorAuthorizationRequest(input: CursorAuthorizationInput) {
-  if (!input.actor.active || input.actor.role !== "venture_controller" || !input.actor.mfaEnabled) {
+  const [authorizer] = await db.select({
+    id: adminUsers.id,
+    role: adminUsers.role,
+    active: adminUsers.active,
+    mfaEnabled: adminUsers.mfaEnabled,
+  }).from(adminUsers).where(eq(adminUsers.id, input.actorId)).limit(1)
+  if (!authorizer?.active || authorizer.role !== "venture_controller" || !authorizer.mfaEnabled) {
     throw new VentureOauthError(403, "access_denied", "An active MFA-enabled Venture Controller must authorize this connector.")
   }
   if (input.responseType !== "code") throw new VentureOauthError(400, "unsupported_response_type", "Only authorization-code flow is supported.")

@@ -2152,6 +2152,7 @@ describe("real PostgreSQL integration", () => {
         client_id: "cursor-venture-lab",
         client_name: "Cursor / Grok Bot Venture Director",
         redirect_uris: [
+          "cursor://anysphere.cursor-mcp/oauth/callback",
           "https://www.cursor.com/agents/mcp/oauth/callback",
           "http://localhost:8787/callback",
         ],
@@ -2159,12 +2160,32 @@ describe("real PostgreSQL integration", () => {
       });
 
       await expect(pool.query(
-        "INSERT INTO venture_oauth_clients(client_id,client_name,redirect_uris) VALUES('attacker-client','Attacker','[\"https://www.cursor.com/agents/mcp/oauth/callback\",\"http://localhost:8787/callback\"]'::jsonb)",
+        "INSERT INTO venture_oauth_clients(client_id,client_name,redirect_uris) VALUES('attacker-client','Attacker','[\"cursor://anysphere.cursor-mcp/oauth/callback\",\"https://www.cursor.com/agents/mcp/oauth/callback\",\"http://localhost:8787/callback\"]'::jsonb)",
       )).rejects.toThrow(/check constraint/i);
       await expect(pool.query(
-        "UPDATE venture_oauth_clients SET redirect_uris='[\"https://evil.example/callback\",\"http://localhost:8787/callback\"]'::jsonb WHERE client_id=$1",
+        "UPDATE venture_oauth_clients SET redirect_uris='[\"cursor://anysphere.cursor-mcp/oauth/callback\",\"https://evil.example/callback\",\"http://localhost:8787/callback\"]'::jsonb WHERE client_id=$1",
         [clientId],
       )).rejects.toThrow(/immutable|check constraint/i);
+
+      expect(oauth.registerCursorOauthClient({
+        client_name: "Grok Bot",
+        redirect_uris: [...oauth.CURSOR_OAUTH_REDIRECT_URIS],
+        token_endpoint_auth_method: "none",
+        grant_types: ["authorization_code", "refresh_token"],
+        response_types: ["code"],
+      })).toMatchObject({
+        client_id: "cursor-venture-lab",
+        token_endpoint_auth_method: "none",
+        redirect_uris: [...oauth.CURSOR_OAUTH_REDIRECT_URIS],
+      });
+      expect(() => oauth.registerCursorOauthClient({
+        redirect_uris: ["https://www.cursor.com/agents/mcp/oauth/callback", "http://localhost:8787/callback"],
+        token_endpoint_auth_method: "none",
+      })).toThrow(/redirect URIs/i);
+      expect(() => oauth.registerCursorOauthClient({
+        redirect_uris: [...oauth.CURSOR_OAUTH_REDIRECT_URIS],
+        token_endpoint_auth_method: "client_secret_post",
+      })).toThrow(/public PKCE clients/i);
 
       const verifier = "cursor-pkce-verifier-000000000000000000000000000000000000000000000000";
       const challenge = createHash("sha256").update(verifier).digest("base64url");

@@ -1,3 +1,4 @@
+import type { ReactNode } from "react"
 import { formatGbpMinor } from "@/lib/venture-lab/money"
 import { getVentureLabDashboardSnapshot } from "@/lib/server/venture-lab-dashboard"
 
@@ -133,7 +134,7 @@ function Metric({ label, value, detail, compact = false }: { label: string; valu
   )
 }
 
-function Panel({ title, children }: { title: string; children: React.ReactNode }) {
+function Panel({ title, children }: { title: string; children: ReactNode }) {
   return <section className="rounded-xl border border-zinc-200 bg-white p-5"><h2 className="mb-4 text-lg font-semibold text-zinc-950">{title}</h2>{children}</section>
 }
 

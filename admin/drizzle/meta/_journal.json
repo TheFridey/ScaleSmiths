@@ -435,6 +435,13 @@
       "when": 1790112600000,
       "tag": "0061_venture_lab_core",
       "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1790158200000,
+      "tag": "0062_venture_lab_controller_mcp_gate",
+      "breakpoints": true
     }
   ]
 }

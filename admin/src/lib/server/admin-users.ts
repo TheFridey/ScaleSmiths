@@ -74,7 +74,7 @@ export async function updateAdminUser(targetId: string, input: Record<string, un
     const nextRole = input.role === undefined ? target.role : input.role
     const nextActive = input.active === undefined ? target.active : input.active
     if (typeof nextActive !== "boolean" || !isRole(nextRole)) throw new AdminIdentityError("Invalid role or active state.")
-    if (nextRole === "owner" && !hasCapability(actor.role, "admin_users.owner.assign")) throw new AdminIdentityError("Only an owner can grant the owner role.", 403, "owner_required")
+    if ((nextRole === "owner" || nextRole === "venture_controller") && !hasCapability(actor.role, "admin_users.owner.assign")) throw new AdminIdentityError("Only an owner can grant owner or Venture Controller authority.", 403, "owner_required")
     const privilegeReduced = isPrivilegeReduction(target.role, nextRole)
     const mutation = resolveAdminUserMutation({ targetId: target.id, actorId: actor.id, targetRole: target.role, targetActive: target.active, targetSessionVersion: target.sessionVersion, requestedRole: nextRole, requestedActive: nextActive, revokeSessions: input.revokeSessions === true || privilegeReduced, activeOwnerCount: Number(ownerCount.value) })
     const now = new Date()
@@ -168,5 +168,5 @@ export async function writeAdminSecurityAudit(input: { actorUserId?: string | nu
   await db.insert(adminSecurityAudit).values({ actorUserId: input.actorUserId ?? null, targetUserId: input.targetUserId ?? null, action: input.action, success: input.success, metadataJson: input.metadataJson })
 }
 
-function isRole(value: unknown): value is AdminRole { return typeof value === "string" && ["owner", "administrator", "sales", "project_manager", "developer", "finance", "viewer"].includes(value) }
+function isRole(value: unknown): value is AdminRole { return typeof value === "string" && ["owner", "administrator", "venture_controller", "sales", "project_manager", "developer", "finance", "viewer"].includes(value) }
 function isUniqueViolation(error: unknown) { return Boolean(error && typeof error === "object" && "code" in error && error.code === "23505") }

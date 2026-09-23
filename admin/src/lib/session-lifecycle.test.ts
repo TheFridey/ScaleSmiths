@@ -72,7 +72,7 @@ describe("privilege reduction detection", () => {
 })
 
 describe("role validation", () => {
-  it("validates all seven defined roles", () => {
+  it("validates all defined roles", () => {
     for (const role of ADMIN_ROLES) {
       expect(isAdminRole(role)).toBe(true)
     }

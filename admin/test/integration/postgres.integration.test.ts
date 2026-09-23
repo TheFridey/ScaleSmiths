@@ -1595,7 +1595,7 @@ describe("real PostgreSQL integration", () => {
   it("enforces database-authoritative Venture Lab concurrency, protected reserve, exact approvals and idempotency", async () => {
     const service = await import("../../src/lib/server/venture-lab-persistence");
     const owner = (await pool.query(
-      "INSERT INTO admin_users(email,display_name,password_hash,role) VALUES('venture-owner@example.test','Venture Owner','hash','owner') RETURNING id",
+      "INSERT INTO admin_users(email,display_name,password_hash,role) VALUES('venture-owner@example.test','Venture Controller','hash','venture_controller') RETURNING id",
     )).rows[0].id as string;
     const serviceId = "grok-integration";
     await service.initializeExperimentZero({ serviceAccountId: serviceId, serviceAccountName: "Grok Integration" });
@@ -1636,6 +1636,19 @@ describe("real PostgreSQL integration", () => {
       approvalId: developerBlocked.id,
       actorUserId: developer,
       reason: "Developer must not release capital",
+    })).rejects.toMatchObject({ code: "approval_authority_denied" });
+    expect((await pool.query(
+      "SELECT status,approved_by FROM venture_approval_requests WHERE id=$1",
+      [developerBlocked.id],
+    )).rows[0]).toEqual({ status: "REQUESTED", approved_by: null });
+
+    const ordinaryOwner = (await pool.query(
+      "INSERT INTO admin_users(email,display_name,password_hash,role) VALUES('venture-ordinary-owner@example.test','Ordinary ScaleSmiths Owner','hash','owner') RETURNING id",
+    )).rows[0].id as string;
+    await expect(service.approveVentureSpendRequest({
+      approvalId: developerBlocked.id,
+      actorUserId: ordinaryOwner,
+      reason: "Generic owner must not substitute for Venture Controller",
     })).rejects.toMatchObject({ code: "approval_authority_denied" });
     expect((await pool.query(
       "SELECT status,approved_by FROM venture_approval_requests WHERE id=$1",
@@ -1819,7 +1832,7 @@ describe("real PostgreSQL integration", () => {
   it("consumes one approved Venture Lab request exactly once under concurrency", async () => {
     const service = await import("../../src/lib/server/venture-lab-persistence");
     const owner = (await pool.query(
-      "INSERT INTO admin_users(email,display_name,password_hash,role) VALUES('venture-single-use@example.test','Single Use Owner','hash','owner') RETURNING id",
+      "INSERT INTO admin_users(email,display_name,password_hash,role) VALUES('venture-single-use@example.test','Single Use Controller','hash','venture_controller') RETURNING id",
     )).rows[0].id as string;
     const serviceId = "grok-single-use";
     await service.initializeExperimentZero({ serviceAccountId: serviceId, serviceAccountName: "Grok Single Use" });
@@ -1873,7 +1886,7 @@ describe("real PostgreSQL integration", () => {
   it("keeps Venture Lab ledger and audit history append-only and balanced", async () => {
     const service = await import("../../src/lib/server/venture-lab-persistence");
     const owner = (await pool.query(
-      "INSERT INTO admin_users(email,display_name,password_hash,role) VALUES('venture-ledger@example.test','Ledger Owner','hash','owner') RETURNING id",
+      "INSERT INTO admin_users(email,display_name,password_hash,role) VALUES('venture-ledger@example.test','Ledger Controller','hash','venture_controller') RETURNING id",
     )).rows[0].id as string;
     const serviceId = "grok-ledger";
     await service.initializeExperimentZero({ serviceAccountId: serviceId, serviceAccountName: "Grok Ledger" });
@@ -1961,7 +1974,7 @@ describe("real PostgreSQL integration", () => {
   it("fails Venture Lab mutations closed under emergency STOP and irreversible service revocation", async () => {
     const service = await import("../../src/lib/server/venture-lab-persistence");
     const owner = (await pool.query(
-      "INSERT INTO admin_users(email,display_name,password_hash,role) VALUES('venture-stop@example.test','Stop Owner','hash','owner') RETURNING id",
+      "INSERT INTO admin_users(email,display_name,password_hash,role) VALUES('venture-stop@example.test','Stop Controller','hash','venture_controller') RETURNING id",
     )).rows[0].id as string;
     const serviceId = "grok-stop";
     await service.initializeExperimentZero({ serviceAccountId: serviceId, serviceAccountName: "Grok Stop" });
@@ -2040,6 +2053,76 @@ describe("real PostgreSQL integration", () => {
     expect((await pool.query(
       "SELECT reserved_minor,spent_minor FROM venture_budget_envelopes WHERE kind='experiment'",
     )).rows[0]).toEqual({ reserved_minor: 0, spent_minor: 0 });
+  });
+
+  it("keeps the restricted Venture Director MCP identity bounded by STOP, revocation and the tool allowlist", async () => {
+    const service = await import("../../src/lib/server/venture-lab-persistence");
+    const mcp = await import("../../src/lib/server/venture-lab-mcp");
+    const controller = (await pool.query(
+      "INSERT INTO admin_users(email,display_name,password_hash,role) VALUES('venture-mcp-controller@example.test','MCP Controller','hash','venture_controller') RETURNING id",
+    )).rows[0].id as string;
+    await service.initializeExperimentZero({ serviceAccountId: "venture-director", serviceAccountName: "Venture Director" });
+
+    const previousToken = process.env.VENTURE_DIRECTOR_MCP_TOKEN;
+    process.env.VENTURE_DIRECTOR_MCP_TOKEN = "experiment-zero-mcp-token-00000000000000000000";
+    try {
+      const headers = new Headers({ authorization: `Bearer ${process.env.VENTURE_DIRECTOR_MCP_TOKEN}` });
+      await expect(mcp.authenticateVentureDirector(headers)).resolves.toMatchObject({ id: "venture-director" });
+
+      await expect(mcp.executeVentureMcpTool({
+        serviceId: "venture-director",
+        tool: "venture.finance.approve",
+        arguments: {},
+      })).rejects.toMatchObject({ code: "tool_not_allowed" });
+
+      await expect(mcp.executeVentureMcpTool({
+        serviceId: "venture-director",
+        tool: "venture.opportunities.propose",
+        arguments: {
+          title: "Bounded opportunity",
+          problem: "Validate that proposals remain proposals.",
+          approvedBy: controller,
+        },
+      })).rejects.toMatchObject({ code: "invalid_arguments" });
+
+      const proposed = await mcp.executeVentureMcpTool({
+        serviceId: "venture-director",
+        tool: "venture.opportunities.propose",
+        arguments: {
+          title: "Bounded opportunity",
+          problem: "Validate that proposals remain proposals.",
+        },
+      }) as { opportunity: { id: string }; proposal: { status: string } };
+      expect(proposed.proposal.status).toBe("PENDING");
+      expect((await pool.query(
+        "SELECT created_by_service,status FROM venture_opportunities WHERE id=$1",
+        [proposed.opportunity.id],
+      )).rows[0]).toEqual({ created_by_service: "venture-director", status: "PROPOSED" });
+
+      const audit = (await pool.query(
+        "SELECT actor_type,actor_key FROM venture_audit_events WHERE action='mcp:venture.opportunities.propose' ORDER BY id DESC LIMIT 1",
+      )).rows[0];
+      expect(audit).toEqual({ actor_type: "service", actor_key: "venture-director" });
+
+      await service.activateVentureEmergencyStop({ actorUserId: controller, reason: "MCP STOP integration test" });
+      await expect(mcp.authenticateVentureDirector(headers)).rejects.toMatchObject({ code: "venture_paused" });
+      await service.resumeVentureLab({ actorUserId: controller, reason: "Continue MCP revocation test" });
+
+      await service.revokeVentureServiceAccount({
+        serviceAccountId: "venture-director",
+        actorUserId: controller,
+        reason: "MCP revocation integration test",
+      });
+      await expect(mcp.authenticateVentureDirector(headers)).rejects.toMatchObject({ code: "service_revoked" });
+      await expect(mcp.executeVentureMcpTool({
+        serviceId: "venture-director",
+        tool: "venture.dashboard.read",
+        arguments: {},
+      })).rejects.toMatchObject({ code: "service_revoked" });
+    } finally {
+      if (previousToken === undefined) delete process.env.VENTURE_DIRECTOR_MCP_TOKEN;
+      else process.env.VENTURE_DIRECTOR_MCP_TOKEN = previousToken;
+    }
   });
 
 });

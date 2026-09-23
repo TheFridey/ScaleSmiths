@@ -1,11 +1,14 @@
 import type { ReactNode } from "react"
+import { VentureLabControls } from "@/components/VentureLabControls"
 import { formatGbpMinor } from "@/lib/venture-lab/money"
 import { getVentureLabDashboardSnapshot } from "@/lib/server/venture-lab-dashboard"
+import { requireCurrentAdminUser } from "@/lib/server/admin-session"
+import { hasCapability } from "@/lib/rbac"
 
 export const dynamic = "force-dynamic"
 
 export default async function VentureLabPage() {
-  const snapshot = await getVentureLabDashboardSnapshot()
+  const [snapshot, actor] = await Promise.all([getVentureLabDashboardSnapshot(), requireCurrentAdminUser()])
 
   if (!snapshot) {
     return (
@@ -58,6 +61,27 @@ export default async function VentureLabPage() {
         <Metric label="Pending proposals" value={String(proposals.filter((item) => item.status === "PENDING").length)} />
         <Metric label="Approval requests" value={String(approvals.length)} />
       </section>
+
+      <VentureLabControls
+        paused={runtime.paused}
+        approvals={approvals.map((item) => ({
+          id: item.id,
+          action: item.action,
+          amountMinor: item.amountMinor,
+          target: item.target,
+          purpose: item.purpose,
+          status: item.status,
+        }))}
+        services={services.map((item) => ({
+          id: item.id,
+          displayName: item.displayName,
+          active: item.active,
+          revokedAt: item.revokedAt?.toISOString() ?? null,
+        }))}
+        canApprove={hasCapability(actor.role, "venture.finance.approve")}
+        canStop={hasCapability(actor.role, "venture.emergency_stop")}
+        canRevoke={hasCapability(actor.role, "venture.integration.manage")}
+      />
 
       <section className="grid gap-6 xl:grid-cols-2">
         <Panel title="Portfolio / opportunities">

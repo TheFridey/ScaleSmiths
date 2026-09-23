@@ -36,7 +36,9 @@ export default function LoginPage() {
 
       const sessionResponse = await fetch("/api/auth/session", { cache: "no-store" })
       const session = await sessionResponse.json().catch(() => null)
-      router.push(session?.user?.role === "venture_controller" ? "/venture-lab" : "/dashboard")
+      const callbackUrl = new URLSearchParams(window.location.search).get("callbackUrl")
+      const safeCallback = callbackUrl?.startsWith("/venture-lab/oauth/authorize?") ? callbackUrl : null
+      router.push(safeCallback ?? (session?.user?.role === "venture_controller" ? "/venture-lab" : "/dashboard"))
       router.refresh()
     } catch {
       setError("Something went wrong - try again")

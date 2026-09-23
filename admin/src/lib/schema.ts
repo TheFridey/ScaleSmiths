@@ -2079,7 +2079,183 @@ export const ventureServiceCredentials = pgTable("venture_service_credentials", 
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
   uniqueIndex("venture_service_credentials_service_version_idx").on(table.serviceAccountId, table.tokenVersion),
-  check("venture_service_credentials_hash_check", sql`${table.tokenHash} ~ '^[0-9a-f]{64}`),
+  check("venture_service_credentials_hash_check", sql`${table.tokenHash} ~ '^[0-9a-f]{64}
+  check("venture_service_credentials_version_check", sql`${table.tokenVersion} > 0`),
+  check("venture_service_credentials_state_check", sql`(${table.active} = true and ${table.revokedAt} is null) or (${table.active} = false and ${table.revokedAt} is not null)`),
+])
+
+export const ventureOpportunities = pgTable("venture_opportunities", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  experimentId: integer("experiment_id").references(() => ventureExperiments.id, { onDelete: "restrict" }),
+  title: text("title").notNull(),
+  summary: text("summary").notNull(),
+  status: text("status").$type<"PROPOSED" | "RESEARCHING" | "VALIDATION_CANDIDATE" | "ARCHIVED">().default("PROPOSED").notNull(),
+  proposedByService: text("proposed_by_service").references(() => ventureServiceAccounts.id, { onDelete: "restrict" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("venture_opportunities_experiment_created_idx").on(table.experimentId, table.createdAt),
+  check("venture_opportunities_status_check", sql`${table.status} in ('PROPOSED','RESEARCHING','VALIDATION_CANDIDATE','ARCHIVED')`),
+])
+
+export const ventureEvidence = pgTable("venture_evidence", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  experimentId: integer("experiment_id").references(() => ventureExperiments.id, { onDelete: "restrict" }),
+  opportunityId: uuid("opportunity_id").references(() => ventureOpportunities.id, { onDelete: "restrict" }),
+  sourceUrl: text("source_url"),
+  sourceTitle: text("source_title"),
+  evidenceType: text("evidence_type").notNull(),
+  claim: text("claim").notNull(),
+  summary: text("summary").notNull(),
+  excerpt: text("excerpt"),
+  observedAt: timestamp("observed_at", { withTimezone: true }),
+  publishedAt: timestamp("published_at", { withTimezone: true }),
+  contentHash: text("content_hash").notNull(),
+  status: text("status").$type<"PROPOSED" | "ACCEPTED" | "REJECTED">().default("PROPOSED").notNull(),
+  submittedByService: text("submitted_by_service").references(() => ventureServiceAccounts.id, { onDelete: "restrict" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("venture_evidence_experiment_created_idx").on(table.experimentId, table.createdAt),
+  index("venture_evidence_opportunity_created_idx").on(table.opportunityId, table.createdAt),
+  check("venture_evidence_hash_check", sql`${table.contentHash} ~ '^[0-9a-f]{64}
+  check("venture_evidence_excerpt_check", sql`${table.excerpt} is null or length(${table.excerpt}) <= 1000`),
+  check("venture_evidence_status_check", sql`${table.status} in ('PROPOSED','ACCEPTED','REJECTED')`),
+])
+
+export const ventureAgentProposals = pgTable("venture_agent_proposals", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  experimentId: integer("experiment_id").references(() => ventureExperiments.id, { onDelete: "restrict" }),
+  proposalType: text("proposal_type").$type<"OPPORTUNITY" | "EXPERIMENT" | "SPEND" | "LAUNCH" | "OTHER">().notNull(),
+  title: text("title").notNull(),
+  rationale: text("rationale").notNull(),
+  payloadJson: jsonb("payload_json").$type<Record<string, unknown>>().default({}).notNull(),
+  requestedByService: text("requested_by_service").references(() => ventureServiceAccounts.id, { onDelete: "restrict" }).notNull(),
+  status: text("status").$type<"PROPOSED" | "ACCEPTED" | "REJECTED" | "CANCELLED">().default("PROPOSED").notNull(),
+  resolvedBy: uuid("resolved_by").references(() => adminUsers.id, { onDelete: "restrict" }),
+  resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("venture_agent_proposals_experiment_created_idx").on(table.experimentId, table.createdAt),
+  index("venture_agent_proposals_status_created_idx").on(table.status, table.createdAt),
+  check("venture_agent_proposals_type_check", sql`${table.proposalType} in ('OPPORTUNITY','EXPERIMENT','SPEND','LAUNCH','OTHER')`),
+  check("venture_agent_proposals_status_check", sql`${table.status} in ('PROPOSED','ACCEPTED','REJECTED','CANCELLED')`),
+  check("venture_agent_proposals_resolution_check", sql`(${table.status} = 'PROPOSED' and ${table.resolvedBy} is null and ${table.resolvedAt} is null) or (${table.status} <> 'PROPOSED' and ${table.resolvedBy} is not null and ${table.resolvedAt} is not null)`),
+])
+
+export const ventureGateState = pgTable("venture_gate_state", {
+  id: integer("id").primaryKey().default(1),
+  currentBlocker: text("current_blocker").notNull(),
+  nextDecision: text("next_decision").notNull(),
+  updatedBy: uuid("updated_by").references(() => adminUsers.id, { onDelete: "restrict" }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  check("venture_gate_state_singleton_check", sql`${table.id} = 1`),
+])
+`),
+  check("venture_service_credentials_version_check", sql`${table.tokenVersion} > 0`),
+  check("venture_service_credentials_state_check", sql`(${table.active} = true and ${table.revokedAt} is null) or (${table.active} = false and ${table.revokedAt} is not null)`),
+])
+
+export const ventureOpportunities = pgTable("venture_opportunities", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  experimentId: integer("experiment_id").references(() => ventureExperiments.id, { onDelete: "restrict" }),
+  title: text("title").notNull(),
+  summary: text("summary").notNull(),
+  status: text("status").$type<"PROPOSED" | "RESEARCHING" | "VALIDATION_CANDIDATE" | "ARCHIVED">().default("PROPOSED").notNull(),
+  proposedByService: text("proposed_by_service").references(() => ventureServiceAccounts.id, { onDelete: "restrict" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("venture_opportunities_experiment_created_idx").on(table.experimentId, table.createdAt),
+  check("venture_opportunities_status_check", sql`${table.status} in ('PROPOSED','RESEARCHING','VALIDATION_CANDIDATE','ARCHIVED')`),
+])
+
+export const ventureEvidence = pgTable("venture_evidence", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  experimentId: integer("experiment_id").references(() => ventureExperiments.id, { onDelete: "restrict" }),
+  opportunityId: uuid("opportunity_id").references(() => ventureOpportunities.id, { onDelete: "restrict" }),
+  sourceUrl: text("source_url"),
+  sourceTitle: text("source_title"),
+  evidenceType: text("evidence_type").notNull(),
+  claim: text("claim").notNull(),
+  summary: text("summary").notNull(),
+  excerpt: text("excerpt"),
+  observedAt: timestamp("observed_at", { withTimezone: true }),
+  publishedAt: timestamp("published_at", { withTimezone: true }),
+  contentHash: text("content_hash").notNull(),
+  status: text("status").$type<"PROPOSED" | "ACCEPTED" | "REJECTED">().default("PROPOSED").notNull(),
+  submittedByService: text("submitted_by_service").references(() => ventureServiceAccounts.id, { onDelete: "restrict" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("venture_evidence_experiment_created_idx").on(table.experimentId, table.createdAt),
+  index("venture_evidence_opportunity_created_idx").on(table.opportunityId, table.createdAt),
+  check("venture_evidence_hash_check", sql`${table.contentHash} ~ '^[0-9a-f]{64}`),
+  check("venture_evidence_excerpt_check", sql`${table.excerpt} is null or length(${table.excerpt}) <= 1000`),
+  check("venture_evidence_status_check", sql`${table.status} in ('PROPOSED','ACCEPTED','REJECTED')`),
+])
+
+export const ventureAgentProposals = pgTable("venture_agent_proposals", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  experimentId: integer("experiment_id").references(() => ventureExperiments.id, { onDelete: "restrict" }),
+  proposalType: text("proposal_type").$type<"OPPORTUNITY" | "EXPERIMENT" | "SPEND" | "LAUNCH" | "OTHER">().notNull(),
+  title: text("title").notNull(),
+  rationale: text("rationale").notNull(),
+  payloadJson: jsonb("payload_json").$type<Record<string, unknown>>().default({}).notNull(),
+  requestedByService: text("requested_by_service").references(() => ventureServiceAccounts.id, { onDelete: "restrict" }).notNull(),
+  status: text("status").$type<"PROPOSED" | "ACCEPTED" | "REJECTED" | "CANCELLED">().default("PROPOSED").notNull(),
+  resolvedBy: uuid("resolved_by").references(() => adminUsers.id, { onDelete: "restrict" }),
+  resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("venture_agent_proposals_experiment_created_idx").on(table.experimentId, table.createdAt),
+  index("venture_agent_proposals_status_created_idx").on(table.status, table.createdAt),
+  check("venture_agent_proposals_type_check", sql`${table.proposalType} in ('OPPORTUNITY','EXPERIMENT','SPEND','LAUNCH','OTHER')`),
+  check("venture_agent_proposals_status_check", sql`${table.status} in ('PROPOSED','ACCEPTED','REJECTED','CANCELLED')`),
+  check("venture_agent_proposals_resolution_check", sql`(${table.status} = 'PROPOSED' and ${table.resolvedBy} is null and ${table.resolvedAt} is null) or (${table.status} <> 'PROPOSED' and ${table.resolvedBy} is not null and ${table.resolvedAt} is not null)`),
+])
+
+export const ventureGateState = pgTable("venture_gate_state", {
+  id: integer("id").primaryKey().default(1),
+  currentBlocker: text("current_blocker").notNull(),
+  nextDecision: text("next_decision").notNull(),
+  updatedBy: uuid("updated_by").references(() => adminUsers.id, { onDelete: "restrict" }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  check("venture_gate_state_singleton_check", sql`${table.id} = 1`),
+])
+`),
+  check("venture_evidence_excerpt_check", sql`${table.excerpt} is null or length(${table.excerpt}) <= 1000`),
+  check("venture_evidence_status_check", sql`${table.status} in ('PROPOSED','ACCEPTED','REJECTED')`),
+])
+
+export const ventureAgentProposals = pgTable("venture_agent_proposals", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  experimentId: integer("experiment_id").references(() => ventureExperiments.id, { onDelete: "restrict" }),
+  proposalType: text("proposal_type").$type<"OPPORTUNITY" | "EXPERIMENT" | "SPEND" | "LAUNCH" | "OTHER">().notNull(),
+  title: text("title").notNull(),
+  rationale: text("rationale").notNull(),
+  payloadJson: jsonb("payload_json").$type<Record<string, unknown>>().default({}).notNull(),
+  requestedByService: text("requested_by_service").references(() => ventureServiceAccounts.id, { onDelete: "restrict" }).notNull(),
+  status: text("status").$type<"PROPOSED" | "ACCEPTED" | "REJECTED" | "CANCELLED">().default("PROPOSED").notNull(),
+  resolvedBy: uuid("resolved_by").references(() => adminUsers.id, { onDelete: "restrict" }),
+  resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("venture_agent_proposals_experiment_created_idx").on(table.experimentId, table.createdAt),
+  index("venture_agent_proposals_status_created_idx").on(table.status, table.createdAt),
+  check("venture_agent_proposals_type_check", sql`${table.proposalType} in ('OPPORTUNITY','EXPERIMENT','SPEND','LAUNCH','OTHER')`),
+  check("venture_agent_proposals_status_check", sql`${table.status} in ('PROPOSED','ACCEPTED','REJECTED','CANCELLED')`),
+  check("venture_agent_proposals_resolution_check", sql`(${table.status} = 'PROPOSED' and ${table.resolvedBy} is null and ${table.resolvedAt} is null) or (${table.status} <> 'PROPOSED' and ${table.resolvedBy} is not null and ${table.resolvedAt} is not null)`),
+])
+
+export const ventureGateState = pgTable("venture_gate_state", {
+  id: integer("id").primaryKey().default(1),
+  currentBlocker: text("current_blocker").notNull(),
+  nextDecision: text("next_decision").notNull(),
+  updatedBy: uuid("updated_by").references(() => adminUsers.id, { onDelete: "restrict" }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  check("venture_gate_state_singleton_check", sql`${table.id} = 1`),
+])
+`),
   check("venture_service_credentials_version_check", sql`${table.tokenVersion} > 0`),
   check("venture_service_credentials_state_check", sql`(${table.active} = true and ${table.revokedAt} is null) or (${table.active} = false and ${table.revokedAt} is not null)`),
 ])

@@ -1,7 +1,7 @@
 import "server-only"
 
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto"
-import { desc, eq } from "drizzle-orm"
+import { and, desc, eq, sql } from "drizzle-orm"
 import { db } from "@/lib/db"
 import {
   ventureAgentProposals,
@@ -138,6 +138,62 @@ export async function loadVentureLabDashboard() {
     db.select().from(ventureAgentProposals).orderBy(desc(ventureAgentProposals.createdAt)).limit(50),
   ])
   return { runtime: runtime[0] ?? null, gate: gate[0] ?? null, experiments, envelopes, opportunities, evidence, approvals, journals, postings, audit, proposals }
+}
+
+export async function resolveVentureAgentProposal(input: {
+  proposalId: string
+  actorUserId: string
+  decision: "ACCEPTED" | "REJECTED" | "CANCELLED"
+  expectedType?: "OPPORTUNITY" | "EXPERIMENT" | "SPEND" | "LAUNCH" | "OTHER"
+  reason: string
+}) {
+  const [proposal] = await db.select().from(ventureAgentProposals)
+    .where(eq(ventureAgentProposals.id, input.proposalId)).limit(1)
+  if (!proposal || proposal.status !== "PROPOSED") throw new VentureMcpError("proposal_not_resolvable", 409)
+  if (input.expectedType && proposal.proposalType !== input.expectedType) throw new VentureMcpError("proposal_type_mismatch", 409)
+
+  const [resolved] = await db.update(ventureAgentProposals).set({
+    status: input.decision,
+    resolvedBy: input.actorUserId,
+    resolvedAt: sql`CURRENT_TIMESTAMP`,
+  }).where(and(
+    eq(ventureAgentProposals.id, input.proposalId),
+    eq(ventureAgentProposals.status, "PROPOSED"),
+  )).returning()
+  if (!resolved) throw new VentureMcpError("proposal_not_resolvable", 409)
+
+  await db.insert(ventureAuditEvents).values({
+    experimentId: proposal.experimentId,
+    actorType: "human",
+    actorKey: input.actorUserId,
+    action: `agent_proposal_${input.decision.toLowerCase()}`,
+    reason: input.reason,
+    metadataJson: { proposalId: proposal.id, proposalType: proposal.proposalType },
+  })
+  return resolved
+}
+
+export async function updateVentureGateState(input: {
+  actorUserId: string
+  currentBlocker: string
+  nextDecision: string
+}) {
+  const currentBlocker = requiredTextArg(input.currentBlocker, "currentBlocker")
+  const nextDecision = requiredTextArg(input.nextDecision, "nextDecision")
+  const [updated] = await db.update(ventureGateState).set({
+    currentBlocker,
+    nextDecision,
+    updatedBy: input.actorUserId,
+    updatedAt: sql`CURRENT_TIMESTAMP`,
+  }).where(eq(ventureGateState.id, 1)).returning()
+  if (!updated) throw new VentureMcpError("gate_state_missing", 404)
+  await db.insert(ventureAuditEvents).values({
+    actorType: "human",
+    actorKey: input.actorUserId,
+    action: "gate_state_updated",
+    metadataJson: { currentBlocker, nextDecision },
+  })
+  return updated
 }
 
 export async function executeVentureMcpTool(

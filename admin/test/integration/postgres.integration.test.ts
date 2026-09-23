@@ -1595,7 +1595,7 @@ describe("real PostgreSQL integration", () => {
   it("enforces database-authoritative Venture Lab concurrency, protected reserve, exact approvals and idempotency", async () => {
     const service = await import("../../src/lib/server/venture-lab-persistence");
     const owner = (await pool.query(
-      "INSERT INTO admin_users(email,display_name,password_hash,role) VALUES('venture-owner@example.test','Venture Owner','hash','owner') RETURNING id",
+      "INSERT INTO admin_users(email,display_name,password_hash,role) VALUES('venture-owner@example.test','Venture Controller','hash','venture_controller') RETURNING id",
     )).rows[0].id as string;
     const serviceId = "grok-integration";
     await service.initializeExperimentZero({ serviceAccountId: serviceId, serviceAccountName: "Grok Integration" });
@@ -1819,7 +1819,7 @@ describe("real PostgreSQL integration", () => {
   it("consumes one approved Venture Lab request exactly once under concurrency", async () => {
     const service = await import("../../src/lib/server/venture-lab-persistence");
     const owner = (await pool.query(
-      "INSERT INTO admin_users(email,display_name,password_hash,role) VALUES('venture-single-use@example.test','Single Use Owner','hash','owner') RETURNING id",
+      "INSERT INTO admin_users(email,display_name,password_hash,role) VALUES('venture-single-use@example.test','Single Use Controller','hash','venture_controller') RETURNING id",
     )).rows[0].id as string;
     const serviceId = "grok-single-use";
     await service.initializeExperimentZero({ serviceAccountId: serviceId, serviceAccountName: "Grok Single Use" });
@@ -1873,7 +1873,7 @@ describe("real PostgreSQL integration", () => {
   it("keeps Venture Lab ledger and audit history append-only and balanced", async () => {
     const service = await import("../../src/lib/server/venture-lab-persistence");
     const owner = (await pool.query(
-      "INSERT INTO admin_users(email,display_name,password_hash,role) VALUES('venture-ledger@example.test','Ledger Owner','hash','owner') RETURNING id",
+      "INSERT INTO admin_users(email,display_name,password_hash,role) VALUES('venture-ledger@example.test','Ledger Controller','hash','venture_controller') RETURNING id",
     )).rows[0].id as string;
     const serviceId = "grok-ledger";
     await service.initializeExperimentZero({ serviceAccountId: serviceId, serviceAccountName: "Grok Ledger" });
@@ -1961,7 +1961,7 @@ describe("real PostgreSQL integration", () => {
   it("fails Venture Lab mutations closed under emergency STOP and irreversible service revocation", async () => {
     const service = await import("../../src/lib/server/venture-lab-persistence");
     const owner = (await pool.query(
-      "INSERT INTO admin_users(email,display_name,password_hash,role) VALUES('venture-stop@example.test','Stop Owner','hash','owner') RETURNING id",
+      "INSERT INTO admin_users(email,display_name,password_hash,role) VALUES('venture-stop@example.test','Stop Controller','hash','venture_controller') RETURNING id",
     )).rows[0].id as string;
     const serviceId = "grok-stop";
     await service.initializeExperimentZero({ serviceAccountId: serviceId, serviceAccountName: "Grok Stop" });

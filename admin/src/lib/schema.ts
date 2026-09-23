@@ -1980,7 +1980,9 @@ export const ventureOauthClients = pgTable("venture_oauth_clients", {
 }, (table) => [
   uniqueIndex("venture_oauth_clients_client_id_idx").on(table.clientId),
   check("venture_oauth_clients_name_check", sql`char_length(${table.clientName}) between 1 and 200`),
-  check("venture_oauth_clients_redirects_check", sql`jsonb_typeof(${table.redirectUris}) = 'array' and jsonb_array_length(${table.redirectUris}) between 1 and 3`),
+  check("venture_oauth_clients_redirects_check", sql`jsonb_typeof(${table.redirectUris}) = 'array' and jsonb_array_length(${table.redirectUris}) = 2`),
+  check("venture_oauth_clients_static_id_check", sql`${table.clientId} = 'cursor-venture-lab'`),
+  check("venture_oauth_clients_static_redirects_check", sql`${table.redirectUris} = '[\"https://www.cursor.com/agents/mcp/oauth/callback\",\"http://localhost:8787/callback\"]'::jsonb`),
 ])
 
 export const ventureOauthCodes = pgTable("venture_oauth_codes", {

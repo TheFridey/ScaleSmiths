@@ -273,7 +273,7 @@ export async function approveVentureSpendRequest(input: {
   } catch (error) {
     if (errorChainText(error).includes("Venture Lab financial approval requires an active authoritative human identity")) {
       throw new VentureLabPersistenceError(
-        "Venture Lab financial approval requires an active owner or administrator.",
+        "Venture Lab financial approval requires an active owner, administrator, or Venture Controller.",
         "approval_authority_denied",
       )
     }

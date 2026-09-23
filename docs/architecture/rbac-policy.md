@@ -15,8 +15,9 @@ flowchart LR
 
 | Role | Capabilities |
 | --- | --- |
-| owner | all capabilities |
-| administrator | internal admin read/manage; portal read/manage/credential reset; all other capabilities except internal owner assignment and internal credential reset; cannot bypass final-owner invariants |
+| owner | all capabilities except Venture Lab finance approval and launch approval; those are isolated to the Venture Controller |
+| administrator | internal admin read/manage; portal read/manage/credential reset; all other capabilities except internal owner assignment, internal credential reset, Venture Lab finance approval and Venture Lab launch approval; cannot bypass final-owner invariants |
+| venture_controller | Venture Lab read/write, finance read/approve, experiment manage, launch approve, integration manage, emergency STOP and audit read; no unrelated ScaleSmiths admin authority |
 | sales | leads read/write, prospects convert, clients read, projects read, finance read |
 | project_manager | portal users read/manage, leads read, prospects convert, clients read/write, projects read/write, Forge read/execute/approve/configure, finance read, audit read |
 | developer | clients read, projects read/write, Forge read/execute/approve/configure, audit read, deployments execute, Venture Lab read/audit/integration-manage/emergency-STOP |
@@ -29,7 +30,7 @@ Internal identities are available at `/users` and `/api/admin-users*`; external 
 
 ## Enforcement
 
-Node middleware reloads the persisted user, validates session version/active status, maps the request path and method to a capability, and rejects denied APIs with 403 before the handler runs. Denied pages redirect to the dashboard. Sensitive path rules for audit exports, Forge integrations, approvals, deployment, Forge operations health, and analytics retention execute before generic domain rules. Body-dependent actions additionally call `guardApiCapability` inside the handler.
+Node middleware reloads the persisted user, validates session version/active status, maps the request path and method to a capability, and rejects denied APIs with 403 before the handler runs. Denied pages redirect to the role-appropriate safe landing page; Venture Controllers return to `/venture-lab`, while general admin roles return to `/dashboard`. Sensitive path rules for audit exports, Forge integrations, approvals, deployment, Forge operations health, and analytics retention execute before generic domain rules. Body-dependent actions additionally call `guardApiCapability` inside the handler.
 
 Server helpers:
 

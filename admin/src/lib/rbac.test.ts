@@ -7,6 +7,7 @@ import { CAPABILITIES, ROLE_CAPABILITIES, authorizeRequest, databaseQueryScope, 
 const expected: Record<(typeof ADMIN_ROLES)[number], Capability[]> = {
   owner: [...CAPABILITIES],
   administrator: CAPABILITIES.filter((capability) => capability !== "admin_users.credentials.reset" && capability !== "admin_users.owner.assign"),
+  venture_controller: ["venture.read", "venture.write", "venture.finance.read", "venture.finance.request", "venture.finance.approve", "venture.experiment.manage", "venture.launch.request", "venture.launch.approve", "venture.integration.manage", "venture.emergency_stop", "venture.audit.read"],
   sales: ["leads.read", "leads.write", "prospects.convert", "clients.read", "projects.read", "finance.read", "analytics.read"],
   project_manager: ["portal_users.read", "portal_users.manage", "leads.read", "prospects.convert", "clients.read", "clients.write", "projects.read", "projects.write", "forge.read", "forge.execute", "forge.approve", "forge.configure", "finance.read", "audit.read", "analytics.read", "analytics.write"],
   developer: ["clients.read", "projects.read", "projects.write", "forge.read", "forge.execute", "forge.approve", "forge.configure", "audit.read", "deployments.execute", "analytics.read", "venture.read", "venture.audit.read", "venture.integration.manage", "venture.emergency_stop"],
@@ -75,6 +76,16 @@ describe("server request enforcement", () => {
     expect(hasCapability("developer", "venture.integration.manage")).toBe(true)
     expect(hasCapability("developer", "venture.finance.approve")).toBe(false)
     expect(hasCapability("developer", "venture.policy.manage")).toBe(false)
+    expect(hasCapability("developer", "venture.launch.approve")).toBe(false)
+    expect(hasCapability("venture_controller", "venture.finance.approve")).toBe(true)
+    expect(hasCapability("venture_controller", "venture.launch.approve")).toBe(true)
+    expect(hasCapability("venture_controller", "venture.emergency_stop")).toBe(true)
+    expect(hasCapability("venture_controller", "clients.read")).toBe(false)
+    expect(hasCapability("venture_controller", "finance.write")).toBe(false)
+    expect(hasCapability("venture_controller", "forge.read")).toBe(false)
+    expect(hasCapability("venture_controller", "deployments.execute")).toBe(false)
+    expect(hasCapability("venture_controller", "settings.manage")).toBe(false)
+    expect(hasCapability("venture_controller", "admin_users.manage")).toBe(false)
   })
 
   it("maps sensitive routes before generic Forge execution", () => {
@@ -111,8 +122,8 @@ describe("server request enforcement", () => {
     const apiRoot = path.resolve("src", "app", "api")
     const routeFiles = walk(apiRoot).filter((file) => file.endsWith("route.ts"))
     const unmapped = routeFiles.map((file) => `/${path.relative(path.resolve("src", "app"), path.dirname(file)).replaceAll("\\", "/").replace(/\[[^/]+\]/g, "resource")}`)
-      // Auth, self-service logout, health and monitoring self-test authenticate with dedicated protocol-specific controls.
-      .filter((pathname) => !pathname.startsWith("/api/auth") && pathname !== "/api/security/logout" && pathname !== "/api/health" && pathname !== "/api/monitoring/self-test" && requiredCapabilityForRequest({ pathname, method: "GET" }) === null && requiredCapabilityForRequest({ pathname, method: "POST" }) === null)
+      // Auth, self-service logout, health, monitoring and Venture MCP authenticate with dedicated protocol-specific controls.
+      .filter((pathname) => !pathname.startsWith("/api/auth") && pathname !== "/api/security/logout" && pathname !== "/api/health" && pathname !== "/api/monitoring/self-test" && pathname !== "/api/venture-lab/mcp" && requiredCapabilityForRequest({ pathname, method: "GET" }) === null && requiredCapabilityForRequest({ pathname, method: "POST" }) === null)
     expect(unmapped).toEqual([])
   })
 })

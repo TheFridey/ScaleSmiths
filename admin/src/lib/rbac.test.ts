@@ -125,7 +125,6 @@ describe("server request enforcement", () => {
         && pathname !== "/api/health"
         && pathname !== "/api/monitoring/self-test"
         && pathname !== "/api/venture-lab/mcp"
-        && pathname !== "/api/venture-lab/oauth/register"
         && pathname !== "/api/venture-lab/oauth/token"
         && requiredCapabilityForRequest({ pathname, method: "GET" }) === null
         && requiredCapabilityForRequest({ pathname, method: "POST" }) === null)

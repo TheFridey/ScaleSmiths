@@ -64,6 +64,7 @@ export default auth(async (req) => {
     || pathname === "/api/venture-lab/mcp"
     || pathname === "/api/venture-lab/oauth/token"
     || pathname === "/.well-known/oauth-authorization-server"
+    || pathname === "/.well-known/oauth-protected-resource"
     || pathname === "/.well-known/oauth-protected-resource/venture-lab"
   ) {
     return next()

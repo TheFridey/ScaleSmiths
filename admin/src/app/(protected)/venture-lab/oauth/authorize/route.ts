@@ -43,7 +43,14 @@ export async function POST(request: Request) {
     const target = new URL(input.redirectUri)
     target.searchParams.set("code", result.code)
     target.searchParams.set("state", result.state)
-    return NextResponse.redirect(target, { status: 302 })
+    return new NextResponse(null, {
+      status: 302,
+      headers: {
+        Location: target.toString(),
+        "Cache-Control": "no-store",
+        Pragma: "no-cache",
+      },
+    })
   } catch (error) {
     return oauthError(error)
   }

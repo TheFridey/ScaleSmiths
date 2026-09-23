@@ -16,6 +16,7 @@ import { VENTURE_DIRECTOR_SERVICE_ID } from "@/lib/venture-lab/mcp-policy"
 export const VENTURE_OAUTH_SCOPE = "venture"
 export const VENTURE_OAUTH_CLIENT_ID = "cursor-venture-lab" as const
 export const CURSOR_OAUTH_REDIRECT_URIS = [
+  "cursor://anysphere.cursor-mcp/oauth/callback",
   "https://www.cursor.com/agents/mcp/oauth/callback",
   "http://localhost:8787/callback",
 ] as const
@@ -57,11 +58,44 @@ export function ventureAuthorizationServerMetadata(env: NodeJS.ProcessEnv = proc
     issuer: origin,
     authorization_endpoint: `${origin}/venture-lab/oauth/authorize`,
     token_endpoint: `${origin}/api/venture-lab/oauth/token`,
+    registration_endpoint: `${origin}/api/venture-lab/oauth/register`,
     scopes_supported: [VENTURE_OAUTH_SCOPE],
     response_types_supported: ["code"],
     grant_types_supported: ["authorization_code", "refresh_token"],
     token_endpoint_auth_methods_supported: ["none"],
     code_challenge_methods_supported: ["S256"],
+  }
+}
+
+
+export function registerCursorOauthClient(input: unknown) {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    throw new VentureOauthError(400, "invalid_client_metadata", "OAuth client metadata must be a JSON object.")
+  }
+  const body = input as Record<string, unknown>
+  const redirects = Array.isArray(body.redirect_uris) ? body.redirect_uris : []
+  if (redirects.length !== CURSOR_OAUTH_REDIRECT_URIS.length
+    || !CURSOR_OAUTH_REDIRECT_URIS.every((uri) => redirects.includes(uri))
+    || redirects.some((uri) => typeof uri !== "string" || !CURSOR_OAUTH_REDIRECT_URIS.includes(uri as typeof CURSOR_OAUTH_REDIRECT_URIS[number]))) {
+    throw new VentureOauthError(400, "invalid_redirect_uri", "Cursor OAuth redirect URIs do not match the approved Grok Bot registration.")
+  }
+  if (body.token_endpoint_auth_method !== undefined && body.token_endpoint_auth_method !== "none") {
+    throw new VentureOauthError(400, "invalid_client_metadata", "Only public PKCE clients are supported.")
+  }
+  if (Array.isArray(body.response_types) && !body.response_types.includes("code")) {
+    throw new VentureOauthError(400, "invalid_client_metadata", "Authorization-code response type is required.")
+  }
+  if (Array.isArray(body.grant_types) && !body.grant_types.includes("authorization_code")) {
+    throw new VentureOauthError(400, "invalid_client_metadata", "Authorization-code grant is required.")
+  }
+  return {
+    client_id: VENTURE_OAUTH_CLIENT_ID,
+    client_name: typeof body.client_name === "string" && body.client_name.trim() ? body.client_name.trim().slice(0, 200) : "Cursor / Grok Bot Venture Director",
+    redirect_uris: [...CURSOR_OAUTH_REDIRECT_URIS],
+    token_endpoint_auth_method: "none",
+    grant_types: ["authorization_code", "refresh_token"],
+    response_types: ["code"],
+    scope: VENTURE_OAUTH_SCOPE,
   }
 }
 

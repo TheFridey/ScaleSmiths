@@ -73,6 +73,8 @@ export async function executeVentureMcpTool(input: {
   const args = objectArgs(input.arguments)
   const experiment = await requireExperimentZero()
 
+  assertAllowedKeys(input.tool, args)
+
   let result: unknown
   switch (input.tool) {
     case "venture.dashboard.read":
@@ -199,6 +201,20 @@ async function requireOpportunity(experimentId: number, opportunityId: string) {
   const [row] = await db.select({ id: ventureOpportunities.id }).from(ventureOpportunities)
     .where(sql`${ventureOpportunities.id} = ${opportunityId}::uuid AND ${ventureOpportunities.experimentId} = ${experimentId}`).limit(1)
   if (!row) throw new VentureMcpError("Opportunity does not exist in Experiment #000.", 404, "opportunity_missing")
+}
+
+function assertAllowedKeys(tool: VentureMcpToolName, args: Record<string, unknown>) {
+  const allowed: Readonly<Record<VentureMcpToolName, readonly string[]>> = {
+    "venture.dashboard.read": [],
+    "venture.opportunities.list": [],
+    "venture.opportunities.propose": ["title", "problem"],
+    "venture.evidence.list": [],
+    "venture.evidence.submit": ["opportunityId", "sourceUrl", "sourceTitle", "evidenceType", "claim", "summary", "excerpt", "observedAt", "publishedAt"],
+    "venture.proposals.list": [],
+    "venture.experiment.propose": ["title", "rationale", "hypothesis", "successCriteria"],
+  }
+  const unexpected = Object.keys(args).filter((key) => !allowed[tool].includes(key))
+  if (unexpected.length) throw new VentureMcpError("Tool arguments contain fields that are not allowed.", 400, "invalid_arguments")
 }
 
 function inputSchemaFor(tool: VentureMcpToolName) {

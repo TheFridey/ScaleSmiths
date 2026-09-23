@@ -14,8 +14,8 @@ import {
 import { VENTURE_DIRECTOR_SERVICE_ID } from "@/lib/venture-lab/mcp-policy"
 
 export const VENTURE_OAUTH_SCOPE = "venture"
+export const VENTURE_OAUTH_CLIENT_ID = "cursor-venture-lab" as const
 export const CURSOR_OAUTH_REDIRECT_URIS = [
-  "cursor://anysphere.cursor-mcp/oauth/callback",
   "https://www.cursor.com/agents/mcp/oauth/callback",
   "http://localhost:8787/callback",
 ] as const
@@ -23,7 +23,6 @@ export const CURSOR_OAUTH_REDIRECT_URIS = [
 const CODE_TTL_MS = 5 * 60 * 1000
 const ACCESS_TTL_MS = 60 * 60 * 1000
 const REFRESH_TTL_MS = 30 * 24 * 60 * 60 * 1000
-const MAX_ACTIVE_CLIENTS = 20
 
 export class VentureOauthError extends Error {
   constructor(public status: number, public code: string, public safeMessage: string) {
@@ -58,83 +57,11 @@ export function ventureAuthorizationServerMetadata(env: NodeJS.ProcessEnv = proc
     issuer: origin,
     authorization_endpoint: `${origin}/venture-lab/oauth/authorize`,
     token_endpoint: `${origin}/api/venture-lab/oauth/token`,
-    registration_endpoint: `${origin}/api/venture-lab/oauth/register`,
     scopes_supported: [VENTURE_OAUTH_SCOPE],
     response_types_supported: ["code"],
     grant_types_supported: ["authorization_code", "refresh_token"],
     token_endpoint_auth_methods_supported: ["none"],
     code_challenge_methods_supported: ["S256"],
-  }
-}
-
-export async function registerCursorOauthClient(input: unknown) {
-  const body = objectValue(input, "registration")
-  const redirects = stringArray(body.redirect_uris, "redirect_uris")
-  if (redirects.length < 1 || redirects.length > CURSOR_OAUTH_REDIRECT_URIS.length) {
-    throw new VentureOauthError(400, "invalid_client_metadata", "redirect_uris must contain 1 to 3 approved Cursor callbacks.")
-  }
-  const unique = [...new Set(redirects)].sort()
-  if (unique.length !== redirects.length || unique.some((uri) => !(CURSOR_OAUTH_REDIRECT_URIS as readonly string[]).includes(uri))) {
-    throw new VentureOauthError(400, "invalid_redirect_uri", "Only approved Cursor OAuth callback URIs are accepted.")
-  }
-
-  const grantTypes = optionalStringArray(body.grant_types)
-  if (grantTypes && (grantTypes.some((value) => !["authorization_code", "refresh_token"].includes(value)) || !grantTypes.includes("authorization_code"))) {
-    throw new VentureOauthError(400, "invalid_client_metadata", "Unsupported OAuth grant type.")
-  }
-  const responseTypes = optionalStringArray(body.response_types)
-  if (responseTypes && (responseTypes.length !== 1 || responseTypes[0] !== "code")) {
-    throw new VentureOauthError(400, "invalid_client_metadata", "Only authorization-code response type is supported.")
-  }
-  if (body.token_endpoint_auth_method !== undefined && body.token_endpoint_auth_method !== "none") {
-    throw new VentureOauthError(400, "invalid_client_metadata", "Venture Lab registers Cursor as a public PKCE client.")
-  }
-
-  const existingRows = await db.execute(sql`
-    SELECT client_id, client_name, redirect_uris, created_at
-    FROM venture_oauth_clients
-    WHERE active = true
-      AND redirect_uris = ${JSON.stringify(unique)}::jsonb
-    LIMIT 1
-  `)
-  const existing = existingRows.rows[0] as { client_id?: string; client_name?: string; redirect_uris?: string[]; created_at?: Date } | undefined
-  if (existing?.client_id) {
-    return {
-      client_id: existing.client_id,
-      client_name: existing.client_name ?? "Cursor Grok Bot",
-      redirect_uris: existing.redirect_uris ?? unique,
-      grant_types: ["authorization_code", "refresh_token"],
-      response_types: ["code"],
-      token_endpoint_auth_method: "none",
-      client_id_issued_at: existing.created_at ? Math.floor(existing.created_at.getTime() / 1000) : Math.floor(Date.now() / 1000),
-    }
-  }
-
-  const [{ count }] = await db.select({ count: sql<number>`count(*)::int` }).from(ventureOauthClients).where(eq(ventureOauthClients.active, true))
-  if (Number(count) >= MAX_ACTIVE_CLIENTS) throw new VentureOauthError(429, "temporarily_unavailable", "Venture Lab OAuth client registration limit reached.")
-
-  const clientId = `cursor_vl_${randomBytes(24).toString("base64url")}`
-  const clientName = boundedString(body.client_name ?? "Cursor Grok Bot", "client_name", 200)
-  const [client] = await db.insert(ventureOauthClients).values({
-    clientId,
-    clientName,
-    redirectUris: unique,
-  }).returning()
-
-  await auditSystem("oauth_client_registered", "Registered a restricted Cursor OAuth client.", {
-    clientId: client.clientId,
-    clientName: client.clientName,
-    redirectUris: unique,
-  })
-
-  return {
-    client_id: client.clientId,
-    client_name: client.clientName,
-    redirect_uris: unique,
-    grant_types: ["authorization_code", "refresh_token"],
-    response_types: ["code"],
-    token_endpoint_auth_method: "none",
-    client_id_issued_at: Math.floor(client.createdAt.getTime() / 1000),
   }
 }
 
@@ -205,8 +132,11 @@ async function validateCursorAuthorizationRequest(input: CursorAuthorizationInpu
   const scope = normalizeScope(input.scope)
   const resource = normalizeResource(input.resource)
 
+  if (input.clientId !== VENTURE_OAUTH_CLIENT_ID) {
+    throw new VentureOauthError(400, "unauthorized_client", "OAuth client is not registered or is disabled.")
+  }
   const [client] = await db.select().from(ventureOauthClients)
-    .where(and(eq(ventureOauthClients.clientId, input.clientId), eq(ventureOauthClients.active, true))).limit(1)
+    .where(and(eq(ventureOauthClients.clientId, VENTURE_OAUTH_CLIENT_ID), eq(ventureOauthClients.active, true))).limit(1)
   if (!client) throw new VentureOauthError(400, "unauthorized_client", "OAuth client is not registered or is disabled.")
   if (!client.redirectUris.includes(input.redirectUri)) throw new VentureOauthError(400, "invalid_request", "redirect_uri does not match the registered client.")
 
@@ -410,28 +340,6 @@ function normalizeResource(value: string | null | undefined) {
 
 function sha256(value: string) {
   return createHash("sha256").update(value).digest("hex")
-}
-
-function objectValue(value: unknown, field: string): Record<string, unknown> {
-  if (!value || typeof value !== "object" || Array.isArray(value)) throw new VentureOauthError(400, "invalid_client_metadata", `${field} must be an object.`)
-  return value as Record<string, unknown>
-}
-
-function stringArray(value: unknown, field: string) {
-  if (!Array.isArray(value) || value.some((item) => typeof item !== "string")) throw new VentureOauthError(400, "invalid_client_metadata", `${field} must be a string array.`)
-  return value as string[]
-}
-
-function optionalStringArray(value: unknown) {
-  if (value === undefined) return null
-  return stringArray(value, "array")
-}
-
-function boundedString(value: unknown, field: string, max: number) {
-  if (typeof value !== "string") throw new VentureOauthError(400, "invalid_client_metadata", `${field} must be a string.`)
-  const text = value.trim()
-  if (!text || text.length > max) throw new VentureOauthError(400, "invalid_client_metadata", `${field} is invalid.`)
-  return text
 }
 
 function requiredForm(form: URLSearchParams, key: string) {

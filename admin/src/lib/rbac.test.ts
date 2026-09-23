@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 import { readdirSync } from "node:fs"
 import path from "node:path"
 import { ADMIN_ROLES } from "./admin-users"
-import { CAPABILITIES, ROLE_CAPABILITIES, authorizeRequest, databaseQueryScope, hasCapability, isPrivilegeReduction, requiredCapabilityForRequest, type Capability } from "./rbac"
+import { CAPABILITIES, ROLE_CAPABILITIES, authorizeRequest, databaseQueryScope, hasCapability, homePathForRole, isPrivilegeReduction, requiredCapabilityForRequest, type Capability } from "./rbac"
 
 const expected: Record<(typeof ADMIN_ROLES)[number], Capability[]> = {
   owner: [...CAPABILITIES],
@@ -36,6 +36,12 @@ describe("RBAC role/capability matrix", () => {
     expect(hasCapability("viewer", "prospects.convert")).toBe(false)
     expect(hasCapability("finance", "prospects.convert")).toBe(false)
     expect(hasCapability("developer", "prospects.convert")).toBe(false)
+  })
+
+  it("routes the bounded Venture Controller into Venture Lab", () => {
+    expect(homePathForRole("venture_controller")).toBe("/venture-lab")
+    expect(homePathForRole("owner")).toBe("/dashboard")
+    expect(homePathForRole("developer")).toBe("/dashboard")
   })
 
   it("detects privilege reductions for session revocation", () => {

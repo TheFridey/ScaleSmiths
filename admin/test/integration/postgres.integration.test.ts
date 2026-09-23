@@ -1642,6 +1642,19 @@ describe("real PostgreSQL integration", () => {
       [developerBlocked.id],
     )).rows[0]).toEqual({ status: "REQUESTED", approved_by: null });
 
+    const ordinaryOwner = (await pool.query(
+      "INSERT INTO admin_users(email,display_name,password_hash,role) VALUES('venture-ordinary-owner@example.test','Ordinary ScaleSmiths Owner','hash','owner') RETURNING id",
+    )).rows[0].id as string;
+    await expect(service.approveVentureSpendRequest({
+      approvalId: developerBlocked.id,
+      actorUserId: ordinaryOwner,
+      reason: "Generic owner must not substitute for Venture Controller",
+    })).rejects.toMatchObject({ code: "approval_authority_denied" });
+    expect((await pool.query(
+      "SELECT status,approved_by FROM venture_approval_requests WHERE id=$1",
+      [developerBlocked.id],
+    )).rows[0]).toEqual({ status: "REQUESTED", approved_by: null });
+
     const requestAndApprove = async (key: string, amountMinor: number, target: string, purpose = "Experiment #000 validation") => {
       const approval = await service.createVentureSpendApprovalRequest({
         action: "VALIDATION_SPEND",

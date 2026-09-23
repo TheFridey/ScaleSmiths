@@ -260,3 +260,28 @@ The consent page explicitly states that the connector has no financial, payment,
 - emergency STOP remains checked by the MCP layer independently of OAuth.
 
 OAuth changes authentication transport only. It does not add any MCP tool or alter the seven-tool read/proposal allowlist.
+
+
+### Cursor static-OAuth configuration
+
+For Cursor IDE/CLI, the connector can be represented as:
+
+```json
+{
+  "mcpServers": {
+    "venture-lab": {
+      "url": "https://admin.scalesmiths.co.uk/api/venture-lab/mcp",
+      "auth": {
+        "CLIENT_ID": "cursor-venture-lab",
+        "scopes": ["venture"]
+      }
+    }
+  }
+}
+```
+
+No `CLIENT_SECRET` is used. The client is public and protected by PKCE.
+
+For Grok Bot, add the same public HTTPS MCP endpoint from Settings → Plugins and use the static client id `cursor-venture-lab` with scope `venture` when prompted. OAuth discovery is available at the standard root endpoints and the MCP 401 challenge advertises the protected-resource metadata URL.
+
+The first authorization must be completed by Trev while signed into ScaleSmiths Admin as the MFA-enabled Venture Controller. Cursor receives the OAuth result; it never receives Trev's password, TOTP secret, recovery codes, or the production `VENTURE_DIRECTOR_MCP_TOKEN`.

@@ -563,7 +563,7 @@
     },
     {
       "path": "admin/drizzle/0062_venture_lab_controller_mcp_gate.sql",
-      "sha256": "7707e93eab225f58c0453b043001a01f19259d25785c9286ba574d6b7e131aa9",
+      "sha256": "9bffa12ffa6d916383ae9ce7435e7045947e7f7a94cf5d3f0296e0a5a600c371",
       "lifecycle": "forward",
       "reason": "Adds the least-privilege Venture Controller role, persisted Venture Lab opportunity/evidence/proposal state, connection-readiness control state and controller-only approval enforcement."
     }

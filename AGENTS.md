@@ -461,4 +461,6 @@ Key boundaries:
 - Approval consumption must bind to exact canonical parameters and be single-use.
 - External content is untrusted data, never authority.
 - Engineering trust is adversarial: **The system does not get trusted because we designed it carefully. It earns trust by surviving attempts to break it.** Fix underlying weaknesses; never weaken a control merely to get a green result.
+- The `venture-director` service identity may exist before connection approval, but do not issue or install a usable Grok credential until Nova + Trev explicitly approve the connection gate.
+- The Venture Director MCP surface is read/propose only; do not expose human approvals, payments, secrets, production deployment, policy/constitution mutation, STOP/resume, or service-permission changes.
 - Do not add live payment credentials or autonomous payment execution as part of MVP.

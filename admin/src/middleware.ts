@@ -62,7 +62,6 @@ export default auth(async (req) => {
     pathname === "/api/health"
     || pathname === "/api/monitoring/self-test"
     || pathname === "/api/venture-lab/mcp"
-    || pathname === "/api/venture-lab/oauth/register"
     || pathname === "/api/venture-lab/oauth/token"
     || pathname === "/.well-known/oauth-authorization-server"
     || pathname === "/.well-known/oauth-protected-resource/venture-lab"

@@ -26,7 +26,6 @@ export default function LoginPage() {
         totp,
         recoveryCode,
         redirect: false,
-        redirectTo: "/dashboard",
       })
 
       if (res?.error) {
@@ -34,7 +33,10 @@ export default function LoginPage() {
         return
       }
 
-      router.push("/dashboard")
+      const sessionResponse = await fetch("/api/auth/session", { cache: "no-store" })
+      const session = await sessionResponse.json().catch(() => null)
+      const destination = session?.user?.role === "venture_controller" ? "/venture-lab" : "/dashboard"
+      router.push(destination)
       router.refresh()
     } catch {
       setError("Something went wrong - try again")

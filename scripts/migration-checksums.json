@@ -569,7 +569,7 @@
     },
     {
       "path": "admin/drizzle/0063_venture_lab_cursor_oauth.sql",
-      "sha256": "f7d3d9c9918ae757c89d1dd22c3ec842d34aece7c8062c32cff9c4d28bff5dd3",
+      "sha256": "d1a71ecdd0db1df4f33473cd2a0297eb8c1e80cb7dbba648f5912da6c3d65d4a",
       "lifecycle": "forward",
       "reason": "Adds the fixed cursor-venture-lab OAuth 2.1 PKCE client, single-use authorization codes, opaque access/refresh token hashes, and irreversible OAuth client/token guards for the restricted Venture Director MCP."
     }

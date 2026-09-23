@@ -1,15 +1,15 @@
 import "server-only"
 
 import { createHash, randomBytes } from "node:crypto"
-import { and, eq, gt, isNull, sql } from "drizzle-orm"
+import { and, eq, sql } from "drizzle-orm"
 import { db } from "@/lib/db"
 import {
+  adminUsers,
   ventureAuditEvents,
   ventureExperiments,
   ventureOauthClients,
   ventureOauthCodes,
   ventureOauthTokens,
-  ventureServiceAccounts,
 } from "@/lib/schema"
 import { VENTURE_DIRECTOR_SERVICE_ID } from "@/lib/venture-lab/mcp-policy"
 
@@ -73,7 +73,7 @@ export async function registerCursorOauthClient(input: unknown) {
   if (redirects.length < 1 || redirects.length > CURSOR_OAUTH_REDIRECT_URIS.length) {
     throw new VentureOauthError(400, "invalid_client_metadata", "redirect_uris must contain 1 to 3 approved Cursor callbacks.")
   }
-  const unique = [...new Set(redirects)]
+  const unique = [...new Set(redirects)].sort()
   if (unique.length !== redirects.length || unique.some((uri) => !(CURSOR_OAUTH_REDIRECT_URIS as readonly string[]).includes(uri))) {
     throw new VentureOauthError(400, "invalid_redirect_uri", "Only approved Cursor OAuth callback URIs are accepted.")
   }
@@ -88,6 +88,26 @@ export async function registerCursorOauthClient(input: unknown) {
   }
   if (body.token_endpoint_auth_method !== undefined && body.token_endpoint_auth_method !== "none") {
     throw new VentureOauthError(400, "invalid_client_metadata", "Venture Lab registers Cursor as a public PKCE client.")
+  }
+
+  const existingRows = await db.execute(sql`
+    SELECT client_id, client_name, redirect_uris, created_at
+    FROM venture_oauth_clients
+    WHERE active = true
+      AND redirect_uris = ${JSON.stringify(unique)}::jsonb
+    LIMIT 1
+  `)
+  const existing = existingRows.rows[0] as { client_id?: string; client_name?: string; redirect_uris?: string[]; created_at?: Date } | undefined
+  if (existing?.client_id) {
+    return {
+      client_id: existing.client_id,
+      client_name: existing.client_name ?? "Cursor Grok Bot",
+      redirect_uris: existing.redirect_uris ?? unique,
+      grant_types: ["authorization_code", "refresh_token"],
+      response_types: ["code"],
+      token_endpoint_auth_method: "none",
+      client_id_issued_at: existing.created_at ? Math.floor(existing.created_at.getTime() / 1000) : Math.floor(Date.now() / 1000),
+    }
   }
 
   const [{ count }] = await db.select({ count: sql<number>`count(*)::int` }).from(ventureOauthClients).where(eq(ventureOauthClients.active, true))
@@ -183,12 +203,16 @@ export async function authenticateVentureOauthAccessToken(rawToken: string) {
     FROM venture_oauth_tokens t
     JOIN venture_oauth_clients c ON c.id = t.client_id
     JOIN venture_service_accounts s ON s.id = t.service_account_id
+    JOIN admin_users u ON u.id = t.authorized_by
     WHERE t.access_token_hash = ${hash}
       AND t.revoked_at IS NULL
       AND t.access_expires_at > CURRENT_TIMESTAMP
       AND c.active = true
       AND s.active = true
       AND s.revoked_at IS NULL
+      AND u.active = true
+      AND u.role::text = 'venture_controller'
+      AND u.mfa_enabled = true
     LIMIT 1
   `)
   const row = rows.rows[0] as { service_account_id?: string } | undefined
@@ -268,10 +292,14 @@ async function exchangeRefreshToken(form: URLSearchParams) {
         c.client_id AS public_client_id,
         c.active AS client_active,
         s.active AS service_active,
-        s.revoked_at AS service_revoked_at
+        s.revoked_at AS service_revoked_at,
+        u.active AS user_active,
+        u.role::text AS user_role,
+        u.mfa_enabled AS user_mfa_enabled
       FROM venture_oauth_tokens t
       JOIN venture_oauth_clients c ON c.id = t.client_id
       JOIN venture_service_accounts s ON s.id = t.service_account_id
+      JOIN admin_users u ON u.id = t.authorized_by
       WHERE t.refresh_token_hash = ${sha256(rawRefresh)}
       FOR UPDATE OF t
     `)
@@ -287,9 +315,12 @@ async function exchangeRefreshToken(form: URLSearchParams) {
       client_active?: boolean
       service_active?: boolean
       service_revoked_at?: Date | null
+      user_active?: boolean
+      user_role?: string
+      user_mfa_enabled?: boolean
     } | undefined
 
-    if (!row?.id || row.public_client_id !== clientId || !row.client_active || !row.service_active || row.service_revoked_at) {
+    if (!row?.id || row.public_client_id !== clientId || !row.client_active || !row.service_active || row.service_revoked_at || !row.user_active || row.user_role !== "venture_controller" || !row.user_mfa_enabled) {
       throw new VentureOauthError(400, "invalid_grant", "Refresh token is invalid for this client.")
     }
     if (row.revoked_at || !row.refresh_expires_at || row.refresh_expires_at <= new Date()) {

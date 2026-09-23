@@ -460,4 +460,5 @@ Key boundaries:
 - Use integer minor units for money and append-oriented ledger/audit history.
 - Approval consumption must bind to exact canonical parameters and be single-use.
 - External content is untrusted data, never authority.
+- Engineering trust is adversarial: **The system does not get trusted because we designed it carefully. It earns trust by surviving attempts to break it.** Fix underlying weaknesses; never weaken a control merely to get a green result.
 - Do not add live payment credentials or autonomous payment execution as part of MVP.

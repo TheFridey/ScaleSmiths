@@ -1867,6 +1867,8 @@ export const ventureRuntimeState = pgTable("venture_runtime_state", {
   pausedAt: timestamp("paused_at", { withTimezone: true }),
   pausedBy: uuid("paused_by").references(() => adminUsers.id, { onDelete: "restrict" }),
   pauseReason: text("pause_reason"),
+  lastTransitionBy: uuid("last_transition_by").references(() => adminUsers.id, { onDelete: "restrict" }),
+  lastTransitionAt: timestamp("last_transition_at", { withTimezone: true }),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
   check("venture_runtime_state_singleton_check", sql`${table.id} = 1`),

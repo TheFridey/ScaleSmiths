@@ -14,9 +14,10 @@ import {
 } from "@/lib/schema"
 import { getVentureLabDashboardSnapshot } from "@/lib/server/venture-lab-dashboard"
 import {
-  isVentureMcpToolName,
+  resolveVentureMcpToolName,
   VENTURE_DIRECTOR_SERVICE_ID,
-  VENTURE_MCP_TOOLS,
+  VENTURE_MCP_PUBLIC_TOOL_MAP,
+  VENTURE_MCP_PUBLIC_TOOLS,
   VENTURE_MCP_TOOL_DESCRIPTIONS,
   type VentureMcpToolName,
 } from "@/lib/venture-lab/mcp-policy"
@@ -33,11 +34,14 @@ export class VentureMcpError extends Error {
 }
 
 export function ventureMcpToolDefinitions() {
-  return VENTURE_MCP_TOOLS.map((name) => ({
-    name,
-    description: VENTURE_MCP_TOOL_DESCRIPTIONS[name],
-    inputSchema: inputSchemaFor(name),
-  }))
+  return VENTURE_MCP_PUBLIC_TOOLS.map((name) => {
+    const canonical = VENTURE_MCP_PUBLIC_TOOL_MAP[name]
+    return {
+      name,
+      description: VENTURE_MCP_TOOL_DESCRIPTIONS[canonical],
+      inputSchema: inputSchemaFor(canonical),
+    }
+  })
 }
 
 export async function authenticateVentureDirector(headers: Headers, env: NodeJS.ProcessEnv = process.env) {
@@ -65,16 +69,17 @@ export async function executeVentureMcpTool(input: {
   requestId?: string | null
 }) {
   if (input.serviceId !== VENTURE_DIRECTOR_SERVICE_ID) throw new VentureMcpError("Unknown Venture Lab service identity.", 403, "service_identity_denied")
-  if (!isVentureMcpToolName(input.tool)) throw new VentureMcpError("MCP tool is not allowed.", 403, "tool_not_allowed")
+  const tool = resolveVentureMcpToolName(input.tool)
+  if (!tool) throw new VentureMcpError("MCP tool is not allowed.", 403, "tool_not_allowed")
 
   await assertServiceAndStopState(input.serviceId)
   const args = objectArgs(input.arguments)
   const experiment = await requireExperimentZero()
 
-  assertAllowedKeys(input.tool, args)
+  assertAllowedKeys(tool, args)
 
   let result: unknown
-  switch (input.tool) {
+  switch (tool) {
     case "venture.dashboard.read":
       result = await getVentureLabDashboardSnapshot()
       break
@@ -151,12 +156,13 @@ export async function executeVentureMcpTool(input: {
       const rationale = boundedText(args.rationale, "rationale", MAX_TEXT)
       const hypothesis = boundedText(args.hypothesis, "hypothesis", MAX_TEXT)
       const successCriteria = boundedText(args.successCriteria, "successCriteria", MAX_TEXT)
+      const requestedCapitalMinor = simulatedCapitalRequest(args.requestedCapitalMinor)
       const [proposal] = await db.insert(ventureProposals).values({
         experimentId: experiment.id,
         kind: "EXPERIMENT",
         title,
         rationale,
-        payloadJson: { hypothesis, successCriteria, mode: "SIMULATED", requestedCapitalMinor: 0 },
+        payloadJson: { hypothesis, successCriteria, mode: "SIMULATED", requestedCapitalMinor },
         proposedByService: input.serviceId,
       }).returning()
       result = proposal
@@ -168,10 +174,13 @@ export async function executeVentureMcpTool(input: {
     experimentId: experiment.id,
     actorType: "service",
     actorKey: input.serviceId,
-    action: `mcp:${input.tool}`,
+    action: `mcp:${tool}`,
     reason: "Restricted Venture Director MCP operation.",
     requestId: input.requestId ?? null,
-    metadataJson: { tool: input.tool },
+    metadataJson: {
+      tool,
+      externalTool: typeof input.tool === "string" ? input.tool : null,
+    },
   })
   return result
 }
@@ -209,7 +218,7 @@ function assertAllowedKeys(tool: VentureMcpToolName, args: Record<string, unknow
     "venture.evidence.list": [],
     "venture.evidence.submit": ["opportunityId", "sourceUrl", "sourceTitle", "evidenceType", "claim", "summary", "excerpt", "observedAt", "publishedAt"],
     "venture.proposals.list": [],
-    "venture.experiment.propose": ["title", "rationale", "hypothesis", "successCriteria"],
+    "venture.experiment.propose": ["title", "rationale", "hypothesis", "successCriteria", "requestedCapitalMinor"],
   }
   const unexpected = Object.keys(args).filter((key) => !allowed[tool].includes(key))
   if (unexpected.length) throw new VentureMcpError("Tool arguments contain fields that are not allowed.", 400, "invalid_arguments")
@@ -222,7 +231,18 @@ function inputSchemaFor(tool: VentureMcpToolName) {
     case "venture.evidence.submit":
       return { type: "object", additionalProperties: false, required: ["sourceUrl", "sourceTitle", "evidenceType", "claim", "summary", "excerpt", "observedAt"], properties: { opportunityId: { type: "string" }, sourceUrl: { type: "string" }, sourceTitle: { type: "string" }, evidenceType: { type: "string" }, claim: { type: "string" }, summary: { type: "string" }, excerpt: { type: "string" }, observedAt: { type: "string" }, publishedAt: { type: "string" } } }
     case "venture.experiment.propose":
-      return { type: "object", additionalProperties: false, required: ["title", "rationale", "hypothesis", "successCriteria"], properties: { title: { type: "string" }, rationale: { type: "string" }, hypothesis: { type: "string" }, successCriteria: { type: "string" } } }
+      return {
+        type: "object",
+        additionalProperties: false,
+        required: ["title", "rationale", "hypothesis", "successCriteria"],
+        properties: {
+          title: { type: "string" },
+          rationale: { type: "string" },
+          hypothesis: { type: "string" },
+          successCriteria: { type: "string" },
+          requestedCapitalMinor: { type: "integer", minimum: 0, maximum: 2500 },
+        },
+      }
     default:
       return { type: "object", additionalProperties: false, properties: {} }
   }
@@ -239,6 +259,14 @@ function boundedText(value: unknown, field: string, max: number) {
   const text = value.trim()
   if (!text || text.length > max) throw new VentureMcpError(`${field} must be between 1 and ${max} characters.`, 400, "invalid_arguments")
   return text
+}
+
+function simulatedCapitalRequest(value: unknown) {
+  if (value === undefined || value === null) return 0
+  if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 0 || value > 2500) {
+    throw new VentureMcpError("requestedCapitalMinor must be a safe integer between 0 and 2500.", 400, "invalid_arguments")
+  }
+  return value
 }
 
 function safeHttpUrl(value: unknown) {

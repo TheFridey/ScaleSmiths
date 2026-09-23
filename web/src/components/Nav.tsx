@@ -135,7 +135,7 @@ export function Nav() {
             <button
               ref={servicesTriggerRef}
               type="button"
-              onClick={() => setServicesOpen((value) => !value)}
+              onClick={() => setServicesOpen(true)}
               aria-expanded={servicesOpen}
               aria-controls={servicesMenuId}
               className={cn("group relative inline-flex items-center gap-1.5 py-2 font-dm text-[13px] font-medium tracking-[.01em]", servicesActive ? "text-t1" : "text-t2 hover:text-t1")}

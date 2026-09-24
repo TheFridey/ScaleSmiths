@@ -18,7 +18,22 @@ describe("restricted Venture Lab MCP policy", () => {
       "venture.evidence.submit",
       "venture.proposals.list",
       "venture.experiment.propose",
+      "venture.validation.submit",
+      "venture.validation.list",
     ])
+    expect(VENTURE_MCP_PUBLIC_TOOLS).toEqual([
+      "venture_dashboard_read",
+      "venture_opportunities_list",
+      "venture_opportunities_propose",
+      "venture_evidence_list",
+      "venture_evidence_submit",
+      "venture_proposals_list",
+      "venture_experiment_propose",
+      "venture_validation_submit",
+      "venture_validation_list",
+    ])
+    expect(ventureMcpToolClass("venture.validation.submit")).toBe("proposal")
+    expect(ventureMcpToolClass("venture.validation.list")).toBe("read")
     for (const tool of VENTURE_MCP_TOOLS) {
       expect(["read", "proposal"]).toContain(ventureMcpToolClass(tool))
       expect(tool).not.toMatch(/approve|payment|pay|secret|deploy|policy|constitution|admin/i)

@@ -566,6 +566,12 @@
       "sha256": "a68f22f7ec9cf3826871957844a4720f8d3c00a8c1719047b7fa971953fc8f96",
       "lifecycle": "forward",
       "reason": "Adds the least-privilege Venture Controller role, persisted Venture Lab opportunity/evidence/proposal state, connection-readiness control state and controller-only approval enforcement."
+    },
+    {
+      "path": "admin/drizzle/0063_venture_validation_outcomes.sql",
+      "sha256": "9370c8507f4ecd7bc019cf0aa723129782faa42dd58afd43d399f5f66b0c6e02",
+      "lifecycle": "forward",
+      "reason": "Adds append-only coded customer-validation outcomes for Experiment #000 and a human-confirmed £450 care-floor flag. Outcomes are not evidence, approvals, or spend authority."
     }
   ],
   "journals": {
@@ -810,6 +816,13 @@
           "version": "7",
           "when": 1790158200000,
           "tag": "0062_venture_lab_controller_mcp_gate",
+          "breakpoints": true
+        },
+        {
+          "idx": 63,
+          "version": "7",
+          "when": 1790244000000,
+          "tag": "0063_venture_validation_outcomes",
           "breakpoints": true
         }
       ]

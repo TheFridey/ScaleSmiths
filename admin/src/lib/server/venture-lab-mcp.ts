@@ -11,6 +11,7 @@ import {
   ventureEvidence,
   ventureOpportunities,
   ventureProposals,
+  ventureValidationOutcomes,
 } from "@/lib/schema"
 import { getVentureLabDashboardSnapshot } from "@/lib/server/venture-lab-dashboard"
 import {
@@ -21,6 +22,14 @@ import {
   VENTURE_MCP_TOOL_DESCRIPTIONS,
   type VentureMcpToolName,
 } from "@/lib/venture-lab/mcp-policy"
+import {
+  CARE_FLOOR_MINOR,
+  deriveValidationOutcomeStatus,
+  evidenceSupportsQualification,
+  parseValidationSubmission,
+  validationPayloadHash,
+  ValidationInputError,
+} from "@/lib/venture-lab/validation"
 
 const EXPERIMENT_ZERO_CODE = "EXP-000"
 const MAX_TEXT = 4000
@@ -170,6 +179,12 @@ export async function executeVentureMcpTool(input: {
       result = proposal
       break
     }
+    case "venture.validation.submit":
+      result = await submitValidationOutcome(experiment.id, input.serviceId, args)
+      break
+    case "venture.validation.list":
+      result = await listValidationOutcomes(experiment.id)
+      break
   }
 
   await db.insert(ventureAuditEvents).values({
@@ -221,6 +236,8 @@ function assertAllowedKeys(tool: VentureMcpToolName, args: Record<string, unknow
     "venture.evidence.submit": ["opportunityId", "sourceUrl", "sourceTitle", "evidenceType", "claim", "summary", "excerpt", "observedAt", "publishedAt"],
     "venture.proposals.list": [],
     "venture.experiment.propose": ["title", "rationale", "hypothesis", "successCriteria", "requestedCapitalMinor"],
+    "venture.validation.submit": ["opportunityId", "prospectCode", "businessUrl", "qualificationEvidenceId", "supplier", "qualificationReason", "path", "ownershipAwareness", "cancellationBelief", "controlMatters", "spendBand", "satisfaction", "timing", "alternativeConsidered", "pricedProjectAcceptance", "careAcceptance", "strongCommitment", "supersedesOutcomeId"],
+    "venture.validation.list": [],
   }
   const unexpected = Object.keys(args).filter((key) => !allowed[tool].includes(key))
   if (unexpected.length) throw new VentureMcpError("Tool arguments contain fields that are not allowed.", 400, "invalid_arguments")
@@ -243,6 +260,32 @@ function inputSchemaFor(tool: VentureMcpToolName) {
           hypothesis: { type: "string" },
           successCriteria: { type: "string" },
           requestedCapitalMinor: { type: "integer", minimum: 0, maximum: 2500 },
+        },
+      }
+    case "venture.validation.submit":
+      return {
+        type: "object",
+        additionalProperties: false,
+        required: ["opportunityId", "prospectCode", "businessUrl", "qualificationEvidenceId", "supplier", "qualificationReason", "path", "ownershipAwareness", "cancellationBelief", "controlMatters", "spendBand", "satisfaction", "timing", "alternativeConsidered", "pricedProjectAcceptance", "careAcceptance", "strongCommitment"],
+        properties: {
+          opportunityId: { type: "string" },
+          prospectCode: { type: "string" },
+          businessUrl: { type: "string" },
+          qualificationEvidenceId: { type: "string" },
+          supplier: { type: "string" },
+          qualificationReason: { type: "string" },
+          path: { type: "string" },
+          ownershipAwareness: { type: "string" },
+          cancellationBelief: { type: "string" },
+          controlMatters: { type: "string" },
+          spendBand: { type: "string" },
+          satisfaction: { type: "string" },
+          timing: { type: "string" },
+          alternativeConsidered: { type: "string" },
+          pricedProjectAcceptance: { type: "string" },
+          careAcceptance: { type: "string" },
+          strongCommitment: { type: "string" },
+          supersedesOutcomeId: { type: "string" },
         },
       }
     default:
@@ -292,6 +335,107 @@ function parseDate(value: unknown, field: string) {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) throw new VentureMcpError(`${field} must be an ISO timestamp.`, 400, "invalid_arguments")
   return date
+}
+
+async function submitValidationOutcome(experimentId: number, serviceId: string, args: Record<string, unknown>) {
+  let submission
+  try {
+    submission = parseValidationSubmission(args)
+  } catch (error) {
+    if (error instanceof ValidationInputError) throw new VentureMcpError(error.message, 400, "invalid_arguments")
+    throw error
+  }
+  await requireOpportunity(experimentId, submission.opportunityId)
+  const [evidence] = await db.select().from(ventureEvidence)
+    .where(sql`${ventureEvidence.id} = ${submission.qualificationEvidenceId}::uuid AND ${ventureEvidence.experimentId} = ${experimentId}`)
+    .limit(1)
+  if (!evidence) throw new VentureMcpError("Qualification evidence does not exist in Experiment #000.", 404, "evidence_missing")
+  if (evidence.evidenceType.trim().toLowerCase() === "connection-smoke") {
+    throw new VentureMcpError("Connection-smoke evidence cannot qualify a prospect.", 400, "smoke_evidence_rejected")
+  }
+  if (!evidenceSupportsQualification({
+    evidenceType: evidence.evidenceType,
+    opportunityId: evidence.opportunityId,
+    expectedOpportunityId: submission.opportunityId,
+    supplier: submission.supplier,
+    sourceTitle: evidence.sourceTitle,
+    claim: evidence.claim,
+    summary: evidence.summary,
+  })) {
+    throw new VentureMcpError("Qualification evidence does not support this opportunity and supplier.", 400, "evidence_not_qualifying")
+  }
+  if (submission.careAcceptance === "accepted") {
+    const [runtime] = await db.select({ careFloorConfirmedMinor: ventureRuntimeState.careFloorConfirmedMinor })
+      .from(ventureRuntimeState).where(eq(ventureRuntimeState.id, 1)).limit(1)
+    if (runtime?.careFloorConfirmedMinor !== CARE_FLOOR_MINOR) {
+      throw new VentureMcpError("The £450 care floor has not been confirmed.", 409, "care_floor_unconfirmed")
+    }
+  }
+  const outcomeStatus = deriveValidationOutcomeStatus(submission)
+  const payloadHash = validationPayloadHash(experimentId, submission, outcomeStatus)
+  try {
+    const [row] = await db.insert(ventureValidationOutcomes).values({
+      experimentId,
+      opportunityId: submission.opportunityId,
+      prospectCode: submission.prospectCode,
+      businessUrl: submission.businessUrl,
+      qualificationEvidenceId: submission.qualificationEvidenceId,
+      supplier: submission.supplier,
+      qualificationReason: submission.qualificationReason,
+      path: submission.path,
+      ownershipAwareness: submission.ownershipAwareness,
+      cancellationBelief: submission.cancellationBelief,
+      controlMatters: submission.controlMatters,
+      spendBand: submission.spendBand,
+      satisfaction: submission.satisfaction,
+      timing: submission.timing,
+      alternativeConsidered: submission.alternativeConsidered,
+      pricedProjectAcceptance: submission.pricedProjectAcceptance,
+      careAcceptance: submission.careAcceptance,
+      strongCommitment: submission.strongCommitment,
+      outcomeStatus,
+      supersedesOutcomeId: submission.supersedesOutcomeId,
+      payloadHash,
+      capturedByService: serviceId,
+    }).returning()
+    return row
+  } catch (error) {
+    const message = errorChainText(error)
+    if (message.includes("unsuperseded validation outcome")) throw new VentureMcpError("An unsuperseded validation outcome already exists for this prospect.", 409, "validation_duplicate")
+    if (message.includes("already been superseded") || message.includes("same opportunity and prospect") || message.includes("does not exist")) {
+      throw new VentureMcpError("The correction does not reference the latest outcome for this prospect.", 409, "validation_supersede_invalid")
+    }
+    if (message.includes("care floor")) throw new VentureMcpError("The £450 care floor has not been confirmed.", 409, "care_floor_unconfirmed")
+    throw error
+  }
+}
+
+async function listValidationOutcomes(experimentId: number) {
+  const revisions = await db.select().from(ventureValidationOutcomes)
+    .where(eq(ventureValidationOutcomes.experimentId, experimentId))
+    .orderBy(ventureValidationOutcomes.createdAt)
+  const supersededIds = new Set(revisions.map((row) => row.supersedesOutcomeId).filter((id): id is string => Boolean(id)))
+  return {
+    effective: revisions.filter((row) => !supersededIds.has(row.id)),
+    revisions: revisions.map((row) => ({ ...row, superseded: supersededIds.has(row.id) })),
+  }
+}
+
+function errorChainText(error: unknown) {
+  const messages: string[] = []
+  let current: unknown = error
+  const seen = new Set<unknown>()
+  while (current && !seen.has(current)) {
+    seen.add(current)
+    if (current instanceof Error) {
+      messages.push(current.message)
+      current = (current as Error & { cause?: unknown }).cause
+    } else {
+      messages.push(String(current))
+      break
+    }
+  }
+  return messages.join("\n")
 }
 
 function constantTimeTextEqual(actual: string, expected: string) {

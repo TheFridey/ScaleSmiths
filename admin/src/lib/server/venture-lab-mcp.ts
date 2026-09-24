@@ -49,7 +49,9 @@ export async function authenticateVentureDirector(headers: Headers, env: NodeJS.
   if (!expected || expected.length < 32) throw new VentureMcpError("Venture Director MCP authentication is not configured.", 503, "mcp_not_configured")
 
   const auth = headers.get("authorization") ?? ""
-  const token = auth.startsWith("Bearer ") ? auth.slice(7) : ""
+  const bearerToken = auth.startsWith("Bearer ") ? auth.slice(7) : ""
+  const directToken = headers.get("x-scalesmiths-venture-token") ?? ""
+  const token = bearerToken || directToken
   if (!constantTimeTextEqual(token, expected)) throw new VentureMcpError("Unauthorized.", 401, "mcp_unauthorized")
 
   const [service] = await db.select().from(ventureServiceAccounts)

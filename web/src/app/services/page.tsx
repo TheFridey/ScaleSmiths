@@ -8,6 +8,7 @@ import { ServiceRouteChooser } from "@/components/ServiceRouteChooser"
 import { buildServiceHubSchema, serviceHubItems } from "@/lib/service-pages"
 import { businessGrowthAudit, formatAuditPrice } from "@/lib/business-growth-audit"
 import { routeLabel } from "@/lib/service-routes"
+import { PageBreadcrumbs } from "@/components/Breadcrumbs"
 
 export const metadata: Metadata = {
   title: "Web Design, SEO, Apps & Automation Services",
@@ -21,7 +22,8 @@ export default function ServicesPage() {
   return (
     <>
       <JsonLd data={schema} />
-      <section className="mx-auto max-w-[1240px] px-6 py-20 md:px-12">
+      <section className="mx-auto max-w-[1240px] px-6 pb-20 pt-10 md:px-12">
+        <PageBreadcrumbs className="mb-10" items={[{ name: "Home", path: "/" }, { name: "Services", path: "/services" }]} />
         <AnimateIn className="max-w-[760px]">
           <span className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">Services</span>
           <h1 className="mt-2 font-syne text-[clamp(38px,7vw,76px)] font-extrabold leading-none tracking-[-0.03em]">

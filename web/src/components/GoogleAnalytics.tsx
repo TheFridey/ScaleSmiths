@@ -4,22 +4,40 @@ import Script from "next/script"
 import { useEffect } from "react"
 import { COOKIE_CONSENT_COOKIE, COOKIE_POLICY_VERSION, type CookiePreferences } from "@/lib/cookie-consent"
 
-export const GOOGLE_ANALYTICS_ID = "G-24NM2GTZ0C"
+/**
+ * GA4 measurement ID. Configured through the environment so a different property can be used per
+ * deployment, and so a preview or fork does not report into the production property. The current
+ * production ID remains the default, because removing it would silently stop measurement on an
+ * existing deployment that has not yet set the variable.
+ *
+ * Set `NEXT_PUBLIC_GA_MEASUREMENT_ID=""` to disable Google Analytics entirely; the component then
+ * renders nothing and no Google script is requested.
+ */
+export const GOOGLE_ANALYTICS_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID ?? "G-24NM2GTZ0C"
+
 const PREFERENCES_CHANGED_EVENT = "scalesmiths:cookie-preferences-changed"
 
 type GoogleWindow = Window & {
   dataLayer?: unknown[][]
   gtag?: (...args: unknown[]) => void
-  "ga-disable-G-24NM2GTZ0C"?: boolean
-}
+} & Record<string, unknown>
+
+/** gtag's opt-out flag is a window property named after the measurement ID. */
+const disableFlag = (id: string) => `ga-disable-${id}`
 
 export function GoogleAnalytics() {
+  const measurementId = GOOGLE_ANALYTICS_ID
+
   useEffect(() => {
-    applyAnalyticsPreference(readAnalyticsConsent())
-    const onChange = (event: Event) => applyAnalyticsPreference(Boolean((event as CustomEvent<CookiePreferences>).detail?.analytics))
+    if (!measurementId) return
+    applyAnalyticsPreference(measurementId, readAnalyticsConsent())
+    const onChange = (event: Event) =>
+      applyAnalyticsPreference(measurementId, Boolean((event as CustomEvent<CookiePreferences>).detail?.analytics))
     window.addEventListener(PREFERENCES_CHANGED_EVENT, onChange)
     return () => window.removeEventListener(PREFERENCES_CHANGED_EVENT, onChange)
-  }, [])
+  }, [measurementId])
+
+  if (!measurementId) return null
 
   return <>
     <Script id="google-analytics">
@@ -30,20 +48,20 @@ gtag('consent', 'default', { analytics_storage: 'denied' });
 gtag('js', new Date());`}
     </Script>
     <Script
-      src={`https://www.googletagmanager.com/gtag/js?id=${GOOGLE_ANALYTICS_ID}`}
+      src={`https://www.googletagmanager.com/gtag/js?id=${measurementId}`}
       strategy="afterInteractive"
-      onLoad={() => applyAnalyticsPreference(readAnalyticsConsent())}
+      onLoad={() => applyAnalyticsPreference(measurementId, readAnalyticsConsent())}
     />
   </>
 }
 
-function applyAnalyticsPreference(analytics: boolean) {
-  const googleWindow = window as GoogleWindow
-  googleWindow["ga-disable-G-24NM2GTZ0C"] = !analytics
+function applyAnalyticsPreference(measurementId: string, analytics: boolean) {
+  const googleWindow = window as unknown as GoogleWindow
+  googleWindow[disableFlag(measurementId)] = !analytics
 
   if (googleWindow.gtag) {
     googleWindow.gtag("consent", "update", { analytics_storage: analytics ? "granted" : "denied" })
-    if (analytics) googleWindow.gtag("config", GOOGLE_ANALYTICS_ID)
+    if (analytics) googleWindow.gtag("config", measurementId)
   }
   if (!analytics) removeGoogleAnalyticsCookies()
 }

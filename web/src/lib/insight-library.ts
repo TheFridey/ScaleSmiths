@@ -79,6 +79,7 @@ const seeds: Seed[] = [
   {
     slug: "custom-website-vs-wordpress-vs-wix",
     title: "Custom Website vs WordPress vs Wix: Which Is Right for Your Business?",
+    seoTitle: "Custom Website vs WordPress vs Wix",
     description: "Compare custom websites, WordPress and Wix by content needs, integrations, ownership, maintenance and the people expected to operate the site.",
     category: "commercial",
     answer: "Wix suits straightforward sites that an owner wants to assemble and manage inside one platform. WordPress suits content-heavy sites when a maintained theme and plugin model fits. A custom website becomes valuable when the experience, integrations or operational ownership cannot be expressed cleanly through those constraints. The right choice is the least complicated option that still meets the real requirement.",
@@ -131,6 +132,7 @@ const seeds: Seed[] = [
   {
     slug: "what-should-a-professional-business-website-include",
     title: "What Should a Professional Business Website Include?",
+    seoTitle: "What a Business Website Should Include",
     description: "A practical checklist for business websites: clear positioning, services, proof, accessibility, contact routes, legal information and maintainable ownership.",
     category: "commercial",
     answer: "A professional website should help the right visitor understand the business, judge its credibility and take an appropriate next step. That usually requires clear positioning, specific service information, real proof, accessible mobile pages, contact routes, legal information and sound technical ownership. It does not require every fashionable animation or a page for every keyword.",
@@ -149,6 +151,7 @@ const seeds: Seed[] = [
   {
     slug: "website-redesign-vs-website-refresh",
     title: "Website Redesign vs Website Refresh: What's the Difference?",
+    seoTitle: "Website Redesign vs Refresh",
     description: "Understand when a visual refresh is enough and when content, navigation, technology or migration risk makes a full website redesign necessary.",
     category: "commercial",
     answer: "A website refresh improves presentation inside the existing structure. A redesign changes how the site communicates and works: information architecture, content hierarchy, journeys, components and sometimes technology. Choose a refresh when the foundation still serves the business. Choose a redesign when the foundation is the reason important problems keep returning.",
@@ -182,7 +185,7 @@ const seeds: Seed[] = [
     author: "trevor-newton-bradley",
   },
   {
-    slug: "local-seo-nottingham-businesses-guide", title: "Local SEO for Nottingham Businesses: A Practical Guide",
+    slug: "local-seo-nottingham-businesses-guide", title: "Local SEO for Nottingham Businesses: A Practical Guide", seoTitle: "Local SEO for Nottingham Businesses",
     description: "A practical guide to local SEO in Nottingham covering service pages, genuine location content, technical foundations, proof and enquiry measurement.", category: "technical-seo",
     answer: "Local SEO helps a business become a credible answer when nearby customers search for a relevant service. For Nottingham firms, that means more than repeating the city name. The website needs clear services, accurate coverage, genuine local context, useful proof and a route to contact. Technical controls and business listings support that picture; they cannot replace it.",
     sections: [
@@ -213,7 +216,7 @@ const seeds: Seed[] = [
     services: ["/local-seo-nottingham", "/digital-growth-partnership", "/seo-website-audit"], work: ["confirm-a-kill", "precision-finish-plastering-rendering"], related: ["local-seo-nottingham-businesses-guide", "what-is-local-seo-and-do-you-need-it", "seo-vs-google-ads"],
   },
   {
-    slug: "what-is-local-seo-and-do-you-need-it", title: "What Is Local SEO and Does Your Business Actually Need It?",
+    slug: "what-is-local-seo-and-do-you-need-it", title: "What Is Local SEO and Does Your Business Actually Need It?", seoTitle: "What Is Local SEO?",
     description: "Local SEO explained for service businesses, including who benefits, when it is unnecessary and what a credible local search foundation contains.", category: "technical-seo",
     answer: "Local SEO is the work of making a business understandable and credible for searches with local intent. It matters when customers choose partly by area, travel distance or service coverage. It is less relevant to a national software product with no local buying journey. The goal is not to insert town names everywhere; it is to connect services, coverage, identity, proof and contact information.",
     sections: [
@@ -289,7 +292,7 @@ const seeds: Seed[] = [
     services: ["/seo-website-audit", "/website-maintenance-nottingham", "/managed-website-hosting"], work: ["csds", "confirm-a-kill"], related: ["what-are-core-web-vitals", "website-seo-checklist-uk-small-businesses", "why-your-website-isnt-showing-on-google"],
   },
   {
-    slug: "why-scalesmiths-builds-custom-websites", title: "Why ScaleSmiths Builds Custom Websites Instead of Relying on Templates",
+    slug: "why-scalesmiths-builds-custom-websites", title: "Why ScaleSmiths Builds Custom Websites Instead of Relying on Templates", seoTitle: "Why We Build Custom, Not From Templates",
     description: "Why ScaleSmiths uses custom website development when the offer, journey or operational requirements justify it—and when a template remains sensible.", category: "web-development",
     answer: "ScaleSmiths builds custom websites because important projects often need a content structure, enquiry journey or integration that generic themes express poorly. Custom does not mean inventing every technical primitive or rejecting established platforms. It means the public experience and operational boundaries are designed around the business instead of being forced through a predetermined page pattern.",
     sections: [
@@ -320,7 +323,7 @@ const seeds: Seed[] = [
     services: ["/next-js-agency-uk", "/website-redesign-nottingham", "/custom-web-app-development-uk"], work: ["csds", "the-business-circle"], related: ["custom-website-vs-wordpress-vs-wix", "why-scalesmiths-builds-custom-websites", "what-are-core-web-vitals"],
   },
   {
-    slug: "what-is-a-web-application", title: "What Is a Web Application and Does Your Business Need One?",
+    slug: "what-is-a-web-application", title: "What Is a Web Application and Does Your Business Need One?", seoTitle: "What Is a Web Application?",
     description: "Web applications explained through practical examples such as portals, dashboards, booking systems and internal workflows, including when a website is enough.", category: "web-development",
     answer: "A web application is software used through a browser to complete tasks or manage data. Client portals, dashboards, booking systems and membership products are common examples. A marketing website mainly communicates; a web application maintains state and enforces workflows. Many businesses need both, but they do not always need to live in the same codebase.",
     sections: [
@@ -350,7 +353,7 @@ const seeds: Seed[] = [
     services: ["/custom-software-development-uk", "/business-automation-nottingham", "/custom-web-app-development-uk"], work: ["the-business-circle", "veteranfinder"], related: ["what-is-a-web-application", "why-scalesmiths-builds-custom-websites", "what-does-website-maintenance-include"], featured: true,
   },
   {
-    slug: "what-does-website-maintenance-include", title: "What Does a Website Maintenance Service Actually Include?",
+    slug: "what-does-website-maintenance-include", title: "What Does a Website Maintenance Service Actually Include?", seoTitle: "What Website Maintenance Includes",
     description: "What website maintenance can cover, what usually sits outside it and why responsibilities, access and response expectations need to be written down.", category: "web-development",
     answer: "Website maintenance can include dependency updates, deployment checks, monitoring, backups, minor fixes and technical support. It does not automatically include unlimited design, content, SEO or feature development. A useful agreement names the website and infrastructure covered, access requirements, routine cadence, incident route, exclusions and how larger changes are handled.",
     sections: [

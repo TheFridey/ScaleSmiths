@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState } from "react"
 import { AnimatePresence, m, useReducedMotion } from "motion/react"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, ArrowRight, Check } from "lucide-react"
+import { PageBreadcrumbs } from "@/components/Breadcrumbs"
 import { EnquiryConsent } from "@/components/EnquiryConsent"
 import { AuditAcquisitionLink } from "@/components/AuditAcquisitionLink"
 import { formatAuditPrice } from "@/lib/business-growth-audit"
@@ -188,6 +189,7 @@ export default function QuotePage() {
 
   return (
     <main className="mx-auto max-w-[780px] px-6 py-12 md:px-12 md:py-16">
+      <PageBreadcrumbs className="mb-8" items={[{ name: "Home", path: "/" }, { name: "Start a project", path: "/quote" }]} />
       <button
         type="button"
         onClick={previousStage}

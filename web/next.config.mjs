@@ -56,6 +56,15 @@ const nextConfig = {
     minimumCacheTTL: 60 * 60 * 24 * 365,
     remotePatterns: [],
   },
+  async redirects() {
+    return [
+      // The `growth` and `automation` insight hubs were retired because they listed almost the
+      // same articles as `websites` and `development`. Each points at the hub that now owns
+      // those articles.
+      { source: "/insights/growth", destination: "/insights/websites", permanent: true },
+      { source: "/insights/automation", destination: "/insights/development", permanent: true },
+    ]
+  },
   async headers() {
     return [
       {

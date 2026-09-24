@@ -1,5 +1,8 @@
 import Link from "next/link"
 import { ChevronRight } from "lucide-react"
+import { JsonLd } from "@/components/JsonLd"
+import { siteBaseUrl } from "@/lib/site-identity"
+import { buildBreadcrumbSchema } from "@/lib/structured-data"
 
 export interface BreadcrumbItem {
   name: string
@@ -25,5 +28,22 @@ export function Breadcrumbs({ items, className = "" }: { items: readonly Breadcr
         })}
       </ol>
     </nav>
+  )
+}
+
+/**
+ * The visible trail plus its matching BreadcrumbList schema, from one declaration, so the two
+ * cannot drift apart. `items` is ordered root-first; the last entry is the current page and is
+ * rendered as text rather than a link.
+ */
+export function PageBreadcrumbs({ items, className }: { items: ReadonlyArray<{ name: string; path: string }>; className?: string }) {
+  return (
+    <>
+      <JsonLd data={buildBreadcrumbSchema(siteBaseUrl(), items)} />
+      <Breadcrumbs
+        className={className}
+        items={items.map((item, index) => ({ name: item.name, href: index < items.length - 1 ? item.path : undefined }))}
+      />
+    </>
   )
 }

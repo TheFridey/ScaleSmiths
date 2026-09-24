@@ -133,9 +133,7 @@ export function contextualFaqs(ids: readonly FaqId[]): Array<{ id: FaqId; anchor
 export const FAQ_CATEGORY_FOR_INSIGHT_TOPIC: Record<string, string> = {
   websites: "web-design",
   seo: "seo",
-  growth: "commercial",
   development: "custom-development",
-  automation: "custom-development",
   infrastructure: "infrastructure",
 }
 

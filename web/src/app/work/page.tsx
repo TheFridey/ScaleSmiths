@@ -7,6 +7,7 @@ import { CTA } from "@/components/CTA"
 import { buildLogs } from "@/lib/build-logs"
 import { RelatedQuestions, RelatedServices } from "@/components/RelatedContent"
 import { buildPageMetadata } from "@/lib/page-metadata"
+import { PageBreadcrumbs } from "@/components/Breadcrumbs"
 
 export const metadata: Metadata = buildPageMetadata({
   title: "Web Design & Development Case Studies",
@@ -18,7 +19,10 @@ export const metadata: Metadata = buildPageMetadata({
 export default function WorkPage() {
   return (
     <>
-      <div className="px-6 md:px-12 pt-16 pb-0 max-w-[1240px] mx-auto">
+      <div className="px-6 md:px-12 pt-10 max-w-[1240px] mx-auto">
+        <PageBreadcrumbs items={[{ name: "Home", path: "/" }, { name: "Work", path: "/work" }]} />
+      </div>
+      <div className="px-6 md:px-12 pt-6 pb-0 max-w-[1240px] mx-auto">
         <AnimateIn>
           <span className="font-dm text-xs text-acc tracking-[.14em] font-semibold uppercase">Work / Build Logs</span>
           <h1 className="font-syne text-[clamp(32px,5.5vw,60px)] font-extrabold tracking-[-0.025em] mt-2">

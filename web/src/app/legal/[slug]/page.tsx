@@ -12,10 +12,10 @@ function publicLegalCopy(text: string) {
 }
 
 export function generateStaticParams() { return legalRoutes.map((slug) => ({ slug })) }
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) { const { slug } = await params; if (!legalRoutes.includes(slug as LegalSlug)) return {}; return legalMetadata(legalPolicies[slug as LegalSlug].title, slug as LegalSlug) }
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) { const { slug } = await params; if (!legalRoutes.includes(slug as LegalSlug)) return {}; const policy = legalPolicies[slug as LegalSlug]; return legalMetadata(policy.title, slug as LegalSlug, publicLegalCopy(policy.introduction)) }
 export default async function LegalPolicyPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   if (!legalRoutes.includes(slug as LegalSlug)) notFound()
   const policy = legalPolicies[slug as LegalSlug]
-  return <LegalDocument title={policy.title} introduction={publicLegalCopy(policy.introduction)}>{policy.sections.map((section) => <LegalSection key={section.title} title={section.title}>{section.paragraphs?.map((paragraph) => <p key={paragraph}>{publicLegalCopy(paragraph)}</p>)}{section.bullets && <ul className="list-disc space-y-2 pl-5">{section.bullets.map((bullet) => <li key={bullet}>{publicLegalCopy(bullet)}</li>)}</ul>}{slug === "cookies" && section.title === "How choices work" && <div className="pt-4"><PrivacyStorageControls /></div>}</LegalSection>)}</LegalDocument>
+  return <LegalDocument title={policy.title} introduction={publicLegalCopy(policy.introduction)} slug={slug}>{policy.sections.map((section) => <LegalSection key={section.title} title={section.title}>{section.paragraphs?.map((paragraph) => <p key={paragraph}>{publicLegalCopy(paragraph)}</p>)}{section.bullets && <ul className="list-disc space-y-2 pl-5">{section.bullets.map((bullet) => <li key={bullet}>{publicLegalCopy(bullet)}</li>)}</ul>}{slug === "cookies" && section.title === "How choices work" && <div className="pt-4"><PrivacyStorageControls /></div>}</LegalSection>)}</LegalDocument>
 }

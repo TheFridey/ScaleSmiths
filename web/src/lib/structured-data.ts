@@ -93,7 +93,7 @@ export function buildWebsiteSchema(base: string) {
   }
 }
 
-export function buildBreadcrumbSchema(base: string, trail: Array<{ name: string; path: string }>) {
+export function buildBreadcrumbSchema(base: string, trail: ReadonlyArray<{ name: string; path: string }>) {
   return {
     "@context": CONTEXT,
     "@type": "BreadcrumbList",

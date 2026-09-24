@@ -1,10 +1,19 @@
 import type { ReactNode } from "react"
 import Link from "next/link"
+import { Breadcrumbs } from "@/components/Breadcrumbs"
+import { JsonLd } from "@/components/JsonLd"
 import { LEGAL_EFFECTIVE_DATE, LEGAL_LAST_UPDATED, LEGAL_VERSION } from "@/lib/legal"
+import { siteBaseUrl } from "@/lib/site-identity"
+import { buildBreadcrumbSchema } from "@/lib/structured-data"
 
-export function LegalDocument({ title, introduction, children }: { title: string; introduction: string; children: ReactNode }) {
+export function LegalDocument({ title, introduction, slug, children }: { title: string; introduction: string; slug?: string; children: ReactNode }) {
+  const trail = slug
+    ? [{ name: "Home", path: "/" }, { name: "Legal", path: "/legal" }, { name: title, path: `/legal/${slug}` }]
+    : [{ name: "Home", path: "/" }, { name: "Legal", path: "/legal" }]
   return (
     <article className="mx-auto max-w-[880px] px-6 py-16 md:px-12 md:py-24">
+      {slug ? <JsonLd data={buildBreadcrumbSchema(siteBaseUrl(), trail)} /> : null}
+      <Breadcrumbs className="mb-10" items={trail.map((item, index) => ({ name: item.name, href: index < trail.length - 1 ? item.path : undefined }))} />
       <header className="border-b border-b1 pb-10">
         <p className="font-dm text-xs font-semibold uppercase tracking-[0.14em] text-acc">Legal information</p>
         <h1 className="mt-3 font-syne text-[clamp(38px,7vw,72px)] font-extrabold leading-none tracking-[-0.035em]">{title}</h1>

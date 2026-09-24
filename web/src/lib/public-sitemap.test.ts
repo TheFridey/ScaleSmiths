@@ -25,8 +25,8 @@ describe("public sitemap", () => {
   it("publishes the Insights hub, all topic clusters and the complete initial library", () => {
     const urls = buildPublicSitemap().map((entry) => entry.url)
     expect(urls).toContain("https://scalesmiths.co.uk/insights")
-    for (const topic of ["websites", "seo", "growth", "development", "automation", "infrastructure"]) expect(urls).toContain(`https://scalesmiths.co.uk/insights/${topic}`)
-    expect(urls.filter((url) => /\/insights\/[^/]+$/.test(url)).length).toBe(31)
+    for (const topic of ["websites", "seo", "development", "infrastructure"]) expect(urls).toContain(`https://scalesmiths.co.uk/insights/${topic}`)
+    expect(urls.filter((url) => /\/insights\/[^/]+$/.test(url)).length).toBe(29)
   })
 
   it("uses stable source-controlled last-modified values", () => {

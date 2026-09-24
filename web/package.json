@@ -24,6 +24,7 @@
     "test:e2e:cleanup": "node scripts/test-database.mjs cleanup",
     "check:performance-budgets": "node scripts/check-performance-budgets.mjs",
     "work-media:sync": "node scripts/sync-work-media.mjs",
+    "seo:audit": "node scripts/seo-audit.mjs",
     "lint": "eslint .",
     "db:generate": "node --env-file-if-exists=../.env ./node_modules/drizzle-kit/bin.cjs generate",
     "db:migrate": "node --env-file-if-exists=../.env ../scripts/migrate-database.mjs",

@@ -50,8 +50,25 @@ export const LEGAL_LINKS = [
   { href: "/legal/website-terms", label: "Terms" },
 ] as const
 
-export function legalMetadata(title: string, slug: LegalSlug): Metadata {
-  return { title, description: `${title} for ScaleSmiths services and scalesmiths.co.uk.`, alternates: { canonical: `/legal/${slug}` }, robots: { index: true, follow: true } }
+/**
+ * Each policy describes itself. Passing the document's own introduction gives every legal route a
+ * distinct, substantive description instead of the same templated sentence with the title swapped
+ * in, which reads as boilerplate to a reader and as near-duplicate metadata to a crawler.
+ */
+export function legalMetadata(title: string, slug: LegalSlug, introduction?: string): Metadata {
+  const summary = introduction ? summariseForMeta(introduction) : `${title} for ScaleSmiths services, hosting, managed email and client work.`
+  return { title, description: summary, alternates: { canonical: `/legal/${slug}` }, robots: { index: true, follow: true } }
+}
+
+/** First whole sentences of a policy introduction, trimmed to a usable meta-description length. */
+export function summariseForMeta(text: string, limit = 158): string {
+  const clean = text.replace(/\s+/g, " ").trim()
+  if (clean.length <= limit) return clean
+  const truncated = clean.slice(0, limit)
+  const lastStop = truncated.lastIndexOf(". ")
+  if (lastStop > limit * 0.5) return truncated.slice(0, lastStop + 1)
+  const lastSpace = truncated.lastIndexOf(" ")
+  return `${truncated.slice(0, lastSpace > 0 ? lastSpace : limit).replace(/[,;:]$/, "")}…`
 }
 
 export function legalSitemapEntries(base: string): MetadataRoute.Sitemap {

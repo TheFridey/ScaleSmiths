@@ -3,7 +3,13 @@ import { gotoReady, installConsoleGuards, mockExperienceAnalytics, rejectNonEsse
 
 test.describe.configure({ timeout: 600_000 })
 
-const categories = ["websites", "seo", "growth", "development", "automation", "infrastructure"] as const
+// The four topic clusters. `growth` and `automation` were retired because they listed almost the
+// same articles as `websites` and `development`; both now 301 to their successor.
+const categories = ["websites", "seo", "development", "infrastructure"] as const
+const retiredCategories = [
+  { from: "/insights/growth", to: "/insights/websites" },
+  { from: "/insights/automation", to: "/insights/development" },
+] as const
 const samples = [
   "how-much-does-a-business-website-cost-uk-2026",
   "local-seo-nottingham-businesses-guide",
@@ -49,3 +55,11 @@ for (const viewport of [{ name: "desktop", width: 1440, height: 1000 }, { name: 
     await consoleGuards.expectClean()
   })
 }
+
+test("redirects retired insight hubs to the cluster that absorbed them", async ({ request }) => {
+  for (const { from, to } of retiredCategories) {
+    const response = await request.get(from, { maxRedirects: 0 })
+    expect(response.status(), from).toBe(308)
+    expect(response.headers().location, from).toContain(to)
+  }
+})

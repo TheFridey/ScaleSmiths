@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-html-link-for-pages */
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import Link from "next/link"
@@ -15,6 +14,9 @@ import { ConfirmAKillStory } from "@/components/work/ConfirmAKillStory"
 import { ProjectCard } from "@/components/work/ProjectCard"
 import { ProjectScreenshot, hostFromUrl, isDevelopment } from "@/components/work/ProjectScreenshot"
 import { getBuildLog, type BuildLog } from "@/lib/build-logs"
+import { Breadcrumbs } from "@/components/Breadcrumbs"
+import { getInsight } from "@/lib/insights"
+import { serviceRoutes } from "@/lib/service-routes"
 import { adjacentCaseStudies, getCaseStudy, primaryImage, relatedCaseStudies, relatedInsightsForCaseStudy, relatedServicesForCaseStudy, type CaseStudy } from "@/lib/case-studies"
 import { resolveClientQuote, resolveOutcomes, resolveVerifiedMetrics } from "@/lib/case-study-metrics"
 import { logoForProject } from "@/lib/client-proof"
@@ -61,6 +63,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 function BuildLogPage({ log, verifiedBusinessValue, verifiedOutcome }: { log: BuildLog; verifiedBusinessValue?: string; verifiedOutcome?: string }) {
   const base = siteBaseUrl()
+  const logServices = serviceRoutes(log.relatedServiceHrefs ?? [])
+  const logArticles = (log.relatedInsightSlugs ?? [])
+    .map((slug) => getInsight(slug, { includeDrafts: false }))
+    .filter((insight): insight is NonNullable<typeof insight> => Boolean(insight))
   const schema = [
     {
       "@context": "https://schema.org",
@@ -84,9 +90,10 @@ function BuildLogPage({ log, verifiedBusinessValue, verifiedOutcome }: { log: Bu
     <>
       <JsonLd data={schema} />
       <div className="mx-auto max-w-[1080px] px-6 pt-10 md:px-12">
-        <a href="/work" className="mb-12 inline-flex items-center gap-2 font-dm text-sm text-t2 transition-colors hover:text-t1">
-          <ArrowLeft size={14} aria-hidden="true" /> Back to Work
-        </a>
+        <Breadcrumbs
+          className="mb-12"
+          items={[{ name: "Home", href: "/" }, { name: "Work", href: "/work" }, { name: log.title }]}
+        />
         <AnimateIn>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">
             <span>{log.status}</span><span className="text-t3">System · {log.system}</span>
@@ -122,6 +129,27 @@ function BuildLogPage({ log, verifiedBusinessValue, verifiedOutcome }: { log: Bu
             {log.technicalApproach.map((item, index) => <li key={item} className="grid grid-cols-[34px_1fr] border-b border-b1 py-3 font-dm text-sm text-t2"><span className="text-t3">0{index + 1}</span>{item}</li>)}
           </ol>
         </AnimateIn>
+
+        {logServices.length > 0 || logArticles.length > 0 ? (
+          <AnimateIn className="mb-20 border-t border-b1 pt-10">
+            <h2 className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">Where this applies</h2>
+            <div className="mt-6 grid gap-3 md:grid-cols-2">
+              {/* Labels only. The catalogue descriptions are identical on every note, so repeating
+                  them made six short pages look like near-duplicates of each other. */}
+              {logServices.map((service) => (
+                <Link key={service.href} href={service.href} prefetch={false} className="group inline-flex items-center justify-between gap-3 rounded-xl border border-b1 bg-s1 px-5 py-4 transition-colors hover:border-b2">
+                  <span className="font-syne text-base font-bold">{service.label}</span>
+                  <ArrowRight size={14} aria-hidden="true" className="shrink-0 text-acc transition-transform group-hover:translate-x-0.5" />
+                </Link>
+              ))}
+            </div>
+            {logArticles.length > 0 ? (
+              <div className="mt-8 grid gap-4 md:grid-cols-2">
+                {logArticles.map((insight) => <InsightCard key={insight.slug} insight={insight} headingLevel="h3" />)}
+              </div>
+            ) : null}
+          </AnimateIn>
+        ) : null}
       </div>
       <CTA />
     </>

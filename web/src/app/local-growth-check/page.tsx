@@ -4,15 +4,16 @@ import { ArrowRight, Check, Compass, MapPin, SearchCheck } from "lucide-react"
 import { AnimateIn } from "@/components/AnimateIn"
 import { AuditAcquisitionLink } from "@/components/AuditAcquisitionLink"
 import { JsonLd } from "@/components/JsonLd"
+import { PageBreadcrumbs } from "@/components/Breadcrumbs"
+import { buildPageMetadata } from "@/lib/page-metadata"
 import { DiscoveryCallLink } from "@/components/DiscoveryCallLink"
 import { businessGrowthAudit, formatAuditPrice } from "@/lib/business-growth-audit"
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: "Local Business Growth Audit, Nottinghamshire",
   description: "A £395 review for Hucknall and Nottinghamshire businesses covering visibility, trust, enquiries and systems, with a prioritised list of what to fix first.",
-  alternates: { canonical: "/local-growth-check" },
-  openGraph: { title: "Local Business Growth Audit, Nottinghamshire | ScaleSmiths", description: "Find what is actually holding your local business back, with clear findings and a prioritised roadmap.", url: "/local-growth-check" },
-}
+  path: "/local-growth-check",
+})
 
 const problems = ["Plenty of website visits but very few enquiries", "Most work still comes through word of mouth", "People find competitors before they find you", "Customers cannot quickly see why they should choose you", "Enquiries arrive through several channels with no single process", "Quotes go out, but follow-up is inconsistent", "Nobody knows whether the old website is doing anything", "Hours disappear into admin that could be simpler"]
 const checks = [
@@ -30,7 +31,7 @@ export default function LocalGrowthCheckPage() {
   const schema = { "@context": "https://schema.org", "@type": "WebPage", name: "Business Growth Audit for local businesses", url: `${baseUrl}/local-growth-check`, description: metadata.description, about: { "@type": "Service", name: businessGrowthAudit.name, url: `${baseUrl}${businessGrowthAudit.slug}` }, areaServed: ["Hucknall", "Nottingham", "Nottinghamshire", "United Kingdom"] }
   return <main>
     <JsonLd data={schema} />
-    <section className="px-6 py-16 md:px-12 md:py-24"><div className="mx-auto grid max-w-[1240px] gap-10 lg:grid-cols-[1.15fr_.85fr] lg:items-end">
+    <section className="px-6 pb-16 pt-10 md:px-12 md:pb-24"><div className="mx-auto max-w-[1240px]"><PageBreadcrumbs className="mb-10" items={[{ name: "Home", path: "/" }, { name: "Services", path: "/services" }, { name: "Local growth check", path: "/local-growth-check" }]} /></div><div className="mx-auto grid max-w-[1240px] gap-10 lg:grid-cols-[1.15fr_.85fr] lg:items-end">
       <AnimateIn><span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[.15em] text-acc"><MapPin size={14} aria-hidden="true" /> Local business growth</span><h1 className="mt-5 max-w-[850px] font-syne text-[clamp(46px,7vw,88px)] font-extrabold leading-[.92] tracking-[-.05em]">What&apos;s actually holding your business back?</h1><p className="mt-7 max-w-[720px] text-lg leading-relaxed text-t2">You do not need another agency telling you to rebuild everything. We look at how your business is found, trusted, contacted and operated—then show you where the biggest opportunities actually are.</p><div className="mt-8 flex flex-wrap gap-3"><AuditAcquisitionLink source="local_growth_check" start className="btn-primary">Start my Growth Audit <ArrowRight size={16} aria-hidden="true" /></AuditAcquisitionLink><a href="#included" className="btn-ghost">See what&apos;s included</a></div></AnimateIn>
       <AnimateIn delay={.08} className="rounded-3xl border border-acc/20 bg-s1 p-7 md:p-9"><p className="text-xs font-semibold uppercase tracking-[.14em] text-acc">ScaleSmiths Business Growth Audit</p><p className="mt-4 font-syne text-6xl font-extrabold">{formatAuditPrice()}</p><p className="mt-1 text-xs font-semibold uppercase tracking-[.12em] text-t3">One-time</p><p className="mt-6 border-t border-b1 pt-5 text-sm leading-relaxed text-t2">For local businesses in Hucknall, Nottingham and beyond. The full {formatAuditPrice(businessGrowthAudit.buildCreditMinor)} is credited against an eligible subsequent ScaleSmiths build.</p></AnimateIn>
     </div></section>

@@ -12,13 +12,20 @@ export const INSIGHT_CATEGORIES = {
 } as const
 export type InsightCategory = keyof typeof INSIGHT_CATEGORIES
 
+/**
+ * Topic clusters partition the article categories; they never overlap.
+ *
+ * An earlier arrangement gave `growth` both `local-growth` and `commercial`, and `automation`
+ * both `business-systems` and `web-development`, so those hubs listed almost the same articles as
+ * `websites` and `development` (75% and 67% content overlap in the crawl). Two hubs competing for
+ * one intent is the cheapest way to lose both. Every category now belongs to exactly one cluster,
+ * which `insights.test.ts` enforces.
+ */
 export const INSIGHT_TOPIC_CLUSTERS = {
-  websites: { label: "Websites", description: "Clear guidance on planning, buying, rebuilding and owning a business website.", categories: ["commercial"] },
-  seo: { label: "SEO", description: "Practical search guidance for UK businesses, from indexation and speed to local visibility.", categories: ["technical-seo", "local-growth"] },
-  growth: { label: "Growth", description: "Commercial decisions, local visibility and better routes from attention to enquiry.", categories: ["local-growth", "commercial"] },
-  development: { label: "Development", description: "Custom websites, web applications, software and maintainable technical choices.", categories: ["web-development"] },
-  automation: { label: "Automation", description: "Connected workflows, integrations and focused business automation.", categories: ["business-systems", "web-development"] },
-  infrastructure: { label: "Infrastructure", description: "Hosting, reliability, maintenance, domains and business email foundations.", categories: ["infrastructure"] },
+  websites: { label: "Websites", description: "Planning, buying, rebuilding and owning a business website, including what it should cost and how long it takes.", categories: ["commercial"] },
+  seo: { label: "SEO", description: "Practical search guidance for UK businesses, from indexation and page speed to local visibility.", categories: ["technical-seo", "local-growth"] },
+  development: { label: "Development", description: "Custom websites, web applications, business software and the automation that connects them.", categories: ["web-development", "business-systems"] },
+  infrastructure: { label: "Infrastructure", description: "Hosting, reliability, maintenance, domains and dependable business email.", categories: ["infrastructure"] },
 } as const satisfies Record<string, { label: string; description: string; categories: readonly InsightCategory[] }>
 export type InsightTopicSlug = keyof typeof INSIGHT_TOPIC_CLUSTERS
 

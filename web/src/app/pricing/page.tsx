@@ -3,6 +3,7 @@ import { buildPageMetadata } from "@/lib/page-metadata"
 import Link from "next/link"
 import { ArrowRight } from "lucide-react"
 import { JsonLd } from "@/components/JsonLd"
+import { PageBreadcrumbs } from "@/components/Breadcrumbs"
 import { pricingFaqs, pricingItems, buildPricingSchema } from "@/lib/service-pages"
 import { claimWording, publicClaimMap } from "@/lib/public-claims"
 import { getVerifiedPublicClaims } from "@/lib/public-claims.server"
@@ -25,7 +26,8 @@ export default async function PricingPage() {
   return (
     <>
       <JsonLd data={schema} />
-      <section className="mx-auto max-w-[1240px] px-6 py-20 md:px-12">
+      <section className="mx-auto max-w-[1240px] px-6 pb-20 pt-10 md:px-12">
+        <PageBreadcrumbs className="mb-10" items={[{ name: "Home", path: "/" }, { name: "Pricing", path: "/pricing" }]} />
         <span className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">Pricing</span>
         <h1 className="mt-2 max-w-[820px] font-syne text-[clamp(38px,7vw,76px)] font-extrabold leading-none tracking-[-0.03em]">
           Clear scoping before the proposal.

@@ -4,20 +4,20 @@ import { ArrowRight, BarChart3, CheckCircle2, Search, ShieldCheck, Wrench } from
 import { AnimateIn } from "@/components/AnimateIn"
 import { CTA } from "@/components/CTA"
 import { JsonLd } from "@/components/JsonLd"
+import { PageBreadcrumbs } from "@/components/Breadcrumbs"
 import { ContextualFaqs } from "@/components/faq/ContextualFaqs"
 import { contextualFaqs } from "@/lib/faq-knowledge-base"
+import { buildPageMetadata } from "@/lib/page-metadata"
 import { organizationReference } from "@/lib/site-identity"
 
-export const metadata: Metadata = {
+const description =
+  "An ongoing partnership covering SEO, conversion, content, analytics, automation and technical support, whether or not ScaleSmiths built the current site."
+
+export const metadata: Metadata = buildPageMetadata({
   title: "Digital Growth Partnership",
-  description: "An ongoing digital growth partnership for website improvements, SEO, conversion optimisation, content, analytics, automation and managed technical support — whether or not ScaleSmiths built the current site.",
-  alternates: { canonical: "/digital-growth-partnership" },
-  openGraph: {
-    title: "Digital Growth Partnership | ScaleSmiths",
-    description: "Ongoing website, SEO, conversion, automation and technical improvement with one accountable digital partner.",
-    url: "/digital-growth-partnership",
-  },
-}
+  description,
+  path: "/digital-growth-partnership",
+})
 
 const capabilities = [
   { title: "Search visibility", body: "Technical SEO, service and location content, internal linking, search-intent coverage and Search Console review.", Icon: Search },
@@ -46,7 +46,7 @@ export default function DigitalGrowthPartnershipPage() {
       url: `${baseUrl}/digital-growth-partnership`,
       provider: organizationReference(baseUrl),
       areaServed: ["Nottingham", "Nottinghamshire", "United Kingdom"],
-      description: metadata.description,
+      description,
     },
     {
       "@context": "https://schema.org",
@@ -58,7 +58,8 @@ export default function DigitalGrowthPartnershipPage() {
   return (
     <>
       <JsonLd data={schema} />
-      <section className="mx-auto max-w-[1240px] px-6 py-20 md:px-12 md:py-28">
+      <section className="mx-auto max-w-[1240px] px-6 pb-20 pt-10 md:px-12 md:pb-28">
+        <PageBreadcrumbs className="mb-10" items={[{ name: "Home", path: "/" }, { name: "Services", path: "/services" }, { name: "Digital Growth Partnership", path: "/digital-growth-partnership" }]} />
         <AnimateIn className="max-w-[920px]">
           <p className="text-xs font-semibold uppercase tracking-[.14em] text-acc">Ongoing growth</p>
           <h1 className="mt-3 font-syne text-[clamp(42px,8vw,88px)] font-extrabold leading-[.92] tracking-[-.04em]">Your Digital Growth Partnership.</h1>

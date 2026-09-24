@@ -1,3 +1,5 @@
+import { faqEntries } from "./faq-library"
+
 export interface Project {
   id: number
   slug: string
@@ -435,7 +437,6 @@ export const projects: Project[] = [
       { title: "Commercial and governance surfaces", detail: "Clerk authentication, Stripe plans, team seats and execution credits are part of the product rather than bolted on afterwards." },
     ],
     relatedServiceHrefs: [
-      "/custom-software-development-uk",
       "/custom-web-app-development-uk",
     ],
     relatedInsightSlugs: [
@@ -491,7 +492,6 @@ export const projects: Project[] = [
     ],
     relatedServiceHrefs: [
       "/custom-web-app-development-uk",
-      "/custom-software-development-uk",
       "/next-js-agency-uk",
     ],
     relatedInsightSlugs: [
@@ -580,10 +580,10 @@ export const faqs = [
     q: "How long does a project take?",
     a: "Delivery timing is confirmed after discovery because content readiness, integrations, review cycles and technical risk materially affect the schedule. The agreed proposal records the delivery range and assumptions.",
   },
-  {
-    q: "What happens after launch?",
-    a: "A Digital Growth Partnership can include maintenance, monitoring, SEO, conversion work, content, automation and roadmap delivery. It is scoped around agreed priorities and can begin with an existing digital estate or continue after a ScaleSmiths build.",
-  },
+  // Reuses the knowledge-base answer rather than restating it, so the homepage and /faq cannot
+  // drift apart. The questions above are brand-level and have no knowledge-base equivalent; the
+  // pricing and timeline answers are replaced at render time with verified claim wording.
+  { q: "What happens after launch?", a: faqEntries.support.a },
   {
     q: "What is ScaleSmiths Managed Business Email?",
     a: "It is professional custom-domain email configured, authenticated and supported by ScaleSmiths. The standalone starting service is £15 for three 5GB mailboxes with initial setup included.",

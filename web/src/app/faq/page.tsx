@@ -11,6 +11,8 @@ import { siteBaseUrl } from "@/lib/site-identity"
 import { buildBreadcrumbSchema, buildWebPageSchema } from "@/lib/structured-data"
 
 const description =
+  "Straight answers on websites, SEO, ongoing support, custom development, hosting, business email and how ScaleSmiths works commercially."
+const intro =
   "A searchable knowledge base of straight answers about websites, SEO, ongoing support, custom development, hosting, business email and how ScaleSmiths works commercially."
 
 export const metadata = buildPageMetadata({
@@ -81,7 +83,7 @@ export default function FaqPage() {
             <div className="mt-10 max-w-[840px]">
               <p className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">Knowledge base · {total} answers</p>
               <h1 className="mt-3 font-syne text-[clamp(38px,6.5vw,72px)] font-black leading-[1.02] tracking-[-.04em]">Clear answers before you commit.</h1>
-              <p className="mt-5 font-dm text-lg leading-relaxed text-t2">{description}</p>
+              <p className="mt-5 font-dm text-lg leading-relaxed text-t2">{intro}</p>
               <p className="mt-4 max-w-[720px] border-l border-acc pl-4 font-dm text-sm leading-relaxed text-t3">
                 Where something is agreed per engagement rather than published — payment terms, response commitments, what a specific partnership covers — the answer says so instead of inventing a policy.
               </p>

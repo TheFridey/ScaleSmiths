@@ -8,6 +8,13 @@ export interface BuildLog {
   tags: string[]
   system: string
   status: "Production note" | "System note"
+  /**
+   * Where a reader should go next. Service hrefs must exist in serviceRouteCatalogue(); article
+   * slugs must be published. These notes are short by design, so the onward routes matter: they
+   * are the reason the page is worth reaching rather than a dead end in the sitemap.
+   */
+  relatedServiceHrefs?: string[]
+  relatedInsightSlugs?: string[]
 }
 
 export const buildLogs: BuildLog[] = [
@@ -21,6 +28,8 @@ export const buildLogs: BuildLog[] = [
     tags: ["Next.js", "PostgreSQL", "Drizzle", "Docker", "CSP"],
     system: "Public site · Admin · Portal · Deployment",
     status: "Production note",
+    relatedServiceHrefs: ["/next-js-agency-uk", "/managed-website-hosting"],
+    relatedInsightSlugs: ["why-scalesmiths-builds-custom-websites", "website-hosting-explained"],
   },
   {
     slug: "quote-system-hardening",
@@ -32,6 +41,8 @@ export const buildLogs: BuildLog[] = [
     tags: ["Security", "Validation", "Rate limits", "Lead quality"],
     system: "Quote funnel",
     status: "System note",
+    relatedServiceHrefs: ["/web-development-nottingham", "/custom-web-app-development-uk"],
+    relatedInsightSlugs: ["what-is-a-web-application"],
   },
   {
     slug: "portal-foundation",
@@ -43,6 +54,8 @@ export const buildLogs: BuildLog[] = [
     tags: ["Portal", "Auth", "JWT", "bcrypt"],
     system: "Client portal",
     status: "System note",
+    relatedServiceHrefs: ["/custom-web-app-development-uk", "/custom-software-development-uk"],
+    relatedInsightSlugs: ["what-is-a-web-application", "when-does-a-business-need-custom-software"],
   },
   {
     slug: "seo-aeo-page-architecture",
@@ -54,6 +67,8 @@ export const buildLogs: BuildLog[] = [
     tags: ["SEO", "AEO", "Schema", "Sitemap"],
     system: "Public site architecture",
     status: "Production note",
+    relatedServiceHrefs: ["/local-seo-nottingham", "/seo-website-audit"],
+    relatedInsightSlugs: ["website-seo-checklist-uk-small-businesses", "why-your-website-isnt-showing-on-google"],
   },
   {
     slug: "admin-dashboard-foundation",
@@ -65,6 +80,8 @@ export const buildLogs: BuildLog[] = [
     tags: ["Admin", "Leads", "Clients", "Dashboard"],
     system: "Operations platform",
     status: "System note",
+    relatedServiceHrefs: ["/custom-software-development-uk", "/business-automation-nottingham"],
+    relatedInsightSlugs: ["when-does-a-business-need-custom-software"],
   },
   {
     slug: "security-hardening-pass",
@@ -76,6 +93,8 @@ export const buildLogs: BuildLog[] = [
     tags: ["CSP", "Headers", "Cookies", "Production"],
     system: "Public and admin applications",
     status: "Production note",
+    relatedServiceHrefs: ["/managed-website-hosting", "/website-maintenance-nottingham"],
+    relatedInsightSlugs: ["what-happens-when-your-website-goes-down", "website-hosting-explained"],
   },
 ]
 

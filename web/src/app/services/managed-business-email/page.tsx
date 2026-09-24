@@ -6,17 +6,14 @@ import { ContextualFaqs } from "@/components/faq/ContextualFaqs"
 import { JsonLd } from "@/components/JsonLd"
 import { buildManagedBusinessEmailSchema, managedBusinessEmail, managedBusinessEmailPriceLabel } from "@/lib/managed-business-email"
 import { contextualFaqs } from "@/lib/faq-knowledge-base"
+import { buildPageMetadata } from "@/lib/page-metadata"
+import { PageBreadcrumbs } from "@/components/Breadcrumbs"
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: "Managed Business Email",
   description: "Professional custom-domain business email configured, authenticated and supported by ScaleSmiths. Three 5GB mailboxes for £15/month, with initial setup included.",
-  alternates: { canonical: managedBusinessEmail.slug },
-  openGraph: {
-    title: "ScaleSmiths Managed Business Email",
-    description: "Professional email on your domain, configured properly and managed for £15/month.",
-    url: managedBusinessEmail.slug,
-  },
-}
+  path: managedBusinessEmail.slug,
+})
 
 export default function ManagedBusinessEmailPage() {
   const schema = buildManagedBusinessEmailSchema(process.env.NEXT_PUBLIC_SITE_URL ?? "https://scalesmiths.co.uk")
@@ -25,7 +22,8 @@ export default function ManagedBusinessEmailPage() {
     <>
       <JsonLd data={schema} />
       <main>
-        <section className="px-6 py-20 md:px-12 md:py-28">
+        <section className="px-6 pb-20 pt-10 md:px-12 md:pb-28">
+          <div className="mx-auto max-w-[1240px]"><PageBreadcrumbs className="mb-10" items={[{ name: "Home", path: "/" }, { name: "Services", path: "/services" }, { name: "Managed Business Email", path: "/services/managed-business-email" }]} /></div>
           <div className="mx-auto grid max-w-[1240px] gap-12 lg:grid-cols-[1.2fr_.8fr] lg:items-end">
             <AnimateIn>
               <span className="text-xs font-semibold uppercase tracking-[.16em] text-acc">Managed Business Email</span>

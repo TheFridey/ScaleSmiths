@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest"
 import { projects } from "./data"
 import { founderBySlug, UNSUPPORTED_CLAIM_PATTERNS } from "./founders"
 import {
+  INSIGHT_CATEGORIES,
+  INSIGHT_TOPIC_CLUSTERS,
   draftPreviewEnabled,
   editorialPipeline,
   getInsight,
@@ -12,6 +14,7 @@ import {
   insightsByAuthor,
   insightsForCaseStudy,
   insightsForService,
+  insightsForTopic,
   publishedInsights,
   readingTimeMinutes,
   relatedInsights,
@@ -157,5 +160,24 @@ describe("article helpers and schema", () => {
     expect(posting.dateModified).toBe("2026-09-10")
     expect(posting.mainEntityOfPage).toBe(`${base}/insights/example-article`)
     expect(breadcrumb.itemListElement.map((item) => item.item)).toEqual([base, `${base}/insights`, `${base}/insights/seo`, `${base}/insights/example-article`])
+  })
+})
+
+describe("insight topic clusters", () => {
+  it("assigns every category to exactly one cluster, so no two hubs list the same articles", () => {
+    const owners = new Map<string, string[]>()
+    for (const [topic, cluster] of Object.entries(INSIGHT_TOPIC_CLUSTERS)) {
+      for (const category of cluster.categories) owners.set(category, [...(owners.get(category) ?? []), topic])
+    }
+    for (const [category, topics] of owners) {
+      expect(topics, `${category} is claimed by ${topics.join(" and ")}`).toHaveLength(1)
+    }
+    expect([...owners.keys()].sort()).toEqual(Object.keys(INSIGHT_CATEGORIES).sort())
+  })
+
+  it("never publishes a cluster hub with too few articles to be worth a page", () => {
+    for (const topic of Object.keys(INSIGHT_TOPIC_CLUSTERS) as Array<keyof typeof INSIGHT_TOPIC_CLUSTERS>) {
+      expect(insightsForTopic(topic).length, `${topic} hub`).toBeGreaterThanOrEqual(3)
+    }
   })
 })

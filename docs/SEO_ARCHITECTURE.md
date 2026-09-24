@@ -47,6 +47,11 @@ Reusable related-content components are `RelatedInsights`, `RelatedServices`, `R
 
 A case study may also curate its topic cluster through `relatedServiceHrefs` and `relatedInsightSlugs` in `data.ts`, which put the most relevant routes first without replacing the derived set. The reciprocity rule still holds and is enforced in `case-studies.test.ts`: a case study only links to a service page that lists it as proof. `adjacentCaseStudies` gives every case study a previous/next route so no project is a dead end.
 
+`tests/e2e/responsive-qa.spec.ts` checks every page archetype at 1440px, 768px and 390px for
+horizontal overflow, missing chrome and heading collapse, and exercises the mobile drawer's focus
+trap, the desktop services menu by keyboard, the FAQ disclosures at each breakpoint, and tap targets
+against the WCAG 2.5.8 AA 24px minimum.
+
 `tests/e2e/internal-link-graph.spec.ts` is the site-wide audit. It crawls the public site from the homepage and fails on dead internal links, sitemap routes nothing links to, sitemap routes the crawl never reaches, duplicate element ids, missing or duplicated metadata, broken heading order and console errors. `/interactive` and `/traditional` are the only routes exempt, because they are reached through the experience chooser rather than a standing link. The same file checks that each major search entry point has no horizontal overflow at 390px and offers a conversion route in its own content rather than relying on the header and footer.
 
 ## FAQ knowledge base
@@ -58,6 +63,26 @@ One answer is written once and reused. `/faq` renders the whole library through 
 `/faq` deliberately emits `CollectionPage` and `BreadcrumbList` schema, **not** `FAQPage`. Marking up sixty questions as one FAQ entity is not what the schema describes, and Google restricts FAQ rich results to authoritative health and government sources — there is no result to chase. Short, intent-scoped FAQ blocks on individual service pages keep their existing `FAQPage` markup, because there the questions genuinely are what the page answers.
 
 Answers must stay consistent with published evidence: `data.ts`, verified public claims, `managed-business-email.ts` and `legal-policies.ts`. Where practice is agreed per engagement rather than published — payment terms, response commitments, what a given partnership covers — the answer says so and routes to contact. `faq-knowledge-base.test.ts` enforces category coverage, unique anchors, live service routes, published insight slugs and the no-ranking-promise rule.
+
+## Auditing
+
+`web/scripts/seo-audit.mjs` (`npm run seo:audit -- --base <url>`) renders every indexable URL with
+Playwright and writes `docs/seo-audit.json` plus `docs/SEO_FINAL_AUDIT.md`. It exits non-zero on any
+error-severity finding, so it can gate a release.
+
+It identifies as Googlebot deliberately. The site serves the experience chooser to ordinary
+browsers and the full homepage to recognised crawlers (`lib/experience-routing.ts`), so an audit run
+with a browser user agent measures the wrong page.
+
+Canonical hosts are checked against the origin the served sitemap uses, not against a hard-coded
+production host. Both derive from `NEXT_PUBLIC_SITE_URL`, so this catches a genuine inconsistency
+while still passing on a local run, and the audit separately warns when that origin is not the
+production one.
+
+Three findings are classified rather than fixed, with the reason recorded in the report: `next/image`
+with `fill` legitimately carries no intrinsic width and height; legal documents, forms, directories
+and contact pages are short because of what they are; and a noindex funnel step needs no canonical
+or breadcrumb. Everything else is expected to be zero.
 
 ## Adding content
 

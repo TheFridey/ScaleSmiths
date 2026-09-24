@@ -1969,6 +1969,66 @@ export const ventureControlState = pgTable("venture_control_state", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 })
 
+export const ventureOauthClients = pgTable("venture_oauth_clients", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  clientId: text("client_id").notNull(),
+  clientName: text("client_name").notNull(),
+  redirectUris: jsonb("redirect_uris").$type<string[]>().notNull(),
+  active: boolean("active").default(true).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("venture_oauth_clients_client_id_idx").on(table.clientId),
+  check("venture_oauth_clients_name_check", sql`char_length(${table.clientName}) between 1 and 200`),
+  check("venture_oauth_clients_redirects_check", sql`jsonb_typeof(${table.redirectUris}) = 'array' and jsonb_array_length(${table.redirectUris}) = 3`),
+  check("venture_oauth_clients_static_id_check", sql`${table.clientId} = 'cursor-venture-lab'`),
+  check("venture_oauth_clients_static_redirects_check", sql`${table.redirectUris} = '[\"cursor://anysphere.cursor-mcp/oauth/callback\",\"https://www.cursor.com/agents/mcp/oauth/callback\",\"http://localhost:8787/callback\"]'::jsonb`),
+])
+
+export const ventureOauthCodes = pgTable("venture_oauth_codes", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  codeHash: text("code_hash").notNull(),
+  clientId: uuid("client_id").references(() => ventureOauthClients.id, { onDelete: "restrict" }).notNull(),
+  redirectUri: text("redirect_uri").notNull(),
+  codeChallenge: text("code_challenge").notNull(),
+  scope: text("scope").default("venture").notNull(),
+  resource: text("resource").notNull(),
+  approvedBy: uuid("approved_by").references(() => adminUsers.id, { onDelete: "restrict" }).notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  consumedAt: timestamp("consumed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("venture_oauth_codes_code_hash_idx").on(table.codeHash),
+  index("venture_oauth_codes_client_expiry_idx").on(table.clientId, table.expiresAt),
+  check("venture_oauth_codes_hash_check", sql`${table.codeHash} ~ '^[0-9a-f]{64}$'`),
+  check("venture_oauth_codes_challenge_check", sql`${table.codeChallenge} ~ '^[A-Za-z0-9_-]{43}$'`),
+  check("venture_oauth_codes_scope_check", sql`${table.scope} = 'venture'`),
+  check("venture_oauth_codes_expiry_check", sql`${table.expiresAt} > ${table.createdAt}`),
+])
+
+export const ventureOauthTokens = pgTable("venture_oauth_tokens", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  clientId: uuid("client_id").references(() => ventureOauthClients.id, { onDelete: "restrict" }).notNull(),
+  serviceAccountId: text("service_account_id").references(() => ventureServiceAccounts.id, { onDelete: "restrict" }).notNull(),
+  authorizedBy: uuid("authorized_by").references(() => adminUsers.id, { onDelete: "restrict" }).notNull(),
+  accessTokenHash: text("access_token_hash").notNull(),
+  refreshTokenHash: text("refresh_token_hash").notNull(),
+  scope: text("scope").default("venture").notNull(),
+  accessExpiresAt: timestamp("access_expires_at", { withTimezone: true }).notNull(),
+  refreshExpiresAt: timestamp("refresh_expires_at", { withTimezone: true }).notNull(),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("venture_oauth_tokens_access_hash_idx").on(table.accessTokenHash),
+  uniqueIndex("venture_oauth_tokens_refresh_hash_idx").on(table.refreshTokenHash),
+  index("venture_oauth_tokens_access_expiry_idx").on(table.accessTokenHash, table.accessExpiresAt),
+  index("venture_oauth_tokens_refresh_expiry_idx").on(table.refreshTokenHash, table.refreshExpiresAt),
+  check("venture_oauth_tokens_access_hash_check", sql`${table.accessTokenHash} ~ '^[0-9a-f]{64}$'`),
+  check("venture_oauth_tokens_refresh_hash_check", sql`${table.refreshTokenHash} ~ '^[0-9a-f]{64}$'`),
+  check("venture_oauth_tokens_scope_check", sql`${table.scope} = 'venture'`),
+  check("venture_oauth_tokens_expiry_check", sql`${table.accessExpiresAt} > ${table.createdAt} and ${table.refreshExpiresAt} > ${table.accessExpiresAt}`),
+])
+
 export const ventureBudgetEnvelopes = pgTable("venture_budget_envelopes", {
   id: serial("id").primaryKey(),
   experimentId: integer("experiment_id").references(() => ventureExperiments.id, { onDelete: "restrict" }).notNull(),

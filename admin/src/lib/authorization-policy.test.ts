@@ -36,6 +36,7 @@ describe("authoritative authorization policy", () => {
   it("has no dead policy rule", () => {
     for (const policy of AUTHORIZATION_POLICY) {
       if (policy.id === "auth.protocol") continue // Auth.js exports handlers through destructuring, not function declarations.
+      if (policy.id === "venture.oauth.metadata" || policy.id === "venture.oauth.authorize") continue // These are non-/api route handlers covered explicitly below.
       expect(operations.some(({ pathname, method }) => policy.route.test(pathname) && policy.methods.includes(method)), policy.id).toBe(true)
     }
   })
@@ -64,6 +65,13 @@ describe("authoritative authorization policy", () => {
     expect(authorizationExpectation("/api/prospects/5/conversion", "GET")?.capability).toBe("leads.read")
     expect(authorizationExpectation("/api/prospects/5/conversion", "POST")?.capability).toBe("prospects.convert")
     expect(authorizationExpectation("/api/prospects/5", "PATCH")?.capability).toBe("leads.write")
+  })
+
+  it("maps Venture OAuth browser and discovery routes explicitly", () => {
+    expect(authorizationExpectation("/.well-known/oauth-authorization-server", "GET")).toMatchObject({ id: "venture.oauth.metadata", authenticated: false, capability: null })
+    expect(authorizationExpectation("/.well-known/oauth-protected-resource", "GET")).toMatchObject({ id: "venture.oauth.metadata", authenticated: false, capability: null })
+    expect(authorizationExpectation("/.well-known/oauth-protected-resource/venture-lab", "GET")).toMatchObject({ id: "venture.oauth.metadata", authenticated: false, capability: null })
+    expect(authorizationExpectation("/venture-lab/oauth/authorize", "GET")).toMatchObject({ id: "venture.oauth.authorize", authenticated: true, capability: "venture.integration.manage" })
   })
 
   it("fails closed for an unregistered API operation", () => {

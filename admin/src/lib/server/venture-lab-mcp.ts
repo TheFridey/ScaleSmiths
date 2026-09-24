@@ -13,6 +13,7 @@ import {
   ventureProposals,
 } from "@/lib/schema"
 import { getVentureLabDashboardSnapshot } from "@/lib/server/venture-lab-dashboard"
+import { authenticateVentureOauthAccessToken } from "@/lib/server/venture-lab-oauth"
 import {
   resolveVentureMcpToolName,
   VENTURE_DIRECTOR_SERVICE_ID,
@@ -45,12 +46,16 @@ export function ventureMcpToolDefinitions() {
 }
 
 export async function authenticateVentureDirector(headers: Headers, env: NodeJS.ProcessEnv = process.env) {
-  const expected = env.VENTURE_DIRECTOR_MCP_TOKEN
-  if (!expected || expected.length < 32) throw new VentureMcpError("Venture Director MCP authentication is not configured.", 503, "mcp_not_configured")
-
   const auth = headers.get("authorization") ?? ""
-  const token = auth.startsWith("Bearer ") ? auth.slice(7) : ""
-  if (!constantTimeTextEqual(token, expected)) throw new VentureMcpError("Unauthorized.", 401, "mcp_unauthorized")
+  const token = auth.startsWith("Bearer ") ? auth.slice(7).trim() : ""
+  if (!token) throw new VentureMcpError("Unauthorized.", 401, "mcp_unauthorized")
+
+  const expected = env.VENTURE_DIRECTOR_MCP_TOKEN
+  const staticMatch = Boolean(expected && expected.length >= 32 && constantTimeTextEqual(token, expected))
+  const oauth = staticMatch ? null : await authenticateVentureOauthAccessToken(token)
+  if (!staticMatch && oauth?.serviceId !== VENTURE_DIRECTOR_SERVICE_ID) {
+    throw new VentureMcpError("Unauthorized.", 401, "mcp_unauthorized")
+  }
 
   const [service] = await db.select().from(ventureServiceAccounts)
     .where(eq(ventureServiceAccounts.id, VENTURE_DIRECTOR_SERVICE_ID)).limit(1)

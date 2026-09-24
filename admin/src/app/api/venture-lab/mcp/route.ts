@@ -5,6 +5,7 @@ import {
   VentureMcpError,
   ventureMcpToolDefinitions,
 } from "@/lib/server/venture-lab-mcp"
+import { ventureOauthOrigin } from "@/lib/server/venture-lab-oauth"
 
 export const dynamic = "force-dynamic"
 
@@ -43,11 +44,22 @@ export async function POST(request: Request) {
 
     return rpcError(id, -32601, "Method not found", 404)
   } catch (error) {
-    if (error instanceof VentureMcpError) return rpcError(id, -32000, error.safeMessage, error.status, error.code)
+    if (error instanceof VentureMcpError) {
+      if (error.code === "mcp_unauthorized") {
+        const resourceMetadata = `${ventureOauthOrigin()}/.well-known/oauth-protected-resource`
+        return rpcError(id, -32000, error.safeMessage, error.status, error.code, {
+          "WWW-Authenticate": `Bearer resource_metadata="${resourceMetadata}", scope="venture"`,
+        })
+      }
+      return rpcError(id, -32000, error.safeMessage, error.status, error.code)
+    }
     return rpcError(id, -32603, "Internal error", 500)
   }
 }
 
-function rpcError(id: unknown, code: number, message: string, status: number, data?: string) {
-  return NextResponse.json({ jsonrpc: "2.0", id: id ?? null, error: { code, message, ...(data ? { data } : {}) } }, { status })
+function rpcError(id: unknown, code: number, message: string, status: number, data?: string, headers?: HeadersInit) {
+  return NextResponse.json(
+    { jsonrpc: "2.0", id: id ?? null, error: { code, message, ...(data ? { data } : {}) } },
+    { status, headers },
+  )
 }

@@ -2225,7 +2225,7 @@ describe("real PostgreSQL integration", () => {
       await expect(submit({ ...args, prospectCode: "P02", qualificationEvidenceId: otherEvidence.id })).rejects.toMatchObject({ code: "evidence_not_qualifying" });
       await expect(submit({ ...args, path: "unknown", pricedProjectAcceptance: "accepted" })).rejects.toMatchObject({ code: "invalid_arguments" });
       await expect(submit({ ...args, qualificationReason: "not-a-reason" })).rejects.toMatchObject({ code: "invalid_arguments" });
-      await expect(submit({ ...args, prospectCode: "P02", careAcceptance: "accepted" })).rejects.toMatchObject({ code: "care_floor_unconfirmed" });
+      await expect(submit({ ...args, prospectCode: "P02", pricedProjectAcceptance: "accepted", careAcceptance: "accepted" })).rejects.toMatchObject({ code: "care_floor_unconfirmed" });
 
       const corrected = await submit({
         ...args,
@@ -2245,8 +2245,32 @@ describe("real PostgreSQL integration", () => {
         careAcceptance: "accepted",
         strongCommitment: "written_commitment",
         supersedesOutcomeId: corrected.id,
-      }) as { outcomeStatus: string };
+      }) as { id: string; outcomeStatus: string };
       expect(cared.outcomeStatus).toBe("care_accepted");
+      await expect(submit({ ...args, prospectCode: "P07", pricedProjectAcceptance: "declined", careAcceptance: "accepted" })).rejects.toMatchObject({ code: "invalid_arguments" });
+      await expect(submit({ ...args, prospectCode: "P08", pricedProjectAcceptance: "declined", strongCommitment: "deposit_ready" })).rejects.toMatchObject({ code: "invalid_arguments" });
+      await expect(submit({ ...args, prospectCode: "P09", supplier: "Unknown" })).rejects.toMatchObject({ code: "invalid_arguments" });
+
+      const concurrentArgs = { ...args, prospectCode: "P06" };
+      const concurrent = await Promise.allSettled([submit(concurrentArgs), submit(concurrentArgs)]);
+      expect(concurrent.filter((result) => result.status === "fulfilled")).toHaveLength(1);
+      const duplicate = concurrent.find((result) => result.status === "rejected") as PromiseRejectedResult;
+      expect(duplicate.reason).toMatchObject({ code: "validation_duplicate" });
+      expect((await pool.query(
+        "SELECT count(*)::int AS count FROM venture_validation_outcomes WHERE prospect_code = 'P06' AND supersedes_outcome_id IS NULL",
+      )).rows[0].count).toBe(1);
+
+      const correctionArgs = {
+        ...args,
+        pricedProjectAcceptance: "accepted",
+        careAcceptance: "declined",
+        strongCommitment: "none",
+        supersedesOutcomeId: cared.id,
+      };
+      const concurrentCorrections = await Promise.allSettled([submit(correctionArgs), submit(correctionArgs)]);
+      expect(concurrentCorrections.filter((result) => result.status === "fulfilled")).toHaveLength(1);
+      const superseded = concurrentCorrections.find((result) => result.status === "rejected") as PromiseRejectedResult;
+      expect(superseded.reason).toMatchObject({ code: "validation_supersede_invalid" });
 
       const beforeList = (await pool.query("SELECT count(*)::int AS count FROM venture_validation_outcomes")).rows[0].count;
       await expect(mcp.executeVentureMcpTool({
@@ -2259,9 +2283,8 @@ describe("real PostgreSQL integration", () => {
         tool: "venture.validation.list",
         arguments: {},
       }) as { effective: Array<{ prospectCode: string }>; revisions: Array<{ superseded: boolean }> };
-      expect(listed.effective).toHaveLength(1);
-      expect(listed.effective[0].prospectCode).toBe("P01");
-      expect(listed.revisions.filter((row) => row.superseded)).toHaveLength(2);
+      expect(listed.effective.map((row) => row.prospectCode).sort()).toEqual(["P01", "P06"]);
+      expect(listed.revisions.filter((row) => row.superseded)).toHaveLength(3);
       expect((await pool.query("SELECT count(*)::int AS count FROM venture_validation_outcomes")).rows[0].count).toBe(beforeList);
       expect((await pool.query(
         "SELECT actor_type,actor_key,action FROM venture_audit_events WHERE action='mcp:venture.validation.list' ORDER BY id DESC LIMIT 1",

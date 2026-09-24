@@ -59,6 +59,12 @@ export function validationPayloadHash(experimentId: number, submission: Validati
   return sha256Canonical({ experimentId, ...submission, outcomeStatus })
 }
 
+/**
+ * qualificationEvidenceId is source provenance for an already-qualified prospect.
+ * The human or Venture Director supplies the structured qualificationReason.
+ * This check only confirms the evidence belongs to the same opportunity and names
+ * the identifiable supplier. It does not infer contract clauses from free text.
+ */
 export function evidenceSupportsQualification(input: {
   evidenceType: string
   opportunityId: string | null
@@ -69,10 +75,38 @@ export function evidenceSupportsQualification(input: {
   summary: string
 }) {
   if (input.evidenceType.trim().toLowerCase() === "connection-smoke") return false
+  if (!identifiableSupplier(input.supplier)) return false
   if (!input.opportunityId || input.opportunityId !== input.expectedOpportunityId) return false
-  if (input.supplier.toLowerCase() === "unknown") return true
   const haystack = `${input.sourceTitle}\n${input.claim}\n${input.summary}`.toLowerCase()
-  return haystack.includes(input.supplier.toLowerCase())
+  return haystack.includes(input.supplier.trim().toLowerCase())
+}
+
+export function validationSubmitInputSchema() {
+  return {
+    type: "object",
+    additionalProperties: false,
+    required: ["opportunityId", "prospectCode", "businessUrl", "qualificationEvidenceId", "supplier", "qualificationReason", "path", "ownershipAwareness", "cancellationBelief", "controlMatters", "spendBand", "satisfaction", "timing", "alternativeConsidered", "pricedProjectAcceptance", "careAcceptance", "strongCommitment"],
+    properties: {
+      opportunityId: { type: "string" },
+      prospectCode: { type: "string", pattern: "^P(0[1-9]|1[0-9]|20)$" },
+      businessUrl: { type: "string" },
+      qualificationEvidenceId: { type: "string" },
+      supplier: { type: "string", minLength: 1, maxLength: 120 },
+      qualificationReason: { type: "string", enum: [...QUALIFICATION_REASONS] },
+      path: { type: "string", enum: [...VALIDATION_PATHS] },
+      ownershipAwareness: { type: "string", enum: [...OWNERSHIP_AWARENESS] },
+      cancellationBelief: { type: "string", enum: [...CANCELLATION_BELIEFS] },
+      controlMatters: { type: "string", enum: [...YES_NO_UNKNOWN] },
+      spendBand: { type: "string", enum: [...SPEND_BANDS] },
+      satisfaction: { type: "string", enum: [...SATISFACTION] },
+      timing: { type: "string", enum: [...TIMING] },
+      alternativeConsidered: { type: "string", enum: [...CONSIDERED] },
+      pricedProjectAcceptance: { type: "string", enum: [...PROJECT_ACCEPTANCE] },
+      careAcceptance: { type: "string", enum: [...CARE_ACCEPTANCE] },
+      strongCommitment: { type: "string", enum: [...COMMITMENT] },
+      supersedesOutcomeId: { type: "string" },
+    },
+  }
 }
 
 export function parseValidationSubmission(args: Record<string, unknown>): ValidationSubmission {
@@ -101,6 +135,12 @@ export function parseValidationSubmission(args: Record<string, unknown>): Valida
   if (submission.pricedProjectAcceptance === "accepted" && submission.path === "unknown") {
     throw new ValidationInputError("pricedProjectAcceptance cannot be accepted when path is unknown.")
   }
+  if (submission.careAcceptance === "accepted" && submission.pricedProjectAcceptance !== "accepted") {
+    throw new ValidationInputError("careAcceptance can be accepted only when pricedProjectAcceptance is accepted.")
+  }
+  if (submission.strongCommitment !== "none" && submission.pricedProjectAcceptance !== "accepted") {
+    throw new ValidationInputError("strongCommitment requires pricedProjectAcceptance to be accepted.")
+  }
   return submission
 }
 
@@ -115,7 +155,13 @@ function supplierName(value: unknown) {
   if (typeof value !== "string") throw new ValidationInputError("supplier is required.")
   const text = value.trim()
   if (!text || text.length > 120) throw new ValidationInputError("supplier must be between 1 and 120 characters.")
+  if (!identifiableSupplier(text)) throw new ValidationInputError("supplier must identify the restrictive provider. Unknown is not accepted.")
   return text
+}
+
+function identifiableSupplier(value: string) {
+  const text = value.trim()
+  return text.length > 0 && text.toLowerCase() !== "unknown"
 }
 
 function requiredUuid(value: unknown, field: string) {

@@ -54,6 +54,8 @@ CREATE TABLE "venture_validation_outcomes" (
   CONSTRAINT "venture_validation_outcomes_commitment_check" CHECK ("strong_commitment" IN ('deposit_ready','written_commitment','none')),
   CONSTRAINT "venture_validation_outcomes_status_check" CHECK ("outcome_status" IN ('care_accepted','priced_next_step','no_priced_step','incomplete')),
   CONSTRAINT "venture_validation_outcomes_path_price_check" CHECK ("priced_project_acceptance" <> 'accepted' OR "path" <> 'unknown'),
+  CONSTRAINT "venture_validation_outcomes_care_requires_project_check" CHECK ("care_acceptance" <> 'accepted' OR "priced_project_acceptance" = 'accepted'),
+  CONSTRAINT "venture_validation_outcomes_commitment_requires_project_check" CHECK ("strong_commitment" = 'none' OR "priced_project_acceptance" = 'accepted'),
   CONSTRAINT "venture_validation_outcomes_hash_check" CHECK ("payload_hash" ~ '^[0-9a-f]{64}$')
 );
 --> statement-breakpoint
@@ -70,6 +72,8 @@ ALTER TABLE "venture_validation_outcomes" ADD CONSTRAINT "venture_validation_out
 CREATE INDEX "venture_validation_outcomes_prospect_idx" ON "venture_validation_outcomes" ("opportunity_id","prospect_code","created_at");
 --> statement-breakpoint
 CREATE UNIQUE INDEX "venture_validation_outcomes_supersedes_idx" ON "venture_validation_outcomes" ("supersedes_outcome_id");
+--> statement-breakpoint
+CREATE UNIQUE INDEX "venture_validation_outcomes_root_idx" ON "venture_validation_outcomes" ("opportunity_id","prospect_code") WHERE "supersedes_outcome_id" IS NULL;
 --> statement-breakpoint
 
 CREATE OR REPLACE FUNCTION "venture_guard_validation_outcome"() RETURNS trigger

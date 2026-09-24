@@ -1980,6 +1980,7 @@ export const ventureValidationOutcomes = pgTable("venture_validation_outcomes", 
 }, (table) => [
   index("venture_validation_outcomes_prospect_idx").on(table.opportunityId, table.prospectCode, table.createdAt),
   uniqueIndex("venture_validation_outcomes_supersedes_idx").on(table.supersedesOutcomeId),
+  uniqueIndex("venture_validation_outcomes_root_idx").on(table.opportunityId, table.prospectCode).where(sql`${table.supersedesOutcomeId} is null`),
   foreignKey({
     columns: [table.supersedesOutcomeId],
     foreignColumns: [table.id],
@@ -2001,6 +2002,8 @@ export const ventureValidationOutcomes = pgTable("venture_validation_outcomes", 
   check("venture_validation_outcomes_commitment_check", sql`${table.strongCommitment} in ('deposit_ready','written_commitment','none')`),
   check("venture_validation_outcomes_status_check", sql`${table.outcomeStatus} in ('care_accepted','priced_next_step','no_priced_step','incomplete')`),
   check("venture_validation_outcomes_path_price_check", sql`${table.pricedProjectAcceptance} <> 'accepted' or ${table.path} <> 'unknown'`),
+  check("venture_validation_outcomes_care_requires_project_check", sql`${table.careAcceptance} <> 'accepted' or ${table.pricedProjectAcceptance} = 'accepted'`),
+  check("venture_validation_outcomes_commitment_requires_project_check", sql`${table.strongCommitment} = 'none' or ${table.pricedProjectAcceptance} = 'accepted'`),
   check("venture_validation_outcomes_hash_check", sql`${table.payloadHash} ~ '^[0-9a-f]{64}$'`),
 ])
 

@@ -28,6 +28,7 @@ import {
   evidenceSupportsQualification,
   parseValidationSubmission,
   validationPayloadHash,
+  validationSubmitInputSchema,
   ValidationInputError,
 } from "@/lib/venture-lab/validation"
 
@@ -263,31 +264,7 @@ function inputSchemaFor(tool: VentureMcpToolName) {
         },
       }
     case "venture.validation.submit":
-      return {
-        type: "object",
-        additionalProperties: false,
-        required: ["opportunityId", "prospectCode", "businessUrl", "qualificationEvidenceId", "supplier", "qualificationReason", "path", "ownershipAwareness", "cancellationBelief", "controlMatters", "spendBand", "satisfaction", "timing", "alternativeConsidered", "pricedProjectAcceptance", "careAcceptance", "strongCommitment"],
-        properties: {
-          opportunityId: { type: "string" },
-          prospectCode: { type: "string" },
-          businessUrl: { type: "string" },
-          qualificationEvidenceId: { type: "string" },
-          supplier: { type: "string" },
-          qualificationReason: { type: "string" },
-          path: { type: "string" },
-          ownershipAwareness: { type: "string" },
-          cancellationBelief: { type: "string" },
-          controlMatters: { type: "string" },
-          spendBand: { type: "string" },
-          satisfaction: { type: "string" },
-          timing: { type: "string" },
-          alternativeConsidered: { type: "string" },
-          pricedProjectAcceptance: { type: "string" },
-          careAcceptance: { type: "string" },
-          strongCommitment: { type: "string" },
-          supersedesOutcomeId: { type: "string" },
-        },
-      }
+      return validationSubmitInputSchema()
     default:
       return { type: "object", additionalProperties: false, properties: {} }
   }
@@ -401,7 +378,12 @@ async function submitValidationOutcome(experimentId: number, serviceId: string, 
     return row
   } catch (error) {
     const message = errorChainText(error)
-    if (message.includes("unsuperseded validation outcome")) throw new VentureMcpError("An unsuperseded validation outcome already exists for this prospect.", 409, "validation_duplicate")
+    if (message.includes("unsuperseded validation outcome") || uniqueViolation(error, "venture_validation_outcomes_root_idx")) {
+      throw new VentureMcpError("An unsuperseded validation outcome already exists for this prospect.", 409, "validation_duplicate")
+    }
+    if (uniqueViolation(error, "venture_validation_outcomes_supersedes_idx")) {
+      throw new VentureMcpError("The correction does not reference the latest outcome for this prospect.", 409, "validation_supersede_invalid")
+    }
     if (message.includes("already been superseded") || message.includes("same opportunity and prospect") || message.includes("does not exist")) {
       throw new VentureMcpError("The correction does not reference the latest outcome for this prospect.", 409, "validation_supersede_invalid")
     }
@@ -419,6 +401,18 @@ async function listValidationOutcomes(experimentId: number) {
     effective: revisions.filter((row) => !supersededIds.has(row.id)),
     revisions: revisions.map((row) => ({ ...row, superseded: supersededIds.has(row.id) })),
   }
+}
+
+function uniqueViolation(error: unknown, constraint: string) {
+  let current: unknown = error
+  const seen = new Set<unknown>()
+  while (current && typeof current === "object" && !seen.has(current)) {
+    seen.add(current)
+    const record = current as { code?: unknown; constraint?: unknown; message?: unknown; cause?: unknown }
+    if (record.code === "23505" && (record.constraint === constraint || String(record.message ?? "").includes(constraint))) return true
+    current = record.cause
+  }
+  return false
 }
 
 function errorChainText(error: unknown) {

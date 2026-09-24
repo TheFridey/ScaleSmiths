@@ -569,7 +569,7 @@
     },
     {
       "path": "admin/drizzle/0063_venture_validation_outcomes.sql",
-      "sha256": "9370c8507f4ecd7bc019cf0aa723129782faa42dd58afd43d399f5f66b0c6e02",
+      "sha256": "4073dc7b206317e435f416fc851264650a3bf87e35f9daced629ee023f56de44",
       "lifecycle": "forward",
       "reason": "Adds append-only coded customer-validation outcomes for Experiment #000 and a human-confirmed £450 care-floor flag. Outcomes are not evidence, approvals, or spend authority."
     }

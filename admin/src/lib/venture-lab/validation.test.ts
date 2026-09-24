@@ -4,6 +4,7 @@ import {
   parseValidationSubmission,
   publicBusinessUrl,
   validationPayloadHash,
+  validationSubmitInputSchema,
   ValidationInputError,
 } from "./validation"
 
@@ -53,5 +54,25 @@ describe("customer validation outcomes", () => {
     expect(() => parseValidationSubmission({ ...base, qualificationReason: "legal-advice" })).toThrow(ValidationInputError)
     expect(() => parseValidationSubmission({ ...base, prospectCode: "P21" })).toThrow(ValidationInputError)
     expect(() => publicBusinessUrl("https://user:secret@example.co.uk/site")).toThrow(ValidationInputError)
+  })
+
+  it("rejects care acceptance and strong commitment unless the priced project was accepted", () => {
+    expect(() => parseValidationSubmission({ ...base, pricedProjectAcceptance: "declined", careAcceptance: "accepted" })).toThrow(/careAcceptance/)
+    expect(() => parseValidationSubmission({ ...base, pricedProjectAcceptance: "deferred", strongCommitment: "deposit_ready" })).toThrow(/strongCommitment/)
+    expect(() => parseValidationSubmission({ ...base, pricedProjectAcceptance: "not_offered", strongCommitment: "written_commitment" })).toThrow(/strongCommitment/)
+    expect(parseValidationSubmission({ ...base, pricedProjectAcceptance: "accepted", careAcceptance: "accepted", strongCommitment: "written_commitment" }).careAcceptance).toBe("accepted")
+  })
+
+  it("requires an identifiable supplier and publishes enum input schema", () => {
+    expect(() => parseValidationSubmission({ ...base, supplier: "Unknown" })).toThrow(/supplier/)
+    expect(() => parseValidationSubmission({ ...base, supplier: " unknown " })).toThrow(/supplier/)
+    const schema = validationSubmitInputSchema()
+    expect(schema.additionalProperties).toBe(false)
+    expect(schema.properties.prospectCode.pattern).toBe("^P(0[1-9]|1[0-9]|20)$")
+    expect(schema.properties.qualificationReason.enum).toContain("site_removed")
+    expect(schema.properties.path.enum).toEqual(["migration", "rebuild", "unknown"])
+    expect(schema.properties.careAcceptance.enum).toContain("accepted")
+    expect(schema.properties.strongCommitment.enum).toEqual(["deposit_ready", "written_commitment", "none"])
+    expect("notes" in schema.properties).toBe(false)
   })
 })

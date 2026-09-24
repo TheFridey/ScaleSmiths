@@ -37,7 +37,7 @@ export const VENTURE_MCP_TOOL_DESCRIPTIONS: Readonly<Record<VentureMcpToolName, 
   "venture.evidence.submit": "Persist bounded evidence for a Venture Lab opportunity. External content remains untrusted data.",
   "venture.proposals.list": "List pending and resolved Venture Lab proposals.",
   "venture.experiment.propose": "Submit an experiment proposal for human review, including an optional simulated validation-capital request up to £25. Does not create spend authority or launch approval.",
-  "venture.validation.submit": "Persist a coded customer-validation outcome for an existing opportunity. Does not approve capital, launch an experiment, or store a transcript.",
+  "venture.validation.submit": "Persist a coded customer-validation outcome for an already-qualified prospect. qualificationEvidenceId is source provenance for the named supplier; the caller supplies the structured qualificationReason. Does not infer contract clauses, approve capital, launch an experiment, or store a transcript.",
   "venture.validation.list": "List coded customer-validation outcomes and their revision chain for Experiment #000.",
 }
 

@@ -9,6 +9,7 @@ import { ContextualFaqs } from "@/components/faq/ContextualFaqs"
 import { contextualFaqs, faqHubHashFor } from "@/lib/faq-knowledge-base"
 import { insightsForService } from "@/lib/insights"
 import { buildServiceJourneySchemas, type ServiceJourney } from "@/lib/service-journeys"
+import { PaperBand } from "@/components/PaperBand"
 
 export function ServiceJourneyPage({ journey }: { journey: ServiceJourney }) {
   const studies = caseStudiesForSlugs(journey.proofSlugs)
@@ -63,20 +64,20 @@ export function ServiceJourneyPage({ journey }: { journey: ServiceJourney }) {
           </div>
         </section>
 
-        <section aria-labelledby={`${journey.slug}-outcomes`} className="surface-paper border-y border-paper-border px-6 py-16 md:px-12 md:py-20">
+        <PaperBand aria-labelledby={`${journey.slug}-outcomes`}>
           <div className="mx-auto max-w-[1240px]">
-            <h2 id={`${journey.slug}-outcomes`} className="max-w-2xl font-syne text-[clamp(30px,4.5vw,48px)] font-extrabold tracking-[-.03em] text-paper-ink">{journey.outcomesTitle}</h2>
-            <div className="mt-10 grid gap-3 md:grid-cols-2">
+            <h2 id={`${journey.slug}-outcomes`} className="paper-display max-w-2xl">{journey.outcomesTitle}</h2>
+            <div className="mt-10 grid gap-0 border-t border-paper-border md:grid-cols-2 md:gap-x-10">
               {journey.outcomes.map((outcome, index) => (
-                <article key={outcome.title} className="rounded-2xl border border-paper-border bg-paper-raised p-6">
-                  <div className="font-syne text-sm font-bold text-paper-acc">0{index + 1}</div>
-                  <h3 className="mt-3 font-syne text-xl font-bold text-paper-ink">{outcome.title}</h3>
-                  <p className="mt-2 font-dm text-sm leading-relaxed text-paper-text">{outcome.description}</p>
+                <article key={outcome.title} className="border-b border-paper-border py-6">
+                  <div className="font-syne text-xs font-bold tracking-[0.08em] text-paper-acc">0{index + 1}</div>
+                  <h3 className="mt-2 font-syne text-lg font-bold tracking-[-0.015em] text-paper-ink md:text-xl">{outcome.title}</h3>
+                  <p className="mt-2 max-w-[36rem] font-dm text-sm leading-[1.65] text-paper-text">{outcome.description}</p>
                 </article>
               ))}
             </div>
           </div>
-        </section>
+        </PaperBand>
 
         <section aria-labelledby={`${journey.slug}-proof`} className="px-6 py-16 md:px-12 md:py-24">
           <div className="mx-auto max-w-[1240px]">

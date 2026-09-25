@@ -33,8 +33,10 @@ const config: Config = {
           text: "var(--paper-text)",
           muted: "var(--paper-muted)",
           border: "var(--paper-border)",
+          edge: "var(--paper-edge)",
           acc: "var(--paper-acc)",
         },
+        bridge: "var(--surface-bridge)",
         control: {
           DEFAULT: "var(--control-border)",
           hover: "var(--control-border-hover)",

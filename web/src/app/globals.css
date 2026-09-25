@@ -37,13 +37,57 @@
     @apply field-control text-sm;
   }
 
+  /*
+   * Paper = ScaleSmiths “blueprint daylight” — cool navy-tinted relief inside
+   * the same world as dark chrome. Soft edge fades + hairlines bridge dark↔paper.
+   * Dark cards keep .surface-chrome so they are not flattened to white-on-grey.
+   */
   .surface-paper {
+    position: relative;
+    isolation: isolate;
+    /* Soft navy wash into paper — no solid colour wall, no milky fog band */
     background:
-      radial-gradient(ellipse at 12% 0%, rgba(14, 116, 144, 0.06), transparent 42%),
-      radial-gradient(ellipse at 88% 12%, rgba(253, 230, 138, 0.08), transparent 36%),
+      linear-gradient(180deg, rgba(7, 17, 31, 0.42) 0%, rgba(7, 17, 31, 0.14) 40px, transparent 96px),
+      linear-gradient(0deg, rgba(7, 17, 31, 0.42) 0%, rgba(7, 17, 31, 0.14) 40px, transparent 96px),
+      radial-gradient(ellipse at 12% 10%, rgba(12, 107, 130, 0.08), transparent 42%),
+      radial-gradient(ellipse at 88% 90%, rgba(20, 36, 54, 0.1), transparent 48%),
+      linear-gradient(rgba(7, 17, 31, 0.022) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(7, 17, 31, 0.022) 1px, transparent 1px),
       var(--paper);
+    background-size:
+      auto, auto, auto, auto,
+      72px 72px, 72px 72px,
+      auto;
     color: var(--paper-text);
-    border-color: var(--paper-border);
+    border-color: transparent;
+    box-shadow:
+      inset 0 1px 0 rgba(34, 211, 238, 0.18),
+      inset 0 -1px 0 rgba(34, 211, 238, 0.12);
+  }
+  /* Hairline rails that continue the dark cyan language into paper */
+  .surface-paper::before,
+  .surface-paper::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 1px;
+    z-index: 2;
+    pointer-events: none;
+    background: linear-gradient(
+      90deg,
+      transparent 6%,
+      rgba(34, 211, 238, 0.4) 24%,
+      rgba(127, 152, 175, 0.55) 50%,
+      rgba(34, 211, 238, 0.4) 76%,
+      transparent 94%
+    );
+  }
+  .surface-paper::before { top: 0; }
+  .surface-paper::after { bottom: 0; }
+  .surface-paper > * {
+    position: relative;
+    z-index: 1;
   }
   .surface-paper h1,
   .surface-paper h2,
@@ -51,17 +95,12 @@
   .surface-paper h4,
   .surface-paper .paper-ink {
     color: var(--paper-ink);
+    letter-spacing: -0.022em;
+    line-height: 1.14;
   }
-  .surface-paper .text-t1 { color: var(--paper-ink); }
-  .surface-paper .text-t2 { color: var(--paper-text); }
-  .surface-paper .text-t3 { color: var(--paper-muted); }
-  .surface-paper .border-b1,
-  .surface-paper .border-b2 { border-color: var(--paper-border); }
-  .surface-paper .bg-s1,
-  .surface-paper .bg-s2,
-  .surface-paper .bg-bg\/60,
-  .surface-paper .bg-bg\/40 {
-    background-color: var(--paper-raised);
+  .surface-paper h1,
+  .surface-paper h2 {
+    font-weight: 700;
   }
   .surface-paper .text-acc {
     color: var(--paper-acc);
@@ -69,6 +108,100 @@
   .surface-paper a.text-acc,
   .surface-paper .paper-link {
     color: var(--paper-acc);
+  }
+  .surface-paper .field-control,
+  .surface-paper .growth-check-field,
+  .surface-paper .v2-form-field {
+    background: var(--paper-raised);
+    border-color: var(--paper-border);
+    color: var(--paper-ink);
+  }
+  .surface-paper .field-control::placeholder,
+  .surface-paper .v2-form-field::placeholder {
+    color: var(--paper-muted);
+  }
+  .surface-paper .field-control:hover,
+  .surface-paper .v2-form-field:hover {
+    border-color: var(--paper-acc);
+  }
+  .surface-paper .field-control:focus,
+  .surface-paper .field-control:focus-visible,
+  .surface-paper .v2-form-field:focus {
+    border-color: var(--control-border-focus) !important;
+    box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.22);
+  }
+
+  /* Dark chrome retained inside paper bands (portfolio cards, aside panels). */
+  .surface-chrome {
+    background:
+      radial-gradient(ellipse at 20% 0%, rgba(34, 211, 238, 0.06), transparent 55%),
+      var(--s1);
+    color: var(--t1);
+    border-color: var(--b1);
+  }
+  .surface-paper .surface-chrome,
+  .surface-paper .surface-chrome h1,
+  .surface-paper .surface-chrome h2,
+  .surface-paper .surface-chrome h3,
+  .surface-paper .surface-chrome h4,
+  .surface-paper .surface-chrome .paper-ink {
+    color: var(--t1);
+    letter-spacing: inherit;
+    line-height: inherit;
+  }
+  .surface-paper .surface-chrome .text-t1 { color: var(--t1); }
+  .surface-paper .surface-chrome .text-t2 { color: var(--t2); }
+  .surface-paper .surface-chrome .text-t3 { color: var(--t3); }
+  .surface-paper .surface-chrome .text-acc { color: var(--acc); }
+  .surface-paper .surface-chrome a.text-acc { color: var(--acc); }
+  .surface-paper .surface-chrome .border-b1,
+  .surface-paper .surface-chrome .border-b2 { border-color: var(--b1); }
+  .surface-paper .surface-chrome .bg-s1,
+  .surface-paper .surface-chrome .bg-s2 { background-color: var(--s2); }
+  .surface-paper .surface-chrome .bg-bg\/60,
+  .surface-paper .surface-chrome .bg-bg\/50,
+  .surface-paper .surface-chrome .bg-bg\/40 { background-color: rgba(7, 17, 31, 0.55); }
+  .surface-paper .surface-chrome .btn-primary {
+    background: var(--acc);
+    color: var(--acc-ink);
+    box-shadow: 0 14px 36px rgba(34, 211, 238, 0.18);
+  }
+  .surface-paper .surface-chrome .btn-ghost {
+    background: rgba(11, 22, 38, 0.58);
+    color: var(--t1);
+    border-color: var(--control-border);
+  }
+  .surface-paper .surface-chrome .btn-ghost:hover {
+    border-color: var(--control-border-hover);
+    background: rgba(255, 255, 255, 0.045);
+  }
+
+  /* Editorial outcome/list rows on paper — hairlines, not white cards. */
+  .paper-rule {
+    border-color: color-mix(in srgb, var(--paper-ink) 16%, transparent);
+  }
+  .paper-label {
+    font-family: var(--font-dm);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--paper-acc);
+  }
+  .paper-display {
+    font-family: var(--font-syne);
+    font-weight: 700;
+    font-size: clamp(1.5rem, 3.2vw, 2.375rem);
+    letter-spacing: -0.018em;
+    line-height: 1.18;
+    color: var(--paper-ink);
+  }
+  .paper-lede {
+    font-family: var(--font-dm);
+    font-size: 1rem;
+    line-height: 1.65;
+    max-width: 40rem;
+    color: var(--paper-text);
   }
 }
 
@@ -94,15 +227,17 @@
   --amb:    #fde68a;
   --red:    #ef4444;
 
-  /* Light paper relief (~30%) — cool navy-tinted, not cream */
-  --paper:         #e8eef5;
-  --paper-soft:    #dde6f0;
-  --paper-raised:  #f4f7fb;
-  --paper-ink:     #0a1628;
-  --paper-text:    #243447;
-  --paper-muted:   #4a6075;
-  --paper-border:  #c5d3e0;
-  --paper-acc:     #0e7490;
+  /* Paper relief (~30%) — cool navy-tinted blueprint daylight, not cream/white */
+  --paper:         #d4e0eb;
+  --paper-soft:    #c5d4e2;
+  --paper-raised:  #e2ebf3;
+  --paper-ink:     #07111f;
+  --paper-text:    #1a2d40;
+  --paper-muted:   #3d556b;
+  --paper-border:  #9bb0c4;
+  --paper-edge:    #7f98af;
+  --paper-acc:     #0c6b82;
+  --surface-bridge:#142436;
 
   /* Functional control boundaries (stronger than decorative b1) */
   --control-border:       #2f5a74;
@@ -283,20 +418,20 @@ body {
 }
 .btn-sm:hover { opacity: 0.9; }
 
-/* Light-surface button variants */
+/* Light-surface button variants — premium, theme-aware, not Bootstrap white */
 .surface-paper .btn-primary {
   background: var(--paper-acc);
   color: #f8fbff;
-  box-shadow: 0 12px 28px rgba(14, 116, 144, 0.18);
+  box-shadow: 0 12px 28px rgba(12, 107, 130, 0.22);
 }
 .surface-paper .btn-ghost {
-  background: var(--paper-raised);
+  background: rgba(7, 17, 31, 0.04);
   color: var(--paper-ink);
   border-color: var(--paper-border);
 }
 .surface-paper .btn-ghost:hover {
   border-color: var(--paper-acc);
-  background: #fff;
+  background: rgba(7, 17, 31, 0.07);
 }
 
 .v2-form-field {

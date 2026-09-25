@@ -3,7 +3,8 @@
 import Link from "next/link"
 import { Fragment, useLayoutEffect, useRef } from "react"
 import { m, useReducedMotion } from "motion/react"
-import { ArrowRight, ArrowUpRight, MapPin } from "lucide-react"
+import { ArrowRight, ArrowUpRight } from "lucide-react"
+import { HeroEmbers } from "@/components/HeroEmbers"
 import { motionStagger, revealMask, revealSoft, staggerContainer } from "@/lib/motion"
 
 const HERO_LINES = ["FORGE YOUR", "DIGITAL EDGE"] as const
@@ -25,7 +26,7 @@ function renderHeroLine(text: string) {
 
 /**
  * First viewport budget: brand atmosphere, one headline, one supporting sentence,
- * one CTA group. Offer labels and verified stats live in the following bands.
+ * one CTA group. Embers + forge plate carry the visual; no secondary marketing clutter.
  */
 export function Hero() {
   const heroRef = useRef<HTMLElement>(null)
@@ -40,7 +41,6 @@ export function Hero() {
       lines.forEach((line) => {
         const mask = line.parentElement
         if (!mask) return
-        // Reset before measuring so scrollWidth reflects the true unscaled line.
         mask.style.removeProperty("transform")
         const maxWidth = Math.max(240, root.clientWidth - 48)
         const scale = Math.min(1, maxWidth / Math.max(1, line.scrollWidth))
@@ -66,36 +66,47 @@ export function Hero() {
   return (
     <section
       ref={heroRef}
-      className="hero-grid-bg relative flex min-h-[min(88vh,920px)] w-full max-w-[100vw] flex-col items-center justify-center overflow-hidden px-6 pb-20 pt-16 text-center md:px-12 md:pb-24 md:pt-20"
+      className="hero-grid-bg relative flex min-h-[min(90vh,940px)] w-full max-w-[100vw] flex-col items-center justify-center overflow-hidden px-6 pb-24 pt-20 text-center md:px-12 md:pb-28 md:pt-24"
       aria-label="ScaleSmiths - forge your digital edge"
     >
       <div className="hero-scene-fallback absolute inset-0" data-hero-scene="static" aria-hidden="true" />
-      {/* Forge brand plate — molten rock atmosphere behind the first viewport */}
+
+      {/* Forge plate — lower-weighted so molten rock feeds the ember bed */}
       <div
-        className="pointer-events-none absolute inset-0 opacity-[0.55]"
+        className="pointer-events-none absolute inset-0 opacity-[0.48] md:opacity-[0.52]"
         aria-hidden="true"
         style={{
           backgroundImage: "url(/brand/scalesmiths-forge-plate.webp)",
           backgroundSize: "cover",
-          backgroundPosition: "center 35%",
-          maskImage: "linear-gradient(180deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.55) 55%, transparent 100%)",
-          WebkitMaskImage: "linear-gradient(180deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.55) 55%, transparent 100%)",
+          backgroundPosition: "center 42%",
+          maskImage: "linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.35) 18%, rgba(0,0,0,0.7) 48%, rgba(0,0,0,0.95) 78%, rgba(0,0,0,0.55) 100%)",
+          WebkitMaskImage: "linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.35) 18%, rgba(0,0,0,0.7) 48%, rgba(0,0,0,0.95) 78%, rgba(0,0,0,0.55) 100%)",
         }}
       />
+
+      {/* Soft vignette so type stays readable over the plate */}
+      <div
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_38%,transparent_0%,rgba(11,10,8,0.35)_55%,rgba(11,10,8,0.82)_100%)]"
+        aria-hidden="true"
+      />
+
+      <HeroEmbers />
 
       <m.div
         className="relative z-10 flex w-full flex-col items-center"
         variants={staggerContainer}
-        initial={false}
+        initial={reducedMotion ? false : "hidden"}
         animate="visible"
-        transition={{ delayChildren: 0.02, staggerChildren: motionStagger.tight }}
+        transition={{ delayChildren: 0.04, staggerChildren: motionStagger.tight }}
       >
-        <m.div variants={revealSoft} className="hero-badge font-dm" role="status">
-          <span className="hero-badge-dot" aria-hidden="true" />
-          Find the next move. Build it properly. Keep improving.
-        </m.div>
+        <m.p
+          variants={revealSoft}
+          className="mb-8 font-syne text-[11px] font-semibold uppercase tracking-[0.28em] text-acc/90 md:mb-10 md:text-xs"
+        >
+          ScaleSmiths
+        </m.p>
 
-        <h1 className="mb-7 w-full max-w-full overflow-hidden">
+        <h1 className="mb-7 w-full max-w-full overflow-hidden md:mb-8">
           <span className="hero-line-overflow block">
             <m.span variants={revealMask} className="hero-h hero-outline font-syne inline-block whitespace-nowrap" aria-label={HERO_LINES[0]}>
               {renderHeroLine(HERO_LINES[0])}
@@ -108,17 +119,10 @@ export function Hero() {
           </span>
         </h1>
 
-        <m.p variants={revealSoft} className="mb-8 w-full max-w-[620px] font-dm text-[clamp(15px,1.8vw,18px)] font-light leading-relaxed text-t2">
-          ScaleSmiths helps businesses find what is holding growth back, build the right solution,
-          and keep improving it — across websites, visibility, systems, automation and ongoing digital growth.
+        <m.p variants={revealSoft} className="mb-10 w-full max-w-[560px] font-dm text-[clamp(15px,1.7vw,18px)] font-light leading-relaxed text-t2 md:mb-12">
+          Find what is holding growth back, build the right solution, and keep improving it —
+          websites, systems, automation and ongoing digital growth.
         </m.p>
-
-        <m.div variants={revealSoft} className="mb-10 flex items-center gap-2">
-          <MapPin size={12} className="text-t3" aria-hidden="true" />
-          <span className="font-dm text-xs tracking-wider text-t3">
-            Hucknall, Nottinghamshire, UK {"\u00b7"} Working nationally
-          </span>
-        </m.div>
 
         <m.div variants={revealSoft} className="flex flex-wrap justify-center gap-3">
           <Link href="/quote" prefetch={false} className="btn-primary font-dm">

@@ -65,7 +65,7 @@ export function Footer() {
       <div className="relative mx-auto max-w-[1240px]">
         <div className="grid gap-12 pb-14 md:grid-cols-[minmax(260px,1fr)_minmax(420px,1.6fr)] md:gap-16 md:pb-16">
           <div>
-            <Logo size={42} className="max-w-full [&_img]:max-w-full" />
+            <Logo size={36} showName className="max-w-full [&_img]:max-w-full" />
             <p className="mt-5 max-w-[360px] font-dm text-sm leading-relaxed text-t2">Founder-led business growth and engineering for ambitious organisations.</p>
             <address className="mt-6 grid gap-1 font-dm text-sm not-italic leading-relaxed text-t2">
               <span className="font-semibold text-t1">{SITE_NAME}</span>

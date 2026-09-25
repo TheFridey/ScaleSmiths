@@ -18,7 +18,11 @@ export function HeroApproachBand({ verifiedStats = [] }: { verifiedStats?: strin
   const caption = verifiedStats.length > 0 ? "Verified public claim" : "ScaleSmiths approach"
 
   return (
-    <section aria-label="How ScaleSmiths works" className="border-b border-b1 bg-s1/40 px-6 py-14 md:px-12 md:py-20">
+    <section aria-label="How ScaleSmiths works" className="relative border-b border-b1 bg-s1/50 px-6 py-14 md:px-12 md:py-20">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-acc/35 to-transparent"
+      />
       <div className="mx-auto flex max-w-[1240px] flex-col gap-12 lg:flex-row lg:items-start lg:justify-between lg:gap-20">
         <ul className="flex max-w-[38rem] flex-wrap gap-x-1 gap-y-4" aria-label="ScaleSmiths core offers">
           {OFFERS.map((offer) => (
@@ -26,7 +30,7 @@ export function HeroApproachBand({ verifiedStats = [] }: { verifiedStats?: strin
               <Link
                 href={offer.href}
                 prefetch={false}
-                className="border-l border-b2 pl-4 font-dm text-[13px] font-medium leading-snug tracking-[0.01em] text-t2 transition-colors hover:text-t1"
+                className="border-l border-acc/35 pl-4 font-dm text-[13px] font-medium leading-snug tracking-[0.01em] text-t2 transition-colors hover:border-acc hover:text-t1"
               >
                 {offer.label}
               </Link>
@@ -39,7 +43,7 @@ export function HeroApproachBand({ verifiedStats = [] }: { verifiedStats?: strin
               <p className="font-syne text-[1.0625rem] font-semibold leading-[1.35] tracking-[-0.008em] text-t1 md:text-[1.125rem]">
                 {statement}
               </p>
-              <p className="mt-2.5 font-dm text-xs leading-snug tracking-[0.03em] text-t3">{caption}</p>
+              <p className="mt-2.5 font-dm text-xs leading-snug tracking-[0.04em] text-t3">{caption}</p>
             </li>
           ))}
         </ul>

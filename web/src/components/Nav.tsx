@@ -123,7 +123,7 @@ export function Nav() {
         "relative z-50 mx-auto flex max-w-[1320px] items-center gap-10 px-6 transition-[height] duration-300 md:px-12",
         scrolled ? "h-[62px]" : "h-[78px]",
       )}>
-        <Logo showName={false} size={scrolled ? 33 : 38} />
+        <Logo showName={false} size={scrolled ? 36 : 42} />
 
         <div className="ml-auto hidden items-center gap-7 md:flex">
           <div

@@ -5,19 +5,23 @@ import { MagneticLink } from "./MagneticLink"
 
 export function CTA() {
   return (
-    <section aria-label="Call to action" className="px-6 md:px-12 py-24">
-      <AnimateIn className="max-w-[760px] mx-auto text-center bg-gradient-to-br from-s2 to-acc/5 border border-acc/20 rounded-3xl px-8 md:px-16 py-[72px]">
-        <div className="float-anim inline-block mb-7" aria-hidden="true">
+    <section aria-label="Call to action" className="px-6 py-24 md:px-12">
+      <AnimateIn className="relative mx-auto max-w-[760px] overflow-hidden rounded-3xl border border-acc/25 bg-gradient-to-br from-s2 via-s1 to-acc/[.07] px-8 py-[72px] text-center md:px-16">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-acc/50 to-transparent"
+        />
+        <div className="float-anim mb-7 inline-block" aria-hidden="true">
           <Logo size={44} showName={false} href="" />
         </div>
-        <h2 className="font-syne text-[clamp(28px,4.5vw,48px)] font-extrabold tracking-[-0.025em] mb-4">
+        <h2 className="mb-4 font-syne text-[clamp(28px,4.5vw,48px)] font-extrabold tracking-[-0.025em]">
           Ready to build something<br />that actually scales?
         </h2>
-        <p className="font-dm text-base text-t2 leading-relaxed mb-10 max-w-[420px] mx-auto">
+        <p className="mx-auto mb-10 max-w-[420px] font-dm text-base leading-relaxed text-t2">
           Tell us about your business and we&apos;ll tell you exactly what you need to grow.
           No pitch. No pressure. Just honest advice.
         </p>
-        <MagneticLink href="/quote?intent=strategy_call" className="btn-primary group font-dm inline-flex">
+        <MagneticLink href="/quote?intent=strategy_call" className="btn-primary group inline-flex font-dm">
           Request a Strategy Call <ArrowRight size={16} aria-hidden="true" />
         </MagneticLink>
       </AnimateIn>

@@ -20,8 +20,17 @@ export function ServiceJourneyPage({ journey }: { journey: ServiceJourney }) {
     <>
       <JsonLd data={schemas} />
       <div className={isLocal ? "journey-local" : "journey-systems"}>
-        <section className="px-6 pb-16 pt-10 md:px-12 md:pb-24 md:pt-14">
-          <div className="mx-auto max-w-[1240px]">
+        <section className="relative overflow-hidden px-6 pb-16 pt-10 md:px-12 md:pb-24 md:pt-14">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 opacity-90"
+            style={{
+              background: isLocal
+                ? "radial-gradient(ellipse at 85% 20%, rgba(20,241,178,0.10), transparent 42%)"
+                : "radial-gradient(ellipse at 85% 20%, rgba(34,211,238,0.12), transparent 42%)",
+            }}
+          />
+          <div className="relative mx-auto max-w-[1240px]">
             <nav aria-label="Breadcrumb" className="font-dm text-xs text-t3">
               <ol className="flex flex-wrap items-center gap-2">
                 <li><Link href="/" className="hover:text-t1">Home</Link></li>
@@ -43,10 +52,10 @@ export function ServiceJourneyPage({ journey }: { journey: ServiceJourney }) {
                 </div>
               </div>
 
-              <aside aria-label={`Who ${journey.eyebrow} is for`} className={`rounded-2xl border p-6 md:p-8 ${isLocal ? "border-success/25 bg-success/[.07]" : "border-acc/25 bg-acc/[.07]"}`}>
+              <aside aria-label={`Who ${journey.eyebrow} is for`} className={`journey-hero-aside rounded-2xl border p-6 md:p-8 ${isLocal ? "border-success/25 bg-success/[.07]" : "border-acc/25 bg-acc/[.07]"}`}>
                 <p className="font-dm text-xs font-semibold uppercase tracking-[.12em] text-t3">Designed for</p>
                 <ul className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-                  {journey.audience.map((audience) => <li key={audience} className="flex items-center gap-3 font-dm text-sm text-t1"><CheckCircle2 size={15} className="shrink-0 text-acc" aria-hidden="true" />{audience}</li>)}
+                  {journey.audience.map((audience) => <li key={audience} className="flex items-center gap-3 font-dm text-sm text-t1"><CheckCircle2 size={15} className={`shrink-0 ${isLocal ? "text-success" : "text-acc"}`} aria-hidden="true" />{audience}</li>)}
                 </ul>
                 <p className="mt-6 border-t border-b1 pt-5 font-dm text-sm leading-relaxed text-t2">{journey.buyerQuestion}</p>
               </aside>
@@ -54,15 +63,15 @@ export function ServiceJourneyPage({ journey }: { journey: ServiceJourney }) {
           </div>
         </section>
 
-        <section aria-labelledby={`${journey.slug}-outcomes`} className="border-y border-b1 bg-s1/60 px-6 py-16 md:px-12 md:py-20">
+        <section aria-labelledby={`${journey.slug}-outcomes`} className="surface-paper border-y border-paper-border px-6 py-16 md:px-12 md:py-20">
           <div className="mx-auto max-w-[1240px]">
-            <h2 id={`${journey.slug}-outcomes`} className="max-w-2xl font-syne text-[clamp(30px,4.5vw,48px)] font-extrabold tracking-[-.03em]">{journey.outcomesTitle}</h2>
+            <h2 id={`${journey.slug}-outcomes`} className="max-w-2xl font-syne text-[clamp(30px,4.5vw,48px)] font-extrabold tracking-[-.03em] text-paper-ink">{journey.outcomesTitle}</h2>
             <div className="mt-10 grid gap-3 md:grid-cols-2">
               {journey.outcomes.map((outcome, index) => (
-                <article key={outcome.title} className="rounded-2xl border border-b1 bg-bg/60 p-6">
-                  <div className="font-syne text-sm font-bold text-acc">0{index + 1}</div>
-                  <h3 className="mt-3 font-syne text-xl font-bold">{outcome.title}</h3>
-                  <p className="mt-2 font-dm text-sm leading-relaxed text-t2">{outcome.description}</p>
+                <article key={outcome.title} className="rounded-2xl border border-paper-border bg-paper-raised p-6">
+                  <div className="font-syne text-sm font-bold text-paper-acc">0{index + 1}</div>
+                  <h3 className="mt-3 font-syne text-xl font-bold text-paper-ink">{outcome.title}</h3>
+                  <p className="mt-2 font-dm text-sm leading-relaxed text-paper-text">{outcome.description}</p>
                 </article>
               ))}
             </div>

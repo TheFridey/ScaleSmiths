@@ -5,6 +5,7 @@ import { FeaturedCaseStudy } from "@/components/FeaturedCaseStudy"
 import { FitSection } from "@/components/FitSection"
 import { FoundersSection } from "@/components/FoundersSection"
 import { Hero } from "@/components/Hero"
+import { HeroApproachBand } from "@/components/HeroApproachBand"
 import { DigitalEstate } from "@/components/DigitalEstate"
 import { ClientPortalSection } from "@/components/ClientPortalSection"
 import { BuildProofBlocks } from "@/components/BuildProofBlocks"
@@ -36,7 +37,8 @@ export async function HomePageContent() {
   // work, how it runs, and the ongoing relationship.
   return (
     <>
-      <Hero verifiedStats={heroStats} />
+      <Hero />
+      <HeroApproachBand verifiedStats={heroStats} />
       <ClientTrustStrip />
       <Portfolio limit={2} />
       <ServiceRouteChooser compact />

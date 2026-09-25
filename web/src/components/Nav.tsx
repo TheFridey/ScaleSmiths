@@ -117,7 +117,7 @@ export function Nav() {
   return (
     <header className={cn(
       "sticky top-0 z-50 border-b transition-[background-color,border-color,box-shadow] duration-300",
-      scrolled ? "border-b1/80 bg-bg/94 shadow-[0_12px_40px_rgba(0,0,0,.18)] backdrop-blur-md" : "border-transparent bg-bg/35",
+      scrolled ? "border-b1/80 bg-bg/94 shadow-[0_12px_40px_rgba(0,0,0,.18)] backdrop-blur-md" : "border-transparent bg-bg/55 backdrop-blur-sm",
     )}>
       <nav aria-label="Main navigation" className={cn(
         "relative z-50 mx-auto flex max-w-[1320px] items-center gap-10 px-6 transition-[height] duration-300 md:px-12",
@@ -202,7 +202,7 @@ export function Nav() {
           </Link>
         </div>
 
-        <button ref={toggleRef} type="button" className="ml-auto inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-b1 bg-s1/70 text-t1 md:hidden"
+        <button ref={toggleRef} type="button" className="ml-auto inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-control bg-s1/70 text-t1 md:hidden"
           onClick={() => setOpen((value) => !value)} aria-label={open ? "Close menu" : "Open menu"} aria-expanded={open} aria-controls="mobile-navigation">
           {open ? <X size={20} aria-hidden="true" /> : <Menu size={20} aria-hidden="true" />}
         </button>

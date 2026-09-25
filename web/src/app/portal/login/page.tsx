@@ -75,7 +75,7 @@ export default function PortalLoginPage() {
                 autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-[10px] border border-b2 bg-s2 px-4 py-3 font-dm text-sm text-t1 outline-none transition-colors focus:border-acc/50"
+                className="field-control text-sm"
                 required
               />
             </div>
@@ -89,7 +89,7 @@ export default function PortalLoginPage() {
                 autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-[10px] border border-b2 bg-s2 px-4 py-3 font-dm text-sm text-t1 outline-none transition-colors focus:border-acc/50"
+                className="field-control text-sm"
                 required
               />
             </div>

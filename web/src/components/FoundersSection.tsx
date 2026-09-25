@@ -24,8 +24,12 @@ export function FoundersSection() {
   const pairPhoto = teamImages.founders
 
   return (
-    <section aria-labelledby="home-founders-heading" className="px-6 py-24 md:px-12 md:py-32">
-      <div className="mx-auto max-w-[1240px]">
+    <section aria-labelledby="home-founders-heading" className="relative overflow-hidden px-6 py-24 md:px-12 md:py-32">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_20%_30%,rgba(253,230,138,0.06),transparent_45%),radial-gradient(ellipse_at_85%_60%,rgba(34,211,238,0.07),transparent_40%)]"
+      />
+      <div className="relative mx-auto max-w-[1240px]">
         <div className="grid gap-12 lg:grid-cols-[1.05fr_.95fr] lg:items-center">
           <AnimateIn>
             {pairPhoto.available ? (
@@ -61,7 +65,7 @@ export function FoundersSection() {
                   <Link
                     href={founderProfileHref(founder)}
                     prefetch={false}
-                    className="group flex flex-col gap-3 rounded-2xl border border-b1 bg-s1 p-5 transition-colors hover:border-b2 focus-visible:border-acc sm:flex-row sm:items-center sm:justify-between"
+                    className="group flex flex-col gap-3 rounded-2xl border border-b2 bg-s1/80 p-5 transition-colors hover:border-acc/40 hover:bg-s2 focus-visible:border-acc sm:flex-row sm:items-center sm:justify-between"
                   >
                     <span>
                       <span className="block font-syne text-xl font-bold">{founder.name}</span>
@@ -78,7 +82,7 @@ export function FoundersSection() {
           </AnimateIn>
         </div>
 
-        <AnimateIn delay={0.1} className="mt-14 grid gap-3 border-t border-b1 pt-10 md:grid-cols-3">
+        <AnimateIn delay={0.1} className="mt-14 grid gap-6 border-t border-b1 pt-10 md:grid-cols-3 md:gap-8">
           {directAccessPoints.map((point) => (
             <div key={point.title}>
               <h3 className="font-syne text-lg font-bold">{point.title}</h3>

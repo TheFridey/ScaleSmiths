@@ -90,7 +90,7 @@ export function BusinessEmailEnquiryForm() {
     }
   }
 
-  const inputClass = "mt-2 w-full rounded-xl border border-b2 bg-s2 px-4 py-3 text-base text-t1 outline-none transition-colors focus:border-acc focus-visible:ring-2 focus-visible:ring-acc"
+  const inputClass = "field-control mt-2"
   return (
     <form onSubmit={submit} className="space-y-7" noValidate>
       {error && <div role="alert" className="rounded-xl border border-red/30 bg-red/10 px-4 py-3 text-sm text-t1">{error}</div>}
@@ -116,7 +116,7 @@ export function BusinessEmailEnquiryForm() {
       <Field label="Additional requirements" hint="Optional. Do not include passwords, payment-card details or other secrets."><textarea rows={4} value={form.notes} onChange={(e) => update("notes", e.target.value)} className={`${inputClass} resize-y`} /></Field>
       <input type="text" tabIndex={-1} autoComplete="off" aria-hidden="true" className="hidden" value={form.website} onChange={(e) => update("website", e.target.value)} />
       <EnquiryConsent id="business-email-consent" checked={form.consent} onChange={(value) => update("consent", value)} />
-      <label className="flex items-start gap-3 rounded-xl border border-b1 bg-s1 p-4 text-sm leading-relaxed text-t2"><input type="checkbox" required checked={form.termsAccepted} onChange={(event) => update("termsAccepted", event.target.checked)} className="mt-1 h-4 w-4 shrink-0 accent-[var(--acc)]" /><span>I confirm that I am authorised to make this request wholly or mainly for a business and agree that any confirmed order is governed by the <Link href="/legal/service-terms" className="underline underline-offset-2">Service Terms</Link>, <Link href="/legal/email-terms" className="underline underline-offset-2">Managed Business Email Terms</Link>, <Link href="/legal/acceptable-use" className="underline underline-offset-2">Acceptable Use Policy</Link> and <Link href="/legal/privacy" className="underline underline-offset-2">Privacy Notice</Link>. <span className="text-acc">*</span></span></label>
+      <label className="flex items-start gap-3 rounded-xl border border-control bg-s1 p-4 text-sm leading-relaxed text-t2"><input type="checkbox" required checked={form.termsAccepted} onChange={(event) => update("termsAccepted", event.target.checked)} className="mt-1 h-4 w-4 shrink-0 accent-[var(--acc)]" /><span>I confirm that I am authorised to make this request wholly or mainly for a business and agree that any confirmed order is governed by the <Link href="/legal/service-terms" className="underline underline-offset-2">Service Terms</Link>, <Link href="/legal/email-terms" className="underline underline-offset-2">Managed Business Email Terms</Link>, <Link href="/legal/acceptable-use" className="underline underline-offset-2">Acceptable Use Policy</Link> and <Link href="/legal/privacy" className="underline underline-offset-2">Privacy Notice</Link>. <span className="text-acc">*</span></span></label>
       <div className="rounded-xl border border-acc/20 bg-acc/[.05] p-4 text-sm leading-relaxed text-t2">
         We only ask who manages your domain at this stage. Never enter a registrar, DNS or email password in this form. Appropriate secure access is arranged during onboarding.
       </div>
@@ -132,9 +132,9 @@ function Field({ label, hint, required, children }: { label: string; hint?: stri
 }
 
 function Choice({ label, name, value, values, update }: { label: string; name: string; value: string; values: string[]; update: (value: string) => void }) {
-  return <fieldset><legend className="mb-3 text-sm text-t2">{label} <span className="text-acc">*</span></legend><div className="flex flex-wrap gap-2">{values.map((item) => <label key={item} className={`cursor-pointer rounded-xl border px-5 py-3 text-sm transition-colors ${value === item ? "border-acc bg-acc/10 text-t1" : "border-b2 bg-s2 text-t2 hover:border-acc/50"}`}><input className="mr-2 accent-[var(--acc)]" type="radio" name={name} checked={value === item} onChange={() => update(item)} />{item}</label>)}</div></fieldset>
+  return <fieldset><legend className="mb-3 text-sm text-t2">{label} <span className="text-acc">*</span></legend><div className="flex flex-wrap gap-2">{values.map((item) => <label key={item} className={`min-h-11 cursor-pointer rounded-xl border px-5 py-3 text-sm transition-colors ${value === item ? "border-control-focus bg-acc/10 text-t1" : "border-control bg-s2 text-t2 hover:border-control-hover"}`}><input className="mr-2 accent-[var(--acc)]" type="radio" name={name} checked={value === item} onChange={() => update(item)} />{item}</label>)}</div></fieldset>
 }
 
 function Select({ label, value, values, update }: { label: string; value: string; values: string[]; update: (value: string) => void }) {
-  return <label className="text-sm text-t2">{label} <span className="text-acc">*</span><select value={value} onChange={(e) => update(e.target.value)} required className="mt-2 w-full rounded-xl border border-b2 bg-s2 px-4 py-3 text-base text-t1 outline-none focus:border-acc focus-visible:ring-2 focus-visible:ring-acc"><option value="">Select one</option>{values.map((item) => <option key={item}>{item}</option>)}</select></label>
+  return <label className="text-sm text-t2">{label} <span className="text-acc">*</span><select value={value} onChange={(e) => update(e.target.value)} required className="field-control mt-2"><option value="">Select one</option>{values.map((item) => <option key={item}>{item}</option>)}</select></label>
 }

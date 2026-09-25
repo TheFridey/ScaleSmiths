@@ -33,7 +33,7 @@ export function FitSection() {
             <ul className="mt-5 flex flex-col gap-4">
               {FOR.map((item) => (
                 <li key={item} className="flex gap-2.5 font-dm text-sm leading-relaxed text-t1">
-                  <CheckCircle2 size={15} className="mt-0.5 shrink-0 text-grn" aria-hidden="true" />
+                  <CheckCircle2 size={15} className="mt-0.5 shrink-0 text-success" aria-hidden="true" />
                   {item}
                 </li>
               ))}
@@ -44,7 +44,7 @@ export function FitSection() {
             <ul className="mt-5 flex flex-col gap-4">
               {NOT_FOR.map((item) => (
                 <li key={item} className="flex gap-2.5 font-dm text-sm leading-relaxed text-t2">
-                  <XCircle size={15} className="mt-0.5 shrink-0 text-red" aria-hidden="true" />
+                  <XCircle size={15} className="mt-0.5 shrink-0 text-danger" aria-hidden="true" />
                   {item}
                 </li>
               ))}

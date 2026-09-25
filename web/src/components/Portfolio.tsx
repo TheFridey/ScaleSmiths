@@ -31,16 +31,16 @@ export function Portfolio({ limit, showHeading = true, grouped = false }: Portfo
   const platformWork = shown.filter((study) => study.portfolioGroup === "product-platform")
 
   return (
-    <section aria-label="Selected work" className="px-6 py-24 md:px-12">
+    <section aria-label="Selected work" className="surface-paper border-y border-paper-border px-6 py-24 md:px-12 md:py-28">
       <div className="mx-auto max-w-[1240px]">
         {showHeading ? (
           <AnimateIn className="mb-12 flex items-end justify-between gap-8">
             <div className="max-w-[720px]">
-              <span className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">Selected work</span>
-              <h2 className="mt-2 font-syne text-[clamp(32px,5vw,56px)] font-extrabold tracking-[-0.035em]">Built around the hard part.</h2>
-              <p className="mt-4 font-dm text-base leading-relaxed text-t2">Real businesses, the scope delivered, and the case study behind each build.</p>
+              <span className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-paper-acc">Selected work</span>
+              <h2 className="mt-2 font-syne text-[clamp(32px,5vw,56px)] font-extrabold tracking-[-0.035em] text-paper-ink">Built around the hard part.</h2>
+              <p className="mt-4 font-dm text-base leading-relaxed text-paper-text">Real businesses, the scope delivered, and the case study behind each build.</p>
             </div>
-            {limit ? <Link href="/work" prefetch={false} className="hidden items-center gap-2 font-dm text-sm font-medium text-t2 transition-colors hover:text-t1 md:inline-flex">Explore all work <ArrowRight size={15} aria-hidden="true" /></Link> : null}
+            {limit ? <Link href="/work" prefetch={false} className="hidden items-center gap-2 font-dm text-sm font-medium text-paper-muted transition-colors hover:text-paper-ink md:inline-flex">Explore all work <ArrowRight size={15} aria-hidden="true" /></Link> : null}
           </AnimateIn>
         ) : null}
 
@@ -57,7 +57,7 @@ export function Portfolio({ limit, showHeading = true, grouped = false }: Portfo
           </div>
         ) : <CaseStudyGrid items={shown} lead={false} />}
 
-        {limit ? <Link href="/work" prefetch={false} className="mt-8 inline-flex items-center gap-2 font-dm text-sm font-medium text-t2 md:hidden">Explore all work <ArrowRight size={15} aria-hidden="true" /></Link> : null}
+        {limit ? <Link href="/work" prefetch={false} className="mt-8 inline-flex items-center gap-2 font-dm text-sm font-medium text-paper-muted md:hidden">Explore all work <ArrowRight size={15} aria-hidden="true" /></Link> : null}
       </div>
     </section>
   )

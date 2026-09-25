@@ -97,8 +97,12 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section aria-labelledby="about-founders" className="px-6 py-16 md:px-12 md:py-24">
-        <div className="mx-auto max-w-[1240px]">
+      <section aria-labelledby="about-founders" className="relative overflow-hidden px-6 py-16 md:px-12 md:py-24">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_15%_0%,rgba(253,230,138,0.07),transparent_40%),radial-gradient(ellipse_at_90%_80%,rgba(34,211,238,0.06),transparent_45%)]"
+        />
+        <div className="relative mx-auto max-w-[1240px]">
           <div className="max-w-3xl">
             <span className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">The founders</span>
             <h2 id="about-founders" className="mt-2 font-syne text-[clamp(30px,4.5vw,48px)] font-extrabold tracking-[-.03em]">Commercial thinking meets technical delivery.</h2>

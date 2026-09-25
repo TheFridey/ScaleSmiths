@@ -1,4 +1,3 @@
-import { Star } from "lucide-react"
 import { AnimateIn } from "./AnimateIn"
 
 export interface VerifiedTestimonial {
@@ -8,34 +7,29 @@ export interface VerifiedTestimonial {
   business: string
 }
 
+/** Editorial quote treatment on paper — only renders verified attributed claims. */
 export function Testimonials({ testimonials }: { testimonials: VerifiedTestimonial[] }) {
   if (testimonials.length === 0) return null
   return (
-    <section aria-label="Client testimonials" className="px-6 md:px-12 py-20">
-      <div className="max-w-[1240px] mx-auto">
-        <AnimateIn className="text-center mb-12">
-          <span className="font-dm text-xs text-acc tracking-[.14em] font-semibold uppercase">Results</span>
-          <h2 className="font-syne text-[clamp(28px,4vw,44px)] font-extrabold tracking-[-0.025em] mt-2">
-            What clients say.
+    <section aria-label="Client testimonials" className="surface-paper border-y border-paper-border px-6 py-20 md:px-12 md:py-28">
+      <div className="mx-auto max-w-[1240px]">
+        <AnimateIn className="mb-14 max-w-[640px]">
+          <span className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-paper-acc">
+            From clients
+          </span>
+          <h2 className="mt-2 font-syne text-[clamp(28px,4vw,44px)] font-extrabold tracking-[-0.025em] text-paper-ink">
+            Words from people who trusted us with the work.
           </h2>
         </AnimateIn>
-        <div className="grid gap-3 md:grid-cols-3">
+        <div className="grid gap-10 md:grid-cols-3 md:gap-8">
           {testimonials.map((t) => (
-            <blockquote
-              key={t.id}
-              className="bg-s1 border border-b1 rounded-2xl p-7 m-0"
-            >
-              <div className="flex gap-0.5 mb-5" aria-label="5 stars">
-                {[...Array(5)].map((_, j) => (
-                  <Star key={j} size={13} fill="#f59e0b" className="text-warning" aria-hidden="true" />
-                ))}
-              </div>
-              <p className="font-dm text-[15px] text-t1 leading-[1.72] mb-5 italic">
+            <blockquote key={t.id} className="m-0 border-l-2 border-paper-acc/50 pl-5 md:pl-6">
+              <p className="font-syne text-[clamp(18px,2vw,22px)] font-semibold leading-snug tracking-[-0.015em] text-paper-ink">
                 &ldquo;{t.quote}&rdquo;
               </p>
-              <footer>
-                <div className="font-syne text-sm font-bold">{t.name}</div>
-                <div className="font-dm text-xs text-t2 mt-0.5">{t.business}</div>
+              <footer className="mt-6">
+                <div className="font-syne text-sm font-bold text-paper-ink">{t.name}</div>
+                <div className="mt-0.5 font-dm text-xs text-paper-muted">{t.business}</div>
               </footer>
             </blockquote>
           ))}

@@ -41,7 +41,7 @@ export function ServiceRouteChooser({ compact = false }: { compact?: boolean }) 
 function RouteCard({ href, eyebrow, title, description, cta, icon, tone }: { href: string; eyebrow: string; title: string; description: string; cta: string; icon: React.ReactNode; tone: "local" | "systems" }) {
   const visual = tone === "local"
     ? "border-success/25 bg-gradient-to-br from-success/[.09] to-s1 hover:border-success/45"
-    : "border-acc/25 bg-gradient-to-br from-acc/[.09] via-s1 to-violet-500/5 hover:border-acc/45"
+    : "border-acc/25 bg-gradient-to-br from-acc/[.09] to-s1 hover:border-acc/45"
   return (
     <Link href={href} prefetch={false} className={`group rounded-2xl border p-6 transition-colors md:p-8 ${visual}`}>
       <div className="flex items-center gap-3 text-acc">{icon}<span className="font-dm text-xs font-semibold uppercase tracking-[.12em]">{eyebrow}</span></div>

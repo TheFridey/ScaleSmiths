@@ -58,7 +58,11 @@ export function Footer() {
 
   return (
     <footer className="relative overflow-hidden border-t border-b1 bg-[#050d17] px-6 pb-8 pt-14 sm:pb-28 md:px-12 md:pt-20">
-      <div className="mx-auto max-w-[1240px]">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-acc/40 to-transparent"
+      />
+      <div className="relative mx-auto max-w-[1240px]">
         <div className="grid gap-12 pb-14 md:grid-cols-[minmax(260px,1fr)_minmax(420px,1.6fr)] md:gap-16 md:pb-16">
           <div>
             <Logo size={42} className="max-w-full [&_img]:max-w-full" />

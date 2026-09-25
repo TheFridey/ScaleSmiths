@@ -37,7 +37,7 @@ export function Services({ claims }: { claims: ReadonlyMap<string, PublicClaim> 
                 )}
               >
                 {s.featured && (
-                  <div className="absolute top-4 right-4 bg-acc text-white text-[11px] font-dm font-semibold px-[10px] py-[3px] rounded-full tracking-[.04em]">
+                  <div className="absolute right-4 top-4 rounded-full bg-acc px-[10px] py-[3px] font-dm text-[11px] font-semibold tracking-[.04em] text-acc-ink">
                     FEATURED
                   </div>
                 )}
@@ -61,8 +61,8 @@ export function Services({ claims }: { claims: ReadonlyMap<string, PublicClaim> 
                   className={cn(
                     "w-full flex items-center justify-center gap-1.5 py-[11px] rounded-lg font-dm text-sm font-medium transition-all",
                     s.featured
-                      ? "bg-acc text-white hover:opacity-90"
-                      : "bg-s3 text-t2 hover:bg-b1",
+                      ? "bg-acc text-acc-ink hover:opacity-90"
+                      : "border border-control bg-s3 text-t2 hover:border-control-hover hover:bg-b1",
                   )}
                   aria-label={`Get started with the ${s.tier} tier`}
                 >

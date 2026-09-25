@@ -255,7 +255,7 @@ export function PortalOperatingHub({
         <Sparkles size={18} className="mb-4 text-acc" aria-hidden="true" />
         <h2 className="font-syne text-xl font-bold">Next recommended action</h2>
         <p className="mt-2 max-w-[760px] font-dm text-sm leading-relaxed text-t2">{nextAction.body}</p>
-        <Link href={nextAction.href} className="mt-4 inline-flex w-fit items-center rounded-lg bg-acc px-4 py-2 font-dm text-sm font-semibold text-white transition-opacity hover:opacity-90">
+        <Link href={nextAction.href} className="mt-4 inline-flex min-h-11 w-fit items-center rounded-lg bg-acc px-4 py-2 font-dm text-sm font-semibold text-acc-ink transition-opacity hover:opacity-90">
           {nextAction.label}
         </Link>
       </section>

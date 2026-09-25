@@ -88,7 +88,7 @@ export function FaqKnowledgeBase({ categories }: { categories: FaqCategoryView[]
               onChange={(event) => setQuery(event.target.value)}
               placeholder="hosting, DMARC, deposit…"
               autoComplete="off"
-              className="min-h-11 w-full rounded-lg border border-b1 bg-s1 pl-10 pr-10 font-dm text-sm text-t1 placeholder:text-t3 focus-visible:border-acc focus-visible:outline-none"
+              className="field-control min-h-11 w-full rounded-lg pl-10 pr-10 text-sm"
             />
             {query ? (
               <button

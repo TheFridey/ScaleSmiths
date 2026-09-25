@@ -252,7 +252,7 @@ export default function QuotePage() {
           <ChoiceGroup legend="Preferred Contact" name="preferredContactMethod" options={CONTACT} value={data.preferredContactMethod} update={update} />
         </>}
         {stage === 3 && <>
-          <details className="rounded-xl bg-s1 p-4">
+          <details className="rounded-xl border border-control bg-s1 p-4">
             <summary className="cursor-pointer font-dm text-sm font-semibold text-t1">Add an expanded project brief <span className="text-t3">(optional)</span></summary>
             <div className="mt-4"><TextField id="brief" label="Project Brief" multiline value={data.brief} update={update} /></div>
           </details>
@@ -272,7 +272,7 @@ export default function QuotePage() {
 function TextField({ id, label, type = "text", autoComplete = "off", value = "", update, multiline = false, errorId, invalid = false }: {
   id: string; label: string; type?: string; autoComplete?: string; value?: string; update: (key: string, value: string) => void; multiline?: boolean; errorId?: string; invalid?: boolean
 }) {
-  const classes = "w-full rounded-[10px] border border-b2 bg-s2 px-4 py-3 font-dm text-base text-t1 outline-none transition-colors focus:border-acc focus-visible:ring-2 focus-visible:ring-acc"
+  const classes = "field-control"
   return <div><label htmlFor={`q-${id}`} className="mb-2 block font-dm text-sm text-t2">{label}</label>{multiline
     ? <textarea id={`q-${id}`} rows={5} value={value} onChange={(event) => update(id, event.target.value)} aria-describedby={errorId} aria-invalid={invalid || undefined} className={`${classes} resize-y`} />
     : <input id={`q-${id}`} type={type} autoComplete={autoComplete} value={value} onChange={(event) => update(id, event.target.value)} aria-describedby={errorId} aria-invalid={invalid || undefined} className={classes} />}</div>
@@ -283,7 +283,7 @@ function ChoiceGroup({ legend, name, options, value, update }: { legend: string;
 }
 
 function Choice({ type, name, option, checked, onChange }: { type: "radio" | "checkbox"; name: string; option: string; checked: boolean; onChange: () => void }) {
-  return <m.label whileTap={{ scale: 0.99 }} className={`flex min-h-11 cursor-pointer items-center gap-3 rounded-[10px] border px-4 py-3 font-dm text-sm transition-[border-color,background-color,transform] ${checked ? "border-acc bg-acc/10 text-t1 shadow-[inset_3px_0_0_var(--acc)]" : "border-b2 text-t2 hover:border-acc/50"}`}>
+  return <m.label whileTap={{ scale: 0.99 }} className={`flex min-h-11 cursor-pointer items-center gap-3 rounded-[10px] border px-4 py-3 font-dm text-sm transition-[border-color,background-color,transform] ${checked ? "border-control-focus bg-acc/10 text-t1 shadow-[inset_3px_0_0_var(--acc)]" : "border-control text-t2 hover:border-control-hover"}`}>
     <input type={type} name={name} value={option} checked={checked} onChange={onChange} className="h-4 w-4 accent-[var(--acc)]" />
     {option}
   </m.label>

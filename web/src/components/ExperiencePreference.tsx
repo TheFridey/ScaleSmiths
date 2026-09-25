@@ -183,7 +183,7 @@ function ExperienceRedirectShell() {
       aria-label="Opening interactive experience"
       className="relative isolate flex min-h-[calc(100vh-70px)] items-center justify-center overflow-hidden px-6 py-16 text-center md:px-12 md:py-24"
     >
-      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_50%_32%,rgba(34,211,238,0.14),transparent_30%),linear-gradient(135deg,rgba(11,22,38,0.82),rgba(7,17,31,0.98))]" />
+      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_50%_32%,rgba(232,160,69,0.14),transparent_30%),linear-gradient(135deg,rgba(11,22,38,0.82),rgba(11,10,8,0.98))]" />
       <div>
         <p className="font-dm text-xs font-semibold uppercase tracking-[0.14em] text-acc">Interactive preference saved</p>
         <h1 className="mt-4 font-syne text-3xl font-black leading-tight tracking-normal text-t1 md:text-5xl">
@@ -251,7 +251,7 @@ function ExperienceChoice({
       aria-labelledby="experience-choice-heading"
       className="relative isolate min-h-[calc(100vh-70px)] overflow-hidden px-6 py-16 md:px-12 md:py-24"
     >
-      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_18%_18%,rgba(34,211,238,0.12),transparent_30%),radial-gradient(circle_at_82%_24%,rgba(253,230,138,0.10),transparent_24%),linear-gradient(135deg,rgba(11,22,38,0.78),rgba(7,17,31,0.96))]" />
+      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_18%_18%,rgba(232,160,69,0.12),transparent_30%),radial-gradient(circle_at_82%_24%,rgba(253,230,138,0.10),transparent_24%),linear-gradient(135deg,rgba(11,22,38,0.78),rgba(11,10,8,0.96))]" />
       <div className="mx-auto flex max-w-[1060px] flex-col items-center text-center">
         <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-b2 bg-s1/70 px-4 py-2 font-dm text-xs font-semibold uppercase tracking-[0.14em] text-t2">
           <Sparkles size={14} aria-hidden="true" />
@@ -291,7 +291,7 @@ function ExperienceChoice({
             type="button"
             onClick={onChooseInteractive}
             aria-describedby="interactive-experience-copy"
-            className="group min-h-[260px] rounded-lg border border-acc/40 bg-[linear-gradient(135deg,rgba(34,211,238,0.16),rgba(20,241,178,0.08),rgba(253,230,138,0.06))] p-7 text-left shadow-[0_24px_90px_rgba(34,211,238,0.16)] motion-safe:transition motion-safe:duration-200 hover:border-acc hover:bg-acc/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-acc"
+            className="group min-h-[260px] rounded-lg border border-acc/40 bg-[linear-gradient(135deg,rgba(232,160,69,0.16),rgba(20,241,178,0.08),rgba(253,230,138,0.06))] p-7 text-left shadow-[0_24px_90px_rgba(232,160,69,0.16)] motion-safe:transition motion-safe:duration-200 hover:border-acc hover:bg-acc/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-acc"
           >
             {recommended === "interactive" && <RecommendedBadge label="Recommended for this device" />}
             <span className="flex h-12 w-12 items-center justify-center rounded-lg border border-acc/40 bg-bg text-warning">

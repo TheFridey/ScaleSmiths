@@ -9,17 +9,17 @@ import {
 
 describe("color-contrast", () => {
   it("parses hex colours", () => {
-    expect(parseHexColor("#22d3ee")).toEqual([34, 211, 238])
+    expect(parseHexColor("#e8a045")).toEqual([232, 160, 69])
     expect(parseHexColor("#fff")).toEqual([255, 255, 255])
   })
 
   it("computes known contrast ratios", () => {
     // Nearly black on white is ~21:1
     expect(contrastRatio("#000000", "#ffffff")).toBeCloseTo(21, 0)
-    // Cyan CTA ink must clear AA on accent
-    expect(contrastRatio("#04131c", "#22d3ee")).toBeGreaterThanOrEqual(4.5)
-    // White on cyan fails AA — the anti-pattern we eliminated
-    expect(meetsWcagAa("#ffffff", "#22d3ee")).toBe(false)
+    // Forge gold CTA ink must clear AA on accent
+    expect(contrastRatio("#1a1208", "#e8a045")).toBeGreaterThanOrEqual(4.5)
+    // White on gold fails AA — the anti-pattern we eliminated
+    expect(meetsWcagAa("#ffffff", "#e8a045")).toBe(false)
   })
 
   it("keeps every public token pair WCAG AA-safe", () => {

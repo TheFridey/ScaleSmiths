@@ -23,7 +23,7 @@ import { getIndustryContent } from "@/lib/v2/industryContent"
 
 const ClientSceneCanvas = dynamic(() => import("@/components/v2/three/ClientSceneCanvas"), {
   ssr: false,
-  loading: () => <div aria-hidden="true" className="h-full w-full bg-[radial-gradient(circle_at_50%_42%,rgba(34,211,238,0.10),transparent_34%)]" />,
+  loading: () => <div aria-hidden="true" className="h-full w-full bg-[radial-gradient(circle_at_50%_42%,rgba(232,160,69,0.10),transparent_34%)]" />,
 })
 
 interface IndustryOption {
@@ -126,7 +126,7 @@ function SceneBackdrop({
           transition={reducedMotion ? { duration: 0 } : { duration: 0.7, ease: "easeOut" }}
         >
           {!loaded && (
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_24%_20%,rgba(34,211,238,0.18),transparent_28%),radial-gradient(circle_at_76%_28%,rgba(253,230,138,0.10),transparent_24%),linear-gradient(135deg,rgba(7,17,31,1),rgba(11,22,38,0.94))]">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_24%_20%,rgba(232,160,69,0.18),transparent_28%),radial-gradient(circle_at_76%_28%,rgba(253,230,138,0.10),transparent_24%),linear-gradient(135deg,rgba(11,10,8,1),rgba(11,22,38,0.94))]">
               <div className="absolute bottom-8 left-6 h-px w-28 overflow-hidden rounded-full bg-white/10 md:left-12">
                 <div className="h-full w-1/2 rounded-full bg-acc/70 motion-safe:animate-[v2-loading-sweep_1.4s_ease-in-out_infinite]" />
               </div>
@@ -146,7 +146,7 @@ function SceneBackdrop({
       </AnimatePresence>
 
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.026)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.026)_1px,transparent_1px)] bg-[size:64px_64px] opacity-55" />
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_48%_26%,rgba(34,211,238,0.10),transparent_26%),linear-gradient(90deg,rgba(4,12,23,0.95),rgba(4,12,23,0.62)_43%,rgba(4,12,23,0.78)),linear-gradient(180deg,rgba(4,12,23,0.70),rgba(4,12,23,0.20)_42%,rgba(4,12,23,0.88))]" />
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_48%_26%,rgba(232,160,69,0.10),transparent_26%),linear-gradient(90deg,rgba(4,12,23,0.95),rgba(4,12,23,0.62)_43%,rgba(4,12,23,0.78)),linear-gradient(180deg,rgba(4,12,23,0.70),rgba(4,12,23,0.20)_42%,rgba(4,12,23,0.88))]" />
       {!disableCanvas && (
         <div aria-hidden="true" className="absolute inset-0 hidden opacity-55 md:block">
           <ClientSceneCanvas
@@ -266,7 +266,7 @@ function PrimaryJourneyButton({
     <motion.button
       type="button"
       onClick={onClick}
-      className={`group inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-acc px-6 py-3 font-dm text-sm font-semibold text-bg shadow-[0_0_58px_rgba(34,211,238,0.26)] transition hover:bg-[#67e8f9] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-acc ${className}`}
+      className={`group inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-acc px-6 py-3 font-dm text-sm font-semibold text-bg shadow-[0_0_58px_rgba(232,160,69,0.26)] transition hover:bg-[#f0b35a] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-acc ${className}`}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.34, delay: 0.14, ease: "easeOut" }}

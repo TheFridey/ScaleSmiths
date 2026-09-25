@@ -10,11 +10,15 @@ interface LogoProps {
   label?: string
 }
 
+/**
+ * Forge brand lockup — coding-bracket S (gold + silver) with optional wordmark.
+ * Assets extracted from the forge brand plate under /public/brand.
+ */
 export function Logo({ size = 32, showName = true, className, href = "/", label = "ScaleSmiths" }: LogoProps) {
   const asset = showName
-    ? { src: "/brand/scalesmiths-wordmark.png", width: 729, height: 118 }
-    : { src: "/brand/scalesmiths-mark.png", width: 302, height: 313 }
-  const height = showName ? Math.round(size * 1.08) : size
+    ? { src: "/brand/scalesmiths-wordmark.png", width: 662, height: 85 }
+    : { src: "/brand/scalesmiths-mark.png", width: 581, height: 581 }
+  const height = showName ? Math.round(size * 1.05) : size
   const width = Math.round((asset.width / asset.height) * height)
   const inner = (
     <span className={cn("inline-flex items-center", className)}>

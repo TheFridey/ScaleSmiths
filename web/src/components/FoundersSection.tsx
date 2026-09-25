@@ -27,13 +27,13 @@ export function FoundersSection() {
     <section aria-labelledby="home-founders-heading" className="relative overflow-hidden px-6 py-24 md:px-12 md:py-32">
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_20%_30%,rgba(253,230,138,0.06),transparent_45%),radial-gradient(ellipse_at_85%_60%,rgba(34,211,238,0.07),transparent_40%)]"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_20%_30%,rgba(253,230,138,0.06),transparent_45%),radial-gradient(ellipse_at_85%_60%,rgba(232,160,69,0.07),transparent_40%)]"
       />
       <div className="relative mx-auto max-w-[1240px]">
         <div className="grid gap-12 lg:grid-cols-[1.05fr_.95fr] lg:items-center">
           <AnimateIn>
             {pairPhoto.available ? (
-              <FounderPortrait image="founders" monogram="R · TNB" accent="#22d3ee" sizes="(min-width: 1024px) 620px, 100vw" />
+              <FounderPortrait image="founders" monogram="R · TNB" accent="#e8a045" sizes="(min-width: 1024px) 620px, 100vw" />
             ) : (
               <div className="grid grid-cols-2 gap-3">
                 {founders.map((founder, index) => (

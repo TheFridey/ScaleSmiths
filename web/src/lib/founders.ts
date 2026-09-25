@@ -72,7 +72,7 @@ export const founders: Founder[] = [
     photo: "rhys",
     // Owner-supplied title (founder profile card, 15 September 2026).
     authorTitle: "Co-founder & Technical Lead",
-    accent: "#22d3ee",
+    accent: "#e8a045",
     role: {
       text: "Co-founder — technical leadership, engineering and delivery",
       evidence: `${OWNER_BRIEF} and web/src/lib/data.ts (project credits: "Made by Rhys · ScaleSmiths co-founder")`,
@@ -136,7 +136,7 @@ export const founders: Founder[] = [
     photo: "trevor",
     // Owner-supplied title (founder profile card, 15 September 2026).
     authorTitle: "Co-founder & Commercial Lead",
-    accent: "#6366f1",
+    accent: "#cfc7bc",
     role: {
       text: "Co-founder — commercial growth and client relationships",
       evidence: `${OWNER_BRIEF}, web/src/app/layout.tsx and admin/src/components/ProspectPipeline.tsx`,

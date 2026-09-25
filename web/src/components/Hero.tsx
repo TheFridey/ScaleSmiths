@@ -70,6 +70,18 @@ export function Hero() {
       aria-label="ScaleSmiths - forge your digital edge"
     >
       <div className="hero-scene-fallback absolute inset-0" data-hero-scene="static" aria-hidden="true" />
+      {/* Forge brand plate — molten rock atmosphere behind the first viewport */}
+      <div
+        className="pointer-events-none absolute inset-0 opacity-[0.55]"
+        aria-hidden="true"
+        style={{
+          backgroundImage: "url(/brand/scalesmiths-forge-plate.webp)",
+          backgroundSize: "cover",
+          backgroundPosition: "center 35%",
+          maskImage: "linear-gradient(180deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.55) 55%, transparent 100%)",
+          WebkitMaskImage: "linear-gradient(180deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.55) 55%, transparent 100%)",
+        }}
+      />
 
       <m.div
         className="relative z-10 flex w-full flex-col items-center"

@@ -56,7 +56,7 @@ function StaticSceneFallback() {
     <div
       aria-hidden="true"
       data-v2-scene-fallback="true"
-      className="h-full w-full bg-[radial-gradient(circle_at_22%_22%,rgba(34,211,238,0.18),transparent_28%),radial-gradient(circle_at_78%_28%,rgba(20,241,178,0.10),transparent_24%),radial-gradient(circle_at_50%_82%,rgba(253,230,138,0.08),transparent_30%)]"
+      className="h-full w-full bg-[radial-gradient(circle_at_22%_22%,rgba(232,160,69,0.18),transparent_28%),radial-gradient(circle_at_78%_28%,rgba(20,241,178,0.10),transparent_24%),radial-gradient(circle_at_50%_82%,rgba(253,230,138,0.08),transparent_30%)]"
     />
   )
 }
@@ -156,7 +156,7 @@ function ManualForgeScene({
 
     const ambientLight = new THREE.AmbientLight("#ffffff", 0.42)
     const amberLight = new THREE.PointLight("#f59e0b", 1.8, 12)
-    const cyanLight = new THREE.PointLight("#22d3ee", 1.25, 10)
+    const cyanLight = new THREE.PointLight("#e8a045", 1.25, 10)
     const whiteLight = new THREE.DirectionalLight("#ffffff", 0.7)
     amberLight.position.set(0, 0.65, 0)
     cyanLight.position.set(-3, 2.6, 3)
@@ -213,7 +213,7 @@ function ManualForgeScene({
 
     const particleGeometry = new THREE.BufferGeometry()
     const particleMaterial = new THREE.PointsMaterial({
-      color: "#67e8f9",
+      color: "#f0b35a",
       size: 0.038,
       transparent: true,
       opacity: 0.7,
@@ -528,7 +528,7 @@ function createFiberScene(fiber: typeof import("@react-three/fiber")) {
         <bufferGeometry>
           <bufferAttribute attach="attributes-position" count={positions.length / 3} array={positions} itemSize={3} />
         </bufferGeometry>
-        <pointsMaterial color="#67e8f9" size={0.038} transparent opacity={0.7} depthWrite={false} />
+        <pointsMaterial color="#f0b35a" size={0.038} transparent opacity={0.7} depthWrite={false} />
       </points>
     )
   }
@@ -554,7 +554,7 @@ function createFiberScene(fiber: typeof import("@react-three/fiber")) {
       <>
         <ambientLight intensity={0.42} />
         <pointLight ref={amberRef} position={[0, 0.65, 0]} intensity={1.8} color="#f59e0b" distance={12} />
-        <pointLight ref={cyanRef} position={[-3, 2.6, 3]} intensity={1.25} color="#22d3ee" distance={10} />
+        <pointLight ref={cyanRef} position={[-3, 2.6, 3]} intensity={1.25} color="#e8a045" distance={10} />
         <directionalLight position={[2, 4, 4]} intensity={0.7} color="#ffffff" />
         <group ref={groupRef}>
           <mesh position={[0, -0.12, 0]} rotation={[0, Math.PI / 8, 0]}>

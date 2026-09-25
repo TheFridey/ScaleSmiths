@@ -28,7 +28,7 @@ export function ServiceJourneyPage({ journey }: { journey: ServiceJourney }) {
             style={{
               background: isLocal
                 ? "radial-gradient(ellipse at 85% 20%, rgba(20,241,178,0.10), transparent 42%)"
-                : "radial-gradient(ellipse at 85% 20%, rgba(34,211,238,0.12), transparent 42%)",
+                : "radial-gradient(ellipse at 85% 20%, rgba(232,160,69,0.12), transparent 42%)",
             }}
           />
           <div className="relative mx-auto max-w-[1240px]">

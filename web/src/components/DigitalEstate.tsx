@@ -54,7 +54,7 @@ export function DigitalEstate() {
               ))}
             </svg>
 
-            <div className="absolute left-1/2 top-1/2 flex h-32 w-32 -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-full border border-acc/35 bg-s1 text-center shadow-[0_0_70px_rgba(34,211,238,.08)]">
+            <div className="absolute left-1/2 top-1/2 flex h-32 w-32 -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-full border border-acc/35 bg-s1 text-center shadow-[0_0_70px_rgba(232,160,69,.08)]">
               <span className="font-dm text-[9px] font-semibold uppercase tracking-[.18em] text-acc">Managed by</span>
               <span className="mt-2 font-syne text-sm font-bold">ScaleSmiths</span>
             </div>

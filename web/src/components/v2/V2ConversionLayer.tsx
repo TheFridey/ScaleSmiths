@@ -426,7 +426,7 @@ export function V2ConversionLayer({ industry }: V2ConversionLayerProps) {
           <button
             type="submit"
             disabled={submitting}
-            className="mt-1 inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-acc px-5 py-3 font-dm text-sm font-semibold text-bg shadow-[0_0_42px_rgba(34,211,238,0.22)] transition hover:bg-[#67e8f9] disabled:cursor-not-allowed disabled:opacity-65 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-acc sm:justify-self-start"
+            className="mt-1 inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-acc px-5 py-3 font-dm text-sm font-semibold text-bg shadow-[0_0_42px_rgba(232,160,69,0.22)] transition hover:bg-[#f0b35a] disabled:cursor-not-allowed disabled:opacity-65 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-acc sm:justify-self-start"
           >
             {submitting ? "Sending..." : conversionIntentLabel(intent)}
             <Send size={15} aria-hidden="true" />

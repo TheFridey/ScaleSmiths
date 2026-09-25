@@ -62,7 +62,7 @@ export const metadata: Metadata = {
     googleBot: { index: true, follow: true, "max-image-preview": "large" },
   },
   icons: {
-    icon: "/brand/scalesmiths-mark.png",
+    icon: [{ url: "/brand/favicon.png", type: "image/png" }, { url: "/brand/scalesmiths-mark.png", type: "image/png" }],
   },
 }
 

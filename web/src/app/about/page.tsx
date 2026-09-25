@@ -100,7 +100,7 @@ export default function AboutPage() {
       <section aria-labelledby="about-founders" className="relative overflow-hidden px-6 py-16 md:px-12 md:py-24">
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_15%_0%,rgba(253,230,138,0.07),transparent_40%),radial-gradient(ellipse_at_90%_80%,rgba(34,211,238,0.06),transparent_45%)]"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_15%_0%,rgba(253,230,138,0.07),transparent_40%),radial-gradient(ellipse_at_90%_80%,rgba(232,160,69,0.06),transparent_45%)]"
         />
         <div className="relative mx-auto max-w-[1240px]">
           <div className="max-w-3xl">

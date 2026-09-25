@@ -57,7 +57,7 @@ export function Footer() {
   const profiles = organizationProfiles()
 
   return (
-    <footer className="relative overflow-hidden border-t border-b1 bg-[#050d17] px-6 pb-8 pt-14 sm:pb-28 md:px-12 md:pt-20">
+    <footer className="relative overflow-hidden border-t border-b1 bg-[#080706] px-6 pb-8 pt-14 sm:pb-28 md:px-12 md:pt-20">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-acc/40 to-transparent"

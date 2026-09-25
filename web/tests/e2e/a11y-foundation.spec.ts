@@ -3,7 +3,7 @@ import { chooseNormalExperience, rejectNonEssentialStorage, setExperience } from
 
 /**
  * Accessibility smoke for the refined public design system.
- * Complements responsive-qa and visual baselines — checks cyan+white is gone,
+ * Complements responsive-qa and visual baselines — checks gold+white CTAs are gone,
  * focus language is present, and sticky-nav scroll padding is applied.
  */
 test.describe("public a11y foundation", () => {
@@ -13,7 +13,7 @@ test.describe("public a11y foundation", () => {
     await rejectNonEssentialStorage(page)
   })
 
-  test("homepage has no cyan+white CTAs and keeps focus/scroll foundations", async ({ page }) => {
+  test("homepage has no gold+white CTAs and keeps focus/scroll foundations", async ({ page }) => {
     await page.goto("/", { waitUntil: "domcontentloaded" })
     await page.waitForFunction(() => document.documentElement.dataset.scalesmithsHydrated === "true", undefined, { timeout: 120_000 })
     const chooser = page.getByRole("heading", { name: /what experience would you like today/i })
@@ -44,8 +44,8 @@ test.describe("public a11y foundation", () => {
     const primary = page.locator(".btn-primary").first()
     await expect(primary).toBeVisible()
     const ink = await primary.evaluate((el) => getComputedStyle(el).color)
-    // rgb(4, 19, 28) = #04131c — never white
-    expect(ink).toMatch(/rgb\(\s*4,\s*19,\s*28\s*\)/)
+    // rgb(26, 18, 8) = #1a1208 — never white on forge gold
+    expect(ink).toMatch(/rgb\(\s*26,\s*18,\s*8\s*\)/)
   })
 
   test("quote form controls expose identifiable borders and stronger focus", async ({ page }) => {
@@ -67,7 +67,7 @@ test.describe("public a11y foundation", () => {
       const styles = getComputedStyle(el)
       return { border: styles.borderTopColor, shadow: styles.boxShadow }
     })
-    // Stronger focus: cyan border and/or cyan focus ring
+    // Stronger focus: forge-gold border and/or gold focus ring
     const stronger =
       focused.border !== idle.border
       || (focused.shadow !== "none" && focused.shadow !== idle.shadow)

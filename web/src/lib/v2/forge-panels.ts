@@ -10,7 +10,7 @@ export const forgePanels: ForgePanel[] = [
     id: "website",
     label: "Website",
     description: "The public surface that explains the offer, captures intent, and routes visitors into the right next action.",
-    color: "#67e8f9",
+    color: "#f0b35a",
   },
   {
     id: "crm",

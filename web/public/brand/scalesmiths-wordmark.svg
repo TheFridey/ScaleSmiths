@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 120" role="img" aria-label="ScaleSmiths">
+  <defs>
+    <linearGradient id="wm" x1="0" y1="0" x2="760" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#f2ebe3"/>
+      <stop offset="42%" stop-color="#d8d0c6"/>
+      <stop offset="58%" stop-color="#e0b06a"/>
+      <stop offset="100%" stop-color="#e8a045"/>
+    </linearGradient>
+  </defs>
+  <text x="380" y="68" text-anchor="middle"
+        font-family="Syne, Inter, Arial, sans-serif"
+        font-size="52" font-weight="700" letter-spacing="18"
+        fill="url(#wm)">SCALESMITHS</text>
+  <line x1="210" y1="96" x2="360" y2="96" stroke="#9a9084" stroke-width="1.2"/>
+  <line x1="400" y1="96" x2="550" y2="96" stroke="#9a9084" stroke-width="1.2"/>
+  <path d="M380 90 L384 96 L380 102 L376 96 Z" fill="#e8a045"/>
+</svg>

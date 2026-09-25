@@ -121,6 +121,7 @@
 html {
   scroll-behavior: auto;
   scroll-padding-top: var(--nav-offset);
+  overflow-x: clip;
 }
 
 body {
@@ -182,7 +183,12 @@ body {
   flex-shrink: 0;
 }
 
-.hero-line-overflow { overflow: hidden; line-height: 1; }
+.hero-line-overflow {
+  overflow: hidden;
+  line-height: 1;
+  width: 100%;
+  max-width: 100%;
+}
 
 .hero-h {
   --hero-scale: 1;

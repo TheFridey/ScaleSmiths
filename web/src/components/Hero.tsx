@@ -66,27 +66,27 @@ export function Hero() {
   return (
     <section
       ref={heroRef}
-      className="hero-grid-bg relative flex min-h-[min(90vh,940px)] w-full max-w-[100vw] flex-col items-center justify-center overflow-hidden px-6 pb-24 pt-20 text-center md:px-12 md:pb-28 md:pt-24"
+      className="hero-grid-bg relative flex min-h-[min(92vh,960px)] w-full max-w-[100vw] flex-col items-center justify-center overflow-hidden px-6 pb-28 pt-20 text-center md:px-12 md:pb-32 md:pt-24"
       aria-label="ScaleSmiths - forge your digital edge"
     >
       <div className="hero-scene-fallback absolute inset-0" data-hero-scene="static" aria-hidden="true" />
 
       {/* Forge plate — lower-weighted so molten rock feeds the ember bed */}
       <div
-        className="pointer-events-none absolute inset-0 opacity-[0.48] md:opacity-[0.52]"
+        className="pointer-events-none absolute inset-0 opacity-[0.52] md:opacity-[0.58]"
         aria-hidden="true"
         style={{
           backgroundImage: "url(/brand/scalesmiths-forge-plate.webp)",
           backgroundSize: "cover",
-          backgroundPosition: "center 42%",
-          maskImage: "linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.35) 18%, rgba(0,0,0,0.7) 48%, rgba(0,0,0,0.95) 78%, rgba(0,0,0,0.55) 100%)",
-          WebkitMaskImage: "linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.35) 18%, rgba(0,0,0,0.7) 48%, rgba(0,0,0,0.95) 78%, rgba(0,0,0,0.55) 100%)",
+          backgroundPosition: "center 46%",
+          maskImage: "linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.28) 16%, rgba(0,0,0,0.68) 46%, rgba(0,0,0,0.96) 76%, rgba(0,0,0,0.62) 100%)",
+          WebkitMaskImage: "linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.28) 16%, rgba(0,0,0,0.68) 46%, rgba(0,0,0,0.96) 76%, rgba(0,0,0,0.62) 100%)",
         }}
       />
 
       {/* Soft vignette so type stays readable over the plate */}
       <div
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_38%,transparent_0%,rgba(11,10,8,0.35)_55%,rgba(11,10,8,0.82)_100%)]"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_36%,transparent_0%,rgba(11,10,8,0.28)_52%,rgba(11,10,8,0.78)_100%)]"
         aria-hidden="true"
       />
 
@@ -101,7 +101,7 @@ export function Hero() {
       >
         <m.p
           variants={revealSoft}
-          className="mb-8 font-syne text-[11px] font-semibold uppercase tracking-[0.28em] text-acc/90 md:mb-10 md:text-xs"
+          className="mb-8 font-syne text-[11px] font-semibold uppercase tracking-[0.32em] text-acc md:mb-10 md:text-xs"
         >
           ScaleSmiths
         </m.p>

@@ -10,7 +10,7 @@ type PaperBandProps<T extends ElementType> = {
 } & Omit<ComponentPropsWithoutRef<T>, "as" | "children" | "className">
 
 /**
- * Shared paper band shell — blueprint daylight with navy↔paper bridge fades.
+ * Shared paper band shell — blueprint daylight with charcoal↔paper bridge fades.
  * Prefer this over raw `surface-paper` so section padding stays consistent.
  */
 export function PaperBand<T extends ElementType = "section">({

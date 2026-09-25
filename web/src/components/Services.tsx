@@ -37,7 +37,7 @@ export function Services({ claims }: { claims: ReadonlyMap<string, PublicClaim> 
                 )}
               >
                 {s.featured && (
-                  <div className="absolute right-4 top-4 rounded-full bg-acc px-[10px] py-[3px] font-dm text-[11px] font-semibold tracking-[.04em] text-acc-ink">
+                  <div className="absolute right-4 top-4 rounded-md bg-acc px-[10px] py-[3px] font-dm text-[11px] font-semibold tracking-[.04em] text-acc-ink">
                     FEATURED
                   </div>
                 )}
@@ -92,7 +92,7 @@ export function Services({ claims }: { claims: ReadonlyMap<string, PublicClaim> 
                 <div className="font-dm text-[13px] text-t2 leading-relaxed">{r.desc}</div>
                 <div className="mt-4 flex items-center justify-between border-t border-b2 pt-3 font-dm text-[11px]">
                   <span className="text-t3">Managed Business Email</span>
-                  <span className="rounded-full bg-acc/10 px-2.5 py-1 font-semibold uppercase tracking-[.08em] text-acc">{r.managedEmail}</span>
+                  <span className="rounded-md bg-acc/10 px-2.5 py-1 font-semibold uppercase tracking-[.08em] text-acc">{r.managedEmail}</span>
                 </div>
               </div>
             ))}

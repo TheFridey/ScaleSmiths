@@ -117,13 +117,13 @@ export function Nav() {
   return (
     <header className={cn(
       "sticky top-0 z-50 border-b transition-[background-color,border-color,box-shadow] duration-300",
-      scrolled ? "border-b1/80 bg-bg/94 shadow-[0_12px_40px_rgba(0,0,0,.18)] backdrop-blur-md" : "border-transparent bg-bg/55 backdrop-blur-sm",
+      scrolled ? "border-b1/80 bg-bg/94 shadow-[0_12px_40px_rgba(0,0,0,.22)] backdrop-blur-md" : "border-transparent bg-bg/45 backdrop-blur-sm",
     )}>
       <nav aria-label="Main navigation" className={cn(
         "relative z-50 mx-auto flex max-w-[1320px] items-center gap-10 px-6 transition-[height] duration-300 md:px-12",
         scrolled ? "h-[62px]" : "h-[78px]",
       )}>
-        <Logo showName={false} size={scrolled ? 36 : 42} />
+        <Logo showName={false} size={scrolled ? 38 : 44} />
 
         <div className="ml-auto hidden items-center gap-7 md:flex">
           <div

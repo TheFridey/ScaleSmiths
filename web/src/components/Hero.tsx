@@ -64,7 +64,7 @@ export function Hero() {
   return (
     <section
       ref={heroRef}
-      className="hero-grid-bg relative flex min-h-[min(88vh,920px)] flex-col items-center justify-center overflow-hidden px-6 pb-20 pt-16 text-center md:px-12 md:pb-24 md:pt-20"
+      className="hero-grid-bg relative flex min-h-[min(88vh,920px)] w-full max-w-[100vw] flex-col items-center justify-center overflow-hidden px-6 pb-20 pt-16 text-center md:px-12 md:pb-24 md:pt-20"
       aria-label="ScaleSmiths - forge your digital edge"
     >
       <div className="hero-scene-fallback absolute inset-0" data-hero-scene="static" aria-hidden="true" />
@@ -81,14 +81,14 @@ export function Hero() {
           Find the next move. Build it properly. Keep improving.
         </m.div>
 
-        <h1 className="mb-7 w-full">
-          <span className="hero-line-overflow block">
-            <m.span variants={revealMask} className="hero-h hero-outline font-syne inline-block whitespace-nowrap" aria-label={HERO_LINES[0]}>
+        <h1 className="mb-7 w-full max-w-full overflow-hidden">
+          <span className="hero-line-overflow block max-w-full">
+            <m.span variants={revealMask} className="hero-h hero-outline font-syne inline-block max-w-full whitespace-nowrap" aria-label={HERO_LINES[0]}>
               {renderHeroLine(HERO_LINES[0])}
             </m.span>
           </span>
-          <span className="hero-line-overflow block">
-            <m.span variants={revealMask} className="hero-h text-t1 font-syne inline-block whitespace-nowrap" aria-label={HERO_LINES[1]}>
+          <span className="hero-line-overflow block max-w-full">
+            <m.span variants={revealMask} className="hero-h text-t1 font-syne inline-block max-w-full whitespace-nowrap" aria-label={HERO_LINES[1]}>
               {renderHeroLine(HERO_LINES[1])}
             </m.span>
           </span>

@@ -209,8 +209,8 @@ body {
 
 @media (max-width: 767px) {
   .hero-h {
-    font-size: 42px;
-    letter-spacing: 0;
+    font-size: clamp(28px, 11vw, 42px);
+    letter-spacing: -0.02em;
   }
   .hero-outline {
     -webkit-text-stroke-width: 1.75px;

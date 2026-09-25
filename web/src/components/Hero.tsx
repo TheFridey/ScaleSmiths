@@ -38,18 +38,20 @@ export function Hero() {
     const lines = Array.from(root.querySelectorAll<HTMLElement>(".hero-h"))
     const fitLines = () => {
       lines.forEach((line) => {
-        const maxWidth = Math.max(260, root.clientWidth - 72)
-        const scale = Math.min(1, maxWidth / line.scrollWidth)
         const mask = line.parentElement
-        if (mask) {
-          mask.style.transform = `scaleX(${scale})`
-          mask.style.transformOrigin = "center"
-        }
+        if (!mask) return
+        // Reset before measuring so scrollWidth reflects the true unscaled line.
+        mask.style.removeProperty("transform")
+        const maxWidth = Math.max(240, root.clientWidth - 48)
+        const scale = Math.min(1, maxWidth / Math.max(1, line.scrollWidth))
+        mask.style.transform = `scale(${scale})`
+        mask.style.transformOrigin = "center top"
       })
     }
     fitLines()
     const observer = new ResizeObserver(fitLines)
     observer.observe(root)
+    void document.fonts?.ready?.then(fitLines)
 
     return () => {
       observer.disconnect()

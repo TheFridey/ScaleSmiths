@@ -24,12 +24,11 @@ export const teamImages = {
     aspect: "4 / 5",
     available: true,
   },
-  // TODO(owner): supply /images/team/trevor.webp and replace the alt text with a description of the real photo.
   trevor: {
     src: "/images/team/trevor.webp",
-    alt: "Trevor Newton-Bradley, co-founder of ScaleSmiths",
+    alt: "Trevor Newton-Bradley, co-founder and commercial lead of ScaleSmiths, in a ScaleSmiths polo",
     aspect: "4 / 5",
-    available: false,
+    available: true,
   },
   // TODO(owner): supply /images/team/rhys-trevor.webp (both founders together) and describe it in the alt text.
   founders: {

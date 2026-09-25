@@ -24,8 +24,8 @@ export function PaperBand<T extends ElementType = "section">({
   return (
     <Tag
       className={cn(
-        "surface-paper px-6 pb-14 pt-14 md:px-12 md:pb-16 md:pt-16",
-        compact && "surface-paper-compact pt-12 pb-12 md:pt-14 md:pb-14",
+        "surface-paper px-6 pb-16 pt-24 md:px-12 md:pb-20 md:pt-28",
+        compact && "surface-paper-compact pt-16 pb-14 md:pt-20 md:pb-16",
         className,
       )}
       {...rest}

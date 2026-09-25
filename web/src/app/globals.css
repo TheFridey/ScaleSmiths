@@ -47,20 +47,18 @@
     position: relative;
     isolation: isolate;
     background:
-      /* Top bridge: soft navy wash into paper (~180px), never a solid colour wall */
+      /* Top bridge: soft navy wash into paper (~120px) — padding clears this zone */
       linear-gradient(
         180deg,
-        color-mix(in srgb, var(--bg) 72%, transparent) 0%,
-        color-mix(in srgb, var(--surface-bridge) 48%, transparent) 48px,
-        color-mix(in srgb, var(--bg) 18%, transparent) 110px,
-        transparent 180px
+        color-mix(in srgb, var(--bg) 68%, transparent) 0%,
+        color-mix(in srgb, var(--surface-bridge) 40%, transparent) 40px,
+        transparent 120px
       ),
       /* Bottom exit: short (keeps short bands readable) */
       linear-gradient(
         0deg,
-        color-mix(in srgb, var(--bg) 55%, transparent) 0%,
-        color-mix(in srgb, var(--surface-bridge) 28%, transparent) 36px,
-        transparent 96px
+        color-mix(in srgb, var(--bg) 48%, transparent) 0%,
+        transparent 72px
       ),
       radial-gradient(ellipse at 14% 18%, color-mix(in srgb, var(--paper-acc) 7%, transparent), transparent 40%),
       radial-gradient(ellipse at 88% 82%, color-mix(in srgb, var(--surface-bridge) 14%, transparent), transparent 46%),
@@ -246,7 +244,7 @@
     font-weight: 600;
     font-size: clamp(1.375rem, 2.6vw, 2rem);
     letter-spacing: -0.01em;
-    line-height: 1.22;
+    line-height: 1.25;
     max-width: 18ch;
     color: var(--paper-ink);
   }
@@ -412,11 +410,11 @@ body {
 
 .hero-h {
   --hero-scale: 1;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  line-height: 1;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.05;
   display: block;
-  font-size: clamp(52px, 10.5vw, 118px);
+  font-size: clamp(48px, 9.5vw, 104px);
   transform-origin: center;
 }
 
@@ -429,13 +427,19 @@ body {
 
 @media (max-width: 767px) {
   .hero-h {
-    font-size: clamp(28px, 11vw, 42px);
-    letter-spacing: -0.02em;
+    font-size: clamp(28px, 10.5vw, 40px);
+    letter-spacing: -0.012em;
+    line-height: 1.08;
   }
   .hero-outline {
     -webkit-text-stroke-width: 1.75px;
     -webkit-text-stroke-color: rgba(203, 213, 225, 0.48);
   }
+}
+
+/* Display Syne defaults — avoid extrabold + heavy negative tracking (reads squashed) */
+.font-syne {
+  letter-spacing: -0.012em;
 }
 
 /* ── Hero background ─────────────────────────────────────────── */

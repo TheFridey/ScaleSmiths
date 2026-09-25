@@ -37,7 +37,7 @@ export function ProjectCard({ study, size = "standard", headingLevel: Heading = 
 
       <div className={cn("flex flex-1 flex-col", size === "compact" ? "p-5" : "p-6 md:p-7", size === "feature" && "lg:border-l lg:border-b1")}>
         {logo ? <ClientLogo name={study.name} logo={logo} height={24} monochrome className="mb-4" /> : null}
-        <Heading className={cn("font-syne font-extrabold leading-tight tracking-[-.02em]", size === "feature" ? "text-[clamp(24px,2.4vw,32px)]" : size === "compact" ? "text-xl" : "text-2xl")}>{study.name}</Heading>
+        <Heading className={cn("font-syne font-bold leading-[1.2] tracking-[-0.012em]", size === "feature" ? "text-[clamp(22px,2.2vw,30px)]" : size === "compact" ? "text-xl" : "text-2xl")}>{study.name}</Heading>
         {meta ? <p className="mt-2 font-dm text-xs font-semibold uppercase tracking-[.12em] text-acc">{meta}</p> : null}
         {study.summary ? <p className={cn("mt-4 font-dm text-sm leading-relaxed text-t2", size === "compact" && "line-clamp-3")}>{study.summary}</p> : null}
 

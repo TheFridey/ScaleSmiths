@@ -22,13 +22,13 @@ export default function WorkPage() {
       <div className="px-6 md:px-12 pt-10 max-w-[1240px] mx-auto">
         <PageBreadcrumbs items={[{ name: "Home", path: "/" }, { name: "Work", path: "/work" }]} />
       </div>
-      <div className="px-6 md:px-12 pt-6 pb-0 max-w-[1240px] mx-auto">
+      <div className="mx-auto max-w-[1240px] px-6 pb-16 pt-6 md:px-12 md:pb-24 md:pt-8">
         <AnimateIn>
-          <span className="font-dm text-xs text-acc tracking-[.14em] font-semibold uppercase">Work / Build Logs</span>
-          <h1 className="font-syne text-[clamp(32px,5.5vw,60px)] font-extrabold tracking-[-0.025em] mt-2">
+          <span className="font-dm text-xs font-semibold uppercase tracking-[.12em] text-acc">Work / Build Logs</span>
+          <h1 className="mt-4 max-w-[16ch] font-syne text-[clamp(1.875rem,4.2vw,3rem)] font-bold leading-[1.18] tracking-[-0.01em]">
             Here is what we actually built.
           </h1>
-          <p className="font-dm text-base text-t2 leading-relaxed mt-3 max-w-[620px]">
+          <p className="mt-6 max-w-[38rem] font-dm text-base leading-[1.75] text-t2">
             Real businesses and platforms, the scope delivered for each, and the engineering notes behind the work. No fake revenue claims, no invented testimonials.
           </p>
         </AnimateIn>

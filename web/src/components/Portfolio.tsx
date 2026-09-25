@@ -32,14 +32,14 @@ export function Portfolio({ limit, showHeading = true, grouped = false }: Portfo
   const platformWork = shown.filter((study) => study.portfolioGroup === "product-platform")
 
   return (
-    <PaperBand aria-label="Selected work" className="py-20 md:py-24">
+    <PaperBand aria-label="Selected work">
       <div className="mx-auto max-w-[1240px]">
         {showHeading ? (
-          <AnimateIn className="mb-10 flex items-end justify-between gap-8 md:mb-12">
+          <AnimateIn className="mb-8 flex items-end justify-between gap-8 md:mb-10">
             <div className="max-w-[40rem]">
               <span className="paper-label">Selected work</span>
               <h2 className="paper-display mt-3">Built around the hard part.</h2>
-              <p className="paper-lede mt-4">Real businesses, the scope delivered, and the case study behind each build.</p>
+              <p className="paper-lede mt-5">Real businesses, the scope delivered, and the case study behind each build.</p>
             </div>
             {limit ? (
               <Link
@@ -54,20 +54,20 @@ export function Portfolio({ limit, showHeading = true, grouped = false }: Portfo
         ) : null}
 
         {grouped ? (
-          <div className="grid gap-16 md:gap-20">
+          <div className="grid gap-12 md:gap-14">
             <div>
-              <AnimateIn className="mb-5 border-b border-paper-border pb-3">
+              <AnimateIn className="mb-6 border-b border-paper-border/50 pb-3">
                 <p className="paper-label">01 · Client work</p>
-                <h2 className="mt-2 font-syne text-[clamp(1.375rem,2.4vw,1.75rem)] font-bold tracking-[-0.02em] text-paper-ink">
+                <h2 className="paper-display mt-3 max-w-none text-[clamp(1.25rem,2.2vw,1.625rem)]">
                   Commercial delivery.
                 </h2>
               </AnimateIn>
               <CaseStudyGrid items={clientWork} />
             </div>
             <div>
-              <AnimateIn className="mb-5 border-b border-paper-border pb-3">
+              <AnimateIn className="mb-6 border-b border-paper-border/50 pb-3">
                 <p className="paper-label">02 · Product / platform work</p>
-                <h2 className="mt-2 font-syne text-[clamp(1.375rem,2.4vw,1.75rem)] font-bold tracking-[-0.02em] text-paper-ink">
+                <h2 className="paper-display mt-3 max-w-none text-[clamp(1.25rem,2.2vw,1.625rem)]">
                   Systems built for complexity.
                 </h2>
               </AnimateIn>

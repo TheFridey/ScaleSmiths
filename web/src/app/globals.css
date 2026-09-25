@@ -29,7 +29,7 @@
   }
   .field-control:focus,
   .field-control:focus-visible {
-    border-color: var(--control-border-focus);
+    border-color: var(--control-border-focus) !important;
     box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.22);
   }
 

@@ -82,13 +82,13 @@ export function Hero() {
         </m.div>
 
         <h1 className="mb-7 w-full max-w-full overflow-hidden">
-          <span className="hero-line-overflow block max-w-full">
-            <m.span variants={revealMask} className="hero-h hero-outline font-syne inline-block max-w-full whitespace-nowrap" aria-label={HERO_LINES[0]}>
+          <span className="hero-line-overflow block">
+            <m.span variants={revealMask} className="hero-h hero-outline font-syne inline-block whitespace-nowrap" aria-label={HERO_LINES[0]}>
               {renderHeroLine(HERO_LINES[0])}
             </m.span>
           </span>
-          <span className="hero-line-overflow block max-w-full">
-            <m.span variants={revealMask} className="hero-h text-t1 font-syne inline-block max-w-full whitespace-nowrap" aria-label={HERO_LINES[1]}>
+          <span className="hero-line-overflow block">
+            <m.span variants={revealMask} className="hero-h text-t1 font-syne inline-block whitespace-nowrap" aria-label={HERO_LINES[1]}>
               {renderHeroLine(HERO_LINES[1])}
             </m.span>
           </span>

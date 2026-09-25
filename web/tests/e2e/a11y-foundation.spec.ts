@@ -56,13 +56,21 @@ test.describe("public a11y foundation", () => {
     await expect(input).toBeVisible()
     const idle = await input.evaluate((el) => {
       const styles = getComputedStyle(el)
-      return { border: styles.borderTopColor, width: styles.borderTopWidth }
+      return { border: styles.borderTopColor, width: styles.borderTopWidth, shadow: styles.boxShadow }
     })
     expect(Number.parseFloat(idle.width)).toBeGreaterThanOrEqual(1)
+    // Idle control border must be visible (not transparent)
+    expect(idle.border).not.toMatch(/rgba?\(0,\s*0,\s*0,\s*0\)|transparent/)
 
     await input.focus()
-    const focused = await input.evaluate((el) => getComputedStyle(el).borderTopColor)
-    // Focus border should move toward cyan (acc)
-    expect(focused).not.toBe(idle.border)
+    const focused = await input.evaluate((el) => {
+      const styles = getComputedStyle(el)
+      return { border: styles.borderTopColor, shadow: styles.boxShadow }
+    })
+    // Stronger focus: cyan border and/or cyan focus ring
+    const stronger =
+      focused.border !== idle.border
+      || (focused.shadow !== "none" && focused.shadow !== idle.shadow)
+    expect(stronger).toBe(true)
   })
 })

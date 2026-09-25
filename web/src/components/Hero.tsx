@@ -71,16 +71,16 @@ export function Hero() {
     >
       <div className="hero-scene-fallback absolute inset-0" data-hero-scene="static" aria-hidden="true" />
 
-      {/* Forge plate — lower-weighted so molten rock feeds the ember bed */}
+      {/* Forge atmosphere — molten rock only (logo-free crop of the brand plate) */}
       <div
-        className="pointer-events-none absolute inset-0 opacity-[0.52] md:opacity-[0.58]"
+        className="pointer-events-none absolute inset-0 opacity-[0.58] md:opacity-[0.64]"
         aria-hidden="true"
         style={{
-          backgroundImage: "url(/brand/scalesmiths-forge-plate.webp)",
+          backgroundImage: "url(/brand/scalesmiths-forge-atmosphere.webp)",
           backgroundSize: "cover",
-          backgroundPosition: "center 46%",
-          maskImage: "linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.28) 16%, rgba(0,0,0,0.68) 46%, rgba(0,0,0,0.96) 76%, rgba(0,0,0,0.62) 100%)",
-          WebkitMaskImage: "linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.28) 16%, rgba(0,0,0,0.68) 46%, rgba(0,0,0,0.96) 76%, rgba(0,0,0,0.62) 100%)",
+          backgroundPosition: "center 62%",
+          maskImage: "linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.28) 14%, rgba(0,0,0,0.72) 44%, rgba(0,0,0,0.98) 74%, rgba(0,0,0,0.7) 100%)",
+          WebkitMaskImage: "linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.28) 14%, rgba(0,0,0,0.72) 44%, rgba(0,0,0,0.98) 74%, rgba(0,0,0,0.7) 100%)",
         }}
       />
 

@@ -38,33 +38,69 @@
   }
 
   /*
-   * Paper = ScaleSmiths “blueprint daylight” — cool navy-tinted relief inside
-   * the same world as dark chrome. Soft edge fades + hairlines bridge dark↔paper.
-   * Dark cards keep .surface-chrome so they are not flattened to white-on-grey.
+   * Paper = ScaleSmiths “blueprint daylight”.
+   * Bridge is TOP-LED (enter from dark). Bottom exit is short + quiet so short
+   * bands (insights featured, journey outcomes) are not crushed into a fog strip
+   * by two overlapping 260px fades.
    */
   .surface-paper {
     position: relative;
     isolation: isolate;
-    /* Soft navy wash into paper — no solid colour wall, no milky fog band */
     background:
-      linear-gradient(180deg, rgba(7, 17, 31, 0.42) 0%, rgba(7, 17, 31, 0.14) 40px, transparent 96px),
-      linear-gradient(0deg, rgba(7, 17, 31, 0.42) 0%, rgba(7, 17, 31, 0.14) 40px, transparent 96px),
-      radial-gradient(ellipse at 12% 10%, rgba(12, 107, 130, 0.08), transparent 42%),
-      radial-gradient(ellipse at 88% 90%, rgba(20, 36, 54, 0.1), transparent 48%),
-      linear-gradient(rgba(7, 17, 31, 0.022) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(7, 17, 31, 0.022) 1px, transparent 1px),
+      /* Top bridge: soft navy wash into paper (~180px), never a solid colour wall */
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--bg) 72%, transparent) 0%,
+        color-mix(in srgb, var(--surface-bridge) 48%, transparent) 48px,
+        color-mix(in srgb, var(--bg) 18%, transparent) 110px,
+        transparent 180px
+      ),
+      /* Bottom exit: short (keeps short bands readable) */
+      linear-gradient(
+        0deg,
+        color-mix(in srgb, var(--bg) 55%, transparent) 0%,
+        color-mix(in srgb, var(--surface-bridge) 28%, transparent) 36px,
+        transparent 96px
+      ),
+      radial-gradient(ellipse at 14% 18%, color-mix(in srgb, var(--paper-acc) 7%, transparent), transparent 40%),
+      radial-gradient(ellipse at 88% 82%, color-mix(in srgb, var(--surface-bridge) 14%, transparent), transparent 46%),
+      linear-gradient(rgba(7, 17, 31, 0.009) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(7, 17, 31, 0.009) 1px, transparent 1px),
       var(--paper);
     background-size:
       auto, auto, auto, auto,
-      72px 72px, 72px 72px,
+      96px 96px, 96px 96px,
       auto;
     color: var(--paper-text);
     border-color: transparent;
     box-shadow:
-      inset 0 1px 0 rgba(34, 211, 238, 0.18),
-      inset 0 -1px 0 rgba(34, 211, 238, 0.12);
+      inset 0 1px 0 color-mix(in srgb, var(--paper-acc) 18%, transparent),
+      inset 0 -1px 0 color-mix(in srgb, var(--paper-edge) 22%, transparent);
   }
-  /* Hairline rails that continue the dark cyan language into paper */
+  /* Compact bands (featured insight, short outcomes) — even shorter fades */
+  .surface-paper-compact {
+    background:
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--bg) 58%, transparent) 0%,
+        color-mix(in srgb, var(--surface-bridge) 32%, transparent) 28px,
+        transparent 88px
+      ),
+      linear-gradient(
+        0deg,
+        color-mix(in srgb, var(--bg) 42%, transparent) 0%,
+        transparent 64px
+      ),
+      radial-gradient(ellipse at 14% 18%, color-mix(in srgb, var(--paper-acc) 6%, transparent), transparent 40%),
+      linear-gradient(rgba(7, 17, 31, 0.009) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(7, 17, 31, 0.009) 1px, transparent 1px),
+      var(--paper);
+    background-size:
+      auto, auto, auto,
+      96px 96px, 96px 96px,
+      auto;
+  }
+  /* Quiet hairline rails — paper-acc, not neon --acc */
   .surface-paper::before,
   .surface-paper::after {
     content: "";
@@ -76,11 +112,11 @@
     pointer-events: none;
     background: linear-gradient(
       90deg,
-      transparent 6%,
-      rgba(34, 211, 238, 0.4) 24%,
-      rgba(127, 152, 175, 0.55) 50%,
-      rgba(34, 211, 238, 0.4) 76%,
-      transparent 94%
+      transparent 10%,
+      color-mix(in srgb, var(--paper-acc) 22%, transparent) 30%,
+      color-mix(in srgb, var(--paper-edge) 32%, transparent) 50%,
+      color-mix(in srgb, var(--paper-acc) 22%, transparent) 70%,
+      transparent 90%
     );
   }
   .surface-paper::before { top: 0; }
@@ -95,13 +131,14 @@
   .surface-paper h4,
   .surface-paper .paper-ink {
     color: var(--paper-ink);
-    letter-spacing: -0.022em;
-    line-height: 1.14;
+    letter-spacing: -0.01em;
+    line-height: 1.22;
   }
   .surface-paper h1,
   .surface-paper h2 {
-    font-weight: 700;
+    font-weight: 600;
   }
+  /* Neon cyan never on daylight copy — paper-acc only; chrome overrides below */
   .surface-paper .text-acc {
     color: var(--paper-acc);
   }
@@ -139,6 +176,21 @@
     color: var(--t1);
     border-color: var(--b1);
   }
+  /* Seat chrome in the paper plane — soft rim + plate, less “floating appliance” */
+  .surface-paper .surface-chrome {
+    border-radius: 1rem;
+    border-color: color-mix(in srgb, var(--paper-edge) 55%, var(--b1));
+    background:
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--s2) 88%, var(--paper-soft)) 0%,
+        var(--s1) 32%
+      ),
+      var(--s1);
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--paper-edge) 45%, transparent),
+      0 20px 44px rgba(7, 17, 31, 0.16);
+  }
   .surface-paper .surface-chrome,
   .surface-paper .surface-chrome h1,
   .surface-paper .surface-chrome h2,
@@ -148,6 +200,7 @@
     color: var(--t1);
     letter-spacing: inherit;
     line-height: inherit;
+    font-weight: inherit;
   }
   .surface-paper .surface-chrome .text-t1 { color: var(--t1); }
   .surface-paper .surface-chrome .text-t2 { color: var(--t2); }
@@ -178,22 +231,23 @@
 
   /* Editorial outcome/list rows on paper — hairlines, not white cards. */
   .paper-rule {
-    border-color: color-mix(in srgb, var(--paper-ink) 16%, transparent);
+    border-color: color-mix(in srgb, var(--paper-ink) 14%, transparent);
   }
   .paper-label {
     font-family: var(--font-dm);
     font-size: 0.75rem;
     font-weight: 600;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.11em;
     text-transform: uppercase;
     color: var(--paper-acc);
   }
   .paper-display {
     font-family: var(--font-syne);
-    font-weight: 700;
-    font-size: clamp(1.5rem, 3.2vw, 2.375rem);
-    letter-spacing: -0.018em;
-    line-height: 1.18;
+    font-weight: 600;
+    font-size: clamp(1.375rem, 2.6vw, 2rem);
+    letter-spacing: -0.01em;
+    line-height: 1.22;
+    max-width: 18ch;
     color: var(--paper-ink);
   }
   .paper-lede {
@@ -202,6 +256,37 @@
     line-height: 1.65;
     max-width: 40rem;
     color: var(--paper-text);
+  }
+
+  @media (max-width: 767px) {
+    .surface-paper {
+      background:
+        linear-gradient(
+          180deg,
+          color-mix(in srgb, var(--bg) 68%, transparent) 0%,
+          color-mix(in srgb, var(--surface-bridge) 40%, transparent) 36px,
+          transparent 140px
+        ),
+        linear-gradient(
+          0deg,
+          color-mix(in srgb, var(--bg) 48%, transparent) 0%,
+          transparent 72px
+        ),
+        radial-gradient(ellipse at 14% 18%, color-mix(in srgb, var(--paper-acc) 6%, transparent), transparent 40%),
+        linear-gradient(rgba(7, 17, 31, 0.009) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(7, 17, 31, 0.009) 1px, transparent 1px),
+        var(--paper);
+      background-size:
+        auto, auto, auto,
+        96px 96px, 96px 96px,
+        auto;
+    }
+    .surface-paper .surface-chrome {
+      border-radius: 0.875rem;
+      box-shadow:
+        0 0 0 1px color-mix(in srgb, var(--paper-edge) 50%, transparent),
+        0 16px 36px rgba(7, 17, 31, 0.18);
+    }
   }
 }
 
@@ -227,16 +312,16 @@
   --amb:    #fde68a;
   --red:    #ef4444;
 
-  /* Paper relief (~30%) — cool navy-tinted blueprint daylight, not cream/white */
-  --paper:         #d4e0eb;
-  --paper-soft:    #c5d4e2;
-  --paper-raised:  #e2ebf3;
-  --paper-ink:     #07111f;
-  --paper-text:    #1a2d40;
-  --paper-muted:   #3d556b;
-  --paper-border:  #9bb0c4;
-  --paper-edge:    #7f98af;
-  --paper-acc:     #0c6b82;
+  /* Paper relief (~30%) — deeper navy daylight, quieter accent than neon cyan */
+  --paper:         #c2d0de;
+  --paper-soft:    #b3c3d4;
+  --paper-raised:  #d4e0eb;
+  --paper-ink:     #0e1a28;
+  --paper-text:    #1c3144;
+  --paper-muted:   #3a5368;
+  --paper-border:  #8aa0b5;
+  --paper-edge:    #6a849c;
+  --paper-acc:     #0a5a6e;
   --surface-bridge:#142436;
 
   /* Functional control boundaries (stronger than decorative b1) */
@@ -422,7 +507,7 @@ body {
 .surface-paper .btn-primary {
   background: var(--paper-acc);
   color: #f8fbff;
-  box-shadow: 0 12px 28px rgba(12, 107, 130, 0.22);
+  box-shadow: 0 12px 28px rgba(10, 90, 110, 0.22);
 }
 .surface-paper .btn-ghost {
   background: rgba(7, 17, 31, 0.04);

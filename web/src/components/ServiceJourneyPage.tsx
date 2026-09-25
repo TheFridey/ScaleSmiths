@@ -64,14 +64,14 @@ export function ServiceJourneyPage({ journey }: { journey: ServiceJourney }) {
           </div>
         </section>
 
-        <PaperBand aria-labelledby={`${journey.slug}-outcomes`}>
+        <PaperBand aria-labelledby={`${journey.slug}-outcomes`} compact>
           <div className="mx-auto max-w-[1240px]">
             <h2 id={`${journey.slug}-outcomes`} className="paper-display max-w-2xl">{journey.outcomesTitle}</h2>
-            <div className="mt-10 grid gap-0 border-t border-paper-border md:grid-cols-2 md:gap-x-10">
+            <div className="mt-10 grid gap-0 border-t border-paper-border/50 md:grid-cols-2 md:gap-x-10">
               {journey.outcomes.map((outcome, index) => (
-                <article key={outcome.title} className="border-b border-paper-border py-6">
-                  <div className="font-syne text-xs font-bold tracking-[0.08em] text-paper-acc">0{index + 1}</div>
-                  <h3 className="mt-2 font-syne text-lg font-bold tracking-[-0.015em] text-paper-ink md:text-xl">{outcome.title}</h3>
+                <article key={outcome.title} className="border-b border-paper-border/50 py-6">
+                  <div className="paper-label">0{index + 1}</div>
+                  <h3 className="mt-2 font-syne text-lg font-semibold tracking-[-0.01em] text-paper-ink md:text-xl">{outcome.title}</h3>
                   <p className="mt-2 max-w-[36rem] font-dm text-sm leading-[1.65] text-paper-text">{outcome.description}</p>
                 </article>
               ))}

@@ -32,7 +32,7 @@ export default function InsightsPage() {
     <main>
       <header className="px-6 pb-16 pt-10 md:px-12 md:pb-24 md:pt-14"><div className="mx-auto max-w-[1240px]"><Breadcrumbs items={[{ name: "Home", href: "/" }, { name: "Insights" }]} /><div className="mt-10 max-w-[860px]"><p className="text-xs font-semibold uppercase tracking-[.14em] text-acc">Insights</p><h1 className="mt-3 font-syne text-[clamp(40px,7vw,78px)] font-black leading-[1.02] tracking-[-.04em]">Useful answers from the people doing the work.</h1><p className="mt-6 max-w-[760px] text-lg leading-relaxed text-t2">Websites, search, development and infrastructure explained without inflated promises. Each article connects the decision to relevant services, delivery evidence and the next useful question.</p><Link href="/feed.xml" className="mt-6 inline-flex text-sm font-semibold text-acc hover:underline">Subscribe via RSS</Link></div></div></header>
 
-      <PaperBand aria-labelledby="featured-insight">
+      <PaperBand aria-labelledby="featured-insight" compact>
         <div className="mx-auto grid max-w-[1240px] gap-10 lg:grid-cols-[1.05fr_.95fr] lg:items-center">
           <div>
             <p className="paper-label">Featured insight</p>

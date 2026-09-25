@@ -68,7 +68,7 @@ export function Hero({ verifiedStats = [] }: { verifiedStats?: string[] }) {
       <m.div
         className="relative z-10 flex w-full flex-col items-center"
         variants={staggerContainer}
-        initial={reducedMotion ? false : "hidden"}
+        initial={false}
         animate="visible"
         transition={{ delayChildren: 0.02, staggerChildren: motionStagger.tight }}
       >

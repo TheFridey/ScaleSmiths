@@ -19,6 +19,7 @@ import {
 import { canonicalJson } from "@/lib/venture-lab/canonical"
 import { hashApprovalPayload } from "@/lib/venture-lab/approval"
 import { assertMinorUnits, EXPERIMENT_ZERO_CAPITAL } from "@/lib/venture-lab/money"
+import { CARE_FLOOR_MINOR } from "@/lib/venture-lab/validation"
 import type { ApprovalPayload } from "@/lib/venture-lab/types"
 
 export class VentureLabPersistenceError extends Error {
@@ -550,6 +551,30 @@ export async function resumeVentureLab(input: {
       })
     }
     return state ?? null
+  }, { isolationLevel: "serializable" })
+}
+
+export async function confirmVentureCareFloor(input: { actorUserId: string; reason: string }) {
+  const actorUserId = requiredText(input.actorUserId, "actorUserId")
+  const reason = requiredText(input.reason, "reason")
+  return db.transaction(async (tx) => {
+    const [current] = await tx.select().from(ventureRuntimeState).where(eq(ventureRuntimeState.id, 1)).limit(1)
+    if (current?.careFloorConfirmedMinor === CARE_FLOOR_MINOR) return current
+    const [state] = await tx.update(ventureRuntimeState).set({
+      careFloorConfirmedMinor: CARE_FLOOR_MINOR,
+      careFloorConfirmedAt: sql`CURRENT_TIMESTAMP`,
+      careFloorConfirmedBy: actorUserId,
+      updatedAt: sql`CURRENT_TIMESTAMP`,
+    }).where(and(eq(ventureRuntimeState.id, 1), sql`${ventureRuntimeState.careFloorConfirmedMinor} is null`)).returning()
+    if (!state) throw new VentureLabPersistenceError("The care floor could not be confirmed.", "care_floor_unconfirmed")
+    await tx.insert(ventureAuditEvents).values({
+      actorType: "human",
+      actorKey: actorUserId,
+      action: "care_floor_confirmed",
+      reason,
+      metadataJson: { careFloorConfirmedMinor: CARE_FLOOR_MINOR },
+    })
+    return state
   }, { isolationLevel: "serializable" })
 }
 

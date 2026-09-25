@@ -104,6 +104,8 @@ The endpoint is not an Admin API proxy. A caller cannot supply a route, URL, cap
 | `venture_evidence_submit` | `venture.evidence.submit` | proposal/data | Persist bounded evidence as untrusted data |
 | `venture_proposals_list` | `venture.proposals.list` | read | List proposals |
 | `venture_experiment_propose` | `venture.experiment.propose` | proposal | Create a simulated experiment proposal for human review, with an optional requested-capital value capped at 2500 minor units (£25) |
+| `venture_validation_submit` | `venture.validation.submit` | proposal/data | Persist a coded customer-validation outcome for an already-qualified prospect. `qualificationEvidenceId` is source provenance for the named supplier. The caller supplies the structured `qualificationReason`. The tool does not infer contract clauses from free text, and `Unknown` is not an identifiable supplier. It is not public evidence, capital approval, or launch authority |
+| `venture_validation_list` | `venture.validation.list` | read | List coded validation outcomes and their append-only revision chain |
 
 The Grok-facing public identifiers use only letters, digits and underscores because Grok Build rejects dotted MCP tool names. The server immediately resolves public aliases back to canonical dotted actions before validation, authorization and audit. Canonical actions remain the policy source of truth.
 

@@ -2125,6 +2125,189 @@ describe("real PostgreSQL integration", () => {
     }
   });
 
+  it("stores coded validation outcomes without treating them as evidence or authority", async () => {
+    const service = await import("../../src/lib/server/venture-lab-persistence");
+    const mcp = await import("../../src/lib/server/venture-lab-mcp");
+    const controller = (await pool.query(
+      "INSERT INTO admin_users(email,display_name,password_hash,role) VALUES('venture-validation@example.test','Validation Controller','hash','venture_controller') RETURNING id",
+    )).rows[0].id as string;
+    await service.initializeExperimentZero({ serviceAccountId: "venture-director", serviceAccountName: "Venture Director" });
+    const previousToken = process.env.VENTURE_DIRECTOR_MCP_TOKEN;
+    process.env.VENTURE_DIRECTOR_MCP_TOKEN = "experiment-zero-mcp-token-00000000000000000000";
+    const submit = (args: Record<string, unknown>) => mcp.executeVentureMcpTool({
+      serviceId: "venture-director",
+      tool: "venture.validation.submit",
+      arguments: args,
+    });
+    try {
+      const proposed = await mcp.executeVentureMcpTool({
+        serviceId: "venture-director",
+        tool: "venture.opportunities.propose",
+        arguments: { title: "Recovery", problem: "Restrictive rental website." },
+      }) as { opportunity: { id: string }; proposal: { status: string } };
+      const other = await mcp.executeVentureMcpTool({
+        serviceId: "venture-director",
+        tool: "venture.opportunities.propose",
+        arguments: { title: "Other", problem: "A second opportunity." },
+      }) as { opportunity: { id: string } };
+      expect(proposed.proposal.status).toBe("PENDING");
+      const evidence = await mcp.executeVentureMcpTool({
+        serviceId: "venture-director",
+        tool: "venture.evidence.submit",
+        arguments: {
+          opportunityId: proposed.opportunity.id,
+          sourceUrl: "https://example.co.uk/terms",
+          sourceTitle: "Webtik terms",
+          evidenceType: "contract-terms",
+          claim: "Webtik removes the site on cancellation.",
+          summary: "Public terms for Webtik.",
+          excerpt: "The site is deleted.",
+          observedAt: "2026-09-24T12:00:00.000Z",
+        },
+      }) as { id: string };
+      const smoke = await mcp.executeVentureMcpTool({
+        serviceId: "venture-director",
+        tool: "venture.evidence.submit",
+        arguments: {
+          opportunityId: proposed.opportunity.id,
+          sourceUrl: "https://example.co.uk/smoke",
+          sourceTitle: "Smoke",
+          evidenceType: "connection-smoke",
+          claim: "Synthetic.",
+          summary: "Not market evidence.",
+          excerpt: "Smoke.",
+          observedAt: "2026-09-24T12:00:00.000Z",
+        },
+      }) as { id: string };
+      const otherEvidence = await mcp.executeVentureMcpTool({
+        serviceId: "venture-director",
+        tool: "venture.evidence.submit",
+        arguments: {
+          opportunityId: other.opportunity.id,
+          sourceUrl: "https://example.co.uk/other",
+          sourceTitle: "Webtik other",
+          evidenceType: "contract-terms",
+          claim: "Webtik other opportunity.",
+          summary: "Wrong opportunity.",
+          excerpt: "Other.",
+          observedAt: "2026-09-24T12:00:00.000Z",
+        },
+      }) as { id: string };
+      const args = {
+        opportunityId: proposed.opportunity.id,
+        prospectCode: "P01",
+        businessUrl: "https://plumber.example.co.uk/home?ref=1#top",
+        qualificationEvidenceId: evidence.id,
+        supplier: "Webtik",
+        qualificationReason: "site_removed",
+        path: "rebuild",
+        ownershipAwareness: "unknown",
+        cancellationBelief: "unknown",
+        controlMatters: "yes",
+        spendBand: "50_to_99_pcm",
+        satisfaction: "mixed",
+        timing: "unknown",
+        alternativeConsidered: "yes",
+        pricedProjectAcceptance: "declined",
+        careAcceptance: "not_offered",
+        strongCommitment: "none",
+      };
+      const first = await submit(args) as { id: string; outcomeStatus: string; payloadHash: string; businessUrl: string };
+      expect(first.outcomeStatus).toBe("no_priced_step");
+      expect(first.businessUrl).toBe("https://plumber.example.co.uk/home");
+      expect(first.payloadHash).toMatch(/^[0-9a-f]{64}$/);
+      expect((await pool.query(
+        "SELECT actor_type,actor_key,action FROM venture_audit_events WHERE action='mcp:venture.validation.submit' ORDER BY id DESC LIMIT 1",
+      )).rows[0]).toEqual({ actor_type: "service", actor_key: "venture-director", action: "mcp:venture.validation.submit" });
+      await expect(submit({ ...args, payloadHash: "a".repeat(64), notes: "Jane Smith 07700900000" })).rejects.toMatchObject({ code: "invalid_arguments" });
+      await expect(submit(args)).rejects.toMatchObject({ code: "validation_duplicate" });
+      await expect(submit({ ...args, qualificationEvidenceId: smoke.id })).rejects.toMatchObject({ code: "smoke_evidence_rejected" });
+      await expect(submit({ ...args, prospectCode: "P02", qualificationEvidenceId: otherEvidence.id })).rejects.toMatchObject({ code: "evidence_not_qualifying" });
+      await expect(submit({ ...args, path: "unknown", pricedProjectAcceptance: "accepted" })).rejects.toMatchObject({ code: "invalid_arguments" });
+      await expect(submit({ ...args, qualificationReason: "not-a-reason" })).rejects.toMatchObject({ code: "invalid_arguments" });
+      await expect(submit({ ...args, prospectCode: "P02", pricedProjectAcceptance: "accepted", careAcceptance: "accepted" })).rejects.toMatchObject({ code: "care_floor_unconfirmed" });
+
+      const corrected = await submit({
+        ...args,
+        pricedProjectAcceptance: "accepted",
+        supersedesOutcomeId: first.id,
+      }) as { id: string; outcomeStatus: string };
+      expect(corrected.outcomeStatus).toBe("priced_next_step");
+      await expect(submit({ ...args, supersedesOutcomeId: first.id })).rejects.toMatchObject({ code: "validation_supersede_invalid" });
+      await expect(submit({ ...args, prospectCode: "P02", supersedesOutcomeId: corrected.id })).rejects.toMatchObject({ code: "validation_supersede_invalid" });
+      const secondOpportunityArgs = { ...args, opportunityId: other.opportunity.id, qualificationEvidenceId: otherEvidence.id, prospectCode: "P03", supersedesOutcomeId: corrected.id };
+      await expect(submit(secondOpportunityArgs)).rejects.toMatchObject({ code: "validation_supersede_invalid" });
+
+      await service.confirmVentureCareFloor({ actorUserId: controller, reason: "Confirm the current £450 care floor for validation." });
+      const cared = await submit({
+        ...args,
+        pricedProjectAcceptance: "accepted",
+        careAcceptance: "accepted",
+        strongCommitment: "written_commitment",
+        supersedesOutcomeId: corrected.id,
+      }) as { id: string; outcomeStatus: string };
+      expect(cared.outcomeStatus).toBe("care_accepted");
+      await expect(submit({ ...args, prospectCode: "P07", pricedProjectAcceptance: "declined", careAcceptance: "accepted" })).rejects.toMatchObject({ code: "invalid_arguments" });
+      await expect(submit({ ...args, prospectCode: "P08", pricedProjectAcceptance: "declined", strongCommitment: "deposit_ready" })).rejects.toMatchObject({ code: "invalid_arguments" });
+      await expect(submit({ ...args, prospectCode: "P09", supplier: "Unknown" })).rejects.toMatchObject({ code: "invalid_arguments" });
+
+      const concurrentArgs = { ...args, prospectCode: "P06" };
+      const concurrent = await Promise.allSettled([submit(concurrentArgs), submit(concurrentArgs)]);
+      expect(concurrent.filter((result) => result.status === "fulfilled")).toHaveLength(1);
+      const duplicate = concurrent.find((result) => result.status === "rejected") as PromiseRejectedResult;
+      expect(duplicate.reason).toMatchObject({ code: "validation_duplicate" });
+      expect((await pool.query(
+        "SELECT count(*)::int AS count FROM venture_validation_outcomes WHERE prospect_code = 'P06' AND supersedes_outcome_id IS NULL",
+      )).rows[0].count).toBe(1);
+
+      const correctionArgs = {
+        ...args,
+        pricedProjectAcceptance: "accepted",
+        careAcceptance: "declined",
+        strongCommitment: "none",
+        supersedesOutcomeId: cared.id,
+      };
+      const concurrentCorrections = await Promise.allSettled([submit(correctionArgs), submit(correctionArgs)]);
+      expect(concurrentCorrections.filter((result) => result.status === "fulfilled")).toHaveLength(1);
+      const superseded = concurrentCorrections.find((result) => result.status === "rejected") as PromiseRejectedResult;
+      expect(superseded.reason).toMatchObject({ code: "validation_supersede_invalid" });
+
+      const beforeList = (await pool.query("SELECT count(*)::int AS count FROM venture_validation_outcomes")).rows[0].count;
+      await expect(mcp.executeVentureMcpTool({
+        serviceId: "venture-director",
+        tool: "venture.validation.list",
+        arguments: { notes: "must not be accepted" },
+      })).rejects.toMatchObject({ code: "invalid_arguments" });
+      const listed = await mcp.executeVentureMcpTool({
+        serviceId: "venture-director",
+        tool: "venture.validation.list",
+        arguments: {},
+      }) as { effective: Array<{ prospectCode: string }>; revisions: Array<{ superseded: boolean }> };
+      expect(listed.effective.map((row) => row.prospectCode).sort()).toEqual(["P01", "P06"]);
+      expect(listed.revisions.filter((row) => row.superseded)).toHaveLength(3);
+      expect((await pool.query("SELECT count(*)::int AS count FROM venture_validation_outcomes")).rows[0].count).toBe(beforeList);
+      expect((await pool.query(
+        "SELECT actor_type,actor_key,action FROM venture_audit_events WHERE action='mcp:venture.validation.list' ORDER BY id DESC LIMIT 1",
+      )).rows[0]).toEqual({ actor_type: "service", actor_key: "venture-director", action: "mcp:venture.validation.list" });
+      expect((await pool.query("SELECT column_name FROM information_schema.columns WHERE table_name='venture_validation_outcomes' AND column_name='notes'")).rowCount).toBe(0);
+      const proposalCount = (await pool.query("SELECT count(*)::int count FROM venture_proposals WHERE kind='EXPERIMENT'")).rows[0].count;
+      expect(proposalCount).toBe(0);
+
+      await service.activateVentureEmergencyStop({ actorUserId: controller, reason: "Stop validation submit" });
+      await expect(submit({ ...args, prospectCode: "P04" })).rejects.toMatchObject({ code: "venture_paused" });
+      await service.resumeVentureLab({ actorUserId: controller, reason: "Resume for revocation" });
+      await service.revokeVentureServiceAccount({
+        serviceAccountId: "venture-director",
+        actorUserId: controller,
+        reason: "Revoke validation submit",
+      });
+      await expect(submit({ ...args, prospectCode: "P05" })).rejects.toMatchObject({ code: "service_revoked" });
+    } finally {
+      if (previousToken === undefined) delete process.env.VENTURE_DIRECTOR_MCP_TOKEN;
+      else process.env.VENTURE_DIRECTOR_MCP_TOKEN = previousToken;
+    }
+  });
+
 });
 async function createProject() {
   return (

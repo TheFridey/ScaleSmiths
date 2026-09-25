@@ -1867,6 +1867,9 @@ export const ventureRuntimeState = pgTable("venture_runtime_state", {
   pausedAt: timestamp("paused_at", { withTimezone: true }),
   pausedBy: uuid("paused_by").references(() => adminUsers.id, { onDelete: "restrict" }),
   pauseReason: text("pause_reason"),
+  careFloorConfirmedMinor: integer("care_floor_confirmed_minor"),
+  careFloorConfirmedAt: timestamp("care_floor_confirmed_at", { withTimezone: true }),
+  careFloorConfirmedBy: uuid("care_floor_confirmed_by").references(() => adminUsers.id, { onDelete: "restrict" }),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
   check("venture_runtime_state_singleton_check", sql`${table.id} = 1`),
@@ -1874,6 +1877,11 @@ export const ventureRuntimeState = pgTable("venture_runtime_state", {
     (${table.paused} = false and ${table.pausedAt} is null and ${table.pausedBy} is null and ${table.pauseReason} is null)
     or
     (${table.paused} = true and ${table.pausedAt} is not null and ${table.pausedBy} is not null and length(trim(${table.pauseReason})) > 0)
+  `),
+  check("venture_runtime_state_care_floor_check", sql`
+    (${table.careFloorConfirmedMinor} is null and ${table.careFloorConfirmedAt} is null and ${table.careFloorConfirmedBy} is null)
+    or
+    (${table.careFloorConfirmedMinor} = 45000 and ${table.careFloorConfirmedAt} is not null and ${table.careFloorConfirmedBy} is not null)
   `),
 ])
 
@@ -1942,6 +1950,61 @@ export const ventureEvidence = pgTable("venture_evidence", {
   index("venture_evidence_opportunity_created_idx").on(table.opportunityId, table.createdAt),
   check("venture_evidence_excerpt_check", sql`char_length(${table.excerpt}) <= 1000`),
   check("venture_evidence_hash_check", sql`${table.contentHash} ~ '^[0-9a-f]{64}$'`),
+])
+
+export const ventureValidationOutcomes = pgTable("venture_validation_outcomes", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  experimentId: integer("experiment_id").references(() => ventureExperiments.id, { onDelete: "restrict" }).notNull(),
+  opportunityId: uuid("opportunity_id").references(() => ventureOpportunities.id, { onDelete: "restrict" }).notNull(),
+  prospectCode: text("prospect_code").notNull(),
+  businessUrl: text("business_url").notNull(),
+  qualificationEvidenceId: uuid("qualification_evidence_id").references(() => ventureEvidence.id, { onDelete: "restrict" }).notNull(),
+  supplier: text("supplier").notNull(),
+  qualificationReason: text("qualification_reason").notNull(),
+  path: text("path").notNull(),
+  ownershipAwareness: text("ownership_awareness").notNull(),
+  cancellationBelief: text("cancellation_belief").notNull(),
+  controlMatters: text("control_matters").notNull(),
+  spendBand: text("spend_band").notNull(),
+  satisfaction: text("satisfaction").notNull(),
+  timing: text("timing").notNull(),
+  alternativeConsidered: text("alternative_considered").notNull(),
+  pricedProjectAcceptance: text("priced_project_acceptance").notNull(),
+  careAcceptance: text("care_acceptance").notNull(),
+  strongCommitment: text("strong_commitment").notNull(),
+  outcomeStatus: text("outcome_status").notNull(),
+  supersedesOutcomeId: uuid("supersedes_outcome_id"),
+  payloadHash: text("payload_hash").notNull(),
+  capturedByService: text("captured_by_service").references(() => ventureServiceAccounts.id, { onDelete: "restrict" }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("venture_validation_outcomes_prospect_idx").on(table.opportunityId, table.prospectCode, table.createdAt),
+  uniqueIndex("venture_validation_outcomes_supersedes_idx").on(table.supersedesOutcomeId),
+  uniqueIndex("venture_validation_outcomes_root_idx").on(table.opportunityId, table.prospectCode).where(sql`${table.supersedesOutcomeId} is null`),
+  foreignKey({
+    columns: [table.supersedesOutcomeId],
+    foreignColumns: [table.id],
+    name: "venture_validation_outcomes_supersedes_fk",
+  }).onDelete("restrict"),
+  check("venture_validation_outcomes_prospect_check", sql`${table.prospectCode} ~ '^P(0[1-9]|1[0-9]|20)$'`),
+  check("venture_validation_outcomes_supplier_check", sql`char_length(trim(${table.supplier})) between 1 and 120`),
+  check("venture_validation_outcomes_reason_check", sql`${table.qualificationReason} in ('site_removed','files_not_handed_over','ownership_retained','meaningful_buyout','provider_controls_domain','asset_cannot_move')`),
+  check("venture_validation_outcomes_path_check", sql`${table.path} in ('migration','rebuild','unknown')`),
+  check("venture_validation_outcomes_awareness_check", sql`${table.ownershipAwareness} in ('knows','believes_other','unknown')`),
+  check("venture_validation_outcomes_belief_check", sql`${table.cancellationBelief} in ('site_removed','files_withheld','domain_lost','believes_they_own','unknown','other')`),
+  check("venture_validation_outcomes_control_check", sql`${table.controlMatters} in ('yes','no','unknown')`),
+  check("venture_validation_outcomes_spend_check", sql`${table.spendBand} in ('under_50_pcm','50_to_99_pcm','100_to_249_pcm','250_pcm_or_more','unknown')`),
+  check("venture_validation_outcomes_satisfaction_check", sql`${table.satisfaction} in ('satisfied','mixed','dissatisfied','unknown')`),
+  check("venture_validation_outcomes_timing_check", sql`${table.timing} in ('in_minimum_term','renewal_within_90_days','rolling_or_no_known_date','not_planning_to_move','unknown')`),
+  check("venture_validation_outcomes_alternative_check", sql`${table.alternativeConsidered} in ('yes','no','unknown')`),
+  check("venture_validation_outcomes_project_check", sql`${table.pricedProjectAcceptance} in ('accepted','declined','deferred','not_offered')`),
+  check("venture_validation_outcomes_care_check", sql`${table.careAcceptance} in ('accepted','declined','deferred','not_offered')`),
+  check("venture_validation_outcomes_commitment_check", sql`${table.strongCommitment} in ('deposit_ready','written_commitment','none')`),
+  check("venture_validation_outcomes_status_check", sql`${table.outcomeStatus} in ('care_accepted','priced_next_step','no_priced_step','incomplete')`),
+  check("venture_validation_outcomes_path_price_check", sql`${table.pricedProjectAcceptance} <> 'accepted' or ${table.path} <> 'unknown'`),
+  check("venture_validation_outcomes_care_requires_project_check", sql`${table.careAcceptance} <> 'accepted' or ${table.pricedProjectAcceptance} = 'accepted'`),
+  check("venture_validation_outcomes_commitment_requires_project_check", sql`${table.strongCommitment} = 'none' or ${table.pricedProjectAcceptance} = 'accepted'`),
+  check("venture_validation_outcomes_hash_check", sql`${table.payloadHash} ~ '^[0-9a-f]{64}$'`),
 ])
 
 export const ventureProposals = pgTable("venture_proposals", {

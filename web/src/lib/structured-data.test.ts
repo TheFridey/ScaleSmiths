@@ -10,6 +10,7 @@ import {
   buildPersonSchema,
   buildWebsiteSchema,
 } from "./structured-data"
+import { teamImages } from "./team-images"
 
 const base = "https://scalesmiths.co.uk"
 const orgRef = { "@id": `${base}/#org` }
@@ -58,8 +59,12 @@ describe("founder entities", () => {
       expect(person.worksFor).toEqual(orgRef)
       expect(person["@id"]).toBe(`${base}/about/${founder.slug}#person`)
       expect(person).not.toHaveProperty("sameAs")
-      // No image until a real photograph is supplied.
-      expect(person).not.toHaveProperty("image")
+      const photo = teamImages[founder.photo]
+      if (photo.available) {
+        expect(person.image).toBe(`${base}${photo.src}`)
+      } else {
+        expect(person).not.toHaveProperty("image")
+      }
     }
   })
 

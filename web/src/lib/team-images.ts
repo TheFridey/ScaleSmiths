@@ -18,12 +18,11 @@ export interface TeamImage {
 }
 
 export const teamImages = {
-  // TODO(owner): supply /images/team/rhys.webp and replace the alt text with a description of the real photo.
   rhys: {
     src: "/images/team/rhys.webp",
-    alt: "Rhys, co-founder of ScaleSmiths",
+    alt: "Rhys, co-founder and technical lead of ScaleSmiths, in a ScaleSmiths polo",
     aspect: "4 / 5",
-    available: false,
+    available: true,
   },
   // TODO(owner): supply /images/team/trevor.webp and replace the alt text with a description of the real photo.
   trevor: {

@@ -78,7 +78,7 @@ export default async function FounderProfilePage({ params }: Props) {
 
             <AnimateIn delay={0.06}>
               <span className={eyebrow}>{founder.authorTitle}, ScaleSmiths</span>
-              <h1 className="mt-3 font-syne text-[clamp(40px,7vw,84px)] font-black leading-[1] tracking-[-.045em]">{founder.name}</h1>
+              <h1 className="mt-3 font-syne text-[clamp(2.5rem,6vw,4.5rem)] font-bold leading-[1.08] tracking-[-0.015em]">{founder.name}</h1>
               <p className="mt-4 font-dm text-lg font-semibold text-t1">{founder.role.text}</p>
               <p className="mt-2 flex items-center gap-2 font-dm text-sm text-t3">
                 <MapPin size={14} className="text-acc" aria-hidden="true" /> {BUSINESS_LOCATION.locality}, {BUSINESS_LOCATION.region}

@@ -55,11 +55,24 @@ test.describe("about and founders page", () => {
     await expect(page.locator("#trevor-newton-bradley")).toContainText(/commercial growth/i)
   })
 
-  test("never shows stock or placeholder photographs before real founder photos are supplied", async ({ page }) => {
+  test("publishes Rhys's real portrait and keeps Trevor as a monogram until his photo is supplied", async ({ page }) => {
     await gotoReady(page, "/about")
 
-    await expect(page.locator("#rhys img")).toHaveCount(0)
+    const rhysPhoto = page.locator("#rhys img")
+    await expect(rhysPhoto).toHaveCount(1)
+    await expect(rhysPhoto).toHaveAttribute("alt", /Rhys.*ScaleSmiths/i)
+    await expect(rhysPhoto).toHaveAttribute("src", /\/images\/team\/rhys/)
+
     await expect(page.locator("#trevor-newton-bradley img")).toHaveCount(0)
+  })
+
+  test("shows Rhys's portrait on his founder profile", async ({ page }) => {
+    await gotoReady(page, "/about/rhys")
+
+    const portrait = page.locator("main img").first()
+    await expect(portrait).toBeVisible()
+    await expect(portrait).toHaveAttribute("alt", /Rhys.*ScaleSmiths/i)
+    await expect(portrait).toHaveAttribute("src", /\/images\/team\/rhys/)
   })
 
   test("publishes canonical metadata and consistent founder structured data", async ({ page }) => {

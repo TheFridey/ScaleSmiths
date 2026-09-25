@@ -21,7 +21,7 @@ export function ProjectCard({ study, size = "standard", headingLevel: Heading = 
   const services = study.services.slice(0, size === "compact" ? 3 : 4)
 
   return (
-    <article className={cn("group flex h-full flex-col overflow-hidden rounded-[1.25rem] border border-b1 bg-s1 transition-colors duration-300 hover:border-b2 focus-within:border-acc/50", size === "feature" && "lg:grid lg:grid-cols-[1.45fr_.55fr]")}>
+    <article className={cn("surface-chrome group flex h-full flex-col overflow-hidden rounded-[1.25rem] border border-b1 transition-colors duration-300 hover:border-b2 focus-within:border-acc/50", size === "feature" && "lg:grid lg:grid-cols-[1.45fr_.55fr]")}>
       {image ? (
         // Duplicate of the case-study button for pointer users; hidden from assistive tech and tab order.
         <Link href={href} prefetch={false} tabIndex={-1} aria-hidden="true" className="block border-b border-b1 bg-bg/40 p-3 sm:p-4 lg:border-b-0">

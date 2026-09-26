@@ -39,7 +39,7 @@ test.describe("security & trust page", () => {
       await expect(page.getByRole("heading", { level: 1 })).toContainText(/security designed into the architecture/i)
       await expect(page.getByRole("link", { name: /discuss security requirements/i }).first()).toHaveAttribute("href", "/security#security-contact")
       await expect(page.locator("#security-contact")).toBeVisible()
-      await expect(page.getByRole("link", { name: /start an enterprise enquiry/i })).toHaveAttribute("href", "/quote?intent=enterprise")
+      await expect(page.getByRole("link", { name: /start an enterprise enquiry/i })).toHaveAttribute("href", "/enterprise/contact")
 
       for (const heading of SECTION_HEADINGS) {
         await expect(page.getByRole("heading", { name: heading })).toBeVisible()

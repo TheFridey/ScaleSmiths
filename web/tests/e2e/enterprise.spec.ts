@@ -39,7 +39,7 @@ test.describe("enterprise landing page", () => {
       await expect(page.getByRole("link", { name: /discuss an enterprise system/i }).first()).toHaveAttribute("href", "/enterprise#discuss")
       await expect(page.getByRole("link", { name: /view technical work/i }).first()).toHaveAttribute("href", "/work")
       await expect(page.locator("#discuss")).toBeVisible()
-      await expect(page.getByRole("link", { name: /start an enterprise enquiry/i })).toHaveAttribute("href", "/quote?intent=enterprise")
+      await expect(page.getByRole("link", { name: /start an enterprise enquiry/i })).toHaveAttribute("href", "/enterprise/contact")
 
       for (const heading of SECTION_HEADINGS) {
         await expect(page.getByRole("heading", { name: heading })).toBeVisible()

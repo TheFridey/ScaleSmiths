@@ -24,6 +24,7 @@ export function enquiryIntentLabel(intent: EnquiryIntent) {
 }
 
 export function enquiryIntentHref(intent: EnquiryIntent) {
+  if (intent === "enterprise") return "/enterprise/contact"
   return `/quote?intent=${encodeURIComponent(intent)}`
 }
 

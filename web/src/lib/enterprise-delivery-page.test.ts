@@ -17,7 +17,7 @@ describe("enterprise delivery page content", () => {
     expect(enterpriseDeliveryCopy.lede).toMatch(/does not start coding from a vague brief/i)
     expect(enterpriseDeliveryCopy.primaryCta.label).toBe("Start with Discovery")
     expect(enterpriseDeliveryCopy.secondaryCta.label).toBe("Discuss Your Existing Systems")
-    expect(enterpriseDeliveryCopy.enquiryCta.href).toBe("/quote?intent=enterprise")
+    expect(enterpriseDeliveryCopy.enquiryCta.href).toBe("/enterprise/contact")
   })
 
   it("covers the staged methodology and fourteen phases", () => {

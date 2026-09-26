@@ -37,7 +37,7 @@ test.describe("enterprise delivery page", () => {
       await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1)
       await expect(page.getByRole("heading", { level: 1 })).toContainText(/founder-led engineering with structured enterprise delivery/i)
       await expect(page.getByRole("link", { name: /start with discovery/i }).first()).toHaveAttribute("href", "/enterprise/delivery#start-discovery")
-      await expect(page.getByRole("link", { name: /discuss your existing systems/i }).first()).toHaveAttribute("href", "/quote?intent=enterprise")
+      await expect(page.getByRole("link", { name: /discuss your existing systems/i }).first()).toHaveAttribute("href", "/enterprise/contact")
       await expect(page.locator("#start-discovery")).toBeVisible()
       await expect(page.getByRole("list", { name: /enterprise delivery stages/i })).toBeVisible()
       await expect(page.getByRole("list", { name: /enterprise delivery stages/i }).getByRole("listitem")).toHaveCount(7)

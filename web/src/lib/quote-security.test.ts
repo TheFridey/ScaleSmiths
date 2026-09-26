@@ -153,6 +153,57 @@ describe("quote security", () => {
     if (result.ok) expect(result.data).toMatchObject({ funnelType: "business_growth_audit", leadSource: "business_growth_audit", type: "Business Growth Audit", budget: "£395 one-time audit", intent: "business_growth_audit" })
   })
 
+  it("accepts and normalises the enterprise discovery funnel", () => {
+    const result = validateQuotePayload({
+      name: "Alex Ops",
+      email: "Alex@Example.com",
+      biz: "Example Holdings",
+      phone: "+44 7700 900123",
+      businessType: "51–200",
+      type: "Operational platform, Compliance platform",
+      budget: "£100k–£250k",
+      timeframe: "3–6 months",
+      goal: "Field checks and compliance evidence are fragmented across sites.",
+      needs: ["Operational platform", "Compliance platform", "Integrations"],
+      carePlanInterest: "Yes",
+      funnelType: "enterprise",
+      intent: "enterprise",
+      consent: true,
+      brief: "=== Enterprise discovery brief ===\nDetailed operating context for a serious custom software opportunity.",
+    })
+
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.data).toMatchObject({
+        funnelType: "enterprise",
+        leadSource: "enterprise",
+        intent: "enterprise",
+        email: "alex@example.com",
+        budget: "£100k–£250k",
+        preferredContactMethod: "Email",
+      })
+      expect(result.data.needs).toHaveLength(3)
+      expect(scoreLeadQuality(result.data)).toBe("high")
+      expect(quoteInsertValues(result.data).enquiryIntent).toBe("enterprise")
+    }
+  })
+
+  it("rejects enterprise submissions without phone, needs or consent", () => {
+    const result = validateQuotePayload({
+      name: "Alex Ops",
+      email: "alex@example.com",
+      biz: "Example Holdings",
+      budget: "£50k–£100k",
+      timeframe: "Next quarter",
+      goal: "Replace overlapping SaaS tools",
+      funnelType: "enterprise",
+      intent: "enterprise",
+      consent: false,
+      brief: "Enterprise brief without qualification fields.",
+    })
+    expect(result.ok).toBe(false)
+  })
+
   it("scores high-intent leads server-side", () => {
     const result = validateQuotePayload({
       name: "Rhys",

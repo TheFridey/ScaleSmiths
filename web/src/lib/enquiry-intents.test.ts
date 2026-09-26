@@ -31,6 +31,6 @@ describe("enquiry intents", () => {
 
   it("supports the enterprise enquiry journey", () => {
     expect(ENQUIRY_INTENTS.enterprise).toBe("Discuss an Enterprise System")
-    expect(enquiryIntentHref("enterprise")).toBe("/quote?intent=enterprise")
+    expect(enquiryIntentHref("enterprise")).toBe("/enterprise/contact")
   })
 })

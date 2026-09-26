@@ -26,7 +26,7 @@ describe("enterprise page content", () => {
     expect(enterpriseFaqs.some((item) => /do not claim certifications/i.test(item.a))).toBe(true)
     expect(enterprisePageCopy.title).toMatch(/organisation actually operates/i)
     expect(enterprisePageCopy.primaryCta.href).toBe(`${ENTERPRISE_PATH}#discuss`)
-    expect(enterprisePageCopy.enquiryCta.href).toBe("/quote?intent=enterprise")
+    expect(enterprisePageCopy.enquiryCta.href).toBe("/enterprise/contact")
   })
 
   it("covers the problem set buyers expect on an enterprise route", () => {

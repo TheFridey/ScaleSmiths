@@ -13,6 +13,15 @@ export function quoteEmailContent(funnelType: FunnelType, safeName: string) {
       confirmationBody: `Thanks, ${safeName}. We&apos;ll review the domain and mailbox details, clarify any migration requirements, and reply with the next onboarding step. Do not send domain or registrar passwords by email.`,
     }
   }
+  if (funnelType === "enterprise") {
+    return {
+      internalLabel: "New enterprise discovery enquiry",
+      internalSubject: `Enterprise discovery enquiry from ${safeName}`,
+      confirmationSubject: "Your enterprise discovery enquiry",
+      confirmationHeading: "Your enterprise discovery enquiry is in.",
+      confirmationBody: `Thanks, ${safeName}. We&apos;ll review the operating context, system requirements and project constraints you shared, then reply with a sensible next discovery step. No payment has been taken through this website.`,
+    }
+  }
   return {
     internalLabel: "New quote request",
     internalSubject: `New quote request from ${safeName}`,

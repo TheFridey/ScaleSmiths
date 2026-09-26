@@ -33,7 +33,7 @@ test.describe("pricing journeys", () => {
       const enterprise = page.locator("#enterprise-systems")
       await expect(enterprise.getByRole("heading", { name: /scoped following discovery/i })).toBeVisible()
       await expect(enterprise.getByRole("heading", { name: /why enterprise software is scoped differently/i })).toBeVisible()
-      await expect(enterprise.getByRole("link", { name: /discuss an enterprise system/i })).toHaveAttribute("href", "/quote?intent=enterprise")
+      await expect(enterprise.getByRole("link", { name: /discuss an enterprise system/i })).toHaveAttribute("href", "/enterprise/contact")
       await expect(enterprise.getByRole("link", { name: /^enterprise systems$/i })).toHaveAttribute("href", "/enterprise")
       await expect(enterprise.getByRole("link", { name: /^custom systems$/i })).toHaveAttribute("href", "/custom-systems")
 

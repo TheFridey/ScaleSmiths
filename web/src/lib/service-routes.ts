@@ -18,6 +18,7 @@ export function serviceRouteCatalogue(): Map<string, ServiceRoute> {
     ...Object.values(landingPages).map((page) => ({ href: `/${page.slug}`, label: page.title, description: page.description })),
     { href: "/services", label: "All services", description: "Websites, local growth, custom systems, email, audits and ongoing partnership." },
     { href: "/enterprise", label: "Enterprise", description: "Bespoke operational platforms, internal systems, integrations and multi-site software for complex organisations." },
+    { href: "/enterprise/delivery", label: "Enterprise Delivery", description: "Discovery-to-production process for complex software engagements, including UAT, migration and release control." },
     { href: "/security", label: "Security & Trust", description: "How ScaleSmiths approaches secure software development, infrastructure, data protection and delivery controls." },
     { href: "/digital-growth-partnership", label: "Digital Growth Partnership", description: "Ongoing improvement across search, conversion, content and technical stewardship, scoped around agreed priorities." },
     { href: "/services/business-growth-audit", label: "Business Growth Audit", description: "A structured review of visibility, trust, enquiries and systems, with a prioritised roadmap." },

@@ -1,0 +1,5 @@
+# Place the forge hero loop here as:
+#   scalesmiths-hero-forge.webm
+#
+# From Windows (PowerShell), zip then upload the zip in chat, or copy to the VPS:
+#   scp "D:\Downloads\9a189e9e-22b5-4eba-bed1-ff0f5434bb7c-2026-09-26.webm" root@YOUR_SERVER:/var/www/scalesmiths/ScaleSmiths/web/public/brand/scalesmiths-hero-forge.webm

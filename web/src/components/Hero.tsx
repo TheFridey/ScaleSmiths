@@ -5,6 +5,7 @@ import { Fragment, useLayoutEffect, useRef } from "react"
 import { m, useReducedMotion } from "motion/react"
 import { ArrowRight, ArrowUpRight } from "lucide-react"
 import { HeroEmbers } from "@/components/HeroEmbers"
+import { HeroForgeVideo } from "@/components/HeroForgeVideo"
 import { motionStagger, revealMask, revealSoft, staggerContainer } from "@/lib/motion"
 
 const HERO_LINES = ["FORGE YOUR", "DIGITAL EDGE"] as const
@@ -71,9 +72,9 @@ export function Hero() {
     >
       <div className="hero-scene-fallback absolute inset-0" data-hero-scene="static" aria-hidden="true" />
 
-      {/* Forge atmosphere — molten rock only (logo-free crop of the brand plate) */}
+      {/* Forge atmosphere still-frame — under video / as fallback */}
       <div
-        className="pointer-events-none absolute inset-0 opacity-[0.58] md:opacity-[0.64]"
+        className="pointer-events-none absolute inset-0 z-[1] opacity-[0.5] md:opacity-[0.55]"
         aria-hidden="true"
         style={{
           backgroundImage: "url(/brand/scalesmiths-forge-atmosphere.webp)",
@@ -84,9 +85,11 @@ export function Hero() {
         }}
       />
 
-      {/* Soft vignette so type stays readable over the plate */}
+      <HeroForgeVideo />
+
+      {/* Soft vignette so type stays readable over video + plate */}
       <div
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_36%,transparent_0%,rgba(11,10,8,0.28)_52%,rgba(11,10,8,0.78)_100%)]"
+        className="pointer-events-none absolute inset-0 z-[3] bg-[radial-gradient(ellipse_at_50%_36%,transparent_0%,rgba(11,10,8,0.32)_52%,rgba(11,10,8,0.8)_100%)]"
         aria-hidden="true"
       />
 

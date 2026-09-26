@@ -436,17 +436,24 @@ body {
   background-size: 100% 100%, 100% 100%, 72px 72px, 72px 72px;
 }
 
+/* ── Hero forge video wash ───────────────────────────────────── */
+.hero-forge-video-wash {
+  background:
+    linear-gradient(180deg, rgba(11, 10, 8, 0.55) 0%, rgba(11, 10, 8, 0.28) 38%, rgba(11, 10, 8, 0.62) 100%),
+    radial-gradient(ellipse at 50% 70%, rgba(232, 160, 69, 0.12), transparent 55%);
+}
+
 /* ── Hero forge embers ───────────────────────────────────────── */
 .hero-embers,
 .hero-embers-static {
   position: absolute;
   inset: auto 0 0 0;
-  height: min(62%, 560px);
-  z-index: 2;
+  height: min(78%, 720px);
+  z-index: 6;
   pointer-events: none;
   overflow: hidden;
-  mask-image: linear-gradient(180deg, transparent 0%, #000 22%, #000 100%);
-  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 22%, #000 100%);
+  mask-image: linear-gradient(180deg, transparent 0%, #000 18%, #000 100%);
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 18%, #000 100%);
 }
 
 .hero-embers::before,
@@ -454,37 +461,37 @@ body {
   content: "";
   position: absolute;
   inset: auto 0 0 0;
-  height: 42%;
+  height: 48%;
   background:
-    radial-gradient(ellipse at 50% 100%, rgba(232, 160, 69, 0.22), transparent 55%),
-    radial-gradient(ellipse at 28% 95%, rgba(180, 80, 20, 0.18), transparent 42%),
-    radial-gradient(ellipse at 74% 98%, rgba(232, 160, 69, 0.14), transparent 40%);
+    radial-gradient(ellipse at 50% 100%, rgba(232, 160, 69, 0.32), transparent 58%),
+    radial-gradient(ellipse at 28% 95%, rgba(180, 80, 20, 0.24), transparent 44%),
+    radial-gradient(ellipse at 74% 98%, rgba(232, 160, 69, 0.2), transparent 42%);
 }
 
 .hero-embers-static {
   background:
-    radial-gradient(ellipse at 30% 90%, rgba(232, 160, 69, 0.16), transparent 42%),
-    radial-gradient(ellipse at 70% 95%, rgba(180, 80, 20, 0.12), transparent 38%);
+    radial-gradient(ellipse at 30% 90%, rgba(232, 160, 69, 0.22), transparent 42%),
+    radial-gradient(ellipse at 70% 95%, rgba(180, 80, 20, 0.16), transparent 38%);
 }
 
 .hero-ember {
   position: absolute;
   bottom: -2%;
-  width: var(--ember-size, 3px);
-  height: var(--ember-size, 3px);
+  width: var(--ember-size, 6px);
+  height: var(--ember-size, 6px);
   border-radius: 999px;
   background:
-    radial-gradient(circle at 35% 30%, #fff6e8 0%, #f0b35a 28%, #e8a045 55%, transparent 78%);
+    radial-gradient(circle at 35% 30%, #fffaf0 0%, #ffe08a 22%, #f0b35a 48%, #e8a045 68%, transparent 82%);
   box-shadow:
-    0 0 6px rgba(232, 160, 69, 0.65),
-    0 0 16px rgba(180, 80, 20, 0.35),
-    0 0 28px rgba(232, 160, 69, 0.18);
+    0 0 8px rgba(255, 220, 140, 0.85),
+    0 0 18px rgba(232, 160, 69, 0.75),
+    0 0 36px rgba(180, 80, 20, 0.45);
   opacity: 0;
   will-change: transform, opacity;
   animation:
-    ember-rise var(--ember-dur, 12s) linear infinite,
-    ember-flicker 1.8s ease-in-out infinite;
-  animation-delay: var(--ember-delay, 0s), calc(var(--ember-delay, 0s) * 0.35);
+    ember-rise var(--ember-dur, 8s) linear infinite,
+    ember-flicker 1.4s ease-in-out infinite;
+  animation-delay: var(--ember-delay, 0s), calc(var(--ember-delay, 0s) * 0.28);
 }
 
 @keyframes ember-rise {
@@ -492,26 +499,27 @@ body {
     transform: translate3d(0, 0, 0) scale(1);
     opacity: 0;
   }
-  8% {
-    opacity: var(--ember-opacity, 0.5);
+  6% {
+    opacity: var(--ember-opacity, 0.85);
   }
-  55% {
-    opacity: var(--ember-opacity, 0.5);
+  62% {
+    opacity: var(--ember-opacity, 0.85);
   }
   100% {
-    transform: translate3d(var(--ember-drift, 10px), -108%, 0) scale(0.35);
+    transform: translate3d(var(--ember-drift, 14px), -118%, 0) scale(0.28);
     opacity: 0;
   }
 }
 
 @keyframes ember-flicker {
   0%, 100% { filter: brightness(1); }
-  40% { filter: brightness(1.35); }
-  70% { filter: brightness(0.85); }
+  35% { filter: brightness(1.45); }
+  65% { filter: brightness(0.8); }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .hero-ember { animation: none; opacity: 0; }
+  .hero-forge-video { display: none !important; }
 }
 
 /* ── Buttons ─────────────────────────────────────────────────── */

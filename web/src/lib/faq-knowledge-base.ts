@@ -59,7 +59,7 @@ export const faqCategories: readonly FaqCategory[] = [
     label: "Custom development",
     description: "CRMs, portals, integrations, automation and when custom software is genuinely justified.",
     questionIds: ["custom-web-development", "custom-software", "crm", "customer-portals", "stripe", "integrations", "process-automation", "replace-spreadsheets", "internal-admin-systems", "software-scaling", "phases"],
-    services: ["/custom-software-development-uk", "/custom-web-app-development-uk", "/business-automation-nottingham"],
+    services: ["/custom-software-development-uk", "/custom-web-app-development-uk", "/business-automation-nottingham", "/enterprise"],
     insights: ["what-is-a-web-application", "when-does-a-business-need-custom-software"],
     cta: { href: "/work", label: "View related work", description: "The systems behind these answers — CRMs, portals, billing and admin tooling in production." },
   },

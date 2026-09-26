@@ -23,6 +23,7 @@ export const metadata = buildPageMetadata({
 
 const routes = [
   { title: "Start a project brief", description: "Share the goal, scope and constraints so we can come back with a considered view.", href: "/quote" },
+  { title: "Discuss an enterprise system", description: "Complex operational platforms, integrations and multi-site software — talk to the builders first.", href: "/enterprise#discuss" },
   { title: "Request a strategy call", description: "Talk the problem through with a founder before anything is scoped.", href: "/quote?intent=strategy_call" },
   { title: "Business Growth Audit", description: "Not sure what needs fixing first? Start with a structured diagnosis.", href: "/services/business-growth-audit" },
   { title: "Existing client portal", description: "Log requests and follow active work if you are already a client.", href: "/portal/login" },

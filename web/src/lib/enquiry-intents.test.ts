@@ -28,4 +28,9 @@ describe("enquiry intents", () => {
   it("supports the Business Growth Audit journey", () => {
     expect(ENQUIRY_INTENTS.business_growth_audit).toBe("Start a Business Growth Audit")
   })
+
+  it("supports the enterprise enquiry journey", () => {
+    expect(ENQUIRY_INTENTS.enterprise).toBe("Discuss an Enterprise System")
+    expect(enquiryIntentHref("enterprise")).toBe("/quote?intent=enterprise")
+  })
 })

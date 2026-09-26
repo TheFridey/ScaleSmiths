@@ -8,6 +8,7 @@ const importantRoutes = [
   "/services",
   "/local-growth",
   "/custom-systems",
+  "/enterprise",
   "/web-design-hucknall",
   "/web-design-nottingham",
   "/digital-growth-partnership",

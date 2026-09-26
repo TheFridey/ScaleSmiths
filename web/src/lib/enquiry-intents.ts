@@ -6,6 +6,7 @@ export const ENQUIRY_INTENTS = {
   email_plan: "Email This Plan",
   business_email: "Set Up Managed Business Email",
   business_growth_audit: "Start a Business Growth Audit",
+  enterprise: "Discuss an Enterprise System",
 } as const
 
 export type EnquiryIntent = keyof typeof ENQUIRY_INTENTS

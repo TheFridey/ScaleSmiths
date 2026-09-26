@@ -21,6 +21,7 @@ const ROUTES = [
   "/",
   "/services",
   "/local-growth",
+  "/enterprise",
   "/web-design-nottingham",
   "/locations/nottingham",
   "/work",

@@ -35,6 +35,7 @@ export default function ServicesPage() {
           <div className="mt-8 flex flex-wrap gap-3">
             <Link href="/local-growth" prefetch={false} className="btn-primary font-dm">Explore Local Growth <ArrowRight size={16} aria-hidden="true" /></Link>
             <Link href="/custom-systems" prefetch={false} className="btn-ghost font-dm">Explore Custom Systems</Link>
+            <Link href="/enterprise" prefetch={false} className="btn-ghost font-dm">Enterprise Systems</Link>
             <Link href="/pricing" prefetch={false} className="btn-ghost font-dm">View Pricing Guidance</Link>
           </div>
         </AnimateIn>

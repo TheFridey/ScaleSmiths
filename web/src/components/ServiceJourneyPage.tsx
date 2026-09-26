@@ -2,6 +2,7 @@ import Link from "next/link"
 import { ArrowRight, CheckCircle2, ChevronRight } from "lucide-react"
 import { ProjectCard } from "@/components/work/ProjectCard"
 import { caseStudiesForSlugs } from "@/lib/case-studies"
+import { EnterpriseArchitectureFramework } from "@/components/EnterpriseArchitectureFramework"
 import { FounderStrip } from "@/components/FounderStrip"
 import { InsightCard } from "@/components/insights/InsightCard"
 import { JsonLd } from "@/components/JsonLd"
@@ -78,6 +79,10 @@ export function ServiceJourneyPage({ journey }: { journey: ServiceJourney }) {
             </div>
           </div>
         </PaperBand>
+
+        {!isLocal ? (
+          <EnterpriseArchitectureFramework idPrefix={`${journey.slug}-architecture`} />
+        ) : null}
 
         <section aria-labelledby={`${journey.slug}-proof`} className="px-6 py-16 md:px-12 md:py-24">
           <div className="mx-auto max-w-[1240px]">

@@ -786,6 +786,94 @@ body {
   }
 }
 
+/* ── Enterprise architecture diagram ─────────────────────────── */
+.architecture-diagram__flow {
+  display: grid;
+  gap: 0;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.architecture-diagram__node {
+  display: grid;
+  justify-items: stretch;
+}
+
+.architecture-diagram__card {
+  display: grid;
+  gap: 0.2rem;
+  border: 1px solid rgba(201, 189, 176, 0.16);
+  border-radius: 0.9rem;
+  background:
+    linear-gradient(160deg, rgba(232, 160, 69, 0.07), transparent 55%),
+    rgba(20, 18, 16, 0.92);
+  padding: 0.9rem 1rem;
+}
+
+.architecture-diagram__index {
+  font-family: var(--font-syne), ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--acc);
+}
+
+.architecture-diagram__label {
+  font-family: var(--font-syne), ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--t1);
+}
+
+.architecture-diagram__detail {
+  font-family: var(--font-dm), ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--t3);
+}
+
+.architecture-diagram__connector {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.35rem;
+  color: rgba(232, 160, 69, 0.7);
+}
+
+.architecture-diagram__arrow-right {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .architecture-diagram__flow {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    column-gap: 1.1rem;
+    row-gap: 1rem;
+  }
+
+  .architecture-diagram__card {
+    position: relative;
+    min-height: 6.4rem;
+    height: 100%;
+  }
+
+  .architecture-diagram__connector {
+    display: none;
+  }
+
+  .architecture-diagram__node:not(:nth-child(4n)) .architecture-diagram__card::after {
+    content: "→";
+    position: absolute;
+    top: 50%;
+    right: -0.85rem;
+    transform: translate(50%, -50%);
+    font-size: 0.85rem;
+    color: rgba(232, 160, 69, 0.7);
+    pointer-events: none;
+  }
+}
+
 /* ── Card lift ───────────────────────────────────────────────── */
 .card-lift {
   transition: transform 0.25s cubic-bezier(0.4,0,0.2,1), border-color 0.25s, box-shadow 0.25s;

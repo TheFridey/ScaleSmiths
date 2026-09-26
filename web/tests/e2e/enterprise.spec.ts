@@ -11,7 +11,7 @@ const SECTION_HEADINGS = [
   /when the estate no longer matches the operation/i,
   /platforms for how the organisation actually works/i,
   /the engineering surface area behind the platform/i,
-  /architecture before theatre/i,
+  /architecture follows the problem/i,
   /designed for controlled environments/i,
   /connect the estate without fragile bridges/i,
   /one operating model\. many places of work/i,
@@ -73,9 +73,11 @@ test.describe("enterprise landing page", () => {
 
     const mainNavigation = page.getByRole("navigation", { name: /main navigation/i })
     await mainNavigation.getByRole("button", { name: "Services", exact: true }).click()
-    await expect(mainNavigation.getByRole("link", { name: /^Enterprise/ })).toHaveAttribute("href", "/enterprise")
+    await expect(mainNavigation.locator('a[href="/enterprise"]')).toBeVisible()
+    await expect(mainNavigation.locator('a[href="/enterprise/delivery"]')).toBeVisible()
 
     const footer = page.getByRole("navigation", { name: /footer navigation/i })
     await expect(footer.getByRole("link", { name: "Enterprise", exact: true })).toHaveAttribute("href", "/enterprise")
+    await expect(footer.getByRole("link", { name: "Enterprise Delivery", exact: true })).toHaveAttribute("href", "/enterprise/delivery")
   })
 })

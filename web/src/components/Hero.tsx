@@ -89,7 +89,7 @@ export function Hero() {
 
       {/* Soft vignette so type stays readable without burying the forge video */}
       <div
-        className="pointer-events-none absolute inset-0 z-[3] bg-[radial-gradient(ellipse_at_50%_36%,transparent_0%,rgba(11,10,8,0.18)_55%,rgba(11,10,8,0.62)_100%)]"
+        className="pointer-events-none absolute inset-0 z-[3] bg-[radial-gradient(ellipse_at_50%_36%,transparent_0%,rgba(11,10,8,0.1)_58%,rgba(11,10,8,0.48)_100%)]"
         aria-hidden="true"
       />
 

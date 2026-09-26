@@ -113,7 +113,7 @@ test.describe("enterprise discovery enquiry", () => {
     await advanceCompleteWizard(page)
     await page.getByRole("button", { name: /Start Enterprise Discovery/i }).click()
 
-    await expect(page.getByRole("alert")).toContainText(/Unable to submit your enquiry/i)
+    await expect(page.locator("[role='alert'][tabindex='-1']")).toContainText(/Unable to submit your enquiry/i)
     await expect(page).toHaveURL(/\/enterprise\/contact$/)
     await expect(page.getByRole("heading", { level: 2, name: "Final Message", exact: true })).toBeVisible()
   })

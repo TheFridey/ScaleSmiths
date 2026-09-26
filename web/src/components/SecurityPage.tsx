@@ -87,6 +87,10 @@ export function SecurityPage() {
                 Enterprise systems
               </Link>
               ,{" "}
+              <Link href="/enterprise/delivery" prefetch={false} className="text-t2 underline-offset-2 hover:text-t1 hover:underline">
+                Enterprise delivery
+              </Link>
+              ,{" "}
               <Link href="/custom-systems" prefetch={false} className="text-t2 underline-offset-2 hover:text-t1 hover:underline">
                 Custom systems
               </Link>

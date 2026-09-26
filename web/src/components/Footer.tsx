@@ -30,6 +30,7 @@ const navigationGroups = [
       { href: "/local-growth", label: "Local Growth" },
       { href: "/custom-systems", label: "Custom Systems" },
       { href: "/enterprise", label: "Enterprise" },
+      { href: "/enterprise/delivery", label: "Enterprise Delivery" },
       { href: "/security", label: "Security & Trust" },
       { href: "/web-design-nottingham", label: "Web Design Nottingham" },
       { href: "/local-seo-nottingham", label: "Local SEO Nottingham" },

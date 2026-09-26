@@ -19,7 +19,7 @@ export const enterprisePageCopy = {
   eyebrow: "Enterprise systems",
   title: "Enterprise software built around how your organisation actually operates.",
   lede:
-    "ScaleSmiths designs and builds bespoke platforms for organisations that have outgrown fragmented software, duplicated workflows, spreadsheets, disconnected SaaS products and manual operational processes. Small, senior and founder-led — with direct access to the people who architecture and deliver the system.",
+    "ScaleSmiths designs and builds bespoke platforms for organisations that have outgrown fragmented software, duplicated workflows, spreadsheets, disconnected SaaS products and manual operational processes. Small, senior and founder-led — with direct access to the people who architect and deliver the system.",
   primaryCta: {
     label: "Discuss an Enterprise System",
     href: `${ENTERPRISE_PATH}#${ENTERPRISE_ENQUIRY_ANCHOR}`,

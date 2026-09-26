@@ -9,6 +9,7 @@ export const INSIGHT_CATEGORIES = {
   "business-systems": { label: "Business systems", description: "Automation, connected workflows and operational software." },
   infrastructure: { label: "Infrastructure", description: "Hosting, availability, domains and dependable business email." },
   commercial: { label: "Buying digital work", description: "Costs, scope, timelines and how to make sound website decisions." },
+  enterprise: { label: "Enterprise", description: "Operational platforms, permissions, migrations, integrations and founder-led enterprise engineering." },
 } as const
 export type InsightCategory = keyof typeof INSIGHT_CATEGORIES
 
@@ -20,14 +21,47 @@ export type InsightCategory = keyof typeof INSIGHT_CATEGORIES
  * `websites` and `development` (75% and 67% content overlap in the crawl). Two hubs competing for
  * one intent is the cheapest way to lose both. Every category now belongs to exactly one cluster,
  * which `insights.test.ts` enforces.
+ *
+ * Filter chips on /insights use reader-facing labels (Web, Growth, Engineering, …) while hub
+ * routes keep stable slugs for SEO continuity.
  */
 export const INSIGHT_TOPIC_CLUSTERS = {
-  websites: { label: "Websites", description: "Planning, buying, rebuilding and owning a business website, including what it should cost and how long it takes.", categories: ["commercial"] },
-  seo: { label: "SEO", description: "Practical search guidance for UK businesses, from indexation and page speed to local visibility.", categories: ["technical-seo", "local-growth"] },
-  development: { label: "Development", description: "Custom websites, web applications, business software and the automation that connects them.", categories: ["web-development", "business-systems"] },
+  websites: { label: "Web", description: "Planning, buying, rebuilding and owning a business website, including what it should cost and how long it takes.", categories: ["commercial"] },
+  seo: { label: "Growth", description: "Practical search and local-growth guidance for UK businesses, from indexation and page speed to enquiry quality.", categories: ["technical-seo", "local-growth"] },
+  development: { label: "Engineering", description: "Custom websites, web applications, internal tools, automation and the engineering decisions behind them.", categories: ["web-development", "business-systems"] },
   infrastructure: { label: "Infrastructure", description: "Hosting, reliability, maintenance, domains and dependable business email.", categories: ["infrastructure"] },
+  enterprise: { label: "Enterprise", description: "Bespoke operational software, legacy replacement, permissions, offline systems, integrations and enterprise discovery.", categories: ["enterprise"] },
 } as const satisfies Record<string, { label: string; description: string; categories: readonly InsightCategory[] }>
 export type InsightTopicSlug = keyof typeof INSIGHT_TOPIC_CLUSTERS
+
+/** Reader-facing filters on the Insights hub. AI / Automation maps into Engineering without a competing hub URL. */
+export const INSIGHT_FILTERS = [
+  { id: "engineering", label: "Engineering", topic: "development" as const, description: "Custom websites, applications and internal tooling." },
+  { id: "enterprise", label: "Enterprise", topic: "enterprise" as const, description: "Operational platforms, migrations and enterprise architecture." },
+  { id: "web", label: "Web", topic: "websites" as const, description: "Buying, rebuilding and owning a business website." },
+  { id: "growth", label: "Growth", topic: "seo" as const, description: "Search, local visibility and enquiry quality." },
+  { id: "infrastructure", label: "Infrastructure", topic: "infrastructure" as const, description: "Hosting, email and operational reliability." },
+  { id: "ai-automation", label: "AI / Automation", topic: "development" as const, description: "Workflow automation and connected business systems.", category: "business-systems" as const },
+] as const
+
+export const ENTERPRISE_TOPIC_CLUSTERS = [
+  "Legacy system replacement",
+  "Workflow consolidation",
+  "Enterprise software architecture",
+  "Internal tools",
+  "Security engineering",
+  "Identity / SSO / permissions",
+  "Offline-first applications",
+  "Data migration",
+  "Systems integration",
+  "Audit trails",
+  "Multi-site systems",
+  "Build vs buy",
+  "SaaS consolidation",
+  "Operational software",
+  "Enterprise discovery",
+  "Software modernisation",
+] as const
 
 export type InsightBlock =
   | { type: "heading"; text: string }
@@ -38,6 +72,7 @@ export type InsightBlock =
   | { type: "callout"; title: string; text: string }
   | { type: "image"; src: string; alt: string; width: number; height: number; caption?: string }
   | { type: "code"; language: string; code: string }
+  | { type: "diagram"; title?: string; code: string }
   | { type: "authorNote"; text: string }
 
 export interface InsightBrief { targetQuery: string; searchIntent: string; angle: string; outline: string[]; firstHandEvidence: string[]; cannibalisationNotes?: string; priority: number }
@@ -45,6 +80,7 @@ export interface Insight {
   slug: string; title: string; seoTitle?: string; description: string; status: InsightStatus; authorSlug: string; category: InsightCategory
   datePublished?: string; dateModified?: string; heroImage?: { src: string; alt: string; width: number; height: number }
   body: InsightBlock[]; brief: InsightBrief; relatedServices: string[]; relatedCaseStudies: string[]; relatedInsights?: string[]; featured?: boolean
+  topics?: string[]
 }
 
 export const insights: Insight[] = initialInsights

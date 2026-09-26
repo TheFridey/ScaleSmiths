@@ -71,8 +71,10 @@ export default function InsightsPage() {
             <Breadcrumbs items={[{ name: "Home", href: "/" }, { name: "Insights" }]} />
             <div className="mt-10 max-w-[900px]">
               <p className="text-xs font-semibold uppercase tracking-[.14em] text-acc">Engineering publication</p>
-              <p className="mt-3 font-syne text-4xl font-extrabold tracking-[-0.04em] text-t1 md:text-5xl">ScaleSmiths</p>
-              <h1 className="mt-4 font-syne text-[clamp(36px,6.5vw,72px)] font-black leading-[1.02] tracking-[-.04em]">
+              <p className="mt-4 font-syne text-[clamp(2.75rem,7vw,4.5rem)] font-extrabold leading-none tracking-[-0.045em] text-t1">
+                ScaleSmiths
+              </p>
+              <h1 className="mt-6 max-w-[22ch] font-syne text-[clamp(1.75rem,3.8vw,2.75rem)] font-bold leading-[1.15] tracking-[-.03em] text-t1">
                 Technical insight for people who ship systems.
               </h1>
               <p className="mt-6 max-w-[760px] text-lg leading-relaxed text-t2">

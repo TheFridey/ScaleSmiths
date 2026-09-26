@@ -141,25 +141,6 @@ export const enterpriseCapabilities = [
   "Testing and validation",
 ] as const
 
-export const enterpriseArchitecture = [
-  {
-    title: "Domain-first modelling",
-    body: "We start with actors, permissions, data ownership, failure states and the real operating constraints before choosing a stack.",
-  },
-  {
-    title: "Boundary-aware architecture",
-    body: "Auth, tenancy, integrations and privileged actions are treated as first-class design concerns, not late bolt-ons.",
-  },
-  {
-    title: "Delivery in controlled stages",
-    body: "First dependable release, then evidence-led expansion — so procurement and leadership can see risk reduce over time.",
-  },
-  {
-    title: "Engineering discipline",
-    body: "Typed contracts, automated checks, migration plans, observability and rollback thinking travel with the build.",
-  },
-] as const
-
 export const enterpriseSecurity = [
   {
     title: "Access control",

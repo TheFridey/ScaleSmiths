@@ -3,16 +3,13 @@ import {
   ArrowRight,
   Building2,
   CheckCircle2,
-  GitBranch,
-  Layers,
-  Lock,
   Network,
-  Radar,
   Shield,
   Workflow,
 } from "lucide-react"
 import { AnimateIn, StaggerIn } from "@/components/AnimateIn"
 import { PageBreadcrumbs } from "@/components/Breadcrumbs"
+import { EnterpriseArchitectureFramework } from "@/components/EnterpriseArchitectureFramework"
 import { ContextualFaqs } from "@/components/faq/ContextualFaqs"
 import { FounderStrip } from "@/components/FounderStrip"
 import { HeroEmbers } from "@/components/HeroEmbers"
@@ -23,7 +20,6 @@ import {
   ENTERPRISE_ENQUIRY_ANCHOR,
   ENTERPRISE_PROOF_SLUGS,
   buildEnterprisePageSchemas,
-  enterpriseArchitecture,
   enterpriseCapabilities,
   enterpriseFaqs,
   enterpriseFounderAdvantage,
@@ -185,29 +181,7 @@ export function EnterprisePage() {
         </div>
       </section>
 
-      <section aria-labelledby="enterprise-architecture" className="px-6 py-20 md:px-12 md:py-24">
-        <div className="mx-auto max-w-[1240px]">
-          <AnimateIn className="max-w-[760px]">
-            <SectionEyebrow>Architecture and engineering approach</SectionEyebrow>
-            <SectionHeading id="enterprise-architecture">Architecture before theatre.</SectionHeading>
-            <SectionLede>
-              Complex systems fail when delivery starts from slides. We engineer from the operating model outward — with delivery discipline that procurement, IT and operational leaders can inspect.
-            </SectionLede>
-          </AnimateIn>
-          <div className="mt-12 grid gap-4 lg:grid-cols-2">
-            {enterpriseArchitecture.map(({ title, body }, index) => {
-              const Icon = [Layers, Lock, GitBranch, Radar][index] ?? Layers
-              return (
-                <AnimateIn key={title} className="rounded-2xl border border-b1 bg-bg p-6 md:p-8">
-                  <Icon size={18} className="text-acc" aria-hidden="true" />
-                  <h3 className="mt-5 font-syne text-xl font-bold">{title}</h3>
-                  <p className="mt-3 font-dm text-sm leading-relaxed text-t2">{body}</p>
-                </AnimateIn>
-              )
-            })}
-          </div>
-        </div>
-      </section>
+      <EnterpriseArchitectureFramework idPrefix="enterprise" hideEnterpriseLink />
 
       <section aria-labelledby="enterprise-security" className="border-y border-acc/20 bg-acc/[.04] px-6 py-20 md:px-12 md:py-24">
         <div className="mx-auto max-w-[1240px]">

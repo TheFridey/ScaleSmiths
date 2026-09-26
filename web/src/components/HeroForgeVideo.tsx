@@ -41,7 +41,7 @@ export function HeroForgeVideo() {
     >
       <video
         ref={videoRef}
-        className="absolute inset-0 h-full w-full scale-105 object-cover opacity-[0.38] md:opacity-[0.42]"
+        className="absolute inset-0 h-full w-full scale-105 object-cover opacity-[0.28] md:opacity-[0.32]"
         autoPlay
         muted
         loop

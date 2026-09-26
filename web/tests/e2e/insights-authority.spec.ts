@@ -3,9 +3,9 @@ import { gotoReady, installConsoleGuards, mockExperienceAnalytics, rejectNonEsse
 
 test.describe.configure({ timeout: 600_000 })
 
-// The four topic clusters. `growth` and `automation` were retired because they listed almost the
-// same articles as `websites` and `development`; both now 301 to their successor.
-const categories = ["websites", "seo", "development", "infrastructure"] as const
+// Topic clusters. `growth` and `automation` were retired as overlapping hubs; filter chips reuse
+// those labels without restoring competing CollectionPage URLs. `enterprise` is a dedicated hub.
+const categories = ["websites", "seo", "development", "infrastructure", "enterprise"] as const
 const retiredCategories = [
   { from: "/insights/growth", to: "/insights/websites" },
   { from: "/insights/automation", to: "/insights/development" },
@@ -14,6 +14,7 @@ const samples = [
   "how-much-does-a-business-website-cost-uk-2026",
   "local-seo-nottingham-businesses-guide",
   "spf-dkim-dmarc-explained",
+  "what-enterprise-software-discovery-should-produce",
 ] as const
 
 for (const viewport of [{ name: "desktop", width: 1440, height: 1000 }, { name: "mobile", width: 390, height: 844 }] as const) {
@@ -40,7 +41,7 @@ for (const viewport of [{ name: "desktop", width: 1440, height: 1000 }, { name: 
       const response = await gotoReady(page, route)
       expect(response?.status(), route).toBe(200)
       await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1)
-      await expect(page.locator('meta[property="article:published_time"]')).toHaveAttribute("content", /2026-09-23/)
+      await expect(page.locator('meta[property="article:published_time"]')).toHaveAttribute("content", /2026-09-(23|26)/)
       await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", new RegExp(`${route.replaceAll("/", "\\/")}$`))
       await expect(page.getByRole("link", { name: /Rhys|Trevor/ }).first()).toHaveAttribute("rel", "author")
       expect(await page.locator('script[type="application/ld+json"]').allTextContents()).toEqual(expect.arrayContaining([expect.stringContaining("BlogPosting")]))

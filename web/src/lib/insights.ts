@@ -91,7 +91,30 @@ export function insightsForTopic(topic: InsightTopicSlug): Insight[] { const cat
 export function insightTopic(insight: Insight): InsightTopicSlug { return (Object.keys(INSIGHT_TOPIC_CLUSTERS) as InsightTopicSlug[]).find((topic) => (INSIGHT_TOPIC_CLUSTERS[topic].categories as readonly InsightCategory[]).includes(insight.category)) ?? "websites" }
 export function getInsight(slug: string, { includeDrafts = draftPreviewEnabled() } = {}): Insight | undefined { const insight = insights.find((candidate) => candidate.slug === slug); return insight && (insight.status === "published" || includeDrafts) ? insight : undefined }
 export function insightAuthor(insight: Insight): Founder { const founder = founderBySlug(insight.authorSlug); if (!founder) throw new Error(`Insight ${insight.slug} has unknown author ${insight.authorSlug}`); return founder }
-export function insightPlainText(insight: Insight): string { return insight.body.flatMap((block) => { switch (block.type) { case "heading": case "subheading": case "paragraph": return [block.text]; case "list": return block.items; case "quote": return [block.text]; case "callout": return [block.title, block.text]; case "image": return block.caption ? [block.caption] : []; default: return [] } }).join(" ").replace(/\[([^\]]+)\]\([^)]+\)/g, "$1") }
+export function insightPlainText(insight: Insight): string {
+  return insight.body.flatMap((block) => {
+    switch (block.type) {
+      case "heading":
+      case "subheading":
+      case "paragraph":
+        return [block.text]
+      case "list":
+        return block.items
+      case "quote":
+        return [block.text]
+      case "callout":
+        return [block.title, block.text]
+      case "image":
+        return block.caption ? [block.caption] : []
+      case "diagram":
+        return block.title ? [block.title, block.code] : [block.code]
+      case "code":
+        return [block.code]
+      default:
+        return []
+    }
+  }).join(" ").replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+}
 export function insightWordCount(insight: Insight): number { return insightPlainText(insight).split(/\s+/).filter(Boolean).length }
 export function readingTimeMinutes(insight: Insight): number { return Math.max(1, Math.ceil(insightWordCount(insight) / WORDS_PER_MINUTE)) }
 export function headingId(text: string): string { return text.toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") }

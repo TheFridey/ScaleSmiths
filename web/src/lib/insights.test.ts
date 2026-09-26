@@ -95,7 +95,7 @@ describe("editorial integrity", () => {
   })
 
   it("publishes the commissioned initial library with no drafting artefacts", () => {
-    expect(publishedInsights()).toHaveLength(25)
+    expect(publishedInsights()).toHaveLength(35)
     expect(editorialPipeline()).toEqual([])
     expect(insights.every((insight) => insight.body.every((block) => block.type !== "authorNote"))).toBe(true)
   })
@@ -121,6 +121,7 @@ describe("visibility of unpublished articles", () => {
     const urls = buildPublicSitemap().map((entry) => entry.url)
     expect(urls).toContain(`${base}/insights`)
     expect(urls).toContain(`${base}/insights/websites`)
+    expect(urls).toContain(`${base}/insights/enterprise`)
     for (const insight of publishedInsights()) expect(urls).toContain(`${base}/insights/${insight.slug}`)
   })
 })

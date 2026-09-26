@@ -70,6 +70,19 @@ function Block({ block }: { block: InsightBlock }) {
           <code data-language={block.language}>{block.code}</code>
         </pre>
       )
+    case "diagram":
+      return (
+        <figure className="mt-8 overflow-hidden rounded-xl border border-acc/25 bg-[linear-gradient(180deg,rgba(232,160,69,0.06),transparent_40%),#0a0908]">
+          {block.title ? (
+            <figcaption className="border-b border-b1 px-5 py-3 font-dm text-xs font-semibold uppercase tracking-[.12em] text-acc">
+              {block.title}
+            </figcaption>
+          ) : null}
+          <pre className="overflow-x-auto p-5 font-mono text-[13px] leading-relaxed text-t2">
+            <code>{block.code}</code>
+          </pre>
+        </figure>
+      )
     case "authorNote":
       return isDevelopment ? (
         <p className="mt-5 rounded-lg border border-dashed border-b2 px-4 py-3 font-dm text-sm text-t3">Author note (dev only): {block.text}</p>

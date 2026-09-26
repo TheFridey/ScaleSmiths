@@ -1,3 +1,4 @@
+import { enterpriseInsights } from "./enterprise-insight-library"
 import type { Insight, InsightBlock, InsightCategory } from "./insights"
 
 interface Seed {
@@ -459,4 +460,7 @@ const seeds: Seed[] = [
   },
 ]
 
-export const initialInsights: Insight[] = seeds.map((seed, index) => article(seed, index + 1))
+export const initialInsights: Insight[] = [
+  ...seeds.map((seed, index) => article(seed, index + 1)),
+  ...enterpriseInsights,
+]

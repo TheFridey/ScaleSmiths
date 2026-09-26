@@ -135,6 +135,7 @@ export const FAQ_CATEGORY_FOR_INSIGHT_TOPIC: Record<string, string> = {
   seo: "seo",
   development: "custom-development",
   infrastructure: "infrastructure",
+  enterprise: "custom-development",
 }
 
 /** The category an answer belongs to, so a page can deep-link to the right group on /faq. */

@@ -439,9 +439,9 @@ body {
 /* ── Hero forge video wash ───────────────────────────────────── */
 .hero-forge-video-wash {
   background:
-    linear-gradient(180deg, rgba(11, 10, 8, 0.72) 0%, rgba(11, 10, 8, 0.42) 36%, rgba(11, 10, 8, 0.78) 100%),
-    radial-gradient(ellipse at 50% 55%, rgba(11, 10, 8, 0.35), transparent 58%),
-    radial-gradient(ellipse at 50% 78%, rgba(232, 160, 69, 0.1), transparent 52%);
+    linear-gradient(180deg, rgba(11, 10, 8, 0.48) 0%, rgba(11, 10, 8, 0.18) 38%, rgba(11, 10, 8, 0.55) 100%),
+    radial-gradient(ellipse at 50% 55%, rgba(11, 10, 8, 0.18), transparent 62%),
+    radial-gradient(ellipse at 50% 78%, rgba(232, 160, 69, 0.14), transparent 52%);
 }
 
 /* ── Hero forge embers ───────────────────────────────────────── */

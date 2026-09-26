@@ -74,7 +74,7 @@ export function Hero() {
 
       {/* Forge atmosphere still-frame — under video / as fallback */}
       <div
-        className="pointer-events-none absolute inset-0 z-[1] opacity-[0.5] md:opacity-[0.55]"
+        className="pointer-events-none absolute inset-0 z-[1] opacity-[0.58] md:opacity-[0.64]"
         aria-hidden="true"
         style={{
           backgroundImage: "url(/brand/scalesmiths-forge-atmosphere.webp)",
@@ -87,9 +87,9 @@ export function Hero() {
 
       <HeroForgeVideo />
 
-      {/* Soft vignette so type stays readable over video + plate */}
+      {/* Soft vignette so type stays readable without burying the forge video */}
       <div
-        className="pointer-events-none absolute inset-0 z-[3] bg-[radial-gradient(ellipse_at_50%_36%,transparent_0%,rgba(11,10,8,0.32)_52%,rgba(11,10,8,0.8)_100%)]"
+        className="pointer-events-none absolute inset-0 z-[3] bg-[radial-gradient(ellipse_at_50%_36%,transparent_0%,rgba(11,10,8,0.18)_55%,rgba(11,10,8,0.62)_100%)]"
         aria-hidden="true"
       />
 

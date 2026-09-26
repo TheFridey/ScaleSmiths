@@ -4,8 +4,9 @@ import { useEffect, useRef, useState } from "react"
 import { useReducedMotion } from "motion/react"
 
 /**
- * Full-bleed forge hero video. Plays muted/looped under a dark wash so type
- * stays readable. Falls back silently when the asset is missing or motion is reduced.
+ * Full-bleed forge hero video. Plays muted/looped under a light wash so the
+ * forge remains visible while type stays readable. Falls back silently when
+ * the asset is missing or motion is reduced.
  */
 export function HeroForgeVideo() {
   const reducedMotion = useReducedMotion()
@@ -41,7 +42,7 @@ export function HeroForgeVideo() {
     >
       <video
         ref={videoRef}
-        className="absolute inset-0 h-full w-full scale-105 object-cover opacity-[0.28] md:opacity-[0.32]"
+        className="absolute inset-0 h-full w-full scale-105 object-cover opacity-[0.48] md:opacity-[0.55]"
         autoPlay
         muted
         loop
@@ -51,7 +52,7 @@ export function HeroForgeVideo() {
       >
         <source src="/brand/scalesmiths-hero-forge.webm" type="video/webm" />
       </video>
-      {/* Extra fade so the footage stays atmospheric, not bright */}
+      {/* Soft wash: keep type readable without muting the forge footage */}
       <div className="hero-forge-video-wash absolute inset-0" />
     </div>
   )

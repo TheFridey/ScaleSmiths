@@ -102,8 +102,15 @@ export function ServiceJourneyPage({ journey }: { journey: ServiceJourney }) {
             <div>
               <span className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">How buying works</span>
               <h2 id={`${journey.slug}-process`} className="mt-2 font-syne text-3xl font-extrabold">{journey.processTitle}</h2>
-              <p className="mt-4 font-dm text-sm leading-relaxed text-t2">Pricing is scoped after discovery around the approved outcome, complexity, integrations, content, and delivery risk. Ongoing support is optional and scoped separately.</p>
-              <Link href="/pricing" prefetch={false} className="mt-5 inline-flex items-center gap-2 font-dm text-sm font-semibold text-acc">Read pricing guidance<ArrowRight size={14} aria-hidden="true" /></Link>
+              <p className="mt-4 font-dm text-sm leading-relaxed text-t2">
+                {isLocal
+                  ? "Pricing is scoped after discovery around the approved outcome, complexity, content and delivery risk. Ongoing support is optional and scoped separately."
+                  : "Custom software and enterprise systems are scoped following discovery — not published as fixed retail prices beside SME offers. Ongoing support is optional and scoped separately."}
+              </p>
+              <Link href={isLocal ? "/pricing#web-growth" : "/pricing#enterprise-systems"} prefetch={false} className="mt-5 inline-flex items-center gap-2 font-dm text-sm font-semibold text-acc">
+                {isLocal ? "Read Web & Growth pricing" : "Read enterprise pricing guidance"}
+                <ArrowRight size={14} aria-hidden="true" />
+              </Link>
             </div>
             <ol className="grid gap-3 sm:grid-cols-2">
               {journey.process.map((step, index) => <li key={step.title} className="rounded-2xl border border-b1 bg-s1 p-5"><span className="font-syne text-sm font-bold text-acc">{index + 1}</span><h3 className="mt-2 font-syne text-lg font-bold">{step.title}</h3><p className="mt-2 font-dm text-sm leading-relaxed text-t2">{step.description}</p></li>)}

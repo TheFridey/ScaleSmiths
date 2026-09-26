@@ -372,6 +372,9 @@ export function EnterprisePage() {
               <Link href={enterprisePageCopy.secondaryCta.href} prefetch={false} className="btn-ghost justify-center font-dm">
                 {enterprisePageCopy.secondaryCta.label}
               </Link>
+              <Link href="/pricing#enterprise-systems" prefetch={false} className="btn-ghost justify-center font-dm">
+                How enterprise work is priced
+              </Link>
               <p className="pt-2 text-center font-dm text-xs leading-relaxed text-t3 lg:text-left">
                 Subject to client security and procurement requirements. No invented certifications, logos or guaranteed compliance claims.
               </p>

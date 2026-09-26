@@ -76,15 +76,55 @@ export const managedBusinessEmailService = {
 
 export const businessGrowthAuditService = { title: businessGrowthAudit.shortName, description: "A business-wide assessment of positioning, customer journey, visibility, systems and growth opportunities with a prioritised roadmap.", href: businessGrowthAudit.slug }
 
-export const pricingItems = [
-  { name: "One-page business site", range: "Scoped after discovery", priceClaimId: "price.one-page", note: "Focused single-page presence for a clear offer or campaign." },
-  { name: "Local business growth site", range: "Scoped after discovery", priceClaimId: "price.foundation", note: "Multi-page local site with conversion and SEO foundations." },
-  { name: "E-commerce site", range: "Scoped after discovery", priceClaimId: "price.growth", note: "Commerce UX, product structure, payments, and admin workflows." },
-  { name: "Custom web app", range: "Scoped after discovery", priceClaimId: "price.forge", note: "Database-backed product, portal, dashboard, or SaaS surface." },
-  { name: "Digital Growth Partnership", range: "Scoped separately", priceClaimId: "price.care-plan", note: "A commercially bounded, roadmap-led relationship for agreed priorities across SEO, conversion, content, automation, maintenance and ongoing engineering." },
-  { name: "Hosting / maintenance", range: "Scoped to stack", priceClaimId: null, note: "Deployment, SSL, backups, monitoring, and infrastructure support." },
-  { name: "Managed Business Email", range: "£15/month", priceClaimId: null, note: "Three professional 5GB mailboxes on your domain, with initial setup included." },
-  { name: businessGrowthAudit.shortName, range: formatAuditPrice(), priceClaimId: null, note: "One-time business-wide assessment with the full fee credited against an eligible subsequent ScaleSmiths build." },
+export interface PricingItem {
+  name: string
+  range: string
+  priceClaimId: string | null
+  note: string
+  href?: string
+}
+
+/** Transparent Web & Growth / SME services. Kept separate from enterprise procurement. */
+export const webGrowthPricingItems: PricingItem[] = [
+  { name: "One-page business site", range: "Scoped after discovery", priceClaimId: "price.one-page", note: "Focused single-page presence for a clear offer or campaign.", href: "/local-growth" },
+  { name: "Local business growth site", range: "Scoped after discovery", priceClaimId: "price.foundation", note: "Multi-page local site with conversion and SEO foundations.", href: "/local-growth" },
+  { name: "E-commerce site", range: "Scoped after discovery", priceClaimId: "price.growth", note: "Commerce UX, product structure, payments, and admin workflows.", href: "/e-commerce-development-nottingham" },
+  { name: "Digital Growth Partnership", range: "Scoped separately", priceClaimId: "price.care-plan", note: "A commercially bounded, roadmap-led relationship for agreed priorities across SEO, conversion, content, automation, maintenance and ongoing engineering.", href: "/digital-growth-partnership" },
+  { name: "Hosting / maintenance", range: "Scoped to stack", priceClaimId: null, note: "Deployment, SSL, backups, monitoring, and infrastructure support.", href: "/managed-website-hosting" },
+  { name: "Managed Business Email", range: "£15/month", priceClaimId: null, note: "Three professional 5GB mailboxes on your domain, with initial setup included.", href: "/services/managed-business-email" },
+  { name: businessGrowthAudit.shortName, range: formatAuditPrice(), priceClaimId: null, note: "One-time business-wide assessment with the full fee credited against an eligible subsequent ScaleSmiths build.", href: businessGrowthAudit.slug },
+]
+
+export const enterpriseCommercialComponents = [
+  { title: "Discovery", body: "Map users, workflows, systems, risks and constraints before a build commitment is made." },
+  { title: "Architecture", body: "Define system boundaries, identity, data, integrations and the first dependable release." },
+  { title: "Prototype", body: "Prove the highest-risk technical or workflow assumptions where the engagement needs it." },
+  { title: "Implementation", body: "Build the agreed MVP or phased release with environment separation and delivery controls." },
+  { title: "Migration", body: "Move data and process cutover in rehearsed stages rather than as an untested go-live step." },
+  { title: "Integrations", body: "Connect identity, ERP, CRM, finance and operational platforms under explicit ownership." },
+  { title: "Managed support", body: "Ongoing operational ownership scoped separately from project delivery — not unlimited development." },
+  { title: "Platform licensing", body: "Third-party or platform licence costs where applicable, identified during scoping rather than buried later." },
+] as const
+
+export const enterpriseCostFactors = [
+  { title: "User count", body: "More actors, roles and concurrent use change authentication, permissions and operational load." },
+  { title: "Sites and teams", body: "Multi-site or multi-team structures add permission, process and reporting complexity." },
+  { title: "Integrations", body: "Each interface brings mapping, failure handling, testing and operational ownership." },
+  { title: "Data migration", body: "Volume, quality, history and cutover risk materially affect timeline and commercial scope." },
+  { title: "Security requirements", body: "SSO, audit trails, residency and client security controls reshape architecture and delivery effort." },
+  { title: "Mobile / offline", body: "Field and offline-capable work needs different application design than a connected desktop workflow." },
+  { title: "Workflows", body: "Approvals, exceptions and process encoding drive much of the real engineering surface area." },
+  { title: "Hosting model", body: "ScaleSmiths-managed, client cloud or approved Azure/AWS estates change operational responsibility." },
+  { title: "Support requirements", body: "Response expectations, environments and ongoing ownership are commercial boundaries, not free extras." },
+] as const
+
+/**
+ * Combined catalogue for tests and legacy consumers.
+ * Custom/enterprise software is guided on /pricing#enterprise-systems rather than sold as a retail card beside SME offers.
+ */
+export const pricingItems: PricingItem[] = [
+  ...webGrowthPricingItems,
+  { name: "Custom web app / enterprise system", range: "Scoped following discovery", priceClaimId: "price.forge", note: "Operational platforms, portals, SaaS and enterprise systems are commercially scoped after discovery — not published as fixed retail prices." },
 ]
 
 export function buildServiceHubSchema(baseUrl = "https://scalesmiths.co.uk") {
@@ -114,8 +154,10 @@ export function buildServiceHubSchema(baseUrl = "https://scalesmiths.co.uk") {
 }
 
 export const pricingFaqs = [
-  { q: "How much does a ScaleSmiths project cost?", a: "Projects are scoped by business outcome and complexity. Any current verified guidance appears in the pricing cards; the final price follows a project-specific proposal." },
+  { q: "How much does a ScaleSmiths project cost?", a: "Web & Growth work uses the transparent guidance on this page, with final prices confirmed in a proposal. Custom software and enterprise systems are scoped following discovery because integrations, security, migration and operating model change the commercial shape." },
   { q: "Do you offer a Digital Growth Partnership?", a: "Yes. A Digital Growth Partnership is a scoped, prioritised relationship for continued improvement. It can begin with an existing digital estate or continue after a ScaleSmiths build." },
+  { q: "Why are enterprise systems not listed with fixed prices?", a: "User count, sites, integrations, data migration, security, mobile or offline needs, workflows, hosting and support requirements all materially affect cost. Publishing a single public figure would misrepresent the procurement decision." },
+  { q: "Where should enterprise buyers start?", a: "Start with discovery. Review the Enterprise and Custom Systems routes, then discuss the operating constraint so architecture and commercial scope can be defined before implementation expands." },
 ] as const
 
 /** FAQPage mirrors the questions rendered visibly on /pricing; keep both in this one array. */

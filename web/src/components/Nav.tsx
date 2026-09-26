@@ -19,6 +19,7 @@ const serviceLinks = [
   { href: "/local-growth", label: "Local growth", description: "Websites and search work for businesses selling in a place." },
   { href: "/custom-systems", label: "Custom systems", description: "Applications, portals, integrations and automation." },
   { href: "/enterprise", label: "Enterprise", description: "Bespoke platforms for complex operational and multi-site software." },
+  { href: "/security", label: "Security & Trust", description: "Architecture-led security, delivery controls and assurance posture." },
   { href: "/digital-growth-partnership", label: "Digital Growth Partnership", description: "Ongoing, prioritised improvement after launch." },
   { href: "/services/business-growth-audit", label: "Business Growth Audit", description: "A prioritised roadmap before committing to a build." },
   { href: "/services/managed-business-email", label: "Managed Business Email", description: "Custom-domain mailboxes, configured and supported." },

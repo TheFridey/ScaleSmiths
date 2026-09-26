@@ -229,6 +229,12 @@ export function EnterprisePage() {
               </article>
             ))}
           </div>
+          <div className="mt-8">
+            <Link href="/security" prefetch={false} className="inline-flex items-center gap-2 font-dm text-sm font-semibold text-acc">
+              View Security &amp; Trust practices
+              <ArrowRight size={14} aria-hidden="true" />
+            </Link>
+          </div>
         </div>
       </section>
 

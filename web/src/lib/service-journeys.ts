@@ -90,6 +90,7 @@ export const serviceJourneys: Record<ServiceJourneySlug, ServiceJourney> = {
     relatedPages: [
       { href: "/custom-web-app-development-uk", label: "Custom web app development", description: "Portals, dashboards, SaaS tools, and operational applications." },
       { href: "/e-commerce-development-nottingham", label: "E-commerce development", description: "Commerce UX, product workflows, payments, admin, and migrations." },
+      { href: "/security", label: "Security & Trust", description: "How ScaleSmiths designs identity, data protection, infrastructure and secure delivery." },
       { href: "/next-js-agency-uk", label: "Next.js engineering", description: "Product-grade Next.js architecture, integrations, and deployment." },
     ],
     primaryCta: { href: "/quote", label: "Start a Project Brief" },

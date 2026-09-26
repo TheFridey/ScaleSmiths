@@ -172,6 +172,7 @@ export default function AboutPage() {
           <div className="mt-8 flex flex-wrap gap-3">
             <Link href="/local-growth" prefetch={false} className="btn-ghost font-dm">Local Growth</Link>
             <Link href="/custom-systems" prefetch={false} className="btn-ghost font-dm">Custom Systems</Link>
+            <Link href="/security" prefetch={false} className="btn-ghost font-dm">Security</Link>
             <Link href="/digital-growth-partnership" prefetch={false} className="btn-ghost font-dm">Growth Partnership</Link>
           </div>
         </div>

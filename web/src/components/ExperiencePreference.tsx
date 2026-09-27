@@ -1,10 +1,15 @@
 "use client"
 
 import Link from "next/link"
+import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { ArrowRight, RefreshCw, Sparkles } from "lucide-react"
 import { trackExperienceEvent } from "@/lib/experience-analytics-client"
 import { EXPERIENCE_PREFERENCE_COOKIE } from "@/lib/experience-experiment"
+import {
+  EXPERIENCE_QUERY_PARAMETER,
+  NORMAL_EXPERIENCE_QUERY_VALUE,
+} from "@/lib/experience-routing"
 import { cn } from "@/lib/utils"
 
 type ExperiencePreference = "normal" | "interactive"
@@ -21,6 +26,20 @@ function rememberPreference(preference: ExperiencePreference) {
   } catch {
     // Private browsing or locked-down storage should not block navigation.
   }
+}
+
+/**
+ * Legacy `/traditional` and explicit `?experience=normal` must override a stored
+ * interactive preference in both cookie (middleware) and localStorage (client).
+ */
+export function ExperienceQuerySync() {
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get(EXPERIENCE_QUERY_PARAMETER) === NORMAL_EXPERIENCE_QUERY_VALUE) {
+      rememberPreference("normal")
+    }
+  }, [])
+  return null
 }
 
 function clearPreference() {

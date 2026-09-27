@@ -198,7 +198,7 @@ export default function InsightsPage() {
               <p className="text-xs font-semibold uppercase tracking-[.14em] text-acc">Apply the guidance</p>
               <h2 className="mt-3 font-syne text-3xl font-extrabold">Need the website or system reviewed in context?</h2>
               <p className="mt-3 max-w-[720px] text-sm leading-relaxed text-t2">
-                Explore ScaleSmiths services, review the{" "}
+                Talk the constraint through with a founder, review the{" "}
                 <Link href="/enterprise" className="underline decoration-acc/50 underline-offset-2 hover:decoration-acc">
                   enterprise systems
                 </Link>{" "}
@@ -210,11 +210,11 @@ export default function InsightsPage() {
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
-              <Link href="/enterprise/contact" prefetch={false} className="btn-primary justify-center">
-                Start enterprise discovery <ArrowRight size={16} aria-hidden="true" />
+              <Link href="/quote?intent=strategy_call" prefetch={false} className="btn-primary justify-center">
+                Request a strategy call <ArrowRight size={16} aria-hidden="true" />
               </Link>
-              <Link href="/work" prefetch={false} className="btn-ghost justify-center">
-                View work
+              <Link href="/enterprise/contact" prefetch={false} className="btn-ghost justify-center">
+                Start enterprise discovery
               </Link>
             </div>
           </div>

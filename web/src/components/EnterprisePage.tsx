@@ -181,7 +181,7 @@ export function EnterprisePage() {
         </div>
       </section>
 
-      <EnterpriseArchitectureFramework idPrefix="enterprise" hideEnterpriseLink />
+      <EnterpriseArchitectureFramework idPrefix="enterprise-architecture" hideEnterpriseLink />
 
       <section aria-labelledby="enterprise-security" className="border-y border-acc/20 bg-acc/[.04] px-6 py-20 md:px-12 md:py-24">
         <div className="mx-auto max-w-[1240px]">

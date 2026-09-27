@@ -18,6 +18,7 @@ describe("homepage experience defaults", () => {
     expect(preferenceSource).toContain('PROJECT_PLANNER_HREF = "/interactive"')
     expect(preferenceSource).toContain('PROJECT_PLANNER_CTA_LABEL = "Launch the Project Planner"')
     expect(preferenceSource).toContain("export function ProjectPlannerCta")
+    expect(preferenceSource).toContain("export function ExperienceQuerySync")
     expect(preferenceSource).not.toContain("HomeExperienceGate")
     expect(preferenceSource).not.toContain("What experience would you like today?")
   })

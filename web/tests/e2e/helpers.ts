@@ -150,6 +150,19 @@ export async function submitQuoteWizard(page: Page, quotePath = "/quote") {
   await page.getByRole("button", { name: /submit brief/i }).click()
 }
 
+/** Light strategy/discovery call form rendered for intent=strategy_call|discovery_call. */
+export async function submitStrategyCallForm(page: Page, quotePath: string) {
+  await gotoReady(page, quotePath)
+  await page.getByLabel(/^Your name/i).fill("Pat Test")
+  await page.getByLabel(/^Business name/i).fill("Pat Test Studio")
+  await page.getByLabel(/^Email/i).fill("pat@example.com")
+  await page.getByLabel(/What are you trying to solve/i).fill("Need clarity on what to fix first before scoping a build.")
+  await page.getByRole("radio", { name: /^Email$/i }).check()
+  await page.getByRole("radio", { name: /^This month$/i }).check()
+  await page.getByLabel(/store the information i submit/i).check()
+  await page.getByRole("button", { name: /request (?:discovery|strategy) call/i }).click()
+}
+
 function isUnexpectedConsoleError(message: string) {
   return ![
     "favicon.ico",

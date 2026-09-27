@@ -10,6 +10,7 @@ import {
   rejectNonEssentialStorage,
   setExperience,
   submitQuoteWizard,
+  submitStrategyCallForm,
 } from "./helpers"
 import { withoutVerifiedPublicClaims } from "./database"
 
@@ -35,7 +36,7 @@ test.describe("public experience SEO routing", () => {
 
       expect(response.status()).toBe(200)
       expect(html).toContain('aria-label="FORGE YOUR"')
-      expect(html).toContain("find what is holding growth back")
+      expect(html).toContain("Find what is holding growth back")
       expect(html).not.toContain("What experience would you like today?")
       expect(html).toContain("Launch the Project Planner")
       expect(response.headers()["cache-control"]).toMatch(/no-store/i)
@@ -392,7 +393,7 @@ test.describe("quote and contact forms", () => {
     let submittedPayload: Record<string, unknown> | undefined
     await mockQuoteApi(page, { ok: true, onRequest: (payload) => { submittedPayload = payload } })
 
-    await submitQuoteWizard(page, "/quote?intent=discovery_call")
+    await submitStrategyCallForm(page, "/quote?intent=discovery_call")
 
     await expect(page).toHaveURL(/\/quote\/thanks\?intent=discovery_call$/)
     expect(submittedPayload?.intent).toBe("discovery_call")

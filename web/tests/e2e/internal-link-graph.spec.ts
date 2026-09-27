@@ -191,6 +191,7 @@ test.describe("search entry points on mobile", () => {
           'a[href="/quote"]',
           'a[href^="/quote?"]',
           'a[href="/contact"]',
+          'a[href="/enterprise/contact"]',
           'a[href="/services/business-growth-audit"]',
           'a[href="/seo-website-audit"]',
           'a[href="/local-growth-check"]',

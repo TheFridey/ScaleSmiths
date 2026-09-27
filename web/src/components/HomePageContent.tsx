@@ -1,5 +1,6 @@
 import { ClientTrustStrip } from "@/components/ClientTrustStrip"
 import { CTA } from "@/components/CTA"
+import { ExperienceQuerySync } from "@/components/ExperiencePreference"
 import { FAQ } from "@/components/FAQ"
 import { FeaturedCaseStudy, FEATURED_CASE_STUDY_SLUG } from "@/components/FeaturedCaseStudy"
 import { FitSection } from "@/components/FitSection"
@@ -37,6 +38,7 @@ export async function HomePageContent() {
   // work, how it runs, and the ongoing relationship.
   return (
     <>
+      <ExperienceQuerySync />
       <Hero />
       <HeroApproachBand verifiedStats={heroStats} />
       <ClientTrustStrip />

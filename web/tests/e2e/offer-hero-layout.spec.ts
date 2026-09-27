@@ -47,7 +47,7 @@ async function heroLayoutReport(page: Page) {
   return page.evaluate(() => {
     const doc = document.documentElement
     const hero = document.querySelector<HTMLElement>("[data-offer-hero]")
-    const card = document.querySelector<HTMLElement>("[data-offer-hero-card], .journey-hero-aside")
+    const card = document.querySelector<HTMLElement>("[data-offer-hero] .offer-hero-card, [data-offer-hero-card], .journey-hero-aside")
     const price = document.querySelector<HTMLElement>("[data-offer-hero-price]")
     const h1 = document.querySelector("h1")
     const viewportWidth = window.innerWidth
@@ -55,7 +55,7 @@ async function heroLayoutReport(page: Page) {
     const tolerance = 1
 
     function withinViewport(el: Element | null) {
-      if (!el) return true
+      if (!el) return false
       const rect = el.getBoundingClientRect()
       return rect.left >= -tolerance && rect.right <= viewportWidth + tolerance
     }
@@ -71,6 +71,7 @@ async function heroLayoutReport(page: Page) {
       overflow: doc.scrollWidth - doc.clientWidth,
       heroWithinViewport: withinViewport(hero),
       cardWithinViewport: withinViewport(card),
+      missingCard: !card,
       priceFullyVisible,
       priceText: price?.textContent?.trim() ?? null,
       h1FontSize: h1 ? Number.parseFloat(getComputedStyle(h1).fontSize) : null,
@@ -96,6 +97,9 @@ test.describe("offer hero layout", () => {
         await visit(page, route.path)
         const report = await heroLayoutReport(page)
 
+        if (report.missingCard) {
+          failures.push(`${route.path}: missing offer/journey card`)
+        }
         if (report.overflow > 1) {
           failures.push(`${route.path}: horizontal overflow ${report.overflow}px`)
         }
@@ -114,6 +118,17 @@ test.describe("offer hero layout", () => {
         // Display type must not hit the old oversized ceiling (88–94px) on laptop widths
         if (viewport.width >= 1024 && report.h1FontSize && report.h1FontSize > 64) {
           failures.push(`${route.path}: h1 still oversized at ${report.h1FontSize}px`)
+        }
+        // Side-by-side offer grid must remain two columns at lg+
+        if (viewport.width >= 1024) {
+          const cols = await page.evaluate(() => {
+            const hero = document.querySelector("[data-offer-hero]")
+            return hero ? getComputedStyle(hero).gridTemplateColumns : ""
+          })
+          const trackCount = cols.trim().split(/\s+/).filter(Boolean).length
+          if (trackCount < 2) {
+            failures.push(`${route.path}: expected 2-column hero grid, got "${cols}"`)
+          }
         }
       }
 
@@ -151,10 +166,11 @@ test.describe("offer hero layout", () => {
       expect(box, `price box missing at ${width}px`).not.toBeNull()
       expect(box!.x + box!.width, `price clipped at ${width}px`).toBeLessThanOrEqual(width + 1)
 
-      const card = page.locator("[data-offer-hero-card]")
-      await expect(card).toBeInViewport()
+      const card = page.locator("[data-offer-hero] .offer-hero-card").first()
+      await expect(card).toBeVisible()
       const cardBox = await card.boundingBox()
-      expect(cardBox!.x + cardBox!.width).toBeLessThanOrEqual(width + 1)
+      expect(cardBox, `card box missing at ${width}px`).not.toBeNull()
+      expect(cardBox!.x + cardBox!.width, `card clipped at ${width}px`).toBeLessThanOrEqual(width + 1)
 
       const overflow = await page.evaluate(
         () => document.documentElement.scrollWidth - document.documentElement.clientWidth,

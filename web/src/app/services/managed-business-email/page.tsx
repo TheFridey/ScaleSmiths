@@ -34,7 +34,7 @@ export default function ManagedBusinessEmailPage() {
                 <span className="text-sm text-t2">Initial setup included. No separate setup fee.</span>
               </div>
             </AnimateIn>
-            <AnimateIn delay={0.08} className="offer-hero-card rounded-3xl border border-acc/20 bg-s1 p-7 md:p-9" data-offer-hero-card>
+            <AnimateIn delay={0.08} className="offer-hero-card rounded-3xl border border-acc/20 bg-s1 p-7 md:p-9">
               <p className="text-xs font-semibold uppercase tracking-[.14em] text-acc">Monthly service</p>
               <div className="offer-hero-price mt-4" data-offer-hero-price>{managedBusinessEmailPriceLabel()}</div>
               <p className="mt-2 text-sm text-t3">Initial setup included</p>

@@ -259,30 +259,25 @@
    * the scrollbar. Always use minmax(0, …fr) and min-width:0 on children.
    */
   .offer-hero-grid {
-    --offer-hero-main: 1.2;
-    --offer-hero-aside: 0.8;
     display: grid;
     width: 100%;
     max-width: 1240px;
     margin-inline: auto;
     gap: 2.5rem;
     min-width: 0;
-  }
-  .offer-hero-grid--tight {
-    --offer-hero-main: 1.15;
-    --offer-hero-aside: 0.85;
-  }
-  .offer-hero-grid--journey {
-    --offer-hero-main: 1.12;
-    --offer-hero-aside: 0.88;
+    grid-template-columns: minmax(0, 1fr);
   }
   @media (min-width: 1024px) {
     .offer-hero-grid {
-      grid-template-columns:
-        minmax(0, calc(var(--offer-hero-main) * 1fr))
-        minmax(0, calc(var(--offer-hero-aside) * 1fr));
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
       align-items: end;
       gap: 3rem;
+    }
+    .offer-hero-grid--tight {
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+    }
+    .offer-hero-grid--journey {
+      grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.88fr);
     }
   }
   .offer-hero-copy,
@@ -303,8 +298,8 @@
     max-width: 100%;
     font-family: var(--font-syne);
     font-weight: 800;
-    /* Sized to the card, not 10vw of the viewport */
-    font-size: clamp(1.875rem, 1.35rem + 1.4vw, 2.75rem);
+    /* Sized to the card column — keep "£15/month" fully visible at lg (1024+) */
+    font-size: clamp(1.75rem, 1.05rem + 1.15vw, 2.5rem);
     line-height: 1;
     letter-spacing: -0.03em;
   }

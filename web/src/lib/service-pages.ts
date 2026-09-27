@@ -44,7 +44,7 @@ export const serviceHubItems = [
   },
   {
     journey: "local-growth" as const,
-    title: "Digital Growth Partnership",
+    title: "Growth Partnership",
     for: "Businesses that want one accountable partner improving search visibility, conversion, content and technology — whether ScaleSmiths built the current site or not.",
     includes: "SEO, content, analytics, conversion improvement, roadmap delivery, monitoring and technical support as agreed.",
     outcome: "A prioritised digital estate that evolves with the business instead of quietly decaying.",
@@ -89,7 +89,7 @@ export const webGrowthPricingItems: PricingItem[] = [
   { name: "One-page business site", range: "Scoped after discovery", priceClaimId: "price.one-page", note: "Focused single-page presence for a clear offer or campaign.", href: "/local-growth" },
   { name: "Local business growth site", range: "Scoped after discovery", priceClaimId: "price.foundation", note: "Multi-page local site with conversion and SEO foundations.", href: "/local-growth" },
   { name: "E-commerce site", range: "Scoped after discovery", priceClaimId: "price.growth", note: "Commerce UX, product structure, payments, and admin workflows.", href: "/e-commerce-development-nottingham" },
-  { name: "Digital Growth Partnership", range: "Scoped separately", priceClaimId: "price.care-plan", note: "A commercially bounded, roadmap-led relationship for agreed priorities across SEO, conversion, content, automation, maintenance and ongoing engineering.", href: "/digital-growth-partnership" },
+  { name: "Growth Partnership", range: "Scoped separately", priceClaimId: "price.care-plan", note: "A commercially bounded, roadmap-led relationship for agreed priorities across SEO, conversion, content, automation, maintenance and ongoing engineering.", href: "/digital-growth-partnership" },
   { name: "Hosting / maintenance", range: "Scoped to stack", priceClaimId: null, note: "Deployment, SSL, backups, monitoring, and infrastructure support.", href: "/managed-website-hosting" },
   { name: "Managed Business Email", range: "£15/month", priceClaimId: null, note: "Three professional 5GB mailboxes on your domain, with initial setup included.", href: "/services/managed-business-email" },
   { name: businessGrowthAudit.shortName, range: formatAuditPrice(), priceClaimId: null, note: "One-time business-wide assessment with the full fee credited against an eligible subsequent ScaleSmiths build.", href: businessGrowthAudit.slug },
@@ -155,7 +155,7 @@ export function buildServiceHubSchema(baseUrl = "https://scalesmiths.co.uk") {
 
 export const pricingFaqs = [
   { q: "How much does a ScaleSmiths project cost?", a: "Web & Growth work uses the transparent guidance on this page, with final prices confirmed in a proposal. Custom software and enterprise systems are scoped following discovery because integrations, security, migration and operating model change the commercial shape." },
-  { q: "Do you offer a Digital Growth Partnership?", a: "Yes. A Digital Growth Partnership is a scoped, prioritised relationship for continued improvement. It can begin with an existing digital estate or continue after a ScaleSmiths build." },
+  { q: "Do you offer a Growth Partnership?", a: "Yes. A Growth Partnership is a scoped, prioritised relationship for continued improvement. It can begin with an existing digital estate or continue after a ScaleSmiths build." },
   { q: "Why are enterprise systems not listed with fixed prices?", a: "User count, sites, integrations, data migration, security, mobile or offline needs, workflows, hosting and support requirements all materially affect cost. Publishing a single public figure would misrepresent the procurement decision." },
   { q: "Where should enterprise buyers start?", a: "Start with discovery. Review the Enterprise and Custom Systems routes, then discuss the operating constraint so architecture and commercial scope can be defined before implementation expands." },
 ] as const

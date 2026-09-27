@@ -34,7 +34,7 @@ describe("service buying journeys", () => {
     expect(publicCopy).not.toMatch(/£|GBP|starting at|from \d/i)
     expect(serviceJourneys["local-growth"].process).toContainEqual({
       title: "Grow",
-      description: expect.stringMatching(/Digital Growth Partnership.*agreed roadmap, cadence and scope/i),
+      description: expect.stringMatching(/Growth Partnership.*agreed roadmap, cadence and scope/i),
     })
   })
 })

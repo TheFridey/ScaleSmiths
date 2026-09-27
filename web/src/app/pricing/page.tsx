@@ -114,7 +114,7 @@ export default async function PricingPage() {
               Request a Quote <ArrowRight size={16} aria-hidden="true" />
             </Link>
             <Link href="/local-growth" prefetch={false} className="btn-ghost font-dm">Explore Local Growth</Link>
-            <Link href="/digital-growth-partnership" prefetch={false} className="btn-ghost font-dm">Digital Growth Partnership</Link>
+            <Link href="/digital-growth-partnership" prefetch={false} className="btn-ghost font-dm">Growth Partnership</Link>
           </div>
         </div>
       </section>

@@ -13,7 +13,7 @@ import { PageBreadcrumbs } from "@/components/Breadcrumbs"
 
 export const metadata: Metadata = {
   title: "Web Design, SEO, Apps & Automation Services",
-  description: "ScaleSmiths services: web design, local SEO, e-commerce, custom web apps, automation, hosting and ongoing Digital Growth Partnerships.",
+  description: "ScaleSmiths services: web design, local SEO, e-commerce, custom web apps, automation, hosting and ongoing Growth Partnerships.",
   alternates: { canonical: "/services" },
 }
 
@@ -93,13 +93,13 @@ export default function ServicesPage() {
           <div>
             <span className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">Managed infrastructure</span>
             <h2 id="managed-estate-services" className="mt-3 font-syne text-[clamp(30px,4vw,48px)] font-extrabold tracking-[-.03em]">One accountable partner for what exists and what comes next.</h2>
-            <p className="mt-4 font-dm text-sm leading-[1.8] text-t2">A Digital Growth Partnership can start with an existing third-party website or infrastructure, or continue after a ScaleSmiths build. Priorities, responsibilities and commercial boundaries are agreed around the business.</p>
+            <p className="mt-4 font-dm text-sm leading-[1.8] text-t2">A Growth Partnership can start with an existing third-party website or infrastructure, or continue after a ScaleSmiths build. Priorities, responsibilities and commercial boundaries are agreed around the business.</p>
           </div>
           <div className="grid gap-3 sm:grid-cols-3">
             {[
               { title: "Hosting", body: "Production deployment and infrastructure responsibility where agreed.", Icon: ServerCog },
               { title: "Maintenance", body: "Updates, monitoring and support around the managed system.", Icon: Wrench },
-              { title: "Managed Business Email", body: "Professional custom-domain email from £15, available standalone or inside an agreed managed relationship.", Icon: Mail },
+              { title: "Managed Business Email", body: "Professional custom-domain email from £15/month, available standalone or inside an agreed managed relationship.", Icon: Mail },
             ].map(({ title, body, Icon }) => (
               <article key={title} className="border-l border-b2 pl-5">
                 <Icon size={17} className="text-acc" aria-hidden="true" />

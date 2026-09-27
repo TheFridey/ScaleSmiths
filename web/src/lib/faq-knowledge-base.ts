@@ -48,7 +48,7 @@ export const faqCategories: readonly FaqCategory[] = [
   {
     slug: "ongoing-support",
     label: "Ongoing support",
-    description: "What happens after launch, what a Digital Growth Partnership covers, and where the boundaries sit.",
+    description: "What happens after launch, what a Growth Partnership covers, and where the boundaries sit.",
     questionIds: ["support", "support-included", "manage-external-site", "content-updates", "seo-ongoing", "something-breaks", "monitoring", "hosting-included", "request-priority", "new-features"],
     services: ["/digital-growth-partnership", "/website-maintenance-nottingham", "/managed-website-hosting"],
     insights: ["what-does-website-maintenance-include", "what-happens-when-your-website-goes-down"],

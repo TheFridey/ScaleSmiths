@@ -239,11 +239,11 @@ test.describe("public navigation and accessibility behaviours", () => {
     const servicesTrigger = mainNavigation.getByRole("button", { name: "Services", exact: true })
     await servicesTrigger.click()
     await expect(servicesTrigger).toHaveAttribute("aria-expanded", "true")
-    const partnershipLink = mainNavigation.getByRole("link", { name: /digital growth partnership/i })
+    const partnershipLink = mainNavigation.getByRole("link", { name: /growth partnership/i })
     await expect(partnershipLink).toHaveAttribute("href", "/digital-growth-partnership")
     await partnershipLink.click({ noWaitAfter: true })
     await page.waitForURL(/\/digital-growth-partnership$/, { timeout: 20_000, waitUntil: "domcontentloaded" })
-    await expect(page.getByRole("heading", { level: 1, name: /digital growth partnership/i })).toBeVisible()
+    await expect(page.getByRole("heading", { level: 1, name: /growth partnership/i })).toBeVisible()
 
     // Each custom-systems service card routes to the full brief; local-growth cards route to
     // the short check instead, so assert both journeys keep a working commercial next step.

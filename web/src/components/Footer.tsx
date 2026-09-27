@@ -42,7 +42,7 @@ const navigationGroups = [
     label: "Find & grow",
     links: [
       { href: "/services/business-growth-audit", label: "Business Growth Audit" },
-      { href: "/digital-growth-partnership", label: "Digital Growth Partnership" },
+      { href: "/digital-growth-partnership", label: "Growth Partnership" },
       { href: "/seo-website-audit", label: "SEO Website Audit" },
       { href: "/quote", label: "Start a Project" },
     ],

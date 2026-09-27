@@ -100,6 +100,42 @@ test.describe("responsive structure", () => {
   }
 })
 
+/**
+ * Realistic handset / compact-tablet widths where the hamburger drawer is shown
+ * (`md` breakpoint hides it at 768px+).
+ */
+const MOBILE_MENU_VIEWPORTS = [
+  { name: "galaxy-s8", width: 360, height: 740 },
+  { name: "galaxy-s20", width: 360, height: 800 },
+  { name: "iphone-12", width: 390, height: 844 },
+  { name: "pixel-5", width: 393, height: 851 },
+  { name: "samsung-a51", width: 412, height: 915 },
+  { name: "android-430", width: 430, height: 932 },
+  { name: "tablet-compact", width: 767, height: 1024 },
+] as const
+
+const SHIFT_TOLERANCE_PX = 2
+
+async function measureChromeStability(page: Page) {
+  return page.evaluate(() => {
+    const header = document.querySelector("header")
+    const main = document.querySelector("main")
+    const logo = header?.querySelector("a")
+    const headerRect = header?.getBoundingClientRect()
+    const mainRect = main?.getBoundingClientRect()
+    const logoRect = logo?.getBoundingClientRect()
+    return {
+      scrollX: window.scrollX,
+      scrollWidth: document.documentElement.scrollWidth,
+      innerWidth: window.innerWidth,
+      headerLeft: headerRect?.left ?? 0,
+      mainLeft: mainRect?.left ?? 0,
+      logoLeft: logoRect?.left ?? 0,
+      bodyLeft: document.body.getBoundingClientRect().left,
+    }
+  })
+}
+
 test.describe("interactive components", () => {
   test.use({ navigationTimeout: 120_000 })
 
@@ -123,6 +159,88 @@ test.describe("interactive components", () => {
     await page.keyboard.press("Escape")
     await expect(drawer).toBeHidden()
     await expect(toggle).toBeFocused()
+  })
+
+  test("opening the mobile menu does not shift the page horizontally across phone and tablet widths", async ({ page }) => {
+    await setExperience(page, "normal")
+    await rejectNonEssentialStorage(page)
+
+    const failures: string[] = []
+
+    for (const viewport of MOBILE_MENU_VIEWPORTS) {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height })
+      await visit(page, "/")
+
+      const before = await measureChromeStability(page)
+      const toggle = page.getByRole("button", { name: /open menu/i })
+      await expect(toggle, `${viewport.name}: hamburger visible`).toBeVisible()
+
+      // Sample mid-animation frames — the historical bug shifted the sticky
+      // header left by hundreds of pixels while the drawer slid in.
+      const shiftSamples: number[] = []
+      const sampleShift = async () => {
+        const sample = await page.evaluate(() => {
+          const header = document.querySelector("header")
+          const main = document.querySelector("main")
+          return {
+            headerLeft: header?.getBoundingClientRect().left ?? 0,
+            mainLeft: main?.getBoundingClientRect().left ?? 0,
+            scrollX: window.scrollX,
+            scrollWidth: document.documentElement.scrollWidth,
+            innerWidth: window.innerWidth,
+          }
+        })
+        shiftSamples.push(
+          Math.abs(sample.headerLeft - before.headerLeft),
+          Math.abs(sample.mainLeft - before.mainLeft),
+          Math.abs(sample.scrollX - before.scrollX),
+        )
+        if (sample.scrollWidth > sample.innerWidth + SHIFT_TOLERANCE_PX) {
+          failures.push(`${viewport.name}: horizontal overflow mid-open (${sample.scrollWidth} > ${sample.innerWidth})`)
+        }
+      }
+
+      await toggle.click()
+      const drawer = page.getByRole("dialog", { name: /site navigation/i })
+      await expect(drawer, `${viewport.name}: drawer visible`).toBeVisible()
+
+      for (let i = 0; i < 8; i += 1) {
+        await sampleShift()
+        await page.waitForTimeout(40)
+      }
+
+      const after = await measureChromeStability(page)
+      const deltas = [
+        Math.abs(after.headerLeft - before.headerLeft),
+        Math.abs(after.mainLeft - before.mainLeft),
+        Math.abs(after.logoLeft - before.logoLeft),
+        Math.abs(after.bodyLeft - before.bodyLeft),
+        Math.abs(after.scrollX - before.scrollX),
+        ...shiftSamples,
+      ]
+      const worst = Math.max(...deltas)
+      if (worst > SHIFT_TOLERANCE_PX) {
+        failures.push(`${viewport.name}: chrome shifted ${worst.toFixed(1)}px (before headerLeft=${before.headerLeft}, after=${after.headerLeft})`)
+      }
+      if (after.scrollWidth > after.innerWidth + SHIFT_TOLERANCE_PX) {
+        failures.push(`${viewport.name}: horizontal overflow while open (${after.scrollWidth} > ${after.innerWidth})`)
+      }
+
+      // Drawer must stay viewport-aligned once settled (allow 1px subpixel).
+      const drawerBox = await drawer.boundingBox()
+      if (!drawerBox) {
+        failures.push(`${viewport.name}: drawer missing bounding box`)
+      } else if (drawerBox.x + drawerBox.width > viewport.width + SHIFT_TOLERANCE_PX) {
+        failures.push(`${viewport.name}: drawer extends past viewport right edge`)
+      } else if (drawerBox.x < -SHIFT_TOLERANCE_PX) {
+        failures.push(`${viewport.name}: drawer extends past viewport left edge`)
+      }
+
+      await page.keyboard.press("Escape")
+      await expect(drawer).toBeHidden()
+    }
+
+    expect(failures, "mobile menu must not shift or overflow the page").toEqual([])
   })
 
   test("desktop services menu is keyboard operable", async ({ page }) => {

@@ -155,7 +155,7 @@ export async function submitStrategyCallForm(page: Page, quotePath: string) {
   await gotoReady(page, quotePath)
   await page.getByLabel(/^Your name/i).fill("Pat Test")
   await page.getByLabel(/^Business name/i).fill("Pat Test Studio")
-  await page.getByLabel(/^Email/i).fill("pat@example.com")
+  await page.getByRole("textbox", { name: /^Email$/i }).fill("pat@example.com")
   await page.getByLabel(/What are you trying to solve/i).fill("Need clarity on what to fix first before scoping a build.")
   await page.getByRole("radio", { name: /^Email$/i }).check()
   await page.getByRole("radio", { name: /^This month$/i }).check()

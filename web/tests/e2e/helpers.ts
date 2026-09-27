@@ -154,5 +154,8 @@ function isUnexpectedConsoleError(message: string) {
   return ![
     "favicon.ico",
     "ResizeObserver loop",
+    // Firefox logs aborted in-flight webfont fetches as console errors when a
+    // soft navigation (e.g. / → /interactive preference redirect) cancels them.
+    "downloadable font: download failed",
   ].some((allowed) => message.includes(allowed))
 }

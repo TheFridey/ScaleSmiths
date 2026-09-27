@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { CheckCircle2, Globe, TrendingUp, Layers, ChevronRight } from "lucide-react"
 import { AnimateIn, StaggerIn } from "./AnimateIn"
+import { ProjectPlannerCta } from "@/components/ExperiencePreference"
 import { services, digitalGrowthPartnerships } from "@/lib/data"
 import { cn } from "@/lib/utils"
 import { claimWording, type PublicClaim } from "@/lib/public-claims"
@@ -72,6 +73,10 @@ export function Services({ claims }: { claims: ReadonlyMap<string, PublicClaim> 
             )
           })}
         </StaggerIn>
+
+        <AnimateIn className="mt-6">
+          <ProjectPlannerCta source="services_section" className="text-t2 hover:text-acc" />
+        </AnimateIn>
 
         <AnimateIn className="mt-6 rounded-2xl border border-b1 bg-s1/70 px-5 py-4 md:flex md:items-center md:justify-between md:gap-6">
           <div className="max-w-[720px]">

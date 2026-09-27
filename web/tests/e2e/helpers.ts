@@ -114,7 +114,7 @@ export async function mockExperienceAnalytics(page: Page, onRequest?: (payload: 
 }
 
 export async function chooseNormalExperience(page: Page) {
-  await page.getByRole("button", { name: /open website/i }).click()
+  // Homepage always renders the normal site; no chooser to dismiss.
   await expect(page.getByRole("heading", { name: /forge your digital edge/i })).toBeVisible()
 }
 

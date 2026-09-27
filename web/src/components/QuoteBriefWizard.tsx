@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import { ArrowLeft, ArrowRight, Check } from "lucide-react"
 import { PageBreadcrumbs } from "@/components/Breadcrumbs"
 import { EnquiryConsent } from "@/components/EnquiryConsent"
+import { ProjectPlannerCta } from "@/components/ExperiencePreference"
 import { AuditAcquisitionLink } from "@/components/AuditAcquisitionLink"
 import { formatAuditPrice } from "@/lib/business-growth-audit"
 import { enquiryIntentFromLocation } from "@/lib/enquiry-intents"
@@ -204,10 +205,15 @@ export function QuoteBriefWizard() {
       </button>
 
       {stage === 0 && (
-        <aside className="mb-7 grid gap-3 rounded-xl border border-b1 bg-s1 p-4 font-dm text-sm sm:grid-cols-[1fr_auto] sm:items-center" aria-label="Business Growth Audit alternative">
-          <div><strong className="text-t1">Not sure what to fix first?</strong><p className="mt-1 text-t2">Use the Growth Audit if the business needs improving but the right project is not yet clear. Already know what you need? Continue with this project quote.</p></div>
-          <div className="sm:text-right"><p className="font-semibold text-acc">Business Growth Audit · {formatAuditPrice()}</p><AuditAcquisitionLink source="quote" className="mt-1 inline-flex items-center gap-1 font-semibold text-t1">Explore the Audit <ArrowRight size={14} aria-hidden="true" /></AuditAcquisitionLink><p className="mt-1 text-xs text-t3">Full fee credited against an eligible build.</p></div>
-        </aside>
+        <>
+          <aside className="mb-7 grid gap-3 rounded-xl border border-b1 bg-s1 p-4 font-dm text-sm sm:grid-cols-[1fr_auto] sm:items-center" aria-label="Business Growth Audit alternative">
+            <div><strong className="text-t1">Not sure what to fix first?</strong><p className="mt-1 text-t2">Use the Growth Audit if the business needs improving but the right project is not yet clear. Already know what you need? Continue with this project quote.</p></div>
+            <div className="sm:text-right"><p className="font-semibold text-acc">Business Growth Audit · {formatAuditPrice()}</p><AuditAcquisitionLink source="quote" className="mt-1 inline-flex items-center gap-1 font-semibold text-t1">Explore the Audit <ArrowRight size={14} aria-hidden="true" /></AuditAcquisitionLink><p className="mt-1 text-xs text-t3">Full fee credited against an eligible build.</p></div>
+          </aside>
+          <div className="mb-7">
+            <ProjectPlannerCta source="quote_wizard" className="text-t2 hover:text-acc" />
+          </div>
+        </>
       )}
 
       <div className="mb-9" aria-label="Quote progress">

@@ -27,7 +27,7 @@ export default function ServicesPage() {
         <PageBreadcrumbs className="mb-10" items={[{ name: "Home", path: "/" }, { name: "Services", path: "/services" }]} />
         <AnimateIn className="max-w-[760px]">
           <span className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">Services</span>
-          <h1 className="mt-2 font-syne text-[clamp(38px,7vw,76px)] font-extrabold leading-none tracking-[-0.03em]">
+          <h1 className="page-hero-display mt-2">
             Websites, search visibility and systems built to grow with you.
           </h1>
           <p className="mt-5 font-dm text-lg leading-relaxed text-t2">

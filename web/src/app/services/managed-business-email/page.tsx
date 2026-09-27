@@ -24,19 +24,19 @@ export default function ManagedBusinessEmailPage() {
       <main>
         <section className="px-6 pb-20 pt-10 md:px-12 md:pb-28">
           <div className="mx-auto max-w-[1240px]"><PageBreadcrumbs className="mb-10" items={[{ name: "Home", path: "/" }, { name: "Services", path: "/services" }, { name: "Managed Business Email", path: "/services/managed-business-email" }]} /></div>
-          <div className="mx-auto grid max-w-[1240px] gap-12 lg:grid-cols-[1.2fr_.8fr] lg:items-end">
-            <AnimateIn>
+          <div className="offer-hero-grid" data-offer-hero>
+            <AnimateIn className="offer-hero-copy">
               <span className="text-xs font-semibold uppercase tracking-[.16em] text-acc">Managed Business Email</span>
-              <h1 className="mt-4 max-w-[850px] font-syne text-[clamp(44px,7vw,88px)] font-extrabold leading-[.92] tracking-[-.045em]">Professional email.<br />Your domain.<br />Managed properly.</h1>
+              <h1 className="offer-hero-display mt-4">Professional email.<br />Your domain.<br />Managed properly.</h1>
               <p className="mt-7 max-w-[680px] text-lg leading-relaxed text-t2">A professional identity, correct technical configuration and a real team to help when something changes. ScaleSmiths handles the setup so you can get on with running the business.</p>
               <div className="mt-8 flex flex-wrap items-center gap-4">
                 <Link href={managedBusinessEmail.onboardingPath} className="btn-primary">Set up my email <ArrowRight size={16} aria-hidden="true" /></Link>
                 <span className="text-sm text-t2">Initial setup included. No separate setup fee.</span>
               </div>
             </AnimateIn>
-            <AnimateIn delay={0.08} className="rounded-3xl border border-acc/20 bg-s1 p-7 md:p-9">
+            <AnimateIn delay={0.08} className="offer-hero-card rounded-3xl border border-acc/20 bg-s1 p-7 md:p-9">
               <p className="text-xs font-semibold uppercase tracking-[.14em] text-acc">Monthly service</p>
-              <div className="mt-4 font-syne text-[clamp(34px,10vw,60px)] font-extrabold leading-none">{managedBusinessEmailPriceLabel()}</div>
+              <div className="offer-hero-price mt-4" data-offer-hero-price>{managedBusinessEmailPriceLabel()}</div>
               <p className="mt-2 text-sm text-t3">Initial setup included</p>
               <div className="mt-7 grid grid-cols-2 gap-4 border-y border-b1 py-6">
                 <Spec value={String(spec.mailboxes)} label="professional mailboxes" />

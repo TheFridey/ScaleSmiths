@@ -55,7 +55,7 @@ export default async function PricingPage() {
       <section className="mx-auto max-w-[1240px] px-6 pb-16 pt-10 md:px-12 md:pb-20">
         <PageBreadcrumbs className="mb-10" items={[{ name: "Home", path: "/" }, { name: "Pricing", path: "/pricing" }]} />
         <span className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">Pricing</span>
-        <h1 className="mt-2 max-w-[860px] font-syne text-[clamp(38px,7vw,72px)] font-extrabold leading-none tracking-[-0.03em]">
+        <h1 className="page-hero-display mt-2 max-w-[860px]">
           Two buying journeys. One clear commercial boundary.
         </h1>
         <p className="mt-5 max-w-[680px] font-dm text-lg leading-relaxed text-t2">

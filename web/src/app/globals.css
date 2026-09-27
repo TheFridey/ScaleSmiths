@@ -249,6 +249,69 @@
     max-width: 18ch;
     color: var(--paper-ink);
   }
+
+  /*
+   * Split offer / service heroes (headline + price/aside card).
+   *
+   * Root cause of live clipping: fr tracks + default min-width:auto let large
+   * display type / max-w-[850px] inflate the main column past the container, so
+   * the price card renders past the viewport while html/body overflow-x hides
+   * the scrollbar. Always use minmax(0, …fr) and min-width:0 on children.
+   */
+  .offer-hero-grid {
+    display: grid;
+    width: 100%;
+    max-width: 1240px;
+    margin-inline: auto;
+    gap: 2.5rem;
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  @media (min-width: 1024px) {
+    .offer-hero-grid {
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+      align-items: end;
+      gap: 3rem;
+    }
+    .offer-hero-grid--tight {
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+    }
+    .offer-hero-grid--journey {
+      grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.88fr);
+    }
+  }
+  .offer-hero-copy,
+  .offer-hero-card {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .offer-hero-display {
+    max-width: 100%;
+    font-family: var(--font-syne);
+    font-weight: 800;
+    /* Conservative fluid type: readable beside a card without crushing it */
+    font-size: clamp(2.125rem, 1.15rem + 2.6vw, 3.5rem);
+    line-height: 1.05;
+    letter-spacing: -0.04em;
+  }
+  .offer-hero-price {
+    max-width: 100%;
+    font-family: var(--font-syne);
+    font-weight: 800;
+    /* Sized to the card column — keep "£15/month" fully visible at lg (1024+) */
+    font-size: clamp(1.75rem, 1.05rem + 1.15vw, 2.5rem);
+    line-height: 1;
+    letter-spacing: -0.03em;
+  }
+  /* Full-width marketing heroes (no side card) — still cap display scale */
+  .page-hero-display {
+    max-width: 100%;
+    font-family: var(--font-syne);
+    font-weight: 800;
+    font-size: clamp(2.25rem, 1.2rem + 3vw, 4rem);
+    line-height: 1.05;
+    letter-spacing: -0.035em;
+  }
   .paper-lede {
     font-family: var(--font-dm);
     font-size: 1rem;

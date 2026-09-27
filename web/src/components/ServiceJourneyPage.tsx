@@ -43,10 +43,10 @@ export function ServiceJourneyPage({ journey }: { journey: ServiceJourney }) {
               </ol>
             </nav>
 
-            <div className="mt-10 grid gap-10 lg:grid-cols-[1.12fr_.88fr] lg:items-end">
-              <div>
+            <div className="offer-hero-grid offer-hero-grid--journey mt-10" data-offer-hero>
+              <div className="offer-hero-copy">
                 <span className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">{journey.eyebrow}</span>
-                <h1 className="mt-3 max-w-4xl font-syne text-[clamp(40px,6.5vw,76px)] font-black leading-[1.01] tracking-[-.04em]">{journey.title}</h1>
+                <h1 className="offer-hero-display mt-3 font-black">{journey.title}</h1>
                 <p className="mt-6 max-w-3xl font-dm text-lg leading-relaxed text-t2">{journey.description}</p>
                 <div className="mt-8 flex flex-wrap gap-3">
                   <Link href={journey.primaryCta.href} prefetch={false} className="btn-primary font-dm">{journey.primaryCta.label}<ArrowRight size={16} aria-hidden="true" /></Link>
@@ -54,7 +54,7 @@ export function ServiceJourneyPage({ journey }: { journey: ServiceJourney }) {
                 </div>
               </div>
 
-              <aside aria-label={`Who ${journey.eyebrow} is for`} className={`journey-hero-aside rounded-2xl border p-6 md:p-8 ${isLocal ? "border-success/25 bg-success/[.07]" : "border-acc/25 bg-acc/[.07]"}`}>
+              <aside aria-label={`Who ${journey.eyebrow} is for`} data-offer-hero-card className={`offer-hero-card journey-hero-aside rounded-2xl border p-6 md:p-8 ${isLocal ? "border-success/25 bg-success/[.07]" : "border-acc/25 bg-acc/[.07]"}`}>
                 <p className="font-dm text-xs font-semibold uppercase tracking-[.12em] text-t3">Designed for</p>
                 <ul className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
                   {journey.audience.map((audience) => <li key={audience} className="flex items-center gap-3 font-dm text-sm text-t1"><CheckCircle2 size={15} className={`shrink-0 ${isLocal ? "text-success" : "text-acc"}`} aria-hidden="true" />{audience}</li>)}

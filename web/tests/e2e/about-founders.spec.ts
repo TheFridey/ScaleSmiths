@@ -14,7 +14,7 @@ test.describe("about and founders page", () => {
     await gotoReady(page, "/about")
 
     await expect(page.getByRole("heading", { level: 1 })).toContainText(/two founders/i)
-    await expect(page.getByRole("heading", { level: 3, name: "Rhys", exact: true })).toBeVisible()
+    await expect(page.getByRole("heading", { level: 3, name: "Rhys Lacy", exact: true })).toBeVisible()
     await expect(page.getByRole("heading", { level: 3, name: "Trevor Newton-Bradley" })).toBeVisible()
 
     const rhys = page.locator("#rhys")
@@ -99,6 +99,7 @@ test.describe("about and founders page", () => {
     expect(structuredData).toContain("BreadcrumbList")
     expect(structuredData).toContain("/about/rhys#person")
     expect(structuredData).toContain("/about/trevor-newton-bradley#person")
+    expect(structuredData).toContain("Rhys Lacy")
     expect(structuredData).toContain("Trevor Newton-Bradley")
     expect(structuredData).toContain("foundingLocation")
   })
@@ -125,7 +126,7 @@ test.describe("about and founders page", () => {
     await credit.click({ noWaitAfter: true })
 
     await page.waitForURL(/\/about\/rhys$/, { timeout: 20_000, waitUntil: "domcontentloaded" })
-    await expect(page.getByRole("heading", { level: 1, name: "Rhys", exact: true })).toBeVisible()
+    await expect(page.getByRole("heading", { level: 1, name: "Rhys Lacy", exact: true })).toBeVisible()
   })
 
   test("offers a founder-led call to action", async ({ page }) => {
@@ -177,7 +178,7 @@ test.describe("about and founders page", () => {
   })
 
   for (const founder of [
-    { slug: "rhys", name: "Rhys", expertise: /software engineering/i, project: /glow tanning/i },
+    { slug: "rhys", name: "Rhys Lacy", expertise: /software engineering/i, project: /glow tanning/i },
     { slug: "trevor-newton-bradley", name: "Trevor Newton-Bradley", expertise: /client relationships/i, project: /the business circle/i },
   ]) {
     test(`publishes a founder profile for ${founder.name}`, async ({ page }) => {

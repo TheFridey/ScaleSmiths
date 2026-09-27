@@ -15,7 +15,7 @@ const navigationGroups = [
     label: "Company",
     links: [
       { href: "/about", label: "About" },
-      { href: founderProfilePath("rhys"), label: "Rhys" },
+      { href: founderProfilePath("rhys"), label: "Rhys Lacy" },
       { href: founderProfilePath("trevor-newton-bradley"), label: "Trevor Newton-Bradley" },
       { href: "/work", label: "Work" },
       { href: "/locations", label: "Locations" },

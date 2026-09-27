@@ -21,14 +21,14 @@ export const teamImages = {
   /** Forge-mountain brand mural portrait — primary profile / Person schema image. */
   rhys: {
     src: "/images/team/rhys.webp",
-    alt: "Rhys, co-founder of ScaleSmiths, in a branded polo against the forge-mountain mural",
+    alt: "Rhys Lacy, co-founder of ScaleSmiths, in a branded polo against the forge-mountain mural",
     aspect: "4 / 5",
     available: true,
   },
   /** Studio/office portrait — card and homepage trust contexts. */
   rhysOffice: {
     src: "/images/team/rhys-office.webp",
-    alt: "Rhys, co-founder of ScaleSmiths, standing in the branded office by the wall logo",
+    alt: "Rhys Lacy, co-founder of ScaleSmiths, standing in the branded office by the wall logo",
     aspect: "4 / 5",
     available: true,
   },
@@ -41,7 +41,7 @@ export const teamImages = {
   // TODO(owner): supply /images/team/rhys-trevor.webp (both founders together) and describe it in the alt text.
   founders: {
     src: "/images/team/rhys-trevor.webp",
-    alt: "ScaleSmiths co-founders Rhys and Trevor Newton-Bradley",
+    alt: "ScaleSmiths co-founders Rhys Lacy and Trevor Newton-Bradley",
     aspect: "3 / 2",
     available: false,
   },

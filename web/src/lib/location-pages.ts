@@ -67,7 +67,7 @@ export const locationPages: Record<LocationPageData["slug"], LocationPageData> =
     ],
     proofLinks: ["glow-tanning", "precision-finish-plastering-rendering"],
     faqs: [
-      { q: "Is ScaleSmiths actually in Hucknall?", a: "Yes. ScaleSmiths is run from Hucknall by founders Rhys and Trevor Newton-Bradley." },
+      { q: "Is ScaleSmiths actually in Hucknall?", a: "Yes. ScaleSmiths is run from Hucknall by founders Rhys Lacy and Trevor Newton-Bradley." },
       { q: "Can you visit our Hucknall business?", a: "Yes, when an in-person session is useful and agreed as part of discovery or delivery." },
       { q: "Do you build only local-business websites?", a: "No. The portfolio includes local websites, e-commerce, SaaS products, portals and custom systems for organisations in the UK and beyond." },
     ],

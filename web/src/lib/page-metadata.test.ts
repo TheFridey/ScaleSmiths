@@ -10,8 +10,8 @@ describe("page metadata", () => {
   })
 
   it("includes article author and publication fields", () => {
-    const metadata = buildPageMetadata({ title: "Article", description: "Article description.", path: "/insights/article", type: "article", authors: [{ name: "Rhys", url: "/about/rhys" }], publishedTime: "2026-09-01", modifiedTime: "2026-09-10", section: "Technical SEO" })
-    expect(metadata.authors).toEqual([{ name: "Rhys", url: "/about/rhys" }])
-    expect(metadata.openGraph).toMatchObject({ type: "article", publishedTime: "2026-09-01", modifiedTime: "2026-09-10", section: "Technical SEO", authors: ["Rhys"] })
+    const metadata = buildPageMetadata({ title: "Article", description: "Article description.", path: "/insights/article", type: "article", authors: [{ name: "Rhys Lacy", url: "/about/rhys" }], publishedTime: "2026-09-01", modifiedTime: "2026-09-10", section: "Technical SEO" })
+    expect(metadata.authors).toEqual([{ name: "Rhys Lacy", url: "/about/rhys" }])
+    expect(metadata.openGraph).toMatchObject({ type: "article", publishedTime: "2026-09-01", modifiedTime: "2026-09-10", section: "Technical SEO", authors: ["Rhys Lacy"] })
   })
 })

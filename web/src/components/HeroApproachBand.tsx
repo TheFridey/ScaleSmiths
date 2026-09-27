@@ -6,7 +6,7 @@ const OFFERS = [
   { label: "Business Growth Audit", href: "/services/business-growth-audit" },
   { label: "Websites that convert", href: "/local-growth" },
   { label: "Custom systems", href: "/custom-systems" },
-  { label: "Digital Growth Partnership", href: "/digital-growth-partnership" },
+  { label: "Growth Partnership", href: "/digital-growth-partnership" },
 ] as const
 
 /**

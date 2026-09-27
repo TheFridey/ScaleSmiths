@@ -30,7 +30,7 @@ describe("service and pricing schemas", () => {
     expect(webGrowthPricingItems.map((item) => item.name)).toEqual(expect.arrayContaining([
       "Managed Business Email",
       "Business Growth Audit",
-      "Digital Growth Partnership",
+      "Growth Partnership",
       "Local business growth site",
     ]))
     expect(webGrowthPricingItems.some((item) => /custom web app|enterprise/i.test(item.name))).toBe(false)

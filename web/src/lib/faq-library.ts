@@ -110,7 +110,7 @@ export const faqLibrary = {
   },
   "seo-in-build": {
     q: "Is SEO included in a website build?",
-    a: "Search foundations are part of the build: deliberate metadata, canonicals, structured data, heading and route architecture, internal links, indexation controls and page speed. Ongoing SEO — content, authority, continued measurement and iteration — is separate work, scoped either as a project or through a Digital Growth Partnership.",
+    a: "Search foundations are part of the build: deliberate metadata, canonicals, structured data, heading and route architecture, internal links, indexation controls and page speed. Ongoing SEO — content, authority, continued measurement and iteration — is separate work, scoped either as a project or through a Growth Partnership.",
     services: ["/web-design-nottingham", "/digital-growth-partnership"],
     insights: ["website-seo-checklist-uk-small-businesses"],
   },
@@ -128,7 +128,7 @@ export const faqLibrary = {
   },
   "seo-existing-site": {
     q: "Can ScaleSmiths improve an existing site's SEO?",
-    a: "Yes, and that is often the better starting point. An SEO and website audit reviews indexation, technical health, content coverage, internal linking and the conversion journey, and produces a prioritised list. Implementation can then be scoped separately, handled through a Digital Growth Partnership, or carried out by your own team.",
+    a: "Yes, and that is often the better starting point. An SEO and website audit reviews indexation, technical health, content coverage, internal linking and the conversion journey, and produces a prioritised list. Implementation can then be scoped separately, handled through a Growth Partnership, or carried out by your own team.",
     services: ["/seo-website-audit", "/digital-growth-partnership"],
     insights: ["website-seo-checklist-uk-small-businesses", "why-your-website-isnt-showing-on-google"],
   },
@@ -155,13 +155,13 @@ export const faqLibrary = {
   // --------------------------------------------------- ongoing support / retainer
   support: {
     q: "What happens after my website launches?",
-    a: "Launch is a measurement point, not the end of the work. The production site is verified, measurement is connected, and ownership of accounts and access is agreed. From there a Digital Growth Partnership can continue the work — it can start after a ScaleSmiths build or with an existing website, and it covers agreed priorities rather than an open-ended retainer.",
+    a: "Launch is a measurement point, not the end of the work. The production site is verified, measurement is connected, and ownership of accounts and access is agreed. From there a Growth Partnership can continue the work — it can start after a ScaleSmiths build or with an existing website, and it covers agreed priorities rather than an open-ended retainer.",
     services: ["/digital-growth-partnership"],
     insights: ["what-does-website-maintenance-include"],
   },
   "support-included": {
     q: "What is included in ongoing website management?",
-    a: "The proposal defines it. A Digital Growth Partnership can include hosting, updates, monitoring, fixes, SEO, conversion work, content, automation and roadmap delivery, with priorities and working cadence agreed up front. Maintenance protects dependable operation; SEO, content, design changes and new integrations are improvement work and are scoped accordingly.",
+    a: "The proposal defines it. A Growth Partnership can include hosting, updates, monitoring, fixes, SEO, conversion work, content, automation and roadmap delivery, with priorities and working cadence agreed up front. Maintenance protects dependable operation; SEO, content, design changes and new integrations are improvement work and are scoped accordingly.",
     services: ["/digital-growth-partnership", "/website-maintenance-nottingham"],
     insights: ["what-does-website-maintenance-include"],
   },
@@ -178,7 +178,7 @@ export const faqLibrary = {
   },
   "seo-ongoing": {
     q: "Is SEO ongoing?",
-    a: "Yes, if it is going to work. Search results, competitors and your own services all change, so content, technical health and measurement need continued attention. That is why SEO sits in a Digital Growth Partnership as prioritised improvement work rather than being treated as a task that completes at launch.",
+    a: "Yes, if it is going to work. Search results, competitors and your own services all change, so content, technical health and measurement need continued attention. That is why SEO sits in a Growth Partnership as prioritised improvement work rather than being treated as a task that completes at launch.",
     services: ["/digital-growth-partnership", "/local-seo-nottingham"],
     insights: ["how-long-does-seo-take-local-business"],
   },
@@ -196,13 +196,13 @@ export const faqLibrary = {
   },
   "hosting-included": {
     q: "Is hosting included?",
-    a: "Not automatically. Hosting can be part of a Digital Growth Partnership or arranged as a managed hosting service on its own, and the order states which applications, environments, monitoring, maintenance and backups are covered. Managed Business Email is likewise separate unless a combined arrangement is written into the agreement.",
+    a: "Not automatically. Hosting can be part of a Growth Partnership or arranged as a managed hosting service on its own, and the order states which applications, environments, monitoring, maintenance and backups are covered. Managed Business Email is likewise separate unless a combined arrangement is written into the agreement.",
     services: ["/managed-website-hosting", "/digital-growth-partnership"],
     insights: ["website-hosting-explained"],
   },
   "request-priority": {
     q: "How are requests prioritised?",
-    a: "A Digital Growth Partnership works to an agreed roadmap and a prioritised backlog rather than a first-come queue, so work that matters commercially is not displaced by whatever arrived most recently. Incidents affecting a live service take precedence over improvement work. Clients can raise and track requests through the ScaleSmiths client portal.",
+    a: "A Growth Partnership works to an agreed roadmap and a prioritised backlog rather than a first-come queue, so work that matters commercially is not displaced by whatever arrived most recently. Incidents affecting a live service take precedence over improvement work. Clients can raise and track requests through the ScaleSmiths client portal.",
     services: ["/digital-growth-partnership"],
   },
   "new-features": {

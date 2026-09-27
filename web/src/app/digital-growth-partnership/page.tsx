@@ -14,7 +14,7 @@ const description =
   "An ongoing partnership covering SEO, conversion, content, analytics, automation and technical support, whether or not ScaleSmiths built the current site."
 
 export const metadata: Metadata = buildPageMetadata({
-  title: "Digital Growth Partnership",
+  title: "Growth Partnership",
   description,
   path: "/digital-growth-partnership",
 })
@@ -27,7 +27,7 @@ const capabilities = [
 ]
 
 const partnershipFaq = [
-  { q: "Is a Digital Growth Partnership the same as website maintenance?", a: "No. Maintenance can be part of it, but the partnership is broader. The agreed scope may combine technical care with SEO, content, conversion work, analytics, automation and roadmap delivery." },
+  { q: "Is a Growth Partnership the same as website maintenance?", a: "No. Maintenance can be part of it, but the partnership is broader. The agreed scope may combine technical care with SEO, content, conversion work, analytics, automation and roadmap delivery." },
   { q: "Do I need a new ScaleSmiths website first?", a: "No. A partnership can begin around the website and systems you already have. We assess access, technology, risks and growth priorities first, then scope any takeover, repair or improvement work that is genuinely useful." },
   { q: "What is included each month?", a: "The proposal defines priorities, working cadence, responsibilities and commercial terms. Work is deliberately scoped around the business rather than presented as an unlimited or generic package." },
 ]
@@ -41,7 +41,7 @@ export default function DigitalGrowthPartnershipPage() {
     {
       "@context": "https://schema.org",
       "@type": "Service",
-      name: "Digital Growth Partnership",
+      name: "Growth Partnership",
       serviceType: "Ongoing digital growth, SEO, conversion optimisation and web development",
       url: `${baseUrl}/digital-growth-partnership`,
       provider: organizationReference(baseUrl),
@@ -59,10 +59,10 @@ export default function DigitalGrowthPartnershipPage() {
     <>
       <JsonLd data={schema} />
       <section className="mx-auto max-w-[1240px] px-6 pb-20 pt-10 md:px-12 md:pb-28">
-        <PageBreadcrumbs className="mb-10" items={[{ name: "Home", path: "/" }, { name: "Services", path: "/services" }, { name: "Digital Growth Partnership", path: "/digital-growth-partnership" }]} />
+        <PageBreadcrumbs className="mb-10" items={[{ name: "Home", path: "/" }, { name: "Services", path: "/services" }, { name: "Growth Partnership", path: "/digital-growth-partnership" }]} />
         <AnimateIn className="max-w-[920px]">
           <p className="text-xs font-semibold uppercase tracking-[.14em] text-acc">Ongoing growth</p>
-          <h1 className="mt-3 font-syne text-[clamp(42px,8vw,88px)] font-extrabold leading-[.92] tracking-[-.04em]">Your Digital Growth Partnership.</h1>
+          <h1 className="mt-3 font-syne text-[clamp(42px,8vw,88px)] font-extrabold leading-[.92] tracking-[-.04em]">Your Growth Partnership.</h1>
           <p className="mt-7 max-w-[790px] text-lg leading-relaxed text-t2">You do not need to wait for a new website or a completed ScaleSmiths build. ScaleSmiths becomes the accountable digital partner helping decide what matters next, then actually delivering it — across search visibility, conversion, content, automation, website improvement and technical delivery, prioritised around the business rather than a predetermined list of tasks.</p>
           <div className="mt-9 flex flex-wrap gap-3">
             <Link href="/quote?intent=strategy_call" className="btn-primary">Discuss a Partnership <ArrowRight size={16} /></Link>

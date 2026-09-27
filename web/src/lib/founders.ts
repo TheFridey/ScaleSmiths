@@ -176,7 +176,7 @@ export const founders: Founder[] = [
     projectSlugs: ["the-business-circle"],
     relatedServices: [
       { href: "/services/business-growth-audit", label: "Business Growth Audit" },
-      { href: "/digital-growth-partnership", label: "Digital Growth Partnership" },
+      { href: "/digital-growth-partnership", label: "Growth Partnership" },
       { href: "/local-growth", label: "Local Growth" },
     ],
     linkConfig: [
@@ -220,7 +220,7 @@ export const approachPillars: Array<{ title: string; description: string }> = [
   {
     title: "Grow",
     description:
-      "Keep improving through a scoped Digital Growth Partnership, with agreed priorities across SEO, conversion, content, automation, technical stewardship and roadmap delivery.",
+      "Keep improving through a scoped Growth Partnership, with agreed priorities across SEO, conversion, content, automation, technical stewardship and roadmap delivery.",
   },
 ]
 

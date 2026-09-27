@@ -72,7 +72,7 @@ test.describe("rebound customer journeys", () => {
   test("growth prospect: Home → Growth Partnership → Growth Audit → Contact", async ({ page }) => {
     await journey(page, [
       { path: "/", heading: /forge your digital edge/i },
-      { path: "/digital-growth-partnership", heading: /digital growth partnership/i },
+      { path: "/digital-growth-partnership", heading: /growth partnership/i },
       { path: "/services/business-growth-audit", heading: /know what to fix next/i },
       { path: "/contact", heading: /speak directly to the founders/i },
     ])

@@ -20,7 +20,7 @@ const steps = [
   },
   {
     n: "04", label: "Grow", title: "Keep improving",
-    desc: "A Digital Growth Partnership can keep the roadmap moving across visibility, conversion, content and technology. It can begin here or around an existing digital estate from day one.", Icon: TrendingUp,
+    desc: "A Growth Partnership can keep the roadmap moving across visibility, conversion, content and technology. It can begin here or around an existing digital estate from day one.", Icon: TrendingUp,
   },
 ]
 

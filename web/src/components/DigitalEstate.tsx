@@ -111,7 +111,7 @@ export function DigitalEstate() {
           </Link>
         </AnimateIn>
         <AnimateIn className="mt-5 flex flex-col justify-between gap-4 rounded-2xl border border-acc/20 bg-acc/[.04] p-5 sm:flex-row sm:items-center">
-          <p className="font-dm text-sm text-t2"><strong className="text-t1">Need professional email only?</strong> Managed Business Email starts from £15 for three 5GB mailboxes, with initial setup included.</p>
+          <p className="font-dm text-sm text-t2"><strong className="text-t1">Need professional email only?</strong> Managed Business Email starts from £15/month for three 5GB mailboxes, with initial setup included.</p>
           <Link href="/services/managed-business-email" prefetch={false} className="group inline-flex shrink-0 items-center gap-2 font-dm text-sm font-semibold text-acc">Explore Managed Email <ArrowRight size={15} className="transition-transform group-hover:translate-x-1" aria-hidden="true" /></Link>
         </AnimateIn>
       </div>

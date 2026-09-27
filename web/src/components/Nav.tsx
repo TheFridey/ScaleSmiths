@@ -22,7 +22,7 @@ const serviceLinks = [
   { href: "/enterprise", label: "Enterprise", description: "Bespoke platforms for complex operational and multi-site software." },
   { href: "/enterprise/delivery", label: "Enterprise Delivery", description: "Discovery through production rollout for complex software engagements." },
   { href: "/security", label: "Security & Trust", description: "Architecture-led security, delivery controls and assurance posture." },
-  { href: "/digital-growth-partnership", label: "Digital Growth Partnership", description: "Ongoing, prioritised improvement after launch." },
+  { href: "/digital-growth-partnership", label: "Growth Partnership", description: "Ongoing, prioritised improvement after launch." },
   { href: "/services/business-growth-audit", label: "Business Growth Audit", description: "A prioritised roadmap before committing to a build." },
   { href: "/services/managed-business-email", label: "Managed Business Email", description: "Custom-domain mailboxes, configured and supported." },
 ]

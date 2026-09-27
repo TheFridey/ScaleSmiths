@@ -8,7 +8,7 @@ Allow: /
 # ScaleSmiths is a founder-led business growth and engineering company based in
 # Hucknall, Nottinghamshire. It identifies commercial constraints, builds the right
 # websites, custom systems and automation, and can remain involved through a
-# scoped Digital Growth Partnership.
+# scoped Growth Partnership.
 
 # Primary categories:
 #   - Business Growth & Engineering
@@ -16,7 +16,7 @@ Allow: /
 #   - E-Commerce Development
 #   - AI Implementation Consultancy
 #   - Business Automation Consultancy
-#   - Digital Growth Partnership
+#   - Growth Partnership
 
 # Contact: hello@scalesmiths.co.uk
 # Structured data: https://scalesmiths.co.uk/ (Organization / ProfessionalService JSON-LD)

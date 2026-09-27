@@ -34,7 +34,7 @@ export const metadata: Metadata = {
   description:
     "ScaleSmiths helps ambitious businesses find growth constraints, build the right digital solution, and keep improving through websites, local growth, custom systems, automation and ongoing digital partnership.",
   keywords: [
-    "digital growth partnership",
+    "growth partnership",
     "web development Nottingham",
     "web design Hucknall",
     "local business growth",

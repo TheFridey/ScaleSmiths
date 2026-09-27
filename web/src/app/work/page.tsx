@@ -64,7 +64,7 @@ export default function WorkPage() {
           <RelatedServices items={[
             { href: "/local-growth", eyebrow: "Service route", title: "Local growth", description: "Websites and search work for businesses that sell in a place." },
             { href: "/custom-systems", eyebrow: "Service route", title: "Custom systems", description: "Applications, portals, integrations and the operating layer behind them." },
-            { href: "/digital-growth-partnership", eyebrow: "After launch", title: "Digital Growth Partnership", description: "How the work continues once a build is live, as it does for Confirm-A-Kill." },
+            { href: "/digital-growth-partnership", eyebrow: "After launch", title: "Growth Partnership", description: "How the work continues once a build is live, as it does for Confirm-A-Kill." },
           ]} />
           <RelatedQuestions items={[
             { href: "/faq#web-design", eyebrow: "FAQ", title: "What a website build involves", description: "Cost, timescale, ownership, technology and what we need before starting." },

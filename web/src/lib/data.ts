@@ -566,7 +566,7 @@ export const digitalGrowthPartnerships: Array<{ name: string; price: string; pri
 export const faqs = [
   {
     q: "What does ScaleSmiths do?",
-    a: "ScaleSmiths is a founder-led business growth and engineering company. We identify commercial constraints, build websites, e-commerce platforms, SaaS applications, automation and custom systems, and can remain involved through a Digital Growth Partnership. Based in Hucknall, Nottinghamshire, we work with clients across the UK and internationally.",
+    a: "ScaleSmiths is a founder-led business growth and engineering company. We identify commercial constraints, build websites, e-commerce platforms, SaaS applications, automation and custom systems, and can remain involved through a Growth Partnership. Based in Hucknall, Nottinghamshire, we work with clients across the UK and internationally.",
   },
   {
     q: "How much does a website cost?",
@@ -590,6 +590,6 @@ export const faqs = [
   },
   {
     q: "Is managed business email included in a ScaleSmiths plan?",
-    a: "Managed Business Email can be part of an agreed Digital Growth Partnership or purchased as a standalone service. Partnership inclusion and requirements are defined in the client proposal rather than inferred from the standalone three-mailbox package.",
+    a: "Managed Business Email can be part of an agreed Growth Partnership or purchased as a standalone service. Partnership inclusion and requirements are defined in the client proposal rather than inferred from the standalone three-mailbox package.",
   },
 ]

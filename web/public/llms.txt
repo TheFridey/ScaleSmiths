@@ -8,7 +8,7 @@
 - **Local / founder-led growth** — websites, enquiries, conversions, local search, SEO, AEO, analytics, CRM, reviews, email and operational journeys.
 - **Custom systems** — portals, internal tools, workflow software, integrations, permissions and operational platforms.
 - **Enterprise software** — fragmented estates, multi-site operations, RBAC/ABAC, SSO, audit trails, migrations, offline workflows and controlled delivery.
-- **Digital Growth Partnership** — prioritised ongoing improvement across the digital estate after launch or for an existing site.
+- **Growth Partnership** — prioritised ongoing improvement across the digital estate after launch or for an existing site.
 - **Business Growth Audit** — a paid diagnostic when the right project is not yet clear.
 
 ## Philosophy

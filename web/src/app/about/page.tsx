@@ -13,14 +13,14 @@ const whatWeBuild = [
   { title: "Local growth websites", description: "Search-led sites that turn local demand into enquiries and bookings.", href: "/local-growth" },
   { title: "E-commerce", description: "Custom storefronts and admin tooling when templates no longer fit the workflow.", href: "/e-commerce-development-nottingham" },
   { title: "Custom systems and SaaS", description: "Web applications, portals, billing, automation and production infrastructure.", href: "/custom-systems" },
-  { title: "Ongoing improvement", description: "A scoped Digital Growth Partnership around the current estate or after a ScaleSmiths build.", href: "/digital-growth-partnership" },
+  { title: "Ongoing improvement", description: "A scoped Growth Partnership around the current estate or after a ScaleSmiths build.", href: "/digital-growth-partnership" },
 ]
 
 const relationshipModel = [
   { title: "A founder conversation first", description: "The first call is with the people who will shape and deliver the work, not a sales intermediary." },
   { title: "Commercial and technical scoping together", description: "Trevor frames the commercial priorities; Rhys frames the technical approach, risks and delivery." },
   { title: "Delivery by the people who scoped it", description: "No hand-off from sales to an account manager to an outsourced developer." },
-  { title: "Continuity after launch", description: "A Digital Growth Partnership can begin with an existing digital estate or continue after a ScaleSmiths build, with the same founders remaining accountable." },
+  { title: "Continuity after launch", description: "A Growth Partnership can begin with an existing digital estate or continue after a ScaleSmiths build, with the same founders remaining accountable." },
 ]
 
 export default function AboutPage() {

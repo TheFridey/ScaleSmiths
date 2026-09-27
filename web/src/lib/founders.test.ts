@@ -33,7 +33,10 @@ describe("founder data source", () => {
   it("centrally manages both founders named in the organisation data", () => {
     expect(founders.map((founder) => founder.name)).toEqual(["Rhys", "Trevor Newton-Bradley"])
     expect(founderBySlug("rhys")?.monogram).toBe("R")
+    expect(founderBySlug("rhys")?.photo).toBe("rhys")
+    expect(founderBySlug("rhys")?.cardPhoto).toBe("rhysOffice")
     expect(founderBySlug("trevor-newton-bradley")?.monogram).toBe("TNB")
+    expect(founderBySlug("trevor-newton-bradley")?.cardPhoto).toBeUndefined()
     expect(founderBySlug("nobody")).toBeUndefined()
   })
 

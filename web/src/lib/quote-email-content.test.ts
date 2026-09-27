@@ -22,4 +22,14 @@ describe("quote confirmation email content", () => {
     expect(copy).toContain("No payment has been taken")
     expect(copy).not.toMatch(/within \d+|24 hours|same day|guarantee/i)
   })
+
+  it("uses strategy-call confirmation copy without unsupported response promises", () => {
+    const content = quoteEmailContent("full_quote", "Alex", "strategy_call")
+    const copy = Object.values(content).join(" ")
+
+    expect(content.internalLabel).toMatch(/strategy call/i)
+    expect(content.confirmationSubject).toBe("Your strategy call request")
+    expect(copy).toContain("preferred contact")
+    expect(copy).not.toMatch(/within \d+|24 hours|same day|guarantee/i)
+  })
 })

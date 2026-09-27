@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test"
-import { chooseNormalExperience, rejectNonEssentialStorage, setExperience } from "./helpers"
+import { rejectNonEssentialStorage, setExperience } from "./helpers"
 
 /**
  * Accessibility smoke for the refined public design system.
@@ -16,10 +16,7 @@ test.describe("public a11y foundation", () => {
   test("homepage has no gold+white CTAs and keeps focus/scroll foundations", async ({ page }) => {
     await page.goto("/", { waitUntil: "domcontentloaded" })
     await page.waitForFunction(() => document.documentElement.dataset.scalesmithsHydrated === "true", undefined, { timeout: 120_000 })
-    const chooser = page.getByRole("heading", { name: /what experience would you like today/i })
-    if (await chooser.isVisible().catch(() => false)) {
-      await chooseNormalExperience(page)
-    }
+    await expect(page.getByRole("heading", { name: /forge your digital edge/i })).toBeVisible()
 
     const badContrast = await page.evaluate(() => {
       const offenders: string[] = []

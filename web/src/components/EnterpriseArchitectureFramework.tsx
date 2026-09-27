@@ -32,6 +32,7 @@ export function EnterpriseArchitectureFramework({
 
   return (
     <section
+      id={idPrefix}
       aria-labelledby={followsId}
       className={cn("border-y border-b1 bg-s1 px-6 py-20 md:px-12 md:py-24", className)}
       data-testid="enterprise-architecture-framework"

@@ -198,23 +198,52 @@ export const enterpriseMultiSite = [
   },
 ] as const
 
+/**
+ * Compact delivery sequence on the Enterprise overview. The full gated methodology
+ * (acceptance criteria, change control, UAT) lives on `/enterprise/delivery`.
+ */
 export const enterpriseProcess = [
   {
     title: "Discovery",
     body: "Map the operating model, pain points, constraints, integrations, compliance expectations and success criteria with the people who live the work.",
   },
   {
-    title: "Architecture",
-    body: "Define system boundaries, data ownership, identity, permissions, audit needs and the first dependable release.",
+    title: "Prototype",
+    body: "Prove the highest-risk technical or workflow assumptions before the organisation commits full build budget.",
   },
   {
-    title: "Build and validate",
-    body: "Engineer against the agreed model with testing, migration rehearsal and operational readiness checks appropriate to the risk.",
+    title: "Validated Scope",
+    body: "Lock the first dependable release against evidence — boundaries, acceptance criteria and what explicitly waits.",
   },
   {
-    title: "Deploy and harden",
-    body: "Controlled release, monitoring, support paths and a roadmap for the next increments — not an open-ended rewrite.",
+    title: "MVP",
+    body: "Build the smallest production-worthy system that removes the named constraint.",
   },
+  {
+    title: "UAT",
+    body: "Client and stakeholder acceptance against agreed criteria before production is the first serious review.",
+  },
+  {
+    title: "Production",
+    body: "Controlled rollout with monitoring, rollback capability and clear operational ownership.",
+  },
+  {
+    title: "Expansion",
+    body: "Add modules and capability only after the core system is dependable — not as an open-ended rewrite.",
+  },
+] as const
+
+/** Jump targets for sticky section navigation on the long Enterprise page. */
+export const enterpriseSectionNav = [
+  { id: "enterprise-problems", label: "Problems" },
+  { id: "enterprise-systems", label: "Systems" },
+  { id: "enterprise-capabilities", label: "Capabilities" },
+  { id: "enterprise-architecture", label: "Architecture" },
+  { id: "enterprise-security", label: "Security" },
+  { id: "enterprise-integrations", label: "Integrations" },
+  { id: "enterprise-process", label: "Delivery" },
+  { id: "enterprise-proof", label: "Proof" },
+  { id: ENTERPRISE_ENQUIRY_ANCHOR, label: "Enquire" },
 ] as const
 
 export const enterpriseFounderAdvantage = [

@@ -19,9 +19,9 @@ export default function InteractivePage() {
       <noscript>
         <section aria-labelledby="interactive-fallback-heading" className="min-h-screen bg-bg px-6 py-24 text-t1 md:px-12">
           <div className="mx-auto max-w-[900px] rounded-lg border border-b2 bg-s1 p-8">
-            <p className="font-dm text-sm font-semibold uppercase tracking-[0.14em] text-acc">ScaleSmiths V2.0</p>
+            <p className="font-dm text-sm font-semibold uppercase tracking-[0.14em] text-acc">Interactive planner</p>
             <h2 id="interactive-fallback-heading" className="mt-4 font-syne text-4xl font-black leading-[1.04] tracking-normal">
-              Welcome to the future of business websites.
+              Shape the right system around your business.
             </h2>
             <p className="mt-5 font-dm text-lg leading-relaxed text-t2">
               We are not going to show you a website. We are going to build one around your business.

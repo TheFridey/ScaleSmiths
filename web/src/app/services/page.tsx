@@ -3,6 +3,7 @@ import Link from "next/link"
 import { ArrowRight, CheckCircle2, Mail, ServerCog, Wrench } from "lucide-react"
 import { AnimateIn } from "@/components/AnimateIn"
 import { CTA } from "@/components/CTA"
+import { ProjectPlannerCta } from "@/components/ExperiencePreference"
 import { JsonLd } from "@/components/JsonLd"
 import { ServiceRouteChooser } from "@/components/ServiceRouteChooser"
 import { buildServiceHubSchema, serviceHubItems } from "@/lib/service-pages"
@@ -37,6 +38,9 @@ export default function ServicesPage() {
             <Link href="/custom-systems" prefetch={false} className="btn-ghost font-dm">Explore Custom Systems</Link>
             <Link href="/enterprise" prefetch={false} className="btn-ghost font-dm">Enterprise Systems</Link>
             <Link href="/pricing" prefetch={false} className="btn-ghost font-dm">View Pricing Guidance</Link>
+          </div>
+          <div className="mt-5">
+            <ProjectPlannerCta source="services_hub" className="text-t2 hover:text-acc" />
           </div>
         </AnimateIn>
       </section>

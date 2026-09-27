@@ -125,8 +125,12 @@ export function validateQuotePayload(payload: QuotePayload): QuoteValidationResu
   const businessEmail = requestedFunnel === "business_email"
   const businessAudit = requestedFunnel === "business_growth_audit"
   const enterprise = requestedFunnel === "enterprise"
+  const parsedIntent = parseEnquiryIntent(payload.intent)
+  const strategyCall = !businessEmail && !businessAudit && !enterprise
+    && (parsedIntent === "strategy_call" || parsedIntent === "discovery_call")
   const rawType = cleanString(payload.type, 240)
   const inferredInteractive = rawType.startsWith("ScaleSmiths V2 interactive journey")
+    || rawType.startsWith("ScaleSmiths interactive journey")
   const funnelType: FunnelType = businessAudit
     ? "business_growth_audit"
     : businessEmail
@@ -160,19 +164,25 @@ export function validateQuotePayload(payload: QuotePayload): QuoteValidationResu
         ? "Business email customer"
         : enterprise
           ? cleanString(payload.businessType, 120) || "Enterprise organisation"
-          : cleanString(payload.businessType, 120),
+          : strategyCall
+            ? cleanString(payload.businessType, 120) || "Strategy call enquiry"
+            : cleanString(payload.businessType, 120),
     type: businessAudit
       ? "Business Growth Audit"
       : businessEmail
         ? "Managed Business Email"
         : enterprise
           ? rawType || "Enterprise System"
-          : rawType,
+          : strategyCall
+            ? rawType || (parsedIntent === "discovery_call" ? "Discovery Call" : "Strategy Call")
+            : rawType,
     budget: businessAudit
       ? "£395 one-time audit"
       : businessEmail
         ? "£15 starting service"
-        : cleanString(payload.budget, 80),
+        : strategyCall
+          ? cleanString(payload.budget, 80) || "To be discussed on call"
+          : cleanString(payload.budget, 80),
     timeframe: businessAudit
       ? "Delivery date to be confirmed before work begins"
       : businessEmail
@@ -192,7 +202,9 @@ export function validateQuotePayload(payload: QuotePayload): QuoteValidationResu
         ? "Standalone email enquiry"
         : enterprise
           ? cleanString(payload.carePlanInterest, 80) || "Not provided"
-          : cleanString(payload.carePlanInterest, 80),
+          : strategyCall
+            ? cleanString(payload.carePlanInterest, 80) || "Not provided"
+            : cleanString(payload.carePlanInterest, 80),
     preferredContactMethod: businessAudit || businessEmail || enterprise
       ? "Email"
       : cleanString(payload.preferredContactMethod, 80),
@@ -205,7 +217,7 @@ export function validateQuotePayload(payload: QuotePayload): QuoteValidationResu
         ? "business_email"
         : enterprise
           ? "enterprise"
-          : parseEnquiryIntent(payload.intent),
+          : parsedIntent,
     consent: payload.consent === true,
     brief: cleanString(payload.brief, 5000),
     website: cleanString(payload.website, 200),
@@ -217,7 +229,9 @@ export function validateQuotePayload(payload: QuotePayload): QuoteValidationResu
       ? !data.name || !data.email || !data.biz || !data.goal || !data.brief || !data.consent
       : enterprise
         ? !data.name || !data.email || !data.biz || !data.phone || !data.goal || !data.brief || !data.consent || !data.budget || !data.timeframe || data.needs.length === 0
-        : !data.name || !data.email || !data.brief || !data.type || !data.budget || !data.timeframe || !data.goal || !data.businessType || !data.preferredContactMethod || !data.consent
+        : strategyCall
+          ? !data.name || !data.email || !data.biz || !data.goal || !data.brief || !data.timeframe || !data.preferredContactMethod || !data.consent
+          : !data.name || !data.email || !data.brief || !data.type || !data.budget || !data.timeframe || !data.goal || !data.businessType || !data.preferredContactMethod || !data.consent
 
   if (missingRequired) {
     return { ok: false, status: 400, error: "Please check the required fields and try again." }

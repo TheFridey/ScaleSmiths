@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { CheckCircle2, Globe, TrendingUp, Layers, ChevronRight } from "lucide-react"
 import { AnimateIn, StaggerIn } from "./AnimateIn"
+import { ProjectPlannerCta } from "@/components/ExperiencePreference"
 import { services, digitalGrowthPartnerships } from "@/lib/data"
 import { cn } from "@/lib/utils"
 import { claimWording, type PublicClaim } from "@/lib/public-claims"
@@ -37,7 +38,7 @@ export function Services({ claims }: { claims: ReadonlyMap<string, PublicClaim> 
                 )}
               >
                 {s.featured && (
-                  <div className="absolute right-4 top-4 rounded-md bg-acc px-[10px] py-[3px] font-dm text-[11px] font-semibold tracking-[.04em] text-acc-ink">
+                  <div className="absolute right-4 top-4 rounded-md bg-acc px-[10px] py-[3px] font-dm text-xs font-semibold tracking-[.04em] text-acc-ink">
                     FEATURED
                   </div>
                 )}
@@ -73,9 +74,21 @@ export function Services({ claims }: { claims: ReadonlyMap<string, PublicClaim> 
           })}
         </StaggerIn>
 
-        <AnimateIn className="mt-6 grid gap-6 rounded-2xl border border-acc/20 bg-s1 p-7 md:grid-cols-[1fr_auto] md:items-center">
-          <div><p className="font-dm text-xs font-semibold uppercase tracking-[.12em] text-acc">Standalone service</p><h3 className="mt-2 font-syne text-2xl font-bold">Managed Business Email</h3><p className="mt-2 max-w-[720px] font-dm text-sm leading-relaxed text-t2">Professional custom-domain email, configured and supported by ScaleSmiths. £15/month for three 5GB mailboxes, with initial setup included.</p></div>
-          <Link href="/services/managed-business-email" prefetch={false} className="btn-ghost min-h-11 justify-center font-dm">Explore Business Email <ChevronRight size={14} /></Link>
+        <AnimateIn className="mt-6">
+          <ProjectPlannerCta source="services_section" className="text-t2 hover:text-acc" />
+        </AnimateIn>
+
+        <AnimateIn className="mt-6 rounded-2xl border border-b1 bg-s1/70 px-5 py-4 md:flex md:items-center md:justify-between md:gap-6">
+          <div className="max-w-[720px]">
+            <p className="font-dm text-xs font-semibold uppercase tracking-[.12em] text-t3">Also available</p>
+            <p className="mt-1 font-dm text-sm leading-relaxed text-t2">
+              <span className="font-semibold text-t1">Managed Business Email</span>
+              {" "}— professional custom-domain email from £15/month for three 5GB mailboxes, with setup included.
+            </p>
+          </div>
+          <Link href="/services/managed-business-email" prefetch={false} className="mt-3 inline-flex min-h-11 items-center gap-1.5 font-dm text-sm font-semibold text-acc md:mt-0">
+            Explore Business Email <ChevronRight size={14} />
+          </Link>
         </AnimateIn>
 
         <AnimateIn className="mt-10 bg-s1 border border-acc/20 rounded-2xl p-7" delay={0.2}>
@@ -90,9 +103,9 @@ export function Services({ claims }: { claims: ReadonlyMap<string, PublicClaim> 
                 <div className="font-syne text-[15px] font-bold mb-1">{r.name}</div>
                 <div className="font-syne text-sm font-semibold text-acc mb-2">{claimWording(claims, r.priceClaimId, r.price)}</div>
                 <div className="font-dm text-[13px] text-t2 leading-relaxed">{r.desc}</div>
-                <div className="mt-4 flex items-center justify-between border-t border-b2 pt-3 font-dm text-[11px]">
+                <div className="mt-4 grid gap-1 border-t border-b2 pt-3 font-dm text-xs sm:flex sm:items-center sm:justify-between sm:gap-3">
                   <span className="text-t3">Managed Business Email</span>
-                  <span className="rounded-md bg-acc/10 px-2.5 py-1 font-semibold uppercase tracking-[.08em] text-acc">{r.managedEmail}</span>
+                  <span className="w-fit rounded-md bg-acc/10 px-2.5 py-1 font-semibold uppercase tracking-[.08em] text-acc">{r.managedEmail}</span>
                 </div>
               </div>
             ))}

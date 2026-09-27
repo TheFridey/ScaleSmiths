@@ -56,7 +56,7 @@ export function ConfirmAKillStory() {
         <div className="mx-auto max-w-[1240px]">
           <AnimateIn className="grid gap-10 lg:grid-cols-[.75fr_1.25fr] lg:items-end">
             <div>
-              <p className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">The existing opportunity</p>
+              <p className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">Tracking / measurement</p>
               <h2 id="cak-baseline" className="mt-2 font-syne text-[clamp(30px,4vw,48px)] font-extrabold tracking-[-.03em]">Visible in search. Rarely chosen.</h2>
               <p className="mt-5 font-dm text-base leading-relaxed text-t2">
                 Before launch, Confirm-A-Kill was already appearing frequently in Google Search, generating 57.9K impressions over three months. Only 0.3% of those impressions converted into organic clicks, exposing a clear opportunity to improve search-result relevance and the journey after the click.

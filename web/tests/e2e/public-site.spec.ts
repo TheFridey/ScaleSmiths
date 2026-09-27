@@ -1,7 +1,6 @@
 import { expect, test } from "@playwright/test"
 import {
   EXPERIENCE_KEY,
-  chooseNormalExperience,
   clearV2State,
   installConsoleGuards,
   gotoReady,
@@ -11,6 +10,7 @@ import {
   rejectNonEssentialStorage,
   setExperience,
   submitQuoteWizard,
+  submitStrategyCallForm,
 } from "./helpers"
 import { withoutVerifiedPublicClaims } from "./database"
 
@@ -25,26 +25,22 @@ test.beforeEach(async ({ page }, testInfo) => {
 })
 
 test.describe("public experience SEO routing", () => {
-  test("serves the server-rendered normal homepage to Googlebot and Bingbot without the chooser", async ({ request }) => {
+  test("serves the server-rendered normal homepage to Googlebot, Bingbot, and humans without a chooser", async ({ request }) => {
     for (const userAgent of [
       "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
       "Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)",
+      "Mozilla/5.0 Chrome/126.0 Safari/537.36",
     ]) {
       const response = await request.get("/", { headers: { "user-agent": userAgent } })
       const html = await response.text()
 
       expect(response.status()).toBe(200)
       expect(html).toContain('aria-label="FORGE YOUR"')
-      expect(html).toContain("find what is holding growth back")
+      expect(html).toContain("Find what is holding growth back")
       expect(html).not.toContain("What experience would you like today?")
+      expect(html).toContain("Launch the Project Planner")
       expect(response.headers()["cache-control"]).toMatch(/no-store/i)
     }
-
-    const humanResponse = await request.get("/", {
-      headers: { "user-agent": "Mozilla/5.0 Chrome/126.0 Safari/537.36" },
-    })
-    expect(await humanResponse.text()).toContain("What experience would you like today?")
-    expect(humanResponse.headers()["cache-control"]).toMatch(/no-store/i)
   })
 
   test("permanently redirects the legacy normal route and honours it over an interactive preference", async ({ page, request }) => {
@@ -125,82 +121,47 @@ test.describe("public experience SEO routing", () => {
 })
 
 test.describe("public experience preference", () => {
-  test("shows the first-time chooser and saves the normal-site selection", async ({ page }) => {
+  test("homepage defaults into the normal site without an experience chooser", async ({ page }) => {
     const consoleGuard = await installConsoleGuards(page)
     await clearV2State(page)
 
     await gotoReady(page, "/")
-    await expect(page.getByRole("heading", { name: /what experience would you like today/i })).toBeVisible()
-    await expect(page.getByRole("button", { name: /open website/i })).toBeVisible()
-    await expect(page.getByRole("button", { name: /launch interactive/i })).toBeVisible()
-
-    await chooseNormalExperience(page)
-    await expect.poll(() => page.evaluate((key) => localStorage.getItem(key), EXPERIENCE_KEY)).toBe("normal")
+    await expect(page.getByRole("heading", { name: /forge your digital edge/i })).toBeVisible()
+    await expect(page.getByRole("heading", { name: /what experience would you like today/i })).toBeHidden()
+    await expect(page.getByRole("link", { name: /launch the project planner/i }).first()).toBeVisible()
     await consoleGuard.expectClean()
   })
 
-  test("launches the interactive experience from the chooser", async ({ page }) => {
+  test("launches the interactive planner from a secondary CTA", async ({ page }) => {
     await clearV2State(page)
 
     await gotoReady(page, "/")
-    await page.getByRole("button", { name: /launch interactive/i }).click({ noWaitAfter: true })
+    await page.getByRole("link", { name: /launch the project planner/i }).first().click()
 
     await page.waitForURL(/\/interactive$/, { timeout: 20_000 })
     await expect(page.getByRole("link", { name: /exit to normal site/i })).toBeVisible()
     await expect.poll(() => page.evaluate((key) => localStorage.getItem(key), EXPERIENCE_KEY)).toBe("interactive")
   })
 
-  test("returns directly to the normal site for a stored normal preference", async ({ page }) => {
-    await setExperience(page, "normal")
+  test("keeps visitors on the normal homepage even with a stored interactive preference", async ({ page }) => {
+    await setExperience(page, "interactive")
 
     await gotoReady(page, "/")
 
+    await expect(page).toHaveURL(/\/$/)
     await expect(page.getByRole("heading", { name: /forge your digital edge/i })).toBeVisible()
     await expect(page.getByRole("heading", { name: /what experience would you like today/i })).toBeHidden()
   })
 
-  test("redirects to interactive for a stored interactive preference without flashing the homepage", async ({ page }) => {
-    await page.addInitScript(
-      ({ key }) => {
-        window.localStorage.setItem(key, "interactive")
-        window.sessionStorage.setItem("scalesmiths.homeFlashText", "[]")
-        const seen: string[] = []
-        const record = () => {
-          const text = document.body?.innerText ?? ""
-          if (/FORGE YOUR|DIGITAL EDGE|What experience would you like today/i.test(text)) {
-            seen.push(text)
-            window.sessionStorage.setItem("scalesmiths.homeFlashText", JSON.stringify(seen))
-          }
-        }
-        new MutationObserver(record).observe(document.documentElement, { childList: true, subtree: true })
-        window.addEventListener("DOMContentLoaded", record)
-      },
-      { key: EXPERIENCE_KEY },
-    )
-
-    await page.goto("/", { waitUntil: "domcontentloaded" })
-
-    await page.waitForURL(/\/interactive$/, { timeout: 20_000 })
+  test("interactive planner remains a direct public route and can exit to the website", async ({ page }) => {
+    await clearV2State(page)
+    await gotoReady(page, "/interactive")
     await expect(page.getByRole("link", { name: /exit to normal site/i })).toBeVisible()
-    await expect.poll(() => page.evaluate(() => JSON.parse(window.sessionStorage.getItem("scalesmiths.homeFlashText") ?? "[]"))).toEqual([])
-  })
 
-  test("can reset and switch experience preferences", async ({ page }) => {
-    await setExperience(page, "normal")
-
-    await gotoReady(page, "/")
-    await page.getByRole("button", { name: /reset experience preference/i }).click()
-    await expect(page.getByRole("heading", { name: /what experience would you like today/i })).toBeVisible()
-    await expect.poll(() => page.evaluate((key) => localStorage.getItem(key), EXPERIENCE_KEY)).toBeNull()
-
-    await page.getByRole("button", { name: /open website/i }).click()
-    await page.getByRole("button", { name: /switch experience/i }).click({ noWaitAfter: true })
-    await page.waitForURL(/\/interactive$/, { timeout: 20_000 })
-    await expect.poll(() => page.evaluate((key) => localStorage.getItem(key), EXPERIENCE_KEY)).toBe("interactive")
-
-    await page.getByRole("link", { name: /exit to normal site/i }).click()
+    await page.getByRole("button", { name: /back to website/i }).click()
     await page.waitForURL(/\/$/, { timeout: 20_000 })
-    await expect.poll(() => page.evaluate((key) => localStorage.getItem(key), EXPERIENCE_KEY)).toBe("normal")
+    await expect(page.getByRole("heading", { name: /forge your digital edge/i })).toBeVisible()
+    await expect.poll(() => page.evaluate((key) => localStorage.getItem(key), EXPERIENCE_KEY)).toBeNull()
   })
 })
 
@@ -432,7 +393,7 @@ test.describe("quote and contact forms", () => {
     let submittedPayload: Record<string, unknown> | undefined
     await mockQuoteApi(page, { ok: true, onRequest: (payload) => { submittedPayload = payload } })
 
-    await submitQuoteWizard(page, "/quote?intent=discovery_call")
+    await submitStrategyCallForm(page, "/quote?intent=discovery_call")
 
     await expect(page).toHaveURL(/\/quote\/thanks\?intent=discovery_call$/)
     expect(submittedPayload?.intent).toBe("discovery_call")

@@ -1,7 +1,8 @@
 import { ClientTrustStrip } from "@/components/ClientTrustStrip"
 import { CTA } from "@/components/CTA"
+import { ExperienceQuerySync } from "@/components/ExperiencePreference"
 import { FAQ } from "@/components/FAQ"
-import { FeaturedCaseStudy } from "@/components/FeaturedCaseStudy"
+import { FeaturedCaseStudy, FEATURED_CASE_STUDY_SLUG } from "@/components/FeaturedCaseStudy"
 import { FitSection } from "@/components/FitSection"
 import { FoundersSection } from "@/components/FoundersSection"
 import { Hero } from "@/components/Hero"
@@ -37,10 +38,11 @@ export async function HomePageContent() {
   // work, how it runs, and the ongoing relationship.
   return (
     <>
+      <ExperienceQuerySync />
       <Hero />
       <HeroApproachBand verifiedStats={heroStats} />
       <ClientTrustStrip />
-      <Portfolio limit={2} />
+      <Portfolio limit={2} excludeSlugs={[FEATURED_CASE_STUDY_SLUG]} />
       <ServiceRouteChooser compact />
       <Services claims={serviceClaims} />
       <EntryProducts />

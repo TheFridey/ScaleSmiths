@@ -1,5 +1,6 @@
 import { ArrowRight } from "lucide-react"
 import { AnimateIn } from "./AnimateIn"
+import { ProjectPlannerCta } from "@/components/ExperiencePreference"
 import { Logo } from "./Logo"
 import { MagneticLink } from "./MagneticLink"
 
@@ -28,6 +29,9 @@ export function CTA() {
         <MagneticLink href="/quote?intent=strategy_call" className="btn-primary group inline-flex font-dm">
           Request a Strategy Call <ArrowRight size={16} aria-hidden="true" />
         </MagneticLink>
+        <div className="mt-6">
+          <ProjectPlannerCta source="homepage_cta" className="justify-center text-t2 hover:text-acc" />
+        </div>
       </AnimateIn>
     </section>
   )

@@ -42,7 +42,7 @@ export function InsightCategoryPage({ topic }: { topic: InsightTopicSlug }) {
           <Breadcrumbs items={[{ name: "Home", href: "/" }, { name: "Insights", href: "/insights" }, { name: cluster.label }]} />
           <header className="mt-10 max-w-[820px]">
             <p className="text-xs font-semibold uppercase tracking-[.14em] text-acc">
-              {enterprise ? "Engineering publication · Enterprise" : "Insights topic"}
+              {enterprise ? "Knowledge Library · Enterprise" : "Insights topic"}
             </p>
             <h1 className="mt-3 font-syne text-[clamp(38px,6.5vw,72px)] font-black tracking-[-.04em]">{cluster.label}</h1>
             <p className="mt-5 text-lg leading-relaxed text-t2">{cluster.description}</p>

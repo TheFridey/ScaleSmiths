@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
     }
 
     const resend = new Resend(apiKey)
-    const emailContent = quoteEmailContent(funnelType, escapeHtml(name))
+    const emailContent = quoteEmailContent(funnelType, escapeHtml(name), intent)
     const internalHtml = `
       <div style="background:#080808;padding:28px;font-family:Arial,sans-serif;">
         <div style="max-width:680px;margin:0 auto;background:#0f0f0f;border:1px solid #242424;border-radius:16px;overflow:hidden;">

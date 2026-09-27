@@ -70,7 +70,7 @@ export default function InsightsPage() {
           <div className="mx-auto max-w-[1240px]">
             <Breadcrumbs items={[{ name: "Home", href: "/" }, { name: "Insights" }]} />
             <div className="mt-10 max-w-[900px]">
-              <p className="text-xs font-semibold uppercase tracking-[.14em] text-acc">Engineering publication</p>
+              <p className="text-xs font-semibold uppercase tracking-[.14em] text-acc">ScaleSmiths Knowledge Library</p>
               <p className="mt-4 font-syne text-[clamp(2.75rem,7vw,4.5rem)] font-extrabold leading-none tracking-[-0.045em] text-t1">
                 ScaleSmiths
               </p>
@@ -79,6 +79,7 @@ export default function InsightsPage() {
               </h1>
               <p className="mt-6 max-w-[760px] text-lg leading-relaxed text-t2">
                 Enterprise software, engineering trade-offs, websites, search and infrastructure — written without inflated promises.
+                This library launched as a coherent body of work; dates reflect publication, not invented history.
                 Each article connects the decision to relevant services, delivery evidence and the next useful question.
               </p>
               <div className="mt-7 flex flex-wrap gap-3">
@@ -198,7 +199,7 @@ export default function InsightsPage() {
               <p className="text-xs font-semibold uppercase tracking-[.14em] text-acc">Apply the guidance</p>
               <h2 className="mt-3 font-syne text-3xl font-extrabold">Need the website or system reviewed in context?</h2>
               <p className="mt-3 max-w-[720px] text-sm leading-relaxed text-t2">
-                Explore ScaleSmiths services, review the{" "}
+                Talk the constraint through with a founder, review the{" "}
                 <Link href="/enterprise" className="underline decoration-acc/50 underline-offset-2 hover:decoration-acc">
                   enterprise systems
                 </Link>{" "}
@@ -210,11 +211,11 @@ export default function InsightsPage() {
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
-              <Link href="/enterprise/contact" prefetch={false} className="btn-primary justify-center">
-                Start enterprise discovery <ArrowRight size={16} aria-hidden="true" />
+              <Link href="/quote?intent=strategy_call" prefetch={false} className="btn-primary justify-center">
+                Request a strategy call <ArrowRight size={16} aria-hidden="true" />
               </Link>
-              <Link href="/work" prefetch={false} className="btn-ghost justify-center">
-                View work
+              <Link href="/enterprise/contact" prefetch={false} className="btn-ghost justify-center">
+                Start enterprise discovery
               </Link>
             </div>
           </div>

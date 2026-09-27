@@ -28,7 +28,7 @@ interface ConversionFormData {
 
 const conversionOptions = [
   { id: "strategy_call", label: "Request a Strategy Call", Icon: ClipboardList },
-  { id: "v2_demo", label: "Request a V2 Demo", Icon: Sparkles },
+  { id: "v2_demo", label: "Request an Interactive Demo", Icon: Sparkles },
   { id: "email_plan", label: "Email This Plan", Icon: MailCheck },
 ] as const
 
@@ -94,7 +94,7 @@ function buildBrief({
   workflow: string[]
 }) {
   return [
-    "ScaleSmiths V2 interactive journey enquiry",
+    "ScaleSmiths interactive journey enquiry",
     "",
     `Requested next step: ${conversionIntentLabel(intent)}`,
     `Journey industry: ${journeyIndustry}`,
@@ -188,7 +188,7 @@ export function V2ConversionLayer({ industry }: V2ConversionLayerProps) {
           biz: formData.businessName,
           websiteUrl: "",
           businessType: formContent.name,
-          type: `ScaleSmiths V2 interactive journey - ${conversionIntentLabel(intent)}`,
+          type: `ScaleSmiths interactive journey - ${conversionIntentLabel(intent)}`,
           budget: formData.budget,
           timeframe: formData.timeline,
           goal: formData.goal,
@@ -291,7 +291,7 @@ export function V2ConversionLayer({ industry }: V2ConversionLayerProps) {
           <CheckCircle2 className="h-6 w-6 text-success" aria-hidden="true" />
           <h3 className="mt-3 font-syne text-2xl font-black tracking-normal text-t1">Plan sent.</h3>
           <p className="mt-2 font-dm text-sm leading-relaxed text-t2">
-            We have the V2 journey context and your project details. ScaleSmiths will review the fit and come back with the next sensible step.
+            We have the interactive planner context and your project details. ScaleSmiths will review the fit and come back with the next sensible step.
           </p>
         </div>
       ) : (

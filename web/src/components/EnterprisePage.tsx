@@ -14,6 +14,7 @@ import { ContextualFaqs } from "@/components/faq/ContextualFaqs"
 import { FounderStrip } from "@/components/FounderStrip"
 import { HeroEmbers } from "@/components/HeroEmbers"
 import { JsonLd } from "@/components/JsonLd"
+import { PageSectionNav } from "@/components/PageSectionNav"
 import { ProjectCard } from "@/components/work/ProjectCard"
 import { caseStudiesForSlugs } from "@/lib/case-studies"
 import {
@@ -29,6 +30,7 @@ import {
   enterpriseProblems,
   enterpriseProcess,
   enterpriseProofIntro,
+  enterpriseSectionNav,
   enterpriseSecurity,
   enterpriseSystemTypes,
 } from "@/lib/enterprise-page"
@@ -116,6 +118,8 @@ export function EnterprisePage() {
         </div>
       </section>
 
+      <PageSectionNav items={enterpriseSectionNav} label="Jump to" />
+
       <section aria-labelledby="enterprise-problems" className="border-y border-b1 bg-s1 px-6 py-20 md:px-12 md:py-24">
         <div className="mx-auto max-w-[1240px]">
           <AnimateIn>
@@ -181,7 +185,7 @@ export function EnterprisePage() {
         </div>
       </section>
 
-      <EnterpriseArchitectureFramework idPrefix="enterprise" hideEnterpriseLink />
+      <EnterpriseArchitectureFramework idPrefix="enterprise-architecture" hideEnterpriseLink />
 
       <section aria-labelledby="enterprise-security" className="border-y border-acc/20 bg-acc/[.04] px-6 py-20 md:px-12 md:py-24">
         <div className="mx-auto max-w-[1240px]">
@@ -260,16 +264,16 @@ export function EnterprisePage() {
       <section aria-labelledby="enterprise-process" className="px-6 py-20 md:px-12 md:py-24">
         <div className="mx-auto grid max-w-[1240px] gap-10 lg:grid-cols-[.7fr_1.3fr]">
           <AnimateIn>
-            <SectionEyebrow>Discovery-to-deployment process</SectionEyebrow>
+            <SectionEyebrow>Discovery → Expansion</SectionEyebrow>
             <SectionHeading id="enterprise-process">From operating constraint to controlled release.</SectionHeading>
             <SectionLede>
-              The aim is not an unbounded transformation programme. It is a clear path from discovery to a first dependable system — then disciplined expansion.
+              The aim is not an unbounded transformation programme. It is a clear path — Discovery → Prototype → Validated Scope → MVP → UAT → Production → Expansion — then disciplined improvement.
             </SectionLede>
           </AnimateIn>
-          <ol className="grid gap-3 sm:grid-cols-2">
+          <ol className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {enterpriseProcess.map((step, index) => (
               <li key={step.title} className="rounded-2xl border border-b1 bg-s1 p-5 md:p-6">
-                <span className="font-syne text-sm font-bold text-acc">{index + 1}</span>
+                <span className="font-syne text-sm font-bold text-acc">{String(index + 1).padStart(2, "0")}</span>
                 <h3 className="mt-2 font-syne text-lg font-bold">{step.title}</h3>
                 <p className="mt-2 font-dm text-sm leading-relaxed text-t2">{step.body}</p>
               </li>

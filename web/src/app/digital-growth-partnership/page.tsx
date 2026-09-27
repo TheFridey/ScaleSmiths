@@ -62,7 +62,7 @@ export default function DigitalGrowthPartnershipPage() {
         <PageBreadcrumbs className="mb-10" items={[{ name: "Home", path: "/" }, { name: "Services", path: "/services" }, { name: "Growth Partnership", path: "/digital-growth-partnership" }]} />
         <AnimateIn className="max-w-[920px]">
           <p className="text-xs font-semibold uppercase tracking-[.14em] text-acc">Ongoing growth</p>
-          <h1 className="mt-3 font-syne text-[clamp(42px,8vw,88px)] font-extrabold leading-[.92] tracking-[-.04em]">Your Growth Partnership.</h1>
+          <h1 className="page-hero-display mt-3">Your Growth Partnership.</h1>
           <p className="mt-7 max-w-[790px] text-lg leading-relaxed text-t2">You do not need to wait for a new website or a completed ScaleSmiths build. ScaleSmiths becomes the accountable digital partner helping decide what matters next, then actually delivering it — across search visibility, conversion, content, automation, website improvement and technical delivery, prioritised around the business rather than a predetermined list of tasks.</p>
           <div className="mt-9 flex flex-wrap gap-3">
             <Link href="/quote?intent=strategy_call" className="btn-primary">Discuss a Partnership <ArrowRight size={16} /></Link>

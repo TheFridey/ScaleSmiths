@@ -42,10 +42,10 @@ export default function AboutPage() {
             </ol>
           </nav>
 
-          <AnimateIn className="mt-10 grid gap-10 lg:grid-cols-[1.15fr_.85fr] lg:items-end">
-            <div>
+          <AnimateIn className="offer-hero-grid offer-hero-grid--tight mt-10" data-offer-hero>
+            <div className="offer-hero-copy">
               <span className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">About & founders</span>
-              <h1 className="mt-3 max-w-4xl font-syne text-[clamp(38px,6.5vw,76px)] font-black leading-[1.02] tracking-[-.04em]">
+              <h1 className="offer-hero-display mt-3 font-black">
                 Two founders. One accountable team. Built around the business.
               </h1>
               <p className="mt-6 max-w-3xl font-dm text-lg leading-relaxed text-t2">
@@ -59,7 +59,7 @@ export default function AboutPage() {
               </div>
             </div>
 
-            <aside aria-label="Where ScaleSmiths is based" className="rounded-2xl border border-acc/25 bg-acc/[.07] p-6 md:p-8">
+            <aside aria-label="Where ScaleSmiths is based" className="offer-hero-card rounded-2xl border border-acc/25 bg-acc/[.07] p-6 md:p-8">
               <p className="flex items-center gap-2 font-dm text-xs font-semibold uppercase tracking-[.12em] text-t3">
                 <MapPin size={14} className="text-acc" aria-hidden="true" /> Hucknall, Nottinghamshire
               </p>

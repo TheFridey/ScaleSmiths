@@ -276,16 +276,16 @@ export default async function CaseStudyPage({ params }: Props) {
             </p>
           ) : null}
 
-          <AnimateIn className="mt-10 grid gap-10 lg:grid-cols-[1.2fr_.8fr] lg:items-end">
-            <div>
+          <AnimateIn className="offer-hero-grid mt-10" data-offer-hero>
+            <div className="offer-hero-copy">
               {logo ? <ClientLogo name={study.name} logo={logo} height={36} className="mb-6" /> : null}
               <p className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">ScaleSmiths case study</p>
-              <h1 className="mt-3 font-syne text-[clamp(40px,7vw,84px)] font-extrabold leading-[.98] tracking-[-.04em]">{study.name}</h1>
+              <h1 className="offer-hero-display mt-3">{study.name}</h1>
               {meta ? <p className="mt-4 font-dm text-base text-t2">{meta}</p> : null}
               {study.summary ? <p className="mt-6 max-w-[720px] font-dm text-[clamp(17px,2vw,21px)] leading-relaxed text-t1">{study.summary}</p> : <div className="mt-6"><AwaitingContent study={study} what="one-sentence project summary" /></div>}
             </div>
 
-            <div className="grid gap-6">
+            <div className="offer-hero-card grid gap-6">
               {study.services.length > 0 ? (
                 <div>
                   <h2 className="font-dm text-xs font-semibold uppercase tracking-[.12em] text-t3">Scope delivered</h2>

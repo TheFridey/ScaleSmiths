@@ -35,7 +35,10 @@ export interface Founder {
   /** Name as it already appears in project credits. */
   creditName: string
   monogram: string
+  /** Primary portrait (profile hero, Person schema, insight bylines). */
   photo: TeamImageKey
+  /** Optional secondary portrait for about/home cards (workspace/trust contexts). */
+  cardPhoto?: TeamImageKey
   role: EvidencedStatement
   /** Short title used in article bylines and Person structured data. */
   authorTitle: string
@@ -63,22 +66,21 @@ export const FOUNDER_LOCATION = {
 export const founders: Founder[] = [
   {
     slug: "rhys",
-    // TODO(owner): confirm whether Rhys's surname should be published. A full name strengthens
-    // the Person entity; until confirmed, the credited first name is used everywhere.
-    name: "Rhys",
+    name: "Rhys Lacy",
     firstName: "Rhys",
-    creditName: "Rhys",
+    creditName: "Rhys Lacy",
     monogram: "R",
     photo: "rhys",
+    cardPhoto: "rhysOffice",
     // Owner-supplied title (founder profile card, 15 September 2026).
     authorTitle: "Co-founder & Technical Lead",
     accent: "#e8a045",
     role: {
       text: "Co-founder — technical leadership, engineering and delivery",
-      evidence: `${OWNER_BRIEF} and web/src/lib/data.ts (project credits: "Made by Rhys · ScaleSmiths co-founder")`,
+      evidence: `${OWNER_BRIEF} and web/src/lib/data.ts (project credits: "Made by Rhys Lacy · ScaleSmiths co-founder")`,
     },
     summary: {
-      text: "Rhys co-founded ScaleSmiths and leads its technical direction: strategy, software engineering, web systems, architecture, technical SEO implementation and delivery. Clients discuss the technical approach with the founder accountable for building it.",
+      text: "Rhys Lacy co-founded ScaleSmiths and leads its technical direction: strategy, software engineering, web systems, architecture, technical SEO implementation and delivery. Clients discuss the technical approach with the founder accountable for building it.",
       evidence: OWNER_BRIEF,
     },
     responsibilities: [
@@ -189,7 +191,7 @@ export const founders: Founder[] = [
 /** The origin narrative, restricted to facts already present in the repository. */
 export const originStatements: EvidencedStatement[] = [
   {
-    text: "ScaleSmiths is a founder-led business growth and engineering company founded by Rhys and Trevor Newton-Bradley.",
+    text: "ScaleSmiths is a founder-led business growth and engineering company founded by Rhys Lacy and Trevor Newton-Bradley.",
     evidence: "web/src/app/layout.tsx (Organization founders)",
   },
   {
@@ -269,7 +271,7 @@ export function founderLinks(
 export const aboutMetadata: Metadata = buildPageMetadata({
   title: "About & Founders",
   description:
-    "Meet ScaleSmiths co-founders Rhys and Trevor Newton-Bradley, who lead engineering and commercial growth from Hucknall, Nottinghamshire.",
+    "Meet ScaleSmiths co-founders Rhys Lacy and Trevor Newton-Bradley, who lead engineering and commercial growth from Hucknall, Nottinghamshire.",
   path: "/about",
 })
 

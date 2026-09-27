@@ -8,7 +8,7 @@ still outstanding. Code that publishes founder statements cites this file as evi
 
 Supplied by the ScaleSmiths owner as the basis for founder profiles.
 
-**Rhys** — Co-founder. Technical leadership, strategy, software engineering, web systems,
+**Rhys Lacy** — Co-founder. Technical leadership, strategy, software engineering, web systems,
 architecture, SEO/technical implementation, delivery.
 
 **Trevor Newton-Bradley** — Co-founder. Commercial growth, client relationships, sales,
@@ -25,7 +25,6 @@ or revenue figures were supplied, and none are published.
 
 | Item | Where it would be used | Status |
 | --- | --- | --- |
-| Rhys's surname (if it should be public) | Person schema, profile page | TODO — owner |
 | First-person founder biographies | `/about/rhys`, `/about/trevor-newton-bradley` | TODO — founders |
 | Authored articles/insights | `Founder.insights` | None published yet |
 | Founder LinkedIn/GitHub URLs | `NEXT_PUBLIC_FOUNDER_*` | Unset |
@@ -45,7 +44,8 @@ All imagery must be real. No stock, AI-generated or mocked photography or screen
 
 | File | Content | Size |
 | --- | --- | --- |
-| `rhys.webp` | Natural portrait of Rhys | ~1200×1500 (4:5), < 250KB |
+| `rhys.webp` | Forge-mountain brand mural portrait of Rhys (primary / profile) | ~1200×1500 (4:5), < 250KB |
+| `rhys-office.webp` | Studio/office portrait of Rhys (about + home cards) | ~1200×1500 (4:5), < 250KB |
 | `trevor.webp` | Natural portrait of Trevor Newton-Bradley | ~1200×1500 (4:5), < 250KB |
 | `rhys-trevor.webp` | Both founders together | ~1600×1067 (3:2), < 300KB |
 

@@ -207,11 +207,11 @@ test.describe("public navigation and accessibility behaviours", () => {
     }
 
     await page.getByRole("button", { name: /open menu/i }).click()
-    const mobileHeader = page.getByRole("banner")
-    await expect(mobileHeader.getByRole("link", { name: "Local growth", exact: true }).last()).toBeVisible()
-    await expect(mobileHeader.getByRole("link", { name: "Custom systems", exact: true }).last()).toBeVisible()
-    await expect(mobileHeader.getByRole("link", { name: "FAQ", exact: true }).last()).toBeVisible()
-    await expect(mobileHeader.getByRole("link", { name: "Insights", exact: true }).last()).toBeVisible()
+    const drawer = page.getByRole("dialog", { name: /site navigation/i })
+    await expect(drawer.getByRole("link", { name: "Local growth", exact: true })).toBeVisible()
+    await expect(drawer.getByRole("link", { name: "Custom systems", exact: true })).toBeVisible()
+    await expect(drawer.getByRole("link", { name: "FAQ", exact: true })).toBeVisible()
+    await expect(drawer.getByRole("link", { name: "Insights", exact: true })).toBeVisible()
   })
 
   test("supports keyboard navigation and visible focus states", async ({ page }) => {

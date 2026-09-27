@@ -191,7 +191,7 @@ function JourneyProgress({ currentStep }: { currentStep: V2JourneyStep }) {
   const progress = ((currentIndex + 1) / journeyMarkers.length) * 100
 
   return (
-    <nav aria-label="V2 journey progress" className="w-full max-w-[620px]">
+    <nav aria-label="Interactive journey progress" className="w-full max-w-[620px]">
       <div className="mb-3 flex items-center justify-between gap-4 font-dm text-[11px] font-semibold uppercase tracking-[0.14em] text-t3">
         <span>Journey</span>
         <span aria-live="polite">{currentIndex + 1} / {journeyMarkers.length}</span>
@@ -375,7 +375,7 @@ export function V2InteractiveExperience() {
               <AnimatePresence mode="wait">
                 {step === "intro" && (
                   <motion.div key="intro" {...panelMotion} className="mt-8">
-                    <StageHeader eyebrow="ScaleSmiths V2.0" Icon={Sparkles} />
+                    <StageHeader eyebrow="Interactive planner" Icon={Sparkles} />
                     <motion.h1
                       id="v2-intro-heading"
                       className="font-syne text-[clamp(2.75rem,13vw,4.9rem)] font-black leading-[1.02] tracking-normal text-t1 drop-shadow-[0_3px_30px_rgba(0,0,0,0.55)] md:text-7xl"

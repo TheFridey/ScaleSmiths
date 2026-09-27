@@ -93,6 +93,47 @@ describe("quote security", () => {
     }
   })
 
+  it("accepts a lighter strategy-call payload without project-brief fields", () => {
+    const result = validateQuotePayload({
+      name: "Alex Local",
+      email: "alex@example.com",
+      biz: "Alex Plumbing",
+      websiteUrl: "https://example.com",
+      phone: "0115 000 0000",
+      goal: "Local enquiries are inconsistent and the current site is unclear.",
+      needs: ["Local visibility / SEO", "Website not converting"],
+      preferredContactMethod: "Phone",
+      timeframe: "This month",
+      intent: "strategy_call",
+      consent: true,
+      brief: "Request a Strategy Call request\n\nWhat they are trying to solve: Local enquiries are inconsistent.",
+    })
+
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.data.intent).toBe("strategy_call")
+      expect(result.data.type).toBe("Strategy Call")
+      expect(result.data.budget).toBe("To be discussed on call")
+      expect(result.data.businessType).toBe("Strategy call enquiry")
+      expect(result.data.needs).toEqual(["Local visibility / SEO", "Website not converting"])
+      expect(quoteInsertValues(result.data).enquiryIntent).toBe("strategy_call")
+    }
+  })
+
+  it("still requires a full project brief when intent is a standard quote", () => {
+    const result = validateQuotePayload({
+      name: "Alex Local",
+      email: "alex@example.com",
+      biz: "Alex Plumbing",
+      goal: "We need clearer local enquiries.",
+      consent: true,
+      intent: "quote",
+      brief: "Looking for a clearer website.",
+    })
+
+    expect(result.ok).toBe(false)
+  })
+
   it("does not let a lead-source field bypass the full quote requirements", () => {
     const result = validateQuotePayload({
       name: "Alex Local",

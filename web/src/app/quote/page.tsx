@@ -7,6 +7,7 @@ import { ArrowLeft, ArrowRight, Check } from "lucide-react"
 import { PageBreadcrumbs } from "@/components/Breadcrumbs"
 import { EnquiryConsent } from "@/components/EnquiryConsent"
 import { AuditAcquisitionLink } from "@/components/AuditAcquisitionLink"
+import { StrategyCallForm } from "@/components/StrategyCallForm"
 import { formatAuditPrice } from "@/lib/business-growth-audit"
 import { enquiryIntentFromLocation } from "@/lib/enquiry-intents"
 import { trackExperienceEvent } from "@/lib/experience-analytics-client"
@@ -32,6 +33,7 @@ export default function QuotePage() {
   const [direction, setDirection] = useState<1 | -1>(1)
   const [error, setError] = useState("")
   const [invalidField, setInvalidField] = useState<string | null>(null)
+  const [lightIntent, setLightIntent] = useState<"strategy_call" | "discovery_call" | null>(null)
   const errorId = useId()
   const errorRef = useRef<HTMLDivElement>(null)
   const submissionInFlight = useRef(false)
@@ -39,6 +41,13 @@ export default function QuotePage() {
   const router = useRouter()
 
   useEffect(() => {
+    const intent = enquiryIntentFromLocation(window.location.search)
+    if (intent === "strategy_call" || intent === "discovery_call") {
+      setLightIntent(intent)
+      setRestored(true)
+      return
+    }
+    setLightIntent(null)
     try {
       const saved = JSON.parse(window.sessionStorage.getItem(STORAGE_KEY) ?? "null") as { stage?: number; data?: FormData } | null
       if (saved?.data) setData(saved.data)
@@ -51,9 +60,9 @@ export default function QuotePage() {
   }, [])
 
   useEffect(() => {
-    if (!restored) return
+    if (!restored || lightIntent) return
     window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ stage, data }))
-  }, [data, restored, stage])
+  }, [data, lightIntent, restored, stage])
 
   useEffect(() => {
     if (!error) return
@@ -62,7 +71,7 @@ export default function QuotePage() {
   }, [error])
 
   useEffect(() => {
-    if (!restored) return
+    if (!restored || lightIntent) return
     const onPopState = (event: PopStateEvent) => {
       const historicStage = Number((event.state as { quoteStage?: number } | null)?.quoteStage)
       if (Number.isInteger(historicStage)) setStage(Math.max(0, Math.min(3, historicStage)))
@@ -70,7 +79,15 @@ export default function QuotePage() {
     window.history.replaceState({ ...window.history.state, quoteStage: stage }, "")
     window.addEventListener("popstate", onPopState)
     return () => window.removeEventListener("popstate", onPopState)
-  }, [restored, stage])
+  }, [lightIntent, restored, stage])
+
+  if (lightIntent) {
+    return <StrategyCallForm intent={lightIntent} />
+  }
+
+  if (!restored) {
+    return <main className="mx-auto max-w-[780px] px-6 py-12 md:px-12 md:py-16" aria-busy="true" />
+  }
 
   function update(key: string, value: string) {
     setError("")

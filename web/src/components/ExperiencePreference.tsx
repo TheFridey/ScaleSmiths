@@ -187,7 +187,7 @@ function ExperienceRedirectShell() {
       <div>
         <p className="font-dm text-xs font-semibold uppercase tracking-[0.14em] text-acc">Interactive preference saved</p>
         <h1 className="mt-4 font-syne text-3xl font-black leading-tight tracking-normal text-t1 md:text-5xl">
-          Opening ScaleSmiths V2.
+          Opening the interactive planner.
         </h1>
       </div>
     </section>
@@ -255,7 +255,7 @@ function ExperienceChoice({
       <div className="mx-auto flex max-w-[1060px] flex-col items-center text-center">
         <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-b2 bg-s1/70 px-4 py-2 font-dm text-xs font-semibold uppercase tracking-[0.14em] text-t2">
           <Sparkles size={14} aria-hidden="true" />
-          ScaleSmiths V2.0
+          ScaleSmiths
         </p>
         <h1
           id="experience-choice-heading"
@@ -298,13 +298,13 @@ function ExperienceChoice({
               <Sparkles size={22} aria-hidden="true" />
             </span>
             <span className="mt-8 block font-syne text-2xl font-black tracking-normal text-t1">
-              Experience the Future
+              Interactive project planner
             </span>
             <span id="interactive-experience-copy" className="mt-4 block max-w-[430px] font-dm text-base leading-relaxed text-t2">
-              Step into the V2.0 direction: a focused interactive shell for shaping projects through a richer ScaleSmiths flow.
+              A focused interactive shell for shaping the right website, system, or growth route with ScaleSmiths.
             </span>
             <span className="mt-8 inline-flex items-center gap-2 font-dm text-sm font-semibold text-warning">
-              Launch interactive
+              Open planner
               <ArrowRight size={16} aria-hidden="true" className="motion-safe:transition-transform group-hover:translate-x-1 motion-reduce:transform-none" />
             </span>
           </button>
@@ -319,14 +319,14 @@ function InteractiveExperimentCta({ onChooseInteractive, label = "Try the intera
     <aside className="relative z-30 border-b border-acc/20 bg-acc/10 px-6 py-3 text-t1 md:px-12">
       <div className="mx-auto flex max-w-[1240px] flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="font-dm text-sm text-t2">
-          {label} when you want the V2 project-planning journey. The normal site remains available.
+          {label} when you want a guided project-planning journey. The normal site remains available.
         </p>
         <button
           type="button"
           onClick={onChooseInteractive}
           className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-acc/35 bg-bg/70 px-4 py-2 font-dm text-sm font-semibold text-acc transition hover:border-acc focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-acc"
         >
-          Launch interactive
+          Open planner
           <ArrowRight size={15} aria-hidden="true" />
         </button>
       </div>

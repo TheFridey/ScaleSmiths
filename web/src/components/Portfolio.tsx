@@ -9,6 +9,7 @@ interface PortfolioProps {
   limit?: number
   showHeading?: boolean
   grouped?: boolean
+  excludeSlugs?: string[]
 }
 
 /** The first study in a group leads at full width; the rest sit in a two-column grid. */
@@ -25,8 +26,9 @@ function CaseStudyGrid({ items, lead = true }: { items: CaseStudy[]; lead?: bool
   )
 }
 
-export function Portfolio({ limit, showHeading = true, grouped = false }: PortfolioProps) {
-  const all = publishedCaseStudies()
+export function Portfolio({ limit, showHeading = true, grouped = false, excludeSlugs = [] }: PortfolioProps) {
+  const excluded = new Set(excludeSlugs)
+  const all = publishedCaseStudies().filter((study) => !excluded.has(study.slug))
   const shown = limit ? all.slice(0, limit) : all
   const clientWork = shown.filter((study) => study.portfolioGroup === "client-work")
   const platformWork = shown.filter((study) => study.portfolioGroup === "product-platform")

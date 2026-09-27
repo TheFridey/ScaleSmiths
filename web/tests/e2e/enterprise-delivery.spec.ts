@@ -8,7 +8,7 @@ const VIEWPORTS = [
 ] as const
 
 const SECTION_HEADINGS = [
-  /discovery → production → expansion/i,
+  /discovery → prototype → validated scope → mvp → uat → production → expansion/i,
   /fourteen phases from first conversation/i,
   /understand the estate before proposing the system/i,
   /artifacts that make scope inspectable/i,

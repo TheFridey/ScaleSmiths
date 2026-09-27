@@ -102,14 +102,19 @@ export function Hero() {
         animate="visible"
         transition={{ delayChildren: 0.04, staggerChildren: motionStagger.tight }}
       >
+        {/* Local text scrim — keeps brand/headline readable across forge brightness cycles */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-[min(72%,34rem)] w-[min(100%,46rem)] -translate-x-1/2 -translate-y-[46%] rounded-[40%] bg-[radial-gradient(ellipse_at_center,rgba(11,10,8,0.55)_0%,rgba(11,10,8,0.28)_42%,transparent_72%)]"
+        />
         <m.p
           variants={revealSoft}
-          className="mb-8 font-syne text-[11px] font-semibold uppercase tracking-[0.32em] text-acc md:mb-10 md:text-xs"
+          className="relative mb-8 font-syne text-xs font-semibold uppercase tracking-[0.28em] text-acc md:mb-10 md:tracking-[0.32em]"
         >
           ScaleSmiths
         </m.p>
 
-        <h1 className="mb-7 w-full max-w-full overflow-hidden md:mb-8">
+        <h1 className="relative mb-7 w-full max-w-full overflow-hidden md:mb-8">
           <span className="hero-line-overflow block">
             <m.span variants={revealMask} className="hero-h hero-outline font-syne inline-block whitespace-nowrap" aria-label={HERO_LINES[0]}>
               {renderHeroLine(HERO_LINES[0])}
@@ -122,17 +127,17 @@ export function Hero() {
           </span>
         </h1>
 
-        <m.p variants={revealSoft} className="mb-10 w-full max-w-[560px] font-dm text-[clamp(15px,1.7vw,18px)] font-light leading-relaxed text-t2 md:mb-12">
+        <m.p variants={revealSoft} className="relative mb-10 w-full max-w-[560px] font-dm text-[clamp(15px,1.7vw,18px)] font-light leading-relaxed text-t2 md:mb-12">
           Find what is holding growth back, build the right solution, and keep improving it —
           websites, systems, automation and ongoing digital growth.
         </m.p>
 
-        <m.div variants={revealSoft} className="flex flex-wrap justify-center gap-3">
+        <m.div variants={revealSoft} className="relative flex flex-wrap justify-center gap-3">
           <Link href="/quote" prefetch={false} className="btn-primary font-dm">
             Start a Project <ArrowRight size={16} aria-hidden="true" />
           </Link>
-          <Link href="/digital-growth-partnership" prefetch={false} className="btn-ghost font-dm">
-            Growth Partnership <ArrowUpRight size={16} aria-hidden="true" />
+          <Link href="/quote?intent=strategy_call" prefetch={false} className="btn-ghost font-dm">
+            Request a Strategy Call <ArrowUpRight size={16} aria-hidden="true" />
           </Link>
         </m.div>
       </m.div>

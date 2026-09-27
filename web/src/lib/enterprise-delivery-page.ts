@@ -30,13 +30,61 @@ export const enterpriseDeliveryCopy = {
 
 /** Compact staged methodology shown as the premium visual timeline. */
 export const deliveryStages = [
-  { id: "discovery", label: "Discovery", summary: "Map the real operating model before software is proposed." },
-  { id: "prototype", label: "Prototype", summary: "Prove the highest-risk assumptions with a focused proof of concept." },
-  { id: "validated-scope", label: "Validated Scope", summary: "Lock the first dependable release against evidence, not optimism." },
-  { id: "mvp", label: "MVP", summary: "Build the smallest production-worthy system that removes the constraint." },
-  { id: "uat", label: "UAT", summary: "Client acceptance and stakeholder review before go-live." },
-  { id: "production", label: "Production", summary: "Controlled rollout with monitoring, rollback and support paths." },
-  { id: "expansion", label: "Expansion", summary: "Add modules and capability only after the core system is dependable." },
+  {
+    id: "discovery",
+    label: "Discovery",
+    summary: "Map the real operating model before software is proposed.",
+    gate: "Shared understanding of users, workflows, data and constraints — before architecture is chosen.",
+  },
+  {
+    id: "prototype",
+    label: "Prototype",
+    summary: "Prove the highest-risk assumptions with a focused proof of concept.",
+    gate: "Highest-risk technical or workflow assumptions exercised with evidence, not slides.",
+  },
+  {
+    id: "validated-scope",
+    label: "Validated Scope",
+    summary: "Lock the first dependable release against evidence, not optimism.",
+    gate: "Written scope, acceptance criteria and explicit out-of-scope before build budget is committed.",
+  },
+  {
+    id: "mvp",
+    label: "MVP",
+    summary: "Build the smallest production-worthy system that removes the constraint.",
+    gate: "First release is production-worthy for the named constraint — not a partial demo of everything.",
+  },
+  {
+    id: "uat",
+    label: "UAT",
+    summary: "Client acceptance and stakeholder review before go-live.",
+    gate: "Signed or recorded acceptance against criteria. Production is not the first serious review.",
+  },
+  {
+    id: "production",
+    label: "Production",
+    summary: "Controlled rollout with monitoring, rollback and support paths.",
+    gate: "Release with rollback, monitoring and named operational owners.",
+  },
+  {
+    id: "expansion",
+    label: "Expansion",
+    summary: "Add modules and capability only after the core system is dependable.",
+    gate: "Core system stable before the next increment is scoped.",
+  },
+] as const
+
+/** Jump targets for sticky section navigation on the Delivery page. */
+export const enterpriseDeliverySectionNav = [
+  { id: "delivery-timeline", label: "Sequence" },
+  { id: "delivery-phases", label: "Phases" },
+  { id: "delivery-discovery", label: "Discovery" },
+  { id: "delivery-requirements", label: "Requirements" },
+  { id: "delivery-architecture", label: "Architecture" },
+  { id: "delivery-testing", label: "Testing" },
+  { id: "delivery-uat", label: "UAT" },
+  { id: "delivery-release", label: "Release" },
+  { id: ENTERPRISE_DELIVERY_CTA_ANCHOR, label: "Start" },
 ] as const
 
 export const deliveryPhases = [

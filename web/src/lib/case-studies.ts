@@ -9,7 +9,9 @@ import { findShot, mediaForProject, SHOT_ASPECT, type ProjectMedia } from "./wor
 
 /**
  * One view model for every case study, so published projects and in-progress drafts share
- * the same page structure. Sections render only when their content exists.
+ * the same page structure. Flagship sections (Business / Constraint / Findings / Strategy /
+ * Decisions / Build / Tracking / Verified Results / Current / Next) render only when their
+ * content exists — never fabricate results, rankings or client outcomes to fill the template.
  */
 export interface CaseStudy {
   slug: string

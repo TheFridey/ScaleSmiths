@@ -22,6 +22,7 @@ import { resolveClientQuote, resolveOutcomes, resolveVerifiedMetrics } from "@/l
 import { logoForProject } from "@/lib/client-proof"
 import { founderProfileHref } from "@/lib/founders"
 import { InsightCard } from "@/components/insights/InsightCard"
+import { PageSectionNav, type PageSectionNavItem } from "@/components/PageSectionNav"
 import { buildPageMetadata } from "@/lib/page-metadata"
 import { publicClaimMap } from "@/lib/public-claims"
 import { getVerifiedPublicClaims } from "@/lib/public-claims.server"
@@ -170,6 +171,32 @@ function Section({ id, eyebrow, title, children, tinted = false }: { id: string;
   )
 }
 
+/**
+ * Flagship case-study architecture (brief §25). Sections render only when content exists —
+ * never invent Business / Constraint / Results / Next just to fill the template.
+ */
+function caseStudySectionNav(study: CaseStudy, opts: {
+  hasComparison: boolean
+  hasResults: boolean
+  hasQuote: boolean
+  hasRelated: boolean
+}): PageSectionNavItem[] {
+  const items: PageSectionNavItem[] = []
+  if (study.client || study.challenge || study.startingPoint.length > 0) {
+    items.push({ id: "case-business", label: "Business" })
+  }
+  if (study.challenge) items.push({ id: "case-constraint", label: "Constraint" })
+  if (study.startingPoint.length > 0) items.push({ id: "case-found", label: "Findings" })
+  if (opts.hasComparison) items.push({ id: "case-before-after", label: "Changed" })
+  if (study.strategy.length > 0 || study.status === "draft") items.push({ id: "case-strategy", label: "Strategy" })
+  if (study.technicalImplementation.length > 0) items.push({ id: "case-decisions", label: "Decisions" })
+  items.push({ id: "case-build", label: "Build" })
+  if (opts.hasResults) items.push({ id: "case-results", label: "Results" })
+  if (opts.hasQuote) items.push({ id: "case-quote", label: "Client" })
+  if (opts.hasRelated) items.push({ id: "case-related", label: "Related" })
+  return items
+}
+
 /** Development-only marker for a draft case study's missing, unverified content. */
 function AwaitingContent({ study, what }: { study: CaseStudy; what: string }) {
   if (study.status !== "draft" || !isDevelopment) return null
@@ -218,6 +245,14 @@ export default async function CaseStudyPage({ params }: Props) {
   const articles = study.status === "published" ? relatedInsightsForCaseStudy(study.slug) : []
   const { previous, next } = adjacentCaseStudies(study.slug)
   const meta = [study.industry, study.location, study.year].filter(Boolean).join(" · ")
+  const showResults = hasResults(results)
+  const showRelated = relatedServices.length > 0 || siblings.length > 0 || articles.length > 0
+  const sectionNav = caseStudySectionNav(study, {
+    hasComparison: views.length > 0,
+    hasResults: showResults,
+    hasQuote: Boolean(quote),
+    hasRelated: showRelated,
+  })
 
   return (
     <>
@@ -265,7 +300,10 @@ export default async function CaseStudyPage({ params }: Props) {
                     Visit website <ArrowUpRight size={16} aria-hidden="true" /><span className="sr-only"> (opens {host} in a new tab)</span>
                   </a>
                 ) : null}
-                <Link href="/quote" prefetch={false} className={study.websiteUrl ? "btn-ghost font-dm" : "btn-primary font-dm"}>Start a similar project</Link>
+                <Link href="/quote?intent=strategy_call" prefetch={false} className={study.websiteUrl ? "btn-ghost font-dm" : "btn-primary font-dm"}>
+                  Request a Strategy Call
+                </Link>
+                <Link href="/quote" prefetch={false} className="btn-ghost font-dm">Start a similar project</Link>
               </div>
               {study.founder ? (
                 <Link href={founderProfileHref(study.founder)} prefetch={false} className="inline-flex w-fit items-center gap-2 font-dm text-xs text-t3 transition-colors hover:text-t1">
@@ -285,26 +323,36 @@ export default async function CaseStudyPage({ params }: Props) {
         </div>
       </section>
 
-      <Section id="case-client" eyebrow="The client" title={`Who ${study.name} are`} tinted>
-        <div className="grid gap-10 lg:grid-cols-2">
-          <div>
-            {study.client ? <p className="font-dm text-lg leading-relaxed text-t1">{study.client}</p> : <AwaitingContent study={study} what="who the client is" />}
-          </div>
-          <div>
-            <h3 className="font-dm text-xs font-semibold uppercase tracking-[.12em] text-t3">The starting point</h3>
-            {study.challenge ? <p className="mt-3 font-dm text-base leading-relaxed text-t2">{study.challenge}</p> : null}
-            {study.startingPoint.length > 0 ? (
-              <ul className="mt-5 grid gap-2">
-                {study.startingPoint.map((issue) => <li key={issue} className="border-t border-b1 pt-2 font-dm text-sm text-t2">{issue}</li>)}
-              </ul>
-            ) : null}
-            {!study.challenge && study.startingPoint.length === 0 ? <div className="mt-3"><AwaitingContent study={study} what="verified starting-point issues" /></div> : null}
-          </div>
-        </div>
-      </Section>
+      <PageSectionNav items={sectionNav} label="Case study" />
+
+      {(study.client || study.status === "draft") ? (
+        <Section id="case-business" eyebrow="The business" title={`Who ${study.name} are`} tinted>
+          {study.client ? <p className="max-w-[760px] font-dm text-lg leading-relaxed text-t1">{study.client}</p> : <AwaitingContent study={study} what="who the client is" />}
+        </Section>
+      ) : null}
+
+      {(study.challenge || study.status === "draft") ? (
+        <Section id="case-constraint" eyebrow="The constraint" title="What was holding them back">
+          {study.challenge ? <p className="max-w-[760px] font-dm text-lg leading-relaxed text-t2">{study.challenge}</p> : <AwaitingContent study={study} what="the operating or growth constraint" />}
+        </Section>
+      ) : null}
+
+      {(study.startingPoint.length > 0 || study.status === "draft") ? (
+        <Section id="case-found" eyebrow="What we found" title="The starting-point evidence" tinted={Boolean(study.challenge)}>
+          {study.startingPoint.length > 0 ? (
+            <ul className="grid max-w-[760px] gap-2">
+              {study.startingPoint.map((issue) => (
+                <li key={issue} className="border-t border-b1 pt-3 font-dm text-base leading-relaxed text-t2">{issue}</li>
+              ))}
+            </ul>
+          ) : (
+            <AwaitingContent study={study} what="verified starting-point issues" />
+          )}
+        </Section>
+      ) : null}
 
       {views.length > 0 ? (
-        <Section id="case-before-after" eyebrow="Before and after" title="What changed, side by side">
+        <Section id="case-before-after" eyebrow="What we changed" title="Before and after, side by side">
           <BeforeAfterComparison views={views} showPlaceholders={isDevelopment} />
         </Section>
       ) : null}
@@ -312,12 +360,26 @@ export default async function CaseStudyPage({ params }: Props) {
       {study.slug === "confirm-a-kill" ? <ConfirmAKillStory /> : null}
 
       {study.strategy.length > 0 || study.status === "draft" ? (
-        <Section id="case-strategy" eyebrow="Strategy" title="What we set out to improve">
+        <Section id="case-strategy" eyebrow="The strategy" title="What we set out to improve">
           {study.strategy.length > 0 ? <Prose paragraphs={study.strategy} /> : <AwaitingContent study={study} what="strategy and reasoning" />}
         </Section>
       ) : null}
 
-      <Section id="case-build" eyebrow="The build" title="What ScaleSmiths built" tinted={views.length === 0}>
+      {study.technicalImplementation.length > 0 ? (
+        <Section id="case-decisions" eyebrow="Why we made those decisions" title="Engineering choices that mattered" tinted>
+          <div className="grid gap-3 md:grid-cols-2">
+            {study.technicalImplementation.map((item, index) => (
+              <AnimateIn key={item.title} delay={index * 0.04} className="rounded-2xl border border-b1 bg-s1/50 p-6">
+                <span className="font-dm text-xs font-semibold tabular-nums text-acc">{String(index + 1).padStart(2, "0")}</span>
+                <h3 className="mt-3 font-syne text-xl font-bold">{item.title}</h3>
+                <p className="mt-2 font-dm text-sm leading-relaxed text-t2">{item.detail}</p>
+              </AnimateIn>
+            ))}
+          </div>
+        </Section>
+      ) : null}
+
+      <Section id="case-build" eyebrow="The build" title="What ScaleSmiths built" tinted={views.length === 0 && study.technicalImplementation.length === 0}>
         <div className="grid gap-12 lg:grid-cols-[1.1fr_.9fr]">
           <div>{study.solution ? <Prose paragraphs={[study.solution]} /> : <AwaitingContent study={study} what="description of the delivered solution" />}</div>
           {study.features.length > 0 ? (
@@ -346,39 +408,25 @@ export default async function CaseStudyPage({ params }: Props) {
         </div>
       </Section>
 
-      {study.technicalImplementation.length > 0 ? (
-        <Section id="case-technical" eyebrow="Under the hood" title="How it was built">
-          <div className="grid gap-3 md:grid-cols-2">
-            {study.technicalImplementation.map((item, index) => (
-              <AnimateIn key={item.title} delay={index * 0.04} className="rounded-2xl border border-b1 bg-s1/50 p-6">
-                <span className="font-dm text-xs font-semibold tabular-nums text-acc">{String(index + 1).padStart(2, "0")}</span>
-                <h3 className="mt-3 font-syne text-xl font-bold">{item.title}</h3>
-                <p className="mt-2 font-dm text-sm leading-relaxed text-t2">{item.detail}</p>
-              </AnimateIn>
-            ))}
-          </div>
-        </Section>
-      ) : null}
-
       {hasGalleryShots(study.media) ? (
         <Section id="case-evidence" eyebrow="Visual evidence" title="Inside the delivered work" tinted>
           <CaseStudyGallery media={study.media} host={host} />
         </Section>
       ) : null}
 
-      {hasResults(results) ? (
-        <Section id="case-results" eyebrow="Results" title="Verified results">
+      {showResults ? (
+        <Section id="case-results" eyebrow="Verified results" title="What we can evidence">
           <CaseStudyResults {...results} />
         </Section>
       ) : null}
 
       {quote ? (
-        <section aria-label="Client perspective" className="px-6 py-20 md:px-12">
+        <section id="case-quote" aria-label="Client perspective" className="px-6 py-20 md:px-12">
           <ClientQuote quote={quote} />
         </section>
       ) : null}
 
-      {relatedServices.length > 0 || siblings.length > 0 || articles.length > 0 ? (
+      {showRelated ? (
         <Section id="case-related" eyebrow="Related" title="Services and work behind this project" tinted>
           {relatedServices.length > 0 ? (
             <ul className="grid gap-3 md:grid-cols-3">

@@ -7,6 +7,8 @@ import {
   enterpriseFaqs,
   enterprisePageCopy,
   enterpriseProblems,
+  enterpriseProcess,
+  enterpriseSectionNav,
   metadataForEnterprisePage,
 } from "./enterprise-page"
 import { projects } from "./data"
@@ -40,6 +42,23 @@ describe("enterprise page content", () => {
       "RBAC / ABAC",
       "Disaster recovery planning",
       "CI/CD",
+    ]))
+  })
+
+  it("surfaces the full Discovery-to-Expansion sequence on the overview", () => {
+    expect(enterpriseProcess.map((step) => step.title)).toEqual([
+      "Discovery",
+      "Prototype",
+      "Validated Scope",
+      "MVP",
+      "UAT",
+      "Production",
+      "Expansion",
+    ])
+    expect(enterpriseSectionNav.map((item) => item.id)).toEqual(expect.arrayContaining([
+      "enterprise-problems",
+      "enterprise-process",
+      "discuss",
     ]))
   })
 

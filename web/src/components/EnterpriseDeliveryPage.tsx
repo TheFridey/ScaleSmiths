@@ -5,6 +5,7 @@ import { PageBreadcrumbs } from "@/components/Breadcrumbs"
 import { ContextualFaqs } from "@/components/faq/ContextualFaqs"
 import { HeroEmbers } from "@/components/HeroEmbers"
 import { JsonLd } from "@/components/JsonLd"
+import { PageSectionNav } from "@/components/PageSectionNav"
 import {
   ENTERPRISE_DELIVERY_CTA_ANCHOR,
   architectureDomains,
@@ -16,6 +17,7 @@ import {
   documentationOutputs,
   enterpriseDeliveryCopy,
   enterpriseDeliveryFaqs,
+  enterpriseDeliverySectionNav,
   releaseManagementPoints,
   requirementsOutputs,
   stagedDeliveryReasons,
@@ -98,13 +100,17 @@ export function EnterpriseDeliveryPage() {
         </div>
       </section>
 
+      <PageSectionNav items={enterpriseDeliverySectionNav} label="Jump to" />
+
       <section aria-labelledby="delivery-timeline" className="border-y border-b1 bg-s1 px-6 py-20 md:px-12 md:py-24">
         <div className="mx-auto max-w-[1240px]">
           <AnimateIn>
             <SectionEyebrow>Staged methodology</SectionEyebrow>
-            <SectionHeading id="delivery-timeline">Discovery → Production → Expansion</SectionHeading>
+            <SectionHeading id="delivery-timeline">
+              Discovery → Prototype → Validated Scope → MVP → UAT → Production → Expansion
+            </SectionHeading>
             <SectionLede>
-              Staged delivery reduces risk by forcing assumptions, scope and acceptance into the open before the organisation commits to a full build and rollout.
+              Staged delivery reduces risk by forcing assumptions, scope and acceptance into the open before the organisation commits to a full build and rollout. Each stage has a gate — not bureaucracy for its own sake.
             </SectionLede>
           </AnimateIn>
 
@@ -117,6 +123,11 @@ export function EnterpriseDeliveryPage() {
                 <div className="delivery-timeline__card enterprise-panel">
                   <h3 className="font-syne text-lg font-bold">{stage.label}</h3>
                   <p className="mt-2 font-dm text-sm leading-relaxed text-t2">{stage.summary}</p>
+                  <p className="mt-3 border-t border-b1 pt-3 font-dm text-xs leading-relaxed text-t3">
+                    <span className="font-semibold uppercase tracking-[.08em] text-acc">Gate</span>
+                    {" — "}
+                    {stage.gate}
+                  </p>
                 </div>
               </li>
             ))}

@@ -70,7 +70,7 @@ export default function InsightsPage() {
           <div className="mx-auto max-w-[1240px]">
             <Breadcrumbs items={[{ name: "Home", href: "/" }, { name: "Insights" }]} />
             <div className="mt-10 max-w-[900px]">
-              <p className="text-xs font-semibold uppercase tracking-[.14em] text-acc">Engineering publication</p>
+              <p className="text-xs font-semibold uppercase tracking-[.14em] text-acc">ScaleSmiths Knowledge Library</p>
               <p className="mt-4 font-syne text-[clamp(2.75rem,7vw,4.5rem)] font-extrabold leading-none tracking-[-0.045em] text-t1">
                 ScaleSmiths
               </p>
@@ -79,6 +79,7 @@ export default function InsightsPage() {
               </h1>
               <p className="mt-6 max-w-[760px] text-lg leading-relaxed text-t2">
                 Enterprise software, engineering trade-offs, websites, search and infrastructure — written without inflated promises.
+                This library launched as a coherent body of work; dates reflect publication, not invented history.
                 Each article connects the decision to relevant services, delivery evidence and the next useful question.
               </p>
               <div className="mt-7 flex flex-wrap gap-3">

@@ -30,6 +30,7 @@ describe("enterprise delivery page content", () => {
       "Production",
       "Expansion",
     ])
+    expect(deliveryStages.every((stage) => stage.gate.length > 20)).toBe(true)
     expect(deliveryPhases).toHaveLength(14)
     expect(deliveryPhases[0]?.title).toBe("Discovery")
     expect(deliveryPhases.at(-1)?.title).toBe("Support and continuous improvement")

@@ -75,7 +75,7 @@ test.describe("about and founders page", () => {
     const portrait = page.locator("main img").first()
     await expect(portrait).toBeVisible()
     await expect(portrait).toHaveAttribute("alt", /Rhys.*ScaleSmiths/i)
-    await expect(portrait).toHaveAttribute("src", /(?:\/|%2F)images(?:\/|%2F)team(?:\/|%2F)rhys(?:\.webp|%2Ewebp)/)
+    await expect(portrait).toHaveAttribute("src", /(?:\/|%2F)images(?:\/|%2F)team(?:\/|%2F)rhys-2026(?:\.webp|%2Ewebp)/)
   })
 
   test("shows Trevor's portrait on his founder profile", async ({ page }) => {

@@ -1,6 +1,6 @@
 "use client"
 
-import { FormEvent, useId, useRef, useState } from "react"
+import { FormEvent, useId, useRef, useState, type ReactNode } from "react"
 import { useRouter } from "next/navigation"
 import { ArrowRight } from "lucide-react"
 import { PageBreadcrumbs } from "@/components/Breadcrumbs"
@@ -409,7 +409,7 @@ function Field({
 }: {
   id: string
   label: string
-  children: React.ReactNode
+  children: ReactNode
   errorId?: string
   invalid?: boolean
 }) {

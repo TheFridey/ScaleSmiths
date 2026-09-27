@@ -35,7 +35,10 @@ export interface Founder {
   /** Name as it already appears in project credits. */
   creditName: string
   monogram: string
+  /** Primary portrait (profile hero, Person schema, insight bylines). */
   photo: TeamImageKey
+  /** Optional secondary portrait for about/home cards (workspace/trust contexts). */
+  cardPhoto?: TeamImageKey
   role: EvidencedStatement
   /** Short title used in article bylines and Person structured data. */
   authorTitle: string
@@ -70,6 +73,7 @@ export const founders: Founder[] = [
     creditName: "Rhys",
     monogram: "R",
     photo: "rhys",
+    cardPhoto: "rhysOffice",
     // Owner-supplied title (founder profile card, 15 September 2026).
     authorTitle: "Co-founder & Technical Lead",
     accent: "#e8a045",

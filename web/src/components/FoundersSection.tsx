@@ -39,7 +39,7 @@ export function FoundersSection() {
                 {founders.map((founder, index) => (
                   <FounderPortrait
                     key={founder.slug}
-                    image={founder.photo}
+                    image={founder.cardPhoto ?? founder.photo}
                     monogram={founder.monogram}
                     accent={founder.accent}
                     sizes="(min-width: 1024px) 310px, 50vw"

@@ -61,7 +61,7 @@ test.describe("about and founders page", () => {
     const rhysPhoto = page.locator("#rhys img")
     await expect(rhysPhoto).toHaveCount(1)
     await expect(rhysPhoto).toHaveAttribute("alt", /Rhys.*ScaleSmiths/i)
-    await expect(rhysPhoto).toHaveAttribute("src", /(?:\/|%2F)images(?:\/|%2F)team(?:\/|%2F)rhys/)
+    await expect(rhysPhoto).toHaveAttribute("src", /(?:\/|%2F)images(?:\/|%2F)team(?:\/|%2F)rhys-office/)
 
     const trevorPhoto = page.locator("#trevor-newton-bradley img")
     await expect(trevorPhoto).toHaveCount(1)
@@ -75,7 +75,7 @@ test.describe("about and founders page", () => {
     const portrait = page.locator("main img").first()
     await expect(portrait).toBeVisible()
     await expect(portrait).toHaveAttribute("alt", /Rhys.*ScaleSmiths/i)
-    await expect(portrait).toHaveAttribute("src", /(?:\/|%2F)images(?:\/|%2F)team(?:\/|%2F)rhys/)
+    await expect(portrait).toHaveAttribute("src", /(?:\/|%2F)images(?:\/|%2F)team(?:\/|%2F)rhys(?:\.webp|%2Ewebp)/)
   })
 
   test("shows Trevor's portrait on his founder profile", async ({ page }) => {

@@ -18,9 +18,17 @@ export interface TeamImage {
 }
 
 export const teamImages = {
+  /** Forge-mountain brand mural portrait — primary profile / Person schema image. */
   rhys: {
     src: "/images/team/rhys.webp",
-    alt: "Rhys, co-founder and technical lead of ScaleSmiths, in a ScaleSmiths polo",
+    alt: "Rhys, co-founder of ScaleSmiths, in a branded polo against the forge-mountain mural",
+    aspect: "4 / 5",
+    available: true,
+  },
+  /** Studio/office portrait — card and homepage trust contexts. */
+  rhysOffice: {
+    src: "/images/team/rhys-office.webp",
+    alt: "Rhys, co-founder of ScaleSmiths, standing in the branded office by the wall logo",
     aspect: "4 / 5",
     available: true,
   },

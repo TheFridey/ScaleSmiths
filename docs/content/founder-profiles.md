@@ -45,7 +45,8 @@ All imagery must be real. No stock, AI-generated or mocked photography or screen
 
 | File | Content | Size |
 | --- | --- | --- |
-| `rhys.webp` | Natural portrait of Rhys | ~1200×1500 (4:5), < 250KB |
+| `rhys.webp` | Forge-mountain brand mural portrait of Rhys (primary / profile) | ~1200×1500 (4:5), < 250KB |
+| `rhys-office.webp` | Studio/office portrait of Rhys (about + home cards) | ~1200×1500 (4:5), < 250KB |
 | `trevor.webp` | Natural portrait of Trevor Newton-Bradley | ~1200×1500 (4:5), < 250KB |
 | `rhys-trevor.webp` | Both founders together | ~1600×1067 (3:2), < 300KB |
 

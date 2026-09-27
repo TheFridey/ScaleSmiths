@@ -151,7 +151,8 @@ test.describe("about and founders page", () => {
     await expect(page.getByRole("link", { name: /talk to a founder/i })).toBeVisible()
 
     await page.getByRole("button", { name: /open menu/i }).click()
-    await expect(page.getByRole("banner").getByRole("link", { name: "About", exact: true }).last()).toBeVisible()
+    const drawer = page.getByRole("dialog", { name: /site navigation/i })
+    await expect(drawer.getByRole("link", { name: "About", exact: true })).toBeVisible()
   })
 
   test("exposes an accessible heading and landmark structure", async ({ page }) => {

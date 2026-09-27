@@ -20,7 +20,9 @@ export interface TeamImage {
 export const teamImages = {
   /** Forge-mountain brand mural portrait — primary profile / Person schema image. */
   rhys: {
-    src: "/images/team/rhys.webp",
+    // Versioned filename so browsers/CDN/_next/image cannot keep serving the prior
+    // `rhys.webp` bytes after an in-place asset replacement (max-age=31536000).
+    src: "/images/team/rhys-2026.webp",
     alt: "Rhys Lacy, co-founder of ScaleSmiths, in a branded polo against the forge-mountain mural",
     aspect: "4 / 5",
     available: true,

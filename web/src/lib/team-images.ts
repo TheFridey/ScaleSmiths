@@ -34,9 +34,12 @@ export const teamImages = {
     aspect: "4 / 5",
     available: true,
   },
+  /** Branded office portrait — primary profile / cards / Person schema image. */
   trevor: {
-    src: "/images/team/trevor.webp",
-    alt: "Trevor Newton-Bradley, co-founder and commercial lead of ScaleSmiths, in a ScaleSmiths polo",
+    // Versioned filename so browsers/CDN/_next/image cannot keep serving the prior
+    // `trevor.webp` bytes after an in-place asset replacement (max-age=31536000).
+    src: "/images/team/trevor-2026.webp",
+    alt: "Trevor Newton-Bradley, co-founder of ScaleSmiths, in a branded polo in the office",
     aspect: "4 / 5",
     available: true,
   },

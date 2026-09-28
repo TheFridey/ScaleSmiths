@@ -46,7 +46,7 @@ All imagery must be real. No stock, AI-generated or mocked photography or screen
 | --- | --- | --- |
 | `rhys-2026.webp` | Forge-mountain brand mural portrait of Rhys (primary / profile; versioned to bust CDN/_next/image cache) | ~1200×1500 (4:5), < 250KB |
 | `rhys-office.webp` | Studio/office portrait of Rhys (about + home cards) | ~1200×1500 (4:5), < 250KB |
-| `trevor.webp` | Natural portrait of Trevor Newton-Bradley | ~1200×1500 (4:5), < 250KB |
+| `trevor-2026.webp` | Branded office portrait of Trevor (primary / cards / schema; versioned to bust CDN/_next/image cache) | ~820×1024 (4:5), < 250KB |
 | `rhys-trevor.webp` | Both founders together | ~1600×1067 (3:2), < 300KB |
 
 After adding a file, set `available: true` in `web/src/lib/team-images.ts` and describe the

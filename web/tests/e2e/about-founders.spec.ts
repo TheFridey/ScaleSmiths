@@ -66,7 +66,7 @@ test.describe("about and founders page", () => {
     const trevorPhoto = page.locator("#trevor-newton-bradley img")
     await expect(trevorPhoto).toHaveCount(1)
     await expect(trevorPhoto).toHaveAttribute("alt", /Trevor.*ScaleSmiths/i)
-    await expect(trevorPhoto).toHaveAttribute("src", /(?:\/|%2F)images(?:\/|%2F)team(?:\/|%2F)trevor/)
+    await expect(trevorPhoto).toHaveAttribute("src", /(?:\/|%2F)images(?:\/|%2F)team(?:\/|%2F)trevor-2026(?:\.webp|%2Ewebp)/)
   })
 
   test("shows Rhys's portrait on his founder profile", async ({ page }) => {
@@ -84,7 +84,7 @@ test.describe("about and founders page", () => {
     const portrait = page.locator("main img").first()
     await expect(portrait).toBeVisible()
     await expect(portrait).toHaveAttribute("alt", /Trevor.*ScaleSmiths/i)
-    await expect(portrait).toHaveAttribute("src", /(?:\/|%2F)images(?:\/|%2F)team(?:\/|%2F)trevor/)
+    await expect(portrait).toHaveAttribute("src", /(?:\/|%2F)images(?:\/|%2F)team(?:\/|%2F)trevor-2026(?:\.webp|%2Ewebp)/)
   })
 
   test("publishes canonical metadata and consistent founder structured data", async ({ page }) => {

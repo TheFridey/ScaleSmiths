@@ -110,7 +110,7 @@ export function EnterpriseDeliveryPage() {
               Discovery → Prototype → Validated Scope → MVP → UAT → Production → Expansion
             </SectionHeading>
             <SectionLede>
-              Staged delivery reduces risk by forcing assumptions, scope and acceptance into the open before the organisation commits to a full build and rollout. Each stage has a gate — not bureaucracy for its own sake.
+              Staged delivery reduces risk by forcing assumptions, scope and acceptance into the open before the organisation commits to a full build and rollout. Each stage has a gate, not bureaucracy for its own sake.
             </SectionLede>
           </AnimateIn>
 
@@ -125,7 +125,7 @@ export function EnterpriseDeliveryPage() {
                   <p className="mt-2 font-dm text-sm leading-relaxed text-t2">{stage.summary}</p>
                   <p className="mt-3 border-t border-b1 pt-3 font-dm text-xs leading-relaxed text-t3">
                     <span className="font-semibold uppercase tracking-[.08em] text-acc">Gate</span>
-                    {" — "}
+                    {": "}
                     {stage.gate}
                   </p>
                 </div>
@@ -191,7 +191,7 @@ export function EnterpriseDeliveryPage() {
             <SectionEyebrow>Requirements</SectionEyebrow>
             <SectionHeading id="delivery-requirements">Artifacts that make scope inspectable.</SectionHeading>
             <SectionLede>
-              Discovery produces working documents leadership and delivery can share — not a slide deck that disappears after kickoff.
+              Discovery produces working documents leadership and delivery can share, not a slide deck that disappears after kickoff.
             </SectionLede>
           </AnimateIn>
           <StaggerIn className="mt-12 grid gap-px overflow-hidden rounded-2xl border border-b1 bg-b1 sm:grid-cols-2 xl:grid-cols-3">
@@ -209,7 +209,7 @@ export function EnterpriseDeliveryPage() {
         <div className="mx-auto max-w-[1240px]">
           <AnimateIn>
             <SectionEyebrow>Architecture</SectionEyebrow>
-            <SectionHeading id="delivery-architecture">Chosen for the operating environment — not a forced stack.</SectionHeading>
+            <SectionHeading id="delivery-architecture">Chosen for the operating environment, not a forced stack.</SectionHeading>
             <SectionLede>
               Architecture follows users, integrations, offline needs, identity constraints and operational ownership. We do not force every project onto the same template.
             </SectionLede>
@@ -269,7 +269,7 @@ export function EnterpriseDeliveryPage() {
         <div className="mx-auto grid max-w-[1240px] gap-10 lg:grid-cols-[.8fr_1.2fr] lg:items-start">
           <AnimateIn>
             <SectionEyebrow>Change control</SectionEyebrow>
-            <SectionHeading id="delivery-change-control">Scope changes are decisions — not silent drift.</SectionHeading>
+            <SectionHeading id="delivery-change-control">Scope changes are decisions, not silent drift.</SectionHeading>
             <SectionLede>
               After scope is agreed, significant new work is documented, assessed and estimated rather than absorbed into the original commitment.
             </SectionLede>
@@ -375,7 +375,7 @@ export function EnterpriseDeliveryPage() {
             <div>
               <SectionEyebrow>Start with discovery</SectionEyebrow>
               <h2 id="delivery-cta" className="mt-3 font-syne text-[clamp(28px,4.2vw,44px)] font-extrabold tracking-[-.03em]">
-                Begin with the operating problem — not a premature build.
+                Begin with the operating problem, not a premature build.
               </h2>
               <p className="mt-5 max-w-[640px] font-dm text-sm leading-relaxed text-t2">
                 Tell us about the current systems, workflows and constraints. Discovery determines whether the right next step is a prototype, a scoped MVP or a clearer architecture decision.

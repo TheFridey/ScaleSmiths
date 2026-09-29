@@ -15,7 +15,7 @@ export const businessGrowthAudit = {
   pillars: [
     { number: "01", title: "Positioning & trust", copy: "Offer clarity, differentiation, credibility, consistency and the reasons a prospect would choose you." },
     { number: "02", title: "Website & experience", copy: "First impression, hierarchy, mobile usability, performance, accessibility fundamentals, calls to action and technical friction." },
-    { number: "03", title: "Customer journey & conversion", copy: "How discovery becomes trust, enquiry, response, quote or booking—and where valuable prospects disappear." },
+    { number: "03", title: "Customer journey & conversion", copy: "How discovery becomes trust, enquiry, response, quote or booking, and where valuable prospects disappear." },
     { number: "04", title: "Search & discoverability", copy: "Search intent, local visibility, site structure, landing opportunities and technical SEO fundamentals without ranking promises." },
     { number: "05", title: "Leads, follow-up & sales", copy: "Enquiry capture, response, qualification, quoting, booking and practical gaps in follow-up or tracking." },
     { number: "06", title: "Digital infrastructure", copy: "Hosting, domains, email, forms, analytics, integrations, reliability and fragmented provider responsibility." },

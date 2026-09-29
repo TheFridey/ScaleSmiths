@@ -76,7 +76,7 @@ export const founders: Founder[] = [
     authorTitle: "Co-founder & Technical Lead",
     accent: "#e8a045",
     role: {
-      text: "Co-founder — technical leadership, engineering and delivery",
+      text: "Co-founder: technical leadership, engineering and delivery",
       evidence: `${OWNER_BRIEF} and web/src/lib/data.ts (project credits: "Made by Rhys Lacy · ScaleSmiths co-founder")`,
     },
     summary: {
@@ -89,7 +89,7 @@ export const founders: Founder[] = [
         evidence: "web/src/lib/data.ts",
       },
       {
-        text: "Builds and operates the production infrastructure the published work runs on — self-hosted Docker Compose, PostgreSQL and Nginx rather than managed defaults.",
+        text: "Builds and operates the production infrastructure the published work runs on, self-hosted Docker Compose, PostgreSQL and Nginx rather than managed defaults.",
         evidence: "web/src/lib/data.ts (project solutions and feature lists)",
       },
       {
@@ -103,7 +103,7 @@ export const founders: Founder[] = [
         evidence: "web/src/lib/data.ts (per-project credit lines)",
       },
       {
-        text: "Owns technical SEO implementation — site architecture, structured data, performance and indexing — as part of the build rather than as a separate hand-off.",
+        text: "Owns technical SEO implementation === site architecture, structured data, performance and indexing === as part of the build rather than as a separate hand-off.",
         evidence: OWNER_BRIEF,
       },
     ],
@@ -140,7 +140,7 @@ export const founders: Founder[] = [
     authorTitle: "Co-founder & Commercial Lead",
     accent: "#cfc7bc",
     role: {
-      text: "Co-founder — commercial growth and client relationships",
+      text: "Co-founder: commercial growth and client relationships",
       evidence: `${OWNER_BRIEF}, web/src/app/layout.tsx and admin/src/components/ProspectPipeline.tsx`,
     },
     summary: {
@@ -199,7 +199,7 @@ export const originStatements: EvidencedStatement[] = [
     evidence: "web/src/lib/data.ts (FAQ) and web/src/lib/site-identity.ts (business location)",
   },
   {
-    text: "The first published project was Glow Tanning — a Hucknall salon with no meaningful web presence and competitors already ahead of it online.",
+    text: "The first published project was Glow Tanning, a Hucknall salon with no meaningful web presence and competitors already ahead of it online.",
     evidence: "web/src/lib/data.ts (project 1, Hucknall, 2025)",
   },
   {
@@ -212,7 +212,7 @@ export const approachPillars: Array<{ title: string; description: string }> = [
   {
     title: "Find",
     description:
-      "Diagnose the commercial constraint before prescribing technology. The answer may be clearer positioning, a focused repair, a workflow change or a new system—not automatically another website.",
+      "Diagnose the commercial constraint before prescribing technology. The answer may be clearer positioning, a focused repair, a workflow change or a new system, not automatically another website.",
   },
   {
     title: "Fix",

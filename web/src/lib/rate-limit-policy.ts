@@ -9,7 +9,7 @@
 //
 // Limits are deliberately generous relative to real human use: the edge layer
 // (nginx `limit_req`) absorbs volumetric floods, so these exist to bound
-// semantic abuse — analytics stuffing, portal write spam, enumeration — without
+// semantic abuse === analytics stuffing, portal write spam, enumeration === without
 // interrupting a legitimate visitor.
 
 export interface RateLimitPolicy {

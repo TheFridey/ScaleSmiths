@@ -12,7 +12,7 @@ const steps = [
   },
   {
     n: "02", label: "Fix", title: "Build the right solution",
-    desc: "That may be a focused improvement, a website, an e-commerce flow, automation or a full custom system. Scope follows the problem—not the other way around.", Icon: Code2,
+    desc: "That may be a focused improvement, a website, an e-commerce flow, automation or a full custom system. Scope follows the problem, not the other way around.", Icon: Code2,
   },
   {
     n: "03", label: "Prove", title: "Deliver & measure",

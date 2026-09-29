@@ -34,7 +34,7 @@ export function BuildProofBlocks() {
             The build is only the beginning.
           </h2>
           <p className="mt-5 max-w-[620px] font-dm text-base leading-relaxed text-t2">
-            Strategy, engineering and operational responsibility are designed as one system—not handed between disconnected suppliers.
+            Strategy, engineering and operational responsibility are designed as one system, not handed between disconnected suppliers.
           </p>
         </AnimateIn>
         <AnimateIn className="grid gap-3 md:grid-cols-2 lg:grid-cols-12 lg:grid-rows-2">

@@ -159,7 +159,7 @@ export function SecurityPage() {
             <SectionEyebrow>Secure delivery</SectionEyebrow>
             <SectionHeading id="security-lifecycle">From design through dependency risk and test evidence.</SectionHeading>
             <SectionLede>
-              Secure development, dependency hygiene, automated testing and third-party penetration testing when required — scoped to the risk of the system being built.
+              Secure development, dependency hygiene, automated testing and third-party penetration testing when required, scoped to the risk of the system being built.
             </SectionLede>
           </AnimateIn>
           <ol className="grid gap-3 sm:grid-cols-2">
@@ -243,7 +243,7 @@ export function SecurityPage() {
         id="security-faqs"
         eyebrow="Enterprise security FAQ"
         title="Direct answers before procurement deepens."
-        intro="Cloud hosting, SSO, residency, documentation, backups and audit trails — without inventing certifications."
+        intro="Cloud hosting, SSO, residency, documentation, backups and audit trails, without inventing certifications."
         items={securityFaqs}
         hubHash="custom-development"
         className="border-t border-b1 bg-s1/50"

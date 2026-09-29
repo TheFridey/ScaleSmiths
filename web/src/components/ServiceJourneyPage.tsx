@@ -105,7 +105,7 @@ export function ServiceJourneyPage({ journey }: { journey: ServiceJourney }) {
               <p className="mt-4 font-dm text-sm leading-relaxed text-t2">
                 {isLocal
                   ? "Pricing is scoped after discovery around the approved outcome, complexity, content and delivery risk. Ongoing support is optional and scoped separately."
-                  : "Custom software and enterprise systems are scoped following discovery — not published as fixed retail prices beside SME offers. Ongoing support is optional and scoped separately."}
+                  : "Custom software and enterprise systems are scoped following discovery, not published as fixed retail prices beside SME offers. Ongoing support is optional and scoped separately."}
               </p>
               <Link href={isLocal ? "/pricing#web-growth" : "/pricing#enterprise-systems"} prefetch={false} className="mt-5 inline-flex items-center gap-2 font-dm text-sm font-semibold text-acc">
                 {isLocal ? "Read Web & Growth pricing" : "Read enterprise pricing guidance"}

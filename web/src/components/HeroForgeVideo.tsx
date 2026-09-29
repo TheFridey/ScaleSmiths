@@ -66,7 +66,7 @@ export function HeroForgeVideo() {
 
     const tryPlay = () => {
       void video.play().then(() => setReady(true)).catch(() => {
-        // Autoplay blocked or asset missing — keep poster atmosphere only.
+        // Autoplay blocked or asset missing, keep poster atmosphere only.
         setReady(false)
       })
     }

@@ -110,7 +110,7 @@ test.describe("offer hero layout", () => {
           failures.push(`${route.path}: price not fully visible (${report.priceText})`)
         }
         if (report.priceText && !report.priceText.includes(route.priceText.replace("£", ""))) {
-          // Soft check — exact label may include cadence
+          // Soft check, exact label may include cadence
           if (report.priceText !== route.priceText && !report.priceText.startsWith(route.priceText)) {
             failures.push(`${route.path}: unexpected price text "${report.priceText}"`)
           }

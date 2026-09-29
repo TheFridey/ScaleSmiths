@@ -7,7 +7,7 @@ import { selectVerifiedPublicClaims, type PublicClaim } from "./public-claims"
 
 export async function getVerifiedPublicClaims(placement: { route: string; component?: string }): Promise<PublicClaim[]> {
   // Claims must be read at request time so demoting/revoking verified wording
-  // fails closed immediately — never bake them into a static production shell.
+  // fails closed immediately, never bake them into a static production shell.
   await connection()
   try {
     const rows = await db.select().from(publicVerifiedClaims)

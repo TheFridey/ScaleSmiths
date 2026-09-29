@@ -42,7 +42,7 @@ export interface Project {
   strategy?: string[]
   /**
    * How the solution was actually built: the notable engineering decisions behind it. Descriptive
-   * only — never performance, ranking or commercial claims, which belong in verified public
+   * only, never performance, ranking or commercial claims, which belong in verified public
    * claims (see case-study-metrics.ts).
    */
   technicalImplementation?: Array<{ title: string; detail: string }>
@@ -187,7 +187,7 @@ export const projects: Project[] = [
     location: "Hucknall, Nottinghamshire",
     year: "2025",
     tags: ["Node.js", "Express", "Canvas API", "Sharp", "Nginx", "JWT"],
-    headline: "A complete digital presence for a premium tanning salon — animated, integrated, and self-managed.",
+    headline: "A complete digital presence for a premium tanning salon, animated, integrated, and self-managed.",
     challenge: "Glow Tanning had no meaningful web presence, no way to capture bookings digitally, and reviews scattered across Google and Facebook with no unified display. Their competitors in the area were already ahead online.",
     solution: "Built a full Node.js/Express site with a custom Canvas API animation system for the hero section (animated sun rays), Salon Tracker booking iframe integration, and a review aggregation pipeline configured for Google Places API and Facebook. A Sharp-based WebP image pipeline handles imagery, with a JWT-secured admin panel for content management.",
     outcomeClaimIds: [
@@ -300,7 +300,7 @@ export const projects: Project[] = [
     tags: ["Next.js", "TypeScript", "Tailwind CSS", "PostgreSQL"],
     headline: "An editorial industrial aesthetic for a US computer repair firm that refuses to look like every other repair shop.",
     challenge: "CSDS needed a professional digital presence that reflected the precision and expertise behind their work. The market is saturated with generic \'we fix computers\' templates.",
-    solution: "Built a Next.js site with a deliberately editorial, industrial aesthetic — electric red accents on near-black surfaces, bold typography, and a refined UI system. A custom multi-step quote request form captures enquiries and feeds a dedicated admin panel where the owner can manage, respond to, and track all incoming jobs.",
+    solution: "Built a Next.js site with a deliberately editorial, industrial aesthetic, electric red accents on near-black surfaces, bold typography, and a refined UI system. A custom multi-step quote request form captures enquiries and feeds a dedicated admin panel where the owner can manage, respond to, and track all incoming jobs.",
     outcomeClaimIds: [
       "project.csds.outcome.distinctive",
       "project.csds.outcome.less-friction",
@@ -354,8 +354,8 @@ export const projects: Project[] = [
     location: "UK",
     year: "2025",
     tags: ["Next.js 15", "Auth.js v5", "Stripe", "LiveKit", "PostgreSQL", "Drizzle ORM"],
-    headline: "A full production SaaS platform for a UK founder community — real billing, real video, real infrastructure.",
-    challenge: "The Business Circle needed a dedicated platform for its founder community. A Slack group wasn\'t enough — they needed tiered memberships, integrated video rooms, member management, and a billing system that could grow.",
+    headline: "A full production SaaS platform for a UK founder community, real billing, real video, real infrastructure.",
+    challenge: "The Business Circle needed a dedicated platform for its founder community. A Slack group wasn\'t enough, they needed tiered memberships, integrated video rooms, member management, and a billing system that could grow.",
     solution: "Built with Next.js, Auth.js multi-role authentication, Stripe subscription billing, and LiveKit video rooms. PostgreSQL with Drizzle ORM handles the data layer, with the stack deployed through Docker Compose on a VPS.",
     outcomeClaimIds: [
       "project.business-circle.outcome.billing-day-one",
@@ -539,7 +539,7 @@ export const services: Service[] = [
   {
     tier: "Growth",
     range: "Scoped after discovery",
-    pitch: "E-commerce, bookings, integrations. For businesses ready to make digital a real revenue channel — not just a brochure.",
+    pitch: "E-commerce, bookings, integrations. For businesses ready to make digital a real revenue channel, not just a brochure.",
     features: ["E-commerce / bookings", "Custom integrations", "CMS setup", "Analytics + conversion", "Priority support"],
     icon: "trending-up",
     featured: true,
@@ -560,7 +560,7 @@ export type ManagedServiceAvailability = "included" | "available" | "optional"
 export const digitalGrowthPartnerships: Array<{ name: string; price: string; priceClaimId: string; desc: string; managedEmail: ManagedServiceAvailability }> = [
   { name: "Maintenance", price: "Scoped separately", priceClaimId: "price.maintenance-retainer", desc: "Hosting, updates, uptime monitoring and minor fixes.", managedEmail: "available" },
   { name: "Growth Partner", price: "Scoped separately", priceClaimId: "price.growth-retainer", desc: "Maintenance plus monthly performance reviews and improvements.", managedEmail: "available" },
-  { name: "Ecosystem", price: "Scoped separately", priceClaimId: "price.ecosystem-retainer", desc: "Full ongoing partnership — development, strategy and advisory support.", managedEmail: "available" },
+  { name: "Ecosystem", price: "Scoped separately", priceClaimId: "price.ecosystem-retainer", desc: "Full ongoing partnership, development, strategy and advisory support.", managedEmail: "available" },
 ]
 
 export const faqs = [

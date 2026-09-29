@@ -58,7 +58,7 @@ export function EnterpriseArchitectureFramework({
             ))}
           </StaggerIn>
           <p className="mt-4 font-dm text-xs leading-relaxed text-t3">
-            Subject to project and security requirements. Topology is agreed in discovery — not assumed from a default hosting package.
+            Subject to project and security requirements. Topology is agreed in discovery, not assumed from a default hosting package.
           </p>
         </div>
 
@@ -102,7 +102,7 @@ export function EnterpriseArchitectureFramework({
               Six layers of serious system capability.
             </h3>
             <p className="mt-3 font-dm text-sm leading-relaxed text-t2">
-              Each item is included because of the operational job it does — not because it looks impressive on a slide.
+              Each item is included because of the operational job it does, not because it looks impressive on a slide.
             </p>
           </AnimateIn>
 

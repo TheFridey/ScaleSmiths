@@ -7,7 +7,7 @@ import {
 } from "./helpers"
 
 /**
- * Brief §53 customer journeys — desktop Chromium (+ mobile project covers width separately).
+ * Brief §53 customer journeys, desktop Chromium (+ mobile project covers width separately).
  * Asserts pathway continuity and CTA hierarchy without redesigning pages.
  */
 test.beforeEach(async ({ page }) => {

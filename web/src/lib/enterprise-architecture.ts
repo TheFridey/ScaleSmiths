@@ -1,7 +1,7 @@
 /**
  * Reusable enterprise architecture framework copy.
  * Mounted on /enterprise, /custom-systems, and available for work/case-study pages.
- * Keep claims operational and generic — never name private client brands here.
+ * Keep claims operational and generic, never name private client brands here.
  */
 
 export interface ArchitectureCapability {
@@ -20,13 +20,13 @@ export const architectureFrameworkCopy = {
   eyebrow: "Technical architecture",
   title: "Architecture follows the problem.",
   lede:
-    "ScaleSmiths does not force every project into one preset stack. Identity, data, integrations and hosting are selected around the operating environment, security constraints and the first dependable release — so the system can be owned, operated and extended with discipline.",
+    "ScaleSmiths does not force every project into one preset stack. Identity, data, integrations and hosting are selected around the operating environment, security constraints and the first dependable release, so the system can be owned, operated and extended with discipline.",
   diagramTitle: "Typical enterprise architecture",
   diagramIntro:
     "A generic reference shape for serious operational systems. Exact components change with the problem; the layering and boundaries stay deliberate.",
   deploymentTitle: "Where systems can run",
   deploymentIntro:
-    "Deployment topology is a design decision, subject to project and security requirements — not a one-size hosting assumption.",
+    "Deployment topology is a design decision, subject to project and security requirements, not a one-size hosting assumption.",
 } as const
 
 export const architectureDeploymentOptions = [
@@ -64,7 +64,7 @@ export const architectureCapabilityGroups: readonly ArchitectureCapabilityGroup[
   {
     id: "identity",
     title: "Identity",
-    intro: "Who can act in the system — and under which organisational constraints.",
+    intro: "Who can act in the system, and under which organisational constraints.",
     capabilities: [
       {
         name: "SSO",
@@ -150,7 +150,7 @@ export const architectureCapabilityGroups: readonly ArchitectureCapabilityGroup[
       },
       {
         name: "Retention",
-        why: "Data kept only as long as the operating and legal purpose requires — reducing sprawl and review burden.",
+        why: "Data kept only as long as the operating and legal purpose requires, reducing sprawl and review burden.",
       },
       {
         name: "Auditability",
@@ -239,7 +239,7 @@ export const architectureCapabilityGroups: readonly ArchitectureCapabilityGroup[
       },
       {
         name: "Structured logging",
-        why: "Investigations need searchable, consistent events — not free-text noise that cannot be correlated.",
+        why: "Investigations need searchable, consistent events, not free-text noise that cannot be correlated.",
       },
       {
         name: "Backups",

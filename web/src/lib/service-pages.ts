@@ -45,7 +45,7 @@ export const serviceHubItems = [
   {
     journey: "local-growth" as const,
     title: "Growth Partnership",
-    for: "Businesses that want one accountable partner improving search visibility, conversion, content and technology — whether ScaleSmiths built the current site or not.",
+    for: "Businesses that want one accountable partner improving search visibility, conversion, content and technology, whether ScaleSmiths built the current site or not.",
     includes: "SEO, content, analytics, conversion improvement, roadmap delivery, monitoring and technical support as agreed.",
     outcome: "A prioritised digital estate that evolves with the business instead of quietly decaying.",
     links: ["/digital-growth-partnership", "/pricing"],
@@ -102,7 +102,7 @@ export const enterpriseCommercialComponents = [
   { title: "Implementation", body: "Build the agreed MVP or phased release with environment separation and delivery controls." },
   { title: "Migration", body: "Move data and process cutover in rehearsed stages rather than as an untested go-live step." },
   { title: "Integrations", body: "Connect identity, ERP, CRM, finance and operational platforms under explicit ownership." },
-  { title: "Managed support", body: "Ongoing operational ownership scoped separately from project delivery — not unlimited development." },
+  { title: "Managed support", body: "Ongoing operational ownership scoped separately from project delivery, not unlimited development." },
   { title: "Platform licensing", body: "Third-party or platform licence costs where applicable, identified during scoping rather than buried later." },
 ] as const
 
@@ -124,7 +124,7 @@ export const enterpriseCostFactors = [
  */
 export const pricingItems: PricingItem[] = [
   ...webGrowthPricingItems,
-  { name: "Custom web app / enterprise system", range: "Scoped following discovery", priceClaimId: "price.forge", note: "Operational platforms, portals, SaaS and enterprise systems are commercially scoped after discovery — not published as fixed retail prices." },
+  { name: "Custom web app / enterprise system", range: "Scoped following discovery", priceClaimId: "price.forge", note: "Operational platforms, portals, SaaS and enterprise systems are commercially scoped after discovery, not published as fixed retail prices." },
 ]
 
 export function buildServiceHubSchema(baseUrl = "https://scalesmiths.co.uk") {

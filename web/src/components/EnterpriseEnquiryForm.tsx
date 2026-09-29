@@ -245,7 +245,7 @@ export function EnterpriseEnquiryForm() {
           </h2>
           <p className="mb-8 mt-3 font-dm text-sm leading-relaxed text-t2" aria-live="polite">
             {stage === 0 && "Tell us who you are and enough organisational context to qualify a serious conversation."}
-            {stage === 1 && "Describe the operating reality — systems, friction and the problem worth solving."}
+            {stage === 1 && "Describe the operating reality, systems, friction and the problem worth solving."}
             {stage === 2 && "Select the system areas that matter. Choose all that apply."}
             {stage === 3 && "Optional technical context. Skip anything that is not yet known."}
             {stage === 4 && "Share timescale, budget posture and who else will approve the work."}
@@ -275,7 +275,7 @@ export function EnterpriseEnquiryForm() {
                 <TextField id="company" label="Company" autoComplete="organization" value={draft.company} onChange={(value) => update("company", value)} errorId={invalidField === "company" ? errorId : undefined} invalid={invalidField === "company"} required />
                 <TextField id="jobTitle" label="Job title" autoComplete="organization-title" value={draft.jobTitle} onChange={(value) => update("jobTitle", value)} errorId={invalidField === "jobTitle" ? errorId : undefined} invalid={invalidField === "jobTitle"} required />
                 <ChoiceGroup legend="Company size" name="companySize" options={ENTERPRISE_COMPANY_SIZES} value={draft.companySize} onChange={(value) => update("companySize", value)} />
-                <TextField id="siteCount" label="Number of sites / locations" hint="Optional — leave blank if not relevant." value={draft.siteCount} onChange={(value) => update("siteCount", value)} />
+                <TextField id="siteCount" label="Number of sites / locations" hint="Optional: leave blank if not relevant." value={draft.siteCount} onChange={(value) => update("siteCount", value)} />
               </>
             )}
 
@@ -341,7 +341,7 @@ export function EnterpriseEnquiryForm() {
                 <ChoiceGroup legend="Desired timescale" name="timescale" options={ENTERPRISE_TIMESCALES} value={draft.timescale} onChange={(value) => update("timescale", value)} />
                 <ChoiceGroup legend="Is budget already approved?" name="budgetApproved" options={ENTERPRISE_YES_NO_UNSURE} value={draft.budgetApproved} onChange={(value) => update("budgetApproved", value)} optional />
                 <ChoiceGroup legend="Budget range" name="budgetRange" options={ENTERPRISE_BUDGET_BANDS} value={draft.budgetRange} onChange={(value) => update("budgetRange", value)} />
-                <TextField id="approvers" label="Who else will be involved in approving this project?" hint="Optional — roles or names are fine." multiline value={draft.approvers} onChange={(value) => update("approvers", value)} />
+                <TextField id="approvers" label="Who else will be involved in approving this project?" hint="Optional: roles or names are fine." multiline value={draft.approvers} onChange={(value) => update("approvers", value)} />
               </>
             )}
 

@@ -87,7 +87,7 @@ export function DigitalEstate() {
               <p className="mt-5 font-dm text-base leading-[1.8] text-t2">{active.description}</p>
             </div>
             <p className="mt-10 border-t border-b1 pt-6 font-dm text-xs leading-relaxed text-t3">
-              Every estate is scoped individually. A node represents a capability that may be managed—not an automatic inclusion or invented live status.
+              Every estate is scoped individually. A node represents a capability that may be managed, not an automatic inclusion or invented live status.
             </p>
           </aside>
 

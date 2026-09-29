@@ -9,11 +9,11 @@ export const SECURITY_CONTACT_ANCHOR = "security-contact"
 export const securityPageCopy = {
   metaTitle: "Security & Trust | Secure Software Development UK",
   metaDescription:
-    "How ScaleSmiths approaches secure software development, enterprise software security, infrastructure, data protection and operational resilience — designed into architecture and delivery, without unverified certification claims.",
+    "How ScaleSmiths approaches secure software development, enterprise software security, infrastructure, data protection and operational resilience, designed into architecture and delivery, without unverified certification claims.",
   eyebrow: "Security & trust",
-  title: "Security designed into the architecture — not bolted on at the end.",
+  title: "Security designed into the architecture, not bolted on at the end.",
   lede:
-    "ScaleSmiths designs security into the architecture and delivery process rather than treating it as a final checklist. This page explains how we approach identity, application security, data protection, infrastructure, resilience and secure delivery for custom and enterprise software — in language that IT, security and procurement can inspect.",
+    "ScaleSmiths designs security into the architecture and delivery process rather than treating it as a final checklist. This page explains how we approach identity, application security, data protection, infrastructure, resilience and secure delivery for custom and enterprise software, in language that IT, security and procurement can inspect.",
   primaryCta: {
     label: "Discuss security requirements",
     href: `${SECURITY_PATH}#${SECURITY_CONTACT_ANCHOR}`,
@@ -26,13 +26,13 @@ export const securityPageCopy = {
     label: "Start an Enterprise Enquiry",
     href: enquiryIntentHref("enterprise"),
   },
-  securityEmailHref: `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent("Security enquiry — ScaleSmiths")}`,
+  securityEmailHref: `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent("Security enquiry: ScaleSmiths")}`,
 } as const
 
 export const securityPhilosophy = [
   {
     title: "Architecture first",
-    body: "Auth boundaries, tenancy, privileged actions, data classification and failure modes are modelled before delivery expands — not discovered in a late review.",
+    body: "Auth boundaries, tenancy, privileged actions, data classification and failure modes are modelled before delivery expands, not discovered in a late review.",
   },
   {
     title: "Least privilege by default",
@@ -40,7 +40,7 @@ export const securityPhilosophy = [
   },
   {
     title: "Evidence over slogans",
-    body: "We describe controls that are designed, built and operated — and we do not imply certifications, regulatory approval or guaranteed compliance we do not hold.",
+    body: "We describe controls that are designed, built and operated, and we do not imply certifications, regulatory approval or guaranteed compliance we do not hold.",
   },
   {
     title: "Client governance respected",
@@ -52,12 +52,12 @@ export const securitySections = [
   {
     id: "identity-access",
     eyebrow: "Identity and access control",
-    title: "Know who is acting — and what they may do.",
+    title: "Know who is acting, and what they may do.",
     lede: "Identity is treated as a first-class system boundary, not a login screen.",
     items: [
       { title: "RBAC and ABAC", body: "Role-based access is the baseline. Attribute-based rules can be introduced where site, team, contractor or data sensitivity requires finer control." },
       { title: "SSO, OIDC and SAML", body: "Systems can integrate with corporate identity providers using OIDC or SAML where the client estate requires centralised authentication." },
-      { title: "MFA and session handling", body: "Multi-factor authentication and secure session handling are designed where the risk and platform support them — including idle timeouts, rotation and revocation paths." },
+      { title: "MFA and session handling", body: "Multi-factor authentication and secure session handling are designed where the risk and platform support them, including idle timeouts, rotation and revocation paths." },
       { title: "Least privilege", body: "Human and machine identities are scoped to the minimum permissions needed for the agreed operating model." },
     ],
   },
@@ -81,7 +81,7 @@ export const securitySections = [
     items: [
       { title: "Encryption in transit", body: "TLS is used for public endpoints and other channels where the platform and architecture support encrypted transport." },
       { title: "Encryption at rest", body: "Encryption at rest is used where the hosting platform and storage services support it for the agreed infrastructure." },
-      { title: "Data minimisation", body: "Collections and retention are designed around the business purpose — not indefinite accumulation by default." },
+      { title: "Data minimisation", body: "Collections and retention are designed around the business purpose, not indefinite accumulation by default." },
       { title: "Access boundaries", body: "Application permissions, environment separation and operational access paths are designed to limit who can reach sensitive records." },
     ],
   },
@@ -103,7 +103,7 @@ export const securitySections = [
     title: "Secrets stay out of source control and client bundles.",
     lede: "Provider keys, auth secrets and encryption material are handled as operational assets.",
     items: [
-      { title: "Environment-scoped secrets", body: "Secrets are injected through environment or secret stores appropriate to the hosting model — not committed to repositories." },
+      { title: "Environment-scoped secrets", body: "Secrets are injected through environment or secret stores appropriate to the hosting model, not committed to repositories." },
       { title: "No public exposure", body: "Provider credentials remain server-only. Public clients do not receive privileged keys through NEXT_PUBLIC or equivalent channels." },
       { title: "Rotation readiness", body: "Secret rotation and replacement paths are considered during design so compromise response is not inventing process under pressure." },
       { title: "Least operational access", body: "Access to production secrets is limited to the people and systems that need it for delivery and support." },
@@ -118,7 +118,7 @@ export const securitySections = [
       { title: "Structured logging", body: "Application and infrastructure logs are structured where practical so incidents can be investigated without guesswork." },
       { title: "Security-relevant events", body: "Authentication failures, privileged actions and unusual operational signals are candidates for elevated visibility." },
       { title: "Audit trails", body: "Systems can be designed with immutable or append-oriented audit trails where the operating model or client governance requires them." },
-      { title: "Proportionate retention", body: "Retention is agreed against operational need, legal obligations and client policy — not infinite storage by default." },
+      { title: "Proportionate retention", body: "Retention is agreed against operational need, legal obligations and client policy, not infinite storage by default." },
     ],
   },
 ] as const
@@ -149,7 +149,7 @@ export const securityResilience = [
   },
   {
     title: "Disaster recovery planning",
-    body: "Recovery expectations are discussed as design constraints — RPO/RTO aspirations, failover shape and restore rehearsal — rather than assumed from hosting defaults alone.",
+    body: "Recovery expectations are discussed as design constraints === RPO/RTO aspirations, failover shape and restore rehearsal === rather than assumed from hosting defaults alone.",
   },
   {
     title: "Monitoring and observability",
@@ -219,7 +219,7 @@ export const securityFaqs = [
   },
   {
     q: "Can clients receive architecture/security documentation?",
-    a: "Yes. Proportionate architecture and security documentation can be provided for the engagement — for example system boundaries, auth model, data flows, environments and operational controls — subject to the agreed scope.",
+    a: "Yes. Proportionate architecture and security documentation can be provided for the engagement, for example system boundaries, auth model, data flows, environments and operational controls, subject to the agreed scope.",
   },
   {
     q: "How are backups handled?",

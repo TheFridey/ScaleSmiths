@@ -1,5 +1,5 @@
 /**
- * Real founder photography only — never stock, AI-generated or illustrative portraits.
+ * Real founder photography only, never stock, AI-generated or illustrative portraits.
  *
  * To publish a photo:
  *   1. Export a compressed WebP (portraits ~1200x1500, 4:5; the pair shot ~1600x1067, 3:2),
@@ -18,7 +18,7 @@ export interface TeamImage {
 }
 
 export const teamImages = {
-  /** Forge-mountain brand mural portrait — primary profile / Person schema image. */
+  /** Forge-mountain brand mural portrait, primary profile / Person schema image. */
   rhys: {
     // Versioned filename so browsers/CDN/_next/image cannot keep serving the prior
     // `rhys.webp` bytes after an in-place asset replacement (max-age=31536000).
@@ -27,14 +27,14 @@ export const teamImages = {
     aspect: "4 / 5",
     available: true,
   },
-  /** Studio/office portrait — card and homepage trust contexts. */
+  /** Studio/office portrait, card and homepage trust contexts. */
   rhysOffice: {
     src: "/images/team/rhys-office.webp",
     alt: "Rhys Lacy, co-founder of ScaleSmiths, standing in the branded office by the wall logo",
     aspect: "4 / 5",
     available: true,
   },
-  /** Branded office portrait — primary profile / cards / Person schema image. */
+  /** Branded office portrait, primary profile / cards / Person schema image. */
   trevor: {
     // Versioned filename so browsers/CDN/_next/image cannot keep serving the prior
     // `trevor.webp` bytes after an in-place asset replacement (max-age=31536000).

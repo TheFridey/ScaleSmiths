@@ -1,7 +1,7 @@
 import { availableWorkMedia } from "./work-media-manifest"
 
 /**
- * Case-study imagery. Every image here is a real capture of delivered work — never a mock-up,
+ * Case-study imagery. Every image here is a real capture of delivered work, never a mock-up,
  * generated interface or approximation.
  *
  * Naming convention (all WebP, under /images/work/<folder>/):

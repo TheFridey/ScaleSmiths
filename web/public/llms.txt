@@ -4,18 +4,18 @@
 
 ## What ScaleSmiths is
 
-- **Constraint-first growth & engineering** — diagnose before prescribing technology.
-- **Local / founder-led growth** — websites, enquiries, conversions, local search, SEO, AEO, analytics, CRM, reviews, email and operational journeys.
-- **Custom systems** — portals, internal tools, workflow software, integrations, permissions and operational platforms.
-- **Enterprise software** — fragmented estates, multi-site operations, RBAC/ABAC, SSO, audit trails, migrations, offline workflows and controlled delivery.
-- **Growth Partnership** — prioritised ongoing improvement across the digital estate after launch or for an existing site.
-- **Business Growth Audit** — a paid diagnostic when the right project is not yet clear.
+- **Constraint-first growth & engineering**: diagnose before prescribing technology.
+- **Local / founder-led growth**: websites, enquiries, conversions, local search, SEO, AEO, analytics, CRM, reviews, email and operational journeys.
+- **Custom systems**: portals, internal tools, workflow software, integrations, permissions and operational platforms.
+- **Enterprise software**: fragmented estates, multi-site operations, RBAC/ABAC, SSO, audit trails, migrations, offline workflows and controlled delivery.
+- **Growth Partnership**: prioritised ongoing improvement across the digital estate after launch or for an existing site.
+- **Business Growth Audit**: a paid diagnostic when the right project is not yet clear.
 
 ## Philosophy
 
 FIND THE CONSTRAINT. ENGINEER THE SOLUTION. PROVE THE IMPACT. KEEP IMPROVING.
 
-ScaleSmiths does not start by selling a fixed package. The correct solution may be a website, a rebuild, search, analytics, CRM, automation, an internal portal, a custom platform, an enterprise system, an integration — or something else entirely.
+ScaleSmiths does not start by selling a fixed package. The correct solution may be a website, a rebuild, search, analytics, CRM, automation, an internal portal, a custom platform, an enterprise system, an integration, or something else entirely.
 
 ## Location & coverage
 
@@ -30,9 +30,9 @@ ScaleSmiths does not start by selling a fixed package. The correct solution may 
 - [Custom Systems](https://scalesmiths.co.uk/custom-systems): Operational software and internal platforms.
 - [Enterprise](https://scalesmiths.co.uk/enterprise): Enterprise systems, capabilities and governance posture.
 - [Enterprise Delivery](https://scalesmiths.co.uk/enterprise/delivery): Discovery → Prototype → Validated Scope → MVP → UAT → Production → Expansion.
-- [Security & Trust](https://scalesmiths.co.uk/security): How security is designed into delivery — without unverified certifications.
+- [Security & Trust](https://scalesmiths.co.uk/security): How security is designed into delivery, without unverified certifications.
 - [Work](https://scalesmiths.co.uk/work): Case studies and build evidence.
-- [Insights](https://scalesmiths.co.uk/insights): ScaleSmiths Knowledge Library — technical articles with honest publication presentation.
+- [Insights](https://scalesmiths.co.uk/insights): ScaleSmiths Knowledge Library: technical articles with honest publication presentation.
 - [Pricing](https://scalesmiths.co.uk/pricing): How SME/web/growth work is scoped; enterprise remains discovery-led.
 - [Strategy Call](https://scalesmiths.co.uk/quote?intent=strategy_call): Light enquiry to talk through the constraint.
 - [Start a Project](https://scalesmiths.co.uk/quote): Full project brief when the scope is clearer.

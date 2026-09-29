@@ -5,7 +5,7 @@ test("Business Growth Audit has a distinct credible route and intake", async ({ 
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Know what to fix next.")
   await expect(page.getByText("£395", { exact: true })).toBeVisible()
   await expect(page.getByText(/No payment is taken through this website/)).toBeVisible()
-  await expect(page.getByText(/Example finding—not a client result/)).toBeVisible()
+  await expect(page.getByText(/Example finding, not a client result/)).toBeVisible()
   await page.getByRole("link", { name: "Start my Audit" }).first().click()
   await expect(page).toHaveURL(/business-growth-audit\/start/)
   await expect(page.getByLabel("Business name")).toBeVisible()

@@ -1,5 +1,5 @@
-# ai.txt — guidance for AI crawlers and assistants
-# ScaleSmiths — https://scalesmiths.co.uk
+# ai.txt: guidance for AI crawlers and assistants
+# ScaleSmiths: https://scalesmiths.co.uk
 
 User-agent: *
 Allow: /

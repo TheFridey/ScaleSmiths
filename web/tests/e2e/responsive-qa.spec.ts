@@ -4,7 +4,7 @@ import { rejectNonEssentialStorage, setExperience } from "./helpers"
 /**
  * Structural QA across the three breakpoints the design targets.
  *
- * This is not a pixel-comparison suite — `public-site.visual.spec.ts` owns screenshots. It checks
+ * This is not a pixel-comparison suite, `public-site.visual.spec.ts` owns screenshots. It checks
  * the things that break silently when content changes: horizontal overflow, chrome that fails to
  * render, disclosure controls that stop working, headings that collapse, and tap targets too small
  * to hit on a phone.
@@ -175,7 +175,7 @@ test.describe("interactive components", () => {
       const toggle = page.getByRole("button", { name: /open menu/i })
       await expect(toggle, `${viewport.name}: hamburger visible`).toBeVisible()
 
-      // Sample mid-animation frames — the historical bug shifted the sticky
+      // Sample mid-animation frames, the historical bug shifted the sticky
       // header left by hundreds of pixels while the drawer slid in.
       const shiftSamples: number[] = []
       const sampleShift = async () => {

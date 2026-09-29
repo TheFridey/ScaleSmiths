@@ -10,7 +10,7 @@ export const enterpriseContactCopy = {
   brand: "ScaleSmiths",
   title: "Start a focused enterprise discovery.",
   lede:
-    "This is not the standard quote form. It captures enough organisational and technical context to qualify a serious custom software opportunity — without a bloated RFP.",
+    "This is not the standard quote form. It captures enough organisational and technical context to qualify a serious custom software opportunity, without a bloated RFP.",
 } as const
 
 export function metadataForEnterpriseContactPage(): Metadata {

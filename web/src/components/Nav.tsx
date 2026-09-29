@@ -12,8 +12,8 @@ import { motionTransitions, staggerContainer, staggerItem } from "@/lib/motion"
 
 /**
  * Five top-level destinations, with the service routes gathered under one group rather than
- * competing for space in the bar. Everything a visitor arriving from search needs — what we do,
- * proof, writing, who we are, and the answers — is reachable in one interaction.
+ * competing for space in the bar. Everything a visitor arriving from search needs, what we do,
+ * proof, writing, who we are, and the answers, is reachable in one interaction.
  */
 const serviceLinks = [
   { href: "/services", label: "All services", description: "Every route in one place, from local growth to custom systems." },

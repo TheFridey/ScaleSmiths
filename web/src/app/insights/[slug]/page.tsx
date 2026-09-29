@@ -86,7 +86,7 @@ export default async function InsightPage({ params }: Props) {
 
             {!isPublished ? (
               <p className="mt-6 rounded-lg border border-dashed border-b2 bg-s1 px-4 py-3 font-dm text-sm text-t2">
-                {insight.status === "planned" ? "Planned article" : "Draft article"} — development preview only. Not listed, linked or indexed until {author.firstName} publishes it.
+                {insight.status === "planned" ? "Planned article" : "Draft article"}, development preview only. Not listed, linked or indexed until {author.firstName} publishes it.
               </p>
             ) : null}
 

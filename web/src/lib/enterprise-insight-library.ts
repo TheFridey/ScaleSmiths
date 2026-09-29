@@ -47,9 +47,9 @@ export const enterpriseInsights: Insight[] = [
     slug: "when-two-saas-platforms-should-become-one-bespoke-system",
     title: "When Two SaaS Platforms Should Become One Bespoke System",
     seoTitle: "When Two SaaS Tools Should Become One Bespoke System",
-    description: "How to decide when consolidating two SaaS platforms into one bespoke system reduces risk, cost and operational friction — and when it does not.",
+    description: "How to decide when consolidating two SaaS platforms into one bespoke system reduces risk, cost and operational friction, and when it does not.",
     answer:
-      "Two SaaS platforms should become one bespoke system when the shared workflow is the product of the business, not a side process you can afford to keep fragmented. The signal is structural: the same entities are duplicated, hand-offs create delay or error, permissions cannot be expressed across both products, and integrations become a permanent tax rather than a bridge. Consolidation is not a reflex against licence fees. It is justified when a single domain model, one permission boundary and one operational surface remove more risk than they introduce. ScaleSmiths treats that decision as architecture work inside [enterprise](/enterprise) delivery — not as a shopping exercise for another vendor feature list.",
+      "Two SaaS platforms should become one bespoke system when the shared workflow is the product of the business, not a side process you can afford to keep fragmented. The signal is structural: the same entities are duplicated, hand-offs create delay or error, permissions cannot be expressed across both products, and integrations become a permanent tax rather than a bridge. Consolidation is not a reflex against licence fees. It is justified when a single domain model, one permission boundary and one operational surface remove more risk than they introduce. ScaleSmiths treats that decision as architecture work inside [enterprise](/enterprise) delivery, not as a shopping exercise for another vendor feature list.",
     priority: 26,
     author: "rhys",
     services: ["/enterprise", "/custom-systems", "/pricing"],
@@ -67,11 +67,11 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "Teams rarely complain about two products in the abstract. They complain that a booking lives in one system, fulfilment in another, and finance in a third — while the customer experience still depends on all three agreeing. Staff become the integration layer: they copy reference numbers, reconcile statuses and invent spreadsheet ledgers that nobody owns. That seam has a cost that does not appear on either vendor invoice. It appears as delayed decisions, inconsistent reporting and permission models that cannot answer who can change what across the full lifecycle. Before arguing for a build, map the seam: which entities cross the boundary, which events must be reliable, and which exceptions currently only humans can resolve.",
+        text: "Teams rarely complain about two products in the abstract. They complain that a booking lives in one system, fulfilment in another, and finance in a third, while the customer experience still depends on all three agreeing. Staff become the integration layer: they copy reference numbers, reconcile statuses and invent spreadsheet ledgers that nobody owns. That seam has a cost that does not appear on either vendor invoice. It appears as delayed decisions, inconsistent reporting and permission models that cannot answer who can change what across the full lifecycle. Before arguing for a build, map the seam: which entities cross the boundary, which events must be reliable, and which exceptions currently only humans can resolve.",
       },
       {
         type: "paragraph",
-        text: "A useful consolidation brief starts with the operational object that must remain coherent — an order, a case, a shipment, a member journey — and asks whether two products can ever share a single source of truth for that object. If each vendor insists on owning identity, status and history, you will keep paying the seam forever. If one product is already the de facto source of truth and the other is a viewport, integration may be enough. The bespoke path becomes interesting when neither product can host the real process without continuous compromise.",
+        text: "A useful consolidation brief starts with the operational object that must remain coherent === an order, a case, a shipment, a member journey === and asks whether two products can ever share a single source of truth for that object. If each vendor insists on owning identity, status and history, you will keep paying the seam forever. If one product is already the de facto source of truth and the other is a viewport, integration may be enough. The bespoke path becomes interesting when neither product can host the real process without continuous compromise.",
       },
       {
         type: "heading",
@@ -91,7 +91,7 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "These signals are cumulative. One awkward integration is normal. A permanent dual-write with no compensating transaction model is a product smell. When the organisation’s competitive behaviour lives in that dual-write — for example custom allocation rules, regulated evidence, or multi-tenant partner workflows — buying another connector rarely removes the risk. It packages the risk differently.",
+        text: "These signals are cumulative. One awkward integration is normal. A permanent dual-write with no compensating transaction model is a product smell. When the organisation’s competitive behaviour lives in that dual-write, for example custom allocation rules, regulated evidence, or multi-tenant partner workflows, buying another connector rarely removes the risk. It packages the risk differently.",
       },
       {
         type: "heading",
@@ -111,7 +111,7 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "If you do consolidate, avoid rebuilding both products feature-for-feature. Extract the shared domain model first: entities, invariants, state machines and permission boundaries. Surround that core with adapters for anything that must remain external — payments, identity providers, document stores, legacy reporting. Prefer a [modular monolith](/insights/enterprise-software-modular-monolith) with clear module boundaries over a premature microservice estate. Premature distribution recreates the same seam problem inside your own network.",
+        text: "If you do consolidate, avoid rebuilding both products feature-for-feature. Extract the shared domain model first: entities, invariants, state machines and permission boundaries. Surround that core with adapters for anything that must remain external, payments, identity providers, document stores, legacy reporting. Prefer a [modular monolith](/insights/enterprise-software-modular-monolith) with clear module boundaries over a premature microservice estate. Premature distribution recreates the same seam problem inside your own network.",
       },
       {
         type: "code",
@@ -144,7 +144,7 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "Also price migration risk. Dual-running periods, data cleansing and staff retraining are part of the project, not optional extras. [Enterprise delivery](/enterprise/delivery) should make those phases visible. If stakeholders will not fund a controlled cutover, they are not ready to consolidate — they are ready to buy another tool and hope.",
+        text: "Also price migration risk. Dual-running periods, data cleansing and staff retraining are part of the project, not optional extras. [Enterprise delivery](/enterprise/delivery) should make those phases visible. If stakeholders will not fund a controlled cutover, they are not ready to consolidate, they are ready to buy another tool and hope.",
       },
       {
         type: "heading",
@@ -177,7 +177,7 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "No. Licence cost is often the smallest line. Consolidation is cheaper when reconciliation labour, incident risk and blocked process change dominate — and when the organisation will own the resulting platform. If those costs are low, keep the products and invest in a clean integration contract.",
+        text: "No. Licence cost is often the smallest line. Consolidation is cheaper when reconciliation labour, incident risk and blocked process change dominate, and when the organisation will own the resulting platform. If those costs are low, keep the products and invest in a clean integration contract.",
       },
       {
         type: "subheading",
@@ -212,7 +212,7 @@ export const enterpriseInsights: Insight[] = [
     seoTitle: "Replace Fragmented Internal Software Safely",
     description: "A practical approach to replacing fragmented internal tools with a coherent platform while keeping day-to-day operations running.",
     answer:
-      "Replacing fragmented internal software without breaking operations means treating cutover as an engineered sequence, not a big-bang weekend. Inventory the real workflows — including the spreadsheets and side channels people actually use — then replace one coherent operational slice at a time behind stable interfaces. Keep the old path available until parity and staff competence are proven. The goal is continuity of business outcomes, not a dramatic switch-off ceremony. ScaleSmiths plans this as part of [enterprise delivery](/enterprise/delivery): discovery, strangler migration, dual-run controls and a rollback stance that operations can trust.",
+      "Replacing fragmented internal software without breaking operations means treating cutover as an engineered sequence, not a big-bang weekend. Inventory the real workflows === including the spreadsheets and side channels people actually use === then replace one coherent operational slice at a time behind stable interfaces. Keep the old path available until parity and staff competence are proven. The goal is continuity of business outcomes, not a dramatic switch-off ceremony. ScaleSmiths plans this as part of [enterprise delivery](/enterprise/delivery): discovery, strangler migration, dual-run controls and a rollback stance that operations can trust.",
     priority: 27,
     author: "trevor-newton-bradley",
     services: ["/enterprise", "/enterprise/delivery", "/custom-systems"],
@@ -230,7 +230,7 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "Internal estates grow organically: an Access database for one team, a SaaS board for another, a shared drive for documents, a mail-merge for customer updates. On paper it looks like a short list of tools. In practice it is a dependency graph of data flows, tribal knowledge and exception paths. Replacing “the CRM” without understanding which reports finance regenerates every Friday will break trust even if the new UI looks polished. Start by observing work, not by interviewing for wishlist features. Shadow a complete cycle — intake, fulfilment, exception, close — and record every system touch, including the unofficial ones.",
+        text: "Internal estates grow organically: an Access database for one team, a SaaS board for another, a shared drive for documents, a mail-merge for customer updates. On paper it looks like a short list of tools. In practice it is a dependency graph of data flows, tribal knowledge and exception paths. Replacing “the CRM” without understanding which reports finance regenerates every Friday will break trust even if the new UI looks polished. Start by observing work, not by interviewing for wishlist features. Shadow a complete cycle === intake, fulfilment, exception, close === and record every system touch, including the unofficial ones.",
       },
       {
         type: "paragraph",
@@ -289,7 +289,7 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "Training is not a slide deck. It is supervised real work with a support channel and a visible backlog for friction. Measure task completion time and error rates on the new path. A migration that “launched” but quietly pushed volume back to legacy has not replaced anything — it has added a museum exhibit.",
+        text: "Training is not a slide deck. It is supervised real work with a support channel and a visible backlog for friction. Measure task completion time and error rates on the new path. A migration that “launched” but quietly pushed volume back to legacy has not replaced anything, it has added a museum exhibit.",
       },
       {
         type: "heading",
@@ -310,7 +310,7 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "Fragmented estates often have oversharing: shared passwords, broad folder access, dormant accounts. Replacement is a chance to introduce SSO, least privilege and joiner/leaver automation — but do not wait for perfection before the first slice ships. Apply a minimum security bar immediately: unique identities, MFA for privileged roles, environment separation, and secrets out of source control. Align with the posture described in [Security & Trust](/security) and the engineering approach in [security in bespoke software projects](/insights/security-in-bespoke-software-projects).",
+        text: "Fragmented estates often have oversharing: shared passwords, broad folder access, dormant accounts. Replacement is a chance to introduce SSO, least privilege and joiner/leaver automation, but do not wait for perfection before the first slice ships. Apply a minimum security bar immediately: unique identities, MFA for privileged roles, environment separation, and secrets out of source control. Align with the posture described in [Security & Trust](/security) and the engineering approach in [security in bespoke software projects](/insights/security-in-bespoke-software-projects).",
       },
       {
         type: "heading",
@@ -354,7 +354,7 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "Freeze non-essential changes on a legacy slice once dual-run begins. Without a freeze, you chase a moving target and parity checks become theatre. Emergency fixes still need a controlled path — just not an open feature pipeline.",
+        text: "Freeze non-essential changes on a legacy slice once dual-run begins. Without a freeze, you chase a moving target and parity checks become theatre. Emergency fixes still need a controlled path, just not an open feature pipeline.",
       },
     ],
   }),
@@ -365,7 +365,7 @@ export const enterpriseInsights: Insight[] = [
     seoTitle: "What Enterprise Software Discovery Should Produce",
     description: "The artefacts enterprise discovery should leave behind: domain boundaries, risk register, migration stance, security posture and a proving release.",
     answer:
-      "Enterprise software discovery should produce decision-grade artefacts, not a slide deck of aspirations. At minimum it should define the problem boundary, the domain model sketch, integration and data risks, a security and permission posture, a migration stance, and a first release that can prove or falsify the investment thesis. Soft workshops that end in “we will be agile” are not discovery — they are deferred design. ScaleSmiths runs [enterprise discovery](/enterprise/contact) to make those artefacts explicit before build budget is committed.",
+      "Enterprise software discovery should produce decision-grade artefacts, not a slide deck of aspirations. At minimum it should define the problem boundary, the domain model sketch, integration and data risks, a security and permission posture, a migration stance, and a first release that can prove or falsify the investment thesis. Soft workshops that end in “we will be agile” are not discovery, they are deferred design. ScaleSmiths runs [enterprise discovery](/enterprise/contact) to make those artefacts explicit before build budget is committed.",
     priority: 28,
     author: "rhys",
     featured: true,
@@ -418,7 +418,7 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "Stakeholders often arrive with feature inventories copied from incumbent tools. Discovery should translate those into domain behaviour: what must be true for an order to ship, a case to close, a stock movement to be trusted. Feature lists without invariants create endless scope. Invariants create a testable core. This is also where build-versus-buy becomes honest — if the invariants are generic, a product may fit; if they are distinctive and cross-cutting, a [custom system](/custom-systems) may be justified. Cross-check with [when a business needs custom software](/insights/when-does-a-business-need-custom-software).",
+        text: "Stakeholders often arrive with feature inventories copied from incumbent tools. Discovery should translate those into domain behaviour: what must be true for an order to ship, a case to close, a stock movement to be trusted. Feature lists without invariants create endless scope. Invariants create a testable core. This is also where build-versus-buy becomes honest, if the invariants are generic, a product may fit; if they are distinctive and cross-cutting, a [custom system](/custom-systems) may be justified. Cross-check with [when a business needs custom software](/insights/when-does-a-business-need-custom-software).",
       },
       {
         type: "paragraph",
@@ -453,7 +453,7 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "Record the operational cost of each integration today: who notices when it fails, how long until someone notices, and what customers experience in the meantime. Those facts calibrate monitoring requirements for the new estate. An integration that fails silently every fortnight is not “fine” — it is an unfunded incident process. Discovery should price the monitoring and on-call expectation alongside the connector itself.",
+        text: "Record the operational cost of each integration today: who notices when it fails, how long until someone notices, and what customers experience in the meantime. Those facts calibrate monitoring requirements for the new estate. An integration that fails silently every fortnight is not “fine”, it is an unfunded incident process. Discovery should price the monitoring and on-call expectation alongside the connector itself.",
       },
       {
         type: "paragraph",
@@ -482,7 +482,7 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "Discovery should produce a go/no-go gate: continue into build, pause for data remediation, or stop because a product fit emerged. The proving release should exercise a complete path — create, permissioned action, exception, audit, report — not a clickable shell. That release is evidence for further investment. Pricing conversations on [/pricing](/pricing) stay honest when the envelope is tied to these artefacts rather than a vague day-rate fantasy.",
+        text: "Discovery should produce a go/no-go gate: continue into build, pause for data remediation, or stop because a product fit emerged. The proving release should exercise a complete path === create, permissioned action, exception, audit, report === not a clickable shell. That release is evidence for further investment. Pricing conversations on [/pricing](/pricing) stay honest when the envelope is tied to these artefacts rather than a vague day-rate fantasy.",
       },
       {
         type: "paragraph",
@@ -518,7 +518,7 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "You need decision-grade clarity on boundaries, invariants, security and migration — not a waterfall novel. Detail can deepen inside the proving release once the core model is stable.",
+        text: "You need decision-grade clarity on boundaries, invariants, security and migration, not a waterfall novel. Detail can deepen inside the proving release once the core model is stable.",
       },
       {
         type: "subheading",
@@ -553,7 +553,7 @@ export const enterpriseInsights: Insight[] = [
     seoTitle: "RBAC vs ABAC for Operational Software",
     description: "A practical comparison of RBAC and ABAC for operational software, including hybrid models, audit implications and implementation trade-offs.",
     answer:
-      "Choose RBAC when stable job functions map cleanly to permissions and the organisation can manage role explosion carefully. Choose ABAC when access depends on dynamic attributes — site, tenant, shift, document classification, relationship to a case — that roles alone cannot express without combinatorial chaos. Most serious operational platforms need a hybrid: roles for coarse capability, attributes for scope. The wrong model either blocks work or silently overshares. Permission design belongs in [enterprise](/enterprise) discovery beside the domain model, not as a UI afterthought.",
+      "Choose RBAC when stable job functions map cleanly to permissions and the organisation can manage role explosion carefully. Choose ABAC when access depends on dynamic attributes === site, tenant, shift, document classification, relationship to a case === that roles alone cannot express without combinatorial chaos. Most serious operational platforms need a hybrid: roles for coarse capability, attributes for scope. The wrong model either blocks work or silently overshares. Permission design belongs in [enterprise](/enterprise) discovery beside the domain model, not as a UI afterthought.",
     priority: 29,
     author: "rhys",
     services: ["/enterprise", "/security", "/custom-systems"],
@@ -571,7 +571,7 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "Role-based access control assigns permissions to roles, and roles to users. It is understandable for operators: Warehouse Operative, Site Manager, Finance Approver. Auditors can ask who holds a role. Provisioning can hook joiner/leaver flows to role membership. RBAC works well when job functions are relatively stable and the permission set for a role does not need to vary by every possible contextual dimension. It fails when you invent a new role for every combination of site, partner and clearance — that is role explosion disguised as governance.",
+        text: "Role-based access control assigns permissions to roles, and roles to users. It is understandable for operators: Warehouse Operative, Site Manager, Finance Approver. Auditors can ask who holds a role. Provisioning can hook joiner/leaver flows to role membership. RBAC works well when job functions are relatively stable and the permission set for a role does not need to vary by every possible contextual dimension. It fails when you invent a new role for every combination of site, partner and clearance, that is role explosion disguised as governance.",
       },
       {
         type: "paragraph",
@@ -587,7 +587,7 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "ABAC without disciplined attribute ownership becomes unpredictable. Attributes must come from trusted sources — identity provider claims, verified resource fields — not from client-supplied request bodies that a user can forge. Treat attribute integrity as part of [Security & Trust](/security).",
+        text: "ABAC without disciplined attribute ownership becomes unpredictable. Attributes must come from trusted sources === identity provider claims, verified resource fields === not from client-supplied request bodies that a user can forge. Treat attribute integrity as part of [Security & Trust](/security).",
       },
       {
         type: "paragraph",
@@ -623,7 +623,7 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "Administrators need operable tooling: assign roles, attach site memberships, preview effective access for a user, and simulate a sensitive action against a sample resource. Without preview, support tickets become the policy debugger. Effective-access views also help joiner/leaver audits — you can show what a leaver could touch yesterday and prove revocation today.",
+        text: "Administrators need operable tooling: assign roles, attach site memberships, preview effective access for a user, and simulate a sensitive action against a sample resource. Without preview, support tickets become the policy debugger. Effective-access views also help joiner/leaver audits, you can show what a leaver could touch yesterday and prove revocation today.",
       },
       {
         type: "code",
@@ -659,7 +659,7 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "Policy change itself must be audited. Who added a capability to a role, who expanded a user’s site set, who disabled MFA requirement for an emergency — those are often more important than the subsequent domain action. Store policy-version identifiers on domain audit events so investigators can reconstruct the rule that was live at the time.",
+        text: "Policy change itself must be audited. Who added a capability to a role, who expanded a user’s site set, who disabled MFA requirement for an emergency, those are often more important than the subsequent domain action. Store policy-version identifiers on domain audit events so investigators can reconstruct the rule that was live at the time.",
       },
       {
         type: "callout",
@@ -672,7 +672,7 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "Store permissions as data you can migrate, not only as hard-coded enums scattered through controllers — though stable capability names should still be code-reviewed. Test policies with matrix fixtures. Load-test scoped queries so attribute filters do not become full table scans. Integrate SSO so joiner/leaver depletes access centrally. For programme context see [custom systems](/custom-systems) and [security in bespoke software projects](/insights/security-in-bespoke-software-projects). Start design conversations in [enterprise discovery](/enterprise/contact).",
+        text: "Store permissions as data you can migrate, not only as hard-coded enums scattered through controllers, though stable capability names should still be code-reviewed. Test policies with matrix fixtures. Load-test scoped queries so attribute filters do not become full table scans. Integrate SSO so joiner/leaver depletes access centrally. For programme context see [custom systems](/custom-systems) and [security in bespoke software projects](/insights/security-in-bespoke-software-projects). Start design conversations in [enterprise discovery](/enterprise/contact).",
       },
       {
         type: "paragraph",
@@ -700,11 +700,11 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "subheading",
-        text: "Where should policies live — code or database?",
+        text: "Where should policies live, code or database?",
       },
       {
         type: "paragraph",
-        text: "Stable capability checks often belong in versioned code. Assignments (who has which role, which sites) belong in data. Highly dynamic customer-specific rules may need a constrained policy store with change control and audit — not an ungoverned admin textarea.",
+        text: "Stable capability checks often belong in versioned code. Assignments (who has which role, which sites) belong in data. Highly dynamic customer-specific rules may need a constrained policy store with change control and audit, not an ungoverned admin textarea.",
       },
       {
         type: "subheading",
@@ -723,7 +723,7 @@ export const enterpriseInsights: Insight[] = [
     seoTitle: "Offline-First Software for Warehouses & Field Teams",
     description: "Engineering trade-offs for offline-first operational apps: sync, conflict rules, device trust, audit continuity and what not to invent.",
     answer:
-      "Offline-first software is justified when connectivity is intermittent and work cannot stop — warehouses with RF dead zones, yards, basements, vehicles and customer sites. The hard problem is not caching screens; it is defining authoritative state, sync boundaries, conflict rules and what happens to audit evidence when devices reconnect out of order. Build a deliberate sync protocol around a small set of offline-capable workflows rather than making the entire enterprise estate optimistic. ScaleSmiths designs these systems as part of [custom systems](/custom-systems) and [enterprise](/enterprise) delivery when field reality demands it.",
+      "Offline-first software is justified when connectivity is intermittent and work cannot stop, warehouses with RF dead zones, yards, basements, vehicles and customer sites. The hard problem is not caching screens; it is defining authoritative state, sync boundaries, conflict rules and what happens to audit evidence when devices reconnect out of order. Build a deliberate sync protocol around a small set of offline-capable workflows rather than making the entire enterprise estate optimistic. ScaleSmiths designs these systems as part of [custom systems](/custom-systems) and [enterprise](/enterprise) delivery when field reality demands it.",
     priority: 30,
     author: "trevor-newton-bradley",
     services: ["/enterprise", "/custom-systems", "/custom-web-app-development-uk"],
@@ -769,11 +769,11 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "Prefer an outbox of intent events (ReceivedUnit, CompletedPick) over blindly merging row snapshots. Events carry actor, device, timestamps and business keys. The server validates, applies, detects conflicts and returns acknowledgements plus catch-up changes. Local UI should read from a local store so work continues during partition. Idempotency keys are mandatory — retries will happen.",
+        text: "Prefer an outbox of intent events (ReceivedUnit, CompletedPick) over blindly merging row snapshots. Events carry actor, device, timestamps and business keys. The server validates, applies, detects conflicts and returns acknowledgements plus catch-up changes. Local UI should read from a local store so work continues during partition. Idempotency keys are mandatory, retries will happen.",
       },
       {
         type: "paragraph",
-        text: "Snapshot downloads need their own discipline. Full database mirrors on every device are rarely viable; prefer scoped working sets — open tasks for this shift, bins for this zone, deliveries for this route. Invalidate and refresh on login, zone change or forced sync. Monitor sync lag as an operational KPI: a warehouse with average lag of forty minutes is not “mostly online”, it is running on delayed truth.",
+        text: "Snapshot downloads need their own discipline. Full database mirrors on every device are rarely viable; prefer scoped working sets, open tasks for this shift, bins for this zone, deliveries for this route. Invalidate and refresh on login, zone change or forced sync. Monitor sync lag as an operational KPI: a warehouse with average lag of forty minutes is not “mostly online”, it is running on delayed truth.",
       },
       {
         type: "heading",
@@ -785,14 +785,14 @@ export const enterpriseInsights: Insight[] = [
           "Last-write-wins is rarely acceptable for inventory or compliance evidence.",
           "Define per-entity conflict policies: reject, merge fields, or require supervisor resolution.",
           "Detect physical impossibilities early (negative stock, double-pick of unique serials).",
-          "Surface conflicts to humans with enough context to decide — do not bury them in logs.",
+          "Surface conflicts to humans with enough context to decide, do not bury them in logs.",
           "Preserve both sides of a conflict in an audit trail until resolution is recorded.",
           "Version schemas so older devices can negotiate or be forced to update before working.",
         ],
       },
       {
         type: "paragraph",
-        text: "Warehouse truth is physical. If two devices claim the same serial was picked, software cannot invent consensus — it must escalate. Field service photos and signatures need durable local storage and careful upload with checksum verification. Design those paths with [audit trails](/insights/designing-audit-trails-operational-software) in mind from day one.",
+        text: "Warehouse truth is physical. If two devices claim the same serial was picked, software cannot invent consensus, it must escalate. Field service photos and signatures need durable local storage and careful upload with checksum verification. Design those paths with [audit trails](/insights/designing-audit-trails-operational-software) in mind from day one.",
       },
       {
         type: "paragraph",
@@ -804,7 +804,7 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "Offline devices hold sensitive operational data. Use device registration, remote wipe capability where the platform allows, encrypted local stores, and short-lived tokens with refresh that degrades safely. Stolen-device playbooks matter: revoke device keys, invalidate sessions, and know what data was resident. MFA for privileged online admin differs from shift-login patterns on shared scanners — design both. Align with [Security & Trust](/security) rather than bolting encryption on late.",
+        text: "Offline devices hold sensitive operational data. Use device registration, remote wipe capability where the platform allows, encrypted local stores, and short-lived tokens with refresh that degrades safely. Stolen-device playbooks matter: revoke device keys, invalidate sessions, and know what data was resident. MFA for privileged online admin differs from shift-login patterns on shared scanners, design both. Align with [Security & Trust](/security) rather than bolting encryption on late.",
       },
       {
         type: "paragraph",
@@ -820,7 +820,7 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "Test on the actual device fleet, not only on developer laptops. Scanner wedges, Bluetooth printers and intermittent captive portals create failure modes browsers hide. Budget a hardware lab day in discovery. If the estate mixes rugged Android and older Windows terminals, the offline client strategy may bifurcate — admit that early rather than shipping a lowest-common-denominator that satisfies nobody.",
+        text: "Test on the actual device fleet, not only on developer laptops. Scanner wedges, Bluetooth printers and intermittent captive portals create failure modes browsers hide. Budget a hardware lab day in discovery. If the estate mixes rugged Android and older Windows terminals, the offline client strategy may bifurcate, admit that early rather than shipping a lowest-common-denominator that satisfies nobody.",
       },
       {
         type: "callout",
@@ -837,7 +837,7 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "Offline programmes fail when they are treated as a mobile skin on an online API. The API must speak idempotent commands, return structured conflict objects, and expose catch-up feeds. If the existing online API is chatty CRUD without business intents, redesign that surface before investing in local databases. That redesign often improves the online product as a side effect — another reason to keep the server core clean inside [custom systems](/custom-systems) work.",
+        text: "Offline programmes fail when they are treated as a mobile skin on an online API. The API must speak idempotent commands, return structured conflict objects, and expose catch-up feeds. If the existing online API is chatty CRUD without business intents, redesign that surface before investing in local databases. That redesign often improves the online product as a side effect, another reason to keep the server core clean inside [custom systems](/custom-systems) work.",
       },
       {
         type: "heading",
@@ -884,7 +884,7 @@ export const enterpriseInsights: Insight[] = [
     seoTitle: "Audit Trails for Operational Software",
     description: "How to design audit trails that investigators and operators can trust: event shape, immutability, retention, privacy and performance trade-offs.",
     answer:
-      "An audit trail for operational software is a deliberate evidence system, not a verbose application log. It should record who did what to which business object, when, from where, under which authority, and with which before/after or intent payload — in a form that survives denial and investigation. Logs that rotate away, can be edited by admins, or omit the business key fail under pressure. Design audit events alongside the domain model and [permission model](/insights/rbac-vs-abac-permission-models), then protect them as carefully as primary data. This is core [enterprise](/enterprise) engineering, not compliance decoration.",
+      "An audit trail for operational software is a deliberate evidence system, not a verbose application log. It should record who did what to which business object, when, from where, under which authority, and with which before/after or intent payload, in a form that survives denial and investigation. Logs that rotate away, can be edited by admins, or omit the business key fail under pressure. Design audit events alongside the domain model and [permission model](/insights/rbac-vs-abac-permission-models), then protect them as carefully as primary data. This is core [enterprise](/enterprise) engineering, not compliance decoration.",
     priority: 31,
     author: "rhys",
     services: ["/enterprise", "/security", "/custom-systems"],
@@ -902,7 +902,7 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "Ask investigation questions first: who overrode a price, who exported personal data, who unlocked a closed period, who changed a delivery address after pick? Those questions define mandatory events. If a privileged action has no event, you do not have an audit trail — you have hope. Product owners should sign off the event catalogue the same way they sign off workflows. Engineers should refuse silent privileged mutations.",
+        text: "Ask investigation questions first: who overrode a price, who exported personal data, who unlocked a closed period, who changed a delivery address after pick? Those questions define mandatory events. If a privileged action has no event, you do not have an audit trail, you have hope. Product owners should sign off the event catalogue the same way they sign off workflows. Engineers should refuse silent privileged mutations.",
       },
       {
         type: "paragraph",
@@ -910,7 +910,7 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "Invite operations, finance and security to nominate the five investigations they actually ran last year. Build the catalogue from those stories. Abstract threat models help, but reminiscences of real disputes catch missing fields — the free-text reason a manager typed, the secondary approver, the ticket number from a side channel. Those fields become mandatory payload keys rather than optional notes.",
+        text: "Invite operations, finance and security to nominate the five investigations they actually ran last year. Build the catalogue from those stories. Abstract threat models help, but reminiscences of real disputes catch missing fields, the free-text reason a manager typed, the secondary approver, the ticket number from a side channel. Those fields become mandatory payload keys rather than optional notes.",
       },
       {
         type: "heading",
@@ -934,7 +934,7 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "Keep action names stable and business-meaningful. Prefer before/after for small critical fields; prefer intent events when the command is the truth. Redact secrets and unnecessary personal data in payloads while retaining investigative value. Correlation IDs stitch UI actions to API commands to job outcomes — essential when [offline sync](/insights/offline-first-software-warehouses-field-teams) replays later.",
+        text: "Keep action names stable and business-meaningful. Prefer before/after for small critical fields; prefer intent events when the command is the truth. Redact secrets and unnecessary personal data in payloads while retaining investigative value. Correlation IDs stitch UI actions to API commands to job outcomes, essential when [offline sync](/insights/offline-first-software-warehouses-field-teams) replays later.",
       },
       {
         type: "paragraph",
@@ -952,7 +952,7 @@ export const enterpriseInsights: Insight[] = [
           "Retention schedule by data class; legal hold capability when investigations require it.",
           "Export formats that preserve integrity metadata for external review.",
           "Backup and restore drills that include audit stores, not only primary tables.",
-          "Alert on audit-write failure — failing open without evidence is a security incident.",
+          "Alert on audit-write failure, failing open without evidence is a security incident.",
         ],
       },
       {
@@ -969,11 +969,11 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "Writing rich audit events on every read will crush databases and create privacy noise. Focus on mutations, privileged reads (exports, unlocks, decryption), authentication events and admin changes. Asynchronous write paths can improve latency if durability guarantees are explicit — a lost audit event on a credit override is unacceptable even if the UI felt fast. Partition large tables by time and tenant. Index object_id and actor_id for investigator queries.",
+        text: "Writing rich audit events on every read will crush databases and create privacy noise. Focus on mutations, privileged reads (exports, unlocks, decryption), authentication events and admin changes. Asynchronous write paths can improve latency if durability guarantees are explicit, a lost audit event on a credit override is unacceptable even if the UI felt fast. Partition large tables by time and tenant. Index object_id and actor_id for investigator queries.",
       },
       {
         type: "paragraph",
-        text: "Privacy regulations still apply. Minimise personal data in payloads, document purposes, and ensure subject-access and erasure processes know what the audit store contains. Erasure may require anonymising actor labels while retaining action evidence — design that policy early with counsel where needed, without pretending a blog post is legal advice.",
+        text: "Privacy regulations still apply. Minimise personal data in payloads, document purposes, and ensure subject-access and erasure processes know what the audit store contains. Erasure may require anonymising actor labels while retaining action evidence, design that policy early with counsel where needed, without pretending a blog post is legal advice.",
       },
       {
         type: "paragraph",
@@ -982,7 +982,7 @@ export const enterpriseInsights: Insight[] = [
       {
         type: "callout",
         title: "Audit that operators will use",
-        text: "If investigators need SQL access to a raw table with no product UI, the trail will be underused and misunderstood. Provide filtered search by object, actor and time — with access controls and its own access logging.",
+        text: "If investigators need SQL access to a raw table with no product UI, the trail will be underused and misunderstood. Provide filtered search by object, actor and time, with access controls and its own access logging.",
       },
       {
         type: "heading",
@@ -990,7 +990,7 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "When actions span adapters — ERP posts, payment captures, messaging — record outbound attempts and inbound acknowledgements with correlation. Dual-writes during migration need audit continuity across old and new systems so a reconstructed timeline remains possible. See [legacy migration planning](/insights/how-to-plan-legacy-system-migration) and [enterprise delivery](/enterprise/delivery).",
+        text: "When actions span adapters === ERP posts, payment captures, messaging === record outbound attempts and inbound acknowledgements with correlation. Dual-writes during migration need audit continuity across old and new systems so a reconstructed timeline remains possible. See [legacy migration planning](/insights/how-to-plan-legacy-system-migration) and [enterprise delivery](/enterprise/delivery).",
       },
       {
         type: "paragraph",
@@ -1006,7 +1006,7 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "Acceptance tests should attempt privileged actions and assert event presence, actor fidelity and redaction rules. CI that only checks HTTP 200 on overrides is incomplete. Make missing audit events fail the build for catalogue-listed actions. That single habit prevents the common late discovery that “we logged it somewhere in the app logger” — which rotated away last Tuesday.",
+        text: "Acceptance tests should attempt privileged actions and assert event presence, actor fidelity and redaction rules. CI that only checks HTTP 200 on overrides is incomplete. Make missing audit events fail the build for catalogue-listed actions. That single habit prevents the common late discovery that “we logged it somewhere in the app logger”, which rotated away last Tuesday.",
       },
       {
         type: "heading",
@@ -1053,7 +1053,7 @@ export const enterpriseInsights: Insight[] = [
     seoTitle: "When Custom Software Costs Less Than SaaS Sprawl",
     description: "How to compare custom software TCO with SaaS sprawl: licences, reconciliation labour, integration tax, incident risk and ownership costs.",
     answer:
-      "Custom software costs less than SaaS sprawl when the organisation already pays — in licences, integration maintenance and human reconciliation — more than the cost of owning a coherent platform for the same workflow. The comparison is total cost and risk over years, not build quote versus one annual subscription. Sprawl hides cost in duplicated entities, brittle connectors and staff who act as middleware. A bespoke system can be cheaper when the workflow is distinctive and stable enough to own; it is more expensive when the need is generic and productised. ScaleSmiths frames this inside [pricing](/pricing) conversations and [enterprise](/enterprise) discovery with numbers attached to operations, not slogans.",
+      "Custom software costs less than SaaS sprawl when the organisation already pays === in licences, integration maintenance and human reconciliation === more than the cost of owning a coherent platform for the same workflow. The comparison is total cost and risk over years, not build quote versus one annual subscription. Sprawl hides cost in duplicated entities, brittle connectors and staff who act as middleware. A bespoke system can be cheaper when the workflow is distinctive and stable enough to own; it is more expensive when the need is generic and productised. ScaleSmiths frames this inside [pricing](/pricing) conversations and [enterprise](/enterprise) discovery with numbers attached to operations, not slogans.",
     priority: 32,
     author: "trevor-newton-bradley",
     services: ["/enterprise", "/pricing", "/custom-systems"],
@@ -1071,7 +1071,7 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "Each SaaS tool arrives with a tidy per-seat price. The sprawl cost arrives later: overlapping modules, export gymnastics, identity silos, and people copying fields between systems because the vendors will not share a domain model. Those people are a recurring opex line whether or not they appear under “software”. Incident cost also compounds — when statuses diverge, customer promises break and senior staff intervene. A fair comparison must monetise reconciliation hours, failed hand-offs and blocked change, not only invoices.",
+        text: "Each SaaS tool arrives with a tidy per-seat price. The sprawl cost arrives later: overlapping modules, export gymnastics, identity silos, and people copying fields between systems because the vendors will not share a domain model. Those people are a recurring opex line whether or not they appear under “software”. Incident cost also compounds, when statuses diverge, customer promises break and senior staff intervene. A fair comparison must monetise reconciliation hours, failed hand-offs and blocked change, not only invoices.",
       },
       {
         type: "paragraph",
@@ -1079,7 +1079,7 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "Interview the people who keep sprawl alive: the coordinator who rebuilds the Friday pack, the analyst who reconciles two stock figures, the manager who re-enters approvals into a second system. Ask how many hours and how often things go wrong. Their answers are often more accurate than vendor ROI calculators. Capture ranges, not false precision — then keep those ranges visible in the business case so optimism cannot silently delete them.",
+        text: "Interview the people who keep sprawl alive: the coordinator who rebuilds the Friday pack, the analyst who reconciles two stock figures, the manager who re-enters approvals into a second system. Ask how many hours and how often things go wrong. Their answers are often more accurate than vendor ROI calculators. Capture ranges, not false precision, then keep those ranges visible in the business case so optimism cannot silently delete them.",
       },
       {
         type: "heading",
@@ -1095,7 +1095,7 @@ export const enterpriseInsights: Insight[] = [
           "Price incident and delay risk using historical events, not optimism.",
           "For custom: include discovery, build, migration, hosting, observability, support and change capacity.",
           "Include exit costs both ways: leaving vendors versus owning a codebase you must maintain.",
-          "Apply a sensitivity range — best/likely/worst — instead of a single heroic number.",
+          "Apply a sensitivity range === best/likely/worst === instead of a single heroic number.",
         ],
       },
       {
@@ -1104,11 +1104,11 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "Present the model as two curves toward the same reliability target, not as a beauty contest between a sales demo and an engineering estimate. If the SaaS path cannot meet audit, offline or permission constraints without unsafe workarounds, note those as non-monetised blockers — or monetise the residual risk explicitly. A cheaper path that cannot satisfy [Security & Trust](/security) constraints is not cheaper; it is unfinished.",
+        text: "Present the model as two curves toward the same reliability target, not as a beauty contest between a sales demo and an engineering estimate. If the SaaS path cannot meet audit, offline or permission constraints without unsafe workarounds, note those as non-monetised blockers, or monetise the residual risk explicitly. A cheaper path that cannot satisfy [Security & Trust](/security) constraints is not cheaper; it is unfinished.",
       },
       {
         type: "heading",
-        text: "Ownership cost is real — price it, do not hide it",
+        text: "Ownership cost is real, price it, do not hide it",
       },
       {
         type: "paragraph",
@@ -1134,11 +1134,11 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "Distinctive operational workflows with multi-site permissions, offline constraints, deep audit needs or partner tenancy often fit poorly into generic SaaS. Paying for unused modules while still funding spreadsheets is a smell. Consolidation into a [custom system](/custom-systems) can remove seats, connectors and rework simultaneously — if discovery produces a sharp release one. Economics fail when stakeholders demand a clone of every legacy quirk plus a speculative platform roadmap on day one.",
+        text: "Distinctive operational workflows with multi-site permissions, offline constraints, deep audit needs or partner tenancy often fit poorly into generic SaaS. Paying for unused modules while still funding spreadsheets is a smell. Consolidation into a [custom system](/custom-systems) can remove seats, connectors and rework simultaneously, if discovery produces a sharp release one. Economics fail when stakeholders demand a clone of every legacy quirk plus a speculative platform roadmap on day one.",
       },
       {
         type: "paragraph",
-        text: "Look for licence piles that exist to paper over one missing workflow. If three products are each 60% right and staff supply the remaining 40%, you are already funding a bespoke system — just a fragmented, unowned one. Concentrating that spend into a coherent core is often the economic move, provided [enterprise discovery](/enterprise/contact) can define a proving release that retires at least one paid seam early.",
+        text: "Look for licence piles that exist to paper over one missing workflow. If three products are each 60% right and staff supply the remaining 40%, you are already funding a bespoke system, just a fragmented, unowned one. Concentrating that spend into a coherent core is often the economic move, provided [enterprise discovery](/enterprise/contact) can define a proving release that retires at least one paid seam early.",
       },
       {
         type: "heading",
@@ -1146,7 +1146,7 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "Cost overruns often come from migrating everything. Grade data and workflows. Retire low-value tools instead of rebuilding them. Dual-run only what safety requires. [Enterprise delivery](/enterprise/delivery) should make retirement part of the business case — licence savings do not appear if nobody switches the old tools off.",
+        text: "Cost overruns often come from migrating everything. Grade data and workflows. Retire low-value tools instead of rebuilding them. Dual-run only what safety requires. [Enterprise delivery](/enterprise/delivery) should make retirement part of the business case, licence savings do not appear if nobody switches the old tools off.",
       },
       {
         type: "paragraph",
@@ -1187,7 +1187,7 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "Use the horizon over which the workflow must remain coherent — often three to five years for operational platforms. Be consistent between options. Revisit annually as licences and headcount change.",
+        text: "Use the horizon over which the workflow must remain coherent, often three to five years for operational platforms. Be consistent between options. Revisit annually as licences and headcount change.",
       },
       {
         type: "subheading",
@@ -1214,7 +1214,7 @@ export const enterpriseInsights: Insight[] = [
     seoTitle: "How to Plan a Legacy System Migration",
     description: "A practical plan for legacy system migration: inventory, data grades, strangler slices, dual-run, cutover criteria and rollback.",
     answer:
-      "Plan a legacy system migration as a sequenced reduction of risk: inventory the estate, grade data and workflows, design strangler slices with dual-run evidence, and define cutover criteria that operations can refuse if unmet. Treat the legacy system as a production dependency until parity is proven — not as an embarrassment to switch off on a fixed date. Migration fails when teams confuse rewrite ambition with cutover engineering. ScaleSmiths embeds migration planning in [enterprise delivery](/enterprise/delivery) and [enterprise discovery](/enterprise/contact) before build velocity becomes the only metric.",
+      "Plan a legacy system migration as a sequenced reduction of risk: inventory the estate, grade data and workflows, design strangler slices with dual-run evidence, and define cutover criteria that operations can refuse if unmet. Treat the legacy system as a production dependency until parity is proven, not as an embarrassment to switch off on a fixed date. Migration fails when teams confuse rewrite ambition with cutover engineering. ScaleSmiths embeds migration planning in [enterprise delivery](/enterprise/delivery) and [enterprise discovery](/enterprise/contact) before build velocity becomes the only metric.",
     priority: 33,
     author: "rhys",
     services: ["/enterprise", "/enterprise/delivery", "/custom-systems"],
@@ -1232,7 +1232,7 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "List applications, databases, scheduled jobs, file exchanges, report packs, user populations and contractual constraints. Capture who can still make emergency changes. Legacy systems often survive because one person knows the batch calendar. If that person is unavailable, your migration plan is incomplete. Include shadow IT that production depends on — the spreadsheet that corrects finance exports is in scope whether anyone likes it or not.",
+        text: "List applications, databases, scheduled jobs, file exchanges, report packs, user populations and contractual constraints. Capture who can still make emergency changes. Legacy systems often survive because one person knows the batch calendar. If that person is unavailable, your migration plan is incomplete. Include shadow IT that production depends on, the spreadsheet that corrects finance exports is in scope whether anyone likes it or not.",
       },
       {
         type: "paragraph",
@@ -1264,7 +1264,7 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "Sample grade A data for duplicates, orphaned references and impossible states. Publish the findings to budget holders before build estimates harden. Data remediation is often a parallel workstream with its own owners — warehouse leads correcting bin codes, finance merging customer records. If remediation is left solely to engineers writing transform scripts, you will migrate myths with better types.",
+        text: "Sample grade A data for duplicates, orphaned references and impossible states. Publish the findings to budget holders before build estimates harden. Data remediation is often a parallel workstream with its own owners, warehouse leads correcting bin codes, finance merging customer records. If remediation is left solely to engineers writing transform scripts, you will migrate myths with better types.",
       },
       {
         type: "heading",
@@ -1289,7 +1289,7 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "Anti-corruption adapters translate legacy schemas into the new domain language so legacy weirdness does not infect the new model. Feature flags and routing let you move cohorts — one site, one product line, one partner — rather than everyone at once. Prefer a [modular monolith](/insights/enterprise-software-modular-monolith) as the new home unless organisational scale already demands distribution.",
+        text: "Anti-corruption adapters translate legacy schemas into the new domain language so legacy weirdness does not infect the new model. Feature flags and routing let you move cohorts === one site, one product line, one partner === rather than everyone at once. Prefer a [modular monolith](/insights/enterprise-software-modular-monolith) as the new home unless organisational scale already demands distribution.",
       },
       {
         type: "paragraph",
@@ -1301,11 +1301,11 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "Dual-run produces evidence: matching counts, status histograms, financial totals and spot-checked entities. Define thresholds and owners. Cutover criteria should be written as gates — parity within X, training completion, support rota live, rollback rehearsed — not as a calendar appointment. Operations must have authority to delay. Parallel to [replacing fragmented internal software](/insights/replace-fragmented-internal-software-without-breaking-operations), freeze non-essential legacy change during dual-run.",
+        text: "Dual-run produces evidence: matching counts, status histograms, financial totals and spot-checked entities. Define thresholds and owners. Cutover criteria should be written as gates === parity within X, training completion, support rota live, rollback rehearsed === not as a calendar appointment. Operations must have authority to delay. Parallel to [replacing fragmented internal software](/insights/replace-fragmented-internal-software-without-breaking-operations), freeze non-essential legacy change during dual-run.",
       },
       {
         type: "paragraph",
-        text: "Automate parity where possible and keep a human sampling ritual for the rest. Dashboards that nobody opens are not controls. Schedule a short daily dual-run stand-up while a slice is live: mismatches, workarounds, training gaps. Close the stand-up only when exit criteria are met or consciously deferred with a new date — never by fatigue.",
+        text: "Automate parity where possible and keep a human sampling ritual for the rest. Dashboards that nobody opens are not controls. Schedule a short daily dual-run stand-up while a slice is live: mismatches, workarounds, training gaps. Close the stand-up only when exit criteria are met or consciously deferred with a new date, never by fatigue.",
       },
       {
         type: "heading",
@@ -1330,11 +1330,11 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "Do not widen access “temporarily” without expiry. Sync pipelines can become exfiltration paths if credentials are shared broadly. Apply least privilege to migration service accounts, encrypt dumps at rest, and audit exports. Align with [Security & Trust](/security) and [security in bespoke projects](/insights/security-in-bespoke-software-projects). Legacy often holds dormant accounts — cleanse them rather than copying them forward.",
+        text: "Do not widen access “temporarily” without expiry. Sync pipelines can become exfiltration paths if credentials are shared broadly. Apply least privilege to migration service accounts, encrypt dumps at rest, and audit exports. Align with [Security & Trust](/security) and [security in bespoke projects](/insights/security-in-bespoke-software-projects). Legacy often holds dormant accounts, cleanse them rather than copying them forward.",
       },
       {
         type: "paragraph",
-        text: "Treat production extracts used for mapping as high-sensitivity artefacts with retention limits. Delete interim files after successful import verification. Log who accessed dumps. Migration convenience is a common path to lingering copies on laptops — forbid that path in the runbook and provide a controlled analysis environment instead.",
+        text: "Treat production extracts used for mapping as high-sensitivity artefacts with retention limits. Delete interim files after successful import verification. Log who accessed dumps. Migration convenience is a common path to lingering copies on laptops, forbid that path in the runbook and provide a controlled analysis environment instead.",
       },
       {
         type: "heading",
@@ -1346,7 +1346,7 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "Governance should empower delay. Steering groups that only cheer green dates create hidden risk. Give operations a formal red flag that pauses cutover without career punishment. Engineering integrity depends on that cultural permission as much as on adapters and parity scripts — a theme that also appears when [fragmented internal software](/insights/replace-fragmented-internal-software-without-breaking-operations) is being retired under live load.",
+        text: "Governance should empower delay. Steering groups that only cheer green dates create hidden risk. Give operations a formal red flag that pauses cutover without career punishment. Engineering integrity depends on that cultural permission as much as on adapters and parity scripts, a theme that also appears when [fragmented internal software](/insights/replace-fragmented-internal-software-without-breaking-operations) is being retired under live load.",
       },
       {
         type: "heading",
@@ -1382,7 +1382,7 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "When no critical workflow depends on it, parity gates have passed, legal retention needs are met elsewhere, and access can be revoked. Decommission is a project with its own checklist — not a party after launch day.",
+        text: "When no critical workflow depends on it, parity gates have passed, legal retention needs are met elsewhere, and access can be revoked. Decommission is a project with its own checklist, not a party after launch day.",
       },
     ],
   }),
@@ -1391,7 +1391,7 @@ export const enterpriseInsights: Insight[] = [
     slug: "enterprise-software-modular-monolith",
     title: "Why Enterprise Software Should Start as a Modular Monolith",
     seoTitle: "Start Enterprise Software as a Modular Monolith",
-    description: "Why most enterprise operational systems should begin as modular monoliths: clearer boundaries, simpler transactions, cheaper ops — and when to split later.",
+    description: "Why most enterprise operational systems should begin as modular monoliths: clearer boundaries, simpler transactions, cheaper ops, and when to split later.",
     answer:
       "Most enterprise operational systems should start as a modular monolith: one deployable unit with enforced module boundaries, a single transactional database where appropriate, and explicit interfaces between domains. That shape preserves development speed and transactional integrity while you are still discovering the real seams. Premature microservices recreate network failure modes, distributed transactions and organisational overhead before the domain is understood. Split later, along tested boundaries, when scale or team topology demands it. ScaleSmiths recommends this default in [enterprise](/enterprise) architecture conversations and [custom systems](/custom-systems) delivery.",
     priority: 34,
@@ -1411,7 +1411,7 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "Critics of monoliths usually describe a ball of mud: shared tables without ownership, circular imports, and features that cannot change without collateral damage. That is a modularity failure, not proof that one deployable is wrong. A modular monolith organises code and data ownership by domain — identity/permissions, orders, inventory, billing adapters — with rules that prevent casual cross-module table reach-ins. Those rules can be architectural tests, package boundaries and code review norms.",
+        text: "Critics of monoliths usually describe a ball of mud: shared tables without ownership, circular imports, and features that cannot change without collateral damage. That is a modularity failure, not proof that one deployable is wrong. A modular monolith organises code and data ownership by domain === identity/permissions, orders, inventory, billing adapters === with rules that prevent casual cross-module table reach-ins. Those rules can be architectural tests, package boundaries and code review norms.",
       },
       {
         type: "paragraph",
@@ -1430,7 +1430,7 @@ export const enterpriseInsights: Insight[] = [
         items: [
           "Each module owns its tables or table prefixes and exposes an application API to others.",
           "Cross-module calls go through service interfaces, not opportunistic SQL joins across ownership lines.",
-          "Shared kernels stay tiny (IDs, clock, auth context) — not a dumping ground for convenience.",
+          "Shared kernels stay tiny (IDs, clock, auth context), not a dumping ground for convenience.",
           "Module boundaries align to domain language discovered in [enterprise discovery](/enterprise/contact).",
           "Integration adapters sit at the edges so vendor schemas do not leak inward.",
           "Permission checks and audit events are platform capabilities modules must use, not reimplement.",
@@ -1446,11 +1446,11 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "Operational workflows often need atomic updates across closely related entities — allocate stock and confirm pick lines together, or refuse the whole command. In a monolith this is a local transaction. In a microservice estate it becomes sagas, outboxes and compensating actions before the domain even stabilises. Observability is also simpler: one service map, correlated logs, fewer partial deploy matrices. For many mid-market platforms, that operational simplicity is worth more than theoretical independent scaling of a rarely hot module.",
+        text: "Operational workflows often need atomic updates across closely related entities, allocate stock and confirm pick lines together, or refuse the whole command. In a monolith this is a local transaction. In a microservice estate it becomes sagas, outboxes and compensating actions before the domain even stabilises. Observability is also simpler: one service map, correlated logs, fewer partial deploy matrices. For many mid-market platforms, that operational simplicity is worth more than theoretical independent scaling of a rarely hot module.",
       },
       {
         type: "paragraph",
-        text: "Local transactions also simplify audit and permission enforcement for compound commands. One request, one auth decision, one audit event, one commit or rollback. Distributed sagas can be correct, but they multiply failure stories your on-call must learn. Earn that complexity with a measured need — for example a module whose scale or regulatory isolation is proven — not with a template repository that scaffolds twelve services by default.",
+        text: "Local transactions also simplify audit and permission enforcement for compound commands. One request, one auth decision, one audit event, one commit or rollback. Distributed sagas can be correct, but they multiply failure stories your on-call must learn. Earn that complexity with a measured need === for example a module whose scale or regulatory isolation is proven === not with a template repository that scaffolds twelve services by default.",
       },
       {
         type: "code",
@@ -1474,7 +1474,7 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "Extract a service when a boundary is stable, the team topology needs independent cadence, scaling characteristics diverge sharply, or a compliance boundary demands isolation. Extract along the existing module API with an anti-corruption mindset. Do not split because a conference talk praised mesh networking. Premature distribution is one of the expensive ways SaaS consolidation projects recreate sprawl inside their own cloud account — see [when two SaaS platforms should become one](/insights/when-two-saas-platforms-should-become-one-bespoke-system).",
+        text: "Extract a service when a boundary is stable, the team topology needs independent cadence, scaling characteristics diverge sharply, or a compliance boundary demands isolation. Extract along the existing module API with an anti-corruption mindset. Do not split because a conference talk praised mesh networking. Premature distribution is one of the expensive ways SaaS consolidation projects recreate sprawl inside their own cloud account, see [when two SaaS platforms should become one](/insights/when-two-saas-platforms-should-become-one-bespoke-system).",
       },
       {
         type: "paragraph",
@@ -1486,7 +1486,7 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "Centralise authn/authz context and audit writing as platform modules. Domain modules declare capabilities and emit domain events; they should not each invent tenancy filters. That keeps [RBAC/ABAC](/insights/rbac-vs-abac-permission-models) and [audit trails](/insights/designing-audit-trails-operational-software) consistent. Security reviews become tractable when enforcement points are few and tested — aligned with [Security & Trust](/security).",
+        text: "Centralise authn/authz context and audit writing as platform modules. Domain modules declare capabilities and emit domain events; they should not each invent tenancy filters. That keeps [RBAC/ABAC](/insights/rbac-vs-abac-permission-models) and [audit trails](/insights/designing-audit-trails-operational-software) consistent. Security reviews become tractable when enforcement points are few and tested, aligned with [Security & Trust](/security).",
       },
       {
         type: "paragraph",
@@ -1495,7 +1495,7 @@ export const enterpriseInsights: Insight[] = [
       {
         type: "callout",
         title: "Modularity is a testable property",
-        text: "If you cannot run a build check that fails when module A imports module B’s tables, you do not have a modular monolith — you have hopeful folders. Invest in boundary enforcement early.",
+        text: "If you cannot run a build check that fails when module A imports module B’s tables, you do not have a modular monolith, you have hopeful folders. Invest in boundary enforcement early.",
       },
       {
         type: "heading",
@@ -1507,7 +1507,7 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "Repository structure should mirror modules without over-fragmenting packages. A single CI pipeline with module-level test targets usually beats a forest of pipelines that obscure the path to production. Keep deployment boring so attention stays on domain risk — the place migrations and consolidations actually fail. That posture is consistent with how we approach [legacy migration](/insights/how-to-plan-legacy-system-migration) and consolidation programmes. When in doubt, ship one modular deployable that operations can reason about, then earn every later split with evidence rather than aspiration.",
+        text: "Repository structure should mirror modules without over-fragmenting packages. A single CI pipeline with module-level test targets usually beats a forest of pipelines that obscure the path to production. Keep deployment boring so attention stays on domain risk, the place migrations and consolidations actually fail. That posture is consistent with how we approach [legacy migration](/insights/how-to-plan-legacy-system-migration) and consolidation programmes. When in doubt, ship one modular deployable that operations can reason about, then earn every later split with evidence rather than aspiration.",
       },
       {
         type: "heading",
@@ -1527,7 +1527,7 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "Not at all. Containerise the monolith, use managed Postgres, separate workers if needed, and keep infrastructure as code. Cloud-native describes operable packaging and observability — not a mandatory microservice count.",
+        text: "Not at all. Containerise the monolith, use managed Postgres, separate workers if needed, and keep infrastructure as code. Cloud-native describes operable packaging and observability, not a mandatory microservice count.",
       },
       {
         type: "subheading",
@@ -1535,7 +1535,7 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "Own modules, enforce boundaries, use code owners, and keep release trains predictable. If team count and release contention become the bottleneck, that is evidence for extraction — not a reason to skip modularity at the start.",
+        text: "Own modules, enforce boundaries, use code owners, and keep release trains predictable. If team count and release contention become the bottleneck, that is evidence for extraction, not a reason to skip modularity at the start.",
       },
       {
         type: "subheading",
@@ -1543,7 +1543,7 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "Start with one database and logical separation (schemas or owned tables). Split data stores when a module’s lifecycle, scale or compliance truly diverges — after the boundary has proven stable.",
+        text: "Start with one database and logical separation (schemas or owned tables). Split data stores when a module’s lifecycle, scale or compliance truly diverges, after the boundary has proven stable.",
       },
     ],
   }),
@@ -1576,7 +1576,7 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "We do not claim ISO 27001 certification or Cyber Essentials certification as a substitute for project controls. Where clients require specific assurance frameworks, we work within their programmes and evidence project practices honestly — controls, logs, diagrams and test results — without theatre.",
+        text: "We do not claim ISO 27001 certification or Cyber Essentials certification as a substitute for project controls. Where clients require specific assurance frameworks, we work within their programmes and evidence project practices honestly === controls, logs, diagrams and test results === without theatre.",
       },
       {
         type: "paragraph",
@@ -1592,7 +1592,7 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "Service-to-service credentials should be scoped to the minimum APIs required, rotated on a known cadence, and owned by a named role. Avoid a single “integration user” that can read every tenant. Where partners access portals, tenant context must be established at authentication and enforced on every query — the same discipline described for multi-site estates in our [enterprise](/enterprise) architecture work.",
+        text: "Service-to-service credentials should be scoped to the minimum APIs required, rotated on a known cadence, and owned by a named role. Avoid a single “integration user” that can read every tenant. Where partners access portals, tenant context must be established at authentication and enforced on every query, the same discipline described for multi-site estates in our [enterprise](/enterprise) architecture work.",
       },
       {
         type: "heading",
@@ -1604,7 +1604,7 @@ export const enterpriseInsights: Insight[] = [
         items: [
           "Separate development, staging and production with distinct credentials and network controls.",
           "Prohibit production personal data in shared non-production environments unless anonymised under agreement.",
-          "Store secrets in a proper secret manager or environment mechanism — never in git.",
+          "Store secrets in a proper secret manager or environment mechanism, never in git.",
           "Rotate credentials that may have been exposed; automate where practical.",
           "Encrypt data in transit; encrypt sensitive data at rest according to platform capability and data class.",
           "Limit production access to named roles with joiner/leaver processes.",
@@ -1653,7 +1653,7 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "Pull requests, protected branches, CI checks and least-privilege deploy roles reduce accidental risk. Infrastructure as code makes reviews possible. Logging should avoid secrets and excessive personal data while retaining investigative value. Incident response needs named contacts, a severity rubric and a path to rotate credentials quickly. For offline or field components, device trust and local encryption enter the design — see [offline-first systems](/insights/offline-first-software-warehouses-field-teams).",
+        text: "Pull requests, protected branches, CI checks and least-privilege deploy roles reduce accidental risk. Infrastructure as code makes reviews possible. Logging should avoid secrets and excessive personal data while retaining investigative value. Incident response needs named contacts, a severity rubric and a path to rotate credentials quickly. For offline or field components, device trust and local encryption enter the design, see [offline-first systems](/insights/offline-first-software-warehouses-field-teams).",
       },
       {
         type: "paragraph",
@@ -1694,7 +1694,7 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "Yes, when IAM boundaries, access reviews and operational ownership are agreed. Deployment topology is a design choice — ScaleSmiths-managed, client cloud, or portable containers — as described in our enterprise architecture framing.",
+        text: "Yes, when IAM boundaries, access reviews and operational ownership are agreed. Deployment topology is a design choice === ScaleSmiths-managed, client cloud, or portable containers === as described in our enterprise architecture framing.",
       },
       {
         type: "subheading",
@@ -1718,7 +1718,7 @@ export const enterpriseInsights: Insight[] = [
       },
       {
         type: "paragraph",
-        text: "Authenticated access, enforced authorisation on APIs, secrets out of source control, environment separation, basic audit for privileged actions, and a clear owner for production access. Broader controls follow risk — but those minima are not optional.",
+        text: "Authenticated access, enforced authorisation on APIs, secrets out of source control, environment separation, basic audit for privileged actions, and a clear owner for production access. Broader controls follow risk, but those minima are not optional.",
       },
     ],
   }),

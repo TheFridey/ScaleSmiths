@@ -25,7 +25,7 @@ export const metadata: Metadata = {
 /**
  * Homepage always renders the normal ScaleSmiths site.
  * The interactive project planner stays a public /interactive route,
- * discoverable via secondary CTAs — never a forced entry gate.
+ * discoverable via secondary CTAs, never a forced entry gate.
  */
 export default async function HomePage() {
   return <HomePageContent />

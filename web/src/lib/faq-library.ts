@@ -43,7 +43,7 @@ export const faqLibrary = {
   },
   "self-editing": {
     q: "Can I edit my website myself?",
-    a: "Where self-service editing matters, we build for it — published work includes a JWT-secured admin panel for Glow Tanning and a custom product admin for Pinkys Prints. How much you can edit is a scoping decision: an editable content layer is worth building when content changes often, and unnecessary when it does not. Tell us what you expect to change and how often, and the proposal says exactly what will be editable.",
+    a: "Where self-service editing matters, we build for it, published work includes a JWT-secured admin panel for Glow Tanning and a custom product admin for Pinkys Prints. How much you can edit is a scoping decision: an editable content layer is worth building when content changes often, and unnecessary when it does not. Tell us what you expect to change and how often, and the proposal says exactly what will be editable.",
     services: ["/web-development-nottingham", "/custom-web-app-development-uk"],
   },
   wordpress: {
@@ -55,7 +55,7 @@ export const faqLibrary = {
   },
   rebuilds: {
     q: "Can you rebuild my existing website?",
-    a: "Yes. We start by reviewing what the current site already does well — pages that rank, enquiries it generates, integrations and hosting — and then recommend a rebuild, a focused repair or a migration, whichever the evidence supports.",
+    a: "Yes. We start by reviewing what the current site already does well === pages that rank, enquiries it generates, integrations and hosting === and then recommend a rebuild, a focused repair or a migration, whichever the evidence supports.",
     services: ["/website-redesign-nottingham", "/seo-website-audit"],
     insights: ["signs-your-business-website-needs-rebuilding", "website-redesign-vs-website-refresh"],
   },
@@ -73,7 +73,7 @@ export const faqLibrary = {
   },
   "project-inputs": {
     q: "What information do you need before starting?",
-    a: "Discovery covers what you sell, who buys it, how they currently choose you, what the present site or system does well, and what evidence exists — analytics, Search Console, enquiry records. Practically, projects move fastest when content, imagery, brand assets and access to domains, hosting and any integrated systems are identified early, because content readiness affects the schedule more than page count does.",
+    a: "Discovery covers what you sell, who buys it, how they currently choose you, what the present site or system does well, and what evidence exists, analytics, Search Console, enquiry records. Practically, projects move fastest when content, imagery, brand assets and access to domains, hosting and any integrated systems are identified early, because content readiness affects the schedule more than page count does.",
     services: ["/services/business-growth-audit", "/services"],
     insights: ["what-should-a-professional-business-website-include"],
   },
@@ -92,7 +92,7 @@ export const faqLibrary = {
   },
   "what-is-local-seo": {
     q: "What is local SEO?",
-    a: "Local SEO is search work aimed at people looking for a provider in a particular place — searches with an area in them, and searches where results are shaped by where the person is. It covers how clearly the site describes each service and the areas covered, how consistent the business details are across the web, how the Google Business Profile supports the site, and whether the proof a local buyer needs is actually visible.",
+    a: "Local SEO is search work aimed at people looking for a provider in a particular place, searches with an area in them, and searches where results are shaped by where the person is. It covers how clearly the site describes each service and the areas covered, how consistent the business details are across the web, how the Google Business Profile supports the site, and whether the proof a local buyer needs is actually visible.",
     services: ["/local-seo-nottingham", "/local-growth"],
     insights: ["what-is-local-seo-and-do-you-need-it", "local-seo-nottingham-businesses-guide"],
   },
@@ -110,7 +110,7 @@ export const faqLibrary = {
   },
   "seo-in-build": {
     q: "Is SEO included in a website build?",
-    a: "Search foundations are part of the build: deliberate metadata, canonicals, structured data, heading and route architecture, internal links, indexation controls and page speed. Ongoing SEO — content, authority, continued measurement and iteration — is separate work, scoped either as a project or through a Growth Partnership.",
+    a: "Search foundations are part of the build: deliberate metadata, canonicals, structured data, heading and route architecture, internal links, indexation controls and page speed. Ongoing SEO === content, authority, continued measurement and iteration === is separate work, scoped either as a project or through a Growth Partnership.",
     services: ["/web-design-nottingham", "/digital-growth-partnership"],
     insights: ["website-seo-checklist-uk-small-businesses"],
   },
@@ -155,7 +155,7 @@ export const faqLibrary = {
   // --------------------------------------------------- ongoing support / retainer
   support: {
     q: "What happens after my website launches?",
-    a: "Launch is a measurement point, not the end of the work. The production site is verified, measurement is connected, and ownership of accounts and access is agreed. From there a Growth Partnership can continue the work — it can start after a ScaleSmiths build or with an existing website, and it covers agreed priorities rather than an open-ended retainer.",
+    a: "Launch is a measurement point, not the end of the work. The production site is verified, measurement is connected, and ownership of accounts and access is agreed. From there a Growth Partnership can continue the work, it can start after a ScaleSmiths build or with an existing website, and it covers agreed priorities rather than an open-ended retainer.",
     services: ["/digital-growth-partnership"],
     insights: ["what-does-website-maintenance-include"],
   },
@@ -173,7 +173,7 @@ export const faqLibrary = {
   },
   "content-updates": {
     q: "Are content updates included?",
-    a: "Only where the agreement says so. Routine edits, new pages and campaign work can be included or scoped separately depending on the working model, so the boundary is written into the partnership rather than assumed. If you expect frequent changes, say so during scoping — it affects both the build and the support arrangement.",
+    a: "Only where the agreement says so. Routine edits, new pages and campaign work can be included or scoped separately depending on the working model, so the boundary is written into the partnership rather than assumed. If you expect frequent changes, say so during scoping, it affects both the build and the support arrangement.",
     services: ["/digital-growth-partnership", "/website-maintenance-nottingham"],
   },
   "seo-ongoing": {
@@ -184,7 +184,7 @@ export const faqLibrary = {
   },
   "something-breaks": {
     q: "What happens if something breaks?",
-    a: "For clients under an agreed arrangement, the escalation route, contacts and cadence are documented as part of the partnership, and ScaleSmiths can perform emergency maintenance and proportionate protective action. Response commitments exist only where they have been contracted — we do not publish response times we have not agreed with you. If you need emergency help without an existing arrangement, contact us and we will tell you honestly whether we can assist.",
+    a: "For clients under an agreed arrangement, the escalation route, contacts and cadence are documented as part of the partnership, and ScaleSmiths can perform emergency maintenance and proportionate protective action. Response commitments exist only where they have been contracted, we do not publish response times we have not agreed with you. If you need emergency help without an existing arrangement, contact us and we will tell you honestly whether we can assist.",
     services: ["/website-maintenance-nottingham", "/digital-growth-partnership"],
     insights: ["what-happens-when-your-website-goes-down"],
   },
@@ -207,7 +207,7 @@ export const faqLibrary = {
   },
   "new-features": {
     q: "Can I request new features later?",
-    a: "Yes. New features are improvement work: they are specified, scoped and placed on the roadmap rather than absorbed into routine maintenance. Building in phases is a deliberate part of how we work — the first release is dependable, and later work follows evidence rather than a fixed wish list.",
+    a: "Yes. New features are improvement work: they are specified, scoped and placed on the roadmap rather than absorbed into routine maintenance. Building in phases is a deliberate part of how we work, the first release is dependable, and later work follows evidence rather than a fixed wish list.",
     services: ["/digital-growth-partnership", "/custom-web-app-development-uk"],
   },
 
@@ -239,7 +239,7 @@ export const faqLibrary = {
   },
   stripe: {
     q: "Can you integrate Stripe?",
-    a: "Yes. The Business Circle runs Stripe subscription billing for tiered memberships, and Prymal uses Stripe for plans, team seats and execution credits. Card details stay with the payment provider — we do not create a reason to handle them directly — and order or subscription state relies on verified server-side provider events rather than a browser redirect alone.",
+    a: "Yes. The Business Circle runs Stripe subscription billing for tiered memberships, and Prymal uses Stripe for plans, team seats and execution credits. Card details stay with the payment provider === we do not create a reason to handle them directly === and order or subscription state relies on verified server-side provider events rather than a browser redirect alone.",
     services: ["/e-commerce-development-nottingham", "/custom-web-app-development-uk"],
   },
   integrations: {
@@ -279,7 +279,7 @@ export const faqLibrary = {
   // ------------------------------------------------------------ infrastructure / email
   "business-email": {
     q: "Do you provide business email?",
-    a: "Yes. ScaleSmiths Managed Business Email starts at £15 per month for three custom-domain mailboxes with 5GB of storage each, and initial mailbox and DNS setup is included at no additional setup charge. It covers webmail, desktop and mobile client compatibility, aliases and forwarding, spam filtering, TLS-secured transport, and SPF, DKIM and DMARC configuration. It is available standalone — you do not need a ScaleSmiths website.",
+    a: "Yes. ScaleSmiths Managed Business Email starts at £15 per month for three custom-domain mailboxes with 5GB of storage each, and initial mailbox and DNS setup is included at no additional setup charge. It covers webmail, desktop and mobile client compatibility, aliases and forwarding, spam filtering, TLS-secured transport, and SPF, DKIM and DMARC configuration. It is available standalone, you do not need a ScaleSmiths website.",
     services: ["/services/managed-business-email"],
     insights: ["why-use-your-own-email-domain"],
   },
@@ -297,7 +297,7 @@ export const faqLibrary = {
   },
   dmarc: {
     q: "What is DMARC?",
-    a: "DMARC ties SPF and DKIM together. It tells receiving mail systems what to do when a message fails those checks — monitor, quarantine or reject it — and can send reports back so you can see who is sending mail as your domain. It is the policy layer that makes the other two records meaningful.",
+    a: "DMARC ties SPF and DKIM together. It tells receiving mail systems what to do when a message fails those checks === monitor, quarantine or reject it === and can send reports back so you can see who is sending mail as your domain. It is the policy layer that makes the other two records meaningful.",
     services: ["/services/managed-business-email"],
     insights: ["spf-dkim-dmarc-explained"],
   },
@@ -360,7 +360,7 @@ export const faqLibrary = {
   },
   "established-businesses": {
     q: "Do you work with established businesses?",
-    a: "Yes, and that is where most of the client work sits. Confirm-A-Kill is an established Nottinghamshire pest-control business whose website and operating systems were rebuilt around search, conversion and day-to-day delivery. Established businesses usually have real evidence — rankings, enquiries, existing systems — and the work starts by protecting what already performs.",
+    a: "Yes, and that is where most of the client work sits. Confirm-A-Kill is an established Nottinghamshire pest-control business whose website and operating systems were rebuilt around search, conversion and day-to-day delivery. Established businesses usually have real evidence === rankings, enquiries, existing systems === and the work starts by protecting what already performs.",
     services: ["/website-redesign-nottingham", "/digital-growth-partnership"],
     insights: ["signs-your-business-website-needs-rebuilding"],
   },
@@ -376,7 +376,7 @@ export const faqLibrary = {
   },
   "internal-team": {
     q: "Can you work alongside an internal team?",
-    a: "Yes. We can take a defined delivery stream, unblock architecture decisions, or build alongside an existing marketing or operations team. Where an audit produces a roadmap, your own team or another supplier is welcome to implement it — the findings are useful either way.",
+    a: "Yes. We can take a defined delivery stream, unblock architecture decisions, or build alongside an existing marketing or operations team. Where an audit produces a roadmap, your own team or another supplier is welcome to implement it, the findings are useful either way.",
     services: ["/services/business-growth-audit", "/web-development-nottingham"],
   },
 } as const satisfies Record<string, LibraryFaq>

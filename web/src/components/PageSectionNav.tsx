@@ -9,7 +9,7 @@ export interface PageSectionNavItem {
 
 /**
  * Sticky jump links for long technical pages (Enterprise, Delivery, flagship case studies).
- * Progressive disclosure via navigation — depth stays on the page; orientation stays visible.
+ * Progressive disclosure via navigation, depth stays on the page; orientation stays visible.
  */
 export function PageSectionNav({
   items,

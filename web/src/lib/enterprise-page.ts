@@ -15,11 +15,11 @@ export const ENTERPRISE_PROOF_SLUGS = [
 export const enterprisePageCopy = {
   metaTitle: "Enterprise Software Development UK",
   metaDescription:
-    "Founder-led enterprise software development in Nottingham and across the UK. Bespoke operational platforms, internal systems, workflow software, integrations and legacy replacement — designed around how your organisation actually operates.",
+    "Founder-led enterprise software development in Nottingham and across the UK. Bespoke operational platforms, internal systems, workflow software, integrations and legacy replacement, designed around how your organisation actually operates.",
   eyebrow: "Enterprise systems",
   title: "Enterprise software built around how your organisation actually operates.",
   lede:
-    "ScaleSmiths designs and builds bespoke platforms for organisations that have outgrown fragmented software, duplicated workflows, spreadsheets, disconnected SaaS products and manual operational processes. Small, senior and founder-led — with direct access to the people who architect and deliver the system.",
+    "ScaleSmiths designs and builds bespoke platforms for organisations that have outgrown fragmented software, duplicated workflows, spreadsheets, disconnected SaaS products and manual operational processes. Small, senior and founder-led, with direct access to the people who architect and deliver the system.",
   primaryCta: {
     label: "Discuss an Enterprise System",
     href: `${ENTERPRISE_PATH}#${ENTERPRISE_ENQUIRY_ANCHOR}`,
@@ -84,7 +84,7 @@ export const enterpriseProblems = [
 export const enterpriseSystemTypes = [
   {
     title: "Custom operational platforms",
-    body: "Systems that encode how your organisation actually runs — not a generic template forced over the top.",
+    body: "Systems that encode how your organisation actually runs, not a generic template forced over the top.",
   },
   {
     title: "Internal business systems",
@@ -148,7 +148,7 @@ export const enterpriseSecurity = [
   },
   {
     title: "Auditability",
-    body: "Designed to support audit trails for sensitive actions, changes and operational evidence — subject to the agreed scope.",
+    body: "Designed to support audit trails for sensitive actions, changes and operational evidence, subject to the agreed scope.",
   },
   {
     title: "Secure delivery posture",
@@ -213,7 +213,7 @@ export const enterpriseProcess = [
   },
   {
     title: "Validated Scope",
-    body: "Lock the first dependable release against evidence — boundaries, acceptance criteria and what explicitly waits.",
+    body: "Lock the first dependable release against evidence, boundaries, acceptance criteria and what explicitly waits.",
   },
   {
     title: "MVP",
@@ -229,7 +229,7 @@ export const enterpriseProcess = [
   },
   {
     title: "Expansion",
-    body: "Add modules and capability only after the core system is dependable — not as an open-ended rewrite.",
+    body: "Add modules and capability only after the core system is dependable, not as an open-ended rewrite.",
   },
 ] as const
 
@@ -249,7 +249,7 @@ export const enterpriseSectionNav = [
 export const enterpriseFounderAdvantage = [
   {
     title: "Direct access to builders",
-    body: "You work with the founders and senior engineers responsible for architecture and delivery — not a relay of account managers.",
+    body: "You work with the founders and senior engineers responsible for architecture and delivery, not a relay of account managers.",
   },
   {
     title: "Technically deep, commercially grounded",
@@ -266,7 +266,7 @@ export const enterpriseFounderAdvantage = [
 ] as const
 
 export const enterpriseProofIntro =
-  "Selected ScaleSmiths technical work showing platform, SaaS, integration and operational-system depth. These are engineering proof points — not claims of named enterprise customer endorsements or guaranteed regulatory outcomes."
+  "Selected ScaleSmiths technical work showing platform, SaaS, integration and operational-system depth. These are engineering proof points, not claims of named enterprise customer endorsements or guaranteed regulatory outcomes."
 
 export const enterpriseFaqs = [
   {
@@ -275,7 +275,7 @@ export const enterpriseFaqs = [
   },
   {
     q: "What kinds of enterprise systems do you build?",
-    a: "Custom operational platforms, internal business systems, workflow engines, portals, compliance-oriented applications, asset systems, mobile and offline-first tools, SaaS foundations, APIs and enterprise integrations — scoped around the organisation's actual operating model.",
+    a: "Custom operational platforms, internal business systems, workflow engines, portals, compliance-oriented applications, asset systems, mobile and offline-first tools, SaaS foundations, APIs and enterprise integrations, scoped around the organisation's actual operating model.",
   },
   {
     q: "Do you hold ISO 27001 or Cyber Essentials certification?",

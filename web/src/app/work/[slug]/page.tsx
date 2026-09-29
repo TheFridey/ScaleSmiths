@@ -172,7 +172,7 @@ function Section({ id, eyebrow, title, children, tinted = false }: { id: string;
 }
 
 /**
- * Flagship case-study architecture (brief §25). Sections render only when content exists —
+ * Flagship case-study architecture (brief §25). Sections render only when content exists:
  * never invent Business / Constraint / Results / Next just to fill the template.
  */
 function caseStudySectionNav(study: CaseStudy, opts: {
@@ -272,7 +272,7 @@ export default async function CaseStudyPage({ params }: Props) {
 
           {study.status === "draft" ? (
             <p className="mt-6 rounded-lg border border-dashed border-b2 bg-s1 px-4 py-3 font-dm text-sm text-t2">
-              Draft case study preview — visible in development only, never listed, linked or indexed. Sections fill in as verified content and screenshots are supplied.
+              Draft case study preview, visible in development only, never listed, linked or indexed. Sections fill in as verified content and screenshots are supplied.
             </p>
           ) : null}
 

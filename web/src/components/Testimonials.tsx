@@ -8,7 +8,7 @@ export interface VerifiedTestimonial {
   business: string
 }
 
-/** Editorial quote treatment on paper — only renders verified attributed claims. */
+/** Editorial quote treatment on paper, only renders verified attributed claims. */
 export function Testimonials({ testimonials }: { testimonials: VerifiedTestimonial[] }) {
   if (testimonials.length === 0) return null
   return (

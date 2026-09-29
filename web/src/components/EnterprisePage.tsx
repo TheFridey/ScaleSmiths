@@ -112,7 +112,7 @@ export function EnterprisePage() {
               <Link href="/custom-systems" prefetch={false} className="text-t2 underline-offset-2 hover:text-t1 hover:underline">
                 custom systems
               </Link>{" "}
-              routes — for organisations whose operational software has become a strategic constraint.
+              routes, for organisations whose operational software has become a strategic constraint.
             </p>
           </AnimateIn>
         </div>
@@ -146,7 +146,7 @@ export function EnterprisePage() {
             <SectionEyebrow>Types of systems we build</SectionEyebrow>
             <SectionHeading id="enterprise-systems">Platforms for how the organisation actually works.</SectionHeading>
             <SectionLede>
-              From internal operations to partner-facing portals, the common thread is software that encodes real process, ownership and control — not a brochure product forced onto the business.
+              From internal operations to partner-facing portals, the common thread is software that encodes real process, ownership and control, not a brochure product forced onto the business.
             </SectionLede>
           </AnimateIn>
           <div className="mt-12 grid gap-4 md:grid-cols-2">
@@ -193,7 +193,7 @@ export function EnterprisePage() {
             <SectionEyebrow>Security and governance overview</SectionEyebrow>
             <SectionHeading id="enterprise-security">Designed for controlled environments.</SectionHeading>
             <SectionLede>
-              Security language matters. We describe what systems are architected for and built with — not certifications or approvals ScaleSmiths does not currently hold.
+              Security language matters. We describe what systems are architected for and built with, not certifications or approvals ScaleSmiths does not currently hold.
             </SectionLede>
           </AnimateIn>
           <div className="mt-12 grid gap-4 md:grid-cols-2">
@@ -222,7 +222,7 @@ export function EnterprisePage() {
             <SectionEyebrow>Integration capabilities</SectionEyebrow>
             <SectionHeading id="enterprise-integrations">Connect the estate without fragile bridges.</SectionHeading>
             <SectionLede>
-              Enterprise value often lives between systems. We build interfaces that can integrate with identity, operational platforms and data flows — subject to client security and procurement requirements.
+              Enterprise value often lives between systems. We build interfaces that can integrate with identity, operational platforms and data flows, subject to client security and procurement requirements.
             </SectionLede>
           </AnimateIn>
           <div className="grid gap-3">
@@ -246,7 +246,7 @@ export function EnterprisePage() {
             <SectionEyebrow>Multi-site / multi-team systems</SectionEyebrow>
             <SectionHeading id="enterprise-multisite">One operating model. Many places of work.</SectionHeading>
             <SectionLede>
-              Multi-site software fails when it ignores local reality or central control. We design for both — permissions, process and reporting that travel with the organisation.
+              Multi-site software fails when it ignores local reality or central control. We design for both, permissions, process and reporting that travel with the organisation.
             </SectionLede>
           </AnimateIn>
           <div className="mt-12 grid gap-4 sm:grid-cols-2">
@@ -267,7 +267,7 @@ export function EnterprisePage() {
             <SectionEyebrow>Discovery → Expansion</SectionEyebrow>
             <SectionHeading id="enterprise-process">From operating constraint to controlled release.</SectionHeading>
             <SectionLede>
-              The aim is not an unbounded transformation programme. It is a clear path — Discovery → Prototype → Validated Scope → MVP → UAT → Production → Expansion — then disciplined improvement.
+              The aim is not an unbounded transformation programme. It is a clear path === Discovery → Prototype → Validated Scope → MVP → UAT → Production → Expansion === then disciplined improvement.
             </SectionLede>
           </AnimateIn>
           <ol className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -294,7 +294,7 @@ export function EnterprisePage() {
             <SectionEyebrow>Founder-led delivery advantage</SectionEyebrow>
             <SectionHeading id="enterprise-founder-advantage">Senior enough for complexity. Small enough for accountability.</SectionHeading>
             <SectionLede>
-              ScaleSmiths is not Accenture and does not pretend to be. The advantage is direct access to technically deep builders with delivery discipline — for organisations that want substance over theatre.
+              ScaleSmiths is not Accenture and does not pretend to be. The advantage is direct access to technically deep builders with delivery discipline, for organisations that want substance over theatre.
             </SectionLede>
           </AnimateIn>
           <div className="mt-12 grid gap-4 md:grid-cols-2">
@@ -339,7 +339,7 @@ export function EnterprisePage() {
         id="enterprise-faqs"
         eyebrow="Enterprise questions"
         title="What buyers usually need to clarify first."
-        intro="Positioning, scope and governance — without overclaiming certifications or inventing enterprise customer logos."
+        intro="Positioning, scope and governance, without overclaiming certifications or inventing enterprise customer logos."
         items={enterpriseFaqs}
         hubHash="custom-development"
         className="border-t border-b1 bg-s1/50"

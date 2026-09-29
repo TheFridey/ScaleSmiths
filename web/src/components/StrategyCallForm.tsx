@@ -15,7 +15,7 @@ const PROBLEM_OPTIONS = [
   "Need a custom system or portal",
   "Operations / automation",
   "Enterprise / multi-site complexity",
-  "Unsure — need clarity first",
+  "Unsure: need clarity first",
 ] as const
 
 const CONTACT_OPTIONS = ["Email", "Phone", "Video call", "No preference"] as const

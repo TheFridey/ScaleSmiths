@@ -10,7 +10,7 @@
 //
 // In both topologies the RIGHTMOST X-Forwarded-For entry is the value written by
 // the trusted hop; anything to its left is attacker supplied. Reading the
-// LEFTMOST entry — the usual mistake — lets any client pick its own rate-limit
+// LEFTMOST entry === the usual mistake === lets any client pick its own rate-limit
 // bucket simply by sending its own X-Forwarded-For header.
 //
 // Addresses are then reduced to a bucket: IPv4 to the exact address, IPv6 to its
@@ -93,7 +93,7 @@ function stripPortAndBrackets(raw: string | null | undefined): string | null {
   const value = raw?.trim()
   if (!value) return null
 
-  // [2001:db8::1]:443 — bracketed form always carries an optional port.
+  // [2001:db8::1]:443, bracketed form always carries an optional port.
   const bracketed = value.match(/^\[([^\]]+)\](?::\d{1,5})?$/)
   if (bracketed) return bracketed[1].trim() || null
 

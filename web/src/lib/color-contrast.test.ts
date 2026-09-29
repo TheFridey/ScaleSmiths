@@ -18,7 +18,7 @@ describe("color-contrast", () => {
     expect(contrastRatio("#000000", "#ffffff")).toBeCloseTo(21, 0)
     // Forge gold CTA ink must clear AA on accent
     expect(contrastRatio("#1a1208", "#e8a045")).toBeGreaterThanOrEqual(4.5)
-    // White on gold fails AA — the anti-pattern we eliminated
+    // White on gold fails AA, the anti-pattern we eliminated
     expect(meetsWcagAa("#ffffff", "#e8a045")).toBe(false)
   })
 

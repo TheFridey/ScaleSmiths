@@ -20,7 +20,7 @@ export function Services({ claims }: { claims: ReadonlyMap<string, PublicClaim> 
             Built for the way<br />you actually work.
           </h2>
           <p className="font-dm text-t2 max-w-[520px] leading-relaxed text-base">
-            {claimWording(claims, "service.projects-across-uk", "We work with local businesses, e-commerce brands and software teams. Every engagement starts with strategy — not a template.")}
+            {claimWording(claims, "service.projects-across-uk", "We work with local businesses, e-commerce brands and software teams. Every engagement starts with strategy, not a template.")}
           </p>
         </AnimateIn>
 
@@ -83,7 +83,7 @@ export function Services({ claims }: { claims: ReadonlyMap<string, PublicClaim> 
             <p className="font-dm text-xs font-semibold uppercase tracking-[.12em] text-t3">Also available</p>
             <p className="mt-1 font-dm text-sm leading-relaxed text-t2">
               <span className="font-semibold text-t1">Managed Business Email</span>
-              {" "}— professional custom-domain email from £15/month for three 5GB mailboxes, with setup included.
+              {", "}professional custom-domain email from £15/month for three 5GB mailboxes, with setup included.
             </p>
           </div>
           <Link href="/services/managed-business-email" prefetch={false} className="mt-3 inline-flex min-h-11 items-center gap-1.5 font-dm text-sm font-semibold text-acc md:mt-0">

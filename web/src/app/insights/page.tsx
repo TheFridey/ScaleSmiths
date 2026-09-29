@@ -20,7 +20,7 @@ const baseMetadata = buildPageMetadata({
   title: "Insights",
   absoluteTitle: "Insights on Enterprise Software, Engineering & Growth | ScaleSmiths",
   description:
-    "Technical guidance from ScaleSmiths on enterprise software, engineering, websites, search and infrastructure — written by the founders doing the work.",
+    "Technical guidance from ScaleSmiths on enterprise software, engineering, websites, search and infrastructure, written by the founders doing the work.",
   path: "/insights",
 })
 export const metadata: Metadata = {
@@ -78,7 +78,7 @@ export default function InsightsPage() {
                 Technical insight for people who ship systems.
               </h1>
               <p className="mt-6 max-w-[760px] text-lg leading-relaxed text-t2">
-                Enterprise software, engineering trade-offs, websites, search and infrastructure — written without inflated promises.
+                Enterprise software, engineering trade-offs, websites, search and infrastructure, written without inflated promises.
                 This library launched as a coherent body of work; dates reflect publication, not invented history.
                 Each article connects the decision to relevant services, delivery evidence and the next useful question.
               </p>
@@ -127,7 +127,7 @@ export default function InsightsPage() {
             <aside className="surface-chrome rounded-2xl border border-b1 p-7 md:p-9">
               <p className="font-syne text-xl font-bold tracking-[-0.015em] text-t1 md:text-2xl">Enterprise topic clusters</p>
               <p className="mt-4 font-dm text-sm leading-[1.7] text-t2">
-                The enterprise library is organised around operating problems — not keyword pages. Start with the constraint you actually have.
+                The enterprise library is organised around operating problems, not keyword pages. Start with the constraint you actually have.
               </p>
               <ul className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {ENTERPRISE_TOPIC_CLUSTERS.slice(0, 8).map((topic) => (

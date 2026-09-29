@@ -5,7 +5,7 @@ import { gotoReady, rejectNonEssentialStorage, setExperience } from "./helpers"
 /**
  * One crawl of the public site, used as the site-wide audit: it follows every internal link from
  * the homepage and checks the pages it finds for the failures that are cheap to introduce and
- * expensive to notice — dead links, orphaned routes, duplicate element ids, missing or duplicated
+ * expensive to notice, dead links, orphaned routes, duplicate element ids, missing or duplicated
  * metadata, broken heading order and mobile overflow.
  *
  * Portal and API routes are excluded: they are authenticated surfaces, not part of the public
@@ -185,7 +185,7 @@ test.describe("search entry points on mobile", () => {
       ).toBe(true)
 
       // Every page a visitor can land on from search offers a commercial next step in its own
-      // content — the standing header and footer links do not count.
+      // content, the standing header and footer links do not count.
       const inContentConversionRoutes = await page.evaluate(() => {
         const selector = [
           'a[href="/quote"]',

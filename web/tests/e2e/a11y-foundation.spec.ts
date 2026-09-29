@@ -3,7 +3,7 @@ import { rejectNonEssentialStorage, setExperience } from "./helpers"
 
 /**
  * Accessibility smoke for the refined public design system.
- * Complements responsive-qa and visual baselines — checks gold+white CTAs are gone,
+ * Complements responsive-qa and visual baselines, checks gold+white CTAs are gone,
  * focus language is present, and sticky-nav scroll padding is applied.
  */
 test.describe("public a11y foundation", () => {
@@ -41,7 +41,7 @@ test.describe("public a11y foundation", () => {
     const primary = page.locator(".btn-primary").first()
     await expect(primary).toBeVisible()
     const ink = await primary.evaluate((el) => getComputedStyle(el).color)
-    // rgb(26, 18, 8) = #1a1208 — never white on forge gold
+    // rgb(26, 18, 8) = #1a1208, never white on forge gold
     expect(ink).toMatch(/rgb\(\s*26,\s*18,\s*8\s*\)/)
   })
 

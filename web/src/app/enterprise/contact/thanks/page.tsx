@@ -22,7 +22,7 @@ export default function EnterpriseContactThanksPage() {
           {[
             { Icon: Search, title: "Qualify", copy: "We check whether the opportunity fits founder-led enterprise engineering." },
             { Icon: FileText, title: "Prepare", copy: "Useful prep: current systems, integrations, security constraints and success criteria." },
-            { Icon: Wrench, title: "Next step", copy: "If there is a fit, we propose a focused discovery conversation — not a sales pitch." },
+            { Icon: Wrench, title: "Next step", copy: "If there is a fit, we propose a focused discovery conversation, not a sales pitch." },
           ].map(({ Icon, title, copy }) => (
             <div key={title} className="rounded-2xl border border-b1 bg-s1 p-5">
               <Icon size={17} className="mb-4 text-acc" aria-hidden="true" />

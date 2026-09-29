@@ -70,7 +70,7 @@ export const serviceJourneys: Record<ServiceJourneySlug, ServiceJourney> = {
     title: "Build the product or operating system your workflow actually needs.",
     description: "Product strategy and engineering for portals, e-commerce, SaaS, AI implementation, automation, integrations, real-time features, and infrastructure with genuine operational complexity.",
     audience: ["SaaS and product founders", "E-commerce operators", "Teams replacing manual workflows", "Organisations connecting complex systems"],
-    buyerQuestion: "Where do users, data, permissions, integrations, and operational risk meet—and what is the smallest dependable system that solves it?",
+    buyerQuestion: "Where do users, data, permissions, integrations, and operational risk meet, and what is the smallest dependable system that solves it?",
     outcomesTitle: "Engineering around the real constraints",
     outcomes: [
       { title: "Product and portal workflows", description: "Authenticated journeys, role-aware interfaces, billing, admin surfaces, and customer or staff operations." },

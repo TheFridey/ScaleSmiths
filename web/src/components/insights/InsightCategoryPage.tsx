@@ -112,7 +112,7 @@ export function InsightCategoryPage({ topic }: { topic: InsightTopicSlug }) {
               </h2>
               <p className="mt-4 max-w-[560px] text-sm leading-relaxed text-t2">
                 {enterprise
-                  ? "If one of these articles describes your operating constraint, the next step is a focused discovery conversation — not another vendor demo."
+                  ? "If one of these articles describes your operating constraint, the next step is a focused discovery conversation, not another vendor demo."
                   : "If one of these articles describes your situation, the quickest way to know what it means for your website is to have someone look at it."}
               </p>
             </div>

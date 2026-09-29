@@ -72,7 +72,7 @@ export function Hero() {
     >
       <div className="hero-scene-fallback absolute inset-0" data-hero-scene="static" aria-hidden="true" />
 
-      {/* Forge atmosphere still-frame — under video / as fallback */}
+      {/* Forge atmosphere still-frame, under video / as fallback */}
       <div
         className="pointer-events-none absolute inset-0 z-[1] opacity-[0.58] md:opacity-[0.64]"
         aria-hidden="true"
@@ -102,7 +102,7 @@ export function Hero() {
         animate="visible"
         transition={{ delayChildren: 0.04, staggerChildren: motionStagger.tight }}
       >
-        {/* Local text scrim — keeps brand/headline readable across forge brightness cycles */}
+        {/* Local text scrim, keeps brand/headline readable across forge brightness cycles */}
         <div
           aria-hidden="true"
           data-hero-text-scrim
@@ -129,7 +129,7 @@ export function Hero() {
         </h1>
 
         <m.p variants={revealSoft} className="hero-copy relative mb-10 w-full max-w-[560px] font-dm text-[clamp(15px,1.7vw,18px)] font-light leading-relaxed text-t2 md:mb-12">
-          Find what is holding growth back, build the right solution, and keep improving it —
+          Find what is holding growth back, build the right solution, and keep improving it:
           websites, systems, automation and ongoing digital growth.
         </m.p>
 

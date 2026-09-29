@@ -9,11 +9,11 @@ export const ENTERPRISE_DELIVERY_CTA_ANCHOR = "start-discovery"
 export const enterpriseDeliveryCopy = {
   metaTitle: "Enterprise Software Delivery Process | ScaleSmiths",
   metaDescription:
-    "How ScaleSmiths handles complex software engagements from discovery through production rollout — founder-led engineering with structured enterprise delivery, staged risk reduction and clear change control.",
+    "How ScaleSmiths handles complex software engagements from discovery through production rollout, founder-led engineering with structured enterprise delivery, staged risk reduction and clear change control.",
   eyebrow: "Enterprise delivery",
   title: "Founder-led engineering with structured enterprise delivery.",
   lede:
-    "ScaleSmiths does not start coding from a vague brief. Complex engagements move through discovery, architecture, validated scope and controlled release — so Operations, IT, security and procurement can see how risk is reduced before production.",
+    "ScaleSmiths does not start coding from a vague brief. Complex engagements move through discovery, architecture, validated scope and controlled release, so Operations, IT, security and procurement can see how risk is reduced before production.",
   primaryCta: {
     label: "Start with Discovery",
     href: `${ENTERPRISE_DELIVERY_PATH}#${ENTERPRISE_DELIVERY_CTA_ANCHOR}`,
@@ -34,7 +34,7 @@ export const deliveryStages = [
     id: "discovery",
     label: "Discovery",
     summary: "Map the real operating model before software is proposed.",
-    gate: "Shared understanding of users, workflows, data and constraints — before architecture is chosen.",
+    gate: "Shared understanding of users, workflows, data and constraints, before architecture is chosen.",
   },
   {
     id: "prototype",
@@ -52,7 +52,7 @@ export const deliveryStages = [
     id: "mvp",
     label: "MVP",
     summary: "Build the smallest production-worthy system that removes the constraint.",
-    gate: "First release is production-worthy for the named constraint — not a partial demo of everything.",
+    gate: "First release is production-worthy for the named constraint, not a partial demo of everything.",
   },
   {
     id: "uat",
@@ -94,7 +94,7 @@ export const deliveryPhases = [
   },
   {
     title: "Workflow mapping",
-    body: "Document how work moves today — including hand-offs, exceptions and the spreadsheets people rely on.",
+    body: "Document how work moves today, including hand-offs, exceptions and the spreadsheets people rely on.",
   },
   {
     title: "Requirements definition",
@@ -142,7 +142,7 @@ export const deliveryPhases = [
   },
   {
     title: "Support and continuous improvement",
-    body: "Maintain, support and enhance the system under explicit commercial boundaries — not unlimited development.",
+    body: "Maintain, support and enhance the system under explicit commercial boundaries, not unlimited development.",
   },
 ] as const
 
@@ -164,7 +164,7 @@ export const discoveryTopics = [
 
 export const requirementsOutputs = [
   { title: "Requirements documentation", body: "A written account of what the system must do, for whom, and under which constraints." },
-  { title: "Acceptance criteria", body: "Testable conditions that define when a requirement is met — used in UAT and release decisions." },
+  { title: "Acceptance criteria", body: "Testable conditions that define when a requirement is met, used in UAT and release decisions." },
   { title: "User journeys", body: "End-to-end paths for the people who will actually operate the system." },
   { title: "System architecture", body: "Boundaries, components and responsibilities for the first dependable release." },
   { title: "Data model", body: "Entities, ownership, relationships and integrity rules that the workflows depend on." },
@@ -203,7 +203,7 @@ export const stagedDeliveryReasons = [
   },
   {
     title: "Expansion follows evidence",
-    body: "Further modules are planned after the core system is dependable — reducing the chance of building the wrong second phase.",
+    body: "Further modules are planned after the core system is dependable, reducing the chance of building the wrong second phase.",
   },
 ] as const
 
@@ -221,7 +221,7 @@ export const testingTypes = [
 export const uatPoints = [
   {
     title: "Acceptance against criteria",
-    body: "UAT is run against the agreed acceptance criteria — not against an informal “does it look right?” review alone.",
+    body: "UAT is run against the agreed acceptance criteria, not against an informal “does it look right?” review alone.",
   },
   {
     title: "Stakeholder review",
@@ -229,14 +229,14 @@ export const uatPoints = [
   },
   {
     title: "Issue triage",
-    body: "Findings are classified as release blockers, deferred work or scope change — so go-live is a controlled decision.",
+    body: "Findings are classified as release blockers, deferred work or scope change, so go-live is a controlled decision.",
   },
 ] as const
 
 export const changeControlPoints = [
   {
     title: "Documented change",
-    body: "Significant changes after agreed scope are written down — including why they matter and what they affect.",
+    body: "Significant changes after agreed scope are written down, including why they matter and what they affect.",
   },
   {
     title: "Impact assessment",
@@ -287,7 +287,7 @@ export const supportModels = [
   },
   {
     title: "Enhancements",
-    body: "Scoped improvements to the live system — prioritised, estimated and delivered as discrete work, not as unlimited backlog burning.",
+    body: "Scoped improvements to the live system, prioritised, estimated and delivered as discrete work, not as unlimited backlog burning.",
   },
   {
     title: "New modules / projects",
@@ -302,7 +302,7 @@ export const enterpriseDeliveryFaqs = [
   },
   {
     q: "Why use staged delivery?",
-    a: "Staged delivery — Discovery → Prototype → Validated Scope → MVP → UAT → Production → Expansion — reduces the chance of committing full build budget against untested assumptions.",
+    a: "Staged delivery === Discovery → Prototype → Validated Scope → MVP → UAT → Production → Expansion === reduces the chance of committing full build budget against untested assumptions.",
   },
   {
     q: "What happens if requirements change after scope is agreed?",

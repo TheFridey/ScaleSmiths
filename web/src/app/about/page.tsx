@@ -182,7 +182,7 @@ export default function AboutPage() {
         <div className="mx-auto max-w-[760px] rounded-3xl border border-acc/20 bg-gradient-to-br from-s2 to-acc/5 px-8 py-[64px] text-center md:px-16">
           <h2 className="font-syne text-[clamp(28px,4.5vw,44px)] font-extrabold tracking-[-.025em]">Speak to a founder, not a sales team.</h2>
           <p className="mx-auto mt-4 max-w-[500px] font-dm text-base leading-relaxed text-t2">
-            Tell us what the business needs to do next. We will look at the problem first — including when the honest answer is that you do not need a rebuild.
+            Tell us what the business needs to do next. We will look at the problem first, including when the honest answer is that you do not need a rebuild.
           </p>
           <div className="mt-9 flex flex-wrap justify-center gap-3">
             <Link href="/quote?intent=strategy_call" prefetch={false} className="btn-primary font-dm inline-flex">

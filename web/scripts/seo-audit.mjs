@@ -431,9 +431,9 @@ function renderMarkdown(report) {
       `### ${title}`,
       "",
       ...group(findings).flatMap(([code, entries]) => [
-        `**${code}** — ${entries.length}`,
+        `**${code}**, ${entries.length}`,
         "",
-        ...entries.slice(0, 15).map((entry) => `- \`${entry.path}\` — ${entry.detail}`),
+        ...entries.slice(0, 15).map((entry) => `- \`${entry.path}\`, ${entry.detail}`),
         entries.length > 15 ? `- …and ${entries.length - 15} more (see \`seo-audit.json\`)` : "",
         "",
       ]),
@@ -445,7 +445,7 @@ function renderMarkdown(report) {
 Generated ${report.generatedAt} against \`${report.base}\`.
 Regenerate with \`node scripts/seo-audit.mjs --base <url>\` while a server is running.
 
-This file is produced by \`web/scripts/seo-audit.mjs\`. Do not edit it by hand — fix the site and
+This file is produced by \`web/scripts/seo-audit.mjs\`. Do not edit it by hand, fix the site and
 re-run the audit instead. The machine-readable record of the same crawl is \`docs/seo-audit.json\`.
 
 ## Summary
@@ -461,8 +461,8 @@ re-run the audit instead. The machine-readable record of the same crawl is \`doc
 
 ## What each severity means
 
-- **error** — a search engine or a visitor is materially affected. These should be zero.
-- **warning** — worth a decision. Some are accepted deliberately; the notes below say which.
+- **error**, a search engine or a visitor is materially affected. These should be zero.
+- **warning**, worth a decision. Some are accepted deliberately; the notes below say which.
 
 ## Errors
 

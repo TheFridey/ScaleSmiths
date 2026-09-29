@@ -18,7 +18,7 @@ import { getVerifiedPublicClaims } from "@/lib/public-claims.server"
 export const metadata: Metadata = buildPageMetadata({
   title: "Pricing Guidance",
   description:
-    "Transparent Web & Growth pricing for websites, audits, managed email and retainers — with enterprise software scoped following discovery rather than published as fixed retail prices.",
+    "Transparent Web & Growth pricing for websites, audits, managed email and retainers, with enterprise software scoped following discovery rather than published as fixed retail prices.",
   path: "/pricing",
 })
 export const dynamic = "force-dynamic"
@@ -35,7 +35,7 @@ const journeys = [
     href: "#enterprise-systems",
     eyebrow: "Custom Software",
     title: "Enterprise systems",
-    description: "Complex platforms scoped after discovery — architecture, migration, integrations and support without artificial fixed prices.",
+    description: "Complex platforms scoped after discovery, architecture, migration, integrations and support without artificial fixed prices.",
     Icon: Workflow,
   },
 ] as const
@@ -59,7 +59,7 @@ export default async function PricingPage() {
           Two buying journeys. One clear commercial boundary.
         </h1>
         <p className="mt-5 max-w-[680px] font-dm text-lg leading-relaxed text-t2">
-          Web &amp; Growth services keep transparent SME guidance. Custom software and enterprise systems are scoped following discovery — so procurement is not asked to judge a complex platform against a mailbox price.
+          Web &amp; Growth services keep transparent SME guidance. Custom software and enterprise systems are scoped following discovery, so procurement is not asked to judge a complex platform against a mailbox price.
         </p>
 
         <div className="mt-10 grid gap-4 lg:grid-cols-2" aria-label="Pricing journeys">
@@ -126,7 +126,7 @@ export default async function PricingPage() {
             Enterprise software is scoped following discovery.
           </h2>
           <p className="mt-5 max-w-[720px] font-dm text-base leading-relaxed text-t2">
-            Complex operational platforms, portals, integrations and multi-site systems are not sold as fixed retail packages. Commercial scope follows the operating model, risk and first dependable release — so IT, Operations and procurement can inspect the decision properly.
+            Complex operational platforms, portals, integrations and multi-site systems are not sold as fixed retail packages. Commercial scope follows the operating model, risk and first dependable release, so IT, Operations and procurement can inspect the decision properly.
           </p>
 
           <div className="enterprise-panel mt-10 rounded-2xl border border-acc/25 bg-s1 p-6 md:p-8">

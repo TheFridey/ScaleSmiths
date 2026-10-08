@@ -64,3 +64,6 @@ generated-sites/*
 
 # Restore drill evidence (ephemeral, generated per run)
 ops/restore-evidence/
+# Dedicated JARVIS integration material
+*.integrations.local.json
+.env.jarvis.tmp

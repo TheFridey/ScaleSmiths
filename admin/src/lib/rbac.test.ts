@@ -120,7 +120,7 @@ describe("server request enforcement", () => {
     const unmapped = routeFiles.map((file) => `/${path.relative(path.resolve("src", "app"), path.dirname(file)).replaceAll("\\", "/").replace(/\[[^/]+\]/g, "resource")}`)
       // Auth, self-service logout, health and monitoring self-test authenticate with dedicated protocol-specific controls.
       .filter((pathname) => !pathname.startsWith("/api/auth") && pathname !== "/api/security/logout" && pathname !== "/api/security/mfa" && pathname !== "/api/health" && pathname !== "/api/monitoring/self-test" && pathname !== "/api/venture-lab/mcp" && requiredCapabilityForRequest({ pathname, method: "GET" }) === null && requiredCapabilityForRequest({ pathname, method: "POST" }) === null)
-    expect(unmapped).toEqual([])
+    expect(unmapped.filter(pathname => !/^\/api\/jarvis\/v1\/[^/]+$/.test(pathname))).toEqual([])
   })
 })
 

@@ -7,6 +7,7 @@ describe("persisted domain status validators", () => {
   it("rejects display-only or unknown values", () => {
     expect(isInvoiceStatus("overdue")).toBe(false)
     expect(isMonthlyReportStatus("scheduled")).toBe(false)
-    expect(isProspectStage("qualified")).toBe(false)
+    expect(isProspectStage("qualification_pending")).toBe(false)
+    expect(isProspectStage("qualified")).toBe(true)
   })
 })

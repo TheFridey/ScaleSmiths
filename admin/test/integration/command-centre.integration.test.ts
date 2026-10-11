@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest"
 import { Pool } from "pg"
 import { randomUUID } from "node:crypto"
 import { assertSafeIntegrationDatabaseUrl } from "../../src/lib/test-database-safety"
+import { migrateSharedTestDatabase } from "./shared-migration-harness"
 let pool: Pool
 let service: typeof import("../../src/lib/server/command-centre")
 const trev = {
@@ -19,6 +20,7 @@ beforeAll(async () => {
   const url = assertSafeIntegrationDatabaseUrl(process.env.TEST_DATABASE_URL)
   process.env.ADMIN_DATABASE_URL = url
   pool = new Pool({ connectionString: url })
+  await migrateSharedTestDatabase(pool)
   for (const actor of [trev, rhys])
     await pool.query(
       "insert into admin_users(id,email,display_name,password_hash,role) values($1,$2,$3,'unused-test-hash','owner')",

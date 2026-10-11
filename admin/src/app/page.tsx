@@ -1,2 +1,2 @@
 import { redirect } from "next/navigation"
-export default function AdminRoot() { redirect("/dashboard") }
+export default function AdminRoot() { redirect("/command-centre") }

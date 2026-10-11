@@ -225,7 +225,7 @@ function addDecisionMaker(factors: LeadScoreFactor[], missing: Set<string>, pros
 }
 
 function addSource(factors: LeadScoreFactor[], source: ProspectSource) {
-  const pointsBySource: Record<ProspectSource, number> = { referral: 8, inbound: 7, local: 4, linkedin: 1, email: 0, facebook: 0, other: -1 }
+  const pointsBySource: Record<ProspectSource, number> = { referral: 8, inbound: 7, local: 4, linkedin: 1, email: 0, facebook: 0, other: -1, in_person: 0, walk_in: 0, tiktok: 0, instagram: 0, cold_outreach: 0, networking: 0, existing_client: 0 }
   const points = pointsBySource[source] ?? 0
   factors.push(factor("referral_source", source === "referral" || source === "inbound" ? "Source has strong intent signal" : "Source has limited intent signal", points >= 0 ? "positive" : "negative", points, source === "other" ? "low" : "medium", [`Source: ${source}.`], ["source"], source === "other"))
 }

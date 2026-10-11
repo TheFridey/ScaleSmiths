@@ -36,7 +36,7 @@ export default function LoginPage() {
 
       const sessionResponse = await fetch("/api/auth/session", { cache: "no-store" })
       const session = await sessionResponse.json().catch(() => null)
-      router.push(session?.user?.role === "venture_controller" ? "/venture-lab" : "/dashboard")
+      router.push(session?.user?.role === "venture_controller" ? "/venture-lab" : "/command-centre")
       router.refresh()
     } catch {
       setError("Something went wrong - try again")

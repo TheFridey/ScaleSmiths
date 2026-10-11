@@ -56,6 +56,9 @@ export default auth(async (req) => {
     return next()
   }
 
+  // Only these non-sensitive installation assets are public on the admin origin.
+  if (pathname === "/manifest.webmanifest" || pathname === "/command-centre-sw.js" || /^\/app-icon\/(192|512|180)$/.test(pathname)) return next()
+
   // The endpoint performs its own constant-time token check. Keep it outside
   // interactive authentication so infrastructure can check the container.
   if (pathname === "/api/health" || pathname === "/api/monitoring/self-test" || pathname === "/api/venture-lab/mcp" || /^\/api\/jarvis\/v1\/[^/]+$/.test(pathname)) {

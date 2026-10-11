@@ -13,7 +13,7 @@ import { FORGE_PROJECT_STATES, FORGE_TASK_STATES } from "./forge-state-machine"
 import { INVOICE_STATUSES } from "./invoices"
 import { MONTHLY_REPORT_STATUSES } from "./monthly-reports"
 import type { ClientOffboardingItemStatus, ClientOffboardingStatus } from "./client-offboarding"
-import { PROPOSAL_PACKAGE_TYPES, PROPOSAL_STATUSES, PROSPECT_PRIORITIES, PROSPECT_SOURCES, PROSPECT_STAGES } from "./prospects"
+import { OUTREACH_ACTIVITY_TYPES, PROPOSAL_PACKAGE_TYPES, PROPOSAL_STATUSES, PROSPECT_PRIORITIES, PROSPECT_SOURCES, PROSPECT_STAGES } from "./prospects"
 
 const bytea = customType<{ data: Buffer }>({ dataType: () => "bytea" })
 
@@ -23,7 +23,7 @@ export const quoteStatus = pgEnum("quote_status", ["new", "read", "replied", "re
 export const prospectSource = pgEnum("prospect_source", PROSPECT_SOURCES)
 export const prospectStage = pgEnum("prospect_stage", PROSPECT_STAGES)
 export const prospectPriority = pgEnum("prospect_priority", PROSPECT_PRIORITIES)
-export const outreachActivityType = pgEnum("outreach_activity_type", ["linkedin_message", "email", "phone_call", "facebook_message", "in_person", "follow_up", "proposal", "note"])
+export const outreachActivityType = pgEnum("outreach_activity_type", OUTREACH_ACTIVITY_TYPES)
 export const outreachDirection = pgEnum("outreach_direction", ["outbound", "inbound", "internal"])
 export const proposalPackageType = pgEnum("proposal_package_type", PROPOSAL_PACKAGE_TYPES)
 export const proposalStatus = pgEnum("proposal_status", PROPOSAL_STATUSES)
@@ -674,7 +674,51 @@ export const loginRateLimits = pgTable("login_rate_limits", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 })
 
+export const commercialContacts = pgTable("commercial_contacts", {
+  id: serial("id").primaryKey(), prospectId: integer("prospect_id").notNull().references(() => prospects.id, { onDelete: "restrict" }),
+  name: text("name").notNull(), email: text("email"), phone: text("phone"), decisionMaker: boolean("decision_maker").default(false).notNull(),
+  suppressed: boolean("suppressed").default(false).notNull(), notes: text("notes"), version: integer("version").default(1).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(), updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+})
+export const commercialTasks = pgTable("commercial_tasks", {
+  id: serial("id").primaryKey(), prospectId: integer("prospect_id").references(() => prospects.id, { onDelete: "restrict" }),
+  contactId: integer("contact_id").references(() => commercialContacts.id, { onDelete: "restrict" }),
+  assignedUserId: uuid("assigned_user_id").notNull().references(() => adminUsers.id, { onDelete: "restrict" }),
+  title: text("title").notNull(), notes: text("notes"), priority: text("priority").default("medium").notNull(), status: text("status").default("open").notNull(),
+  dueAt: timestamp("due_at", { withTimezone: true }).notNull(), completedAt: timestamp("completed_at", { withTimezone: true }), recurrenceDays: integer("recurrence_days"),
+  version: integer("version").default(1).notNull(), createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(), updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+})
+export const commercialContracts = pgTable("commercial_contracts", {
+  id: serial("id").primaryKey(), clientId: integer("client_id").notNull().references(() => clients.id, { onDelete: "restrict" }),
+  prospectId: integer("prospect_id").references(() => prospects.id, { onDelete: "restrict" }), category: text("category").notNull(), status: text("status").default("draft").notNull(),
+  monthlyAmount: integer("monthly_amount").default(0).notNull(), oneOffAmount: integer("one_off_amount").default(0).notNull(), evidence: text("evidence").notNull(),
+  startsAt: timestamp("starts_at", { withTimezone: true }).notNull(), endsAt: timestamp("ends_at", { withTimezone: true }), actorUserId: uuid("actor_user_id").notNull().references(() => adminUsers.id, { onDelete: "restrict" }),
+  version: integer("version").default(1).notNull(), createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(), updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+})
+export const commercialPayments = pgTable("commercial_payments", {
+  id: serial("id").primaryKey(), clientId: integer("client_id").notNull().references(() => clients.id, { onDelete: "restrict" }), invoiceId: integer("invoice_id").references(() => invoices.id, { onDelete: "restrict" }),
+  category: text("category").notNull(), amount: integer("amount").notNull(), evidence: text("evidence").notNull(), reference: text("reference").notNull().unique(), reversesPaymentId: integer("reverses_payment_id").unique(),
+  actorUserId: uuid("actor_user_id").notNull().references(() => adminUsers.id, { onDelete: "restrict" }), receivedAt: timestamp("received_at", { withTimezone: true }).notNull(), createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+})
+export const commercialForecasts = pgTable("commercial_forecasts", {
+  id: serial("id").primaryKey(), clientId: integer("client_id").notNull().references(() => clients.id, { onDelete: "restrict" }), amount: integer("amount").notNull(), expectedAt: timestamp("expected_at", { withTimezone: true }).notNull(), notes: text("notes").notNull(),
+  actorUserId: uuid("actor_user_id").notNull().references(() => adminUsers.id, { onDelete: "restrict" }), createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+})
+export const commercialSettings = pgTable("commercial_settings", {
+  key: text("key").primaryKey(), value: jsonb("value").$type<Record<string, unknown>>().notNull(), version: integer("version").default(1).notNull(), updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+})
+export const commercialAudit = pgTable("commercial_audit", {
+  id: serial("id").primaryKey(), actorUserId: uuid("actor_user_id").notNull().references(() => adminUsers.id, { onDelete: "restrict" }), entity: text("entity").notNull(), recordId: text("record_id").notNull(), action: text("action").notNull(), beforeValue: jsonb("before_value"), afterValue: jsonb("after_value"), createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+})
+
 export const prospects = pgTable("prospects", {
+  ownerUserId: uuid("owner_user_id").references(() => adminUsers.id, { onDelete: "restrict" }),
+  joint: boolean("joint").default(false).notNull(),
+  nextAction: text("next_action"),
+  expectedCloseAt: timestamp("expected_close_at", { withTimezone: true }),
+  confidence: integer("confidence").default(0).notNull(),
+  version: integer("version").default(1).notNull(),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
   id: serial("id").primaryKey(),
   businessName: text("business_name").notNull(),
   contactName: text("contact_name"),
@@ -834,6 +878,11 @@ export const clientOffboardingAuditLogs = pgTable("client_offboarding_audit_logs
 }, (table) => [index("client_offboarding_audit_case_idx").on(table.caseId, table.createdAt)])
 
 export const outreachActivities = pgTable("outreach_activities", {
+  actorUserId: uuid("actor_user_id").references(() => adminUsers.id, { onDelete: "restrict" }),
+  contactId: integer("contact_id").references(() => commercialContacts.id, { onDelete: "restrict" }),
+  nextAction: text("next_action"),
+  requestKey: uuid("request_key").unique(),
+  occurredAt: timestamp("occurred_at", { withTimezone: true }),
   id: serial("id").primaryKey(),
   prospectId: integer("prospect_id").references(() => prospects.id, { onDelete: "cascade" }).notNull(),
   type: outreachActivityType("type").notNull(),

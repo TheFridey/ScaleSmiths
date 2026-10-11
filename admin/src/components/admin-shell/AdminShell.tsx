@@ -33,6 +33,7 @@ import { isNavigationVisible, type Capability } from "@/lib/rbac"
 import { AdminShellProvider, useAdminShell } from "./AdminShellContext"
 
 const NAV: Array<{ href: string; label: string; Icon: typeof LayoutDashboard; capability: Capability }> = [
+  { href: "/command-centre", label: "Command Centre", Icon: Target, capability: "leads.read" },
   { href: "/dashboard", label: "Dashboard", Icon: LayoutDashboard, capability: "projects.read" },
   { href: "/clients", label: "Clients", Icon: Users, capability: "clients.read" },
   { href: "/projects", label: "Projects", Icon: FolderKanban, capability: "projects.read" },

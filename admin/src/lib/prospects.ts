@@ -1,7 +1,7 @@
-export const PROSPECT_SOURCES = ["linkedin", "email", "facebook", "local", "referral", "inbound", "other"] as const
-export const PROSPECT_STAGES = ["found", "audited", "contacted", "replied", "discovery_booked", "proposal_sent", "follow_up_due", "won", "lost"] as const
+export const PROSPECT_SOURCES = ["linkedin", "email", "facebook", "local", "referral", "inbound", "other", "in_person", "walk_in", "tiktok", "instagram", "cold_outreach", "networking", "existing_client"] as const
+export const PROSPECT_STAGES = ["found", "audited", "contacted", "replied", "discovery_booked", "proposal_sent", "follow_up_due", "won", "lost", "contact_identified", "qualified", "proposal_required", "negotiation"] as const
 export const PROSPECT_PRIORITIES = ["low", "medium", "high"] as const
-export const OUTREACH_ACTIVITY_TYPES = ["linkedin_message", "email", "phone_call", "facebook_message", "in_person", "follow_up", "proposal", "note"] as const
+export const OUTREACH_ACTIVITY_TYPES = ["linkedin_message", "email", "phone_call", "facebook_message", "in_person", "follow_up", "proposal", "note", "company_researched", "contact_identified", "whatsapp", "meeting_booked", "meeting_held", "contract_signed"] as const
 export const OUTREACH_DIRECTIONS = ["outbound", "inbound", "internal"] as const
 export const PROPOSAL_PACKAGE_TYPES = ["foundation", "growth", "forge", "retainer", "custom"] as const
 export const PROPOSAL_STATUSES = ["draft", "sent", "viewed", "follow_up_due", "accepted", "rejected"] as const
@@ -15,6 +15,7 @@ export type ProposalPackageType = (typeof PROPOSAL_PACKAGE_TYPES)[number]
 export type ProposalStatus = (typeof PROPOSAL_STATUSES)[number]
 
 export const STAGE_LABELS: Record<ProspectStage, string> = {
+  contact_identified: "Contact identified", qualified: "Qualified opportunity", proposal_required: "Proposal required", negotiation: "Negotiation",
   found: "Found",
   audited: "Audited",
   contacted: "Contacted",
@@ -31,6 +32,7 @@ export const STAGE_LABELS: Record<ProspectStage, string> = {
  * Used for weighted-pipeline (expected value) forecasting. Lightweight, deterministic.
  */
 export const STAGE_WIN_PROBABILITY: Record<ProspectStage, number> = {
+  contact_identified: 0.12, qualified: 0.35, proposal_required: 0.45, negotiation: 0.75,
   found: 0.05,
   audited: 0.1,
   contacted: 0.15,
@@ -458,8 +460,8 @@ function isInRange(value: Date | string | null | undefined, start: Date, end: Da
   return Boolean(date && date >= start && date <= end)
 }
 
-function stageIndex(stage: ProspectStage) {
-  return PROSPECT_STAGES.indexOf(stage)
+export function stageIndex(stage: ProspectStage) {
+  return ["found", "audited", "contact_identified", "contacted", "replied", "qualified", "discovery_booked", "proposal_required", "proposal_sent", "follow_up_due", "negotiation", "won", "lost"].indexOf(stage)
 }
 
 function percentage(value: number, total: number) {

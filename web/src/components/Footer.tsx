@@ -15,7 +15,7 @@ const navigationGroups = [
     label: "Company",
     links: [
       { href: "/about", label: "About" },
-      { href: founderProfilePath("rhys"), label: "Rhys" },
+      { href: founderProfilePath("rhys"), label: "Rhys Lacy" },
       { href: founderProfilePath("trevor-newton-bradley"), label: "Trevor Newton-Bradley" },
       { href: "/work", label: "Work" },
       { href: "/locations", label: "Locations" },
@@ -29,6 +29,9 @@ const navigationGroups = [
       { href: "/services", label: "Services" },
       { href: "/local-growth", label: "Local Growth" },
       { href: "/custom-systems", label: "Custom Systems" },
+      { href: "/enterprise", label: "Enterprise" },
+      { href: "/enterprise/delivery", label: "Enterprise Delivery" },
+      { href: "/security", label: "Security & Trust" },
       { href: "/web-design-nottingham", label: "Web Design Nottingham" },
       { href: "/local-seo-nottingham", label: "Local SEO Nottingham" },
       { href: "/managed-website-hosting", label: "Managed Hosting" },
@@ -39,7 +42,7 @@ const navigationGroups = [
     label: "Find & grow",
     links: [
       { href: "/services/business-growth-audit", label: "Business Growth Audit" },
-      { href: "/digital-growth-partnership", label: "Digital Growth Partnership" },
+      { href: "/digital-growth-partnership", label: "Growth Partnership" },
       { href: "/seo-website-audit", label: "SEO Website Audit" },
       { href: "/quote", label: "Start a Project" },
     ],
@@ -57,7 +60,7 @@ export function Footer() {
   const profiles = organizationProfiles()
 
   return (
-    <footer className="relative overflow-hidden border-t border-b1 bg-[#050d17] px-6 pb-8 pt-14 sm:pb-28 md:px-12 md:pt-20">
+    <footer className="relative overflow-hidden border-t border-b1 bg-[#080706] px-6 pb-8 pt-14 sm:pb-28 md:px-12 md:pt-20">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-acc/40 to-transparent"
@@ -65,7 +68,7 @@ export function Footer() {
       <div className="relative mx-auto max-w-[1240px]">
         <div className="grid gap-12 pb-14 md:grid-cols-[minmax(260px,1fr)_minmax(420px,1.6fr)] md:gap-16 md:pb-16">
           <div>
-            <Logo size={42} className="max-w-full [&_img]:max-w-full" />
+            <Logo size={36} showName className="max-w-full [&_img]:max-w-full" />
             <p className="mt-5 max-w-[360px] font-dm text-sm leading-relaxed text-t2">Founder-led business growth and engineering for ambitious organisations.</p>
             <address className="mt-6 grid gap-1 font-dm text-sm not-italic leading-relaxed text-t2">
               <span className="font-semibold text-t1">{SITE_NAME}</span>

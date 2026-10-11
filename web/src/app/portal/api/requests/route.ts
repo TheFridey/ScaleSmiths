@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Each accepted request notifies staff by email. Limit on the authenticated
-  // client first — that is the identity that actually owns the quota — and on the
+  // client first === that is the identity that actually owns the quota === and on the
   // network bucket so one compromised session cannot be driven from many hosts.
   const decision = await checkWebRateLimit(
     "portalRequestCreate",

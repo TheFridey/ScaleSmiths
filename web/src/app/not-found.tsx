@@ -33,7 +33,7 @@ export default function NotFound() {
           That page isn&apos;t here.
         </h1>
         <p className="mt-5 max-w-[620px] font-dm text-lg leading-relaxed text-t2">
-          The address is wrong, or the page has moved. Nothing has broken on your side — here is where most people are
+          The address is wrong, or the page has moved. Nothing has broken on your side, here is where most people are
           heading.
         </p>
 

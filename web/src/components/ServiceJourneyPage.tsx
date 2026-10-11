@@ -2,6 +2,7 @@ import Link from "next/link"
 import { ArrowRight, CheckCircle2, ChevronRight } from "lucide-react"
 import { ProjectCard } from "@/components/work/ProjectCard"
 import { caseStudiesForSlugs } from "@/lib/case-studies"
+import { EnterpriseArchitectureFramework } from "@/components/EnterpriseArchitectureFramework"
 import { FounderStrip } from "@/components/FounderStrip"
 import { InsightCard } from "@/components/insights/InsightCard"
 import { JsonLd } from "@/components/JsonLd"
@@ -28,7 +29,7 @@ export function ServiceJourneyPage({ journey }: { journey: ServiceJourney }) {
             style={{
               background: isLocal
                 ? "radial-gradient(ellipse at 85% 20%, rgba(20,241,178,0.10), transparent 42%)"
-                : "radial-gradient(ellipse at 85% 20%, rgba(34,211,238,0.12), transparent 42%)",
+                : "radial-gradient(ellipse at 85% 20%, rgba(232,160,69,0.12), transparent 42%)",
             }}
           />
           <div className="relative mx-auto max-w-[1240px]">
@@ -42,10 +43,10 @@ export function ServiceJourneyPage({ journey }: { journey: ServiceJourney }) {
               </ol>
             </nav>
 
-            <div className="mt-10 grid gap-10 lg:grid-cols-[1.12fr_.88fr] lg:items-end">
-              <div>
+            <div className="offer-hero-grid offer-hero-grid--journey mt-10" data-offer-hero>
+              <div className="offer-hero-copy">
                 <span className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">{journey.eyebrow}</span>
-                <h1 className="mt-3 max-w-4xl font-syne text-[clamp(40px,6.5vw,76px)] font-black leading-[1.01] tracking-[-.04em]">{journey.title}</h1>
+                <h1 className="offer-hero-display mt-3 font-black">{journey.title}</h1>
                 <p className="mt-6 max-w-3xl font-dm text-lg leading-relaxed text-t2">{journey.description}</p>
                 <div className="mt-8 flex flex-wrap gap-3">
                   <Link href={journey.primaryCta.href} prefetch={false} className="btn-primary font-dm">{journey.primaryCta.label}<ArrowRight size={16} aria-hidden="true" /></Link>
@@ -53,7 +54,7 @@ export function ServiceJourneyPage({ journey }: { journey: ServiceJourney }) {
                 </div>
               </div>
 
-              <aside aria-label={`Who ${journey.eyebrow} is for`} className={`journey-hero-aside rounded-2xl border p-6 md:p-8 ${isLocal ? "border-success/25 bg-success/[.07]" : "border-acc/25 bg-acc/[.07]"}`}>
+              <aside aria-label={`Who ${journey.eyebrow} is for`} data-offer-hero-card className={`offer-hero-card journey-hero-aside rounded-2xl border p-6 md:p-8 ${isLocal ? "border-success/25 bg-success/[.07]" : "border-acc/25 bg-acc/[.07]"}`}>
                 <p className="font-dm text-xs font-semibold uppercase tracking-[.12em] text-t3">Designed for</p>
                 <ul className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
                   {journey.audience.map((audience) => <li key={audience} className="flex items-center gap-3 font-dm text-sm text-t1"><CheckCircle2 size={15} className={`shrink-0 ${isLocal ? "text-success" : "text-acc"}`} aria-hidden="true" />{audience}</li>)}
@@ -79,6 +80,10 @@ export function ServiceJourneyPage({ journey }: { journey: ServiceJourney }) {
           </div>
         </PaperBand>
 
+        {!isLocal ? (
+          <EnterpriseArchitectureFramework idPrefix={`${journey.slug}-architecture`} />
+        ) : null}
+
         <section aria-labelledby={`${journey.slug}-proof`} className="px-6 py-16 md:px-12 md:py-24">
           <div className="mx-auto max-w-[1240px]">
             <div className="max-w-3xl">
@@ -97,8 +102,15 @@ export function ServiceJourneyPage({ journey }: { journey: ServiceJourney }) {
             <div>
               <span className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">How buying works</span>
               <h2 id={`${journey.slug}-process`} className="mt-2 font-syne text-3xl font-extrabold">{journey.processTitle}</h2>
-              <p className="mt-4 font-dm text-sm leading-relaxed text-t2">Pricing is scoped after discovery around the approved outcome, complexity, integrations, content, and delivery risk. Ongoing support is optional and scoped separately.</p>
-              <Link href="/pricing" prefetch={false} className="mt-5 inline-flex items-center gap-2 font-dm text-sm font-semibold text-acc">Read pricing guidance<ArrowRight size={14} aria-hidden="true" /></Link>
+              <p className="mt-4 font-dm text-sm leading-relaxed text-t2">
+                {isLocal
+                  ? "Pricing is scoped after discovery around the approved outcome, complexity, content and delivery risk. Ongoing support is optional and scoped separately."
+                  : "Custom software and enterprise systems are scoped following discovery, not published as fixed retail prices beside SME offers. Ongoing support is optional and scoped separately."}
+              </p>
+              <Link href={isLocal ? "/pricing#web-growth" : "/pricing#enterprise-systems"} prefetch={false} className="mt-5 inline-flex items-center gap-2 font-dm text-sm font-semibold text-acc">
+                {isLocal ? "Read Web & Growth pricing" : "Read enterprise pricing guidance"}
+                <ArrowRight size={14} aria-hidden="true" />
+              </Link>
             </div>
             <ol className="grid gap-3 sm:grid-cols-2">
               {journey.process.map((step, index) => <li key={step.title} className="rounded-2xl border border-b1 bg-s1 p-5"><span className="font-syne text-sm font-bold text-acc">{index + 1}</span><h3 className="mt-2 font-syne text-lg font-bold">{step.title}</h3><p className="mt-2 font-dm text-sm leading-relaxed text-t2">{step.description}</p></li>)}

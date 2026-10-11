@@ -1,6 +1,7 @@
 import type { FunnelType } from "./quote-security"
+import type { EnquiryIntent } from "./enquiry-intents"
 
-export function quoteEmailContent(funnelType: FunnelType, safeName: string) {
+export function quoteEmailContent(funnelType: FunnelType, safeName: string, intent?: EnquiryIntent) {
   if (funnelType === "business_growth_audit") {
     return { internalLabel: "New Business Growth Audit request", internalSubject: `Business Growth Audit request from ${safeName}`, confirmationSubject: "Your Business Growth Audit request", confirmationHeading: "Your Audit request is in.", confirmationBody: `Thanks, ${safeName}. We&apos;ll review the business context you supplied, confirm the one-time £395 engagement and delivery date, then send the next step. No payment has been taken through this website.` }
   }
@@ -11,6 +12,25 @@ export function quoteEmailContent(funnelType: FunnelType, safeName: string) {
       confirmationSubject: "Your Managed Business Email enquiry",
       confirmationHeading: "Your email setup enquiry is in.",
       confirmationBody: `Thanks, ${safeName}. We&apos;ll review the domain and mailbox details, clarify any migration requirements, and reply with the next onboarding step. Do not send domain or registrar passwords by email.`,
+    }
+  }
+  if (funnelType === "enterprise") {
+    return {
+      internalLabel: "New enterprise discovery enquiry",
+      internalSubject: `Enterprise discovery enquiry from ${safeName}`,
+      confirmationSubject: "Your enterprise discovery enquiry",
+      confirmationHeading: "Your enterprise discovery enquiry is in.",
+      confirmationBody: `Thanks, ${safeName}. We&apos;ll review the operating context, system requirements and project constraints you shared, then reply with a sensible next discovery step. No payment has been taken through this website.`,
+    }
+  }
+  if (intent === "strategy_call" || intent === "discovery_call") {
+    const kind = intent === "discovery_call" ? "discovery call" : "strategy call"
+    return {
+      internalLabel: `New ${kind} request`,
+      internalSubject: `${kind[0]!.toUpperCase()}${kind.slice(1)} request from ${safeName}`,
+      confirmationSubject: `Your ${kind} request`,
+      confirmationHeading: `Your ${kind} request is in.`,
+      confirmationBody: `Thanks, ${safeName}. We&apos;ll review what you are trying to solve and reply through your preferred contact route with a sensible next step.`,
     }
   }
   return {

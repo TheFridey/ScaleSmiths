@@ -14,7 +14,7 @@ export const EXPERIENCE_EXPERIMENT_VARIANTS = [
 export type ExperienceExperimentVariant = (typeof EXPERIENCE_EXPERIMENT_VARIANTS)[number]
 export type StoredExperiencePreference = "normal" | "interactive"
 
-export const DEFAULT_EXPERIENCE_VARIANT: ExperienceExperimentVariant = "fullscreen_choice"
+export const DEFAULT_EXPERIENCE_VARIANT: ExperienceExperimentVariant = "normal_with_interactive_cta"
 
 const VARIANT_SET = new Set<string>(EXPERIENCE_EXPERIMENT_VARIANTS)
 

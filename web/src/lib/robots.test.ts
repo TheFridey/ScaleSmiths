@@ -9,6 +9,7 @@ describe("robots policy", () => {
     expect(rules.disallow).toContain("/api/")
     expect(rules.disallow).toContain("/portal/")
     expect(rules.disallow).toContain("/quote/thanks")
+    expect(rules.disallow).toContain("/enterprise/contact/thanks")
     expect(result.sitemap).toBe("https://scalesmiths.co.uk/sitemap.xml")
   })
 })

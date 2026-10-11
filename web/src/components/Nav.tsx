@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useId, useRef, useState } from "react"
+import { createPortal } from "react-dom"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { AnimatePresence, m, useReducedMotion } from "motion/react"
@@ -11,14 +12,17 @@ import { motionTransitions, staggerContainer, staggerItem } from "@/lib/motion"
 
 /**
  * Five top-level destinations, with the service routes gathered under one group rather than
- * competing for space in the bar. Everything a visitor arriving from search needs — what we do,
- * proof, writing, who we are, and the answers — is reachable in one interaction.
+ * competing for space in the bar. Everything a visitor arriving from search needs, what we do,
+ * proof, writing, who we are, and the answers, is reachable in one interaction.
  */
 const serviceLinks = [
   { href: "/services", label: "All services", description: "Every route in one place, from local growth to custom systems." },
   { href: "/local-growth", label: "Local growth", description: "Websites and search work for businesses selling in a place." },
   { href: "/custom-systems", label: "Custom systems", description: "Applications, portals, integrations and automation." },
-  { href: "/digital-growth-partnership", label: "Digital Growth Partnership", description: "Ongoing, prioritised improvement after launch." },
+  { href: "/enterprise", label: "Enterprise", description: "Bespoke platforms for complex operational and multi-site software." },
+  { href: "/enterprise/delivery", label: "Enterprise Delivery", description: "Discovery through production rollout for complex software engagements." },
+  { href: "/security", label: "Security & Trust", description: "Architecture-led security, delivery controls and assurance posture." },
+  { href: "/digital-growth-partnership", label: "Growth Partnership", description: "Ongoing, prioritised improvement after launch." },
   { href: "/services/business-growth-audit", label: "Business Growth Audit", description: "A prioritised roadmap before committing to a build." },
   { href: "/services/managed-business-email", label: "Managed Business Email", description: "Custom-domain mailboxes, configured and supported." },
 ]
@@ -34,6 +38,7 @@ export function Nav() {
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
   const [servicesOpen, setServicesOpen] = useState(false)
+  const [portalReady, setPortalReady] = useState(false)
   const pathname = usePathname()
   const reducedMotion = useReducedMotion()
   const toggleRef = useRef<HTMLButtonElement>(null)
@@ -41,6 +46,10 @@ export function Nav() {
   const servicesRef = useRef<HTMLDivElement>(null)
   const servicesTriggerRef = useRef<HTMLButtonElement>(null)
   const servicesMenuId = useId()
+
+  useEffect(() => {
+    setPortalReady(true)
+  }, [])
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 72)
@@ -80,8 +89,22 @@ export function Nav() {
 
   useEffect(() => {
     if (!open) return
-    const previousOverflow = document.body.style.overflow
-    document.body.style.overflow = "hidden"
+    // Lock both html and body. Compensating padding prevents the classic
+    // scrollbar-gutter jump on desktop-width viewports that still show the
+    // mobile toggle below the `md` breakpoint (e.g. narrow browser windows).
+    const html = document.documentElement
+    const { body } = document
+    const scrollbarGap = Math.max(0, window.innerWidth - html.clientWidth)
+    const previous = {
+      bodyOverflow: body.style.overflow,
+      htmlOverflow: html.style.overflow,
+      bodyPaddingRight: body.style.paddingRight,
+    }
+    body.style.overflow = "hidden"
+    html.style.overflow = "hidden"
+    if (scrollbarGap > 0) {
+      body.style.paddingRight = `${scrollbarGap}px`
+    }
     const panel = panelRef.current
     const focusable = panel?.querySelectorAll<HTMLElement>('a[href], button:not([disabled])') ?? []
     focusable[0]?.focus()
@@ -105,7 +128,9 @@ export function Nav() {
     }
     document.addEventListener("keydown", handleKeyDown)
     return () => {
-      document.body.style.overflow = previousOverflow
+      body.style.overflow = previous.bodyOverflow
+      html.style.overflow = previous.htmlOverflow
+      body.style.paddingRight = previous.bodyPaddingRight
       document.removeEventListener("keydown", handleKeyDown)
     }
   }, [open])
@@ -113,17 +138,79 @@ export function Nav() {
   const closeMenu = () => setOpen(false)
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`)
   const servicesActive = serviceLinks.some((link) => isActive(link.href))
+  const navOffset = scrolled ? "top-[62px]" : "top-[78px]"
+
+  // Portal the drawer to `document.body`. The sticky header uses `backdrop-blur`,
+  // which creates a containing block for `position: fixed` descendants. Leaving
+  // the slide-in panel inside that header made the entire site translate left
+  // with the drawer animation on mobile.
+  const mobileMenu = portalReady
+    ? createPortal(
+        <AnimatePresence initial={false}>
+          {open ? (
+            <m.div
+              key="mobile-nav-overlay"
+              className={cn(
+                "fixed inset-x-0 bottom-0 z-40 overflow-hidden overscroll-none bg-black/55 md:hidden",
+                navOffset,
+              )}
+              initial={reducedMotion ? false : { opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: reducedMotion ? 0 : 0.18 }}
+              onMouseDown={(event) => event.target === event.currentTarget && closeMenu()}
+            >
+              <m.div
+                ref={panelRef}
+                id="mobile-navigation"
+                role="dialog"
+                aria-modal="true"
+                aria-label="Site navigation"
+                className="ml-auto flex h-full w-[min(88vw,420px)] max-w-full flex-col overflow-y-auto overscroll-contain border-l border-b1 bg-bg px-7 pb-8 pt-8 shadow-2xl"
+                initial={reducedMotion ? false : { x: "100%" }}
+                animate={{ x: 0 }}
+                exit={{ x: "100%" }}
+                transition={reducedMotion ? { duration: 0 } : motionTransitions.gentle}
+              >
+                <m.div variants={staggerContainer} initial={reducedMotion ? false : "hidden"} animate="visible" className="flex flex-col">
+                  {links.map((link) => (
+                    <m.div key={link.href} variants={staggerItem}>
+                      <Link href={link.href} prefetch={false} onClick={closeMenu} className="flex min-h-14 items-center border-b border-b1 font-syne text-xl font-bold text-t1">{link.label}</Link>
+                    </m.div>
+                  ))}
+                  <m.p variants={staggerItem} className="pb-3 pt-7 font-dm text-[11px] font-semibold uppercase tracking-[.16em] text-t3">Services</m.p>
+                  {serviceLinks.map((link) => (
+                    <m.div key={link.href} variants={staggerItem}>
+                      <Link href={link.href} prefetch={false} onClick={closeMenu} className="flex min-h-14 items-center border-b border-b1 font-syne text-lg font-bold text-t1">
+                        {link.label}
+                      </Link>
+                    </m.div>
+                  ))}
+                </m.div>
+                <div className="mt-auto grid gap-3 pt-8">
+                  <Link href="/portal/login" prefetch={false} onClick={closeMenu} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-b2 font-dm text-sm font-medium text-t1">
+                    <LogIn size={15} className="text-acc" aria-hidden="true" /> Client Portal
+                  </Link>
+                  <Link href="/quote" prefetch={false} onClick={closeMenu} className="btn-sm min-h-12 justify-center">Start a Project</Link>
+                </div>
+              </m.div>
+            </m.div>
+          ) : null}
+        </AnimatePresence>,
+        document.body,
+      )
+    : null
 
   return (
     <header className={cn(
       "sticky top-0 z-50 border-b transition-[background-color,border-color,box-shadow] duration-300",
-      scrolled ? "border-b1/80 bg-bg/94 shadow-[0_12px_40px_rgba(0,0,0,.18)] backdrop-blur-md" : "border-transparent bg-bg/55 backdrop-blur-sm",
+      scrolled ? "border-b1/80 bg-bg/94 shadow-[0_12px_40px_rgba(0,0,0,.22)] backdrop-blur-md" : "border-transparent bg-bg/45 backdrop-blur-sm",
     )}>
       <nav aria-label="Main navigation" className={cn(
         "relative z-50 mx-auto flex max-w-[1320px] items-center gap-10 px-6 transition-[height] duration-300 md:px-12",
         scrolled ? "h-[62px]" : "h-[78px]",
       )}>
-        <Logo showName={false} size={scrolled ? 33 : 38} />
+        <Logo showName={false} size={scrolled ? 38 : 44} />
 
         <div className="ml-auto hidden items-center gap-7 md:flex">
           <div
@@ -208,39 +295,7 @@ export function Nav() {
         </button>
       </nav>
 
-      <AnimatePresence initial={false}>
-        {open && (
-          <m.div className={cn("fixed inset-x-0 bottom-0 z-40 bg-black/55 md:hidden", scrolled ? "top-[62px]" : "top-[78px]")}
-            initial={reducedMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: reducedMotion ? 0 : 0.18 }}
-            onMouseDown={(event) => event.target === event.currentTarget && closeMenu()}>
-            <m.div ref={panelRef} id="mobile-navigation" role="dialog" aria-modal="true" aria-label="Site navigation"
-              className="ml-auto flex h-full w-[min(88vw,420px)] flex-col overflow-y-auto border-l border-b1 bg-bg px-7 pb-8 pt-8 shadow-2xl"
-              initial={reducedMotion ? false : { x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} transition={reducedMotion ? { duration: 0 } : motionTransitions.gentle}>
-              <m.div variants={staggerContainer} initial={reducedMotion ? false : "hidden"} animate="visible" className="flex flex-col">
-                {links.map((link) => (
-                  <m.div key={link.href} variants={staggerItem}>
-                    <Link href={link.href} prefetch={false} onClick={closeMenu} className="flex min-h-14 items-center border-b border-b1 font-syne text-xl font-bold text-t1">{link.label}</Link>
-                  </m.div>
-                ))}
-                <m.p variants={staggerItem} className="pb-3 pt-7 font-dm text-[11px] font-semibold uppercase tracking-[.16em] text-t3">Services</m.p>
-                {serviceLinks.map((link) => (
-                  <m.div key={link.href} variants={staggerItem}>
-                    <Link href={link.href} prefetch={false} onClick={closeMenu} className="flex min-h-14 items-center border-b border-b1 font-syne text-lg font-bold text-t1">
-                      {link.label}
-                    </Link>
-                  </m.div>
-                ))}
-              </m.div>
-              <div className="mt-auto grid gap-3 pt-8">
-                <Link href="/portal/login" prefetch={false} onClick={closeMenu} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-b2 font-dm text-sm font-medium text-t1">
-                  <LogIn size={15} className="text-acc" aria-hidden="true" /> Client Portal
-                </Link>
-                <Link href="/quote" prefetch={false} onClick={closeMenu} className="btn-sm min-h-12 justify-center">Start a Project</Link>
-              </div>
-            </m.div>
-          </m.div>
-        )}
-      </AnimatePresence>
+      {mobileMenu}
     </header>
   )
 }

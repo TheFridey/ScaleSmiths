@@ -2,7 +2,7 @@
 
 Run every repository-relative command in this runbook from `/var/www/scalesmiths/ScaleSmiths`, the authoritative production checkout.
 
-This runbook keeps the supported VPS topology: Dockerized `web` and `admin`, the existing PostgreSQL service and generated-sites bind mount, and host Nginx terminating TLS. It adds two loopback application slots:
+This runbook keeps the supported / long-term VPS topology: Dockerized `web` and `admin`, the existing PostgreSQL service and generated-sites bind mount, and host Nginx terminating TLS. If operators confirm this host is still on the interim PM2 canary path instead, use [PM2 host deploy](pm2-host-deploy.md) and do not invent a hybrid switch. It adds two loopback application slots:
 
 | Slot | Web | Admin |
 | --- | ---: | ---: |

@@ -113,6 +113,22 @@ Projects live in `web/src/lib/data.ts`. The fields that matter for depth: `clien
 `startingPoint`, `strategy`, `solution`, `features`, `technicalImplementation`,
 `relatedServiceHrefs`, `relatedInsightSlugs`.
 
+The public case-study page maps those fields into a reusable flagship architecture:
+
+| Section | Source |
+| --- | --- |
+| The business | `client` |
+| The constraint | `challenge` |
+| What we found | `startingPoint` |
+| What we changed | before/after media when available |
+| The strategy | `strategy` |
+| Why we made those decisions | `technicalImplementation` |
+| The build | `solution` + `features` + `stack` |
+| Verified results | claim-backed `outcomeClaimIds` / `metrics` only |
+| Tracking / Current / Next | only when real content exists (e.g. Confirm-A-Kill story) |
+
+Omit empty sections. Do not invent business outcomes to complete the template.
+
 Two hard rules, both enforced by tests:
 
 1. **Numbers need a verified public claim.** Rankings, traffic, conversion and revenue figures
@@ -175,3 +191,27 @@ warnings need a decision, not necessarily a change.
 Check the new page's shingle overlap in the audit's "closest content pairs" table. If a new
 article overlaps an existing one by more than roughly 40%, the two are competing for the same
 query — merge them or sharpen the intent of one.
+
+---
+
+## 6. Content governance (rebound rule set)
+
+Before the site accumulates another redesign cycle, apply these gates:
+
+1. **Homepage section** — Does this introduce something genuinely new? If not, improve an
+   existing section instead of stacking another band.
+2. **New service page** — Is this a genuinely separate customer problem, or another capability
+   label for work already covered? Prefer deepening Local Growth, Custom Systems, Enterprise,
+   Services or Pricing.
+3. **Claim** — Can we prove it? Route numbers and outcomes through verified public claims. Soften
+   or remove UNVERIFIED wording. Label DEMONSTRATION / CONCEPT clearly.
+4. **Animation** — Does this improve understanding or brand experience? Respect
+   `prefers-reduced-motion`. Do not make meaning depend on motion.
+5. **Case study expansion** — Prefer filling the flagship architecture (Business, Constraint,
+   Findings, Strategy, Decisions, Build, Tracking, Verified Results, Current, Next) with real
+   content over inventing metrics. Sections render only when content exists.
+6. **CTA hierarchy** — One obvious primary next step per important page. Prefer Strategy Call /
+   Start a Project as primary; Work / Services / Enterprise as secondary; Growth Audit /
+   Partnership as specific; Client Portal for existing clients.
+
+These rules live here so they stay next to the typed content registries that enforce honesty.

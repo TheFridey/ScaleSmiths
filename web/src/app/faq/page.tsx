@@ -85,7 +85,7 @@ export default function FaqPage() {
               <h1 className="mt-3 font-syne text-[clamp(38px,6.5vw,72px)] font-black leading-[1.02] tracking-[-.04em]">Clear answers before you commit.</h1>
               <p className="mt-5 font-dm text-lg leading-relaxed text-t2">{intro}</p>
               <p className="mt-4 max-w-[720px] border-l border-acc pl-4 font-dm text-sm leading-relaxed text-t3">
-                Where something is agreed per engagement rather than published — payment terms, response commitments, what a specific partnership covers — the answer says so instead of inventing a policy.
+                Where something is agreed per engagement rather than published === payment terms, response commitments, what a specific partnership covers === the answer says so instead of inventing a policy.
               </p>
             </div>
           </div>

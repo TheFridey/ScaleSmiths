@@ -93,6 +93,47 @@ describe("quote security", () => {
     }
   })
 
+  it("accepts a lighter strategy-call payload without project-brief fields", () => {
+    const result = validateQuotePayload({
+      name: "Alex Local",
+      email: "alex@example.com",
+      biz: "Alex Plumbing",
+      websiteUrl: "https://example.com",
+      phone: "0115 000 0000",
+      goal: "Local enquiries are inconsistent and the current site is unclear.",
+      needs: ["Local visibility / SEO", "Website not converting"],
+      preferredContactMethod: "Phone",
+      timeframe: "This month",
+      intent: "strategy_call",
+      consent: true,
+      brief: "Request a Strategy Call request\n\nWhat they are trying to solve: Local enquiries are inconsistent.",
+    })
+
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.data.intent).toBe("strategy_call")
+      expect(result.data.type).toBe("Strategy Call")
+      expect(result.data.budget).toBe("To be discussed on call")
+      expect(result.data.businessType).toBe("Strategy call enquiry")
+      expect(result.data.needs).toEqual(["Local visibility / SEO", "Website not converting"])
+      expect(quoteInsertValues(result.data).enquiryIntent).toBe("strategy_call")
+    }
+  })
+
+  it("still requires a full project brief when intent is a standard quote", () => {
+    const result = validateQuotePayload({
+      name: "Alex Local",
+      email: "alex@example.com",
+      biz: "Alex Plumbing",
+      goal: "We need clearer local enquiries.",
+      consent: true,
+      intent: "quote",
+      brief: "Looking for a clearer website.",
+    })
+
+    expect(result.ok).toBe(false)
+  })
+
   it("does not let a lead-source field bypass the full quote requirements", () => {
     const result = validateQuotePayload({
       name: "Alex Local",
@@ -151,6 +192,57 @@ describe("quote security", () => {
     const result = validateQuotePayload({ name: "A Customer", email: "customer@example.com", biz: "Example Ltd", websiteUrl: "https://example.com", businessType: "Professional services", goal: "Leads are inconsistent", brief: "Detailed business, lead and operational context for the professional assessment.", funnelType: "business_growth_audit", intent: "business_growth_audit", consent: true })
     expect(result.ok).toBe(true)
     if (result.ok) expect(result.data).toMatchObject({ funnelType: "business_growth_audit", leadSource: "business_growth_audit", type: "Business Growth Audit", budget: "£395 one-time audit", intent: "business_growth_audit" })
+  })
+
+  it("accepts and normalises the enterprise discovery funnel", () => {
+    const result = validateQuotePayload({
+      name: "Alex Ops",
+      email: "Alex@Example.com",
+      biz: "Example Holdings",
+      phone: "+44 7700 900123",
+      businessType: "51–200",
+      type: "Operational platform, Compliance platform",
+      budget: "£100k–£250k",
+      timeframe: "3–6 months",
+      goal: "Field checks and compliance evidence are fragmented across sites.",
+      needs: ["Operational platform", "Compliance platform", "Integrations"],
+      carePlanInterest: "Yes",
+      funnelType: "enterprise",
+      intent: "enterprise",
+      consent: true,
+      brief: "=== Enterprise discovery brief ===\nDetailed operating context for a serious custom software opportunity.",
+    })
+
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.data).toMatchObject({
+        funnelType: "enterprise",
+        leadSource: "enterprise",
+        intent: "enterprise",
+        email: "alex@example.com",
+        budget: "£100k–£250k",
+        preferredContactMethod: "Email",
+      })
+      expect(result.data.needs).toHaveLength(3)
+      expect(scoreLeadQuality(result.data)).toBe("high")
+      expect(quoteInsertValues(result.data).enquiryIntent).toBe("enterprise")
+    }
+  })
+
+  it("rejects enterprise submissions without phone, needs or consent", () => {
+    const result = validateQuotePayload({
+      name: "Alex Ops",
+      email: "alex@example.com",
+      biz: "Example Holdings",
+      budget: "£50k–£100k",
+      timeframe: "Next quarter",
+      goal: "Replace overlapping SaaS tools",
+      funnelType: "enterprise",
+      intent: "enterprise",
+      consent: false,
+      brief: "Enterprise brief without qualification fields.",
+    })
+    expect(result.ok).toBe(false)
   })
 
   it("scores high-intent leads server-side", () => {

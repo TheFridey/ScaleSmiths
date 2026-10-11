@@ -12,7 +12,7 @@ const steps = [
   },
   {
     n: "02", label: "Fix", title: "Build the right solution",
-    desc: "That may be a focused improvement, a website, an e-commerce flow, automation or a full custom system. Scope follows the problem—not the other way around.", Icon: Code2,
+    desc: "That may be a focused improvement, a website, an e-commerce flow, automation or a full custom system. Scope follows the problem, not the other way around.", Icon: Code2,
   },
   {
     n: "03", label: "Prove", title: "Deliver & measure",
@@ -20,7 +20,7 @@ const steps = [
   },
   {
     n: "04", label: "Grow", title: "Keep improving",
-    desc: "A Digital Growth Partnership can keep the roadmap moving across visibility, conversion, content and technology. It can begin here or around an existing digital estate from day one.", Icon: TrendingUp,
+    desc: "A Growth Partnership can keep the roadmap moving across visibility, conversion, content and technology. It can begin here or around an existing digital estate from day one.", Icon: TrendingUp,
   },
 ]
 

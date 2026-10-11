@@ -28,7 +28,7 @@ export function LandingPage({ page }: { page: LandingPageData }) {
           <Breadcrumbs items={[{ name: "Home", href: "/" }, { name: "Services", href: "/services" }, { name: page.title }]} />
           <div className="mt-10 max-w-[820px]">
             <span className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">{page.eyebrow}</span>
-            <h1 className="mt-3 font-syne text-[clamp(42px,8vw,86px)] font-extrabold leading-none tracking-[-0.035em]">
+            <h1 className="page-hero-display mt-3">
               {page.h1}
             </h1>
             <p className="mt-6 max-w-[700px] font-dm text-lg leading-relaxed text-t2">{page.intro}</p>

@@ -42,7 +42,7 @@ export interface Project {
   strategy?: string[]
   /**
    * How the solution was actually built: the notable engineering decisions behind it. Descriptive
-   * only — never performance, ranking or commercial claims, which belong in verified public
+   * only, never performance, ranking or commercial claims, which belong in verified public
    * claims (see case-study-metrics.ts).
    */
   technicalImplementation?: Array<{ title: string; detail: string }>
@@ -116,7 +116,7 @@ export const projects: Project[] = [
       "why-your-website-isnt-showing-on-google",
     ],
     accentColor: "#f4cb38",
-    gradient: "from-yellow-400/10 to-cyan-500/5",
+    gradient: "from-yellow-400/10 to-amber-500/5",
     imageKind: "screenshot",
     imageAlt: "Confirm-A-Kill mobile-first pest-control website rebuilt by ScaleSmiths",
     credit: "Built and grown by ScaleSmiths",
@@ -187,7 +187,7 @@ export const projects: Project[] = [
     location: "Hucknall, Nottinghamshire",
     year: "2025",
     tags: ["Node.js", "Express", "Canvas API", "Sharp", "Nginx", "JWT"],
-    headline: "A complete digital presence for a premium tanning salon — animated, integrated, and self-managed.",
+    headline: "A complete digital presence for a premium tanning salon, animated, integrated, and self-managed.",
     challenge: "Glow Tanning had no meaningful web presence, no way to capture bookings digitally, and reviews scattered across Google and Facebook with no unified display. Their competitors in the area were already ahead online.",
     solution: "Built a full Node.js/Express site with a custom Canvas API animation system for the hero section (animated sun rays), Salon Tracker booking iframe integration, and a review aggregation pipeline configured for Google Places API and Facebook. A Sharp-based WebP image pipeline handles imagery, with a JWT-secured admin panel for content management.",
     outcomeClaimIds: [
@@ -230,7 +230,7 @@ export const projects: Project[] = [
     thumbImage: "/images/projects/glow-tanning/thumb.jpg",
     imageKind: "cover-card",
     blurDataURL: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAGCAIAAAB1kpiRAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAxUlEQVR4nAG6AEX/AP7Lg//tn//cktmsbKB9S3pfOFdEJVZBIlxFJE06HgD+yYL/5Jf/x4GZdEV6XzVkTChSPR9kTCl3WzN5XDQAm3lIaE8rb1YxlX9bfmdGcVw/alc9SzkeRDEYXUYnADAkFD0sF1xHJ+rVtMq3nNjGp+TRtlpHLjcnFSUcEQAUDAB4aFF1YklWRjJ4aFJaSThfUkJLRT03LB0NAwAAFAgAQjQccVcznn1LyJ1jxJpgn39RZk80NCcbBAAEvVlDxw0IpsIAAAAASUVORK5CYII=",
-    credit: "Made by Rhys · ScaleSmiths co-founder",
+    credit: "Made by Rhys Lacy · ScaleSmiths co-founder",
     portfolioGroup: "client-work",
   },
   {
@@ -284,7 +284,7 @@ export const projects: Project[] = [
     thumbImage: "/images/projects/pinkys-prints/thumb.jpg",
     imageKind: "cover-card",
     blurDataURL: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAGCAIAAAB1kpiRAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAxUlEQVR4nAG6AEX/AP+t1f/S///B7N+RtKZqhoJTaV85S1ozRmM5TFEsPgD/qdL/w+//qM+bYHx+TGRnOlBWL0JrQVV7SmF7R2QAoGeBcERYeEtgp36RkWp8hWRzeFhoTyk9RyQ6YjdUADslL0YoOV43S/bO4v/w//TO5e7G31k0TUEhOCoXKwAZDReHZYN+WXhbPFqDXYZiQmNrTW1WQWA8Iz0WBR4AGAcSSSk8dkdjo2aKy4GsyH+qpmmQb0JlOB48DwIeljBOWPR4kQUAAAAASUVORK5CYII=",
-    credit: "Made by Rhys · ScaleSmiths co-founder",
+    credit: "Made by Rhys Lacy · ScaleSmiths co-founder",
     portfolioGroup: "client-work",
   },
   {
@@ -300,7 +300,7 @@ export const projects: Project[] = [
     tags: ["Next.js", "TypeScript", "Tailwind CSS", "PostgreSQL"],
     headline: "An editorial industrial aesthetic for a US computer repair firm that refuses to look like every other repair shop.",
     challenge: "CSDS needed a professional digital presence that reflected the precision and expertise behind their work. The market is saturated with generic \'we fix computers\' templates.",
-    solution: "Built a Next.js site with a deliberately editorial, industrial aesthetic — electric red accents on near-black surfaces, bold typography, and a refined UI system. A custom multi-step quote request form captures enquiries and feeds a dedicated admin panel where the owner can manage, respond to, and track all incoming jobs.",
+    solution: "Built a Next.js site with a deliberately editorial, industrial aesthetic, electric red accents on near-black surfaces, bold typography, and a refined UI system. A custom multi-step quote request form captures enquiries and feeds a dedicated admin panel where the owner can manage, respond to, and track all incoming jobs.",
     outcomeClaimIds: [
       "project.csds.outcome.distinctive",
       "project.csds.outcome.less-friction",
@@ -340,7 +340,7 @@ export const projects: Project[] = [
     thumbImage: "/images/projects/csds/thumb.jpg",
     imageKind: "cover-card",
     blurDataURL: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAGCAIAAAB1kpiRAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAxUlEQVR4nAG6AEX/AP+jn//Fu/+0rdqGgaRlYn1LSVw1NFYvLl4zME8qKgD/oZv/trH+nZmnZ2V5REVlODVgOTZpPzx3RUN3QEIAnWBdbT8+cEE+Yjc2jGNhg19fRCMjSiAkYDM4ADUgIEMlJlUsLWE0NvvY2v/y81w0OEojKj8eJigSHAAYDg+AXWl9V2FrSVV6VGZbOkhzVWVTPk05HSkRABEAFwUFSCcqcD5CmFhcyXh8xHV5m1piaDpGNRooDQATqidBHlONUuYAAAAASUVORK5CYII=",
-    credit: "Made by Rhys · ScaleSmiths co-founder",
+    credit: "Made by Rhys Lacy · ScaleSmiths co-founder",
     portfolioGroup: "client-work",
   },
   {
@@ -354,8 +354,8 @@ export const projects: Project[] = [
     location: "UK",
     year: "2025",
     tags: ["Next.js 15", "Auth.js v5", "Stripe", "LiveKit", "PostgreSQL", "Drizzle ORM"],
-    headline: "A full production SaaS platform for a UK founder community — real billing, real video, real infrastructure.",
-    challenge: "The Business Circle needed a dedicated platform for its founder community. A Slack group wasn\'t enough — they needed tiered memberships, integrated video rooms, member management, and a billing system that could grow.",
+    headline: "A full production SaaS platform for a UK founder community, real billing, real video, real infrastructure.",
+    challenge: "The Business Circle needed a dedicated platform for its founder community. A Slack group wasn\'t enough, they needed tiered memberships, integrated video rooms, member management, and a billing system that could grow.",
     solution: "Built with Next.js, Auth.js multi-role authentication, Stripe subscription billing, and LiveKit video rooms. PostgreSQL with Drizzle ORM handles the data layer, with the stack deployed through Docker Compose on a VPS.",
     outcomeClaimIds: [
       "project.business-circle.outcome.billing-day-one",
@@ -444,12 +444,12 @@ export const projects: Project[] = [
       "what-is-a-web-application",
     ],
     accentColor: "#14b8a6",
-    gradient: "from-teal-500/10 to-cyan-600/5",
+    gradient: "from-teal-500/10 to-amber-600/5",
     heroImage: "/images/projects/prymal/hero.jpg",
     thumbImage: "/images/projects/prymal/thumb.jpg",
     imageKind: "cover-card",
     blurDataURL: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAGCAIAAAB1kpiRAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAxUlEQVR4nAG6AEX/AJXa0Lr//K346nq5r1WIgj1pYiJDQB9CPyNJRBs8OACT1s2x/PGT1s1WiYM4ZF4qU00lRkMuVE81YVw5ZWMAUIF9L1ZSMlpULlRPVXdzSGhjGTY1Fzk3Fjk4Jk1PABMpJhk2NRo/PDBXU7bZ18Hl5SlNTxY5PBAyNQAcJAAADA5Mc3pFbnY4XWVGcH4rT1xEaXQrSlgQMDkABxgAAAoKGTk6NV9gUYKDda6tda+vVYaLNV1mDi05AAAW7Iw/N+zrhtQAAAAASUVORK5CYII=",
-    credit: "Made by Rhys · ScaleSmiths co-founder",
+    credit: "Made by Rhys Lacy · ScaleSmiths co-founder",
     portfolioGroup: "product-platform",
     repoUrl: "https://github.com/TheFridey/Prymal",
   },
@@ -498,13 +498,13 @@ export const projects: Project[] = [
       "what-is-a-web-application",
       "when-does-a-business-need-custom-software",
     ],
-    accentColor: "#22d3ee",
-    gradient: "from-cyan-400/10 to-amber-200/5",
+    accentColor: "#e8a045",
+    gradient: "from-amber-400/10 to-amber-200/5",
     heroImage: "/images/projects/veteranfinder/hero.jpg",
     thumbImage: "/images/projects/veteranfinder/thumb.jpg",
     imageKind: "cover-card",
     blurDataURL: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAGCAIAAAB1kpiRAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAxUlEQVR4nAG6AEX/AJqq9LfH/6S0/3yJzVtpm0JNdi05WCQwUCc1VRwoSACUpvCsvf+RoexKV4s7SHIpNlsgLEsxPWA5R3A5RnYAV2SUMT1gPktxdoKlX2qKZW+LWGF+IixMFSFCKDRfAB0lNxkkQTI9X+/9/+v3/+/9/+Lu/yo3XBAeQQgXNAAKDxxebJlPXI00QW5ZZp8zQW9HVYA7SHAYJUoABSQAAAYYGydHOEVzU1+cbnfCcHjEWmamOER5EiBJAAEjv/BF0IdbfaYAAAAASUVORK5CYII=",
-    credit: "Made by Rhys · ScaleSmiths co-founder",
+    credit: "Made by Rhys Lacy · ScaleSmiths co-founder",
     portfolioGroup: "product-platform",
     repoUrl: "https://github.com/TheFridey/VF",
   },
@@ -539,7 +539,7 @@ export const services: Service[] = [
   {
     tier: "Growth",
     range: "Scoped after discovery",
-    pitch: "E-commerce, bookings, integrations. For businesses ready to make digital a real revenue channel — not just a brochure.",
+    pitch: "E-commerce, bookings, integrations. For businesses ready to make digital a real revenue channel, not just a brochure.",
     features: ["E-commerce / bookings", "Custom integrations", "CMS setup", "Analytics + conversion", "Priority support"],
     icon: "trending-up",
     featured: true,
@@ -560,13 +560,13 @@ export type ManagedServiceAvailability = "included" | "available" | "optional"
 export const digitalGrowthPartnerships: Array<{ name: string; price: string; priceClaimId: string; desc: string; managedEmail: ManagedServiceAvailability }> = [
   { name: "Maintenance", price: "Scoped separately", priceClaimId: "price.maintenance-retainer", desc: "Hosting, updates, uptime monitoring and minor fixes.", managedEmail: "available" },
   { name: "Growth Partner", price: "Scoped separately", priceClaimId: "price.growth-retainer", desc: "Maintenance plus monthly performance reviews and improvements.", managedEmail: "available" },
-  { name: "Ecosystem", price: "Scoped separately", priceClaimId: "price.ecosystem-retainer", desc: "Full ongoing partnership — development, strategy and advisory support.", managedEmail: "available" },
+  { name: "Ecosystem", price: "Scoped separately", priceClaimId: "price.ecosystem-retainer", desc: "Full ongoing partnership, development, strategy and advisory support.", managedEmail: "available" },
 ]
 
 export const faqs = [
   {
     q: "What does ScaleSmiths do?",
-    a: "ScaleSmiths is a founder-led business growth and engineering company. We identify commercial constraints, build websites, e-commerce platforms, SaaS applications, automation and custom systems, and can remain involved through a Digital Growth Partnership. Based in Hucknall, Nottinghamshire, we work with clients across the UK and internationally.",
+    a: "ScaleSmiths is a founder-led business growth and engineering company. We identify commercial constraints, build websites, e-commerce platforms, SaaS applications, automation and custom systems, and can remain involved through a Growth Partnership. Based in Hucknall, Nottinghamshire, we work with clients across the UK and internationally.",
   },
   {
     q: "How much does a website cost?",
@@ -590,6 +590,6 @@ export const faqs = [
   },
   {
     q: "Is managed business email included in a ScaleSmiths plan?",
-    a: "Managed Business Email can be part of an agreed Digital Growth Partnership or purchased as a standalone service. Partnership inclusion and requirements are defined in the client proposal rather than inferred from the standalone three-mailbox package.",
+    a: "Managed Business Email can be part of an agreed Growth Partnership or purchased as a standalone service. Partnership inclusion and requirements are defined in the client proposal rather than inferred from the standalone three-mailbox package.",
   },
 ]

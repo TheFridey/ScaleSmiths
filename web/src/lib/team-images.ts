@@ -1,5 +1,5 @@
 /**
- * Real founder photography only — never stock, AI-generated or illustrative portraits.
+ * Real founder photography only, never stock, AI-generated or illustrative portraits.
  *
  * To publish a photo:
  *   1. Export a compressed WebP (portraits ~1200x1500, 4:5; the pair shot ~1600x1067, 3:2),
@@ -18,22 +18,35 @@ export interface TeamImage {
 }
 
 export const teamImages = {
+  /** Forge-mountain brand mural portrait, primary profile / Person schema image. */
   rhys: {
-    src: "/images/team/rhys.webp",
-    alt: "Rhys, co-founder and technical lead of ScaleSmiths, in a ScaleSmiths polo",
+    // Versioned filename so browsers/CDN/_next/image cannot keep serving the prior
+    // `rhys.webp` bytes after an in-place asset replacement (max-age=31536000).
+    src: "/images/team/rhys-2026.webp",
+    alt: "Rhys Lacy, co-founder of ScaleSmiths, in a branded polo against the forge-mountain mural",
     aspect: "4 / 5",
     available: true,
   },
+  /** Studio/office portrait, card and homepage trust contexts. */
+  rhysOffice: {
+    src: "/images/team/rhys-office.webp",
+    alt: "Rhys Lacy, co-founder of ScaleSmiths, standing in the branded office by the wall logo",
+    aspect: "4 / 5",
+    available: true,
+  },
+  /** Branded office portrait, primary profile / cards / Person schema image. */
   trevor: {
-    src: "/images/team/trevor.webp",
-    alt: "Trevor Newton-Bradley, co-founder and commercial lead of ScaleSmiths, in a ScaleSmiths polo",
+    // Versioned filename so browsers/CDN/_next/image cannot keep serving the prior
+    // `trevor.webp` bytes after an in-place asset replacement (max-age=31536000).
+    src: "/images/team/trevor-2026.webp",
+    alt: "Trevor Newton-Bradley, co-founder of ScaleSmiths, in a branded polo in the office",
     aspect: "4 / 5",
     available: true,
   },
   // TODO(owner): supply /images/team/rhys-trevor.webp (both founders together) and describe it in the alt text.
   founders: {
     src: "/images/team/rhys-trevor.webp",
-    alt: "ScaleSmiths co-founders Rhys and Trevor Newton-Bradley",
+    alt: "ScaleSmiths co-founders Rhys Lacy and Trevor Newton-Bradley",
     aspect: "3 / 2",
     available: false,
   },

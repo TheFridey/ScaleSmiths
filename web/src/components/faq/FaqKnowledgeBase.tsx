@@ -199,7 +199,7 @@ export function FaqKnowledgeBase({ categories }: { categories: FaqCategoryView[]
                             <ArrowRight size={13} aria-hidden="true" className="translate-y-0.5 shrink-0 text-acc transition-transform group-hover/link:translate-x-0.5" />
                             <span>
                               <span className="font-medium text-t1">{link.label}</span>
-                              {link.description ? <span className="text-t3"> — {link.description}</span> : null}
+                              {link.description ? <span className="text-t3">: {link.description}</span> : null}
                             </span>
                           </Link>
                         </li>

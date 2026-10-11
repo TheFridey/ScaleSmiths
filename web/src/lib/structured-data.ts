@@ -182,7 +182,7 @@ export function buildFounderProfileSchemas(founder: Founder, base: string, env?:
     {
       "@context": CONTEXT,
       "@type": "ProfilePage",
-      name: `${founder.name} — Co-founder of ScaleSmiths`,
+      name: `${founder.name}: Co-founder of ScaleSmiths`,
       url: `${base}${path}`,
       isPartOf: { "@id": websiteId(base) },
       mainEntity: buildPersonSchema(founder, base, env),

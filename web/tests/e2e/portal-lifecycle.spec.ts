@@ -179,23 +179,23 @@ test("direct URLs cannot cross client boundaries or expose unpublished records",
     await expectSecretsHidden(page, fixture.clientA, fixture.clientB)
 
     await page.goto(`/portal/${fixture.clientA.portalClientId}/requests/${fixture.clientB.visibleRequestId}`)
-    await expect(page.getByRole("heading", { name: "Page not found." })).toBeVisible()
+    await expect(page.getByRole("heading", { name: /that page isn't here/i })).toBeVisible()
     await expect(page.getByText(fixture.clientB.visibleRequestTitle)).toHaveCount(0)
 
     await page.goto(`/portal/${fixture.clientA.portalClientId}/reports/${fixture.clientB.publishedReportId}`)
-    await expect(page.getByRole("heading", { name: "Page not found." })).toBeVisible()
+    await expect(page.getByRole("heading", { name: /that page isn't here/i })).toBeVisible()
     await expect(page.getByText(fixture.clientB.publishedReportPhrase)).toHaveCount(0)
 
     await page.goto(`/portal/${fixture.clientA.portalClientId}/reports/${fixture.clientA.unpublishedReportId}`)
-    await expect(page.getByRole("heading", { name: "Page not found." })).toBeVisible()
+    await expect(page.getByRole("heading", { name: /that page isn't here/i })).toBeVisible()
     await expect(page.getByText(fixture.clientA.unpublishedReportTitle)).toHaveCount(0)
 
     await page.goto(`/portal/${fixture.clientA.portalClientId}/invoices/${encodeURIComponent(fixture.clientB.publishedInvoiceNumber)}`)
-    await expect(page.getByRole("heading", { name: "Page not found." })).toBeVisible()
+    await expect(page.getByRole("heading", { name: /that page isn't here/i })).toBeVisible()
     await expect(page.getByText(fixture.clientB.publishedInvoiceNumber)).toHaveCount(0)
 
     await page.goto(`/portal/${fixture.clientA.portalClientId}/invoices/${encodeURIComponent(fixture.clientA.unpublishedInvoiceNumber)}`)
-    await expect(page.getByRole("heading", { name: "Page not found." })).toBeVisible()
+    await expect(page.getByRole("heading", { name: /that page isn't here/i })).toBeVisible()
     await expect(page.getByText(fixture.clientA.unpublishedInvoiceNumber)).toHaveCount(0)
 
     const foreignPdf = await portalApiRequest(page, `/portal/api/invoices/${encodeURIComponent(fixture.clientB.publishedInvoiceNumber)}/pdf`)

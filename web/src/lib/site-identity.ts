@@ -23,7 +23,7 @@ export const BUSINESS_LOCATION = {
 
 export const SERVICE_AREA_STATEMENT = "Serving businesses across the UK"
 export const CONTACT_EMAIL = legalEntity.contactEmail
-export const LOGO_ASSET = { src: "/brand/scalesmiths-logo-full.png" } as const
+export const LOGO_ASSET = { src: "/brand/scalesmiths-mark.png" } as const
 
 export function siteBaseUrl(siteUrl: string | undefined = process.env.NEXT_PUBLIC_SITE_URL): string {
   return (siteUrl || DEFAULT_SITE_URL).replace(/\/+$/, "")

@@ -23,7 +23,7 @@ export function FounderCard({ founder }: { founder: Founder }) {
     >
       <div className="grid gap-6 sm:grid-cols-[180px_1fr] sm:items-end">
         <FounderPortrait
-          image={founder.photo}
+          image={founder.cardPhoto ?? founder.photo}
           monogram={founder.monogram}
           accent={founder.accent}
           sizes="(min-width: 640px) 180px, 100vw"

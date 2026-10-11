@@ -52,17 +52,17 @@ export function meetsWcagAaUi(foreground: string, background: string): boolean {
   return contrastRatio(foreground, background) >= 3
 }
 
-/** Canonical public-site token pairs that must remain AA-safe. */
+/** Canonical public-site token pairs that must remain AA-safe (forge palette). */
 export const PUBLIC_CONTRAST_PAIRS = [
-  { name: "body on bg", fg: "#f8fbff", bg: "#07111f", largeText: false },
-  { name: "t2 on bg", fg: "#b9c8d9", bg: "#07111f", largeText: false },
-  { name: "t3 on bg (large/UI)", fg: "#7890a7", bg: "#07111f", largeText: true },
-  { name: "acc ink on cyan CTA", fg: "#04131c", bg: "#22d3ee", largeText: false },
-  { name: "paper ink on paper", fg: "#0e1a28", bg: "#c2d0de", largeText: false },
-  { name: "paper text on paper", fg: "#1c3144", bg: "#c2d0de", largeText: false },
-  { name: "paper muted on paper (large/UI)", fg: "#3a5368", bg: "#c2d0de", largeText: true },
-  { name: "paper muted on paper (body)", fg: "#3a5368", bg: "#c2d0de", largeText: false },
-  { name: "paper text on paper-soft", fg: "#1c3144", bg: "#b3c3d4", largeText: false },
-  { name: "acc on paper (link)", fg: "#0a5a6e", bg: "#c2d0de", largeText: false },
-  { name: "CTA ink on paper-acc", fg: "#f8fbff", bg: "#0a5a6e", largeText: false },
+  { name: "body on bg", fg: "#f5efe6", bg: "#0b0a08", largeText: false },
+  { name: "t2 on bg", fg: "#c9bdb0", bg: "#0b0a08", largeText: false },
+  { name: "t3 on bg (large/UI)", fg: "#95887a", bg: "#0b0a08", largeText: true },
+  { name: "acc ink on gold CTA", fg: "#1a1208", bg: "#e8a045", largeText: false },
+  { name: "paper ink on paper", fg: "#1a140e", bg: "#d9d0c4", largeText: false },
+  { name: "paper text on paper", fg: "#2c241c", bg: "#d9d0c4", largeText: false },
+  { name: "paper muted on paper (large/UI)", fg: "#5c5348", bg: "#d9d0c4", largeText: true },
+  { name: "paper muted on paper (body)", fg: "#5c5348", bg: "#d9d0c4", largeText: false },
+  { name: "paper text on paper-soft", fg: "#2c241c", bg: "#ccc3b6", largeText: false },
+  { name: "acc on paper (link)", fg: "#7a3f12", bg: "#d9d0c4", largeText: false },
+  { name: "CTA ink on paper-acc", fg: "#f5efe6", bg: "#7a3f12", largeText: false },
 ] as const

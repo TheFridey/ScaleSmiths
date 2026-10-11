@@ -3,7 +3,9 @@
 import Link from "next/link"
 import { Fragment, useLayoutEffect, useRef } from "react"
 import { m, useReducedMotion } from "motion/react"
-import { ArrowRight, ArrowUpRight, MapPin } from "lucide-react"
+import { ArrowRight, ArrowUpRight } from "lucide-react"
+import { HeroEmbers } from "@/components/HeroEmbers"
+import { HeroForgeVideo } from "@/components/HeroForgeVideo"
 import { motionStagger, revealMask, revealSoft, staggerContainer } from "@/lib/motion"
 
 const HERO_LINES = ["FORGE YOUR", "DIGITAL EDGE"] as const
@@ -25,7 +27,7 @@ function renderHeroLine(text: string) {
 
 /**
  * First viewport budget: brand atmosphere, one headline, one supporting sentence,
- * one CTA group. Offer labels and verified stats live in the following bands.
+ * one CTA group. Embers + forge plate carry the visual; no secondary marketing clutter.
  */
 export function Hero() {
   const heroRef = useRef<HTMLElement>(null)
@@ -40,7 +42,6 @@ export function Hero() {
       lines.forEach((line) => {
         const mask = line.parentElement
         if (!mask) return
-        // Reset before measuring so scrollWidth reflects the true unscaled line.
         mask.style.removeProperty("transform")
         const maxWidth = Math.max(240, root.clientWidth - 48)
         const scale = Math.min(1, maxWidth / Math.max(1, line.scrollWidth))
@@ -66,54 +67,78 @@ export function Hero() {
   return (
     <section
       ref={heroRef}
-      className="hero-grid-bg relative flex min-h-[min(88vh,920px)] w-full max-w-[100vw] flex-col items-center justify-center overflow-hidden px-6 pb-20 pt-16 text-center md:px-12 md:pb-24 md:pt-20"
+      className="hero-grid-bg relative flex min-h-[min(92vh,960px)] w-full max-w-[100vw] flex-col items-center justify-center overflow-hidden px-6 pb-28 pt-20 text-center md:px-12 md:pb-32 md:pt-24"
       aria-label="ScaleSmiths - forge your digital edge"
     >
       <div className="hero-scene-fallback absolute inset-0" data-hero-scene="static" aria-hidden="true" />
 
+      {/* Forge atmosphere still-frame, under video / as fallback */}
+      <div
+        className="pointer-events-none absolute inset-0 z-[1] opacity-[0.58] md:opacity-[0.64]"
+        aria-hidden="true"
+        style={{
+          backgroundImage: "url(/brand/scalesmiths-forge-atmosphere.webp)",
+          backgroundSize: "cover",
+          backgroundPosition: "center 62%",
+          maskImage: "linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.28) 14%, rgba(0,0,0,0.72) 44%, rgba(0,0,0,0.98) 74%, rgba(0,0,0,0.7) 100%)",
+          WebkitMaskImage: "linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.28) 14%, rgba(0,0,0,0.72) 44%, rgba(0,0,0,0.98) 74%, rgba(0,0,0,0.7) 100%)",
+        }}
+      />
+
+      <HeroForgeVideo />
+
+      {/* Soft vignette so type stays readable without burying the forge video */}
+      <div
+        className="pointer-events-none absolute inset-0 z-[3] bg-[radial-gradient(ellipse_at_50%_36%,transparent_0%,rgba(11,10,8,0.1)_58%,rgba(11,10,8,0.48)_100%)]"
+        aria-hidden="true"
+      />
+
+      <HeroEmbers />
+
       <m.div
         className="relative z-10 flex w-full flex-col items-center"
         variants={staggerContainer}
-        initial={false}
+        initial={reducedMotion ? false : "hidden"}
         animate="visible"
-        transition={{ delayChildren: 0.02, staggerChildren: motionStagger.tight }}
+        transition={{ delayChildren: 0.04, staggerChildren: motionStagger.tight }}
       >
-        <m.div variants={revealSoft} className="hero-badge font-dm" role="status">
-          <span className="hero-badge-dot" aria-hidden="true" />
-          Find the next move. Build it properly. Keep improving.
-        </m.div>
+        {/* Local text scrim, keeps brand/headline readable across forge brightness cycles */}
+        <div
+          aria-hidden="true"
+          data-hero-text-scrim
+          className="hero-text-scrim pointer-events-none absolute left-1/2 top-1/2 z-0 h-[min(78%,38rem)] w-[min(100%,52rem)] -translate-x-1/2 -translate-y-[46%] rounded-[42%]"
+        />
+        <m.p
+          variants={revealSoft}
+          className="hero-copy relative mb-8 font-syne text-xs font-semibold uppercase tracking-[0.28em] text-acc md:mb-10 md:tracking-[0.32em]"
+        >
+          ScaleSmiths
+        </m.p>
 
-        <h1 className="mb-7 w-full max-w-full overflow-hidden">
+        <h1 className="relative mb-7 w-full max-w-full overflow-hidden md:mb-8">
           <span className="hero-line-overflow block">
-            <m.span variants={revealMask} className="hero-h hero-outline font-syne inline-block whitespace-nowrap" aria-label={HERO_LINES[0]}>
+            <m.span variants={revealMask} className="hero-h hero-outline hero-copy font-syne inline-block whitespace-nowrap" aria-label={HERO_LINES[0]}>
               {renderHeroLine(HERO_LINES[0])}
             </m.span>
           </span>
           <span className="hero-line-overflow block">
-            <m.span variants={revealMask} className="hero-h text-t1 font-syne inline-block whitespace-nowrap" aria-label={HERO_LINES[1]}>
+            <m.span variants={revealMask} className="hero-h hero-copy text-t1 font-syne inline-block whitespace-nowrap" aria-label={HERO_LINES[1]}>
               {renderHeroLine(HERO_LINES[1])}
             </m.span>
           </span>
         </h1>
 
-        <m.p variants={revealSoft} className="mb-8 w-full max-w-[620px] font-dm text-[clamp(15px,1.8vw,18px)] font-light leading-relaxed text-t2">
-          ScaleSmiths helps businesses find what is holding growth back, build the right solution,
-          and keep improving it — across websites, visibility, systems, automation and ongoing digital growth.
+        <m.p variants={revealSoft} className="hero-copy relative mb-10 w-full max-w-[560px] font-dm text-[clamp(15px,1.7vw,18px)] font-light leading-relaxed text-t2 md:mb-12">
+          Find what is holding growth back, build the right solution, and keep improving it:
+          websites, systems, automation and ongoing digital growth.
         </m.p>
 
-        <m.div variants={revealSoft} className="mb-10 flex items-center gap-2">
-          <MapPin size={12} className="text-t3" aria-hidden="true" />
-          <span className="font-dm text-xs tracking-wider text-t3">
-            Hucknall, Nottinghamshire, UK {"\u00b7"} Working nationally
-          </span>
-        </m.div>
-
-        <m.div variants={revealSoft} className="flex flex-wrap justify-center gap-3">
+        <m.div variants={revealSoft} className="relative flex flex-wrap justify-center gap-3">
           <Link href="/quote" prefetch={false} className="btn-primary font-dm">
             Start a Project <ArrowRight size={16} aria-hidden="true" />
           </Link>
-          <Link href="/digital-growth-partnership" prefetch={false} className="btn-ghost font-dm">
-            Growth Partnership <ArrowUpRight size={16} aria-hidden="true" />
+          <Link href="/quote?intent=strategy_call" prefetch={false} className="btn-ghost font-dm">
+            Request a Strategy Call <ArrowUpRight size={16} aria-hidden="true" />
           </Link>
         </m.div>
       </m.div>

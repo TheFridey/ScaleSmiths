@@ -48,7 +48,7 @@ export const faqCategories: readonly FaqCategory[] = [
   {
     slug: "ongoing-support",
     label: "Ongoing support",
-    description: "What happens after launch, what a Digital Growth Partnership covers, and where the boundaries sit.",
+    description: "What happens after launch, what a Growth Partnership covers, and where the boundaries sit.",
     questionIds: ["support", "support-included", "manage-external-site", "content-updates", "seo-ongoing", "something-breaks", "monitoring", "hosting-included", "request-priority", "new-features"],
     services: ["/digital-growth-partnership", "/website-maintenance-nottingham", "/managed-website-hosting"],
     insights: ["what-does-website-maintenance-include", "what-happens-when-your-website-goes-down"],
@@ -59,9 +59,9 @@ export const faqCategories: readonly FaqCategory[] = [
     label: "Custom development",
     description: "CRMs, portals, integrations, automation and when custom software is genuinely justified.",
     questionIds: ["custom-web-development", "custom-software", "crm", "customer-portals", "stripe", "integrations", "process-automation", "replace-spreadsheets", "internal-admin-systems", "software-scaling", "phases"],
-    services: ["/custom-software-development-uk", "/custom-web-app-development-uk", "/business-automation-nottingham"],
+    services: ["/custom-software-development-uk", "/custom-web-app-development-uk", "/business-automation-nottingham", "/enterprise"],
     insights: ["what-is-a-web-application", "when-does-a-business-need-custom-software"],
-    cta: { href: "/work", label: "View related work", description: "The systems behind these answers — CRMs, portals, billing and admin tooling in production." },
+    cta: { href: "/work", label: "View related work", description: "The systems behind these answers, CRMs, portals, billing and admin tooling in production." },
   },
   {
     slug: "infrastructure",
@@ -135,6 +135,7 @@ export const FAQ_CATEGORY_FOR_INSIGHT_TOPIC: Record<string, string> = {
   seo: "seo",
   development: "custom-development",
   infrastructure: "infrastructure",
+  enterprise: "custom-development",
 }
 
 /** The category an answer belongs to, so a page can deep-link to the right group on /faq. */

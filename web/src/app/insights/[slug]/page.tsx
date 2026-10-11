@@ -86,7 +86,7 @@ export default async function InsightPage({ params }: Props) {
 
             {!isPublished ? (
               <p className="mt-6 rounded-lg border border-dashed border-b2 bg-s1 px-4 py-3 font-dm text-sm text-t2">
-                {insight.status === "planned" ? "Planned article" : "Draft article"} — development preview only. Not listed, linked or indexed until {author.firstName} publishes it.
+                {insight.status === "planned" ? "Planned article" : "Draft article"}, development preview only. Not listed, linked or indexed until {author.firstName} publishes it.
               </p>
             ) : null}
 
@@ -128,7 +128,31 @@ export default async function InsightPage({ params }: Props) {
               <div className="mt-14">
                 <AuthorCard founder={author} />
               </div>
-              {services[0] ? <aside className="mt-8 rounded-2xl border border-acc/20 bg-s1 p-6 md:p-8"><p className="text-xs font-semibold uppercase tracking-[.14em] text-acc">A useful next step</p><h2 className="mt-3 font-syne text-2xl font-bold">Apply this to your own website or system.</h2><p className="mt-3 text-sm leading-relaxed text-t2">Explore {services[0].label.toLowerCase()} or bring the current situation to ScaleSmiths for a scoped conversation.</p><Link href={services[0].href} prefetch={false} className="btn-primary mt-6">Explore {services[0].label} <ArrowRight size={16} aria-hidden="true" /></Link></aside> : null}
+              {services[0] ? (
+                <aside className="mt-8 rounded-2xl border border-acc/20 bg-s1 p-6 md:p-8">
+                  <p className="text-xs font-semibold uppercase tracking-[.14em] text-acc">A useful next step</p>
+                  <h2 className="mt-3 font-syne text-2xl font-bold">
+                    {insight.category === "enterprise"
+                      ? "Apply this to your operating system."
+                      : "Apply this to your own website or system."}
+                  </h2>
+                  <p className="mt-3 text-sm leading-relaxed text-t2">
+                    {insight.category === "enterprise"
+                      ? "Explore enterprise systems, review how we deliver complex work, or start a focused discovery conversation."
+                      : `Explore ${services[0].label.toLowerCase()} or bring the current situation to ScaleSmiths for a scoped conversation.`}
+                  </p>
+                  <div className="mt-6 flex flex-wrap gap-3">
+                    <Link href={services[0].href} prefetch={false} className="btn-primary">
+                      Explore {services[0].label} <ArrowRight size={16} aria-hidden="true" />
+                    </Link>
+                    {insight.category === "enterprise" ? (
+                      <Link href="/enterprise/contact" prefetch={false} className="btn-ghost">
+                        Start enterprise discovery
+                      </Link>
+                    ) : null}
+                  </div>
+                </aside>
+              ) : null}
             </div>
             {toc.length >= 3 ? (
               <div className="hidden lg:block">

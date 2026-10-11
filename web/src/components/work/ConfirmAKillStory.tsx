@@ -31,7 +31,7 @@ const platformLayers = [
 
 
 const scope = [
-  { title: "Complete website rebuild", detail: "A full custom Astro build replacing the previous WordPress presentation — new templates, new content structure and new enquiry journeys, not a theme reskin over the same site." },
+  { title: "Complete website rebuild", detail: "A full custom Astro build replacing the previous WordPress presentation, new templates, new content structure and new enquiry journeys, not a theme reskin over the same site." },
   { title: "Modern responsive front end", detail: "Mobile-first pest and service selection, with the delivered experience captured across desktop, tablet and mobile rather than described." },
   { title: "Page and service architecture", detail: "Separate domestic and commercial service journeys, Nottinghamshire coverage pages and a searchable advice hub, each with an explicit route to a quote." },
   { title: "SEO foundations", detail: "Established advice URLs preserved, canonical metadata and structured data applied across service, coverage and article routes, with a deliberate internal-link architecture between them." },
@@ -56,7 +56,7 @@ export function ConfirmAKillStory() {
         <div className="mx-auto max-w-[1240px]">
           <AnimateIn className="grid gap-10 lg:grid-cols-[.75fr_1.25fr] lg:items-end">
             <div>
-              <p className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">The existing opportunity</p>
+              <p className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">Tracking / measurement</p>
               <h2 id="cak-baseline" className="mt-2 font-syne text-[clamp(30px,4vw,48px)] font-extrabold tracking-[-.03em]">Visible in search. Rarely chosen.</h2>
               <p className="mt-5 font-dm text-base leading-relaxed text-t2">
                 Before launch, Confirm-A-Kill was already appearing frequently in Google Search, generating 57.9K impressions over three months. Only 0.3% of those impressions converted into organic clicks, exposing a clear opportunity to improve search-result relevance and the journey after the click.
@@ -66,7 +66,7 @@ export function ConfirmAKillStory() {
               </p>
             </div>
             <div>
-              <p className="mb-4 font-dm text-[11px] font-semibold uppercase tracking-[.14em] text-t3">Previous website — 3 month Google Search Console baseline</p>
+              <p className="mb-4 font-dm text-[11px] font-semibold uppercase tracking-[.14em] text-t3">Previous website, 3 month Google Search Console baseline</p>
               <dl className="grid grid-cols-2 overflow-hidden rounded-2xl border border-b1 bg-bg md:grid-cols-4">
                 {baseline.map((item) => (
                   <div key={item.label} className="border-b border-r border-b1 p-5 last:border-r-0 md:p-6">

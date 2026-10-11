@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none" role="img" aria-hidden="true">
+  <defs>
+    <linearGradient id="ssGold" x1="30" y1="16" x2="170" y2="118" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#f8e2b8"/>
+      <stop offset="35%" stop-color="#e8a045"/>
+      <stop offset="72%" stop-color="#d4782a"/>
+      <stop offset="100%" stop-color="#a85216"/>
+    </linearGradient>
+    <linearGradient id="ssSilver" x1="30" y1="82" x2="170" y2="186" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#f7f4ef"/>
+      <stop offset="40%" stop-color="#d2cbc1"/>
+      <stop offset="100%" stop-color="#7d756c"/>
+    </linearGradient>
+  </defs>
+  <!-- Top coding bracket (&lt;) — forge gold -->
+  <path fill="url(#ssGold)" d="
+    M168 24
+    L96 72
+    L168 120
+    L140 120
+    L96 90
+    L52 120
+    L52 92
+    L96 62
+    L52 32
+    L52 24
+    Z"/>
+  <!-- Bottom coding bracket (&gt;) — steel silver -->
+  <path fill="url(#ssSilver)" d="
+    M32 80
+    L104 128
+    L32 176
+    L60 176
+    L104 146
+    L148 176
+    L148 148
+    L104 118
+    L148 88
+    L148 80
+    Z"/>
+</svg>

@@ -1,18 +1,23 @@
 import { ArrowRight } from "lucide-react"
 import { AnimateIn } from "./AnimateIn"
+import { ProjectPlannerCta } from "@/components/ExperiencePreference"
 import { Logo } from "./Logo"
 import { MagneticLink } from "./MagneticLink"
 
 export function CTA() {
   return (
-    <section aria-label="Call to action" className="px-6 py-24 md:px-12">
-      <AnimateIn className="relative mx-auto max-w-[760px] overflow-hidden rounded-3xl border border-acc/25 bg-gradient-to-br from-s2 via-s1 to-acc/[.07] px-8 py-[72px] text-center md:px-16">
+    <section aria-label="Call to action" className="px-6 py-28 md:px-12">
+      <AnimateIn className="relative mx-auto max-w-[760px] overflow-hidden rounded-3xl border border-acc/28 bg-gradient-to-br from-s2 via-s1 to-acc/[.1] px-8 py-[72px] text-center shadow-[0_28px_90px_rgba(232,160,69,0.1)] md:px-16">
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-acc/50 to-transparent"
+          className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-acc/55 to-transparent"
         />
-        <div className="float-anim mb-7 inline-block" aria-hidden="true">
-          <Logo size={44} showName={false} href="" />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -bottom-20 left-1/2 h-48 w-[78%] -translate-x-1/2 rounded-full bg-acc/12 blur-3xl"
+        />
+        <div className="float-anim mb-8 inline-block" aria-hidden="true">
+          <Logo size={52} showName={false} href="" />
         </div>
         <h2 className="mb-4 font-syne text-[clamp(28px,4.5vw,48px)] font-extrabold tracking-[-0.025em]">
           Ready to build something<br />that actually scales?
@@ -24,6 +29,9 @@ export function CTA() {
         <MagneticLink href="/quote?intent=strategy_call" className="btn-primary group inline-flex font-dm">
           Request a Strategy Call <ArrowRight size={16} aria-hidden="true" />
         </MagneticLink>
+        <div className="mt-6">
+          <ProjectPlannerCta source="homepage_cta" className="justify-center text-t2 hover:text-acc" />
+        </div>
       </AnimateIn>
     </section>
   )

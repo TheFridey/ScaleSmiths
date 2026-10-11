@@ -19,9 +19,9 @@ export const defaultCookiePreferences: CookiePreferences = {
 }
 
 export const storageInventory = [
-  { name: "ss-client-session", provider: "ScaleSmiths", purpose: "Authenticates an authorised client-portal session.", category: "Strictly necessary", duration: "8 hours", party: "First party", consent: "No — required for the requested portal service" },
-  { name: COOKIE_CONSENT_COOKIE, provider: "ScaleSmiths", purpose: "Records anonymous cookie/storage category choices and policy version.", category: "Strictly necessary", duration: "180 days", party: "First party", consent: "No — required to remember the privacy choice" },
-  { name: "ss_analytics_opt_out", provider: "ScaleSmiths", purpose: "Preserves an analytics objection for compatibility with earlier preference controls.", category: "Strictly necessary", duration: "Up to 1 year", party: "First party", consent: "No — records an objection" },
+  { name: "ss-client-session", provider: "ScaleSmiths", purpose: "Authenticates an authorised client-portal session.", category: "Strictly necessary", duration: "8 hours", party: "First party", consent: "No: required for the requested portal service" },
+  { name: COOKIE_CONSENT_COOKIE, provider: "ScaleSmiths", purpose: "Records anonymous cookie/storage category choices and policy version.", category: "Strictly necessary", duration: "180 days", party: "First party", consent: "No: required to remember the privacy choice" },
+  { name: "ss_analytics_opt_out", provider: "ScaleSmiths", purpose: "Preserves an analytics objection for compatibility with earlier preference controls.", category: "Strictly necessary", duration: "Up to 1 year", party: "First party", consent: "No: records an objection" },
   { name: "ss_experience_preference / scalesmiths.experience", provider: "ScaleSmiths", purpose: "Remembers an experience explicitly selected by the visitor.", category: "Functional", duration: "Up to 1 year / until cleared", party: "First party", consent: "Yes" },
   { name: "scalesmiths.v2.industry", provider: "ScaleSmiths", purpose: "Remembers an industry explicitly selected in the interactive journey.", category: "Functional", duration: "Until cleared", party: "First party", consent: "Yes" },
   { name: "scalesmiths.analytics.session / scalesmiths.analytics.sent", provider: "ScaleSmiths", purpose: "Groups privacy-minimised first-party experience events and prevents duplicates within a browser tab.", category: "Analytics", duration: "Browser tab/session", party: "First party", consent: "Yes" },

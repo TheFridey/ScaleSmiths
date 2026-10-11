@@ -7,8 +7,8 @@ export const QUOTE_BODY_LIMIT_BYTES = 16 * 1024
 export const QUOTE_RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000
 export const QUOTE_RATE_LIMIT_MAX = 3
 
-export type LeadSource = "public_quote" | "interactive_v2" | "business_email" | "business_growth_audit"
-export type FunnelType = "full_quote" | "interactive_v2" | "business_email" | "business_growth_audit"
+export type LeadSource = "public_quote" | "interactive_v2" | "business_email" | "business_growth_audit" | "enterprise"
+export type FunnelType = "full_quote" | "interactive_v2" | "business_email" | "business_growth_audit" | "enterprise"
 
 export interface QuotePayload {
   name?: unknown
@@ -124,32 +124,100 @@ export function validateQuotePayload(payload: QuotePayload): QuoteValidationResu
   const requestedFunnel = cleanString(payload.funnelType, 40)
   const businessEmail = requestedFunnel === "business_email"
   const businessAudit = requestedFunnel === "business_growth_audit"
-  const rawType = cleanString(payload.type, 120)
+  const enterprise = requestedFunnel === "enterprise"
+  const parsedIntent = parseEnquiryIntent(payload.intent)
+  const strategyCall = !businessEmail && !businessAudit && !enterprise
+    && (parsedIntent === "strategy_call" || parsedIntent === "discovery_call")
+  const rawType = cleanString(payload.type, 240)
   const inferredInteractive = rawType.startsWith("ScaleSmiths V2 interactive journey")
-  const funnelType: FunnelType = businessAudit ? "business_growth_audit" : businessEmail ? "business_email" : inferredInteractive ? "interactive_v2" : "full_quote"
-  const leadSource: LeadSource = businessAudit ? "business_growth_audit" : businessEmail ? "business_email" : inferredInteractive ? "interactive_v2" : "public_quote"
+    || rawType.startsWith("ScaleSmiths interactive journey")
+  const funnelType: FunnelType = businessAudit
+    ? "business_growth_audit"
+    : businessEmail
+      ? "business_email"
+      : enterprise
+        ? "enterprise"
+        : inferredInteractive
+          ? "interactive_v2"
+          : "full_quote"
+  const leadSource: LeadSource = businessAudit
+    ? "business_growth_audit"
+    : businessEmail
+      ? "business_email"
+      : enterprise
+        ? "enterprise"
+        : inferredInteractive
+          ? "interactive_v2"
+          : "public_quote"
   const goal = cleanString(payload.goal, 240)
   const phone = cleanString(payload.phone, 40)
+  const needsLimit = enterprise ? 14 : 8
 
   const data: ValidQuotePayload = {
     name: cleanString(payload.name, 120),
     email: cleanString(payload.email, 254).toLowerCase(),
     biz: cleanString(payload.biz, 160),
     websiteUrl: cleanString(payload.websiteUrl, 240),
-    businessType: businessAudit ? cleanString(payload.businessType, 120) || "Business Growth Audit customer" : businessEmail ? "Business email customer" : cleanString(payload.businessType, 120),
-    type: businessAudit ? "Business Growth Audit" : businessEmail ? "Managed Business Email" : rawType,
-    budget: businessAudit ? "£395 one-time audit" : businessEmail ? "£15 starting service" : cleanString(payload.budget, 80),
-    timeframe: businessAudit ? "Delivery date to be confirmed before work begins" : businessEmail ? "Email onboarding" : cleanString(payload.timeframe, 120),
+    businessType: businessAudit
+      ? cleanString(payload.businessType, 120) || "Business Growth Audit customer"
+      : businessEmail
+        ? "Business email customer"
+        : enterprise
+          ? cleanString(payload.businessType, 120) || "Enterprise organisation"
+          : strategyCall
+            ? cleanString(payload.businessType, 120) || "Strategy call enquiry"
+            : cleanString(payload.businessType, 120),
+    type: businessAudit
+      ? "Business Growth Audit"
+      : businessEmail
+        ? "Managed Business Email"
+        : enterprise
+          ? rawType || "Enterprise System"
+          : strategyCall
+            ? rawType || (parsedIntent === "discovery_call" ? "Discovery Call" : "Strategy Call")
+            : rawType,
+    budget: businessAudit
+      ? "£395 one-time audit"
+      : businessEmail
+        ? "£15 starting service"
+        : strategyCall
+          ? cleanString(payload.budget, 80) || "To be discussed on call"
+          : cleanString(payload.budget, 80),
+    timeframe: businessAudit
+      ? "Delivery date to be confirmed before work begins"
+      : businessEmail
+        ? "Email onboarding"
+        : cleanString(payload.timeframe, 120),
     goal,
-    needs: businessAudit ? ["Business Growth Audit"] : businessEmail ? ["Managed Business Email"] : Array.isArray(payload.needs)
-      ? payload.needs.map((item) => cleanString(item, 80)).filter(Boolean).slice(0, 8)
-      : [],
-    carePlanInterest: businessAudit ? "Optional implementation after audit" : businessEmail ? "Standalone email enquiry" : cleanString(payload.carePlanInterest, 80),
-    preferredContactMethod: businessAudit || businessEmail ? "Email" : cleanString(payload.preferredContactMethod, 80),
+    needs: businessAudit
+      ? ["Business Growth Audit"]
+      : businessEmail
+        ? ["Managed Business Email"]
+        : Array.isArray(payload.needs)
+          ? payload.needs.map((item) => cleanString(item, 80)).filter(Boolean).slice(0, needsLimit)
+          : [],
+    carePlanInterest: businessAudit
+      ? "Optional implementation after audit"
+      : businessEmail
+        ? "Standalone email enquiry"
+        : enterprise
+          ? cleanString(payload.carePlanInterest, 80) || "Not provided"
+          : strategyCall
+            ? cleanString(payload.carePlanInterest, 80) || "Not provided"
+            : cleanString(payload.carePlanInterest, 80),
+    preferredContactMethod: businessAudit || businessEmail || enterprise
+      ? "Email"
+      : cleanString(payload.preferredContactMethod, 80),
     phone,
     leadSource,
     funnelType,
-    intent: businessAudit ? "business_growth_audit" : businessEmail ? "business_email" : parseEnquiryIntent(payload.intent),
+    intent: businessAudit
+      ? "business_growth_audit"
+      : businessEmail
+        ? "business_email"
+        : enterprise
+          ? "enterprise"
+          : parsedIntent,
     consent: payload.consent === true,
     brief: cleanString(payload.brief, 5000),
     website: cleanString(payload.website, 200),
@@ -158,8 +226,12 @@ export function validateQuotePayload(payload: QuotePayload): QuoteValidationResu
   const missingRequired = businessAudit
     ? !data.name || !data.email || !data.biz || !data.websiteUrl || !data.goal || !data.brief || !data.consent
     : businessEmail
-    ? !data.name || !data.email || !data.biz || !data.goal || !data.brief || !data.consent
-    : !data.name || !data.email || !data.brief || !data.type || !data.budget || !data.timeframe || !data.goal || !data.businessType || !data.preferredContactMethod || !data.consent
+      ? !data.name || !data.email || !data.biz || !data.goal || !data.brief || !data.consent
+      : enterprise
+        ? !data.name || !data.email || !data.biz || !data.phone || !data.goal || !data.brief || !data.consent || !data.budget || !data.timeframe || data.needs.length === 0
+        : strategyCall
+          ? !data.name || !data.email || !data.biz || !data.goal || !data.brief || !data.timeframe || !data.preferredContactMethod || !data.consent
+          : !data.name || !data.email || !data.brief || !data.type || !data.budget || !data.timeframe || !data.goal || !data.businessType || !data.preferredContactMethod || !data.consent
 
   if (missingRequired) {
     return { ok: false, status: 400, error: "Please check the required fields and try again." }
@@ -186,12 +258,25 @@ function isSafePublicUrl(value: string) {
 }
 
 export function scoreLeadQuality(payload: ValidQuotePayload): LeadQuality {
+  if (payload.funnelType === "enterprise") {
+    let score = 2
+    if (payload.budget.includes("£250k") || payload.budget.includes("£100k")) score += 2
+    else if (payload.budget.includes("£50k")) score += 1
+    if (!payload.budget.includes("Not yet established") && !payload.budget.includes("Under £25k")) score += 1
+    if (payload.carePlanInterest === "Yes") score += 1
+    if (payload.needs.length >= 2) score += 1
+    if (payload.brief.length > 200) score += 1
+    if (score >= 5) return "high"
+    if (score >= 3) return "medium"
+    return "low"
+  }
+
   let score = 0
 
   if (payload.budget.includes("18,000") || payload.budget.includes("8,000")) score += 2
   if (!payload.budget.includes("Not sure")) score += 1
   if (payload.timeframe.includes("ASAP") || payload.timeframe.includes("4-6") || payload.timeframe.includes("8-12")) score += 1
-  if (payload.needs.includes("Custom Functionality") || payload.needs.includes("Payments") || payload.needs.includes("Digital Growth Partnership") || payload.needs.includes("Care Plan")) score += 1
+  if (payload.needs.includes("Custom Functionality") || payload.needs.includes("Payments") || payload.needs.includes("Growth Partnership") || payload.needs.includes("Digital Growth Partnership") || payload.needs.includes("Care Plan")) score += 1
   if (payload.carePlanInterest === "Yes" || payload.carePlanInterest === "Maybe") score += 1
   if (payload.goal.length > 30 && payload.brief.length > 60) score += 1
 

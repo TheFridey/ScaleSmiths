@@ -54,7 +54,7 @@ export function DigitalEstate() {
               ))}
             </svg>
 
-            <div className="absolute left-1/2 top-1/2 flex h-32 w-32 -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-full border border-acc/35 bg-s1 text-center shadow-[0_0_70px_rgba(34,211,238,.08)]">
+            <div className="absolute left-1/2 top-1/2 flex h-32 w-32 -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-full border border-acc/35 bg-s1 text-center shadow-[0_0_70px_rgba(232,160,69,.08)]">
               <span className="font-dm text-[9px] font-semibold uppercase tracking-[.18em] text-acc">Managed by</span>
               <span className="mt-2 font-syne text-sm font-bold">ScaleSmiths</span>
             </div>
@@ -87,7 +87,7 @@ export function DigitalEstate() {
               <p className="mt-5 font-dm text-base leading-[1.8] text-t2">{active.description}</p>
             </div>
             <p className="mt-10 border-t border-b1 pt-6 font-dm text-xs leading-relaxed text-t3">
-              Every estate is scoped individually. A node represents a capability that may be managed—not an automatic inclusion or invented live status.
+              Every estate is scoped individually. A node represents a capability that may be managed, not an automatic inclusion or invented live status.
             </p>
           </aside>
 
@@ -111,7 +111,7 @@ export function DigitalEstate() {
           </Link>
         </AnimateIn>
         <AnimateIn className="mt-5 flex flex-col justify-between gap-4 rounded-2xl border border-acc/20 bg-acc/[.04] p-5 sm:flex-row sm:items-center">
-          <p className="font-dm text-sm text-t2"><strong className="text-t1">Need professional email only?</strong> Managed Business Email starts from £15 for three 5GB mailboxes, with initial setup included.</p>
+          <p className="font-dm text-sm text-t2"><strong className="text-t1">Need professional email only?</strong> Managed Business Email starts from £15/month for three 5GB mailboxes, with initial setup included.</p>
           <Link href="/services/managed-business-email" prefetch={false} className="group inline-flex shrink-0 items-center gap-2 font-dm text-sm font-semibold text-acc">Explore Managed Email <ArrowRight size={15} className="transition-transform group-hover:translate-x-1" aria-hidden="true" /></Link>
         </AnimateIn>
       </div>

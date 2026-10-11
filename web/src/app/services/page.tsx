@@ -3,6 +3,7 @@ import Link from "next/link"
 import { ArrowRight, CheckCircle2, Mail, ServerCog, Wrench } from "lucide-react"
 import { AnimateIn } from "@/components/AnimateIn"
 import { CTA } from "@/components/CTA"
+import { ProjectPlannerCta } from "@/components/ExperiencePreference"
 import { JsonLd } from "@/components/JsonLd"
 import { ServiceRouteChooser } from "@/components/ServiceRouteChooser"
 import { buildServiceHubSchema, serviceHubItems } from "@/lib/service-pages"
@@ -12,7 +13,7 @@ import { PageBreadcrumbs } from "@/components/Breadcrumbs"
 
 export const metadata: Metadata = {
   title: "Web Design, SEO, Apps & Automation Services",
-  description: "ScaleSmiths services: web design, local SEO, e-commerce, custom web apps, automation, hosting and ongoing Digital Growth Partnerships.",
+  description: "ScaleSmiths services: web design, local SEO, e-commerce, custom web apps, automation, hosting and ongoing Growth Partnerships.",
   alternates: { canonical: "/services" },
 }
 
@@ -26,7 +27,7 @@ export default function ServicesPage() {
         <PageBreadcrumbs className="mb-10" items={[{ name: "Home", path: "/" }, { name: "Services", path: "/services" }]} />
         <AnimateIn className="max-w-[760px]">
           <span className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">Services</span>
-          <h1 className="mt-2 font-syne text-[clamp(38px,7vw,76px)] font-extrabold leading-none tracking-[-0.03em]">
+          <h1 className="page-hero-display mt-2">
             Websites, search visibility and systems built to grow with you.
           </h1>
           <p className="mt-5 font-dm text-lg leading-relaxed text-t2">
@@ -35,14 +36,18 @@ export default function ServicesPage() {
           <div className="mt-8 flex flex-wrap gap-3">
             <Link href="/local-growth" prefetch={false} className="btn-primary font-dm">Explore Local Growth <ArrowRight size={16} aria-hidden="true" /></Link>
             <Link href="/custom-systems" prefetch={false} className="btn-ghost font-dm">Explore Custom Systems</Link>
+            <Link href="/enterprise" prefetch={false} className="btn-ghost font-dm">Enterprise Systems</Link>
             <Link href="/pricing" prefetch={false} className="btn-ghost font-dm">View Pricing Guidance</Link>
+          </div>
+          <div className="mt-5">
+            <ProjectPlannerCta source="services_hub" className="text-t2 hover:text-acc" />
           </div>
         </AnimateIn>
       </section>
 
       <ServiceRouteChooser />
 
-      <section className="px-6 pb-20 md:px-12"><div className="mx-auto grid max-w-[1240px] gap-7 rounded-3xl border border-acc/20 bg-s1 p-7 md:grid-cols-[1fr_auto] md:items-center md:p-10"><div><span className="text-xs font-semibold uppercase tracking-[.14em] text-acc">Not sure what you need yet?</span><h2 className="mt-3 font-syne text-[clamp(30px,4vw,48px)] font-extrabold">Start with the Business Growth Audit.</h2><p className="mt-4 max-w-[720px] text-sm leading-relaxed text-t2">A one-time {formatAuditPrice()} assessment of the customer journey, digital presence, systems and growth opportunities—followed by a prioritised roadmap. The full fee is credited against an eligible subsequent ScaleSmiths build.</p></div><Link href={businessGrowthAudit.slug} className="btn-primary justify-center">Explore the Audit <ArrowRight size={16} /></Link></div></section>
+      <section className="px-6 pb-20 md:px-12"><div className="mx-auto grid max-w-[1240px] gap-7 rounded-3xl border border-acc/20 bg-s1 p-7 md:grid-cols-[1fr_auto] md:items-center md:p-10"><div><span className="text-xs font-semibold uppercase tracking-[.14em] text-acc">Not sure what you need yet?</span><h2 className="mt-3 font-syne text-[clamp(30px,4vw,48px)] font-extrabold">Start with the Business Growth Audit.</h2><p className="mt-4 max-w-[720px] text-sm leading-relaxed text-t2">A one-time {formatAuditPrice()} assessment of the customer journey, digital presence, systems and growth opportunities, followed by a prioritised roadmap. The full fee is credited against an eligible subsequent ScaleSmiths build.</p></div><Link href={businessGrowthAudit.slug} className="btn-primary justify-center">Explore the Audit <ArrowRight size={16} /></Link></div></section>
 
       <section className="px-6 pb-20 md:px-12">
         <div className="mx-auto max-w-[1240px]">
@@ -88,13 +93,13 @@ export default function ServicesPage() {
           <div>
             <span className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">Managed infrastructure</span>
             <h2 id="managed-estate-services" className="mt-3 font-syne text-[clamp(30px,4vw,48px)] font-extrabold tracking-[-.03em]">One accountable partner for what exists and what comes next.</h2>
-            <p className="mt-4 font-dm text-sm leading-[1.8] text-t2">A Digital Growth Partnership can start with an existing third-party website or infrastructure, or continue after a ScaleSmiths build. Priorities, responsibilities and commercial boundaries are agreed around the business.</p>
+            <p className="mt-4 font-dm text-sm leading-[1.8] text-t2">A Growth Partnership can start with an existing third-party website or infrastructure, or continue after a ScaleSmiths build. Priorities, responsibilities and commercial boundaries are agreed around the business.</p>
           </div>
           <div className="grid gap-3 sm:grid-cols-3">
             {[
               { title: "Hosting", body: "Production deployment and infrastructure responsibility where agreed.", Icon: ServerCog },
               { title: "Maintenance", body: "Updates, monitoring and support around the managed system.", Icon: Wrench },
-              { title: "Managed Business Email", body: "Professional custom-domain email from £15, available standalone or inside an agreed managed relationship.", Icon: Mail },
+              { title: "Managed Business Email", body: "Professional custom-domain email from £15/month, available standalone or inside an agreed managed relationship.", Icon: Mail },
             ].map(({ title, body, Icon }) => (
               <article key={title} className="border-l border-b2 pl-5">
                 <Icon size={17} className="text-acc" aria-hidden="true" />

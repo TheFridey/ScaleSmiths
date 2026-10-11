@@ -21,7 +21,8 @@ CI uploads `web-performance-reports` on every run.
 The public site has separate budgets for:
 
 - `/?experience=normal` as the explicit normal rendering of the canonical `/` homepage
-- `/interactive` as the V2 interactive experience
+  (homepage now defaults to the normal site; the query remains for analytics/budget continuity)
+- `/interactive` as the interactive project planner experience
 
 Each route is checked for:
 

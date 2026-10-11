@@ -10,6 +10,7 @@ export default function robots(): MetadataRoute.Robots {
         "/api/",
         "/portal/",
         "/quote/thanks",
+        "/enterprise/contact/thanks",
         "/services/business-growth-audit/start",
         "/services/business-growth-audit/thanks",
         "/services/managed-business-email/get-started",

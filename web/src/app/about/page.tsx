@@ -13,14 +13,14 @@ const whatWeBuild = [
   { title: "Local growth websites", description: "Search-led sites that turn local demand into enquiries and bookings.", href: "/local-growth" },
   { title: "E-commerce", description: "Custom storefronts and admin tooling when templates no longer fit the workflow.", href: "/e-commerce-development-nottingham" },
   { title: "Custom systems and SaaS", description: "Web applications, portals, billing, automation and production infrastructure.", href: "/custom-systems" },
-  { title: "Ongoing improvement", description: "A scoped Digital Growth Partnership around the current estate or after a ScaleSmiths build.", href: "/digital-growth-partnership" },
+  { title: "Ongoing improvement", description: "A scoped Growth Partnership around the current estate or after a ScaleSmiths build.", href: "/digital-growth-partnership" },
 ]
 
 const relationshipModel = [
   { title: "A founder conversation first", description: "The first call is with the people who will shape and deliver the work, not a sales intermediary." },
   { title: "Commercial and technical scoping together", description: "Trevor frames the commercial priorities; Rhys frames the technical approach, risks and delivery." },
   { title: "Delivery by the people who scoped it", description: "No hand-off from sales to an account manager to an outsourced developer." },
-  { title: "Continuity after launch", description: "A Digital Growth Partnership can begin with an existing digital estate or continue after a ScaleSmiths build, with the same founders remaining accountable." },
+  { title: "Continuity after launch", description: "A Growth Partnership can begin with an existing digital estate or continue after a ScaleSmiths build, with the same founders remaining accountable." },
 ]
 
 export default function AboutPage() {
@@ -42,10 +42,10 @@ export default function AboutPage() {
             </ol>
           </nav>
 
-          <AnimateIn className="mt-10 grid gap-10 lg:grid-cols-[1.15fr_.85fr] lg:items-end">
-            <div>
+          <AnimateIn className="offer-hero-grid offer-hero-grid--tight mt-10" data-offer-hero>
+            <div className="offer-hero-copy">
               <span className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">About & founders</span>
-              <h1 className="mt-3 max-w-4xl font-syne text-[clamp(38px,6.5vw,76px)] font-black leading-[1.02] tracking-[-.04em]">
+              <h1 className="offer-hero-display mt-3 font-black">
                 Two founders. One accountable team. Built around the business.
               </h1>
               <p className="mt-6 max-w-3xl font-dm text-lg leading-relaxed text-t2">
@@ -59,7 +59,7 @@ export default function AboutPage() {
               </div>
             </div>
 
-            <aside aria-label="Where ScaleSmiths is based" className="rounded-2xl border border-acc/25 bg-acc/[.07] p-6 md:p-8">
+            <aside aria-label="Where ScaleSmiths is based" className="offer-hero-card rounded-2xl border border-acc/25 bg-acc/[.07] p-6 md:p-8">
               <p className="flex items-center gap-2 font-dm text-xs font-semibold uppercase tracking-[.12em] text-t3">
                 <MapPin size={14} className="text-acc" aria-hidden="true" /> Hucknall, Nottinghamshire
               </p>
@@ -100,7 +100,7 @@ export default function AboutPage() {
       <section aria-labelledby="about-founders" className="relative overflow-hidden px-6 py-16 md:px-12 md:py-24">
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_15%_0%,rgba(253,230,138,0.07),transparent_40%),radial-gradient(ellipse_at_90%_80%,rgba(34,211,238,0.06),transparent_45%)]"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_15%_0%,rgba(253,230,138,0.07),transparent_40%),radial-gradient(ellipse_at_90%_80%,rgba(232,160,69,0.06),transparent_45%)]"
         />
         <div className="relative mx-auto max-w-[1240px]">
           <div className="max-w-3xl">
@@ -172,6 +172,7 @@ export default function AboutPage() {
           <div className="mt-8 flex flex-wrap gap-3">
             <Link href="/local-growth" prefetch={false} className="btn-ghost font-dm">Local Growth</Link>
             <Link href="/custom-systems" prefetch={false} className="btn-ghost font-dm">Custom Systems</Link>
+            <Link href="/security" prefetch={false} className="btn-ghost font-dm">Security</Link>
             <Link href="/digital-growth-partnership" prefetch={false} className="btn-ghost font-dm">Growth Partnership</Link>
           </div>
         </div>
@@ -181,7 +182,7 @@ export default function AboutPage() {
         <div className="mx-auto max-w-[760px] rounded-3xl border border-acc/20 bg-gradient-to-br from-s2 to-acc/5 px-8 py-[64px] text-center md:px-16">
           <h2 className="font-syne text-[clamp(28px,4.5vw,44px)] font-extrabold tracking-[-.025em]">Speak to a founder, not a sales team.</h2>
           <p className="mx-auto mt-4 max-w-[500px] font-dm text-base leading-relaxed text-t2">
-            Tell us what the business needs to do next. We will look at the problem first — including when the honest answer is that you do not need a rebuild.
+            Tell us what the business needs to do next. We will look at the problem first, including when the honest answer is that you do not need a rebuild.
           </p>
           <div className="mt-9 flex flex-wrap justify-center gap-3">
             <Link href="/quote?intent=strategy_call" prefetch={false} className="btn-primary font-dm inline-flex">

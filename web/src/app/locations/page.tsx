@@ -45,7 +45,7 @@ export default function LocationsPage() {
               <p className="text-xs font-semibold uppercase tracking-[.14em] text-acc">Where to go next</p>
               <h2 id="location-next" className="mt-2 font-syne text-[clamp(26px,3.4vw,38px)] font-extrabold tracking-[-.03em]">Not in Nottinghamshire?</h2>
               <p className="mt-4 max-w-[560px] text-sm leading-relaxed text-t2">
-                Location hubs exist where we have local work to point at. Everything else runs remotely with a review cadence agreed in the scope — see the{" "}
+                Location hubs exist where we have local work to point at. Everything else runs remotely with a review cadence agreed in the scope, see the{" "}
                 <Link href="/work" prefetch={false} className="text-t1 underline decoration-acc underline-offset-4">case studies</Link> or the{" "}
                 <Link href="/faq#commercial" prefetch={false} className="text-t1 underline decoration-acc underline-offset-4">questions about working together</Link>.
               </p>

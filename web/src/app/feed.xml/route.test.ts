@@ -7,7 +7,7 @@ describe("Insights RSS feed", () => {
     const xml = await response.text()
     expect(response.headers.get("content-type")).toContain("application/rss+xml")
     expect(xml).toContain("<title>ScaleSmiths Insights</title>")
-    expect(xml.match(/<item>/g)).toHaveLength(25)
+    expect(xml.match(/<item>/g)).toHaveLength(35)
     expect(xml).toContain("/insights/how-much-does-a-business-website-cost-uk-2026")
   })
 })

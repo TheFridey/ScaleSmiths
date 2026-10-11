@@ -28,7 +28,7 @@ interface ConversionFormData {
 
 const conversionOptions = [
   { id: "strategy_call", label: "Request a Strategy Call", Icon: ClipboardList },
-  { id: "v2_demo", label: "Request a V2 Demo", Icon: Sparkles },
+  { id: "v2_demo", label: "Request an Interactive Demo", Icon: Sparkles },
   { id: "email_plan", label: "Email This Plan", Icon: MailCheck },
 ] as const
 
@@ -51,7 +51,7 @@ const budgetRanges = [
   "GBP 4,500-6,500",
   "GBP 8,000-15,000",
   "GBP 18,000-35,000+",
-  "Digital Growth Partnership",
+  "Growth Partnership",
   "Not sure yet",
 ]
 
@@ -94,7 +94,7 @@ function buildBrief({
   workflow: string[]
 }) {
   return [
-    "ScaleSmiths V2 interactive journey enquiry",
+    "ScaleSmiths interactive journey enquiry",
     "",
     `Requested next step: ${conversionIntentLabel(intent)}`,
     `Journey industry: ${journeyIndustry}`,
@@ -188,7 +188,7 @@ export function V2ConversionLayer({ industry }: V2ConversionLayerProps) {
           biz: formData.businessName,
           websiteUrl: "",
           businessType: formContent.name,
-          type: `ScaleSmiths V2 interactive journey - ${conversionIntentLabel(intent)}`,
+          type: `ScaleSmiths interactive journey - ${conversionIntentLabel(intent)}`,
           budget: formData.budget,
           timeframe: formData.timeline,
           goal: formData.goal,
@@ -291,7 +291,7 @@ export function V2ConversionLayer({ industry }: V2ConversionLayerProps) {
           <CheckCircle2 className="h-6 w-6 text-success" aria-hidden="true" />
           <h3 className="mt-3 font-syne text-2xl font-black tracking-normal text-t1">Plan sent.</h3>
           <p className="mt-2 font-dm text-sm leading-relaxed text-t2">
-            We have the V2 journey context and your project details. ScaleSmiths will review the fit and come back with the next sensible step.
+            We have the interactive planner context and your project details. ScaleSmiths will review the fit and come back with the next sensible step.
           </p>
         </div>
       ) : (
@@ -426,7 +426,7 @@ export function V2ConversionLayer({ industry }: V2ConversionLayerProps) {
           <button
             type="submit"
             disabled={submitting}
-            className="mt-1 inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-acc px-5 py-3 font-dm text-sm font-semibold text-bg shadow-[0_0_42px_rgba(34,211,238,0.22)] transition hover:bg-[#67e8f9] disabled:cursor-not-allowed disabled:opacity-65 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-acc sm:justify-self-start"
+            className="mt-1 inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-acc px-5 py-3 font-dm text-sm font-semibold text-bg shadow-[0_0_42px_rgba(232,160,69,0.22)] transition hover:bg-[#f0b35a] disabled:cursor-not-allowed disabled:opacity-65 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-acc sm:justify-self-start"
           >
             {submitting ? "Sending..." : conversionIntentLabel(intent)}
             <Send size={15} aria-hidden="true" />

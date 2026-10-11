@@ -14,7 +14,7 @@ test.describe("about and founders page", () => {
     await gotoReady(page, "/about")
 
     await expect(page.getByRole("heading", { level: 1 })).toContainText(/two founders/i)
-    await expect(page.getByRole("heading", { level: 3, name: "Rhys", exact: true })).toBeVisible()
+    await expect(page.getByRole("heading", { level: 3, name: "Rhys Lacy", exact: true })).toBeVisible()
     await expect(page.getByRole("heading", { level: 3, name: "Trevor Newton-Bradley" })).toBeVisible()
 
     const rhys = page.locator("#rhys")
@@ -61,12 +61,12 @@ test.describe("about and founders page", () => {
     const rhysPhoto = page.locator("#rhys img")
     await expect(rhysPhoto).toHaveCount(1)
     await expect(rhysPhoto).toHaveAttribute("alt", /Rhys.*ScaleSmiths/i)
-    await expect(rhysPhoto).toHaveAttribute("src", /\/images\/team\/rhys/)
+    await expect(rhysPhoto).toHaveAttribute("src", /(?:\/|%2F)images(?:\/|%2F)team(?:\/|%2F)rhys-office/)
 
     const trevorPhoto = page.locator("#trevor-newton-bradley img")
     await expect(trevorPhoto).toHaveCount(1)
     await expect(trevorPhoto).toHaveAttribute("alt", /Trevor.*ScaleSmiths/i)
-    await expect(trevorPhoto).toHaveAttribute("src", /\/images\/team\/trevor/)
+    await expect(trevorPhoto).toHaveAttribute("src", /(?:\/|%2F)images(?:\/|%2F)team(?:\/|%2F)trevor-2026(?:\.webp|%2Ewebp)/)
   })
 
   test("shows Rhys's portrait on his founder profile", async ({ page }) => {
@@ -75,7 +75,7 @@ test.describe("about and founders page", () => {
     const portrait = page.locator("main img").first()
     await expect(portrait).toBeVisible()
     await expect(portrait).toHaveAttribute("alt", /Rhys.*ScaleSmiths/i)
-    await expect(portrait).toHaveAttribute("src", /\/images\/team\/rhys/)
+    await expect(portrait).toHaveAttribute("src", /(?:\/|%2F)images(?:\/|%2F)team(?:\/|%2F)rhys-2026(?:\.webp|%2Ewebp)/)
   })
 
   test("shows Trevor's portrait on his founder profile", async ({ page }) => {
@@ -84,7 +84,7 @@ test.describe("about and founders page", () => {
     const portrait = page.locator("main img").first()
     await expect(portrait).toBeVisible()
     await expect(portrait).toHaveAttribute("alt", /Trevor.*ScaleSmiths/i)
-    await expect(portrait).toHaveAttribute("src", /\/images\/team\/trevor/)
+    await expect(portrait).toHaveAttribute("src", /(?:\/|%2F)images(?:\/|%2F)team(?:\/|%2F)trevor-2026(?:\.webp|%2Ewebp)/)
   })
 
   test("publishes canonical metadata and consistent founder structured data", async ({ page }) => {
@@ -99,6 +99,7 @@ test.describe("about and founders page", () => {
     expect(structuredData).toContain("BreadcrumbList")
     expect(structuredData).toContain("/about/rhys#person")
     expect(structuredData).toContain("/about/trevor-newton-bradley#person")
+    expect(structuredData).toContain("Rhys Lacy")
     expect(structuredData).toContain("Trevor Newton-Bradley")
     expect(structuredData).toContain("foundingLocation")
   })
@@ -125,7 +126,7 @@ test.describe("about and founders page", () => {
     await credit.click({ noWaitAfter: true })
 
     await page.waitForURL(/\/about\/rhys$/, { timeout: 20_000, waitUntil: "domcontentloaded" })
-    await expect(page.getByRole("heading", { level: 1, name: "Rhys", exact: true })).toBeVisible()
+    await expect(page.getByRole("heading", { level: 1, name: "Rhys Lacy", exact: true })).toBeVisible()
   })
 
   test("offers a founder-led call to action", async ({ page }) => {
@@ -151,7 +152,8 @@ test.describe("about and founders page", () => {
     await expect(page.getByRole("link", { name: /talk to a founder/i })).toBeVisible()
 
     await page.getByRole("button", { name: /open menu/i }).click()
-    await expect(page.getByRole("banner").getByRole("link", { name: "About", exact: true }).last()).toBeVisible()
+    const drawer = page.getByRole("dialog", { name: /site navigation/i })
+    await expect(drawer.getByRole("link", { name: "About", exact: true })).toBeVisible()
   })
 
   test("exposes an accessible heading and landmark structure", async ({ page }) => {
@@ -176,7 +178,7 @@ test.describe("about and founders page", () => {
   })
 
   for (const founder of [
-    { slug: "rhys", name: "Rhys", expertise: /software engineering/i, project: /glow tanning/i },
+    { slug: "rhys", name: "Rhys Lacy", expertise: /software engineering/i, project: /glow tanning/i },
     { slug: "trevor-newton-bradley", name: "Trevor Newton-Bradley", expertise: /client relationships/i, project: /the business circle/i },
   ]) {
     test(`publishes a founder profile for ${founder.name}`, async ({ page }) => {

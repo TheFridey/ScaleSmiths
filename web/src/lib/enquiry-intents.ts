@@ -2,10 +2,11 @@ export const ENQUIRY_INTENTS = {
   quote: "Request a Quote",
   discovery_call: "Request a Discovery Call",
   strategy_call: "Request a Strategy Call",
-  v2_demo: "Request a V2 Demo",
+  v2_demo: "Request an Interactive Demo",
   email_plan: "Email This Plan",
   business_email: "Set Up Managed Business Email",
   business_growth_audit: "Start a Business Growth Audit",
+  enterprise: "Discuss an Enterprise System",
 } as const
 
 export type EnquiryIntent = keyof typeof ENQUIRY_INTENTS
@@ -23,6 +24,7 @@ export function enquiryIntentLabel(intent: EnquiryIntent) {
 }
 
 export function enquiryIntentHref(intent: EnquiryIntent) {
+  if (intent === "enterprise") return "/enterprise/contact"
   return `/quote?intent=${encodeURIComponent(intent)}`
 }
 

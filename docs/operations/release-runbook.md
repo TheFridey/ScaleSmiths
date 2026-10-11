@@ -1,6 +1,8 @@
 # Production release runbook
 
-This is the authoritative entry point for releasing ScaleSmiths. Run repository-relative production commands from `/var/www/scalesmiths/ScaleSmiths`. The current production release path is the host-Nginx blue/green topology implemented by `scripts/release-manager.mjs` and `docker-compose.release.yml`. The detailed traffic-switch mechanics live in [Canary release and rollback](canary-release-and-rollback.md); that document is subordinate to this release policy.
+This is the authoritative entry point for releasing ScaleSmiths. Run repository-relative production commands from `/var/www/scalesmiths/ScaleSmiths`. The documented long-term / canonical production release path is the host-Nginx blue/green topology implemented by `scripts/release-manager.mjs` and `docker-compose.release.yml`. The detailed traffic-switch mechanics live in [Canary release and rollback](canary-release-and-rollback.md); that document is subordinate to this release policy.
+
+**Host note (do not invert policy):** the current production VPS has been observed serving live traffic via PM2 canary processes on loopback ports rather than an active Docker release-manager switch. When operators confirm that topology, follow [PM2 host deploy](pm2-host-deploy.md) for the practical cutover recipe. That ops note does not replace this runbook, the canary document, or architecture/ADR claims that Docker release-manager remains the canonical long-term path unless/until an approved migration.
 
 CI, a successful image build, a prepared inactive slot, or a Forge release-gate result is evidence only. None independently authorises production deployment. A named human approver must authorise the exact commit and evidence set.
 

@@ -35,7 +35,10 @@ export interface Founder {
   /** Name as it already appears in project credits. */
   creditName: string
   monogram: string
+  /** Primary portrait (profile hero, Person schema, insight bylines). */
   photo: TeamImageKey
+  /** Optional secondary portrait for about/home cards (workspace/trust contexts). */
+  cardPhoto?: TeamImageKey
   role: EvidencedStatement
   /** Short title used in article bylines and Person structured data. */
   authorTitle: string
@@ -63,22 +66,21 @@ export const FOUNDER_LOCATION = {
 export const founders: Founder[] = [
   {
     slug: "rhys",
-    // TODO(owner): confirm whether Rhys's surname should be published. A full name strengthens
-    // the Person entity; until confirmed, the credited first name is used everywhere.
-    name: "Rhys",
+    name: "Rhys Lacy",
     firstName: "Rhys",
-    creditName: "Rhys",
+    creditName: "Rhys Lacy",
     monogram: "R",
     photo: "rhys",
+    cardPhoto: "rhysOffice",
     // Owner-supplied title (founder profile card, 15 September 2026).
     authorTitle: "Co-founder & Technical Lead",
-    accent: "#22d3ee",
+    accent: "#e8a045",
     role: {
-      text: "Co-founder — technical leadership, engineering and delivery",
-      evidence: `${OWNER_BRIEF} and web/src/lib/data.ts (project credits: "Made by Rhys · ScaleSmiths co-founder")`,
+      text: "Co-founder: technical leadership, engineering and delivery",
+      evidence: `${OWNER_BRIEF} and web/src/lib/data.ts (project credits: "Made by Rhys Lacy · ScaleSmiths co-founder")`,
     },
     summary: {
-      text: "Rhys co-founded ScaleSmiths and leads its technical direction: strategy, software engineering, web systems, architecture, technical SEO implementation and delivery. Clients discuss the technical approach with the founder accountable for building it.",
+      text: "Rhys Lacy co-founded ScaleSmiths and leads its technical direction: strategy, software engineering, web systems, architecture, technical SEO implementation and delivery. Clients discuss the technical approach with the founder accountable for building it.",
       evidence: OWNER_BRIEF,
     },
     responsibilities: [
@@ -87,7 +89,7 @@ export const founders: Founder[] = [
         evidence: "web/src/lib/data.ts",
       },
       {
-        text: "Builds and operates the production infrastructure the published work runs on — self-hosted Docker Compose, PostgreSQL and Nginx rather than managed defaults.",
+        text: "Builds and operates the production infrastructure the published work runs on, self-hosted Docker Compose, PostgreSQL and Nginx rather than managed defaults.",
         evidence: "web/src/lib/data.ts (project solutions and feature lists)",
       },
       {
@@ -101,7 +103,7 @@ export const founders: Founder[] = [
         evidence: "web/src/lib/data.ts (per-project credit lines)",
       },
       {
-        text: "Owns technical SEO implementation — site architecture, structured data, performance and indexing — as part of the build rather than as a separate hand-off.",
+        text: "Owns technical SEO implementation === site architecture, structured data, performance and indexing === as part of the build rather than as a separate hand-off.",
         evidence: OWNER_BRIEF,
       },
     ],
@@ -136,9 +138,9 @@ export const founders: Founder[] = [
     photo: "trevor",
     // Owner-supplied title (founder profile card, 15 September 2026).
     authorTitle: "Co-founder & Commercial Lead",
-    accent: "#6366f1",
+    accent: "#cfc7bc",
     role: {
-      text: "Co-founder — commercial growth and client relationships",
+      text: "Co-founder: commercial growth and client relationships",
       evidence: `${OWNER_BRIEF}, web/src/app/layout.tsx and admin/src/components/ProspectPipeline.tsx`,
     },
     summary: {
@@ -176,7 +178,7 @@ export const founders: Founder[] = [
     projectSlugs: ["the-business-circle"],
     relatedServices: [
       { href: "/services/business-growth-audit", label: "Business Growth Audit" },
-      { href: "/digital-growth-partnership", label: "Digital Growth Partnership" },
+      { href: "/digital-growth-partnership", label: "Growth Partnership" },
       { href: "/local-growth", label: "Local Growth" },
     ],
     linkConfig: [
@@ -189,7 +191,7 @@ export const founders: Founder[] = [
 /** The origin narrative, restricted to facts already present in the repository. */
 export const originStatements: EvidencedStatement[] = [
   {
-    text: "ScaleSmiths is a founder-led business growth and engineering company founded by Rhys and Trevor Newton-Bradley.",
+    text: "ScaleSmiths is a founder-led business growth and engineering company founded by Rhys Lacy and Trevor Newton-Bradley.",
     evidence: "web/src/app/layout.tsx (Organization founders)",
   },
   {
@@ -197,7 +199,7 @@ export const originStatements: EvidencedStatement[] = [
     evidence: "web/src/lib/data.ts (FAQ) and web/src/lib/site-identity.ts (business location)",
   },
   {
-    text: "The first published project was Glow Tanning — a Hucknall salon with no meaningful web presence and competitors already ahead of it online.",
+    text: "The first published project was Glow Tanning, a Hucknall salon with no meaningful web presence and competitors already ahead of it online.",
     evidence: "web/src/lib/data.ts (project 1, Hucknall, 2025)",
   },
   {
@@ -210,7 +212,7 @@ export const approachPillars: Array<{ title: string; description: string }> = [
   {
     title: "Find",
     description:
-      "Diagnose the commercial constraint before prescribing technology. The answer may be clearer positioning, a focused repair, a workflow change or a new system—not automatically another website.",
+      "Diagnose the commercial constraint before prescribing technology. The answer may be clearer positioning, a focused repair, a workflow change or a new system, not automatically another website.",
   },
   {
     title: "Fix",
@@ -220,7 +222,7 @@ export const approachPillars: Array<{ title: string; description: string }> = [
   {
     title: "Grow",
     description:
-      "Keep improving through a scoped Digital Growth Partnership, with agreed priorities across SEO, conversion, content, automation, technical stewardship and roadmap delivery.",
+      "Keep improving through a scoped Growth Partnership, with agreed priorities across SEO, conversion, content, automation, technical stewardship and roadmap delivery.",
   },
 ]
 
@@ -269,7 +271,7 @@ export function founderLinks(
 export const aboutMetadata: Metadata = buildPageMetadata({
   title: "About & Founders",
   description:
-    "Meet ScaleSmiths co-founders Rhys and Trevor Newton-Bradley, who lead engineering and commercial growth from Hucknall, Nottinghamshire.",
+    "Meet ScaleSmiths co-founders Rhys Lacy and Trevor Newton-Bradley, who lead engineering and commercial growth from Hucknall, Nottinghamshire.",
   path: "/about",
 })
 

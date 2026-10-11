@@ -1,7 +1,7 @@
 "use client"
 
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer } from "recharts"
-import { Activity, AlertTriangle, Bell, CalendarClock, CheckCircle2, Clock3, FileText, Gauge, Mail, MailX, MessageSquare, Plus, PoundSterling, Target, TrendingUp, Trophy, Users } from "lucide-react"
+import { Activity, AlertTriangle, CalendarClock, CheckCircle2, Clock3, FileText, Gauge, Mail, MailX, MessageSquare, Plus, PoundSterling, Target, TrendingUp, Trophy, Users } from "lucide-react"
 import Link from "next/link"
 import { PROSPECT_STAGES, STAGE_LABELS, type ProspectStage } from "@/lib/prospects"
 
@@ -190,21 +190,18 @@ export function DashboardContent({ clients, salesMetrics, todayLabel, operationa
   ]
 
   return (
-    <div className="mx-auto max-w-[1500px] space-y-6 rounded-[8px] border p-3 sm:p-4 lg:p-5" style={{ background:"rgba(2,6,23,.58)", borderColor:"rgba(56,189,248,.18)", boxShadow:"0 24px 80px rgba(0,0,0,.28)" }}>
+    <div className="mx-auto max-w-[1500px] space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="font-syne text-2xl font-extrabold tracking-tight">Command Centre</h1>
+          <h1 className="font-syne text-2xl font-extrabold">Delivery overview</h1>
           <p className="font-dm text-sm mt-0.5" style={{ color: T.t2 }}>{todayLabel}</p>
         </div>
         <div className="flex flex-wrap gap-2.5">
-          <button aria-label="Notifications" className="flex items-center rounded-[8px] border p-2" style={{ background: T.s2, borderColor: T.b1 }}>
-            <Bell size={14} style={{ color: T.t2 }} />
-          </button>
           <Link href="/clients/new" className="flex items-center gap-1.5 rounded-[8px] px-4 py-2 font-dm text-sm font-medium text-white" style={{ background: "var(--acc)" }}>
             <Plus size={14} /> New Client
           </Link>
-          <Link href="/prospects" className="flex items-center gap-1.5 rounded-[8px] border px-4 py-2 font-dm text-sm font-medium" style={{ background: T.s2, borderColor: T.b1, color: T.t1 }}>
-            <Target size={14} /> Pipeline
+          <Link href="/command-centre" className="flex items-center gap-1.5 rounded-[8px] border px-4 py-2 font-dm text-sm font-medium" style={{ background: T.s2, borderColor: T.b1, color: T.t1 }}>
+            <Target size={14} /> Sales workspace
           </Link>
         </div>
       </div>

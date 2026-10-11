@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { signIn } from "next-auth/react"
 import { Logo } from "@/components/Logo"
+import { InstallAppControl } from "@/components/command-centre/InstallAppProvider"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -34,9 +35,15 @@ export default function LoginPage() {
         return
       }
 
-      const sessionResponse = await fetch("/api/auth/session", { cache: "no-store" })
+      const sessionResponse = await fetch("/api/auth/session", {
+        cache: "no-store",
+      })
       const session = await sessionResponse.json().catch(() => null)
-      router.push(session?.user?.role === "venture_controller" ? "/venture-lab" : "/command-centre")
+      router.push(
+        session?.user?.role === "venture_controller"
+          ? "/venture-lab"
+          : "/command-centre",
+      )
       router.refresh()
     } catch {
       setError("Something went wrong - try again")
@@ -46,17 +53,28 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-6" style={{ background: "var(--bg)" }}>
+    <div
+      className="min-h-screen flex items-center justify-center px-6"
+      style={{ background: "var(--bg)" }}
+    >
       <div className="w-full max-w-[380px]">
         <div className="flex justify-center mb-10">
           <Logo size={40} />
+          <InstallAppControl />
         </div>
         <div className="bg-s1 border border-b1 rounded-2xl p-8">
           <h1 className="font-syne text-xl font-bold mb-1">Sign in</h1>
-          <p className="font-dm text-sm text-t2 mb-7">Access your ScaleSmiths admin panel.</p>
+          <p className="font-dm text-sm text-t2 mb-7">
+            Access your ScaleSmiths admin panel.
+          </p>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div>
-              <label htmlFor="email" className="font-dm text-sm text-t2 block mb-1.5">Email</label>
+              <label
+                htmlFor="email"
+                className="font-dm text-sm text-t2 block mb-1.5"
+              >
+                Email
+              </label>
               <input
                 id="email"
                 type="email"
@@ -68,12 +86,40 @@ export default function LoginPage() {
               />
             </div>
             <div>
-              <label htmlFor="totp" className="font-dm text-sm text-t2 block mb-1.5">Authenticator code <span className="text-t3">(if enabled)</span></label>
-              <input id="totp" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" value={totp} onChange={(e) => setTotp(e.target.value)} placeholder="123456" />
+              <label
+                htmlFor="totp"
+                className="font-dm text-sm text-t2 block mb-1.5"
+              >
+                Authenticator code <span className="text-t3">(if enabled)</span>
+              </label>
+              <input
+                id="totp"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                pattern="[0-9]{6}"
+                value={totp}
+                onChange={(e) => setTotp(e.target.value)}
+                placeholder="123456"
+              />
             </div>
-            <details className="text-sm text-t2"><summary className="cursor-pointer">Use a recovery code</summary><input aria-label="Recovery code" className="mt-2" autoComplete="one-time-code" value={recoveryCode} onChange={(e) => setRecoveryCode(e.target.value)} placeholder="XXXX-XXXX" /></details>
+            <details className="text-sm text-t2">
+              <summary className="cursor-pointer">Use a recovery code</summary>
+              <input
+                aria-label="Recovery code"
+                className="mt-2"
+                autoComplete="one-time-code"
+                value={recoveryCode}
+                onChange={(e) => setRecoveryCode(e.target.value)}
+                placeholder="XXXX-XXXX"
+              />
+            </details>
             <div>
-              <label htmlFor="password" className="font-dm text-sm text-t2 block mb-1.5">Password</label>
+              <label
+                htmlFor="password"
+                className="font-dm text-sm text-t2 block mb-1.5"
+              >
+                Password
+              </label>
               <input
                 id="password"
                 type="password"
@@ -84,9 +130,7 @@ export default function LoginPage() {
                 required
               />
             </div>
-            {error && (
-              <p className="font-dm text-sm text-red-500">{error}</p>
-            )}
+            {error && <p className="font-dm text-sm text-red-500">{error}</p>}
             <button
               type="submit"
               disabled={loading}

@@ -1,21 +1,35 @@
 import type { Metadata } from "next"
 import "./globals.css"
-import { PwaLifecycle } from "@/components/command-centre/PwaLifecycle"
+import { InstallAppProvider } from "@/components/command-centre/InstallAppProvider"
 import type { Viewport } from "next"
 
 export const metadata: Metadata = {
   title: { default: "ScaleSmiths Admin", template: "%s | Admin" },
   robots: { index: false, follow: false },
   manifest: "/manifest.webmanifest",
-  appleWebApp: { capable: true, title: "ScaleSmiths", statusBarStyle: "black-translucent" },
+  appleWebApp: {
+    capable: true,
+    title: "ScaleSmiths",
+    statusBarStyle: "black-translucent",
+  },
   icons: { apple: "/app-icon/180" },
 }
-export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#111214" }
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#111214",
+}
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   return (
     <html lang="en">
-      <body className="bg-bg text-t1">{children}<PwaLifecycle /></body>
+      <body className="bg-bg text-t1">
+        <InstallAppProvider>{children}</InstallAppProvider>
+      </body>
     </html>
   )
 }

@@ -26,41 +26,182 @@ import {
   UserCog,
   Users,
   X,
+  ChevronDown,
 } from "lucide-react"
+import { InstallAppControl } from "@/components/command-centre/InstallAppProvider"
 import { Logo } from "@/components/Logo"
 import type { AdminRole } from "@/lib/admin-users"
 import { isNavigationVisible, type Capability } from "@/lib/rbac"
 import { AdminShellProvider, useAdminShell } from "./AdminShellContext"
 
-const NAV: Array<{ href: string; label: string; Icon: typeof LayoutDashboard; capability: Capability }> = [
-  { href: "/command-centre", label: "Command Centre", Icon: Target, capability: "leads.read" },
-  { href: "/dashboard", label: "Dashboard", Icon: LayoutDashboard, capability: "projects.read" },
-  { href: "/clients", label: "Clients", Icon: Users, capability: "clients.read" },
-  { href: "/projects", label: "Projects", Icon: FolderKanban, capability: "projects.read" },
-  { href: "/finance/invoices", label: "Invoices", Icon: ReceiptText, capability: "finance.read" },
-  { href: "/requests", label: "Requests", Icon: ClipboardList, capability: "clients.read" },
-  { href: "/prospects", label: "Pipeline", Icon: Target, capability: "leads.read" },
+export const NAV: Array<{
+  href: string
+  label: string
+  Icon: typeof LayoutDashboard
+  capability: Capability
+}> = [
+  {
+    href: "/command-centre",
+    label: "Command Centre",
+    Icon: Target,
+    capability: "leads.read",
+  },
+  {
+    href: "/dashboard",
+    label: "Dashboard",
+    Icon: LayoutDashboard,
+    capability: "projects.read",
+  },
+  {
+    href: "/clients",
+    label: "Clients",
+    Icon: Users,
+    capability: "clients.read",
+  },
+  {
+    href: "/projects",
+    label: "Projects",
+    Icon: FolderKanban,
+    capability: "projects.read",
+  },
+  {
+    href: "/finance/invoices",
+    label: "Invoices",
+    Icon: ReceiptText,
+    capability: "finance.read",
+  },
+  {
+    href: "/requests",
+    label: "Requests",
+    Icon: ClipboardList,
+    capability: "clients.read",
+  },
+  {
+    href: "/prospects",
+    label: "Pipeline",
+    Icon: Target,
+    capability: "leads.read",
+  },
   { href: "/forge", label: "Forge", Icon: Gauge, capability: "forge.read" },
-  { href: "/operations/brief", label: "Brief", Icon: CalendarClock, capability: "projects.read" },
-  { href: "/operations/capacity", label: "Capacity", Icon: CalendarClock, capability: "projects.read" },
-  { href: "/operations/forge", label: "Forge ops", Icon: Activity, capability: "audit.read" },
-  { href: "/operations/experience-analytics", label: "Experience", Icon: BarChart3, capability: "leads.read" },
-  { href: "/operations/analytics-retention", label: "Retention", Icon: BarChart3, capability: "analytics.read" },
-  { href: "/roadmap", label: "Roadmap", Icon: GitBranch, capability: "projects.read" },
-  { href: "/messages", label: "Messages", Icon: MessageSquare, capability: "clients.read" },
-  { href: "/portal-users", label: "Portal users", Icon: Users, capability: "portal_users.read" },
-  { href: "/users", label: "Admin users", Icon: UserCog, capability: "admin_users.read" },
-  { href: "/security", label: "Security", Icon: ShieldCheck, capability: "settings.manage" },
-  { href: "/claims", label: "Claims", Icon: BadgeCheck, capability: "claims.read" },
+  {
+    href: "/operations/brief",
+    label: "Brief",
+    Icon: CalendarClock,
+    capability: "projects.read",
+  },
+  {
+    href: "/operations/capacity",
+    label: "Capacity",
+    Icon: CalendarClock,
+    capability: "projects.read",
+  },
+  {
+    href: "/operations/forge",
+    label: "Forge ops",
+    Icon: Activity,
+    capability: "audit.read",
+  },
+  {
+    href: "/operations/experience-analytics",
+    label: "Experience",
+    Icon: BarChart3,
+    capability: "leads.read",
+  },
+  {
+    href: "/operations/analytics-retention",
+    label: "Retention",
+    Icon: BarChart3,
+    capability: "analytics.read",
+  },
+  {
+    href: "/roadmap",
+    label: "Roadmap",
+    Icon: GitBranch,
+    capability: "projects.read",
+  },
+  {
+    href: "/messages",
+    label: "Messages",
+    Icon: MessageSquare,
+    capability: "clients.read",
+  },
+  {
+    href: "/portal-users",
+    label: "Portal users",
+    Icon: Users,
+    capability: "portal_users.read",
+  },
+  {
+    href: "/users",
+    label: "Admin users",
+    Icon: UserCog,
+    capability: "admin_users.read",
+  },
+  {
+    href: "/security",
+    label: "Security",
+    Icon: ShieldCheck,
+    capability: "settings.manage",
+  },
+  {
+    href: "/claims",
+    label: "Claims",
+    Icon: BadgeCheck,
+    capability: "claims.read",
+  },
+]
+
+const NAV_GROUPS = [
+  { label: "Sales", routes: ["/command-centre", "/prospects", "/claims"] },
+  {
+    label: "Client delivery",
+    routes: [
+      "/dashboard",
+      "/clients",
+      "/projects",
+      "/requests",
+      "/messages",
+      "/portal-users",
+    ],
+  },
+  { label: "Finance", routes: ["/finance/invoices"] },
+  { label: "Production", routes: ["/forge", "/operations/forge", "/roadmap"] },
+  {
+    label: "Operations",
+    routes: [
+      "/operations/brief",
+      "/operations/capacity",
+      "/operations/experience-analytics",
+      "/operations/analytics-retention",
+    ],
+  },
+  { label: "Administration", routes: ["/users", "/security"] },
 ]
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  return <AdminShellProvider pathname={pathname}><AdminShellFrame pathname={pathname}>{children}</AdminShellFrame></AdminShellProvider>
+  return (
+    <AdminShellProvider pathname={pathname}>
+      <AdminShellFrame pathname={pathname}>{children}</AdminShellFrame>
+    </AdminShellProvider>
+  )
 }
 
-function AdminShellFrame({ pathname, children }: { pathname: string; children: React.ReactNode }) {
-  const { isForgeRoute, focusMode, sidebarCollapsed, toggleSidebar, toggleFocusMode, ready } = useAdminShell()
+function AdminShellFrame({
+  pathname,
+  children,
+}: {
+  pathname: string
+  children: React.ReactNode
+}) {
+  const {
+    isForgeRoute,
+    focusMode,
+    sidebarCollapsed,
+    toggleSidebar,
+    toggleFocusMode,
+    ready,
+  } = useAdminShell()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [role, setRole] = useState<AdminRole | null>(null)
 
@@ -73,7 +214,8 @@ function AdminShellFrame({ pathname, children }: { pathname: string; children: R
     fetch("/api/auth/session", { cache: "no-store" })
       .then((response) => response.json())
       .then((session) => {
-        if (active && session?.user?.role) setRole(session.user.role as AdminRole)
+        if (active && session?.user?.role)
+          setRole(session.user.role as AdminRole)
       })
       .catch(() => undefined)
     return () => {
@@ -82,7 +224,8 @@ function AdminShellFrame({ pathname, children }: { pathname: string; children: R
   }, [])
 
   const visibleNav = useMemo(
-    () => NAV.filter((item) => role && isNavigationVisible(role, item.capability)),
+    () =>
+      NAV.filter((item) => role && isNavigationVisible(role, item.capability)),
     [role],
   )
 
@@ -112,6 +255,7 @@ function AdminShellFrame({ pathname, children }: { pathname: string; children: R
       />
 
       <AdminTopBar
+        pathname={pathname}
         isForge={isForgeRoute}
         focusMode={focusMode}
         onOpenNavigation={() => setMobileOpen(true)}
@@ -122,14 +266,22 @@ function AdminShellFrame({ pathname, children }: { pathname: string; children: R
         {children}
       </main>
 
-      <MobileSheet open={mobileOpen} onClose={() => setMobileOpen(false)} title="Navigation">
+      <MobileSheet
+        open={mobileOpen}
+        onClose={() => setMobileOpen(false)}
+        title="Navigation"
+      >
         <NavigationList
           collapsed={false}
           pathname={pathname}
           navigation={visibleNav}
           onNavigate={() => setMobileOpen(false)}
         />
-        <button type="button" className="admin-nav-link mt-auto" onClick={() => void handleSignOut()}>
+        <button
+          type="button"
+          className="admin-nav-link mt-auto"
+          onClick={() => void handleSignOut()}
+        >
           <LogOut size={18} aria-hidden="true" />
           <span>Sign out</span>
         </button>
@@ -154,7 +306,11 @@ export function AdminSidebar({
   onSignOut: () => void
 }) {
   return (
-    <aside className="admin-sidebar" aria-label="Primary navigation" aria-hidden={focusMode || undefined}>
+    <aside
+      className="admin-sidebar"
+      aria-label="Primary navigation"
+      aria-hidden={focusMode || undefined}
+    >
       <div className="admin-sidebar-brand">
         <Logo size={collapsed ? 30 : 24} compact={collapsed} />
         <button
@@ -164,10 +320,18 @@ export function AdminSidebar({
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           data-tooltip={collapsed ? "Expand sidebar" : undefined}
         >
-          {collapsed ? <PanelLeftOpen size={18} aria-hidden="true" /> : <PanelLeftClose size={18} aria-hidden="true" />}
+          {collapsed ? (
+            <PanelLeftOpen size={18} aria-hidden="true" />
+          ) : (
+            <PanelLeftClose size={18} aria-hidden="true" />
+          )}
         </button>
       </div>
-      <NavigationList collapsed={collapsed} pathname={pathname} navigation={navigation} />
+      <NavigationList
+        collapsed={collapsed}
+        pathname={pathname}
+        navigation={navigation}
+      />
       <button
         type="button"
         className={`admin-nav-link mt-auto ${collapsed ? "is-collapsed admin-tooltip" : ""}`}
@@ -193,23 +357,64 @@ function NavigationList({
   navigation: typeof NAV
   onNavigate?: () => void
 }) {
+  const [expanded, setExpanded] = useState<string | null>(null)
+  const navigationId = useId()
+  useEffect(() => setExpanded(null), [pathname])
+  const activeGroup = NAV_GROUPS.find((group) =>
+    group.routes.some(
+      (href) => pathname === href || pathname.startsWith(`${href}/`),
+    ),
+  )?.label
   return (
     <nav className="admin-navigation">
-      {navigation.map(({ href, label, Icon }) => {
-        const active = pathname === href || pathname.startsWith(`${href}/`)
+      {NAV_GROUPS.map((group) => {
+        const items = navigation.filter((item) =>
+          group.routes.includes(item.href),
+        )
+        if (!items.length) return null
+        const GroupIcon = items[0].Icon
+        const open =
+          expanded === group.label ||
+          (expanded === null && activeGroup === group.label)
         return (
-          <Link
-            key={href}
-            href={href}
-            onClick={onNavigate}
-            className={`admin-nav-link ${collapsed ? "is-collapsed admin-tooltip" : ""} ${active ? "is-active" : ""}`}
-            aria-current={active ? "page" : undefined}
-            aria-label={collapsed ? label : undefined}
-            data-tooltip={collapsed ? label : undefined}
-          >
-            <Icon size={18} aria-hidden="true" />
-            {!collapsed && <span>{label}</span>}
-          </Link>
+          <section className="admin-nav-group" key={group.label}>
+            <button
+              type="button"
+              className="admin-nav-group-toggle"
+              aria-expanded={open}
+              aria-label={group.label}
+              aria-controls={`${navigationId}-${group.label.replaceAll(" ", "-")}`}
+              title={collapsed ? group.label : undefined}
+              onClick={() => setExpanded(open ? "" : group.label)}
+            >
+              {collapsed ? (
+                <GroupIcon size={18} aria-label={group.label} />
+              ) : (
+                <span>{group.label}</span>
+              )}
+              <ChevronDown size={15} aria-hidden="true" />
+            </button>
+            <div id={`${navigationId}-${group.label.replaceAll(" ", "-")}`} hidden={!open}>
+              {items.map(({ href, label, Icon }) => {
+                const active =
+                  pathname === href || pathname.startsWith(`${href}/`)
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    onClick={onNavigate}
+                    className={`admin-nav-link ${collapsed ? "is-collapsed admin-tooltip" : ""} ${active ? "is-active" : ""}`}
+                    aria-current={active ? "page" : undefined}
+                    aria-label={collapsed ? label : undefined}
+                    data-tooltip={collapsed ? label : undefined}
+                  >
+                    <Icon size={18} aria-hidden="true" />
+                    {!collapsed && <span>{label}</span>}
+                  </Link>
+                )
+              })}
+            </div>
+          </section>
         )
       })}
     </nav>
@@ -217,11 +422,13 @@ function NavigationList({
 }
 
 export function AdminTopBar({
+  pathname,
   isForge,
   focusMode,
   onOpenNavigation,
   onToggleFocus,
 }: {
+  pathname: string
   isForge: boolean
   focusMode: boolean
   onOpenNavigation: () => void
@@ -229,13 +436,27 @@ export function AdminTopBar({
 }) {
   return (
     <header className="admin-topbar">
-      <a className="skip-link" href="#admin-main-content">Skip to content</a>
-      <button type="button" className="admin-icon-button admin-mobile-menu" onClick={onOpenNavigation} aria-label="Open navigation">
+      <a className="skip-link" href="#admin-main-content">
+        Skip to content
+      </a>
+      <button
+        type="button"
+        className="admin-icon-button admin-mobile-menu"
+        onClick={onOpenNavigation}
+        aria-label="Open navigation"
+      >
         <Menu size={20} aria-hidden="true" />
       </button>
       <div className="min-w-0">
-        <p className="admin-topbar-eyebrow">{isForge ? "Production workspace" : "ScaleSmiths"}</p>
-        <p className="admin-topbar-title">{isForge ? "Forge" : "Operations"}</p>
+        <p className="admin-topbar-eyebrow">
+          {isForge ? "Production workspace" : "ScaleSmiths"}
+        </p>
+        <p className="admin-topbar-title">
+          {NAV.find(
+            (item) =>
+              pathname === item.href || pathname.startsWith(`${item.href}/`),
+          )?.label ?? "Workspace"}
+        </p>
       </div>
       {isForge && (
         <button
@@ -244,10 +465,17 @@ export function AdminTopBar({
           onClick={onToggleFocus}
           aria-pressed={focusMode}
         >
-          {focusMode ? <PanelLeftOpen size={17} aria-hidden="true" /> : <PanelLeftClose size={17} aria-hidden="true" />}
+          {focusMode ? (
+            <PanelLeftOpen size={17} aria-hidden="true" />
+          ) : (
+            <PanelLeftClose size={17} aria-hidden="true" />
+          )}
           <span>{focusMode ? "Exit focus" : "Focus mode"}</span>
         </button>
       )}
+      <div className="admin-topbar-utilities">
+        <InstallAppControl />
+      </div>
     </header>
   )
 }
@@ -271,16 +499,32 @@ export function MobileSheet({
   useEffect(() => {
     if (!open) return
     const layer = layerRef.current
-    restoreFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    restoreFocusRef.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = "hidden"
-    const background = Array.from(document.body.children).filter((element) => element !== layer)
-    const inertStates = background.map((element) => ({ element: element as HTMLElement, inert: (element as HTMLElement).inert }))
+    const background = Array.from(document.body.children).filter(
+      (element) => element !== layer,
+    )
+    const inertStates = background.map((element) => ({
+      element: element as HTMLElement,
+      inert: (element as HTMLElement).inert,
+    }))
     for (const { element } of inertStates) element.inert = true
 
-    const focusable = () => Array.from(layer?.querySelectorAll<HTMLElement>(
-      'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-    ) ?? []).filter((element) => !element.hidden && element.getAttribute("aria-hidden") !== "true")
+    const focusable = () =>
+      Array.from(
+        layer?.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ) ?? [],
+      ).filter(
+        (element) =>
+          element.getClientRects().length > 0 &&
+          !element.hidden &&
+          element.getAttribute("aria-hidden") !== "true",
+      )
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         event.preventDefault()
@@ -296,7 +540,11 @@ export function MobileSheet({
       }
       const first = controls[0]
       const last = controls[controls.length - 1]
-      if (event.shiftKey && (document.activeElement === first || !layer?.contains(document.activeElement))) {
+      if (
+        event.shiftKey &&
+        (document.activeElement === first ||
+          !layer?.contains(document.activeElement))
+      ) {
         event.preventDefault()
         last.focus()
       } else if (!event.shiftKey && document.activeElement === last) {
@@ -305,7 +553,9 @@ export function MobileSheet({
       }
     }
     window.addEventListener("keydown", handleKeyDown)
-    const focusFrame = window.requestAnimationFrame(() => closeButtonRef.current?.focus())
+    const focusFrame = window.requestAnimationFrame(() =>
+      closeButtonRef.current?.focus(),
+    )
     return () => {
       window.cancelAnimationFrame(focusFrame)
       window.removeEventListener("keydown", handleKeyDown)
@@ -319,11 +569,30 @@ export function MobileSheet({
   if (!open) return null
   return createPortal(
     <div className="mobile-sheet-layer" ref={layerRef} tabIndex={-1}>
-      <button type="button" className="mobile-sheet-backdrop" onClick={onClose} aria-label={`Close ${title.toLowerCase()}`} tabIndex={-1} />
-      <aside className="mobile-sheet" role="dialog" aria-modal="true" aria-labelledby={titleId}>
+      <button
+        type="button"
+        className="mobile-sheet-backdrop"
+        onClick={onClose}
+        aria-label={`Close ${title.toLowerCase()}`}
+        tabIndex={-1}
+      />
+      <aside
+        className="mobile-sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+      >
         <div className="mobile-sheet-header">
-          <h2 id={titleId} className="admin-topbar-title">{title}</h2>
-          <button ref={closeButtonRef} type="button" className="admin-icon-button" onClick={onClose} aria-label={`Close ${title.toLowerCase()}`}>
+          <h2 id={titleId} className="admin-topbar-title">
+            {title}
+          </h2>
+          <button
+            ref={closeButtonRef}
+            type="button"
+            className="admin-icon-button"
+            onClick={onClose}
+            aria-label={`Close ${title.toLowerCase()}`}
+          >
             <X size={20} aria-hidden="true" />
           </button>
         </div>

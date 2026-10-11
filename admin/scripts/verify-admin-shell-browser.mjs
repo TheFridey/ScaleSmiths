@@ -38,9 +38,11 @@ const bundle = await build({
 })
 const css = (await readFile("test-results/admin-shell/globals.css", "utf8")) + "\n" + (await readFile("src/app/globals.css", "utf8"))
 const worker = await readFile("public/command-centre-sw.js", "utf8")
+let workerVersion = 0
 const server = createServer((request, response) => {
   if (request.url === "/bundle.js") { response.setHeader("Content-Type", "application/javascript"); response.end(bundle.outputFiles[0].text) }
-  else if (request.url === "/command-centre-sw.js") { response.setHeader("Content-Type", "application/javascript"); response.end(worker) }
+  else if (request.url === "/command-centre-sw.js") { response.setHeader("Content-Type", "application/javascript"); response.end(worker.replace("command-centre-v2", `fixture-worker-${workerVersion}`)) }
+  else if (request.url === "/__fixture-update") { workerVersion++; response.end("Updated fixture worker") }
   else { response.setHeader("Content-Type", "text/html"); response.end(`<html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>${css}\n.mobile-sheet .admin-sidebar { display:flex; height:100%; border:0; padding:0; } .mt-auto { margin-top:auto; }</style></head><body><div id="root"></div><script src="/bundle.js"></script></body></html>`) }
 })
 await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve))
@@ -64,6 +66,7 @@ try {
     await navigation.getByRole("link", { name: "Clients", exact: true }).waitFor()
     assert.equal(await navigation.getByRole("link", { name: "Command Centre", exact: true }).isVisible(), false)
     await page.screenshot({ path: path.join(directory, `${name}-navigation.png`) })
+    assert.equal(await page.evaluate(() => [...document.querySelectorAll("button[aria-controls]")].every((button) => document.getElementById(button.getAttribute("aria-controls")))), true)
     if (name === "mobile") await page.getByRole("dialog", { name: "Navigation", exact: true }).getByRole("button", { name: "Close navigation" }).click()
     await page.evaluate(() => {
       const event = new Event("beforeinstallprompt", { cancelable: true })
@@ -77,6 +80,15 @@ try {
     assert.equal(await page.evaluate(() => window.__installCalls), 1)
     await page.evaluate(() => window.dispatchEvent(new Event("appinstalled")))
     await page.getByRole("button", { name: "App installed", exact: true }).waitFor()
+    await page.evaluate(async () => {
+      await navigator.serviceWorker.ready
+      if (!navigator.serviceWorker.controller) await new Promise((resolve) => navigator.serviceWorker.addEventListener("controllerchange", resolve, { once: true }))
+      await fetch("/__fixture-update")
+      await (await navigator.serviceWorker.getRegistration()).update()
+    })
+    await page.getByRole("button", { name: "Update available" }).waitFor()
+    page.once("dialog", (dialog) => dialog.accept())
+    await Promise.all([page.waitForNavigation(), page.getByRole("button", { name: "Update available" }).click()])
     await page.goto(`http://127.0.0.1:${server.address().port}/clients`)
     await page.getByRole("searchbox", { name: "Search clients" }).fill("Alpha")
     await page.getByRole("link", { name: "Edit Alpha fixture" }).waitFor()

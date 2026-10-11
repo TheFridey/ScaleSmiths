@@ -35,7 +35,7 @@ export function InstallAppProvider({
     let mounted = true,
       reloading = false
     let registration: ServiceWorkerRegistration | undefined
-    const hadController = Boolean(navigator.serviceWorker?.controller)
+    let hadController = Boolean(navigator.serviceWorker?.controller)
     const standalone = matchMedia("(display-mode: standalone)")
     const checkInstalled = () =>
       setInstalled(
@@ -57,6 +57,7 @@ export function InstallAppProvider({
       if (!document.hidden) void registration?.update().catch(() => undefined)
     }
     const controllerChange = () => {
+      if (!hadController) { hadController = true; return }
       if (hadController && !reloading) {
         reloading = true
         location.reload()

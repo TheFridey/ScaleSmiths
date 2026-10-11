@@ -383,7 +383,7 @@ function NavigationList({
               className="admin-nav-group-toggle"
               aria-expanded={open}
               aria-label={group.label}
-              aria-controls={`${navigationId}-${group.label}`}
+              aria-controls={`${navigationId}-${group.label.replaceAll(" ", "-")}`}
               title={collapsed ? group.label : undefined}
               onClick={() => setExpanded(open ? "" : group.label)}
             >
@@ -394,7 +394,7 @@ function NavigationList({
               )}
               <ChevronDown size={15} aria-hidden="true" />
             </button>
-            <div id={`${navigationId}-${group.label}`} hidden={!open}>
+            <div id={`${navigationId}-${group.label.replaceAll(" ", "-")}`} hidden={!open}>
               {items.map(({ href, label, Icon }) => {
                 const active =
                   pathname === href || pathname.startsWith(`${href}/`)

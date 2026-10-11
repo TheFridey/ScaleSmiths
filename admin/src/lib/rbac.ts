@@ -74,6 +74,7 @@ export function requiredCapabilityForRequest({ pathname, method }: RbacRequest):
   if (pathname.startsWith("/operations/") || pathname.startsWith("/api/operations/")) return write ? "projects.write" : "projects.read"
   if (pathname.startsWith("/api/kanban") || pathname === "/roadmap" || pathname.startsWith("/roadmap/")) return write ? "projects.write" : "projects.read"
   if (pathname === "/dashboard" || pathname === "/") return "projects.read"
+  if (pathname === "/command-centre") return "leads.read"
   return null
 }
 

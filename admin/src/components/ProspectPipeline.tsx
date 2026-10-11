@@ -29,6 +29,7 @@ const T = { s1:"var(--s1)",s2:"var(--s2)",s3:"var(--s3)",b1:"var(--b1)",b2:"var(
 type DateLike = string | Date | null
 
 interface Prospect {
+  version?: number
   id: number
   businessName: string
   contactName: string | null
@@ -145,6 +146,7 @@ interface ProspectPipelineProps {
 }
 
 const STAGE_COLOR: Record<ProspectStage, string> = {
+  contact_identified: "#81b3ac", qualified: "#d1b266", proposal_required: "#b5b6ba", negotiation: "#d1b266",
   found: "#525252",
   audited: "#60a5fa",
   contacted: "#2563EB",
@@ -273,7 +275,7 @@ export function ProspectPipeline({ initialProspects, initialActivities, initialP
     setError("")
 
     try {
-      const json = await api(`/api/prospects/${selected.id}`, { method: "PATCH", body })
+      const json = await api(`/api/prospects/${selected.id}`, { method: "PATCH", body: { ...body, version: selected.version } })
       mergeProspect(json.prospect)
       setProposals((current) => [json.proposal, ...current])
       form.reset()
@@ -391,7 +393,7 @@ export function ProspectPipeline({ initialProspects, initialActivities, initialP
     setError("")
 
     try {
-      const json = await api(`/api/prospects/${id}`, { method: "PATCH", body })
+      const json = await api(`/api/prospects/${id}`, { method: "PATCH", body: { ...body, version: prospects.find(p => p.id === id)?.version } })
       mergeProspect(json.prospect)
       router.refresh()
       return json

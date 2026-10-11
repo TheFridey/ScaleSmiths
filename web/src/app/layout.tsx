@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { Inter, Syne } from "next/font/google"
+import localFont from "next/font/local"
 import { MotionProvider } from "@/components/MotionProvider"
 import { SiteChrome } from "@/components/SiteChrome"
 import { WebVitalsReporter } from "@/components/WebVitalsReporter"
@@ -7,18 +7,22 @@ import { CookiePreferences } from "@/components/CookiePreferences"
 import { GoogleAnalytics } from "@/components/GoogleAnalytics"
 import { JsonLd } from "@/components/JsonLd"
 import { siteBaseUrl } from "@/lib/site-identity"
-import { buildOrganizationSchema, buildWebsiteSchema } from "@/lib/structured-data"
+import {
+  buildOrganizationSchema,
+  buildWebsiteSchema,
+} from "@/lib/structured-data"
 import "./globals.css"
 
-const syne = Syne({
-  subsets: ["latin"],
+const syne = localFont({
+  src: "./fonts/Syne.ttf",
   variable: "--font-syne",
   display: "swap",
-  weight: ["500", "600", "700", "800"],
+  weight: "400 800",
 })
 
-const inter = Inter({
-  subsets: ["latin"],
+const inter = localFont({
+  src: "./fonts/Inter.ttf",
+  weight: "100 900",
   variable: "--font-dm",
   display: "swap",
 })
@@ -62,15 +66,24 @@ export const metadata: Metadata = {
     googleBot: { index: true, follow: true, "max-image-preview": "large" },
   },
   icons: {
-    icon: [{ url: "/brand/favicon.png", type: "image/png" }, { url: "/brand/scalesmiths-mark.png", type: "image/png" }],
+    icon: [
+      { url: "/brand/favicon.png", type: "image/png" },
+      { url: "/brand/scalesmiths-mark.png", type: "image/png" },
+    ],
   },
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   return (
     <html lang="en" className={`${syne.variable} ${inter.variable}`}>
       <head>
-        <JsonLd data={[buildOrganizationSchema(siteUrl), buildWebsiteSchema(siteUrl)]} />
+        <JsonLd
+          data={[buildOrganizationSchema(siteUrl), buildWebsiteSchema(siteUrl)]}
+        />
       </head>
       <body className="bg-bg text-t1 font-dm antialiased">
         <GoogleAnalytics />

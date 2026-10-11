@@ -390,11 +390,7 @@ export function CommandCentre() {
       )}
       <nav className="cc-tabs" aria-label="Commercial views">
         {tabs
-          .filter(
-            (t) =>
-              (t !== "Settings" || data.actor.canConfigure) &&
-              (t !== "Revenue" || data.actor.canReadFinance),
-          )
+          .filter((t) => ["Today", "Pipeline", "Follow-ups"].includes(t))
           .map((t) => (
             <button
               key={t}
@@ -408,6 +404,33 @@ export function CommandCentre() {
               {t}
             </button>
           ))}
+        <select
+          aria-label="More commercial views"
+          value={["Today", "Pipeline", "Follow-ups"].includes(tab) ? "" : tab}
+          onChange={(event) => {
+            if (event.target.value) {
+              setTab(event.target.value as typeof tab)
+              setFilter("all")
+              setSearch("")
+            }
+          }}
+        >
+          <option value="" disabled>
+            More views
+          </option>
+          {tabs
+            .filter(
+              (t) =>
+                !["Today", "Pipeline", "Follow-ups"].includes(t) &&
+                (t !== "Settings" || data.actor.canConfigure) &&
+                (t !== "Revenue" || data.actor.canReadFinance),
+            )
+            .map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+        </select>
       </nav>
       {tab === "Today" && (
         <>
@@ -708,34 +731,37 @@ export function CommandCentre() {
                 {selectedLead.confidence}% confidence
               </p>
               {data.actor.canWrite && (
-                <div className="cc-actions">
-                  <button
-                    onClick={() =>
-                      open({ kind: "updateProspect", lead: selectedLead })
-                    }
-                  >
-                    Edit opportunity
-                  </button>
-                  <button
-                    onClick={() =>
-                      open({ kind: "activity", lead: selectedLead })
-                    }
-                  >
-                    <Phone size={17} /> Log activity
-                  </button>
-                  <button
-                    onClick={() =>
-                      open({ kind: "contact", lead: selectedLead })
-                    }
-                  >
-                    <Plus size={17} /> Contact
-                  </button>
-                  <button
-                    onClick={() => open({ kind: "task", lead: selectedLead })}
-                  >
-                    <CalendarClock size={17} /> Follow-up
-                  </button>
-                </div>
+                <details className="cc-action-menu">
+                  <summary>Business actions</summary>
+                  <div className="cc-actions">
+                    <button
+                      onClick={() =>
+                        open({ kind: "updateProspect", lead: selectedLead })
+                      }
+                    >
+                      Edit opportunity
+                    </button>
+                    <button
+                      onClick={() =>
+                        open({ kind: "activity", lead: selectedLead })
+                      }
+                    >
+                      <Phone size={17} /> Log activity
+                    </button>
+                    <button
+                      onClick={() =>
+                        open({ kind: "contact", lead: selectedLead })
+                      }
+                    >
+                      <Plus size={17} /> Contact
+                    </button>
+                    <button
+                      onClick={() => open({ kind: "task", lead: selectedLead })}
+                    >
+                      <CalendarClock size={17} /> Follow-up
+                    </button>
+                  </div>
+                </details>
               )}
               <h3>Contacts</h3>
               {data.contacts
@@ -915,17 +941,20 @@ export function CommandCentre() {
           </div>
           <div className="cc-toolbar">
             {data.actor.canFinance && (
-              <>
-                <button onClick={() => open({ kind: "contract" })}>
-                  <Plus size={17} /> Contract
-                </button>
-                <button onClick={() => open({ kind: "payment" })}>
-                  <Plus size={17} /> Payment
-                </button>
-                <button onClick={() => open({ kind: "forecast" })}>
-                  <Plus size={17} /> Forecast
-                </button>
-              </>
+              <details className="cc-action-menu">
+                <summary>Add financial record</summary>
+                <div className="cc-actions">
+                  <button onClick={() => open({ kind: "contract" })}>
+                    <Plus size={17} /> Contract
+                  </button>
+                  <button onClick={() => open({ kind: "payment" })}>
+                    <Plus size={17} /> Payment
+                  </button>
+                  <button onClick={() => open({ kind: "forecast" })}>
+                    <Plus size={17} /> Forecast
+                  </button>
+                </div>
+              </details>
             )}
             <Link className="cc-button" href="/finance/invoices">
               Invoices
@@ -1217,15 +1246,6 @@ export function CommandCentre() {
       {tab === "Reports" && <CommercialReports data={data} />}
       {tab === "Pipeline" && selectedLead && (
         <ConversationPreparation context={selectedLead} />
-      )}
-      {data.actor.canWrite && (
-        <button
-          className="cc-capture"
-          title="Capture prospect"
-          onClick={() => open({ kind: "createProspect" })}
-        >
-          <Plus size={23} />
-        </button>
       )}
       {modal && (
         <EntryModal

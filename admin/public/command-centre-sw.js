@@ -1,5 +1,5 @@
 /* Network-only: private documents, sessions and APIs never enter Cache Storage. */
-const VERSION = "command-centre-v1";
+const VERSION = "command-centre-v2";
 self.addEventListener("install", () => {});
 self.addEventListener("activate", event => {
   event.waitUntil(self.clients.claim());

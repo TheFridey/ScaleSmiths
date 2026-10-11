@@ -44,6 +44,8 @@ export function ClientsTable({ clients, salesProposals }: { clients: ClientRow[]
   const [busy, setBusy] = useState<number | null>(null)
   const [saving, setSaving] = useState<number | null>(null)
   const [error, setError] = useState("")
+  const [search, setSearch] = useState("")
+  const visibleClients = clients.filter((client) => [client.name, client.contactName, client.contactEmail, client.tier, client.status].some((value) => value?.toLowerCase().includes(search.trim().toLowerCase())))
 
   async function generateClientProposal(event: FormEvent<HTMLFormElement>, client: ClientRow) {
     event.preventDefault()
@@ -97,17 +99,19 @@ export function ClientsTable({ clients, salesProposals }: { clients: ClientRow[]
   }
 
   return (
-    <div className="mx-auto max-w-[1500px] rounded-[8px] border p-3 sm:p-4 lg:p-5" style={{ background:"rgba(2,6,23,.58)", borderColor:"rgba(56,189,248,.18)", boxShadow:"0 24px 80px rgba(0,0,0,.28)" }}>
+    <div className="mx-auto max-w-[1500px]">
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-syne text-2xl font-extrabold tracking-tight">Clients</h1>
-          <p className="mt-1 font-dm text-sm" style={{ color: T.t2 }}>Live client records from the database.</p>
+          <p className="mt-1 font-dm text-sm" style={{ color: T.t2 }}>{clients.length} client{clients.length === 1 ? "" : "s"}</p>
         </div>
         <Link href="/clients/new" className="inline-flex items-center gap-1.5 rounded-[8px] bg-acc px-4 py-2 font-dm text-sm font-medium text-white">
           <Plus size={15} /> Add Client
         </Link>
       </div>
 
+      <input className="mb-4" type="search" aria-label="Search clients" placeholder="Search clients or contacts" value={search} onChange={(event) => setSearch(event.target.value)} />
+      {search && visibleClients.length === 0 && <p role="status">No matching clients.</p>}
       {error && (
         <div className="mb-4 rounded-lg border px-4 py-3 font-dm text-sm" style={{ background:"rgba(239,68,68,.08)", borderColor:"rgba(239,68,68,.3)", color:"var(--t1)" }}>
           {error}
@@ -130,7 +134,7 @@ export function ClientsTable({ clients, salesProposals }: { clients: ClientRow[]
               <div key={h} className="font-dm text-[11px] font-semibold uppercase tracking-[.07em]" style={{ color:T.t2 }}>{h}</div>
             ))}
           </div>
-          {clients.map((client, index) => {
+          {visibleClients.map((client, index) => {
             const style = STATUS_STYLE[client.status] ?? STATUS_STYLE.prospect
 
             return (
@@ -139,7 +143,7 @@ export function ClientsTable({ clients, salesProposals }: { clients: ClientRow[]
                 className="grid items-center px-4 py-4 transition-colors sm:px-5"
                 style={{
                   gridTemplateColumns:"2fr 1.1fr .8fr .8fr 1fr 2.2fr",
-                  borderBottom:index < clients.length - 1 ? `1px solid ${T.b1}` : "none",
+                  borderBottom:index < visibleClients.length - 1 ? `1px solid ${T.b1}` : "none",
                   background:hovered === client.id ? T.s2 : "transparent",
                 }}
                 onMouseEnter={() => setHovered(client.id)}

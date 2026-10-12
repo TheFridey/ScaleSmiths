@@ -25,3 +25,7 @@ Verification uses a separate checkout and a guarded disposable database provisio
 Local checks include app lint/typecheck/build, focused role/asset boundaries, the existing unit suites, root policy tests and a production browser audit. The original Windows outbound-network tests have three timeout-versus-immediate-failure assertions that also fail with the previous Undici version; the unchanged 25-test file passes in an isolated Linux container with its documentation-range addresses configured. GitHub CI supplies independent Linux and end-to-end release evidence on the pull request.
 
 Merge and deployment remain separate from local and CI verification. Existing production dead letters are retained for operator investigation; a visual redesign does not establish that a historical job can safely be retried.
+
+## Public visual baseline review
+
+The Linux public snapshots were captured before the previous self-hosted-font change. Ten affected snapshots are refreshed from CI run 38253741713 after reviewing the architecture layout and cookie-choice screenshots. Each received image was byte-identical across all three attempts. The WOFF2 conversion preserves the existing TTF horizontal metrics, variation axes and glyph order for both fonts. No visual comparison tolerance, assertion or screenshot test is removed.

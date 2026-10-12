@@ -11,8 +11,8 @@ test.afterEach(async ({ page }) => {
 
 async function interpret(page: import("@playwright/test").Page, request = prompt, websiteUrl = "") {
   await page.goto("/forge/new")
-  if (websiteUrl) await page.getByLabel(/^Existing website URL/).fill(websiteUrl)
-  await page.getByLabel(/^What should Forge build\?/).fill(request)
+  if (websiteUrl) await page.getByRole("textbox", { name: /^Existing website URL/ }).fill(websiteUrl)
+  await page.getByRole("textbox", { name: /^What should Forge build\?/ }).fill(request)
   await page.getByRole("button", { name: "Generate brief", exact: true }).click()
   await expect(page.getByRole("heading", { level: 1, name: /Approve Forge/ })).toBeVisible({ timeout: 60_000 })
 }

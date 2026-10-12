@@ -1,4 +1,4 @@
-﻿# Admin workspace redesign
+# Admin workspace redesign
 
 The private admin remains one Next.js application. The redesign uses the existing routes, capabilities and shared PostgreSQL schema.
 
@@ -16,7 +16,7 @@ The private admin remains one Next.js application. The redesign uses the existin
 
 ## Release repairs
 
-The failing GitHub runs identified four groups of problems: stale E2E landing expectations, public transfer budgets, vulnerable dependencies and unpublished Docker OpenSSL pins. The change updates the framework and matching governance policy/lockfiles, fixes the E2E route expectations, compresses the existing licensed variable fonts as WOFF2 without removing glyphs, and pins the published OpenSSL 3.5.9 packages. Performance budgets and security thresholds remain unchanged.
+The failing GitHub runs identified four groups of problems: stale E2E landing expectations, public transfer budgets, vulnerable dependencies and unpublished Docker OpenSSL pins. The change updates the framework and matching governance policy/lockfiles, fixes the E2E route expectations, compresses the existing licensed variable fonts as WOFF2 without removing glyphs, and pins the published OpenSSL 3.5.9 and zlib 1.3.2-r1 packages. Performance budgets and security thresholds remain unchanged.
 
 ## Verification boundaries
 

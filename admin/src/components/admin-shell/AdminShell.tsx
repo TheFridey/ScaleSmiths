@@ -397,6 +397,7 @@ function NavigationList({
                     onClick={() => { setNavigationSearch(""); onNavigate?.() }}
                     className={`admin-nav-link ${collapsed ? "is-collapsed admin-tooltip" : ""} ${active ? "is-active" : ""}`}
                     aria-current={active ? "page" : undefined}
+                    title={collapsed ? label : undefined}
                     aria-label={collapsed ? label : undefined}
                     data-tooltip={collapsed ? label : undefined}
                   >

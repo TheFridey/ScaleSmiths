@@ -37,6 +37,7 @@ test("pipeline search, selection and focused panels preserve the correct prospec
   await page.getByRole("button", { name: "List", exact: true }).click()
   await page.locator(".pipeline-list-row").click()
   await expect(page.locator(".pipeline-detail-heading")).toBeInViewport()
+  await expect.poll(() => page.locator("#prospect-detail").evaluate((element) => element.getBoundingClientRect().top)).toBeLessThan(90)
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
   await page.screenshot({ path: "test-results/workspace-review/pipeline-mobile.png" })
 })

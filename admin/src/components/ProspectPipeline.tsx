@@ -697,7 +697,7 @@ function DetailPanel({ prospect, activities, proposals, salesProposals, leadScor
       <div className="rounded-[8px] border p-4 sm:p-5" style={{ background:T.s1, borderColor:T.b1 }}>
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
-            <h2 className="font-syne text-xl font-extrabold">{prospect.businessName}</h2>
+            <h2 className="font-syne text-lg font-semibold">Contact and opportunity</h2>
             <p className="mt-1 font-dm text-xs" style={{ color:T.t2 }}>{prospect.industry ?? "No industry"} / {prospect.location ?? "No location"}</p>
           </div>
           <span className="rounded px-2 py-1 font-dm text-[10px] font-semibold uppercase tracking-[.06em]" style={{ background:T.s2, border:`1px solid ${T.b2}`, color:STAGE_COLOR[prospect.stage] }}>{STAGE_LABELS[prospect.stage]}</span>

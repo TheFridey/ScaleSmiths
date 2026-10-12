@@ -1,3 +1,4 @@
+import { adminHomeForRole, isPublicAdminBrandAsset } from "@/lib/admin-home"
 import { NextResponse } from "next/server"
 import NextAuth from "next-auth"
 import { authConfig } from "../auth.config"
@@ -57,7 +58,7 @@ export default auth(async (req) => {
   }
 
   // Only these non-sensitive installation assets are public on the admin origin.
-  if (pathname === "/manifest.webmanifest" || pathname === "/command-centre-sw.js" || /^\/app-icon\/(192|512|180)$/.test(pathname)) return next()
+  if (isPublicAdminBrandAsset(pathname) || pathname === "/manifest.webmanifest" || pathname === "/command-centre-sw.js" || /^\/app-icon\/(192|512|180)$/.test(pathname)) return next()
 
   // The endpoint performs its own constant-time token check. Keep it outside
   // interactive authentication so infrastructure can check the container.
@@ -67,7 +68,7 @@ export default auth(async (req) => {
 
   if (pathname.startsWith("/login")) {
     if (req.auth) {
-      const url = redirectUrl(req.auth.user.role === "venture_controller" ? "/venture-lab" : "/dashboard")
+      const url = redirectUrl(adminHomeForRole(req.auth.user.role))
       return correlated(NextResponse.redirect(url))
     }
 
@@ -91,13 +92,15 @@ export default auth(async (req) => {
     return correlated(NextResponse.redirect(url))
   }
 
+  if (pathname === "/") return correlated(NextResponse.redirect(redirectUrl(adminHomeForRole(persistedUser.role))))
+
   const authorization = authorizeRequest(persistedUser.role, { pathname, method: req.method })
   if (!authorization.allowed) {
     const auditContext = { actorId: persistedUser.id, actorRole: persistedUser.role, capability: authorization.capability, pathname, method: req.method, requestId }
     requestLogger({ component: "rbac", ...auditContext }).warn("RBAC access denied")
     captureMonitoringMessage("RBAC access denied", "warning", { ...auditContext, errorCategory: "rbac_denied" })
     if (pathname.startsWith("/api/")) return correlated(NextResponse.json({ error: "Forbidden.", requiredCapability: authorization.capability }, { status: 403 }))
-    const url = redirectUrl(req.auth.user.role === "venture_controller" ? "/venture-lab" : "/dashboard")
+    const url = redirectUrl(adminHomeForRole(persistedUser.role))
     url.searchParams.set("reason", "forbidden")
     return correlated(NextResponse.redirect(url))
   }

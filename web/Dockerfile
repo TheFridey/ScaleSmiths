@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 FROM node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS node-base
-RUN apk add --no-cache libcrypto3=3.5.8-r0 libssl3=3.5.8-r0
+RUN apk add --no-cache libcrypto3=3.5.9-r0 libssl3=3.5.9-r0
 
 FROM node-base AS deps
 WORKDIR /workspace/web

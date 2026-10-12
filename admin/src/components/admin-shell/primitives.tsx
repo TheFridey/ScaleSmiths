@@ -146,21 +146,32 @@ function Drawer({
   side: "left" | "right"
 }) {
   const closeButtonRef = useRef<HTMLButtonElement>(null)
+  const dialogRef = useRef<HTMLElement>(null)
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose
   useEffect(() => {
     if (!open) return
+    const previousFocus = document.activeElement as HTMLElement | null
     closeButtonRef.current?.focus()
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose()
+      if (event.key === "Escape") { event.preventDefault(); onCloseRef.current() }
+      if (event.key === "Tab") {
+        const controls = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex="0"]') ?? []).filter((element) => element.getClientRects().length > 0)
+        const first = controls[0]
+        const last = controls[controls.length - 1]
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus() }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus() }
+      }
     }
     window.addEventListener("keydown", onKeyDown)
-    return () => window.removeEventListener("keydown", onKeyDown)
-  }, [onClose, open])
+    return () => { window.removeEventListener("keydown", onKeyDown); previousFocus?.focus() }
+  }, [open])
 
   if (!open) return null
   return (
     <div className="context-drawer-layer">
       <button type="button" className="context-drawer-backdrop" onClick={onClose} aria-label={`Close ${title}`} />
-      <aside className={`context-drawer from-${side}`} role="dialog" aria-modal="true" aria-label={title}>
+      <aside ref={dialogRef} className={`context-drawer from-${side}`} role="dialog" aria-modal="true" aria-label={title}>
         <div className="context-drawer-header">
           <h2>{title}</h2>
           <button ref={closeButtonRef} type="button" className="admin-icon-button" onClick={onClose} aria-label={`Close ${title}`}>

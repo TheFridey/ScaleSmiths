@@ -21,7 +21,7 @@ export function ForgeProjectHeader({ projectId, name, businessName, industry, cu
 }
 
 export function ForgeProjectNavigation({ activeView, attentionCount, onNavigate, onOpenWorkflow }: { activeView: WorkspaceView; attentionCount: number; onNavigate: (view: WorkspaceView) => void; onOpenWorkflow: () => void }) {
-  return <nav className="project-view-nav" aria-label="Project workspace"><button type="button" className="project-stage-mobile-trigger" onClick={onOpenWorkflow}><Workflow size={16} aria-hidden="true" />Stages</button>{WORKSPACE_VIEWS.map(({ key, label, Icon }) => <button key={key} type="button" className={activeView === key ? "is-active" : ""} onClick={() => onNavigate(key)}><Icon size={16} aria-hidden="true" />{label}{key === "attention" && attentionCount > 0 ? <span>{attentionCount}</span> : null}</button>)}</nav>
+  return <nav className="project-view-nav" aria-label="Project workspace"><button type="button" className="project-stage-mobile-trigger" onClick={onOpenWorkflow}><Workflow size={16} aria-hidden="true" />Stages</button>{WORKSPACE_VIEWS.map(({ key, label, Icon }) => <button key={key} type="button" aria-pressed={activeView === key} className={activeView === key ? "is-active" : ""} onClick={() => onNavigate(key)}><Icon size={16} aria-hidden="true" />{label}{key === "attention" && attentionCount > 0 ? <span>{attentionCount}</span> : null}</button>)}</nav>
 }
 
 export function ForgeStageRail({ stages, activeStage, onSelect }: { stages: WorkspaceStage[]; activeStage: ProductionStage; onSelect: (stage: WorkspaceStage) => void }) {

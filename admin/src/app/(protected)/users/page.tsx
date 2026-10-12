@@ -1,6 +1,9 @@
+import type { Metadata } from "next"
 import { AdminUsersManager } from "@/components/AdminUsersManager"
 import { guardPageCapability } from "@/lib/server/rbac"
 import { listAdminUsers } from "@/lib/server/admin-users"
+
+export const metadata: Metadata = { title: "Admin users" }
 
 export const dynamic = "force-dynamic"
 

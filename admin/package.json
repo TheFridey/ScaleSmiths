@@ -20,7 +20,7 @@
     "test:visual:shell": "node ./node_modules/@playwright/test/cli.js test --config playwright.shell.config.ts",
     "test:visual:shell:update": "node ./node_modules/@playwright/test/cli.js test --config playwright.shell.config.ts --update-snapshots",
     "test:e2e:forge-auth": "node ./node_modules/@playwright/test/cli.js test --config playwright.forge.config.ts admin-auth.spec.ts",
-    "test:e2e:forge-journeys": "node ./node_modules/@playwright/test/cli.js test --config playwright.forge.config.ts forge-journeys.spec.ts prospect-conversion.spec.ts",
+    "test:e2e:forge-journeys": "node ./node_modules/@playwright/test/cli.js test --config playwright.forge.config.ts forge-journeys.spec.ts prospect-conversion.spec.ts admin-workspace.spec.ts",
     "test:e2e:golden-path": "node ./node_modules/@playwright/test/cli.js test --config playwright.forge.config.ts golden-path-ui.spec.ts",
     "test:db:prepare": "node scripts/test-database.mjs prepare",
     "test:db:migrate": "node scripts/migrate-shared-test-database.mjs",
@@ -44,7 +44,7 @@
     "clsx": "^2.1.1",
     "drizzle-orm": "0.45.2",
     "lucide-react": "^0.383.0",
-    "next": "15.5.25",
+    "next": "15.5.27",
     "next-auth": "5.0.0-beta.32",
     "pdf-lib": "1.17.1",
     "pg": "8.21.0",
@@ -53,7 +53,7 @@
     "recharts": "3.10.1",
     "resend": "6.17.2",
     "tailwind-merge": "^2.3.0",
-    "undici": "6.28.0"
+    "undici": "6.29.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.5",
@@ -65,7 +65,7 @@
     "autoprefixer": "^10.4.19",
     "drizzle-kit": "^0.31.10",
     "eslint": "^9.39.4",
-    "eslint-config-next": "15.5.25",
+    "eslint-config-next": "15.5.27",
     "postcss": "8.5.25",
     "tailwindcss": "^3.4.4",
     "typescript": "^5.5.2",
@@ -73,13 +73,14 @@
   },
   "overrides": {
     "browserslist": "4.28.8",
-    "brace-expansion": "5.0.9",
+    "brace-expansion": "5.0.12",
     "fast-uri": "3.1.8",
     "nanoid": "3.3.18",
     "js-yaml": "4.3.1",
     "next": {
       "postcss": "8.5.25",
-      "sharp": "0.35.4"
-    }
+      "sharp": "0.35.5"
+    },
+    "source-map-js": "1.2.2"
   }
 }

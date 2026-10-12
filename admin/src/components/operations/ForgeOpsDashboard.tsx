@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState, type ReactNode } from "react"
+import { useMemo, useState, useTransition, type ReactNode } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import {
@@ -14,10 +14,15 @@ import {
 
 export function ForgeOpsDashboard({ snapshot, canRecover }: { snapshot: ForgeOpsSnapshot; canRecover: boolean }) {
   const router = useRouter()
+  const [refreshing, startRefresh] = useTransition()
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [retryJobId, setRetryJobId] = useState(String(snapshot.deadLetters.items[0]?.id ?? ""))
+
+  const [showOffline, setShowOffline] = useState(false)
+  const activeWorkers = snapshot.workers.filter((worker) => worker.state !== "offline")
+  const offlineCount = snapshot.workers.length - activeWorkers.length
 
   const retryPhrase = useMemo(
     () => confirmationPhraseFor("retry_dead_letter", { jobId: Number(retryJobId) || undefined }),
@@ -28,35 +33,37 @@ export function ForgeOpsDashboard({ snapshot, canRecover }: { snapshot: ForgeOps
     setBusy(action)
     setError(null)
     setNotice(null)
-    const response = await fetch("/api/operations/forge-health", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action, confirmation, jobId }),
-    })
-    const payload = await response.json().catch(() => null) as { error?: string; result?: { message?: string } } | null
-    setBusy(null)
-    if (!response.ok) {
-      setError(payload?.error ?? "Recovery action failed.")
-      return
+    try {
+      const response = await fetch("/api/operations/forge-health", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, confirmation, jobId }),
+      })
+      const payload = await response.json().catch(() => null) as { error?: string; result?: { message?: string } } | null
+      if (!response.ok) throw new Error(payload?.error ?? "Recovery action failed.")
+      setNotice(payload?.result?.message ?? "Recovery action completed.")
+      router.refresh()
+    } catch (failure) {
+      setError(failure instanceof Error ? failure.message : "Unable to reach Forge. Please try again.")
+    } finally {
+      setBusy(null)
     }
-    setNotice(payload?.result?.message ?? "Recovery action completed.")
-    router.refresh()
   }
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 p-4">
+    <div className="forge-ops-workspace space-y-6">
       <header className="space-y-2">
+        <div className="forge-ops-actions"><Link href="/forge" className="forge-secondary-action">Open Forge</Link><button className="forge-secondary-action" disabled={refreshing} onClick={() => startRefresh(() => router.refresh())}>{refreshing ? "Refreshing..." : "Refresh health"}</button>{canRecover && <a href="#forge-recovery" className="forge-primary-action">Recovery actions</a>}</div>
         <p className="text-sm text-cyan-300">Operations</p>
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h1 className="font-syne text-3xl font-bold">Forge queue and preview health</h1>
+            <h1 className="font-syne text-3xl font-bold">Forge operations</h1>
             <p className="max-w-3xl text-sm text-t2">
-              Durable queue depth, leases, retries, dead letters and preview ownership. This view shows identifiers and sanitised operator summaries only — not prompts, generated sites or secret-bearing failures.
+              Monitor generation jobs, worker availability and private preview health.
             </p>
           </div>
           <div className="rounded border border-b1 bg-s1 px-4 py-3 text-sm text-t2">
             Generated {new Date(snapshot.generatedAt).toLocaleString("en-GB")}
-            <div>Worker {snapshot.workerEnabled ? "enabled" : "disabled"} · {snapshot.workers.length} heartbeat(s)</div>
+            <div>Worker {snapshot.workerEnabled ? "enabled" : "disabled"} · {activeWorkers.length} active worker(s)</div>
           </div>
         </div>
       </header>
@@ -64,15 +71,15 @@ export function ForgeOpsDashboard({ snapshot, canRecover }: { snapshot: ForgeOps
       {snapshot.alerts.length > 0 && (
         <section className="rounded border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-100">
           <h2 className="font-semibold">Threshold alerts</h2>
-          <p className="mt-1 text-amber-100/80">These codes are the same signals a later monitoring adapter can page on. They do not require Sentry to render here.</p>
+          <p className="mt-1 text-amber-100/80">Review the affected jobs below before taking a recovery action.</p>
           <ul className="mt-2 list-disc space-y-1 pl-5">
             {snapshot.alerts.map((alert) => <AlertItem key={`${alert.code}:${alert.severity}`} alert={alert} />)}
           </ul>
         </section>
       )}
 
-      {error && <p className="rounded border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-100">{error}</p>}
-      {notice && <p className="rounded border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">{notice}</p>}
+      {error && <p role="alert" className="rounded border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-100">{error}</p>}
+      {notice && <p role="status" className="rounded border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">{notice}</p>}
 
       <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <Metric label="Queue depth" value={snapshot.queue.depth.toLocaleString()} detail={ageDetail(snapshot.queue.oldestQueuedAgeMs, snapshot.queue.oldestQueuedJobId)} />
@@ -81,15 +88,19 @@ export function ForgeOpsDashboard({ snapshot, canRecover }: { snapshot: ForgeOps
         <Metric label="Dead letters" value={snapshot.deadLetters.count.toLocaleString()} detail="Retained for investigation" />
         <Metric label="Previews running" value={snapshot.previews.running.toLocaleString()} detail={`${snapshot.previews.abandoned} abandoned`} />
         <Metric label="Inaccessible owners" value={snapshot.previews.inaccessible.toLocaleString()} detail="Live lease, unreachable instance" />
-        <Metric label="Workers" value={snapshot.workers.length.toLocaleString()} detail={snapshot.workers.map((worker) => worker.state).join(", ") || "none"} />
+        <Metric label="Workers" value={activeWorkers.length.toLocaleString()} detail={`${offlineCount} offline / ${activeWorkers.filter((worker) => worker.state === "degraded").length} degraded`} />
         <Metric label="Queued by status" value={String(snapshot.queue.byStatus.queued ?? 0)} detail={Object.entries(snapshot.queue.byStatus).map(([status, count]) => `${status}:${count}`).join(" · ") || "empty"} />
       </section>
 
       <section className="grid gap-4 xl:grid-cols-2">
+        <Panel title="Dead letters">
+          <JobTable jobs={snapshot.deadLetters.items} empty="No dead letters." showFailure />
+        </Panel>
         <Panel title="Workers">
-          {snapshot.workers.length === 0 ? <Empty>No worker heartbeats recorded.</Empty> : (
+          <button className="forge-secondary-action mb-3" aria-pressed={showOffline} onClick={() => setShowOffline((value) => !value)}>{showOffline ? "Hide offline history" : `Show offline history (${offlineCount})`}</button>
+          {(showOffline ? snapshot.workers : activeWorkers).length === 0 ? <Empty>{offlineCount ? "No active workers. Offline history is available above." : "No worker heartbeats recorded."}</Empty> : (
             <Table headers={["Worker", "Host", "Jobs", "State", "Heartbeat"]}>
-              {snapshot.workers.map((worker) => (
+              {(showOffline ? snapshot.workers : activeWorkers).map((worker) => (
                 <tr key={worker.workerId}>
                   <td className="font-mono text-xs">{worker.workerId}</td>
                   <td>{worker.hostname}:{worker.processId}</td>
@@ -122,9 +133,7 @@ export function ForgeOpsDashboard({ snapshot, canRecover }: { snapshot: ForgeOps
         <Panel title="Retry storms">
           <JobTable jobs={snapshot.retries.items} empty="No in-flight jobs have retried above the threshold." />
         </Panel>
-        <Panel title="Dead letters">
-          <JobTable jobs={snapshot.deadLetters.items} empty="No dead letters." showFailure />
-        </Panel>
+
         <Panel title="Preview ownership">
           {snapshot.previews.items.length === 0 ? <Empty>No preview rows.</Empty> : (
             <Table headers={["Project", "Status", "Ownership", "Owner", "Lease"]}>
@@ -142,8 +151,8 @@ export function ForgeOpsDashboard({ snapshot, canRecover }: { snapshot: ForgeOps
         </Panel>
       </section>
 
-      <section className="rounded border border-b1 bg-s1 p-4">
-        <h2 className="font-syne text-xl font-semibold">Documented recovery</h2>
+      <section id="forge-recovery" className="rounded border border-b1 bg-s1 p-4">
+        <h2 className="font-syne text-xl font-semibold">Recovery actions</h2>
         <p className="mt-1 max-w-3xl text-sm text-t2">
           Each action requires an exact confirmation phrase and writes a Forge activity audit entry. Live leases are never taken over. Inaccessible preview owners must wait until their lease expires, then use preview reconciliation.
         </p>
@@ -268,7 +277,7 @@ function Panel({ title, children }: { title: string; children: ReactNode }) {
 
 function Table({ headers, children }: { headers: string[]; children: ReactNode }) {
   return (
-    <div className="overflow-x-auto">
+    <div className="forge-ops-table" tabIndex={0} role="region" aria-label={headers.join(", ")}>
       <table className="w-full min-w-[32rem] text-left text-sm">
         <thead>
           <tr className="text-t2">
@@ -286,7 +295,7 @@ function Empty({ children }: { children: ReactNode }) {
 }
 
 function AlertItem({ alert }: { alert: ForgeOpsAlert }) {
-  return <li><span className="font-mono">{alert.code}</span> · {alert.severity} · {alert.summary}</li>
+  return <li><strong>{alert.summary}</strong><details className="mt-1 text-xs"><summary>Technical reference</summary><span className="font-mono">{alert.code}</span> · {alert.severity} · {alert.summary}</details></li>
 }
 
 function JobLink({ id, kind }: { id: number; kind: string }) {

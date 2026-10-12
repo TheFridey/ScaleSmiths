@@ -1,5 +1,7 @@
 "use client"
 
+import { adminHomeForRole } from "@/lib/admin-home"
+
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { signIn } from "next-auth/react"
@@ -39,11 +41,7 @@ export default function LoginPage() {
         cache: "no-store",
       })
       const session = await sessionResponse.json().catch(() => null)
-      router.push(
-        session?.user?.role === "venture_controller"
-          ? "/venture-lab"
-          : "/command-centre",
-      )
+      router.push(adminHomeForRole(session?.user?.role))
       router.refresh()
     } catch {
       setError("Something went wrong - try again")

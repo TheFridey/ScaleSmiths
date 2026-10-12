@@ -147,12 +147,12 @@ interface ProspectPipelineProps {
 
 const STAGE_COLOR: Record<ProspectStage, string> = {
   contact_identified: "#81b3ac", qualified: "#d1b266", proposal_required: "#b5b6ba", negotiation: "#d1b266",
-  found: "#525252",
+  found: "#a5afbd",
   audited: "#60a5fa",
-  contacted: "#2563EB",
+  contacted: "#8bb8ff",
   replied: "#14b8a6",
   discovery_booked: "#f59e0b",
-  proposal_sent: "#8b5cf6",
+  proposal_sent: "#c4a7ff",
   follow_up_due: "#fb923c",
   won: "#10b981",
   lost: "#ef4444",
@@ -166,8 +166,9 @@ export function ProspectPipeline({ initialProspects, initialActivities, initialP
   const [salesProposals, setSalesProposals] = useState(initialSalesProposals)
   const [leadScores, setLeadScores] = useState<Record<number, LeadScoreSnapshot>>(initialLeadScores)
   const [selectedId, setSelectedId] = useState(initialProspects[0]?.id ?? null)
-  const [view, setView] = useState<"pipeline" | "followups">("pipeline")
+  const [view, setView] = useState<"list" | "pipeline" | "followups">("list")
   const [showNew, setShowNew] = useState(initialProspects.length === 0)
+  const [search, setSearch] = useState("")
   const [dragging, setDragging] = useState<Prospect | null>(null)
   const [busy, setBusy] = useState("")
   const [error, setError] = useState("")
@@ -181,6 +182,18 @@ export function ProspectPipeline({ initialProspects, initialActivities, initialP
     setLeadScores(initialLeadScores)
     setSelectedId((current) => current ?? initialProspects[0]?.id ?? null)
   }, [initialProspects, initialActivities, initialProposals, initialSalesProposals, initialLeadScores])
+
+  function selectProspect(id: number) {
+    setSelectedId(id)
+    if (window.matchMedia("(max-width: 1000px)").matches) {
+      window.requestAnimationFrame(() => document.getElementById("prospect-detail")?.scrollIntoView({ block: "start", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }))
+    }
+  }
+
+  const filteredProspects = useMemo(() => {
+    const query = search.trim().toLowerCase()
+    return prospects.filter((prospect) => [prospect.businessName, prospect.contactName, prospect.location].some((value) => value?.toLowerCase().includes(query)))
+  }, [prospects, search])
 
   const selected = prospects.find((prospect) => prospect.id === selectedId) ?? prospects[0] ?? null
   const metrics = useMemo(() => computeSalesMetrics(prospects, activities, proposals), [prospects, activities, proposals])
@@ -410,15 +423,16 @@ export function ProspectPipeline({ initialProspects, initialActivities, initialP
   }
 
   return (
-    <div className="mx-auto max-w-[1600px] rounded-[8px] border p-3 sm:p-4 lg:p-5" style={{ background:"rgba(2,6,23,.58)", borderColor:"rgba(56,189,248,.18)", boxShadow:"0 24px 80px rgba(0,0,0,.28)" }}>
+    <div className="pipeline-workspace">
       <div className="mb-5 flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
         <div>
           <h1 className="font-syne text-2xl font-extrabold tracking-tight">Prospect Pipeline</h1>
           <p className="mt-1 font-dm text-sm" style={{ color:T.t2 }}>Outbound audits, follow-ups, proposals, retainers, and client conversion.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button onClick={() => setView("pipeline")} className="rounded-[8px] border px-3 py-2 font-dm text-sm" style={tabStyle(view === "pipeline")}>Pipeline</button>
-          <button onClick={() => setView("followups")} className="rounded-[8px] border px-3 py-2 font-dm text-sm" style={tabStyle(view === "followups")}>Follow-ups</button>
+          <button aria-pressed={view === "list"} onClick={() => setView("list")} className="rounded-lg border px-3 py-2 text-sm" style={tabStyle(view === "list")}>List</button>
+          <button aria-pressed={view === "pipeline"} onClick={() => setView("pipeline")} className="rounded-[8px] border px-3 py-2 font-dm text-sm" style={tabStyle(view === "pipeline")}>Board</button>
+          <button aria-pressed={view === "followups"} onClick={() => setView("followups")} className="rounded-[8px] border px-3 py-2 font-dm text-sm" style={tabStyle(view === "followups")}>Follow-ups</button>
           <button onClick={() => setShowNew((open) => !open)} className="flex items-center gap-1.5 rounded-[8px] px-4 py-2 font-dm text-sm font-medium text-white" style={{ background:T.acc }}>
             <Plus size={15} /> Prospect
           </button>
@@ -432,6 +446,7 @@ export function ProspectPipeline({ initialProspects, initialActivities, initialP
       )}
 
       <MetricsPanel metrics={metrics} />
+      <label className="pipeline-search"><span>Find a prospect</span><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search business, contact or location" /></label>
 
       {showNew && (
         <form onSubmit={createProspect} className="mb-5 rounded-[8px] border p-4 sm:p-5" style={{ background:T.s1, borderColor:T.b1 }}>
@@ -461,7 +476,7 @@ export function ProspectPipeline({ initialProspects, initialActivities, initialP
       )}
 
       {view === "followups" ? (
-        <FollowUpsView buckets={followUps} onSelect={setSelectedId} onActivity={addActivity} busy={busy} />
+        <FollowUpsView buckets={followUps} onSelect={(id) => { setView("list"); selectProspect(id) }} onActivity={addActivity} busy={busy} />
       ) : prospects.length === 0 ? (
         <div className="rounded-[8px] border p-6 sm:p-8" style={{ background:T.s1, borderColor:T.b1 }}>
           <Target size={22} className="mb-4 text-acc" />
@@ -471,9 +486,16 @@ export function ProspectPipeline({ initialProspects, initialActivities, initialP
           </p>
         </div>
       ) : (
-        <div className="grid gap-4 2xl:grid-cols-[minmax(0,1.45fr)_minmax(380px,.75fr)]">
-          <KanbanBoard prospects={prospects} selectedId={selected?.id ?? null} dragging={dragging} setDragging={setDragging} onMove={moveStage} onSelect={setSelectedId} />
-          <DetailPanel
+        <div className="pipeline-split">
+          {view === "list" ? <div className="pipeline-list" aria-label="Prospects">
+            {filteredProspects.map((p) => <button key={p.id} className="pipeline-list-row" aria-pressed={selected?.id === p.id} onClick={() => selectProspect(p.id)}>
+              <span><strong>{p.businessName}</strong><small>{p.contactName || "No contact"} / {p.location || "No location"}</small></span>
+              <span className="status-badge" style={{ color: STAGE_COLOR[p.stage] }}>{STAGE_LABELS[p.stage]}</span>
+              <span><strong>&pound;{p.estimatedProjectValue.toLocaleString()}</strong><small style={{ color: followUpColor(p.nextFollowUpAt) }}>{formatDate(p.nextFollowUpAt, "No follow-up scheduled")}</small></span>
+            </button>)}
+            {filteredProspects.length === 0 && <p className="empty-state">No prospects match your search.</p>}
+          </div> : <KanbanBoard prospects={filteredProspects} selectedId={selected?.id ?? null} dragging={dragging} setDragging={setDragging} onMove={moveStage} onSelect={selectProspect} />}
+          <DetailPanel key={selected?.id}
             prospect={selected}
             activities={selectedActivities}
             proposals={selectedProposals}
@@ -522,7 +544,7 @@ function MetricsPanel({ metrics }: { metrics: SalesMetrics }) {
   ] as const
 
   return (
-    <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-8">
+    <div className="pipeline-metrics">
       {cards.map(([label, value, sub, Icon, color]) => (
         <div key={label} className="rounded-[8px] border p-4" style={{ background:T.s1, borderColor:T.b1 }}>
           <div className="mb-2 flex items-center justify-between">
@@ -548,8 +570,8 @@ function KanbanBoard({ prospects, selectedId, dragging, setDragging, onMove, onS
   const [over, setOver] = useState<ProspectStage | null>(null)
 
   return (
-    <div className="overflow-x-auto pb-2">
-      <div className="grid min-w-[1320px] grid-cols-9 gap-3">
+    <div className="pipeline-board" tabIndex={0} role="region" aria-label="Pipeline board; scroll horizontally for more stages">
+      <div className="pipeline-columns">
         {PROSPECT_STAGES.map((stage) => {
           const stageProspects = prospects.filter((prospect) => prospect.stage === stage)
 
@@ -558,7 +580,7 @@ function KanbanBoard({ prospects, selectedId, dragging, setDragging, onMove, onS
               key={stage}
               onDragOver={(event) => { event.preventDefault(); setOver(stage) }}
               onDrop={() => { if (dragging) onMove(dragging, stage); setDragging(null); setOver(null) }}
-              className="min-h-[520px] rounded-[8px] border p-3"
+              className="min-h-[220px] rounded-[8px] border p-3"
               style={{ background:over === stage ? "rgba(37,99,235,.05)" : T.s1, borderColor:over === stage ? "var(--acc-b)" : T.b1 }}
             >
               <div className="mb-3 flex items-center gap-2">
@@ -620,6 +642,7 @@ function DetailPanel({ prospect, activities, proposals, salesProposals, leadScor
   onLost: (event: FormEvent<HTMLFormElement>) => void
   onConvert: () => void
 }) {
+  const [detailTab, setDetailTab] = useState("details")
   const [stage, setStage] = useState<ProspectStage>(prospect?.stage ?? "found")
 
   useEffect(() => {
@@ -631,8 +654,37 @@ function DetailPanel({ prospect, activities, proposals, salesProposals, leadScor
   }
 
   return (
-    <aside className="space-y-3">
-      <LeadScorePanel
+    <aside id="prospect-detail" className="pipeline-detail space-y-3">
+      <header className="pipeline-detail-heading"><span className="workspace-eyebrow">Selected prospect</span><h2>{prospect.businessName}</h2><span className="status-badge" style={{ color: STAGE_COLOR[prospect.stage] }}>{STAGE_LABELS[prospect.stage]}</span></header>
+      <div className="rounded-[8px] border p-4 sm:p-5" style={{ background:T.s1, borderColor:T.b1 }}>
+        <h3 className="mb-3 font-syne text-[15px] font-bold">Next step</h3>
+        <div className="grid grid-cols-[1fr_auto] gap-2">
+          <select aria-label="Move prospect to stage" value={stage} onChange={(event) => setStage(event.target.value as ProspectStage)} className="font-dm text-sm">
+            {PROSPECT_STAGES.map((item) => <option key={item} value={item}>{STAGE_LABELS[item]}</option>)}
+          </select>
+          <button onClick={() => onStage(stage)} disabled={busy.startsWith("stage")} className="rounded-lg px-3 py-2 font-dm text-sm text-white disabled:opacity-60" style={{ background:T.acc }}>Move</button>
+        </div>
+
+        <details className="pipeline-action-disclosure"><summary>Schedule follow-up</summary><form onSubmit={onFollowUp} className="mt-3 grid grid-cols-[1fr_auto] gap-2">
+          <input aria-label="Next follow-up" name="nextFollowUpAt" type="datetime-local" defaultValue={dateTimeValue(prospect.nextFollowUpAt)} />
+          <button disabled={busy === "followup"} className="rounded-lg px-3 py-2 font-dm text-sm text-white disabled:opacity-60" style={{ background:T.amb }}>Set</button>
+        </form></details>
+
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <button onClick={onWon} disabled={busy === "won"} className="rounded-lg px-3 py-2 font-dm text-sm font-medium text-white disabled:opacity-60" style={{ background:T.grn }}>Mark Won</button>
+          <button onClick={onConvert} disabled={busy === "convert" || Boolean(prospect.convertedClientId)} className="rounded-lg px-3 py-2 font-dm text-sm font-medium text-white disabled:opacity-60" style={{ background:T.acc }}>
+            {prospect.convertedClientId ? "Converted" : "Convert to Client"}
+          </button>
+        </div>
+        <details className="pipeline-action-disclosure"><summary>Close as lost</summary><form onSubmit={onLost} className="mt-2 grid grid-cols-[1fr_auto] gap-2">
+          <input aria-label="Lost reason" name="lostReason" placeholder="Lost reason" defaultValue={prospect.lostReason ?? ""} />
+          <button disabled={busy === "lost"} className="rounded-lg px-3 py-2 font-dm text-sm text-white disabled:opacity-60" style={{ background:T.red }}>Lost</button>
+        </form></details>
+      </div>
+      <div className="pipeline-detail-tabs" role="group" aria-label="Prospect information">
+        {[["details", "Details"], ["activity", "Activity"], ["proposals", "Proposals"], ["score", "Lead score"]].map(([key, label]) => <button key={key} type="button" aria-pressed={detailTab === key} onClick={() => setDetailTab(key)}>{label}</button>)}
+      </div>
+      <div hidden={detailTab !== "score"}>      <LeadScorePanel
         score={leadScore}
         busy={busy}
         onRefresh={onRefreshLeadScore}
@@ -640,10 +692,12 @@ function DetailPanel({ prospect, activities, proposals, salesProposals, leadScor
         onOutcome={onRecordLeadScoreOutcome}
       />
 
+</div>
+      <div hidden={detailTab !== "details"} className="space-y-3">
       <div className="rounded-[8px] border p-4 sm:p-5" style={{ background:T.s1, borderColor:T.b1 }}>
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
-            <h2 className="font-syne text-xl font-extrabold">{prospect.businessName}</h2>
+            <h2 className="font-syne text-lg font-semibold">Contact and opportunity</h2>
             <p className="mt-1 font-dm text-xs" style={{ color:T.t2 }}>{prospect.industry ?? "No industry"} / {prospect.location ?? "No location"}</p>
           </div>
           <span className="rounded px-2 py-1 font-dm text-[10px] font-semibold uppercase tracking-[.06em]" style={{ background:T.s2, border:`1px solid ${T.b2}`, color:STAGE_COLOR[prospect.stage] }}>{STAGE_LABELS[prospect.stage]}</span>
@@ -692,32 +746,10 @@ function DetailPanel({ prospect, activities, proposals, salesProposals, leadScor
         </div>
       </div>
 
-      <div className="rounded-[8px] border p-4 sm:p-5" style={{ background:T.s1, borderColor:T.b1 }}>
-        <h3 className="mb-3 font-syne text-[15px] font-bold">Actions</h3>
-        <div className="grid grid-cols-[1fr_auto] gap-2">
-          <select value={stage} onChange={(event) => setStage(event.target.value as ProspectStage)} className="font-dm text-sm">
-            {PROSPECT_STAGES.map((item) => <option key={item} value={item}>{STAGE_LABELS[item]}</option>)}
-          </select>
-          <button onClick={() => onStage(stage)} disabled={busy.startsWith("stage")} className="rounded-lg px-3 py-2 font-dm text-sm text-white disabled:opacity-60" style={{ background:T.acc }}>Move</button>
-        </div>
 
-        <form onSubmit={onFollowUp} className="mt-3 grid grid-cols-[1fr_auto] gap-2">
-          <input name="nextFollowUpAt" type="datetime-local" defaultValue={dateTimeValue(prospect.nextFollowUpAt)} />
-          <button disabled={busy === "followup"} className="rounded-lg px-3 py-2 font-dm text-sm text-white disabled:opacity-60" style={{ background:T.amb }}>Set</button>
-        </form>
 
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          <button onClick={onWon} disabled={busy === "won"} className="rounded-lg px-3 py-2 font-dm text-sm font-medium text-white disabled:opacity-60" style={{ background:T.grn }}>Mark Won</button>
-          <button onClick={onConvert} disabled={busy === "convert" || Boolean(prospect.convertedClientId)} className="rounded-lg px-3 py-2 font-dm text-sm font-medium text-white disabled:opacity-60" style={{ background:T.acc }}>
-            {prospect.convertedClientId ? "Converted" : "Convert to Client"}
-          </button>
-        </div>
-        <form onSubmit={onLost} className="mt-2 grid grid-cols-[1fr_auto] gap-2">
-          <input name="lostReason" placeholder="Lost reason" defaultValue={prospect.lostReason ?? ""} />
-          <button disabled={busy === "lost"} className="rounded-lg px-3 py-2 font-dm text-sm text-white disabled:opacity-60" style={{ background:T.red }}>Lost</button>
-        </form>
       </div>
-
+      <div hidden={detailTab !== "activity"}>
       <div className="rounded-[8px] border p-4 sm:p-5" style={{ background:T.s1, borderColor:T.b1 }}>
         <h3 className="mb-3 font-syne text-[15px] font-bold">Add Activity</h3>
         <ActivityForm onSubmit={onActivity} busy={busy === `activity-${prospect.id}`} />
@@ -737,6 +769,8 @@ function DetailPanel({ prospect, activities, proposals, salesProposals, leadScor
         </div>
       </div>
 
+      </div>
+      <div hidden={detailTab !== "proposals"} className="space-y-3">
       <div className="rounded-[8px] border p-4 sm:p-5" style={{ background:T.s1, borderColor:T.b1 }}>
         <div className="mb-3 flex items-center justify-between gap-3">
           <h3 className="font-syne text-[15px] font-bold">Proposal Generator</h3>
@@ -800,6 +834,7 @@ function DetailPanel({ prospect, activities, proposals, salesProposals, leadScor
             </div>
           ))}
         </div>
+      </div>
       </div>
     </aside>
   )

@@ -17,7 +17,7 @@ export interface WorkspaceStage {
   tab: "command" | "intake" | "strategy" | "build" | "qa" | "launch" | "records"
 }
 
-export function useForgeWorkspaceNavigation(stages: WorkspaceStage[], currentStep: WorkspaceStage) {
+export function useForgeWorkspaceNavigation(_stages: WorkspaceStage[], currentStep: WorkspaceStage) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -31,19 +31,12 @@ export function useForgeWorkspaceNavigation(stages: WorkspaceStage[], currentSte
   const [workflowOpen, setWorkflowOpen] = useState(false)
 
   useEffect(() => {
-    if (!requestedView && !requestedStage) {
-      const current = stages.find((stage) => stage.label === currentStep.label)
-      if (current) setActiveStage(current.key)
-    }
-  }, [currentStep.label, requestedStage, requestedView, stages])
-
-  useEffect(() => {
-    if (requestedView) setActiveView(requestedView)
-    if (requestedStage) {
-      setActiveStage(requestedStage)
-      setStagePane(requestedStage, { setQaPane, setLaunchPane })
-    }
-  }, [requestedStage, requestedView])
+    // Back/forward navigation must restore the default overview as well as explicit deep links.
+    setActiveView(requestedView ?? "overview")
+    const stage = requestedStage ?? currentStep.key
+    setActiveStage(stage)
+    setStagePane(stage, { setQaPane, setLaunchPane })
+  }, [currentStep.key, requestedStage, requestedView])
 
   useEffect(() => {
     const item = searchParams.get("item")

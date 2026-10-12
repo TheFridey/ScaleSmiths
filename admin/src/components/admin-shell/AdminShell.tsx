@@ -178,11 +178,11 @@ const NAV_GROUPS = [
   { label: "Administration", routes: ["/users", "/security"] },
 ]
 
-export function AdminShell({ children }: { children: React.ReactNode }) {
+export function AdminShell({ children, role }: { children: React.ReactNode; role: AdminRole }) {
   const pathname = usePathname()
   return (
     <AdminShellProvider pathname={pathname}>
-      <AdminShellFrame pathname={pathname}>{children}</AdminShellFrame>
+      <AdminShellFrame pathname={pathname} role={role}>{children}</AdminShellFrame>
     </AdminShellProvider>
   )
 }
@@ -190,9 +190,11 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 function AdminShellFrame({
   pathname,
   children,
+  role,
 }: {
   pathname: string
   children: React.ReactNode
+  role: AdminRole
 }) {
   const {
     isForgeRoute,
@@ -203,25 +205,10 @@ function AdminShellFrame({
     ready,
   } = useAdminShell()
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [role, setRole] = useState<AdminRole | null>(null)
 
   useEffect(() => {
     setMobileOpen(false)
   }, [pathname])
-
-  useEffect(() => {
-    let active = true
-    fetch("/api/auth/session", { cache: "no-store" })
-      .then((response) => response.json())
-      .then((session) => {
-        if (active && session?.user?.role)
-          setRole(session.user.role as AdminRole)
-      })
-      .catch(() => undefined)
-    return () => {
-      active = false
-    }
-  }, [])
 
   const visibleNav = useMemo(
     () =>
@@ -357,25 +344,30 @@ function NavigationList({
   navigation: typeof NAV
   onNavigate?: () => void
 }) {
-  const [expanded, setExpanded] = useState<string | null>(null)
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({ Sales: true, Production: true })
+  const [navigationSearch, setNavigationSearch] = useState("")
   const navigationId = useId()
-  useEffect(() => setExpanded(null), [pathname])
+
   const activeGroup = NAV_GROUPS.find((group) =>
     group.routes.some(
       (href) => pathname === href || pathname.startsWith(`${href}/`),
     ),
   )?.label
+  useEffect(() => {
+    if (activeGroup) setExpanded((current) => current[activeGroup] ? current : { ...current, [activeGroup]: true })
+  }, [activeGroup])
   return (
-    <nav className="admin-navigation">
+    <nav className="admin-navigation" aria-label="Main navigation">
+      {!collapsed && <label className="admin-navigation-search"><span className="sr-only">Find a page</span><input type="search" value={navigationSearch} onChange={(event) => setNavigationSearch(event.target.value)} placeholder="Find a page..." /></label>}
+      {navigationSearch && !navigation.some((item) => item.label.toLowerCase().includes(navigationSearch.toLowerCase())) && <p className="p-3 text-sm text-t2">No pages found.</p>}
       {NAV_GROUPS.map((group) => {
         const items = navigation.filter((item) =>
-          group.routes.includes(item.href),
+          group.routes.includes(item.href) && (!navigationSearch || item.label.toLowerCase().includes(navigationSearch.toLowerCase())),
         )
         if (!items.length) return null
         const GroupIcon = items[0].Icon
         const open =
-          expanded === group.label ||
-          (expanded === null && activeGroup === group.label)
+          Boolean(navigationSearch) || (expanded[group.label] ?? activeGroup === group.label)
         return (
           <section className="admin-nav-group" key={group.label}>
             <button
@@ -385,7 +377,7 @@ function NavigationList({
               aria-label={group.label}
               aria-controls={`${navigationId}-${group.label.replaceAll(" ", "-")}`}
               title={collapsed ? group.label : undefined}
-              onClick={() => setExpanded(open ? "" : group.label)}
+              onClick={() => setExpanded((current) => ({ ...current, [group.label]: !open }))}
             >
               {collapsed ? (
                 <GroupIcon size={18} aria-label={group.label} />
@@ -402,9 +394,10 @@ function NavigationList({
                   <Link
                     key={href}
                     href={href}
-                    onClick={onNavigate}
+                    onClick={() => { setNavigationSearch(""); onNavigate?.() }}
                     className={`admin-nav-link ${collapsed ? "is-collapsed admin-tooltip" : ""} ${active ? "is-active" : ""}`}
                     aria-current={active ? "page" : undefined}
+                    title={collapsed ? label : undefined}
                     aria-label={collapsed ? label : undefined}
                     data-tooltip={collapsed ? label : undefined}
                   >

@@ -12,7 +12,7 @@ export const metadata: Metadata = {
     title: "ScaleSmiths",
     statusBarStyle: "black-translucent",
   },
-  icons: { apple: "/app-icon/180" },
+  icons: { icon: "/brand/favicon.png", shortcut: "/brand/favicon.png", apple: "/brand/favicon.png" },
 }
 export const viewport: Viewport = {
   width: "device-width",

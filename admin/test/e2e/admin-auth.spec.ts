@@ -5,6 +5,7 @@ test("authenticated owner can open a protected Forge route with RBAC navigation"
   await expect(page).toHaveURL(/\/forge$/)
   await expect(page.locator("#admin-main-content")).toBeVisible()
   await expect(page.getByRole("navigation").getByRole("link", { name: "Forge", exact: true })).toBeVisible()
+  await page.getByRole("navigation", { name: "Main navigation" }).getByRole("button", { name: "Administration", exact: true }).click()
   await expect(page.getByRole("navigation").getByRole("link", { name: "Admin users", exact: true })).toBeVisible()
 })
 
@@ -52,5 +53,19 @@ test("a portal session cookie cannot open Forge pages or APIs", async ({ browser
   const mutation = await request.post("/api/forge/runs/1/start", { headers: { Cookie: "ss-client-session=compromised-portal-session" } })
   expect(mutation.status()).toBe(401)
   expect(await mutation.json()).toEqual({ error: "Unauthorized." })
+  await context.close()
+})
+
+
+test("only named brand assets are public while Forge remains private", async ({ browser }) => {
+  const context = await browser.newContext({ storageState: { cookies: [], origins: [] } })
+  for (const asset of ["/brand/favicon.png", "/app-icon/192"]) {
+    const response = await context.request.get(asset, { maxRedirects: 0 })
+    expect(response.status()).toBe(200)
+    expect(response.headers()["content-type"]).toMatch(/image/)
+  }
+  const response = await context.request.get("/forge", { maxRedirects: 0 })
+  expect(response.status()).toBe(307)
+  expect(response.headers().location).toContain("/login")
   await context.close()
 })

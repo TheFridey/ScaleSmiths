@@ -276,6 +276,15 @@ jobs:
       - name: Golden Path operator journey
         run: npm run test:e2e:golden-path
 
+      - name: Upload admin workspace review screenshots
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        with:
+          name: admin-workspace-review
+          path: admin/test-results/workspace-review
+          if-no-files-found: ignore
+          retention-days: 14
+
       - name: Upload Forge E2E failure evidence
         if: failure()
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0

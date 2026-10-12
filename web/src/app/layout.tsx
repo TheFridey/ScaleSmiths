@@ -14,14 +14,14 @@ import {
 import "./globals.css"
 
 const syne = localFont({
-  src: "./fonts/Syne.ttf",
+  src: "./fonts/Syne.woff2",
   variable: "--font-syne",
   display: "swap",
   weight: "400 800",
 })
 
 const inter = localFont({
-  src: "./fonts/Inter.ttf",
+  src: "./fonts/Inter.woff2",
   weight: "100 900",
   variable: "--font-dm",
   display: "swap",

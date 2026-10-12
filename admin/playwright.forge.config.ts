@@ -41,6 +41,7 @@ export default defineConfig({
     ? undefined
     : {
         command: serverCommand,
+        env: { AUTH_URL: baseURL },
         url: `${baseURL}/login`,
         reuseExistingServer: true,
         timeout: 180_000,

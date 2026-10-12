@@ -64,7 +64,7 @@ input:focus, textarea:focus, select:focus { border-color: rgba(37,99,235,.5); }
   border-right: 1px solid var(--b1);
   transition: width 180ms ease, transform 180ms ease, opacity 180ms ease;
 }
-.admin-shell[data-focus-mode="true"] .admin-sidebar { pointer-events: none; transform: translateX(-100%); opacity: 0; }
+.admin-shell[data-focus-mode="true"] .admin-sidebar { pointer-events: none; visibility: hidden; transform: translateX(-100%); opacity: 0; }
 .admin-sidebar-brand {
   display: flex;
   min-height: 48px;

@@ -67,7 +67,6 @@ import type { ForgeSitemapArtifactState } from "@/lib/forge-sitemap"
 import type { ForgeWhatsAppConfig } from "@/lib/forge-whatsapp"
 import type { ForgeWorkspaceMetadata } from "@/lib/forge-workspace"
 import { ContextDrawer, DetailDrawer, WorkspaceShell } from "@/components/admin-shell/primitives"
-import { useAdminShell } from "@/components/admin-shell/AdminShellContext"
 import { deriveForgeAttentionItems, type ForgeHealthJob } from "@/lib/forge-operational-health"
 import { normalizeForgeOperatorError } from "@/lib/forge-operator-error"
 import { useForgeWorkspaceNavigation, type ProductionStage, type WorkspaceStage, type WorkspaceView } from "./useForgeWorkspaceNavigation"
@@ -277,7 +276,6 @@ export function ForgeProjectDetail({
   initialResendConfig: ForgeResendConfig
   initialWhatsAppConfig: ForgeWhatsAppConfig
 }) {
-  const { toggleFocusMode } = useAdminShell()
   const router = useRouter()
   const projectId = project.id ?? 0
   const archived = project.status === "archived"
@@ -362,7 +360,7 @@ export function ForgeProjectDetail({
 
   return (
     <WorkspaceShell className="forge-workspace forge-project-workspace">
-      <ForgeProjectHeader projectId={projectId} name={project.name} businessName={project.businessName} industry={project.industry} currentStage={currentStep.label} progress={progress} cost={formatCost(aiUsage.totals.estimatedCost)} status={<Badge value={runStatus} tone={runStatus === "failed" ? "bad" : runStatus === "complete" ? "good" : runStatus === "running" ? "accent" : "muted"} />} primaryAction={primaryAction.label} overflowOpen={overflowOpen} onPrimaryAction={() => navigate(primaryAction.view, primaryAction.stage)} onOpenContext={() => { setContextOpen(true); setOverflowOpen(false) }} onToggleFocus={toggleFocusMode} onToggleOverflow={() => setOverflowOpen((open) => !open)} onOpenSettings={() => { navigate("advanced"); setRecordsPane("settings"); setOverflowOpen(false) }} />
+      <ForgeProjectHeader projectId={projectId} name={project.name} businessName={project.businessName} industry={project.industry} currentStage={currentStep.label} progress={progress} cost={formatCost(aiUsage.totals.estimatedCost)} status={<Badge value={runStatus} tone={runStatus === "failed" ? "bad" : runStatus === "complete" ? "good" : runStatus === "running" ? "accent" : "muted"} />} primaryAction={primaryAction.label} overflowOpen={overflowOpen} onPrimaryAction={() => navigate(primaryAction.view, primaryAction.stage)} onOpenContext={() => { setContextOpen(true); setOverflowOpen(false) }} onToggleOverflow={() => setOverflowOpen((open) => !open)} onOpenSettings={() => { navigate("advanced"); setRecordsPane("settings"); setOverflowOpen(false) }} />
 
       {approvedFallbackTasks.length > 0 && <div className="project-workspace-warning"><strong>Fallback dependency warning:</strong> deployment remains subject to {approvedFallbackTasks.length} recorded quality approval{approvedFallbackTasks.length === 1 ? "" : "s"}.</div>}
 

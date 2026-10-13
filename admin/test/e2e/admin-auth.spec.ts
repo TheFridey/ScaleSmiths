@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test"
+import { mkdir } from "node:fs/promises"
 
 for (const mobile of [false, true]) {
   test(`Venture Controller can use the operational admin and Nova ${mobile ? "on mobile" : "on desktop"}`, async ({ browser }) => {
@@ -21,6 +22,8 @@ for (const mobile of [false, true]) {
       }
       await navigation.getByRole("button", { name: "Venture Lab", exact: true }).click()
       await expect(navigation.getByRole("link", { name: "Nova Venture Lab", exact: true })).toBeVisible()
+      await mkdir("test-results/workspace-review", { recursive: true })
+      await page.screenshot({ path: `test-results/workspace-review/trev-controller-${mobile ? "mobile" : "desktop"}.png` })
       await navigation.getByRole("link", { name: "Pipeline", exact: true }).click()
       await expect(page).toHaveURL(/\/prospects$/)
       if (mobile) await expect(page.getByRole("dialog", { name: "Navigation", exact: true })).toBeHidden()

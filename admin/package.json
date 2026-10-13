@@ -20,7 +20,7 @@
     "test:visual:shell": "node ./node_modules/@playwright/test/cli.js test --config playwright.shell.config.ts",
     "test:visual:shell:update": "node ./node_modules/@playwright/test/cli.js test --config playwright.shell.config.ts --update-snapshots",
     "test:e2e:forge-auth": "node ./node_modules/@playwright/test/cli.js test --config playwright.forge.config.ts admin-auth.spec.ts",
-    "test:e2e:forge-journeys": "node ./node_modules/@playwright/test/cli.js test --config playwright.forge.config.ts forge-journeys.spec.ts prospect-conversion.spec.ts admin-workspace.spec.ts",
+    "test:e2e:forge-journeys": "npm run test:db:seed && node ./node_modules/@playwright/test/cli.js test --config playwright.forge.config.ts forge-journeys.spec.ts prospect-conversion.spec.ts admin-workspace.spec.ts",
     "test:e2e:golden-path": "node ./node_modules/@playwright/test/cli.js test --config playwright.forge.config.ts golden-path-ui.spec.ts",
     "test:db:prepare": "node scripts/test-database.mjs prepare",
     "test:db:migrate": "node scripts/migrate-shared-test-database.mjs",

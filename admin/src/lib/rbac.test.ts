@@ -7,7 +7,7 @@ import { CAPABILITIES, ROLE_CAPABILITIES, authorizeRequest, databaseQueryScope, 
 const expected: Record<(typeof ADMIN_ROLES)[number], Capability[]> = {
   owner: CAPABILITIES.filter((capability) => capability !== "venture.finance.approve" && capability !== "venture.launch.approve"),
   administrator: CAPABILITIES.filter((capability) => capability !== "admin_users.credentials.reset" && capability !== "admin_users.owner.assign" && capability !== "venture.finance.approve" && capability !== "venture.launch.approve"),
-  venture_controller: ["venture.read", "venture.write", "venture.finance.read", "venture.finance.approve", "venture.experiment.manage", "venture.launch.approve", "venture.integration.manage", "venture.emergency_stop", "venture.audit.read"],
+  venture_controller: ["admin_users.read", "admin_users.manage", "portal_users.read", "portal_users.manage", "portal_users.credentials.reset", "leads.read", "leads.write", "prospects.convert", "clients.read", "clients.write", "projects.read", "projects.write", "forge.read", "forge.execute", "forge.approve", "forge.configure", "finance.read", "finance.write", "settings.manage", "audit.read", "deployments.execute", "analytics.read", "analytics.write", "claims.read", "claims.manage", "venture.read", "venture.write", "venture.finance.read", "venture.finance.approve", "venture.experiment.manage", "venture.launch.approve", "venture.integration.manage", "venture.emergency_stop", "venture.audit.read"],
   sales: ["leads.read", "leads.write", "prospects.convert", "clients.read", "projects.read", "finance.read", "analytics.read"],
   project_manager: ["portal_users.read", "portal_users.manage", "leads.read", "prospects.convert", "clients.read", "clients.write", "projects.read", "projects.write", "forge.read", "forge.execute", "forge.approve", "forge.configure", "finance.read", "audit.read", "analytics.read", "analytics.write"],
   developer: ["clients.read", "projects.read", "projects.write", "forge.read", "forge.execute", "forge.approve", "forge.configure", "audit.read", "deployments.execute", "analytics.read", "venture.read", "venture.audit.read", "venture.integration.manage", "venture.emergency_stop"],
@@ -28,11 +28,12 @@ describe("RBAC role/capability matrix", () => {
     expect(new Set(Object.values(ROLE_CAPABILITIES).flat())).toEqual(new Set(CAPABILITIES))
   })
 
-  it("grants prospects.convert to sales/project_manager/administrator/owner only", () => {
+  it("grants prospects.convert to operational administrators, sales and project managers", () => {
     expect(hasCapability("sales", "prospects.convert")).toBe(true)
     expect(hasCapability("project_manager", "prospects.convert")).toBe(true)
     expect(hasCapability("administrator", "prospects.convert")).toBe(true)
     expect(hasCapability("owner", "prospects.convert")).toBe(true)
+    expect(hasCapability("venture_controller", "prospects.convert")).toBe(true)
     expect(hasCapability("viewer", "prospects.convert")).toBe(false)
     expect(hasCapability("finance", "prospects.convert")).toBe(false)
     expect(hasCapability("developer", "prospects.convert")).toBe(false)
@@ -78,8 +79,11 @@ describe("server request enforcement", () => {
     expect(hasCapability("developer", "venture.policy.manage")).toBe(false)
     expect(hasCapability("venture_controller", "venture.finance.approve")).toBe(true)
     expect(hasCapability("venture_controller", "venture.launch.approve")).toBe(true)
-    expect(hasCapability("venture_controller", "finance.write")).toBe(false)
-    expect(hasCapability("venture_controller", "admin_users.manage")).toBe(false)
+    expect(hasCapability("venture_controller", "finance.write")).toBe(true)
+    expect(hasCapability("venture_controller", "admin_users.manage")).toBe(true)
+    expect(hasCapability("venture_controller", "admin_users.owner.assign")).toBe(false)
+    expect(hasCapability("venture_controller", "admin_users.credentials.reset")).toBe(false)
+    expect(hasCapability("venture_controller", "venture.policy.manage")).toBe(false)
     expect(hasCapability("owner", "venture.finance.approve")).toBe(false)
     expect(hasCapability("administrator", "venture.finance.approve")).toBe(false)
   })

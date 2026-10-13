@@ -24,7 +24,7 @@ Reviewed capabilities:
 - `venture.emergency_stop`
 - `venture.audit.read`
 
-It does **not** receive generic ScaleSmiths finance write, Admin-user management, Forge execution, deployment, claims, sales, client-management or settings-management authority.
+The operational-access update approved on 13 October 2026 gives this role ScaleSmiths operational administrator access alongside those existing Venture Lab capabilities. This includes Command Centre, Pipeline, clients, projects, Forge, finance and ordinary administration. Internal credential reset and owner/controller assignment remain owner-only. Venture policy management is not added, and no other role gains capital or launch approval authority.
 
 Generic `owner` and `administrator` roles do not receive Venture Lab finance or launch approval authority. PostgreSQL independently requires an active `venture_controller` identity before a Venture Lab financial approval can transition to `APPROVED`.
 
@@ -165,7 +165,7 @@ Required evidence before connection approval:
 - STOP blocks MCP authentication;
 - service revocation blocks both authentication and subsequent tool execution;
 - Controller MFA requirement passes;
-- Controller RBAC has no unrelated ScaleSmiths privileges;
+- Controller RBAC includes the approved operational workspace access while retaining owner-only identity controls and separate Venture approval authority;
 - owner/administrator cannot substitute for the Venture Controller at the database financial-approval boundary;
 - migration history/checksum/shared-order checks pass;
 - full CI, Security and CodeQL pass on the exact final head.

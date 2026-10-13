@@ -14,10 +14,16 @@ export const CAPABILITIES = [
 ] as const
 export type Capability = (typeof CAPABILITIES)[number]
 
+// Operational admin access excludes owner-only identity controls and does not
+// confer Venture Lab authority. The controller retains its separate approvals.
+const OPERATIONAL_ADMIN_CAPABILITIES = CAPABILITIES.filter((capability) =>
+  !capability.startsWith("venture.") && capability !== "admin_users.credentials.reset" && capability !== "admin_users.owner.assign",
+)
+
 export const ROLE_CAPABILITIES: Readonly<Record<AdminRole, readonly Capability[]>> = {
   owner: CAPABILITIES.filter((capability) => capability !== "venture.finance.approve" && capability !== "venture.launch.approve"),
   administrator: CAPABILITIES.filter((capability) => capability !== "admin_users.credentials.reset" && capability !== "admin_users.owner.assign" && capability !== "venture.finance.approve" && capability !== "venture.launch.approve"),
-  venture_controller: ["venture.read", "venture.write", "venture.finance.read", "venture.finance.approve", "venture.experiment.manage", "venture.launch.approve", "venture.integration.manage", "venture.emergency_stop", "venture.audit.read"],
+  venture_controller: [...OPERATIONAL_ADMIN_CAPABILITIES, "venture.read", "venture.write", "venture.finance.read", "venture.finance.approve", "venture.experiment.manage", "venture.launch.approve", "venture.integration.manage", "venture.emergency_stop", "venture.audit.read"],
   sales: ["leads.read", "leads.write", "prospects.convert", "clients.read", "projects.read", "finance.read", "analytics.read"],
   project_manager: ["portal_users.read", "portal_users.manage", "leads.read", "prospects.convert", "clients.read", "clients.write", "projects.read", "projects.write", "forge.read", "forge.execute", "forge.approve", "forge.configure", "finance.read", "audit.read", "analytics.read", "analytics.write"],
   developer: ["clients.read", "projects.read", "projects.write", "forge.read", "forge.execute", "forge.approve", "forge.configure", "audit.read", "deployments.execute", "analytics.read", "venture.read", "venture.audit.read", "venture.integration.manage", "venture.emergency_stop"],

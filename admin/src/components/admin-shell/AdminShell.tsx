@@ -83,6 +83,7 @@ export const NAV: Array<{
     capability: "leads.read",
   },
   { href: "/forge", label: "Forge", Icon: Gauge, capability: "forge.read" },
+  { href: "/venture-lab", label: "Nova Venture Lab", Icon: GitBranch, capability: "venture.read" },
   {
     href: "/operations/brief",
     label: "Brief",
@@ -166,6 +167,7 @@ const NAV_GROUPS = [
   },
   { label: "Finance", routes: ["/finance/invoices"] },
   { label: "Production", routes: ["/forge", "/operations/forge", "/roadmap"] },
+  { label: "Venture Lab", routes: ["/venture-lab"] },
   {
     label: "Operations",
     routes: [

@@ -5,17 +5,17 @@ import {
   requiredCapabilityForRequest,
 } from "./rbac"
 
-const leadsReadRoles: AdminRole[] = ["owner", "administrator", "sales", "project_manager", "finance", "viewer"]
-const financeReadRoles: AdminRole[] = ["owner", "administrator", "sales", "project_manager", "finance", "viewer"]
-const projectManagerRoles: AdminRole[] = ["owner", "administrator", "project_manager"]
-const ownerAdminSales: AdminRole[] = ["owner", "administrator", "sales"]
-const ownerAdmin: AdminRole[] = ["owner", "administrator"]
-const ownerAdminFinance: AdminRole[] = ["owner", "administrator", "finance"]
-const ownerAdminPMDev: AdminRole[] = ["owner", "administrator", "project_manager", "developer"]
-const ownerAdminDev: AdminRole[] = ["owner", "administrator", "developer"]
-const forgeReadRoles: AdminRole[] = ["owner", "administrator", "project_manager", "developer", "viewer"]
-const auditReadRoles: AdminRole[] = ["owner", "administrator", "project_manager", "developer", "finance"]
-const generalAdminRoles: AdminRole[] = ADMIN_ROLES.filter((role) => role !== "venture_controller")
+const leadsReadRoles: AdminRole[] = ["owner", "administrator", "venture_controller", "sales", "project_manager", "finance", "viewer"]
+const financeReadRoles: AdminRole[] = ["owner", "administrator", "venture_controller", "sales", "project_manager", "finance", "viewer"]
+const projectManagerRoles: AdminRole[] = ["owner", "administrator", "venture_controller", "project_manager"]
+const ownerAdminSales: AdminRole[] = ["owner", "administrator", "venture_controller", "sales"]
+const ownerAdmin: AdminRole[] = ["owner", "administrator", "venture_controller"]
+const ownerAdminFinance: AdminRole[] = ["owner", "administrator", "venture_controller", "finance"]
+const ownerAdminPMDev: AdminRole[] = ["owner", "administrator", "venture_controller", "project_manager", "developer"]
+const ownerAdminDev: AdminRole[] = ["owner", "administrator", "venture_controller", "developer"]
+const forgeReadRoles: AdminRole[] = ["owner", "administrator", "venture_controller", "project_manager", "developer", "viewer"]
+const auditReadRoles: AdminRole[] = ["owner", "administrator", "venture_controller", "project_manager", "developer", "finance"]
+const generalAdminRoles: AdminRole[] = [...ADMIN_ROLES]
 
 describe("RBAC — bypass paths (no capability required)", () => {
   const bypassPaths = [
@@ -55,14 +55,13 @@ describe("RBAC — logout", () => {
 })
 
 describe("RBAC — dashboard and root", () => {
-  it("keeps the Venture Controller out of the general dashboard", () => {
+  it("allows the Venture Controller into the general dashboard with the other admin roles", () => {
     for (const pathname of ["/dashboard", "/"]) {
       for (const role of generalAdminRoles) {
         const result = authorizeRequest(role, { pathname, method: "GET" })
         expect(result.allowed).toBe(true)
         expect(result.capability).toBe("projects.read")
       }
-      expect(authorizeRequest("venture_controller", { pathname, method: "GET" })).toMatchObject({ allowed: false, capability: "projects.read" })
     }
   })
 })
@@ -75,11 +74,11 @@ describe("RBAC — admin user management", () => {
     { pathname: "/api/admin-users/abc", method: "PATCH" },
   ]
 
-  it("restricted to owner and administrator", () => {
+  it("restricted to operational administrators", () => {
     for (const route of routes) {
       for (const role of ADMIN_ROLES) {
         const result = authorizeRequest(role, route)
-        if (role === "owner" || role === "administrator") {
+        if (ownerAdmin.includes(role)) {
           expect(result.allowed).toBe(true)
         } else {
           expect(result.allowed).toBe(false)
@@ -96,23 +95,23 @@ describe("RBAC — portal user management", () => {
       const portalRead = authorizeRequest(role, { pathname: "/portal-users", method: "GET" })
       const portalWrite = authorizeRequest(role, { pathname: "/api/portal-users/12", method: "PATCH" })
       const adminRead = authorizeRequest(role, { pathname: "/api/admin-users", method: "GET" })
-      const portalRole = role === "owner" || role === "administrator" || role === "project_manager"
+      const portalRole = projectManagerRoles.includes(role)
       expect(portalRead.allowed).toBe(portalRole)
       expect(portalRead.capability).toBe("portal_users.read")
       expect(portalWrite.allowed).toBe(portalRole)
       expect(portalWrite.capability).toBe("portal_users.manage")
-      expect(adminRead.allowed).toBe(role === "owner" || role === "administrator")
+      expect(adminRead.allowed).toBe(ownerAdmin.includes(role))
       expect(adminRead.capability).toBe("admin_users.read")
     }
   })
 })
 
 describe("RBAC — security settings", () => {
-  it("keeps broad security settings restricted to owner and administrator", () => {
+  it("keeps broad security settings restricted to operational administrators", () => {
     for (const route of [{ pathname: "/security", method: "GET" }, { pathname: "/security/mfa", method: "POST" }]) {
       for (const role of ADMIN_ROLES) {
         const result = authorizeRequest(role, route)
-        expect(result.allowed).toBe(role === "owner" || role === "administrator")
+        expect(result.allowed).toBe(ownerAdmin.includes(role))
         expect(result.capability).toBe("settings.manage")
       }
     }
@@ -160,7 +159,7 @@ describe("RBAC — prospects (leads)", () => {
 })
 
 describe("RBAC — prospect conversion", () => {
-  const convertRoles: AdminRole[] = ["owner", "administrator", "sales", "project_manager"]
+  const convertRoles: AdminRole[] = ["owner", "administrator", "venture_controller", "sales", "project_manager"]
 
   it("preview (GET) needs leads.read; execute (POST) needs prospects.convert", () => {
     expect(requiredCapabilityForRequest({ pathname: "/api/prospects/5/conversion", method: "GET" })).toBe("leads.read")

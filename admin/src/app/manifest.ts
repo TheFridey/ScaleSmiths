@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "ScaleSmiths Command Centre",
     short_name: "ScaleSmiths",
     description: "Private ScaleSmiths commercial operations",
-    start_url: "/command-centre",
+    start_url: "/",
     scope: "/",
     display: "standalone",
     background_color: "#111214",

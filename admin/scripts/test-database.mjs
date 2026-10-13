@@ -86,6 +86,19 @@ async function seed(db) {
         updated_at = now()
     `, [passwordHash])
 
+    await db.query(`
+      insert into admin_users (email, display_name, password_hash, role, active, mfa_enabled)
+      values ('trev-controller@example.test', 'Trev Controller Fixture', $1, 'venture_controller', true, false)
+      on conflict ((lower(email))) do update set
+        password_hash = excluded.password_hash,
+        role = 'venture_controller',
+        active = true,
+        mfa_enabled = false,
+        mfa_state = null,
+        session_version = admin_users.session_version + 1,
+        updated_at = now()
+    `, [passwordHash])
+
     await db.query("delete from forge_projects where owner_actor = $1", [FIXTURE_OWNER_EMAIL])
     for (const fixture of fixtures()) await seedProject(db, fixture)
 

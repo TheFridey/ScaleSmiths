@@ -9,7 +9,7 @@ describe("admin presentation entry points", () => {
   })
   it("routes developers to delivery and keeps unknown identities at login", () => {
     expect(adminHomeForRole("developer")).toBe("/dashboard")
-    expect(adminHomeForRole("venture_controller")).toBe("/venture-lab")
+    expect(adminHomeForRole("venture_controller")).toBe("/command-centre")
     for (const role of [null, undefined, "super_admin", {}]) expect(adminHomeForRole(role)).toBe("/login")
   })
   it("allows only the named non-sensitive brand asset", () => {

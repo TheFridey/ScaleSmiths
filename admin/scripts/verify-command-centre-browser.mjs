@@ -167,7 +167,7 @@ try {
   assert.equal(denied.status(), 401)
   const manifest = await anon.request.get(`${base.origin}/manifest.webmanifest`)
   assert.equal(manifest.status(), 200)
-  assert.equal((await manifest.json()).start_url, "/command-centre")
+  assert.equal((await manifest.json()).start_url, "/")
   const worker = await anon.request.get(`${base.origin}/command-centre-sw.js`)
   assert.equal(worker.status(), 200)
   const caches = await first.evaluate(async () => ({

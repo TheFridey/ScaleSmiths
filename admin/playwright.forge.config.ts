@@ -1,7 +1,9 @@
 import { defineConfig, devices } from "@playwright/test"
 
 const port = Number(process.env.ADMIN_FORGE_PLAYWRIGHT_PORT ?? 3312)
-const baseURL = process.env.ADMIN_FORGE_BASE_URL ?? `http://127.0.0.1:${port}`
+// Next normalises loopback redirect URLs to localhost. Use that same host for
+// login cookies and PWA/root redirects, rather than crossing cookie origins.
+const baseURL = process.env.ADMIN_FORGE_BASE_URL ?? `http://localhost:${port}`
 const serverCommand = process.env.ADMIN_FORGE_SERVER_MODE === "production"
   ? `npm run start -- --hostname 127.0.0.1 --port ${port}`
   : `npm run dev -- --hostname 127.0.0.1 --port ${port}`

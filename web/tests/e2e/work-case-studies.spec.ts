@@ -18,7 +18,8 @@ test.describe("work portfolio", () => {
     const cards = page.getByRole("article")
     await expect(cards).toHaveCount(projects.length)
     for (const project of projects) {
-      await expect(cards.getByRole('link', { name: `View case study: ${project.name}`, exact: true })).toHaveAttribute('href', `/work/${project.slug}`)
+      const card = cards.filter({ has: page.getByRole('heading', { name: project.name, exact: true }) })
+      await expect(card.getByRole('link', { name: /view case study/i })).toHaveAttribute('href', `/work/${project.slug}`)
     }
 
     const precision = cards.filter({ has: page.getByRole("heading", { name: "Precision Finish Plastering & Rendering" }) })

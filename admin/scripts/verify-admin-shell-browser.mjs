@@ -41,7 +41,7 @@ const worker = await readFile("public/command-centre-sw.js", "utf8")
 let workerVersion = 0
 const server = createServer((request, response) => {
   if (request.url === "/bundle.js") { response.setHeader("Content-Type", "application/javascript"); response.end(bundle.outputFiles[0].text) }
-  else if (request.url === "/command-centre-sw.js") { response.setHeader("Content-Type", "application/javascript"); response.end(worker.replace("command-centre-v2", `fixture-worker-${workerVersion}`)) }
+  else if (request.url === "/command-centre-sw.js") { response.setHeader("Content-Type", "application/javascript"); response.end(worker.replace(/command-centre-v\d+/, `fixture-worker-${workerVersion}`)) }
   else if (request.url === "/__fixture-update") { workerVersion++; response.end("Updated fixture worker") }
   else { response.setHeader("Content-Type", "text/html"); response.end(`<html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>${css}\n.mobile-sheet .admin-sidebar { display:flex; height:100%; border:0; padding:0; } .mt-auto { margin-top:auto; }</style></head><body><div id="root"></div><script src="/bundle.js"></script></body></html>`) }
 })

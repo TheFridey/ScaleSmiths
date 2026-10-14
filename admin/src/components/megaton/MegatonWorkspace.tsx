@@ -12,9 +12,17 @@ import {
   Target,
 } from "lucide-react";
 import { MEGATON_OFFERS, SCORE_WEIGHTS } from "@/lib/megaton";
+import {
+  AddProspect,
+  AISearch,
+  SocialOutreach,
+  ApprovalNotifications,
+  type GrowthSnapshot,
+} from "./MegatonGrowth";
 
 type Row = { [key: string]: string | number | boolean | null };
 interface Snapshot {
+  growth: GrowthSnapshot;
   totalCount: number;
   page: number;
   pageSize: number;
@@ -155,6 +163,16 @@ export function MegatonWorkspace() {
     }
   }, [query, page]);
   useEffect(() => {
+    const requested = new URLSearchParams(window.location.search).get("tab");
+    if (
+      requested &&
+      ["prospects", "discovery", "social", "inbox", "operations"].includes(
+        requested,
+      )
+    )
+      setTab(requested);
+  }, []);
+  useEffect(() => {
     const timer = setTimeout(() => void load(), 250);
     const interval = setInterval(() => {
       if (
@@ -239,7 +257,7 @@ export function MegatonWorkspace() {
       {!data ? (
         <p className="text-slate-400">
           {error
-            ? "Workspace could not load. Apply the shared migrations before use."
+            ? "Workspace could not load. Review the error above and check server configuration and database readiness."
             : "Loading workspace…"}
         </p>
       ) : (
@@ -262,7 +280,12 @@ export function MegatonWorkspace() {
                 Needs human attention
               </p>
               <p className="mt-2 text-2xl font-semibold">
-                {data.threads.filter((t) => t.status === "human_active").length}
+                {data.threads.filter(
+                  (t) => t.status === "human_active" || t.status === "review",
+                ).length +
+                  data.growth.social.filter(
+                    (s) => s.state === "review" || s.state === "unknown",
+                  ).length}
               </p>
               <p className="mt-2 text-sm text-slate-400">
                 Quotation, meeting and incoming message review
@@ -312,6 +335,7 @@ export function MegatonWorkspace() {
               { id: "prospects", label: "Prospects", Icon: Target },
               { id: "discovery", label: "Discovery", Icon: Search },
               { id: "inbox", label: "Inbox & approvals", Icon: Inbox },
+              { id: "social", label: "Social outreach", Icon: Target },
               { id: "operations", label: "Operations", Icon: Activity },
             ].map(({ id, label, Icon }) => (
               <button
@@ -329,6 +353,7 @@ export function MegatonWorkspace() {
             <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
               <section className={panel}>
                 <h2 className="text-lg font-semibold">Shared prospects</h2>
+                {write && <AddProspect act={act} busy={busy} />}
                 <label className="mt-4 block">
                   <span className="sr-only">Search prospects</span>
                   <input
@@ -575,458 +600,504 @@ export function MegatonWorkspace() {
             </div>
           )}
           {tab === "discovery" && (
-            <div className="grid gap-5 lg:grid-cols-2">
-              <section className={panel}>
-                <h2 className="mb-2 text-lg font-semibold">
-                  Town-based campaigns
-                </h2>
-                <p className="mb-5 text-sm text-slate-400">
-                  UK only. Import from a source you are permitted to use; no
-                  discovery provider has been connected.
-                </p>
-                {write && (
-                  <Form
-                    busy={busy || !ready}
-                    label="Create campaign"
-                    onSubmit={(v) => act("campaign", { ...v, country: "GB" })}
-                  >
-                    <Input
-                      name="name"
-                      label="Campaign name"
-                      placeholder="Hucknall · local trades"
-                    />
-                    <Input name="town" label="UK town" placeholder="Hucknall" />
-                    <Input
-                      name="industry"
-                      label="Industry"
-                      placeholder="Plumbing"
-                    />
-                  </Form>
-                )}
-                <div className="mt-6 space-y-3">
-                  {data.campaigns.map((c) => (
-                    <div
-                      className="rounded-xl bg-white/5 p-3"
-                      key={String(c.id)}
+            <div>
+              {write && <AISearch growth={data.growth} act={act} busy={busy} />}
+              <div className="grid gap-5 lg:grid-cols-2">
+                <section className={panel}>
+                  <h2 className="mb-2 text-lg font-semibold">
+                    Town-based campaigns
+                  </h2>
+                  <p className="mb-5 text-sm text-slate-400">
+                    UK only. Create campaigns to organise sourced imports. AI
+                    search and Companies House discovery have separate
+                    configuration.
+                  </p>
+                  {write && (
+                    <Form
+                      busy={busy || !ready}
+                      label="Create campaign"
+                      onSubmit={(v) => act("campaign", { ...v, country: "GB" })}
                     >
-                      <p className="font-medium">{c.name}</p>
-                      <p className="text-sm text-slate-400">
-                        {c.town} · {c.industry} · GB
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </section>
-              <section className={panel}>
-                <h2 className="mb-2 text-lg font-semibold">
-                  Registered-company discovery
-                </h2>
-                <p className="mb-4 text-sm text-slate-400">
-                  Optional Companies House connection. Registered office only;
-                  verify trading presence before import. Sole traders are not
-                  covered.
-                </p>
-                {write && (
-                  <Form
-                    busy={busy || !ready}
-                    label="Find registered companies"
-                    onSubmit={(v) => act("discover", v)}
-                  >
-                    <Input name="town" label="UK town" placeholder="Hucknall" />
-                    <Input
-                      name="sicCode"
-                      label="Five-digit SIC industry code"
-                      placeholder="43220"
-                    />
-                  </Form>
-                )}
-                <div className="my-5 space-y-2">
-                  {candidates.map((c) => (
-                    <div
-                      key={String(c.companyNumber)}
-                      className="rounded-xl bg-white/5 p-3 text-sm"
+                      <Input
+                        name="name"
+                        label="Campaign name"
+                        placeholder="Hucknall · local trades"
+                      />
+                      <Input
+                        name="town"
+                        label="UK town"
+                        placeholder="Hucknall"
+                      />
+                      <Input
+                        name="industry"
+                        label="Industry"
+                        placeholder="Plumbing"
+                      />
+                    </Form>
+                  )}
+                  <div className="mt-6 space-y-3">
+                    {data.campaigns.map((c) => (
+                      <div
+                        className="rounded-xl bg-white/5 p-3"
+                        key={String(c.id)}
+                      >
+                        <p className="font-medium">{c.name}</p>
+                        <p className="text-sm text-slate-400">
+                          {c.town} · {c.industry} · GB
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+                <section className={panel}>
+                  <h2 className="mb-2 text-lg font-semibold">
+                    Registered-company discovery
+                  </h2>
+                  <p className="mb-4 text-sm text-slate-400">
+                    Optional Companies House connection. Registered office only;
+                    verify trading presence before import. Sole traders are not
+                    covered.
+                  </p>
+                  {write && (
+                    <Form
+                      busy={busy || !ready}
+                      label="Find registered companies"
+                      onSubmit={(v) => act("discover", v)}
                     >
-                      <p>{c.businessName}</p>
-                      <p className="text-xs text-slate-400">
-                        Registered office: {c.town} {c.postcode}
-                      </p>
-                      <a
-                        className="text-amber-300"
-                        href={String(c.sourceUrl)}
-                        target="_blank"
-                        rel="noreferrer"
+                      <Input
+                        name="town"
+                        label="UK town"
+                        placeholder="Hucknall"
+                      />
+                      <Input
+                        name="sicCode"
+                        label="Five-digit SIC industry code"
+                        placeholder="43220"
+                      />
+                    </Form>
+                  )}
+                  <div className="my-5 space-y-2">
+                    {candidates.map((c) => (
+                      <div
+                        key={String(c.companyNumber)}
+                        className="rounded-xl bg-white/5 p-3 text-sm"
                       >
-                        Verify source ?
-                      </a>
-                    </div>
-                  ))}
-                </div>
-                <h3 className="mb-2 mt-6 font-semibold">
-                  Import a verified business
-                </h3>
-                <p className="mb-5 text-sm text-slate-400">
-                  Verify the town and source rights. Existing matches are
-                  reused; ambiguous branches require review.
-                </p>
-                {write && (
-                  <Form
-                    busy={busy || !ready || !data.campaigns.length}
-                    label="Import into shared pipeline"
-                    onSubmit={(v) => act("import", { ...v, country: "GB" })}
-                  >
-                    <label className="block text-sm">
-                      Campaign
-                      <select
-                        name="campaignId"
-                        aria-label="Campaign"
-                        className={field}
-                        required
-                      >
-                        {data.campaigns.map((c) => (
-                          <option key={String(c.id)} value={String(c.id)}>
-                            {c.name}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <Input name="businessName" label="Business name" />
-                    <Input name="town" label="Verified UK town" />
-                    <Input name="website" label="Business website" type="url" />
-                    <Input
-                      name="email"
-                      label="Public business email (optional)"
-                      type="email"
-                      required={false}
-                    />
-                    <Input
-                      name="sourceUrl"
-                      label="Discovery source URL"
-                      type="url"
-                    />
-                    <Input
-                      name="sourceReference"
-                      label="Source permission and location evidence"
-                      placeholder="Licensed source reference and verified town evidence"
-                    />
-                  </Form>
-                )}
-              </section>
+                        <p>{c.businessName}</p>
+                        <p className="text-xs text-slate-400">
+                          Registered office: {c.town} {c.postcode}
+                        </p>
+                        <a
+                          className="text-amber-300"
+                          href={String(c.sourceUrl)}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Verify source ?
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                  <h3 className="mb-2 mt-6 font-semibold">
+                    Import a verified business
+                  </h3>
+                  <p className="mb-5 text-sm text-slate-400">
+                    Verify the town and source rights. Existing matches are
+                    reused; ambiguous branches require review.
+                  </p>
+                  {write && (
+                    <Form
+                      busy={busy || !ready || !data.campaigns.length}
+                      label="Import into shared pipeline"
+                      onSubmit={(v) => act("import", { ...v, country: "GB" })}
+                    >
+                      <label className="block text-sm">
+                        Campaign
+                        <select
+                          name="campaignId"
+                          aria-label="Campaign"
+                          className={field}
+                          required
+                        >
+                          {data.campaigns.map((c) => (
+                            <option key={String(c.id)} value={String(c.id)}>
+                              {c.name}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <Input name="businessName" label="Business name" />
+                      <Input name="town" label="Verified UK town" />
+                      <Input
+                        name="website"
+                        label="Business website"
+                        type="url"
+                      />
+                      <Input
+                        name="email"
+                        label="Public business email (optional)"
+                        type="email"
+                        required={false}
+                      />
+                      <Input
+                        name="sourceUrl"
+                        label="Discovery source URL"
+                        type="url"
+                      />
+                      <Input
+                        name="sourceReference"
+                        label="Source permission and location evidence"
+                        placeholder="Licensed source reference and verified town evidence"
+                      />
+                    </Form>
+                  )}
+                </section>
+              </div>
             </div>
           )}
+          {tab === "social" && (
+            <SocialOutreach
+              growth={data.growth}
+              leads={data.leads}
+              act={act}
+              busy={busy}
+              approve={approve}
+              write={write}
+              actorId={data.actorId}
+            />
+          )}
+          {tab === "operations" && approve && (
+            <ApprovalNotifications growth={data.growth} act={act} busy={busy} />
+          )}
           {tab === "inbox" && (
-            <div className="grid items-start gap-5 lg:grid-cols-[300px_minmax(0,1fr)]">
-              <section className={panel}>
-                <h2 className="mb-4 font-semibold">Company conversations</h2>
-                <div className="space-y-2">
-                  {data.threads.map((t) => (
-                    <button
-                      key={String(t.id)}
-                      onClick={() => setThreadId(String(t.id))}
-                      className={`w-full rounded-xl p-3 text-left ${threadId === String(t.id) ? "bg-amber-300/10" : "bg-white/5"}`}
-                    >
-                      <span className="block break-all text-sm font-medium">
-                        {t.recipient}
-                      </span>
-                      <span className="mt-1 block text-xs text-slate-400">
-                        {String(t.status).replaceAll("_", " ")} ·{" "}
-                        {t.owner_user_id === data.actorId
-                          ? "Owned by you"
-                          : t.owner_user_id
-                            ? `Owned by ${t.owner_name || "another user"}`
-                            : "Unassigned"}
-                      </span>
-                    </button>
-                  ))}
-                  {!data.threads.length && (
-                    <p className="text-sm text-slate-400">
-                      No conversations yet. Prepare a prospect draft or activate
-                      and sync the company mailbox.
-                    </p>
-                  )}
+            <div>
+              {data.growth.social.some(
+                (s) => s.state === "review" || s.state === "unknown",
+              ) && (
+                <div className="mb-4 rounded-xl border border-amber-300/20 p-4 text-sm">
+                  Social messages also need review.{" "}
+                  <button
+                    className="text-amber-300 underline"
+                    onClick={() => setTab("social")}
+                  >
+                    Open social approvals
+                  </button>
                 </div>
-              </section>
-              <section className={panel}>
-                {!thread ? (
-                  <p className="py-16 text-center text-slate-400">
-                    Select a conversation.
-                  </p>
-                ) : (
-                  <>
-                    <h2 className="break-all text-lg font-semibold">
-                      {thread.recipient}
-                    </h2>
-                    <p className="mt-1 text-sm text-slate-400">
-                      {thread.subject}
-                    </p>
-                    <div className="my-4 flex flex-wrap gap-2">
-                      {write && (
-                        <>
-                          <button
-                            className={secondary}
-                            disabled={busy || !ready}
-                            onClick={() =>
-                              void act("claim", {
-                                id: thread.id,
-                                revision: thread.revision,
-                              })
-                            }
-                          >
-                            Take ownership
-                          </button>
-                          <button
-                            className={secondary}
-                            disabled={
-                              busy ||
-                              !ready ||
-                              thread.status === "closed" ||
-                              (!!thread.owner_user_id &&
-                                thread.owner_user_id !== data.actorId)
-                            }
-                            onClick={() =>
-                              void act("close", {
-                                id: thread.id,
-                                revision: thread.revision,
-                              })
-                            }
-                          >
-                            Close conversation
-                          </button>
-                          <button
-                            className={secondary}
-                            disabled={
-                              busy ||
-                              !ready ||
-                              thread.owner_user_id !== data.actorId
-                            }
-                            onClick={() =>
-                              void act("handback", {
-                                id: thread.id,
-                                revision: thread.revision,
-                              })
-                            }
-                          >
-                            Explicit handback
-                          </button>
-                          <button
-                            className={secondary}
-                            disabled={busy || !ready}
-                            onClick={() =>
-                              void act("suppress", {
-                                id: thread.id,
-                                revision: thread.revision,
-                                reason: "Founder requested no further contact",
-                              })
-                            }
-                          >
-                            Suppress contact
-                          </button>
-                        </>
-                      )}
-                    </div>
-                    {data.messages
-                      .filter((m) => m.conversation_id === thread.id)
-                      .slice()
-                      .reverse()
-                      .map((m) => (
-                        <article
-                          key={String(m.id)}
-                          className="mb-3 rounded-xl bg-white/5 p-4"
-                        >
-                          <p className="mb-2 text-xs text-slate-400">
-                            {m.direction} · {stamp(m.occurred_at)} ·{" "}
-                            {m.classification}
-                          </p>
-                          <p className="whitespace-pre-wrap break-words text-sm">
-                            {m.body}
-                          </p>
-                        </article>
-                      ))}
-                    {write && (
-                      <details className="my-5">
-                        <summary className="cursor-pointer text-sm font-medium">
-                          Contact eligibility and evidence
-                        </summary>
-                        <div className="mt-4">
-                          <Form
-                            busy={busy || !ready}
-                            label="Save eligibility"
-                            onSubmit={(v) =>
-                              act("eligibility", {
-                                ...v,
-                                id: thread.id,
-                                revision: thread.revision,
-                              })
-                            }
-                          >
-                            <label className="block text-sm">
-                              Subscriber type
-                              <select
-                                name="subscriberType"
-                                aria-label="Subscriber type"
-                                className={field}
-                                defaultValue={String(
-                                  thread.subscriber_type || "unknown",
-                                )}
-                              >
-                                <option value="unknown">
-                                  Unknown — sending blocked
-                                </option>
-                                <option value="corporate">
-                                  Verified corporate subscriber
-                                </option>
-                                <option value="individual">
-                                  Individual / sole trader
-                                </option>
-                              </select>
-                            </label>
-                            <label className="block text-sm">
-                              Lawful basis
-                              <select
-                                name="legalBasis"
-                                aria-label="Lawful basis"
-                                className={field}
-                              >
-                                <option value="consent">
-                                  Recorded consent
-                                </option>
-                                <option value="legitimate_interests">
-                                  Documented legitimate interests — corporate
-                                  only
-                                </option>
-                              </select>
-                            </label>
-                            <Input
-                              name="reference"
-                              label="Consent or corporate eligibility / transparency evidence"
-                            />
-                          </Form>
-                        </div>
-                      </details>
+              )}
+              <div className="grid items-start gap-5 lg:grid-cols-[300px_minmax(0,1fr)]">
+                <section className={panel}>
+                  <h2 className="mb-4 font-semibold">Company conversations</h2>
+                  <div className="space-y-2">
+                    {data.threads.map((t) => (
+                      <button
+                        key={String(t.id)}
+                        onClick={() => setThreadId(String(t.id))}
+                        className={`w-full rounded-xl p-3 text-left ${threadId === String(t.id) ? "bg-amber-300/10" : "bg-white/5"}`}
+                      >
+                        <span className="block break-all text-sm font-medium">
+                          {t.recipient}
+                        </span>
+                        <span className="mt-1 block text-xs text-slate-400">
+                          {String(t.status).replaceAll("_", " ")} ·{" "}
+                          {t.owner_user_id === data.actorId
+                            ? "Owned by you"
+                            : t.owner_user_id
+                              ? `Owned by ${t.owner_name || "another user"}`
+                              : "Unassigned"}
+                        </span>
+                      </button>
+                    ))}
+                    {!data.threads.length && (
+                      <p className="text-sm text-slate-400">
+                        No conversations yet. Prepare a prospect draft or
+                        activate and sync the company mailbox.
+                      </p>
                     )}
-                    {data.drafts
-                      .filter((d) => d.conversation_id === thread.id)
-                      .map((d) => {
-                        const out = data.outbox.find(
-                          (o) => o.draft_id === d.id,
-                        );
-                        return (
+                  </div>
+                </section>
+                <section className={panel}>
+                  {!thread ? (
+                    <p className="py-16 text-center text-slate-400">
+                      Select a conversation.
+                    </p>
+                  ) : (
+                    <>
+                      <h2 className="break-all text-lg font-semibold">
+                        {thread.recipient}
+                      </h2>
+                      <p className="mt-1 text-sm text-slate-400">
+                        {thread.subject}
+                      </p>
+                      <div className="my-4 flex flex-wrap gap-2">
+                        {write && (
+                          <>
+                            <button
+                              className={secondary}
+                              disabled={busy || !ready}
+                              onClick={() =>
+                                void act("claim", {
+                                  id: thread.id,
+                                  revision: thread.revision,
+                                })
+                              }
+                            >
+                              Take ownership
+                            </button>
+                            <button
+                              className={secondary}
+                              disabled={
+                                busy ||
+                                !ready ||
+                                thread.status === "closed" ||
+                                (!!thread.owner_user_id &&
+                                  thread.owner_user_id !== data.actorId)
+                              }
+                              onClick={() =>
+                                void act("close", {
+                                  id: thread.id,
+                                  revision: thread.revision,
+                                })
+                              }
+                            >
+                              Close conversation
+                            </button>
+                            <button
+                              className={secondary}
+                              disabled={
+                                busy ||
+                                !ready ||
+                                thread.owner_user_id !== data.actorId
+                              }
+                              onClick={() =>
+                                void act("handback", {
+                                  id: thread.id,
+                                  revision: thread.revision,
+                                })
+                              }
+                            >
+                              Explicit handback
+                            </button>
+                            <button
+                              className={secondary}
+                              disabled={busy || !ready}
+                              onClick={() =>
+                                void act("suppress", {
+                                  id: thread.id,
+                                  revision: thread.revision,
+                                  reason:
+                                    "Founder requested no further contact",
+                                })
+                              }
+                            >
+                              Suppress contact
+                            </button>
+                          </>
+                        )}
+                      </div>
+                      {data.messages
+                        .filter((m) => m.conversation_id === thread.id)
+                        .slice()
+                        .reverse()
+                        .map((m) => (
                           <article
-                            className="mt-5 rounded-xl border border-white/10 p-4"
-                            key={`${d.id}:${d.revision}`}
+                            key={String(m.id)}
+                            className="mb-3 rounded-xl bg-white/5 p-4"
                           >
-                            <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-amber-300">
-                              Draft · revision {d.revision} ·{" "}
-                              {out?.state || "awaiting approval"}
+                            <p className="mb-2 text-xs text-slate-400">
+                              {m.direction} · {stamp(m.occurred_at)} ·{" "}
+                              {m.classification}
                             </p>
-                            {write ? (
-                              <Form
-                                busy={busy || !ready}
-                                label="Save edits (invalidates approval)"
-                                onSubmit={(v) =>
-                                  act("edit", {
-                                    ...v,
-                                    id: d.id,
-                                    revision: d.revision,
-                                  })
-                                }
-                              >
-                                <label className="block text-sm">
-                                  Subject
-                                  <input
-                                    className={field}
-                                    name="subject"
-                                    defaultValue={String(d.subject)}
-                                    required
-                                  />
-                                </label>
-                                <label className="block text-sm">
-                                  Message
-                                  <textarea
-                                    className={`${field} min-h-56`}
-                                    name="body"
-                                    defaultValue={String(d.body)}
-                                    required
-                                  />
-                                </label>
-                              </Form>
-                            ) : (
-                              <p className="whitespace-pre-wrap text-sm">
-                                {d.body}
+                            <p className="whitespace-pre-wrap break-words text-sm">
+                              {m.body}
+                            </p>
+                          </article>
+                        ))}
+                      {write && (
+                        <details className="my-5">
+                          <summary className="cursor-pointer text-sm font-medium">
+                            Contact eligibility and evidence
+                          </summary>
+                          <div className="mt-4">
+                            <Form
+                              busy={busy || !ready}
+                              label="Save eligibility"
+                              onSubmit={(v) =>
+                                act("eligibility", {
+                                  ...v,
+                                  id: thread.id,
+                                  revision: thread.revision,
+                                })
+                              }
+                            >
+                              <label className="block text-sm">
+                                Subscriber type
+                                <select
+                                  name="subscriberType"
+                                  aria-label="Subscriber type"
+                                  className={field}
+                                  defaultValue={String(
+                                    thread.subscriber_type || "unknown",
+                                  )}
+                                >
+                                  <option value="unknown">
+                                    Unknown — sending blocked
+                                  </option>
+                                  <option value="corporate">
+                                    Verified corporate subscriber
+                                  </option>
+                                  <option value="individual">
+                                    Individual / sole trader
+                                  </option>
+                                </select>
+                              </label>
+                              <label className="block text-sm">
+                                Lawful basis
+                                <select
+                                  name="legalBasis"
+                                  aria-label="Lawful basis"
+                                  className={field}
+                                >
+                                  <option value="consent">
+                                    Recorded consent
+                                  </option>
+                                  <option value="legitimate_interests">
+                                    Documented legitimate interests — corporate
+                                    only
+                                  </option>
+                                </select>
+                              </label>
+                              <Input
+                                name="reference"
+                                label="Consent or corporate eligibility / transparency evidence"
+                              />
+                            </Form>
+                          </div>
+                        </details>
+                      )}
+                      {data.drafts
+                        .filter((d) => d.conversation_id === thread.id)
+                        .map((d) => {
+                          const out = data.outbox.find(
+                            (o) => o.draft_id === d.id,
+                          );
+                          return (
+                            <article
+                              className="mt-5 rounded-xl border border-white/10 p-4"
+                              key={`${d.id}:${d.revision}`}
+                            >
+                              <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-amber-300">
+                                Draft · revision {d.revision} ·{" "}
+                                {out?.state || "awaiting approval"}
                               </p>
-                            )}
-                            <div className="mt-4 flex flex-wrap gap-2">
-                              {write && (
-                                <button
-                                  className={secondary}
-                                  disabled={
-                                    busy ||
-                                    !ready ||
-                                    !!thread.owner_user_id ||
-                                    thread.status === "human_active"
-                                  }
-                                  onClick={() =>
-                                    void act("ai_draft", { id: d.id })
+                              {write ? (
+                                <Form
+                                  busy={busy || !ready}
+                                  label="Save edits (invalidates approval)"
+                                  onSubmit={(v) =>
+                                    act("edit", {
+                                      ...v,
+                                      id: d.id,
+                                      revision: d.revision,
+                                    })
                                   }
                                 >
-                                  Queue AI drafting
-                                </button>
+                                  <label className="block text-sm">
+                                    Subject
+                                    <input
+                                      className={field}
+                                      name="subject"
+                                      defaultValue={String(d.subject)}
+                                      required
+                                    />
+                                  </label>
+                                  <label className="block text-sm">
+                                    Message
+                                    <textarea
+                                      className={`${field} min-h-56`}
+                                      name="body"
+                                      defaultValue={String(d.body)}
+                                      required
+                                    />
+                                  </label>
+                                </Form>
+                              ) : (
+                                <p className="whitespace-pre-wrap text-sm">
+                                  {d.body}
+                                </p>
                               )}
-                              {approve && (
-                                <>
+                              <div className="mt-4 flex flex-wrap gap-2">
+                                {write && (
                                   <button
                                     className={secondary}
                                     disabled={
                                       busy ||
                                       !ready ||
-                                      out?.state === "approved" ||
-                                      out?.state === "sending" ||
-                                      out?.state === "unknown"
+                                      !!thread.owner_user_id ||
+                                      thread.status === "human_active"
                                     }
                                     onClick={() =>
-                                      void act("approve", {
-                                        id: d.id,
-                                        revision: d.revision,
-                                        threadRevision: thread.revision,
-                                      })
+                                      void act("ai_draft", { id: d.id })
                                     }
                                   >
-                                    <ShieldCheck size={15} />
-                                    Approve saved content
+                                    Queue AI drafting
                                   </button>
-                                  {out?.state === "approved" && (
+                                )}
+                                {approve && (
+                                  <>
                                     <button
-                                      className={button}
+                                      className={secondary}
                                       disabled={
                                         busy ||
                                         !ready ||
-                                        !data.readiness.sendEnabled ||
-                                        data.readiness.stopped ||
-                                        !data.connection.active
+                                        out?.state === "approved" ||
+                                        out?.state === "sending" ||
+                                        out?.state === "unknown"
                                       }
                                       onClick={() =>
-                                        void act("dispatch", { id: out.id })
+                                        void act("approve", {
+                                          id: d.id,
+                                          revision: d.revision,
+                                          threadRevision: thread.revision,
+                                        })
                                       }
                                     >
-                                      <CheckCircle2 size={15} />
-                                      Send approved message
+                                      <ShieldCheck size={15} />
+                                      Approve saved content
                                     </button>
-                                  )}
-                                </>
+                                    {out?.state === "approved" && (
+                                      <button
+                                        className={button}
+                                        disabled={
+                                          busy ||
+                                          !ready ||
+                                          !data.readiness.sendEnabled ||
+                                          data.readiness.stopped ||
+                                          !data.connection.active
+                                        }
+                                        onClick={() =>
+                                          void act("dispatch", { id: out.id })
+                                        }
+                                      >
+                                        <CheckCircle2 size={15} />
+                                        Send approved message
+                                      </button>
+                                    )}
+                                  </>
+                                )}
+                              </div>
+                              {out?.state === "unknown" && (
+                                <p className="mt-3 text-sm text-red-200">
+                                  Uncertain send. Check Mailcow before
+                                  reconciliation in Operations; no retry is
+                                  automatic.
+                                </p>
                               )}
-                            </div>
-                            {out?.state === "unknown" && (
-                              <p className="mt-3 text-sm text-red-200">
-                                Uncertain send. Check Mailcow before
-                                reconciliation in Operations; no retry is
-                                automatic.
-                              </p>
-                            )}
-                          </article>
-                        );
-                      })}
-                  </>
-                )}
-              </section>
+                            </article>
+                          );
+                        })}
+                    </>
+                  )}
+                </section>
+              </div>
             </div>
           )}
           {tab === "operations" && (

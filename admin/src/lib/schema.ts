@@ -11,6 +11,7 @@ import { CLIENT_REQUEST_STATUSES } from "./client-requests"
 import { DEPLOYMENT_CANDIDATE_STATES } from "./forge-deployment-candidates"
 import { FORGE_PROJECT_STATES, FORGE_TASK_STATES } from "./forge-state-machine"
 import { INVOICE_STATUSES } from "./invoices"
+
 import { MONTHLY_REPORT_STATUSES } from "./monthly-reports"
 import type { ClientOffboardingItemStatus, ClientOffboardingStatus } from "./client-offboarding"
 import { OUTREACH_ACTIVITY_TYPES, PROPOSAL_PACKAGE_TYPES, PROPOSAL_STATUSES, PROSPECT_PRIORITIES, PROSPECT_SOURCES, PROSPECT_STAGES } from "./prospects"
@@ -2339,7 +2340,7 @@ export const megatonJobs = pgTable("megaton_jobs", {
   errorCode: text("error_code"),
   nextAt: timestamp("next_at", { withTimezone: true }).notNull().defaultNow(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-}, t => [check("megaton_jobs_kind_check", sql`${t.kind} IN ('research','mail_sync','ai_draft')`), check("megaton_jobs_state_check", sql`${t.state} IN ('queued','running','completed','failed','dead_letter','cancelled')`), uniqueIndex("megaton_one_research_job").on(t.prospectId).where(sql`${t.kind}='research' and ${t.state} in ('queued','running')`), uniqueIndex("megaton_one_ai_draft_job").on(t.draftId).where(sql`${t.kind}='ai_draft' and ${t.state} in ('queued','running')`), uniqueIndex("megaton_one_mail_sync_job").on(t.kind).where(sql`${t.kind}='mail_sync' and ${t.state} in ('queued','running')`), index("megaton_jobs_claim").on(t.state,t.nextAt,t.leaseUntil)])
+}, t => [check("megaton_jobs_kind_check", sql`${t.kind} IN ('research','mail_sync','ai_draft','ai_search')`), check("megaton_jobs_state_check", sql`${t.state} IN ('queued','running','completed','failed','dead_letter','cancelled')`), uniqueIndex("megaton_one_research_job").on(t.prospectId).where(sql`${t.kind}='research' and ${t.state} in ('queued','running')`), uniqueIndex("megaton_one_ai_draft_job").on(t.draftId).where(sql`${t.kind}='ai_draft' and ${t.state} in ('queued','running')`), uniqueIndex("megaton_one_mail_sync_job").on(t.kind).where(sql`${t.kind}='mail_sync' and ${t.state} in ('queued','running')`), index("megaton_jobs_claim").on(t.state,t.nextAt,t.leaseUntil)])
 export const megatonSuppressions = pgTable("megaton_suppressions", {
   address: text("address").primaryKey(),
   reason: text("reason").notNull(),
@@ -2374,3 +2375,28 @@ export const megatonScoreRuns = pgTable("megaton_score_runs", {
  model: text("model").notNull(), result: jsonb("result").notNull(), evidenceIds: jsonb("evidence_ids").notNull(),
  actorUserId: uuid("actor_user_id").notNull().references(() => adminUsers.id), createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 })
+
+export const megatonSearches = pgTable('megaton_searches', {
+  id: uuid('id').defaultRandom().primaryKey(), jobId: uuid('job_id').notNull().unique().references(() => megatonJobs.id),
+  town: text('town').notNull(), industry: text('industry').notNull(), results: jsonb('results').notNull().default([]),
+  actorUserId: uuid('actor_user_id').notNull().references(() => adminUsers.id), createdAt: timestamp('created_at',{withTimezone:true}).notNull().defaultNow(),
+})
+export const megatonPushDevices = pgTable('megaton_push_devices', {
+  id: uuid('id').defaultRandom().primaryKey(), userId: uuid('user_id').notNull().references(() => adminUsers.id), sessionVersion: integer('session_version').notNull(),
+  endpointHash: text('endpoint_hash').notNull().unique(), subscriptionEncrypted: text('subscription_encrypted').notNull(),
+  createdAt: timestamp('created_at',{withTimezone:true}).notNull().defaultNow(),
+})
+export const megatonNotifications = pgTable('megaton_notifications', {
+  id: uuid('id').defaultRandom().primaryKey(), userId: uuid('user_id').notNull().references(() => adminUsers.id), eventKey: text('event_key').notNull(),
+  state: text('state').notNull().default('queued'), pushCount: integer('push_count').notNull().default(0), emailAccepted: boolean('email_accepted').notNull().default(false),
+  errorCode: text('error_code'), startedAt: timestamp('started_at',{withTimezone:true}), completedAt: timestamp('completed_at',{withTimezone:true}),
+  createdAt: timestamp('created_at',{withTimezone:true}).notNull().defaultNow(),
+},t=>[uniqueIndex('megaton_notifications_user_id_event_key_key').on(t.userId,t.eventKey),index('megaton_notifications_queue').on(t.state,t.createdAt)])
+export const megatonSocialOutreach = pgTable('megaton_social_outreach', {
+  id: uuid('id').defaultRandom().primaryKey(), prospectId: integer('prospect_id').notNull().references(() => prospects.id), channel: text('channel').notNull(), recipient: text('recipient').notNull(),
+  profileUrl: text('profile_url').notNull(), body: text('body').notNull(), eligibilityReference: text('eligibility_reference').notNull(), revision: integer('revision').notNull().default(1),
+  state: text('state').notNull().default('review'), actorUserId: uuid('actor_user_id').notNull().references(() => adminUsers.id), approvedBy: uuid('approved_by').references(() => adminUsers.id), approvedSessionVersion: integer('approved_session_version'),
+  contentHash: text('content_hash'), dueAt: timestamp('due_at',{withTimezone:true}).notNull().defaultNow(), expiresAt: timestamp('expires_at',{withTimezone:true}),
+  providerReference: text('provider_reference'), startedAt: timestamp('started_at',{withTimezone:true}), completedAt: timestamp('completed_at',{withTimezone:true}),
+  createdAt: timestamp('created_at',{withTimezone:true}).notNull().defaultNow(),
+},t=>[index('megaton_social_due').on(t.state,t.dueAt)])

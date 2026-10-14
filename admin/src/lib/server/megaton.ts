@@ -27,6 +27,7 @@ import {
 import { createSafeOutboundClient } from "./safe-outbound";
 import { aiSettings, requestAIProposal } from "./megaton-ai";
 import { discoverRegistry } from "./megaton-discovery";
+import { growthSnapshot, growthMutation, queueReview, deliverReviewNotifications, dispatchSocial } from "./megaton-growth";
 
 export type MegatonActor = {
   id: string;
@@ -45,9 +46,11 @@ async function event(
   action: string,
   detail: Row = {},
 ) {
-  await tx.execute(
-    sql`insert into megaton_events(actor_user_id,entity_id,action,detail) values(${actor},${entity},${action},${JSON.stringify(detail)}::jsonb)`,
+  const recorded = await tx.execute(
+    sql`insert into megaton_events(actor_user_id,entity_id,action,detail) values(${actor},${entity},${action},${JSON.stringify(detail)}::jsonb) returning id`,
   );
+  if (["draft_created", "draft_edited", "ai_proposal_requires_review", "inbound_review_required", "send_uncertain"].includes(action))
+    await queueReview(tx, `${action}:${recorded.rows[0].id}`);
 }
 async function recordScore(tx: Executor, lead: number, actor: string) {
   const evidence = await rows(
@@ -264,6 +267,7 @@ export async function megatonSnapshot(
       sql`select id,state,reserved_microusd,actual_microusd,created_at from megaton_ai_usage where state='unknown' order by created_at desc limit 50`,
     );
     return {
+      growth: await growthSnapshot(actor, tx),
       campaigns,
       evidence,
       threads,
@@ -316,6 +320,8 @@ export async function megatonMutation(actor: MegatonActor, input: Row) {
   if (!megatonConfig().enabled)
     throw new MegatonError("Megaton is disabled in the environment.", 409);
   const action = cleanText(input.action, "action", 40);
+  if (["add_prospect","ai_search","push_subscribe","push_unsubscribe","notification_test","social_draft","social_approve","social_cancel","social_complete","social_reconcile"].includes(action))
+    return growthMutation(actor,input);
   allowed(
     actor,
     action === "approve" || action === "dispatch" || action === "reconcile"
@@ -718,7 +724,7 @@ export async function megatonMutation(actor: MegatonActor, input: Row) {
         );
       if (
         action === "job_retry" &&
-        job.kind === "ai_draft" &&
+        ["ai_draft", "ai_search"].includes(String(job.kind)) &&
         (
           await rows(
             tx,
@@ -821,7 +827,7 @@ async function dispatchApproved(
       throw new MegatonError("Another send is in flight or uncertain.", 409);
     const [usage] = await rows(
       tx,
-      sql`select count(*)::integer as n from megaton_outbox where started_at >= date_trunc('day',now() at time zone 'Europe/London') at time zone 'Europe/London' and state in ('sending','accepted','unknown')`,
+      sql`select count(*)::integer as n from (select id from megaton_outbox where started_at >= date_trunc('day',now() at time zone 'Europe/London') at time zone 'Europe/London' and state in ('sending','accepted','unknown') union all select id from megaton_social_outreach where started_at >= date_trunc('day',now() at time zone 'Europe/London') at time zone 'Europe/London' and state in ('sending','accepted','unknown')) sent`,
     );
     if (Number(usage.n) >= config.dailySendLimit)
       throw new MegatonError("Daily send limit reached.", 409);
@@ -880,6 +886,8 @@ async function dispatchApproved(
 
 export async function runMegatonWorker(actor: MegatonActor) {
   allowed(actor, "megaton.write");
+  await dispatchSocial();
+  await deliverReviewNotifications();
   const config = megatonConfig();
   if (config.retentionDays > 0 && config.enabled && !config.stopped)
     await db.transaction(async (tx) => {
@@ -979,7 +987,7 @@ export async function runMegatonJob(actor: MegatonActor) {
       sql`update megaton_outbox set state='unknown',error_code='interrupted_send' where state='sending' and started_at<now()-interval '5 minutes'`,
     );
     await tx.execute(
-      sql`update megaton_jobs set state=case when attempts>=3 then 'dead_letter' else 'queued' end,lease_owner=null,lease_until=null where state='running' and lease_until<now()`,
+      sql`update megaton_jobs set state=case when kind='ai_search' then 'failed' when attempts>=3 then 'dead_letter' else 'queued' end,lease_owner=null,lease_until=null where state='running' and lease_until<now()`,
     );
     const [next] = await rows(
       tx,

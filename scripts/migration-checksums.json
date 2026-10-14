@@ -575,7 +575,8 @@
     },
     { "path": "admin/drizzle/0064_command_centre.sql", "sha256": "3176800f472e05ff197f866f2a2b94004fd166df64bedab3e193672f0f1a483e", "lifecycle": "forward", "reason": "Extends existing prospects and outreach with shared ownership, trusted actors, tasks, contracts, payment evidence and append-only commercial history." },
     { "path": "admin/drizzle/0065_command_centre_sources_and_versions.sql", "sha256": "2bda8d031ec079db2435fc134cf9a6aae2876590c56ba84352ff9da4ff7653d5", "lifecycle": "forward", "reason": "Adds discovery sources and advances prospect versions for updates from existing commercial workflows." },
-    {"path": "admin/drizzle/0066_megaton_foundation.sql", "sha256": "20143eb8c3d2d7e5c68c64dfd8abaa0051cf2834526b99c8d0b3936048cb8e87", "lifecycle": "forward", "reason": "Add admin-owned acquisition evidence, company mailbox approvals, ownership and jobs."}
+    {"path": "admin/drizzle/0066_megaton_foundation.sql", "sha256": "20143eb8c3d2d7e5c68c64dfd8abaa0051cf2834526b99c8d0b3936048cb8e87", "lifecycle": "forward", "reason": "Add admin-owned acquisition evidence, company mailbox approvals, ownership and jobs."},
+    {"path":"admin/drizzle/0067_megaton_growth_and_alerts.sql","sha256":"0e3b7823cfa2bbf3eeb4114f5cc561ca3ff91aed4e5ee9a02dee8e76aed5bd57","lifecycle":"forward","reason":"Add sourced AI discovery, private approval notifications and approved social outreach."}
   ],
   "journals": {
     "web": {
@@ -830,7 +831,8 @@
         },
         { "idx": 64, "version": "7", "when": 1791676800000, "tag": "0064_command_centre", "breakpoints": true },
         { "idx": 65, "version": "7", "when": 1791676800001, "tag": "0065_command_centre_sources_and_versions", "breakpoints": true },
-        {"idx": 66, "version": "7", "when": 1791849600000, "tag": "0066_megaton_foundation", "breakpoints": true}
+        {"idx": 66, "version": "7", "when": 1791849600000, "tag": "0066_megaton_foundation", "breakpoints": true},
+        {"idx":67,"version":"7","when":1791936000000,"tag":"0067_megaton_growth_and_alerts","breakpoints":true}
       ]
     }
   },

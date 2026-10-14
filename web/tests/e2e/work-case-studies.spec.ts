@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test"
+import { projects } from "../../src/lib/data"
 import { gotoReady, mockExperienceAnalytics, rejectNonEssentialStorage, setExperience } from "./helpers"
 
 test.beforeEach(async ({ page }) => {
@@ -15,7 +16,10 @@ test.describe("work portfolio", () => {
     await gotoReady(page, "/work")
 
     const cards = page.getByRole("article")
-    await expect(cards).toHaveCount(8)
+    await expect(cards).toHaveCount(projects.length)
+    for (const project of projects) {
+      await expect(cards.getByRole('link', { name: `View case study: ${project.name}`, exact: true })).toHaveAttribute('href', `/work/${project.slug}`)
+    }
 
     const precision = cards.filter({ has: page.getByRole("heading", { name: "Precision Finish Plastering & Rendering" }) })
     // Card screenshots sit in an aria-hidden pointer-only link, so they are not exposed as img roles.
@@ -25,7 +29,7 @@ test.describe("work portfolio", () => {
     await expect(precision.getByRole("link", { name: /visit website/i })).toHaveAttribute("href", "https://precisionplasteringandrendering.co.uk")
 
     // Only projects with a confirmed live URL offer "Visit website" (every project except Pinkys Prints).
-    await expect(page.getByRole("link", { name: /visit website/i })).toHaveCount(7)
+    await expect(page.getByRole("link", { name: /visit website/i })).toHaveCount(projects.filter(project => project.websiteUrl).length)
     const pinkys = cards.filter({ has: page.getByRole("heading", { name: "Pinkys Prints" }) })
     await expect(pinkys.getByRole("link", { name: /visit website/i })).toHaveCount(0)
     // Screenshot placeholders are a development aid and never ship.

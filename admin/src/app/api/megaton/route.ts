@@ -4,6 +4,7 @@ import { megatonSnapshot, megatonMutation } from "@/lib/server/megaton";
 import { MegatonError } from "@/lib/megaton";
 import { AdminIdentityError } from "@/lib/admin-users";
 import { checkDurableRateLimit } from "@/lib/server/rate-limit-store";
+import { deliverReviewNotifications } from "@/lib/server/megaton-growth";
 export const dynamic = "force-dynamic";
 const headers = { "Cache-Control": "private, no-store, max-age=0" };
 function failure(error: unknown) {
@@ -67,10 +68,10 @@ export async function POST(request: Request) {
     }
     if (!input || typeof input !== "object" || Array.isArray(input))
       throw new MegatonError("Invalid payload.");
-    return NextResponse.json(
-      await megatonMutation(actor, input as Record<string, unknown>),
-      { headers },
-    );
+    const result = await megatonMutation(actor, input as Record<string, unknown>);
+    // Notification failure must never roll back or hide a successful business mutation.
+    await deliverReviewNotifications().catch(() => console.error("Megaton notification processing unavailable"));
+    return NextResponse.json(result, { headers });
   } catch (error) {
     return failure(error);
   }

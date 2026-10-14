@@ -49,6 +49,8 @@ export const TENANT_RLS_FUNCTION_GRANTS = [
 ]
 
 export const ADMIN_DELETE_TABLES = [
+  // Revoked/expired notification endpoints must be removed by the private runtime.
+  "megaton_push_devices",
   "delivery_forge_integrations",
   "forge_jobs",
   "invoice_items",

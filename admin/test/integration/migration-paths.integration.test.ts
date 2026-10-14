@@ -18,8 +18,12 @@ let pool: Pool
 let fixtureRoot: string
 let historicalWebMigrations: string
 let historicalAdminMigrations: string
+let currentWebCount: number
+let currentAdminCount: number
 
 beforeAll(async () => {
+  currentWebCount = JSON.parse(await readFile(path.join(WEB_MIGRATIONS, "meta/_journal.json"), "utf8")).entries.length
+  currentAdminCount = JSON.parse(await readFile(path.join(ADMIN_MIGRATIONS, "meta/_journal.json"), "utf8")).entries.length
   const databaseUrl = assertSafeIntegrationDatabaseUrl(process.env.TEST_DATABASE_URL)
   pool = new Pool({ connectionString: databaseUrl, max: 4 })
   fixtureRoot = await mkdtemp(path.join(os.tmpdir(), "scalesmiths-migration-fixture-"))
@@ -43,8 +47,8 @@ describe("migration installation paths", () => {
   it("applies every migration from zero in production order with separate journals", async () => {
     await migrateSharedTestDatabase(pool)
 
-    expect(await migrationCount("__drizzle_web_migrations")).toBe(22)
-    expect(await migrationCount("__drizzle_migrations")).toBe(66)
+    expect(await migrationCount("__drizzle_web_migrations")).toBe(currentWebCount)
+    expect(await migrationCount("__drizzle_migrations")).toBe(currentAdminCount)
     expect(await columnExists("forge_artifacts", "content_bytes")).toBe(true)
     expect(await columnExists("client_requests", "client_record_id")).toBe(true)
     expect(await columnExists("forge_deployment_candidates", "dependency_report_json")).toBe(true)
@@ -90,8 +94,8 @@ describe("migration installation paths", () => {
 
     await migrateSharedTestDatabase(pool)
 
-    expect(await migrationCount("__drizzle_web_migrations")).toBe(22)
-    expect(await migrationCount("__drizzle_migrations")).toBe(66)
+    expect(await migrationCount("__drizzle_web_migrations")).toBe(currentWebCount)
+    expect(await migrationCount("__drizzle_migrations")).toBe(currentAdminCount)
     expect(await columnExists("forge_artifacts", "content_bytes")).toBe(true)
     expect(await columnExists("client_requests", "client_record_id")).toBe(true)
     expect(await columnExists("forge_deployment_candidates", "dependency_report_json")).toBe(true)

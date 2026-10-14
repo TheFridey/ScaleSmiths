@@ -17,7 +17,9 @@ const state = vi.hoisted(() => ({
   send: vi.fn(),
   read: vi.fn(),
   ai: vi.fn(),
+  push: vi.fn(),
 }));
+vi.mock("web-push", () => ({ default: { sendNotification: state.push } }));
 vi.mock("../db", () => {
   const dialect = new PgDialect();
   const executor = (pg: Pick<PGlite, "query">) => ({
@@ -44,6 +46,7 @@ vi.mock("./megaton-ai", async (importOriginal) => {
   return { ...aiModule, requestAIProposal: state.ai };
 });
 import { megatonMutation, megatonSnapshot, type MegatonActor } from "./megaton";
+import { dispatchSocial, deliverReviewNotifications } from "./megaton-growth";
 const rhys = "00000000-0000-4000-8000-000000000001",
   trev = "00000000-0000-4000-8000-000000000002";
 const actor: MegatonActor = { id: rhys, role: "owner", sessionVersion: 1 },
@@ -101,7 +104,7 @@ describe("Megaton production services against embedded PostgreSQL", () => {
   beforeAll(async () => {
     state.pg = new PGlite();
     await state.pg
-      .exec(`create table admin_users(id uuid primary key,role text,active boolean,session_version integer,display_name text default 'Test founder');
+      .exec(`create table admin_users(id uuid primary key,role text,active boolean,session_version integer,display_name text default 'Test founder',email text default 'founder@example.com');
       create table prospects(id serial primary key,business_name text,contact_email text,website_url text,location text,industry text,source text,stage text default 'found',owner_user_id uuid,archived_at timestamptz,updated_at timestamptz default now());
       create table commercial_contacts(id serial primary key,prospect_id integer,email text,suppressed boolean default false);`);
     await state.pg.exec(
@@ -111,15 +114,27 @@ describe("Megaton production services against embedded PostgreSQL", () => {
       ).replaceAll("--> statement-breakpoint", ""),
     );
     await state.pg.exec(
-      "create role megaton_external; grant select on megaton_conversations to megaton_external;",
+      readFileSync(
+        path.resolve(
+          process.cwd(),
+          "drizzle/0067_megaton_growth_and_alerts.sql",
+        ),
+        "utf8",
+      ).replaceAll("--> statement-breakpoint", ""),
+    );
+    await state.pg.exec(
+      "create role megaton_external; grant select on megaton_conversations,megaton_social_outreach,megaton_notifications,megaton_push_devices,megaton_searches to megaton_external;",
     );
   }, 60000);
   beforeEach(async () => {
+    vi.unstubAllGlobals();
     vi.unstubAllEnvs();
     for (const [key, value] of Object.entries(env)) vi.stubEnv(key, value);
     state.send.mockReset();
     state.read.mockReset();
     state.ai.mockReset();
+    state.push.mockReset();
+    state.push.mockResolvedValue({ statusCode: 201 });
     state.send.mockResolvedValue({ reference: "<receipt@example.com>" });
     await state.pg
       .exec(`truncate megaton_events,megaton_discovery_links,megaton_suppressions,megaton_jobs,megaton_outbox,megaton_drafts,megaton_messages,megaton_conversations,megaton_evidence,megaton_campaigns,commercial_contacts,prospects,admin_users restart identity cascade;
@@ -138,8 +153,208 @@ describe("Megaton production services against embedded PostgreSQL", () => {
       "permission",
     );
   });
+  it("adds manually sourced prospects and prevents duplicates across the shared pipeline", async () => {
+    const input = {
+      action: "add_prospect",
+      businessName: "New business",
+      town: "Hucknall",
+      industry: "Plumbing",
+      sourceReference: "Business card from owner",
+    };
+    await megatonMutation(actor, input);
+    expect((await megatonSnapshot(other)).leads).toHaveLength(2);
+    await expect(megatonMutation(other, input)).rejects.toThrow(
+      "matching prospect",
+    );
+    await expect(
+      megatonMutation({ ...actor, role: "viewer" }, input),
+    ).rejects.toThrow("permission");
+  });
+  it("queues private approval alerts for both founders when a draft needs review", async () => {
+    await draft();
+    const notices = (
+      await state.pg.query<{ user_id: string }>(
+        "select user_id,event_key from megaton_notifications",
+      )
+    ).rows;
+    expect(notices).toHaveLength(2);
+    expect(notices.map((n) => n.user_id).sort()).toEqual([rhys, trev]);
+  });
+  async function social(channel = "linkedin") {
+    return (await megatonMutation(actor, {
+      action: "social_draft",
+      prospectId: 1,
+      channel,
+      recipient: "12345",
+      profileUrl:
+        channel === "linkedin"
+          ? "https://www.linkedin.com/company/example/"
+          : channel === 'facebook' ? 'https://www.facebook.com/example' : "https://x.com/example",
+      body: "Hello. May we discuss your website?",
+      reference: "Recipient explicitly requested website advice",
+    })) as { id: string; revision: number };
+  }
+  it("keeps LinkedIn sending manual and requires the current approver to confirm completion", async () => {
+    const d = await social();
+    await megatonMutation(actor, { action: "social_approve", ...d });
+    await expect(
+      megatonMutation(other, { action: "social_complete", ...d }),
+    ).rejects.toThrow("current approver");
+    expect(await dispatchSocial()).toEqual({ processed: 0 });
+    await megatonMutation(actor, { action: "social_complete", ...d });
+    expect(
+      (
+        await state.pg.query<{ state: string }>(
+          "select state from megaton_social_outreach where id=$1",
+          [d.id],
+        )
+      ).rows[0].state,
+    ).toBe("manual_completed");
+  });
+  it("cancels social approvals after approver session revocation without calling a provider", async () => {
+    vi.stubEnv("MEGATON_SOCIAL_SEND_ENABLED", "true");
+    vi.stubEnv("MEGATON_X_USER_ACCESS_TOKEN", "fixture");
+    const fetch = vi.fn();
+    vi.stubGlobal("fetch", fetch);
+    const d = await social("x");
+    await megatonMutation(actor, { action: "social_approve", ...d });
+    await state.pg.query(
+      "update admin_users set session_version=2 where id=$1",
+      [rhys],
+    );
+    await dispatchSocial();
+    expect(fetch).not.toHaveBeenCalled();
+    expect(
+      (
+        await state.pg.query<{ state: string }>(
+          "select state from megaton_social_outreach where id=$1",
+          [d.id],
+        )
+      ).rows[0].state,
+    ).toBe("cancelled");
+  });
+  it("does not retry an uncertain social provider send", async () => {
+    vi.stubEnv("MEGATON_SOCIAL_SEND_ENABLED", "true");
+    vi.stubEnv("MEGATON_X_USER_ACCESS_TOKEN", "fixture");
+    const fetch = vi.fn().mockRejectedValue(new Error("timeout"));
+    vi.stubGlobal("fetch", fetch);
+    const d = await social("x");
+    await megatonMutation(actor, { action: "social_approve", ...d });
+    await dispatchSocial();
+    await dispatchSocial();
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(
+      (
+        await state.pg.query<{ state: string }>(
+          "select state from megaton_social_outreach where id=$1",
+          [d.id],
+        )
+      ).rows[0].state,
+    ).toBe("unknown");
+    await expect(social('x')).rejects.toThrow('uncertain outreach');
+    await megatonMutation(actor,{action:'social_reconcile',...d,outcome:'cancelled',reference:'Fixture provider trace proves request was not accepted'});
+    expect((await state.pg.query<{state:string}>('select state from megaton_social_outreach where id=$1',[d.id])).rows[0].state).toBe('cancelled');
+  });
+  it('checks recent Facebook inbound eligibility before any Page send',async()=>{
+    vi.stubEnv('MEGATON_SOCIAL_SEND_ENABLED','true');vi.stubEnv('MEGATON_FACEBOOK_PAGE_TOKEN','fixture');vi.stubEnv('MEGATON_FACEBOOK_PAGE_ID','999');vi.stubEnv('MEGATON_FACEBOOK_API_VERSION','v25.0');
+    const fetch=vi.fn().mockResolvedValue({ok:true,json:async()=>({data:[{messages:{data:[{from:{id:'12345'},created_time:new Date(Date.now()-48*3600000).toISOString()}]}}]})});vi.stubGlobal('fetch',fetch);
+    const d=await social('facebook');await megatonMutation(actor,{action:'social_approve',...d});await dispatchSocial();
+    expect(fetch).toHaveBeenCalledTimes(1);expect(String(fetch.mock.calls[0][0])).toContain('/conversations?');
+  });
+  it('sends an approved Facebook reply only after the matching recent inbound check',async()=>{
+    vi.stubEnv('MEGATON_SOCIAL_SEND_ENABLED','true');vi.stubEnv('MEGATON_FACEBOOK_PAGE_TOKEN','fixture');vi.stubEnv('MEGATON_FACEBOOK_PAGE_ID','999');vi.stubEnv('MEGATON_FACEBOOK_API_VERSION','v25.0');
+    const fetch=vi.fn().mockResolvedValueOnce({ok:true,json:async()=>({data:[{messages:{data:[{from:{id:'12345'},created_time:new Date().toISOString()}]}}]})}).mockResolvedValueOnce({ok:true,json:async()=>({message_id:'fixture-message'})});vi.stubGlobal('fetch',fetch);
+    const d=await social('facebook');await megatonMutation(actor,{action:'social_approve',...d});await dispatchSocial();await dispatchSocial();
+    expect(fetch).toHaveBeenCalledTimes(2);expect((await state.pg.query<{state:string}>('select state from megaton_social_outreach where id=$1',[d.id])).rows[0].state).toBe('accepted');
+  });
+  it("searches with a bounded reservation and never imports suggestions automatically", async () => {
+    vi.stubEnv("MEGATON_AI_ENABLED", "true");
+    vi.stubEnv("MEGATON_AI_SEARCH_ENABLED", "true");
+    vi.stubEnv("MEGATON_OPENAI_API_KEY", "fixture");
+    vi.stubEnv("MEGATON_AI_DAILY_CAP_MICROUSD", "100000");
+    vi.stubEnv("MEGATON_AI_MONTHLY_CAP_MICROUSD", "100000");
+    const candidate = {
+      businessName: "Search suggestion",
+      town: "Hucknall",
+      website: "https://example.org",
+      sourceUrl: "https://example.org/contact",
+      reason: "Trading location on contact page",
+    };
+    const fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        output: [
+          {
+            type: "web_search_call",
+            action: { sources: [{ url: candidate.sourceUrl }] },
+          },
+          { type: "message", content: [{ text: JSON.stringify([candidate]) }] },
+        ],
+      }),
+    });
+    vi.stubGlobal("fetch", fetch);
+    const r = (await megatonMutation(actor, {
+      action: "ai_search",
+      town: "Hucknall",
+      industry: "Plumbing",
+    })) as { candidates: unknown[] };
+    expect(r.candidates).toHaveLength(1);
+    expect((await megatonSnapshot(actor)).leads).toHaveLength(1);
+    await expect(
+      megatonMutation(actor, {
+        action: "ai_search",
+        town: "Hucknall",
+        industry: "Plumbing",
+      }),
+    ).rejects.toThrow("spend cap");
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+  it("keeps notification delivery off without explicit activation", async () => {
+    await draft();
+    expect(await deliverReviewNotifications()).toEqual({ processed: 0 });
+    expect(state.send).not.toHaveBeenCalled();
+  });
+  it("encrypts registered subscriptions and falls back to founder email when push fails", async () => {
+    vi.stubEnv("MEGATON_PUSH_ENCRYPTION_KEY", "ab".repeat(32));
+    vi.stubEnv("MEGATON_VAPID_PUBLIC_KEY", "fixture");
+    vi.stubEnv("MEGATON_VAPID_PRIVATE_KEY", "fixture");
+    vi.stubEnv("MEGATON_NOTIFICATIONS_ENABLED", "true");
+    vi.stubEnv("MEGATON_NOTIFICATION_EMAIL_FALLBACK", "true");
+    const endpoint = "https://fcm.googleapis.com/fixture-secret-endpoint";
+    await megatonMutation(actor, {
+      action: "push_subscribe",
+      subscription: {
+        endpoint,
+        keys: { auth: "a".repeat(22), p256dh: "b".repeat(87) },
+      },
+    });
+    const stored = (
+      await state.pg.query<{ subscription_encrypted: string }>(
+        "select subscription_encrypted from megaton_push_devices",
+      )
+    ).rows[0];
+    expect(stored.subscription_encrypted).not.toContain("fixture-secret");
+    state.push.mockRejectedValue({ statusCode: 410 });
+    await draft();
+    await deliverReviewNotifications();
+    await deliverReviewNotifications();
+    expect(state.push).toHaveBeenCalledTimes(1);
+    expect(state.send).toHaveBeenCalledTimes(2);
+    expect(
+      (await state.pg.query("select * from megaton_push_devices")).rows,
+    ).toHaveLength(0);
+    const receipts = (
+      await state.pg.query<{ state: string; email_accepted: boolean }>(
+        "select state,email_accepted from megaton_notifications",
+      )
+    ).rows;
+    expect(
+      receipts.every((r) => r.state === "accepted" && r.email_accepted),
+    ).toBe(true);
+  });
   it("keeps acquisition data invisible to public tenant sessions under RLS", async () => {
     await draft();
+    await social();
     await state.pg.transaction(async (tx) => {
       await tx.exec(
         "set local role megaton_external; set local app.access_mode='tenant';",
@@ -147,6 +362,8 @@ describe("Megaton production services against embedded PostgreSQL", () => {
       expect(
         (await tx.query("select * from megaton_conversations")).rows,
       ).toHaveLength(0);
+      expect((await tx.query('select * from megaton_social_outreach')).rows).toHaveLength(0);
+      expect((await tx.query('select * from megaton_notifications')).rows).toHaveLength(0);
     });
   });
   it("requires eligibility and exact displayed revisions before approval", async () => {

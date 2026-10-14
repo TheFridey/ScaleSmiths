@@ -60,7 +60,7 @@ const backendPath = path.join(directory, "backend.mjs");
 await writeFile(backendPath, backend.outputFiles[0].text);
 const service = await import(pathToFileURL(backendPath).href);
 await service.init(
-  (await readFile("drizzle/0066_megaton_foundation.sql", "utf8")).replaceAll(
+  ((await readFile("drizzle/0066_megaton_foundation.sql", "utf8")) + '\n' + (await readFile("drizzle/0067_megaton_growth_and_alerts.sql", "utf8"))).replaceAll(
     "--> statement-breakpoint",
     "",
   ),
@@ -195,7 +195,7 @@ try {
   await first
     .getByLabel("Campaign name", { exact: true })
     .fill("Hucknall plumbing fixture");
-  await first.getByLabel("UK town", { exact: true }).first().fill("Hucknall");
+  await first.locator('form').filter({has:first.getByRole('button',{name:'Create campaign',exact:true})}).getByLabel("UK town", { exact: true }).fill("Hucknall");
   await first.getByLabel("Industry", { exact: true }).fill("Plumbing");
   await first
     .getByRole("button", { name: "Create campaign", exact: true })
@@ -223,6 +223,24 @@ try {
   await first
     .getByRole("button", { name: "Import into shared pipeline", exact: true })
     .click();
+  await first.getByRole("button", { name: "Prospects", exact: true }).click();
+  await first.getByRole('button',{name:'Add prospect',exact:true}).click();
+  await first.getByLabel('Business name',{exact:true}).fill('Manual fixture business');
+  await first.getByLabel('Town / trading location',{exact:true}).fill('Hucknall');
+  await first.getByLabel('Industry',{exact:true}).fill('Carpentry');
+  await first.getByLabel('Source and verified location evidence',{exact:true}).fill('Synthetic owner-provided fixture');
+  await first.getByRole('button',{name:'Save prospect',exact:true}).click();
+  await first.getByRole('button',{name:/Manual fixture business/}).waitFor();
+  await first.getByRole('button',{name:'Social outreach',exact:true}).click();
+  await first.getByLabel('Prospect',{exact:true}).selectOption({label:'Manual fixture business'});
+  await first.getByLabel("Prospect's social profile URL",{exact:true}).fill('https://www.linkedin.com/company/example/');
+  await first.getByLabel('Recipient permission / eligibility evidence',{exact:true}).fill('Synthetic fixture: explicit request for contact');
+  await first.getByLabel('Message for human review',{exact:true}).fill('Synthetic fixture message. Never sent.');
+  await first.getByRole('button',{name:'Request approval',exact:true}).click();
+  await first.getByText('Synthetic fixture message. Never sent.',{exact:true}).waitFor();
+  await first.getByRole('button',{name:'Approve exact message',exact:true}).click();
+  await first.getByRole('link',{name:'Open LinkedIn',exact:false}).waitFor();
+  await first.screenshot({path:path.join(directory,'desktop-social-approval.png')});
   await first.getByRole("button", { name: "Prospects", exact: true }).click();
   await first.getByRole("button", { name: /Local Fixture Ltd/ }).click();
   await first

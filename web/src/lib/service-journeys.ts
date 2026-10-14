@@ -50,7 +50,7 @@ export const serviceJourneys: Record<ServiceJourneySlug, ServiceJourney> = {
       { title: "Measure", description: "Approved work is delivered with analytics foundations and practical post-launch checks so decisions are tied to useful evidence." },
       { title: "Grow", description: "Businesses that want ongoing improvement can move into a Growth Partnership with an agreed roadmap, cadence and scope. It can begin around an existing site or after a ScaleSmiths build." },
     ],
-    proofSlugs: ["precision-finish-plastering-rendering", "glow-tanning", "csds"],
+    proofSlugs: ["precision-finish-plastering-rendering", "glow-tanning", "csds", "foot-works-podiatry"],
     proofIntro: "Start with real local proof: a Hucknall trades business and a Hucknall appointment-led business, followed by broader service-sector work. Public outcome claims appear only when separately verified.",
     relatedPages: [
       { href: "/web-design-hucknall", label: "Web design in Hucknall", description: "Local website strategy, design, trust, and enquiry routes." },

@@ -2,6 +2,7 @@ import type { AdminRole } from "./admin-users"
 import { authorizationExpectation } from "./authorization-policy"
 
 export const CAPABILITIES = [
+  "megaton.read", "megaton.write", "megaton.approve", "megaton.configure",
   "admin_users.read", "admin_users.manage", "admin_users.credentials.reset", "admin_users.owner.assign",
   "portal_users.read", "portal_users.manage", "portal_users.credentials.reset",
   "leads.read", "leads.write", "prospects.convert", "clients.read", "clients.write",
@@ -51,6 +52,7 @@ export function requiredCapabilityForRequest({ pathname, method }: RbacRequest):
   if (pathname.startsWith("/api/auth") || pathname.startsWith("/login")) return null
   if (pathname === "/api/security/logout") return null
   if (pathname === "/security" || pathname.startsWith("/security/") || pathname.startsWith("/api/security")) return "settings.manage"
+  if (pathname === "/megaton" || pathname.startsWith("/megaton/")) return "megaton.read"
   if (pathname === "/users" || pathname.startsWith("/users/") || pathname.startsWith("/api/admin-users")) return write ? "admin_users.manage" : "admin_users.read"
   if (pathname === "/portal-users" || pathname.startsWith("/portal-users/") || pathname.startsWith("/api/portal-users")) return write ? "portal_users.manage" : "portal_users.read"
   if (pathname === "/claims" || pathname.startsWith("/claims/") || pathname.startsWith("/api/claims")) return write ? "claims.manage" : "claims.read"

@@ -143,6 +143,13 @@ async function expectCode(promise: Promise<unknown>, code: SafeOutboundCode) {
   await expect(promise).rejects.toMatchObject({ code })
   await promise.catch((error) => expect(error).toBeInstanceOf(SafeOutboundError))
 }
+// A correctly pinned unreachable address may refuse immediately or time out,
+// depending on the host's routes/firewall. The decoy-hit and DNS assertions
+// below prove the security boundary independently of that OS error timing.
+async function expectPinnedNetworkFailure(promise: Promise<unknown>) {
+  await expect(promise).rejects.toBeInstanceOf(SafeOutboundError)
+  await promise.catch(error => expect(["request_failed", "timeout"]).toContain(error.code))
+}
 
 // A fetch spy that returns queued Responses, recording the URLs it was asked to fetch.
 function fetchSequence(responses: Response[]) {
@@ -327,7 +334,7 @@ describe("safe-outbound production fetch boundary", () => {
     const lookup = rebindSystemLookup("127.0.0.1", 4)
 
     const client = createSafeOutboundClient({ resolve: async () => [testNetV4 ? TEST_NET_V4 : PUBLIC_IP] })
-    await expectCode(client(`http://rebind.example:${port}/secret`, { allowedPorts: { http: [String(port)], https: [] }, timeoutMs: 1000 }), "request_failed")
+    await expectPinnedNetworkFailure(client(`http://rebind.example:${port}/secret`, { allowedPorts: { http: [String(port)], https: [] }, timeoutMs: 1000 }))
     expect(decoyHits).toEqual([])
     expect(lookup.mock.calls.some((call) => String(call[0]) === "rebind.example")).toBe(false)
   })
@@ -344,7 +351,7 @@ describe("safe-outbound production fetch boundary", () => {
     rebindSystemLookup("::1", 6)
 
     const client = createSafeOutboundClient({ resolve: async () => ["2001:db8::1"] })
-    await expectCode(client(`http://rebind6.example:${port}/secret`, { allowedPorts: { http: [String(port)], https: [] }, timeoutMs: 1000 }), "request_failed")
+    await expectPinnedNetworkFailure(client(`http://rebind6.example:${port}/secret`, { allowedPorts: { http: [String(port)], https: [] }, timeoutMs: 1000 }))
     expect(decoyHits).toEqual([])
   })
 
@@ -359,7 +366,7 @@ describe("safe-outbound production fetch boundary", () => {
     rebindSystemLookup("169.254.169.254", 4)
 
     const client = createSafeOutboundClient({ resolve: async () => [testNetV4 ? TEST_NET_V4 : PUBLIC_IP] })
-    await expectCode(client(`http://metadata.example:${port}/latest/meta-data/`, { allowedPorts: { http: [String(port)], https: [] }, timeoutMs: 1000 }), "request_failed")
+    await expectPinnedNetworkFailure(client(`http://metadata.example:${port}/latest/meta-data/`, { allowedPorts: { http: [String(port)], https: [] }, timeoutMs: 1000 }))
     expect(decoyHits).toEqual([])
   })
 

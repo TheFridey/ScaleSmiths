@@ -40,6 +40,7 @@ export const NAV: Array<{
   Icon: typeof LayoutDashboard
   capability: Capability
 }> = [
+  { href: "/megaton", label: "Megaton", Icon: Target, capability: "megaton.read" },
   {
     href: "/command-centre",
     label: "Command Centre",
@@ -153,7 +154,7 @@ export const NAV: Array<{
 ]
 
 const NAV_GROUPS = [
-  { label: "Sales", routes: ["/command-centre", "/prospects", "/claims"] },
+  { label: "Sales", routes: ["/command-centre", "/megaton", "/prospects", "/claims"] },
   {
     label: "Client delivery",
     routes: [

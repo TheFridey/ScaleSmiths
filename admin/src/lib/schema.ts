@@ -2237,3 +2237,140 @@ export const ventureAuditEvents = pgTable("venture_audit_events", {
   index("venture_audit_events_experiment_created_idx").on(table.experimentId, table.createdAt),
   check("venture_audit_events_actor_type_check", sql`${table.actorType} in ('human','service','system')`),
 ])
+
+// Megaton owns these private acquisition records; forward migration 0066.
+export const megatonCampaigns = pgTable("megaton_campaigns", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  town: text("town").notNull(),
+  industry: text("industry").notNull(),
+  country: text("country").notNull().default("GB"),
+  actorUserId: uuid("actor_user_id").notNull().references(() => adminUsers.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [check("megaton_campaigns_country_check", sql`${t.country} = 'GB'`)])
+export const megatonEvidence = pgTable("megaton_evidence", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  prospectId: integer("prospect_id").notNull().references(() => prospects.id, { onDelete: "restrict" }),
+  category: text("category").notNull(),
+  observation: text("observation").notNull(),
+  sourceUrl: text("source_url").notNull(),
+  observedAt: timestamp("observed_at", { withTimezone: true }).notNull(),
+  confidence: numeric("confidence").notNull(),
+  strength: numeric("strength").notNull(),
+  actorUserId: uuid("actor_user_id").notNull().references(() => adminUsers.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [index("megaton_evidence_prospect").on(t.prospectId), check("megaton_evidence_category_check", sql`${t.category} IN ('icp','digital','signals','commercial','contact','completeness')`), check("megaton_evidence_confidence_check", sql`${t.confidence} BETWEEN 0 AND 1`), check("megaton_evidence_strength_check", sql`${t.strength} BETWEEN 0 AND 1`)])
+export const megatonConnections = pgTable("megaton_connections", {
+  lastSyncedAt: timestamp("last_synced_at",{withTimezone:true}),
+  id: text("id").primaryKey(),
+  label: text("label").notNull().default("Company Mailcow"),
+  active: boolean("active").notNull().default(false),
+  activatedBy: uuid("activated_by").references(() => adminUsers.id),
+  cursor: jsonb("cursor").notNull().default(sql`'{}'::jsonb`),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [check("megaton_connections_id_check", sql`${t.id} = 'company-mailcow'`)])
+export const megatonConversations = pgTable("megaton_conversations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  connectionId: text("connection_id").notNull().references(() => megatonConnections.id),
+  prospectId: integer("prospect_id").references(() => prospects.id, { onDelete: "restrict" }),
+  recipient: text("recipient").notNull(),
+  subject: text("subject").notNull(),
+  status: text("status").notNull().default("review"),
+  ownerUserId: uuid("owner_user_id").references(() => adminUsers.id),
+  revision: integer("revision").notNull().default(1),
+  legalBasis: text("legal_basis"),
+  subscriberType: text("subscriber_type"),
+  consentReference: text("consent_reference"),
+  suppressed: boolean("suppressed").notNull().default(false),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [check("megaton_conversations_status_check", sql`${t.status} IN ('review','approval','awaiting_prospect','human_active','follow_up','closed')`), check("megaton_conversations_revision_check", sql`${t.revision} > 0`), check("megaton_conversations_subscriber_type_check", sql`${t.subscriberType} IN ('corporate','individual','unknown')`), uniqueIndex("megaton_conversations_connection_id_recipient_key").on(t.connectionId, t.recipient)])
+export const megatonMessages = pgTable("megaton_messages", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  conversationId: uuid("conversation_id").notNull().references(() => megatonConversations.id),
+  externalId: text("external_id").notNull(),
+  direction: text("direction").notNull(),
+  body: text("body").notNull(),
+  classification: text("classification").notNull(),
+  occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [index("megaton_messages_thread").on(t.conversationId,t.occurredAt), check("megaton_messages_direction_check", sql`${t.direction} IN ('inbound','outbound')`), uniqueIndex("megaton_messages_conversation_id_external_id_key").on(t.conversationId, t.externalId)])
+export const megatonDrafts = pgTable("megaton_drafts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  conversationId: uuid("conversation_id").notNull().references(() => megatonConversations.id),
+  campaignId: uuid("campaign_id").references(() => megatonCampaigns.id),
+  subject: text("subject").notNull(),
+  body: text("body").notNull(),
+  offer: text("offer").notNull(),
+  actorUserId: uuid("actor_user_id").notNull().references(() => adminUsers.id),
+  revision: integer("revision").notNull().default(1),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [check("megaton_drafts_offer_check", sql`${t.offer} IN ('email','audit','website','partnership')`)])
+export const megatonOutbox = pgTable("megaton_outbox", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  draftId: uuid("draft_id").notNull().references(() => megatonDrafts.id),
+  conversationId: uuid("conversation_id").notNull().references(() => megatonConversations.id),
+  contentHash: text("content_hash").notNull(),
+  threadRevision: integer("thread_revision").notNull(),
+  approvedBy: uuid("approved_by").notNull().references(() => adminUsers.id),
+  approvedSessionVersion: integer("approved_session_version").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  dueAt: timestamp("due_at", { withTimezone: true }).notNull().defaultNow(),
+  state: text("state").notNull().default("approved"),
+  messageId: text("message_id").notNull().unique(),
+  providerReference: text("provider_reference"),
+  errorCode: text("error_code"),
+  startedAt: timestamp("started_at", { withTimezone: true }),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [check("megaton_outbox_state_check", sql`${t.state} IN ('approved','sending','accepted','unknown','cancelled')`), uniqueIndex("megaton_one_pending_draft").on(t.draftId).where(sql`${t.state} in ('approved','sending','unknown')`), index("megaton_outbox_due").on(t.state,t.dueAt)])
+export const megatonJobs = pgTable("megaton_jobs", {
+  draftId: uuid("draft_id").references(() => megatonDrafts.id),
+  draftRevision: integer("draft_revision"),
+  threadRevision: integer("thread_revision"),
+  id: uuid("id").primaryKey().defaultRandom(),
+  kind: text("kind").notNull(),
+  prospectId: integer("prospect_id").references(() => prospects.id),
+  actorUserId: uuid("actor_user_id").notNull().references(() => adminUsers.id),
+  state: text("state").notNull().default("queued"),
+  attempts: integer("attempts").notNull().default(0),
+  leaseUntil: timestamp("lease_until", { withTimezone: true }),
+  leaseOwner: uuid("lease_owner"),
+  errorCode: text("error_code"),
+  nextAt: timestamp("next_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [check("megaton_jobs_kind_check", sql`${t.kind} IN ('research','mail_sync','ai_draft')`), check("megaton_jobs_state_check", sql`${t.state} IN ('queued','running','completed','failed','dead_letter','cancelled')`), uniqueIndex("megaton_one_research_job").on(t.prospectId).where(sql`${t.kind}='research' and ${t.state} in ('queued','running')`), uniqueIndex("megaton_one_ai_draft_job").on(t.draftId).where(sql`${t.kind}='ai_draft' and ${t.state} in ('queued','running')`), uniqueIndex("megaton_one_mail_sync_job").on(t.kind).where(sql`${t.kind}='mail_sync' and ${t.state} in ('queued','running')`), index("megaton_jobs_claim").on(t.state,t.nextAt,t.leaseUntil)])
+export const megatonSuppressions = pgTable("megaton_suppressions", {
+  address: text("address").primaryKey(),
+  reason: text("reason").notNull(),
+  actorUserId: uuid("actor_user_id").references(() => adminUsers.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+})
+export const megatonDiscoveryLinks = pgTable("megaton_discovery_links", {
+  campaignId: uuid("campaign_id").notNull().references(() => megatonCampaigns.id),
+  prospectId: integer("prospect_id").notNull().references(() => prospects.id),
+  sourceUrl: text("source_url").notNull(),
+  sourceReference: text("source_reference").notNull(),
+  actorUserId: uuid("actor_user_id").notNull().references(() => adminUsers.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [primaryKey({ columns: [t.campaignId, t.prospectId] })])
+export const megatonEvents = pgTable("megaton_events", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  actorUserId: uuid("actor_user_id").references(() => adminUsers.id),
+  entityId: text("entity_id").notNull(),
+  action: text("action").notNull(),
+  detail: jsonb("detail").notNull().default(sql`'{}'::jsonb`),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+})
+
+export const megatonAiUsage = pgTable("megaton_ai_usage", {
+ id: uuid("id").primaryKey().defaultRandom(), jobId: uuid("job_id").notNull().unique().references(() => megatonJobs.id),
+ state: text("state").notNull(), reservedMicrousd: integer("reserved_microusd").notNull(), actualMicrousd: integer("actual_microusd"),
+ inputTokens: integer("input_tokens"), outputTokens: integer("output_tokens"), createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+},t=>[check("megaton_ai_usage_state_check",sql`${t.state} in ('reserved','spent','unknown')`),check("megaton_ai_usage_reserved_microusd_check",sql`${t.reservedMicrousd} >= 0`),check("megaton_ai_usage_actual_microusd_check",sql`${t.actualMicrousd} >= 0`)])
+
+export const megatonScoreRuns = pgTable("megaton_score_runs", {
+ id: uuid("id").primaryKey().defaultRandom(), prospectId: integer("prospect_id").notNull().references(() => prospects.id),
+ model: text("model").notNull(), result: jsonb("result").notNull(), evidenceIds: jsonb("evidence_ids").notNull(),
+ actorUserId: uuid("actor_user_id").notNull().references(() => adminUsers.id), createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+})

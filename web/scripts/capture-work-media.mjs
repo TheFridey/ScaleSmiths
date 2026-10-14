@@ -33,6 +33,16 @@ const VIEWPORTS = {
  * artefacts that are not part of the visitor experience, such as a custom cursor at 0,0.
  */
 export const captureConfig = {
+  "foot-works-podiatry": {
+    origin: "https://footworksni.squarespace.com",
+    hide: [".gdpr-cookie-banner"],
+    shots: [
+      { file: "desktop-home", view: "desktop", path: "/" },
+      { file: "mobile-home", view: "mobile", path: "/" },
+      { file: "desktop-service", view: "desktop", path: "/ingrown-toenail-surgery" },
+      { file: "desktop-home-visits", view: "desktop", path: "/in-home-treatment" },
+    ],
+  },
   "precision-finish": {
     origin: "https://precisionplasteringandrendering.co.uk",
     shots: [

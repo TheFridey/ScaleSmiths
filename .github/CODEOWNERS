@@ -83,6 +83,11 @@
 /admin/src/app/api/forge/ @TheFridey
 
 # Finance and billing business-critical paths
+# Megaton controls communications, account credentials, approvals and provider budgets.
+/admin/src/lib/megaton*.ts @TheFridey
+/admin/src/lib/server/megaton*.ts @TheFridey
+/admin/src/app/api/megaton/ @TheFridey
+/admin/scripts/megaton-worker.mjs @TheFridey
 /admin/src/app/api/invoices/ @TheFridey
 /admin/src/app/api/invoice-catalogue/ @TheFridey
 /admin/src/app/api/invoice-settings/ @TheFridey

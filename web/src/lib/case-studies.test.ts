@@ -36,6 +36,15 @@ function claim(overrides: Partial<PublicClaim>): PublicClaim {
 }
 
 describe("case study publishing", () => {
+  it("publishes Foot Works as optimisation with no unverified performance metrics", () => {
+    const study = getCaseStudy("foot-works-podiatry", { includeDrafts: false })!
+    expect(study).toMatchObject({ status: "published", location: "Bangor, Northern Ireland", websiteUrl: "https://footworksni.squarespace.com/" })
+    expect(study.stack).toContain("Squarespace")
+    expect(study.stack).toContain("Jane App")
+    expect(study.metrics).toEqual([])
+    expect(study.quoteClaimId).toBeUndefined()
+    expect(resolveOutcomes(study.outcomeClaimIds, [])).toEqual([])
+  })
   it("publishes every project and no drafts", () => {
     expect(publishedCaseStudies().map((study) => study.slug)).toEqual(projects.map((project) => project.slug))
     expect(publishedCaseStudies().every((study) => study.status === "published")).toBe(true)

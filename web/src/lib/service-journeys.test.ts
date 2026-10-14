@@ -16,7 +16,7 @@ describe("service buying journeys", () => {
   })
 
   it("maps only existing case studies to each journey", () => {
-    expect(projectsForJourney(serviceJourneys["local-growth"]).map((project) => project.slug)).toEqual(["precision-finish-plastering-rendering", "glow-tanning", "csds"])
+    expect(projectsForJourney(serviceJourneys["local-growth"]).map((project) => project.slug)).toEqual(["precision-finish-plastering-rendering", "glow-tanning", "csds", "foot-works-podiatry"])
     expect(projectsForJourney(serviceJourneys["custom-systems"]).map((project) => project.slug)).toEqual(["pinkys-prints", "the-business-circle", "prymal", "veteranfinder"])
   })
 

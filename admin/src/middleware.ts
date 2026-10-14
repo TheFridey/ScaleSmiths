@@ -62,7 +62,7 @@ export default auth(async (req) => {
 
   // The endpoint performs its own constant-time token check. Keep it outside
   // interactive authentication so infrastructure can check the container.
-  if (pathname === "/api/health" || pathname === "/api/monitoring/self-test" || pathname === "/api/venture-lab/mcp" || /^\/api\/jarvis\/v1\/[^/]+$/.test(pathname)) {
+  if (pathname === "/api/health" || pathname === "/api/monitoring/self-test" || pathname === "/api/venture-lab/mcp" || pathname === "/api/megaton/worker" || /^\/api\/jarvis\/v1\/[^/]+$/.test(pathname)) {
     return next()
   }
 

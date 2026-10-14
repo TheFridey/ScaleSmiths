@@ -109,6 +109,11 @@ const before = (view: ShotView): ShotPlan => ({ file: `before-${view}-home`, vie
  * (see `data.ts` features and solution); nothing here asserts functionality on its own.
  */
 export const projectMediaPlans: Record<string, ProjectMedia> = {
+  "foot-works-podiatry": plan("foot-works-podiatry", "Foot Works Podiatry", [
+    home("desktop"), home("mobile"),
+    { file: "desktop-service", view: "desktop", section: "service-pages", title: "Specialist nail surgery", describes: "nail surgery information and appointment route" },
+    { file: "desktop-home-visits", view: "desktop", section: "service-pages", title: "Care at home", describes: "home visit service information" },
+  ]),
   "confirm-a-kill": plan("confirm-a-kill", "Confirm-A-Kill", [
     home("desktop"), home("tablet"), home("mobile"),
     { file: "desktop-services", view: "desktop", section: "service-pages", title: "Pest selection", describes: "pest and service selection" },

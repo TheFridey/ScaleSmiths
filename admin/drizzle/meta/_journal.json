@@ -451,6 +451,7 @@
       "breakpoints": true
     },
     { "idx": 64, "version": "7", "when": 1791676800000, "tag": "0064_command_centre", "breakpoints": true },
-    { "idx": 65, "version": "7", "when": 1791676800001, "tag": "0065_command_centre_sources_and_versions", "breakpoints": true }
+    { "idx": 65, "version": "7", "when": 1791676800001, "tag": "0065_command_centre_sources_and_versions", "breakpoints": true },
+    {"idx": 66, "version": "7", "when": 1791849600000, "tag": "0066_megaton_foundation", "breakpoints": true}
   ]
 }

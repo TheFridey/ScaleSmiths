@@ -126,7 +126,7 @@ export function ConfirmAKillStory() {
               <div>
                 <p className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">Ongoing Growth Partnership</p>
                 <h3 className="mt-2 font-syne text-2xl font-bold">Launch is the measurement point, not the finish line.</h3>
-                <p className="mt-3 max-w-[780px] font-dm text-sm leading-relaxed text-t2">Confirm-A-Kill continues on a Growth Partnership at the agreed £350 per month. ScaleSmiths monitors Search Console and analytics, improves content and conversion journeys, maintains the platform, and supports deployment as priorities evolve. That fee is this client&apos;s agreed scope. Other partnerships are quoted separately.</p>
+                <p className="mt-3 max-w-[780px] font-dm text-sm leading-relaxed text-t2">Confirm-A-Kill continues on a Growth Partnership. ScaleSmiths monitors Search Console and analytics, improves content and conversion journeys, maintains the platform, and supports deployment as priorities evolve.</p>
                 <ul className="mt-5 grid gap-2 sm:grid-cols-2">
                   {["Search and analytics monitoring", "Content and technical SEO", "Conversion improvements", "Maintenance and deployment support"].map((item) => <li key={item} className="flex items-center gap-2 font-dm text-sm text-t1"><Check size={14} className="text-acc" aria-hidden="true" />{item}</li>)}
                 </ul>
@@ -187,7 +187,7 @@ export function ConfirmAKillStory() {
               ["Measured baseline", "57.9K impressions, 192 clicks, 0.3% CTR and an average position of 15.6 are Google Search Console figures for the previous website over three months. They are not a result of the rebuild."],
               ["Client observations", "No client quote is published on this page."],
               ["Attributable results", "No post-launch ranking, enquiry or revenue change is published. Paid advertising of about £1,000 a month sits outside the organic baseline."],
-              ["Still being monitored", "Search Console and analytics are being compared with that baseline under this client's £350 per month Growth Partnership. The amount is specific to this agreement."],
+              ["Still being monitored", "Search Console and analytics are being compared with that baseline under the Growth Partnership."],
             ].map(([title, body]) => (
               <div key={title} className="rounded-2xl border border-b1 bg-bg p-6">
                 <dt className="font-syne text-lg font-bold">{title}</dt>

@@ -27,10 +27,9 @@ Recommended presentation, now implemented in the page order:
 
 No amount was changed. No price was removed from the homepage. Complex projects are still described as scoped, not given an invented premium tier.
 
-Founder review still applies to two items:
+The Confirm-A-Kill case study does not state what that client pays. The published Growth Partnership starting price remains on the pricing and service pages.
 
-- Whether the homepage should keep all four starting prices this far down the page, or move them back up.
-- The Confirm-A-Kill case study still states that this client's Growth Partnership is £350 per month. That figure was already public. It has not been removed. It is specific to that agreement, and the page says other partnerships are quoted separately. If the client has not agreed to that fee being public, it should be taken down in a separate approved edit.
+Founder review still applies to whether the homepage should keep all four starting prices in this lower position.
 
 ## C. Content corrections
 

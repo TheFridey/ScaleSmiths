@@ -1,7 +1,8 @@
 "use client"
 
 import { useRef } from "react"
-import { m, useReducedMotion, useScroll, useTransform } from "motion/react"
+import { m, useScroll, useTransform } from "motion/react"
+import { usePrefersReducedMotion } from "@/lib/use-reduced-motion"
 import { Code2, SearchCheck, Target, TrendingUp } from "lucide-react"
 import { AnimateIn } from "./AnimateIn"
 
@@ -26,7 +27,7 @@ const steps = [
 
 export function Process({ verifiedDeliveryClaim, verifiedRetentionClaim }: { verifiedDeliveryClaim?: string; verifiedRetentionClaim?: string }) {
   const sectionRef = useRef<HTMLElement>(null)
-  const reducedMotion = useReducedMotion()
+  const reducedMotion = usePrefersReducedMotion()
   const { scrollYProgress } = useScroll({ target: sectionRef, offset: ["start 70%", "end 65%"] })
   const pathScale = useTransform(scrollYProgress, [0, 1], [0, 1])
   const publicSteps = steps.map((step) => step.n === "04"

@@ -332,7 +332,7 @@ export default async function CaseStudyPage({ params }: Props) {
       ) : null}
 
       {(study.challenge || study.status === "draft") ? (
-        <Section id="case-constraint" eyebrow="The constraint" title="What was holding them back">
+        <Section id="case-constraint" eyebrow="The challenge" title="What was holding them back">
           {study.challenge ? <p className="max-w-[760px] font-dm text-lg leading-relaxed text-t2">{study.challenge}</p> : <AwaitingContent study={study} what="the operating or growth constraint" />}
         </Section>
       ) : null}
@@ -379,7 +379,7 @@ export default async function CaseStudyPage({ params }: Props) {
         </Section>
       ) : null}
 
-      <Section id="case-build" eyebrow="The build" title="What ScaleSmiths built" tinted={views.length === 0 && study.technicalImplementation.length === 0}>
+      <Section id="case-build" eyebrow="The work" title="What ScaleSmiths delivered" tinted={views.length === 0 && study.technicalImplementation.length === 0}>
         <div className="grid gap-12 lg:grid-cols-[1.1fr_.9fr]">
           <div>{study.solution ? <Prose paragraphs={[study.solution]} /> : <AwaitingContent study={study} what="description of the delivered solution" />}</div>
           {study.features.length > 0 ? (
@@ -415,7 +415,7 @@ export default async function CaseStudyPage({ params }: Props) {
       ) : null}
 
       {showResults ? (
-        <Section id="case-results" eyebrow="Verified results" title="What we can evidence">
+        <Section id="case-results" eyebrow="The evidence" title="What has been measured">
           <CaseStudyResults {...results} />
         </Section>
       ) : null}

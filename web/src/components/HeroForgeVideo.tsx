@@ -80,8 +80,6 @@ export function HeroForgeVideo() {
     }
   }, [shouldLoad, reducedMotion])
 
-  if (reducedMotion) return null
-
   return (
     <div
       ref={containerRef}

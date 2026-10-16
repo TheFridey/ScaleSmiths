@@ -2,10 +2,11 @@
 
 import type { MouseEvent, ReactNode } from "react"
 import Link from "next/link"
-import { m, useMotionValue, useReducedMotion, useSpring } from "motion/react"
+import { m, useMotionValue, useSpring } from "motion/react"
+import { usePrefersReducedMotion } from "@/lib/use-reduced-motion"
 
 export function MagneticLink({ href, className, children }: { href: string; className?: string; children: ReactNode }) {
-  const reducedMotion = useReducedMotion()
+  const reducedMotion = usePrefersReducedMotion()
   const x = useSpring(useMotionValue(0), { stiffness: 420, damping: 32, mass: 0.55 })
   const y = useSpring(useMotionValue(0), { stiffness: 420, damping: 32, mass: 0.55 })
 

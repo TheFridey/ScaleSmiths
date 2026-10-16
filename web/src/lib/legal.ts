@@ -6,16 +6,17 @@ export const LEGAL_LAST_UPDATED = "25 August 2026"
 export const LEGAL_LAST_MODIFIED_ISO = "2026-08-25T00:00:00.000Z"
 
 export const legalEntity = {
-  // TODO(owner/legal): confirm and populate the contracting legal name, entity type,
-  // registration details, registered office and VAT status before claiming them publicly.
+  // Company and ICO identity checked against the public registers on 16 October 2026.
+  // VAT registration is still unconfirmed and must stay unpublished.
   tradingName: "ScaleSmiths",
-  legalName: null,
-  entityType: null,
-  companyNumber: null,
-  registeredOffice: null,
-  registeredIn: null,
+  legalName: "ScaleSmiths Ltd",
+  entityType: "Private limited company",
+  companyNumber: "17496624",
+  registeredOffice: "27 Belle Isle Road, Nottingham, NG15 7JL, United Kingdom",
+  registeredIn: "England and Wales",
   vatRegistered: null,
   vatNumber: null,
+  icoRegistrationNumber: "ZC265402",
   businessLocation: "Hucknall, Nottinghamshire, United Kingdom",
   contactEmail: "hello@scalesmiths.co.uk",
   privacyEmail: "hello@scalesmiths.co.uk",
@@ -23,10 +24,14 @@ export const legalEntity = {
   securityEmail: "hello@scalesmiths.co.uk",
 } as const
 
+/** Customer-facing registration lines. Company number and ICO number are different registers. */
+export function publicRegistrationSummary() {
+  return `${legalEntity.legalName}, company number ${legalEntity.companyNumber}, registered in ${legalEntity.registeredIn}. Registered office: ${legalEntity.registeredOffice}. ICO registration number ${legalEntity.icoRegistrationNumber}.`
+}
+
 // Internal decision register. This is deliberately not rendered by any public route.
 export const LEGAL_DECISIONS_REQUIRED = [
-  "Confirm the contracting legal entity and whether Prymal is the legal person trading as ScaleSmiths.",
-  "Confirm company registration, registered office and VAT status where applicable.",
+  "Confirm VAT registration status. Do not publish a VAT number until it is verified.",
   "Approve any financial liability cap for the Master Service Terms.",
   "Approve default notice, minimum commitment, cancellation and refund terms for recurring services.",
   "Record the production VPS provider, datacentre region and DPA status.",

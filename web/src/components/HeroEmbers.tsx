@@ -1,7 +1,5 @@
 "use client"
 
-import { useReducedMotion } from "motion/react"
-
 /**
  * Rising forge embers for the hero. Sized and lit to read clearly over the
  * molten atmosphere / video without turning into a particle blizzard.
@@ -32,12 +30,6 @@ const EMBERS = [
 ] as const
 
 export function HeroEmbers() {
-  const reducedMotion = useReducedMotion()
-
-  if (reducedMotion) {
-    return <div className="hero-embers-static" aria-hidden="true" />
-  }
-
   return (
     <div className="hero-embers" aria-hidden="true">
       {EMBERS.map((ember, index) => (

@@ -1,6 +1,7 @@
 "use client"
 
-import { m, useReducedMotion } from "motion/react"
+import { m } from "motion/react"
+import { usePrefersReducedMotion } from "@/lib/use-reduced-motion"
 import { CheckCircle2, Clock3, FileText, ListChecks, ShieldCheck } from "lucide-react"
 import { motionStagger, motionTransitions } from "@/lib/motion"
 
@@ -12,7 +13,7 @@ const milestones = [
 ]
 
 export function PortalPreview() {
-  const reducedMotion = useReducedMotion()
+  const reducedMotion = usePrefersReducedMotion()
   return (
     <m.div initial={reducedMotion ? false : { opacity: 0, y: 24, rotateX: 3, scale: 0.985 }} whileInView={{ opacity: 1, y: 0, rotateX: 0, scale: 1 }} viewport={{ once: true, amount: 0.18 }} transition={motionTransitions.gentle} style={{ transformPerspective: 1200 }} className="overflow-hidden rounded-[1.35rem] border border-b2 bg-bg shadow-[0_32px_100px_rgba(0,0,0,.4)]" aria-label="Demonstration of the ScaleSmiths client portal using example data">
       <div className="flex items-center justify-between border-b border-b1 bg-s1 px-4 py-3 md:px-5">

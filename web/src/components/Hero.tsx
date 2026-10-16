@@ -2,7 +2,8 @@
 
 import Link from "next/link"
 import { Fragment, useLayoutEffect, useRef } from "react"
-import { m, useReducedMotion } from "motion/react"
+import { m } from "motion/react"
+import { usePrefersReducedMotion } from "@/lib/use-reduced-motion"
 import { ArrowRight, ArrowUpRight } from "lucide-react"
 import { HeroEmbers } from "@/components/HeroEmbers"
 import { HeroForgeVideo } from "@/components/HeroForgeVideo"
@@ -31,7 +32,7 @@ function renderHeroLine(text: string) {
  */
 export function Hero() {
   const heroRef = useRef<HTMLElement>(null)
-  const reducedMotion = useReducedMotion()
+  const reducedMotion = usePrefersReducedMotion()
 
   useLayoutEffect(() => {
     const root = heroRef.current
@@ -133,15 +134,15 @@ export function Hero() {
         </m.h2>
 
         <m.p variants={revealSoft} className="hero-copy relative mb-10 w-full max-w-[640px] font-dm text-[clamp(15px,1.7vw,18px)] font-light leading-relaxed text-t2 md:mb-12">
-          A business that works better. We build websites, improve your online visibility and create smarter business systems that help you attract enquiries, reduce unnecessary work and grow with confidence.
+          For local businesses, growing companies and established organisations. We build websites, improve how you are found, and connect the systems that waste staff time.
         </m.p>
 
         <m.div variants={revealSoft} className="relative flex flex-wrap justify-center gap-3">
           <Link href="/quote?intent=strategy_call" prefetch={false} className="btn-primary font-dm">
             Discuss My Business <ArrowRight size={16} aria-hidden="true" />
           </Link>
-          <Link href="/pricing#published-prices" prefetch={false} className="btn-ghost font-dm">
-            See starting prices <ArrowUpRight size={16} aria-hidden="true" />
+          <Link href="/work" prefetch={false} className="btn-ghost font-dm">
+            See the work <ArrowUpRight size={16} aria-hidden="true" />
           </Link>
         </m.div>
       </m.div>

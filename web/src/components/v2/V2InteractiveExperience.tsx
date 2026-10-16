@@ -5,7 +5,8 @@ import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import dynamic from "next/dynamic"
-import { AnimatePresence, MotionConfig, m as motion, useReducedMotion } from "motion/react"
+import { AnimatePresence, MotionConfig, m as motion } from "motion/react"
+import { usePrefersReducedMotion } from "@/lib/use-reduced-motion"
 import { ArrowRight, Building2, CalendarCheck, ChefHat, Dumbbell, Hammer, Package, Sparkles, Telescope, Users } from "lucide-react"
 import { ResetExperiencePreferenceButton, rememberInteractiveExperience, rememberNormalExperience } from "@/components/ExperiencePreference"
 import { trackExperienceEvent } from "@/lib/experience-analytics-client"
@@ -282,7 +283,7 @@ export function V2InteractiveExperience() {
   const [selectedIndustry, setSelectedIndustry] = useState<V2Industry | null>(null)
   const [activeForgePanelId, setActiveForgePanelId] = useState<string | null>(null)
   const optionRefs = useRef<Array<HTMLButtonElement | null>>([])
-  const reducedMotion = useReducedMotion()
+  const reducedMotion = usePrefersReducedMotion()
 
   useEffect(() => {
     rememberInteractiveExperience()

@@ -1,5 +1,6 @@
 "use client"
-import { m, useReducedMotion } from "motion/react"
+import { m } from "motion/react"
+import { usePrefersReducedMotion } from "@/lib/use-reduced-motion"
 import { Children } from "react"
 import { motionDistances, motionStagger, motionTransitions, reveal, staggerContainer, staggerItem } from "@/lib/motion"
 
@@ -12,7 +13,7 @@ interface AnimateInProps {
 }
 
 export function AnimateIn({ children, className, delay = 0, y = 22, once = true }: AnimateInProps) {
-  const reducedMotion = useReducedMotion()
+  const reducedMotion = usePrefersReducedMotion()
   return (
     <m.div
       className={className}
@@ -35,7 +36,7 @@ interface StaggerProps {
 }
 
 export function StaggerIn({ children, className, staggerDelay = 0.08 }: StaggerProps) {
-  const reducedMotion = useReducedMotion()
+  const reducedMotion = usePrefersReducedMotion()
   return (
     <m.div
       className={className}

@@ -48,10 +48,34 @@ const launchSteps = [
   { title: "Improve under the partnership", detail: "Search, content, conversion and platform work continues month to month rather than stopping at handover." },
 ]
 
+const readingGuide = [
+  ["The challenge", "The business was already visible in search and rarely chosen. Service journeys were fragmented, and an enquiry still had to be re-typed into the working day."],
+  ["The work", "A custom public website and a private CRM, with separate service journeys, preserved advice URLs, and enquiries connected to customers, quotes and jobs."],
+  ["The improvement", "A customer can find the right service and send useful context. The team can follow that enquiry through without starting again in another system."],
+  ["The evidence", "Previous website, three months in Google Search Console: 57.9K impressions, 192 clicks, 0.3% click-through rate, average position 15.6. Paid advertising of about £1,000 a month is separate from those figures."],
+  ["The limitations", "Those search figures describe the previous website. This page does not publish a post-launch ranking, enquiry or revenue change, and it does not include a client quote."],
+  ["The continuing opportunity", "Search, content, conversion and platform work continues under this client's Growth Partnership."],
+] as const
+
 export function ConfirmAKillStory() {
   const siblings = caseStudiesForSlugs(["precision-finish-plastering-rendering", "glow-tanning"])
   return (
     <>
+      <section aria-labelledby="cak-reading" className="border-y border-b1 px-6 py-16 md:px-12">
+        <div className="mx-auto max-w-[1240px]">
+          <p className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">At a glance</p>
+          <h2 id="cak-reading" className="mt-2 max-w-[16ch] font-syne text-[clamp(30px,4vw,48px)] font-extrabold tracking-[-.03em]">What changed, and what is still being measured.</h2>
+          <dl className="mt-8 grid gap-3 md:grid-cols-2">
+            {readingGuide.map(([title, body]) => (
+              <div key={title} className="rounded-2xl border border-b1 bg-bg p-6">
+                <dt className="font-syne text-lg font-bold">{title}</dt>
+                <dd className="mt-2 font-dm text-sm leading-relaxed text-t2">{body}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      </section>
+
       <section aria-labelledby="cak-baseline" className="border-y border-b1 bg-s1/40 px-6 py-20 md:px-12 md:py-24">
         <div className="mx-auto max-w-[1240px]">
           <AnimateIn className="grid gap-10 lg:grid-cols-[.75fr_1.25fr] lg:items-end">
@@ -102,7 +126,7 @@ export function ConfirmAKillStory() {
               <div>
                 <p className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">Ongoing Growth Partnership</p>
                 <h3 className="mt-2 font-syne text-2xl font-bold">Launch is the measurement point, not the finish line.</h3>
-                <p className="mt-3 max-w-[780px] font-dm text-sm leading-relaxed text-t2">Under the £350/month Growth Partnership, ScaleSmiths continues to monitor Search Console and analytics, improve content and conversion journeys, maintain the platform, and support deployment and infrastructure as priorities evolve.</p>
+                <p className="mt-3 max-w-[780px] font-dm text-sm leading-relaxed text-t2">Confirm-A-Kill continues on a Growth Partnership at the agreed £350 per month. ScaleSmiths monitors Search Console and analytics, improves content and conversion journeys, maintains the platform, and supports deployment as priorities evolve. That fee is this client&apos;s agreed scope. Other partnerships are quoted separately.</p>
                 <ul className="mt-5 grid gap-2 sm:grid-cols-2">
                   {["Search and analytics monitoring", "Content and technical SEO", "Conversion improvements", "Maintenance and deployment support"].map((item) => <li key={item} className="flex items-center gap-2 font-dm text-sm text-t1"><Check size={14} className="text-acc" aria-hidden="true" />{item}</li>)}
                 </ul>
@@ -161,9 +185,9 @@ export function ConfirmAKillStory() {
             {[
               ["Completed work", "A custom public website and a private CRM are in production, replacing the previous WordPress presentation. Service, coverage, advice and enquiry journeys are live."],
               ["Measured baseline", "57.9K impressions, 192 clicks, 0.3% CTR and an average position of 15.6 are Google Search Console figures for the previous website over three months. They are not a result of the rebuild."],
-              ["Client observations", "No client testimonial is published on this page. We do not paraphrase the client or invent a quote."],
-              ["Attributable results", "No post-launch ranking, enquiry or revenue change is claimed. Paid advertising of about £1,000 a month is recorded as separate from the organic baseline."],
-              ["Still being monitored", "Search Console and analytics are being compared with that baseline under the £350/month Growth Partnership. The partnership is an agreed scope for this client, not a promise that every partnership costs £350 or includes the same work."],
+              ["Client observations", "No client quote is published on this page."],
+              ["Attributable results", "No post-launch ranking, enquiry or revenue change is published. Paid advertising of about £1,000 a month sits outside the organic baseline."],
+              ["Still being monitored", "Search Console and analytics are being compared with that baseline under this client's £350 per month Growth Partnership. The amount is specific to this agreement."],
             ].map(([title, body]) => (
               <div key={title} className="rounded-2xl border border-b1 bg-bg p-6">
                 <dt className="font-syne text-lg font-bold">{title}</dt>

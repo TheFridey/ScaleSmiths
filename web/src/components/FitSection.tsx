@@ -2,15 +2,15 @@ import { CheckCircle2, XCircle } from "lucide-react"
 import { AnimateIn } from "./AnimateIn"
 
 const FOR = [
-  "Founder-led businesses that need digital to drive enquiries, sales, or operational leverage.",
-  "Teams with enough traction to invest properly in custom design, engineering, and long-term upkeep.",
-  "Clients who want direct technical partnership, clear communication, and honest trade-offs.",
+  "Local businesses that want a clear scope, a straightforward explanation, and a responsible place to start.",
+  "Growing companies that need better enquiries, less wasted admin, and a partner who stays with the work.",
+  "Established organisations that want direct contact with the people who will design and deliver the system.",
 ]
 
 const NOT_FOR = [
-  "One-page brochure sites where the lowest upfront price is the main decision.",
-  "Projects that need to be copied from a competitor without a strategy or differentiation.",
-  "Builds with no owner, no decision-maker or no appetite for ongoing improvement.",
+  "Projects where the only question is the lowest possible price, with no interest in scope or what happens after launch.",
+  "Work that needs to be copied from a competitor without a reason of its own.",
+  "Builds with no owner, no decision-maker, or no appetite for the decisions a project requires.",
 ]
 
 export function FitSection() {

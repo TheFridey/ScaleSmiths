@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { Logo } from "./Logo"
 import { CookieSettingsButton } from "./CookieSettingsButton"
+import { legalEntity, publicRegistrationSummary } from "@/lib/legal"
 import {
   BUSINESS_LOCATION,
   CONTACT_EMAIL,
@@ -101,11 +102,14 @@ export function Footer() {
         </div>
 
         <div className="grid gap-5 border-t border-b1 pt-7 font-dm text-xs text-t3 lg:grid-cols-[1fr_auto] lg:items-center lg:gap-8">
-          <div className="flex flex-wrap gap-x-5 gap-y-3">
-            {legalLinks.map((link) => <Link key={link.href} href={link.href} className="footer-link inline-flex min-h-6 items-center">{link.label}</Link>)}
-            <CookieSettingsButton />
+          <div className="grid gap-3">
+            <p className="max-w-[640px] leading-relaxed">{publicRegistrationSummary()}</p>
+            <div className="flex flex-wrap gap-x-5 gap-y-3">
+              {legalLinks.map((link) => <Link key={link.href} href={link.href} className="footer-link inline-flex min-h-6 items-center">{link.label}</Link>)}
+              <CookieSettingsButton />
+            </div>
           </div>
-          <span>© {new Date().getFullYear()} {SITE_NAME}</span>
+          <span>© {new Date().getFullYear()} {legalEntity.legalName}</span>
         </div>
       </div>
     </footer>

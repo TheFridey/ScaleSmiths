@@ -92,9 +92,19 @@ describe("industry growth engine registry", () => {
   })
 
   it("keeps production notes out of published buyer copy", () => {
-    const leaked = /written for:|doorway spam|publishing backlog|global industry growth engine|indexable query-parameter/i
+    const leaked = /written for:|doorway spam|publishing backlog|global industry growth engine|indexable query-parameter|publish only verified|keyword stuffing|we do not invent|permissioned proof|without inventing/i
     for (const page of publishedIndustryPages()) {
-      const copy = [page.h1, page.intro, page.searchIntent, page.description, ...page.frictions.flatMap((item) => [item.title, item.symptom, item.fix]), ...page.faqs.flatMap((item) => [item.q, item.a])].join(" ")
+      const copy = [
+        page.h1,
+        page.intro,
+        page.searchIntent,
+        page.description,
+        page.proof.summary,
+        page.proof.label,
+        ...page.strategy.flatMap((item) => [item.title, item.description]),
+        ...page.frictions.flatMap((item) => [item.title, item.symptom, item.fix]),
+        ...page.faqs.flatMap((item) => [item.q, item.a]),
+      ].join(" ")
       expect(copy, page.slug).not.toMatch(leaked)
     }
   })

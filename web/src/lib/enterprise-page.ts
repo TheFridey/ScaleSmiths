@@ -249,7 +249,7 @@ export const enterpriseSectionNav = [
 export const enterpriseFounderAdvantage = [
   {
     title: "Direct access to builders",
-    body: "You work with the founders and senior engineers responsible for architecture and delivery, not a relay of account managers.",
+    body: "You work with the founders responsible for architecture and delivery, not a relay of account managers.",
   },
   {
     title: "Technically deep, commercially grounded",
@@ -261,7 +261,7 @@ export const enterpriseFounderAdvantage = [
   },
   {
     title: "Right-sized for complex work",
-    body: "Small enough to move with clarity; senior enough to undertake complex internal platforms without enterprise-theatre overhead.",
+    body: "A founder-led company. Small enough to stay accountable, and experienced enough to scope complex internal platforms without pretending to be a large consultancy.",
   },
 ] as const
 

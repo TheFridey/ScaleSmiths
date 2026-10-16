@@ -339,7 +339,7 @@ export function EnterprisePage() {
         id="enterprise-faqs"
         eyebrow="Enterprise questions"
         title="What buyers usually need to clarify first."
-        intro="Positioning, scope and governance, without overclaiming certifications or inventing enterprise customer logos."
+        intro="Scope, security and how a founder-led team takes on a larger brief."
         items={enterpriseFaqs}
         hubHash="custom-development"
         className="border-t border-b1 bg-s1/50"
@@ -365,7 +365,7 @@ export function EnterprisePage() {
                 Discuss an enterprise system with the people who would build it.
               </h2>
               <p className="mt-5 max-w-[640px] font-dm text-sm leading-relaxed text-t2">
-                Tell us about the operating constraint, the systems involved and the outcome that would matter. This enquiry route is ready for a dedicated enterprise form; today it opens a founder-reviewed brief with an enterprise intent.
+                Tell us about the operating constraint, the systems involved and the outcome that would matter. The founders review the brief and say plainly whether ScaleSmiths is the right team, and what capacity and security questions need answering first.
               </p>
             </div>
             <div className="mt-8 flex flex-col gap-3 lg:mt-0">
@@ -380,7 +380,7 @@ export function EnterprisePage() {
                 How enterprise work is priced
               </Link>
               <p className="pt-2 text-center font-dm text-xs leading-relaxed text-t3 lg:text-left">
-                Subject to client security and procurement requirements. No invented certifications, logos or guaranteed compliance claims.
+                Security, procurement and capacity are discussed before scope is agreed.
               </p>
             </div>
           </div>

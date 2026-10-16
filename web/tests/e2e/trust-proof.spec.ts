@@ -63,7 +63,8 @@ test.describe("trust footer and contact", () => {
 
     const footer = page.getByRole("contentinfo")
     await expect(footer).toContainText("Hucknall, Nottinghamshire")
-    await expect(footer).toContainText("Serving businesses across the UK")
+    await expect(footer).toContainText("UK-based")
+    await expect(footer).toContainText("internationally")
     await expect(footer.getByRole("link", { name: "hello@scalesmiths.co.uk" })).toHaveAttribute("href", "mailto:hello@scalesmiths.co.uk")
 
     const nav = page.getByRole("navigation", { name: /footer navigation/i })

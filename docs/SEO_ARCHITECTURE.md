@@ -90,6 +90,8 @@ Commercial service pages are registered in `web/src/lib/landing-pages.ts`. The s
 
 Genuine location hubs are registered in `web/src/lib/location-pages.ts` and rendered by `LocationPage`. A location record needs distinct local context, relevant services and nearby evidence. The initial `/locations/nottingham` regional hub and `/locations/hucknall` home-base page deliberately serve different reader needs.
 
+Industry hubs and specialist pages live under `/industries/*` and are registered in `web/src/lib/industries/`. Only entries with `state: "published"` are routable or sitemap-indexed. Candidates remain discoverable via directory search and the missing-industry request route. See `docs/content/global-industry-growth-engine.md`.
+
 1. Add the content to its typed source registry rather than hard-coding sitemap entries in a component.
 2. Give the page a unique title and description through the metadata builder.
 3. Add a self-referencing canonical path without a trailing slash or query string.

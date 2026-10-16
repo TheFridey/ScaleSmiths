@@ -1,6 +1,6 @@
 "use client"
 
-import { FormEvent, useId, useRef, useState, type ReactNode } from "react"
+import { FormEvent, useEffect, useId, useRef, useState, type ReactNode } from "react"
 import { useRouter } from "next/navigation"
 import { ArrowRight } from "lucide-react"
 import { PageBreadcrumbs } from "@/components/Breadcrumbs"
@@ -8,6 +8,12 @@ import { EnquiryConsent } from "@/components/EnquiryConsent"
 import { trackExperienceEvent } from "@/lib/experience-analytics-client"
 import type { EnquiryIntent } from "@/lib/enquiry-intents"
 import { ENQUIRY_INTENTS } from "@/lib/enquiry-intents"
+import {
+  industryAttributionBriefPrefix,
+  industryAttributionBusinessType,
+  parseIndustryAttribution,
+  type IndustryAttribution,
+} from "@/lib/industries/attribution"
 
 const PROBLEM_OPTIONS = [
   "Website not converting",
@@ -58,6 +64,7 @@ export function StrategyCallForm({ intent = "strategy_call" }: StrategyCallFormP
   const [error, setError] = useState("")
   const [invalidField, setInvalidField] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [attribution, setAttribution] = useState<IndustryAttribution | null>(null)
   const inFlight = useRef(false)
   const errorId = useId()
   const errorRef = useRef<HTMLDivElement>(null)
@@ -65,6 +72,29 @@ export function StrategyCallForm({ intent = "strategy_call" }: StrategyCallFormP
 
   const label = ENQUIRY_INTENTS[intent]
   const submitLabel = intent === "discovery_call" ? "Request Discovery Call" : "Request Strategy Call"
+
+  useEffect(() => {
+    const parsed = parseIndustryAttribution(window.location.search)
+    if (!parsed) return
+    setAttribution(parsed)
+    const businessHint = industryAttributionBusinessType(parsed)
+    if (businessHint) {
+      setForm((current) => ({
+        ...current,
+        biz: current.biz || businessHint,
+        goal: current.goal || `Industry context: ${businessHint}. Pathway interest: ${parsed.pathway}.`,
+      }))
+    }
+    trackExperienceEvent("quote_form_started", {
+      metadata: {
+        source: "industry_page",
+        industry: parsed.industry,
+        hub: parsed.hub,
+        pathway: parsed.pathway,
+        intent,
+      },
+    })
+  }, [intent])
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setError("")
@@ -136,6 +166,7 @@ export function StrategyCallForm({ intent = "strategy_call" }: StrategyCallFormP
       ? `Focus areas: ${form.problems.join(", ")}`
       : "Focus areas: not selected"
     const brief = [
+      attribution ? industryAttributionBriefPrefix(attribution).trim() : null,
       `${label} request`,
       "",
       `What they are trying to solve: ${form.goal.trim()}`,
@@ -144,7 +175,7 @@ export function StrategyCallForm({ intent = "strategy_call" }: StrategyCallFormP
       `Preferred timing: ${form.timeframe}`,
       form.phone.trim() ? `Phone: ${form.phone.trim()}` : "Phone: not provided",
       form.websiteUrl.trim() ? `Website: ${form.websiteUrl.trim()}` : "Website: not provided",
-    ].join("\n")
+    ].filter(Boolean).join("\n")
 
     try {
       const response = await fetch("/api/quote", {

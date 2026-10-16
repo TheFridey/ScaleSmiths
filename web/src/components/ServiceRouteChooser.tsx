@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { ArrowRight, Building2, Workflow } from "lucide-react"
+import { ArrowRight, Building2, Factory, Workflow } from "lucide-react"
 
 export function ServiceRouteChooser({ compact = false }: { compact?: boolean }) {
   return (
@@ -33,6 +33,28 @@ export function ServiceRouteChooser({ compact = false }: { compact?: boolean }) 
             tone="systems"
           />
         </div>
+
+        <Link
+          href="/industries"
+          prefetch={false}
+          className="group mt-4 flex flex-col gap-3 rounded-2xl border border-b1 bg-s1/70 p-6 transition-colors hover:border-acc/40 md:flex-row md:items-center md:justify-between md:p-7"
+        >
+          <div className="flex items-start gap-3">
+            <Factory size={22} className="mt-0.5 shrink-0 text-acc" aria-hidden="true" />
+            <div>
+              <p className="font-dm text-xs font-semibold uppercase tracking-[0.12em] text-acc">Find your industry</p>
+              <p className="mt-1 font-syne text-xl font-bold tracking-[-0.02em] md:text-2xl">
+                Browse specialist pages for trades, clinics, hospitality, retail, manufacturing and more.
+              </p>
+              <p className="mt-2 max-w-2xl font-dm text-sm leading-relaxed text-t2">
+                Search the directory or open a hub. Every published page routes to Build, Growth Partnership, or a scoped systems conversation.
+              </p>
+            </div>
+          </div>
+          <span className="inline-flex shrink-0 items-center gap-2 font-dm text-sm font-semibold text-t1">
+            Open industries <ArrowRight size={15} className="transition-transform group-hover:translate-x-1" aria-hidden="true" />
+          </span>
+        </Link>
       </div>
     </section>
   )

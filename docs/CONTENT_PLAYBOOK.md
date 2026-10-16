@@ -141,7 +141,25 @@ Testimonials require a client-approved `quoteClaimId`. There is no other route t
 
 ---
 
-## 4. House style
+## 4. Adding an industry page
+
+Industry content lives under `web/src/lib/industries/`. Full operating rules:
+`docs/content/global-industry-growth-engine.md`.
+
+Minimum bar before `state: "published"`:
+
+1. Distinct buyer frictions (at least three) that fail if you swap the industry name.
+2. Honest proof level: `direct` (with a live Work slug), `adjacent`, or `illustrative`.
+3. Commercial pathways for Build and Growth; Systems only when relevant; Audit optional.
+4. Unique meta title (≤60) and description (≤160); canonical `/industries/{hub}/{slug}`.
+5. Related solution hrefs that exist in `serviceRouteCatalogue()`.
+6. Founder approval — never bulk-publish candidates.
+
+Run `npm test -- src/lib/industries/industries.test.ts` after edits.
+
+---
+
+## 5. House style
 
 Write the way the founders talk to a client who is paying attention.
 
@@ -175,7 +193,7 @@ worse, because it hides the answer.
 
 ---
 
-## 5. Before publishing
+## 6. Before publishing
 
 ```bash
 npm run lint
@@ -194,7 +212,7 @@ query — merge them or sharpen the intent of one.
 
 ---
 
-## 6. Content governance (rebound rule set)
+## 7. Content governance (rebound rule set)
 
 Before the site accumulates another redesign cycle, apply these gates:
 

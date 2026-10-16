@@ -22,9 +22,15 @@ function relatedIndustryHref(slug: string, fallbackHub: string) {
 }
 
 const PROOF_BADGE: Record<IndustryPage["proof"]["level"], string> = {
-  direct: "Direct industry proof",
-  adjacent: "Adjacent proof — labelled honestly",
-  illustrative: "Illustrative pattern — not a claimed delivery",
+  direct: "Completed work in this industry",
+  adjacent: "Completed work in a related field",
+  illustrative: "Illustrative example — not a claimed delivery",
+}
+
+const PROOF_LEGEND: Record<IndustryPage["proof"]["level"], string> = {
+  direct: "This is completed ScaleSmiths work for this kind of business. Measured changes and client comments appear only where they are recorded. Anything still being monitored is labelled as such.",
+  adjacent: "This is completed work in a related field. It is not a claim that the same result was delivered for this industry.",
+  illustrative: "This describes a pattern we would use. It is not a client result and not a delivery we are claiming.",
 }
 
 function variantAtmosphere(presentation: IndustryPage["presentation"]) {
@@ -86,11 +92,11 @@ export function IndustryPageView({ page }: { page: IndustryPage }) {
               <span className="font-dm text-xs font-semibold uppercase tracking-[0.14em] text-acc">{page.eyebrow}</span>
               <h1 className="page-hero-display mt-3">{page.h1}</h1>
               <p className="mt-6 max-w-[700px] font-dm text-lg leading-relaxed text-t2">{page.intro}</p>
-              <p className="mt-4 max-w-[720px] border-l border-acc pl-4 font-dm text-sm leading-relaxed text-t3">{page.searchIntent}</p>
-              <p className="mt-4 font-dm text-sm text-t3">Written for: {page.buyer}</p>
+              <p className="mt-4 max-w-[720px] font-dm text-base leading-relaxed text-t2">{page.searchIntent}</p>
+              <p className="mt-4 font-dm text-sm text-t2">For {page.buyer}</p>
               <IndustryHeroCtas page={page} />
-              <p className="mt-4 font-dm text-xs text-t3">
-                Builds, Growth Partnerships and custom systems are scoped after discovery. Optional Business Growth Audit: £395.
+              <p className="mt-4 max-w-[680px] font-dm text-xs leading-relaxed text-t3">
+                See the published starting prices for websites, partnerships, the audit and business email. The right route is still scoped to this business.
               </p>
             </div>
           </div>
@@ -102,7 +108,7 @@ export function IndustryPageView({ page }: { page: IndustryPage }) {
               Where customers slip away
             </h2>
             <p className="mt-3 max-w-[640px] font-dm text-base text-t2">
-              Sector-specific friction — not interchangeable agency filler. Primary constraint: {page.primaryProblem}
+              The constraint we would start with: {page.primaryProblem}
             </p>
             <ul className="mt-10 grid gap-4 md:grid-cols-2">
               {page.frictions.map((friction) => (
@@ -129,7 +135,7 @@ export function IndustryPageView({ page }: { page: IndustryPage }) {
                 What we would change
               </h2>
               <p className="mt-4 font-dm text-base leading-relaxed text-t2">
-                A practical strategy sketch for {page.pluralName}. Unknowns we would explore on a call: {page.unknowns.join("; ")}.
+                A practical plan for {page.pluralName}. On a first conversation we would ask: {page.unknowns.join("; ")}.
               </p>
             </div>
             <ol className="grid gap-4">
@@ -161,7 +167,7 @@ export function IndustryPageView({ page }: { page: IndustryPage }) {
               ))}
             </ol>
             <p className="mt-6 font-dm text-sm text-t3">
-              Metrics that make commercial sense here: {page.meaningfulMetrics.join(" · ")}. These are measurement ideas, not guarantees.
+              Signals worth reviewing with you: {page.meaningfulMetrics.join(" · ")}. These are conversation points, not promised results.
             </p>
           </div>
         </section>
@@ -172,6 +178,7 @@ export function IndustryPageView({ page }: { page: IndustryPage }) {
             <h2 id={`${page.slug}-proof`} className="mt-2 font-syne text-[clamp(26px,3.6vw,40px)] font-extrabold tracking-[-0.025em]">
               {page.proof.label}
             </h2>
+            <p className="mt-4 max-w-[720px] font-dm text-sm leading-relaxed text-t3">{PROOF_LEGEND[page.proof.level]}</p>
             <p className="mt-4 max-w-[720px] font-dm text-base leading-relaxed text-t2">{page.proof.summary}</p>
             {proofStudies.length > 0 ? (
               <div className="mt-8 grid gap-4 md:grid-cols-2">
@@ -211,7 +218,7 @@ export function IndustryPageView({ page }: { page: IndustryPage }) {
               {[
                 ["Conversation", "Tell us what is holding the business back."],
                 ["Discovery", "We examine journey, systems and constraints."],
-                ["Proposal", "Transparent scope in GBP reference currency."],
+                ["Proposal", "A written scope and price in GBP."],
                 ["Delivery", "Founder-led build or partnership work."],
                 ["Measurement", "Track signals that matter for this industry."],
               ].map(([title, body]) => (
@@ -227,7 +234,7 @@ export function IndustryPageView({ page }: { page: IndustryPage }) {
                 Show us what is holding your business back
               </h3>
               <p className="mt-3 max-w-[640px] font-dm text-base text-t2">
-                UK-based. Available internationally where delivery is commercially and legally viable. No fake local offices.
+                We are based in Hucknall and work with businesses across the UK and remotely overseas, where delivery is viable. We do not claim local offices we do not have.
               </p>
               <IndustryHeroCtas page={page} />
             </div>

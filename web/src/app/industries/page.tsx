@@ -37,10 +37,10 @@ export default function IndustriesIndexPage() {
                 <span className="font-dm text-xs font-semibold uppercase tracking-[0.14em] text-acc">Industries we help</span>
                 <h1 className="page-hero-display mt-3">Find the page that understands your business.</h1>
                 <p className="mt-6 font-dm text-lg leading-relaxed text-t2">
-                  ScaleSmiths is building a global industry growth engine — specialist pages for real buyer problems, not thin doorway spam. UK-based. Available internationally where delivery is viable.
+                  These pages describe the problems we see in specific kinds of business: a pest controller separating emergency calls from contract work, a printer collecting a usable specification, a CNC shop receiving a drawing instead of a vague email. We are based in the UK and work remotely with businesses elsewhere. We do not pretend to have a local office in your town.
                 </p>
                 <p className="mt-4 font-dm text-sm text-t3">
-                  {published.length} published specialist pages · {hubs.length} vertical hubs · candidates available on request
+                  {published.length} published industry pages · {hubs.length} groups · if yours is not listed, you can still tell us about the business
                 </p>
               </div>
               <IndustryExplorer featuredHints={["pest control", "podiatry", "roofing", "SaaS", "restaurant", "CNC"]} />
@@ -54,7 +54,7 @@ export default function IndustriesIndexPage() {
               Browse by vertical
             </h2>
             <p className="mt-3 max-w-[640px] font-dm text-base text-t2">
-              High-value categories first. Use search or A–Z for the long tail — filtering never creates indexable query-parameter URLs.
+              Start with the group closest to how you trade. Search and the A–Z list stay on this page, so you are not sent to a thin copy of the same page with a different town in the title.
             </p>
             <ul className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {hubs.map((hub) => (

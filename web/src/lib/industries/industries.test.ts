@@ -91,6 +91,14 @@ describe("industry growth engine registry", () => {
     }
   })
 
+  it("keeps production notes out of published buyer copy", () => {
+    const leaked = /written for:|doorway spam|publishing backlog|global industry growth engine|indexable query-parameter/i
+    for (const page of publishedIndustryPages()) {
+      const copy = [page.h1, page.intro, page.searchIntent, page.description, ...page.frictions.flatMap((item) => [item.title, item.symptom, item.fix]), ...page.faqs.flatMap((item) => [item.q, item.a])].join(" ")
+      expect(copy, page.slug).not.toMatch(leaked)
+    }
+  })
+
   it("avoids banned hype claims", () => {
     for (const page of publishedIndustryPages()) {
       const copy = [page.h1, page.intro, page.searchIntent, ...page.frictions.flatMap((item) => [item.symptom, item.fix]), ...page.faqs.map((item) => item.a)].join(" ")

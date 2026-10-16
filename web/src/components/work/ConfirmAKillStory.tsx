@@ -153,6 +153,27 @@ export function ConfirmAKillStory() {
         </div>
       </section>
 
+      <section aria-labelledby="cak-evidence" className="border-t border-b1 px-6 py-16 md:px-12">
+        <div className="mx-auto max-w-[1240px]">
+          <p className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">How to read this case study</p>
+          <h2 id="cak-evidence" className="mt-2 font-syne text-[clamp(28px,4vw,44px)] font-extrabold tracking-[-.03em]">What is done, what was measured, and what is still open.</h2>
+          <dl className="mt-8 grid gap-3 md:grid-cols-2">
+            {[
+              ["Completed work", "A custom public website and a private CRM are in production, replacing the previous WordPress presentation. Service, coverage, advice and enquiry journeys are live."],
+              ["Measured baseline", "57.9K impressions, 192 clicks, 0.3% CTR and an average position of 15.6 are Google Search Console figures for the previous website over three months. They are not a result of the rebuild."],
+              ["Client observations", "No client testimonial is published on this page. We do not paraphrase the client or invent a quote."],
+              ["Attributable results", "No post-launch ranking, enquiry or revenue change is claimed. Paid advertising of about £1,000 a month is recorded as separate from the organic baseline."],
+              ["Still being monitored", "Search Console and analytics are being compared with that baseline under the £350/month Growth Partnership. The partnership is an agreed scope for this client, not a promise that every partnership costs £350 or includes the same work."],
+            ].map(([title, body]) => (
+              <div key={title} className="rounded-2xl border border-b1 bg-bg p-6">
+                <dt className="font-syne text-lg font-bold">{title}</dt>
+                <dd className="mt-2 font-dm text-sm leading-relaxed text-t2">{body}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      </section>
+
       <section aria-labelledby="cak-status" className="border-y border-b1 bg-s1/40 px-6 py-20 md:px-12">
         <AnimateIn className="mx-auto max-w-[1240px] text-center">
           <p className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">Current status</p>

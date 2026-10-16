@@ -17,8 +17,12 @@ import { Services } from "@/components/Services"
 import { ServiceRouteChooser } from "@/components/ServiceRouteChooser"
 import { Testimonials } from "@/components/Testimonials"
 import { faqs } from "@/lib/data"
+import { libraryFaqs } from "@/lib/faq-library"
+import { publishedStartingPrices } from "@/lib/published-starting-prices"
 import { publicClaimMap, selectVerifiedPublicClaims, type PublicClaim } from "@/lib/public-claims"
 import { getVerifiedPublicClaims } from "@/lib/public-claims.server"
+import { JsonLd } from "@/components/JsonLd"
+import { buildFaqSchema } from "@/lib/structured-data"
 
 export async function HomePageContent() {
   const publicClaims = await getVerifiedPublicClaims({ route: "/" })
@@ -34,10 +38,19 @@ export async function HomePageContent() {
     .filter((claim) => claim.attributionName && claim.attributionBusiness)
     .map((claim) => ({ id: claim.id, quote: claim.approvedWording, name: claim.attributionName as string, business: claim.attributionBusiness as string }))
 
-  // Proof-first order: who we build for and what we built, then what we offer, who does the
-  // work, how it runs, and the ongoing relationship.
+  const faqItems = [
+    ...faqs.map((faq) => faq.q === "How much does a website cost?"
+      ? { ...faq, a: verifiedPricingAnswer(faqClaims) }
+      : faq.q === "How long does a project take?"
+        ? { ...faq, a: verifiedTimelineAnswer(faqClaims) }
+        : faq),
+    ...libraryFaqs(["website-included", "after-enquiry", "improvement-measurement"]),
+  ]
+
+  // Problem and offer first, then proof, then the detailed routes.
   return (
     <>
+      <JsonLd data={buildFaqSchema(faqItems)} />
       <ExperienceQuerySync />
       <Hero />
       <HeroApproachBand verifiedStats={heroStats} />
@@ -54,11 +67,7 @@ export async function HomePageContent() {
       <DigitalEstate />
       <ClientPortalSection />
       <FitSection />
-      <FAQ items={faqs.map((faq) => faq.q === "How much does a website cost?"
-        ? { ...faq, a: verifiedPricingAnswer(faqClaims) }
-        : faq.q === "How long does a project take?"
-          ? { ...faq, a: verifiedTimelineAnswer(faqClaims) }
-          : faq)} />
+      <FAQ items={faqItems} />
       <CTA />
     </>
   )
@@ -70,12 +79,16 @@ function mapForComponents(claims: readonly PublicClaim[], ...components: string[
 }
 
 function verifiedPricingAnswer(claims: ReturnType<typeof publicClaimMap>) {
+  const starting = publishedStartingPrices
+    .map((item) => `${item.name}: ${item.priceLabel}`)
+    .join(". ")
   const values = ["price.foundation", "price.growth", "price.forge"]
     .map((id) => claims.get(id)?.approvedWording)
     .filter((value): value is string => Boolean(value))
-  return values.length === 3
-    ? `Current verified guidance: Foundation ${values[0]}; Growth ${values[1]}; Forge ${values[2]}. Final pricing follows a scoped proposal.`
-    : "Project pricing is scoped from the agreed outcome, complexity, integrations, content and delivery risk. Any current verified guidance appears on the pricing page."
+  const verified = values.length === 3
+    ? ` Additional verified guidance: Foundation ${values[0]}; Growth ${values[1]}; Forge ${values[2]}.`
+    : ""
+  return `${starting}. A starting price is the entry point for an agreed scope, not unlimited work or a guaranteed outcome. The written proposal sets the price.${verified}`
 }
 
 function verifiedTimelineAnswer(claims: ReturnType<typeof publicClaimMap>) {

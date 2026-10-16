@@ -225,7 +225,7 @@ export function StrategyCallForm({ intent = "strategy_call" }: StrategyCallFormP
       <p className="font-dm text-xs font-semibold uppercase tracking-[.12em] text-acc">Conversation first</p>
       <h1 className="mt-2 font-syne text-3xl font-extrabold tracking-[-0.025em] md:text-4xl">{label}</h1>
       <p className="mb-8 mt-3 max-w-[560px] font-dm text-sm leading-relaxed text-t2">
-        A short request so we can understand the constraint and reply with a sensible next step.
+        A short request so the founders can understand the constraint and reply with a sensible next step. Sending it does not take payment or create a contract.
         If you already know the project shape, use the{" "}
         <a href="/quote" className="font-semibold text-t1 underline underline-offset-2 hover:text-acc">
           full project brief

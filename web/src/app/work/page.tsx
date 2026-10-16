@@ -52,7 +52,7 @@ export default function WorkPage() {
               <p className="mt-3 font-dm text-sm leading-relaxed text-t2">{log.summary}</p>
               <div className="mt-6 flex flex-wrap gap-1.5">{log.tags.slice(0, 3).map((tag) => <span key={tag} className="font-dm text-[11px] text-t3">#{tag.replaceAll(" ", "-").toLowerCase()}</span>)}</div>
               <span className="mt-6 inline-flex items-center gap-2 font-dm text-sm font-medium text-t2 transition-colors group-hover:text-t1">
-                Read production note <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" aria-hidden="true" />
+                Read the engineering note <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" aria-hidden="true" />
               </span>
             </Link>
           ))}

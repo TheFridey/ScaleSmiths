@@ -128,17 +128,20 @@ export function Hero() {
           </span>
         </h1>
 
-        <m.p variants={revealSoft} className="hero-copy relative mb-10 w-full max-w-[560px] font-dm text-[clamp(15px,1.7vw,18px)] font-light leading-relaxed text-t2 md:mb-12">
-          Find what is holding growth back, build the right solution, and keep improving it:
-          websites, systems, automation and ongoing digital growth.
+        <m.h2 variants={revealSoft} className="hero-copy relative mb-4 max-w-[18ch] font-syne text-[clamp(26px,3.4vw,40px)] font-bold leading-[1.12] tracking-[-0.02em] text-t1">
+          More customers. Less wasted time.
+        </m.h2>
+
+        <m.p variants={revealSoft} className="hero-copy relative mb-10 w-full max-w-[640px] font-dm text-[clamp(15px,1.7vw,18px)] font-light leading-relaxed text-t2 md:mb-12">
+          A business that works better. We build websites, improve your online visibility and create smarter business systems that help you attract enquiries, reduce unnecessary work and grow with confidence.
         </m.p>
 
         <m.div variants={revealSoft} className="relative flex flex-wrap justify-center gap-3">
-          <Link href="/quote" prefetch={false} className="btn-primary font-dm">
-            Start a Project <ArrowRight size={16} aria-hidden="true" />
+          <Link href="/quote?intent=strategy_call" prefetch={false} className="btn-primary font-dm">
+            Discuss My Business <ArrowRight size={16} aria-hidden="true" />
           </Link>
-          <Link href="/quote?intent=strategy_call" prefetch={false} className="btn-ghost font-dm">
-            Request a Strategy Call <ArrowUpRight size={16} aria-hidden="true" />
+          <Link href="/pricing#published-prices" prefetch={false} className="btn-ghost font-dm">
+            See starting prices <ArrowUpRight size={16} aria-hidden="true" />
           </Link>
         </m.div>
       </m.div>

@@ -37,7 +37,7 @@ export const commercialPathways: Record<CommercialPathwayId, CommercialPathway> 
   build: {
     id: "build",
     label: "Website & digital platform builds",
-    shortLabel: "Build a better website",
+    shortLabel: "Get a Website Quote",
     startingPriceLabel: null,
     priceNote:
       "Scoped after discovery. Cost follows content, integrations, migration risk and review requirements — not a fixed package price on this page.",
@@ -48,7 +48,7 @@ export const commercialPathways: Record<CommercialPathwayId, CommercialPathway> 
   growth: {
     id: "growth",
     label: "Digital Growth Partnership",
-    shortLabel: "Grow my existing business",
+    shortLabel: "Explore Growth Partnerships",
     startingPriceLabel: null,
     priceNote:
       "Scoped separately after discovery. Deliverables, cadence, maintenance, SEO, CRO, content and support are written into the proposal. You do not need a new ScaleSmiths website first.",
@@ -59,7 +59,7 @@ export const commercialPathways: Record<CommercialPathwayId, CommercialPathway> 
   systems: {
     id: "systems",
     label: "Custom systems, automation & enterprise",
-    shortLabel: "I need a custom system",
+    shortLabel: "Discuss a custom system",
     startingPriceLabel: null,
     priceNote: "Individually scoped after discovery. No fixed “from” price is shown because scope varies too widely to advertise honestly.",
     summary:
@@ -69,7 +69,7 @@ export const commercialPathways: Record<CommercialPathwayId, CommercialPathway> 
   audit: {
     id: "audit",
     label: "Business Growth Audit",
-    shortLabel: "Not sure? Start with an audit",
+    shortLabel: "Request a Business Audit",
     startingPriceLabel: "£395 one-time",
     priceNote:
       "Optional diagnosis route. Where published terms allow, the full fee may be credited against an eligible ScaleSmiths build.",
@@ -96,4 +96,4 @@ export function missingIndustryHref(industryHint?: string) {
 
 /** Currency disclosure shown near industry commercial CTAs. */
 export const INDUSTRY_CURRENCY_DISCLOSURE =
-  "Builds, partnerships and custom systems are scoped after discovery. Published product prices (such as the Business Growth Audit) are in GBP. International proposals are quoted for your location and scope."
+  "Published starting points, in GBP only: website design and development from £2,000, Growth Partnerships from £350/month, a Business Growth Audit at £395, and business email from £15/month. A starting price is not unlimited work or a guaranteed result. Builds, partnerships and custom systems are still scoped after discovery. We do not publish converted prices in other currencies."

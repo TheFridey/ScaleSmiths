@@ -34,7 +34,7 @@ describe("service and pricing schemas", () => {
       "Local business growth site",
     ]))
     expect(webGrowthPricingItems.some((item) => /custom web app|enterprise/i.test(item.name))).toBe(false)
-    expect(pricingItems.find((item) => item.name === managedBusinessEmailService.title)?.range).toBe("£15/month")
+    expect(pricingItems.find((item) => item.name === managedBusinessEmailService.title)?.range).toBe("From £15/month")
     expect(pricingItems.find((item) => /custom web app|enterprise system/i.test(item.name))?.range).toMatch(/scoped following discovery/i)
     expect(enterpriseCommercialComponents.map((item) => item.title)).toEqual(expect.arrayContaining([
       "Discovery",
@@ -58,7 +58,9 @@ describe("service and pricing schemas", () => {
     const publicSurface = JSON.stringify({ schema, pricingItems, webGrowthPricingItems })
 
     expect(emailService?.description).toContain("custom-domain")
-    expect(webGrowthPricingItems.find((item) => item.name === managedBusinessEmailService.title)?.range).toBe("£15/month")
+    expect(webGrowthPricingItems.find((item) => item.name === managedBusinessEmailService.title)?.range).toBe("From £15/month")
+    expect(webGrowthPricingItems.find((item) => item.name === "Website design and development")?.range).toBe("From £2,000")
+    expect(webGrowthPricingItems.find((item) => item.name === "Growth Partnership")?.range).toBe("From £350/month")
     expect(publicSurface).toContain("Three professional 5GB mailboxes")
     expect(publicSurface).not.toMatch(/mailcow|sogo|smtp infrastructure topology/i)
   })

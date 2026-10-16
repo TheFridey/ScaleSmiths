@@ -24,7 +24,7 @@ export function industryPath(hubSlug: string, industrySlug?: string) {
 export function metadataForIndustriesIndex(): Metadata {
   return buildPageMetadata({
     title: "Industries We Help",
-    absoluteTitle: "Industries We Help | ScaleSmiths Global Industry Growth Engine",
+    absoluteTitle: "Industries We Help | ScaleSmiths",
     description:
       "Find your industry. Sector hubs and specialist pages for trades, clinics, hospitality, retail, manufacturing, SaaS and more — with honest Build and Growth Partnership routes.",
     path: "/industries",

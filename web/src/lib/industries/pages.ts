@@ -35,7 +35,7 @@ export const industryPages: Record<string, IndustryPage> = {
       {
         title: "Service-area ambiguity",
         symptom: "Visitors cannot tell whether you cover their town, so they dial a national competitor instead.",
-        fix: "Clear coverage architecture and internal links that explain where you work — without thin town-name doorway pages.",
+        fix: "A plain map of the towns and postcodes you actually cover, linked from the pest and service pages, so a caller can tell whether you will come out.",
       },
       {
         title: "Trust collapses on mobile",
@@ -229,7 +229,7 @@ export const industryPages: Record<string, IndustryPage> = {
         "We have not published a roofing-only case study yet. Precision Finish demonstrates the trades pattern: specialist service pages, coverage architecture and quote capture. Treat it as adjacent, not direct roofing experience.",
     },
     faqs: [
-      { q: "Can you promise we will rank for “emergency roofer” in every town?", a: "No. We avoid doorway location spam. We build honest coverage and service pages that can compete where the business is real." },
+      { q: "Can you promise we will rank for “emergency roofer” in every town?", a: "No. A page for every town, with nothing different on it, does not help a homeowner and we will not publish that. We build coverage and service pages for the places and jobs you actually do." },
       { q: "Do you integrate job management software?", a: "When scoped and after discovery. We do not claim every roofing CRM is supported out of the box." },
       { q: "How do reviews work?", a: "We can design consent-aware review request journeys. We never fabricate ratings or post reviews on your behalf without authorisation." },
     ],
@@ -484,7 +484,7 @@ export const industryPages: Record<string, IndustryPage> = {
     eyebrow: "Printing & signage",
     h1: "Print businesses do not need another pretty brochure they cannot update.",
     intro:
-      "When prices, stocks and lead times move weekly, a static site becomes an expensive argument with reality. ScaleSmiths focuses on quote specification, maintainable product information and secure artwork handoff — drawing on e-commerce and print-adjacent delivery experience.",
+      "A printer or sign maker loses urgent work when the website cannot take a proper job. Buyers need size, material, quantity, finishing and a deadline before anyone can price it. If those details never get asked, the phone rings with half a brief, or the job goes to a shop that collected them online. ScaleSmiths builds quote paths, catalogues you can keep current, and a controlled way to receive artwork.",
     searchIntent:
       "For print and signage owners who are too busy to update pages, receive vague quote requests, or cannot safely collect artwork and specifications online.",
     buyer: "Print shop owners, estimators and trade-print operators.",
@@ -501,8 +501,8 @@ export const industryPages: Record<string, IndustryPage> = {
       },
       {
         title: "Vague quote requests",
-        symptom: "Enquiries omit size, material, quantity, finish and deadline.",
-        fix: "Specification-led quote forms for common product families.",
+        symptom: "A business-card enquiry arrives without quantity, stock, lamination or a date. A sign enquiry arrives without size, fixing or site access.",
+        fix: "Separate quote forms for the product families you actually sell, asking the fields an estimator uses before picking up the phone.",
       },
       {
         title: "Artwork handoff risk",
@@ -644,7 +644,7 @@ export const industryPages: Record<string, IndustryPage> = {
     eyebrow: "Precision engineering",
     h1: "Procurement does not buy vibes. It buys capability it can verify.",
     intro:
-      "B2B manufacturing websites fail when they read like consumer brands: vague claims, no tolerances, no RFQ path. ScaleSmiths helps engineering firms present verified capabilities and serious enquiry routes — and we refuse to invent machine specs we have not confirmed with you.",
+      "A CNC or precision buyer is usually trying to send a drawing, a material, a quantity and a required date to a shop that can actually make it. If the website only says “precision engineering”, that buyer cannot tell whether you machine the material, hold the tolerance, or even want the work. We publish only the capabilities your engineers confirm, and we give serious enquiries a place to land with the file attached.",
     searchIntent:
       "For CNC and precision engineering firms whose website under-sells capability, attracts tyre-kickers, or has no usable RFQ and drawing-upload path.",
     buyer: "Owner-managers, sales engineers and operations leads handling RFQs.",

@@ -12,6 +12,7 @@ import {
   pricingFaqs,
   webGrowthPricingItems,
 } from "@/lib/service-pages"
+import { STARTING_PRICE_BOUNDARY, buildPublishedOfferCatalog } from "@/lib/published-starting-prices"
 import { claimWording, publicClaimMap } from "@/lib/public-claims"
 import { getVerifiedPublicClaims } from "@/lib/public-claims.server"
 
@@ -46,7 +47,8 @@ export default async function PricingPage() {
     ...item,
     range: item.priceClaimId ? claimWording(claims, item.priceClaimId, item.range) : item.range,
   }))
-  const schema = buildPricingSchema(process.env.NEXT_PUBLIC_SITE_URL ?? "https://scalesmiths.co.uk")
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://scalesmiths.co.uk"
+  const schema = [buildPublishedOfferCatalog(baseUrl), buildPricingSchema(baseUrl)]
 
   return (
     <>
@@ -93,6 +95,9 @@ export default async function PricingPage() {
           <p className="mt-5 max-w-[680px] font-dm text-base leading-relaxed text-t2">
             These offers remain published for founder-led and local businesses. Final scope, priorities and commercial boundaries are still agreed in the proposal where discovery is required.
           </p>
+          <p id="published-prices" className="mt-4 max-w-[760px] font-dm text-sm leading-relaxed text-t3">
+            {STARTING_PRICE_BOUNDARY}
+          </p>
 
           <div className="mt-10 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
             {smeItems.map((item) => (
@@ -111,10 +116,10 @@ export default async function PricingPage() {
 
           <div className="mt-10 flex flex-wrap gap-3">
             <Link href="/quote" prefetch={false} className="btn-primary font-dm">
-              Request a Quote <ArrowRight size={16} aria-hidden="true" />
+              Get a Website Quote <ArrowRight size={16} aria-hidden="true" />
             </Link>
-            <Link href="/local-growth" prefetch={false} className="btn-ghost font-dm">Explore Local Growth</Link>
-            <Link href="/digital-growth-partnership" prefetch={false} className="btn-ghost font-dm">Growth Partnership</Link>
+            <Link href="/digital-growth-partnership" prefetch={false} className="btn-ghost font-dm">Explore Growth Partnerships</Link>
+            <Link href="/services/business-growth-audit" prefetch={false} className="btn-ghost font-dm">Request a Business Audit</Link>
           </div>
         </div>
       </section>

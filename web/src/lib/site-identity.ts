@@ -11,7 +11,7 @@ export const SITE_NAME = "ScaleSmiths"
 export const DEFAULT_SITE_URL = "https://scalesmiths.co.uk"
 export const SITE_SLOGAN = "Forge Your Digital Edge"
 export const SITE_DESCRIPTION =
-  "ScaleSmiths is a founder-led digital growth and engineering company based in Hucknall, Nottinghamshire. We help businesses identify growth constraints, build websites and custom systems, automate workflows and manage ongoing digital improvement."
+  "ScaleSmiths is a founder-led digital growth and engineering company based in Hucknall, Nottinghamshire, UK. We help businesses identify growth constraints, build websites and custom systems, automate workflows and manage ongoing digital improvement — in the UK and internationally where delivery is viable."
 
 export const BUSINESS_LOCATION = {
   locality: "Hucknall",
@@ -21,7 +21,8 @@ export const BUSINESS_LOCATION = {
   country: "United Kingdom",
 } as const
 
-export const SERVICE_AREA_STATEMENT = "Serving businesses across the UK"
+export const SERVICE_AREA_STATEMENT =
+  "UK-based. Working with businesses internationally where delivery is commercially and legally viable."
 export const CONTACT_EMAIL = legalEntity.contactEmail
 export const LOGO_ASSET = { src: "/brand/scalesmiths-mark.png" } as const
 

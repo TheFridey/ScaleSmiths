@@ -18,6 +18,7 @@ const navigationGroups = [
       { href: founderProfilePath("rhys"), label: "Rhys Lacy" },
       { href: founderProfilePath("trevor-newton-bradley"), label: "Trevor Newton-Bradley" },
       { href: "/work", label: "Work" },
+      { href: "/industries", label: "Industries" },
       { href: "/locations", label: "Locations" },
       { href: "/faq", label: "FAQ" },
       { href: "/contact", label: "Contact" },
@@ -41,6 +42,7 @@ const navigationGroups = [
   {
     label: "Find & grow",
     links: [
+      { href: "/industries", label: "Find your industry" },
       { href: "/services/business-growth-audit", label: "Business Growth Audit" },
       { href: "/digital-growth-partnership", label: "Growth Partnership" },
       { href: "/seo-website-audit", label: "SEO Website Audit" },

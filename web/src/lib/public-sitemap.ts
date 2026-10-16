@@ -3,6 +3,7 @@ import { buildLogs } from "./build-logs"
 import { founders } from "./founders"
 import { INSIGHT_TOPIC_CLUSTERS, insightsForTopic, publishedInsights } from "./insights"
 import { projects } from "./data"
+import { sitemapIndustryEntries } from "./industries"
 import { landingPages } from "./landing-pages"
 import { legalSitemapEntries } from "./legal"
 import { locationPages } from "./location-pages"
@@ -34,6 +35,7 @@ export function buildPublicSitemap(siteUrl = "https://scalesmiths.co.uk"): Metad
     { url: `${base}/digital-growth-partnership`, lastModified: lastModified(), changeFrequency: "monthly", priority: 0.9 },
     { url: `${base}/quote`,       lastModified: lastModified(), changeFrequency: "yearly", priority: 0.7 },
     { url: `${base}/local-growth-check`, lastModified: lastModified(), changeFrequency: "monthly", priority: 0.8 },
+    ...sitemapIndustryEntries(base, lastModified()),
     ...legalSitemapEntries(base),
     ...Object.values(landingPages).map((page) => ({
       url: `${base}/${page.slug}`,

@@ -24,6 +24,7 @@ export function serviceRouteCatalogue(): Map<string, ServiceRoute> {
     { href: "/services/business-growth-audit", label: "Business Growth Audit", description: "A structured review of visibility, trust, enquiries and systems, with a prioritised roadmap." },
     { href: "/services/managed-business-email", label: "Managed Business Email", description: "Professional custom-domain email configured, authenticated and supported by ScaleSmiths." },
     { href: "/pricing", label: "Pricing guidance", description: "How ScaleSmiths scopes and prices projects and ongoing work." },
+    { href: "/industries", label: "Industries", description: "Industry hubs and specialist pages for sector-specific growth journeys." },
   ]
   return new Map(routes.map((route) => [route.href, route]))
 }

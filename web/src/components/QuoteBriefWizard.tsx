@@ -11,6 +11,11 @@ import { AuditAcquisitionLink } from "@/components/AuditAcquisitionLink"
 import { formatAuditPrice } from "@/lib/business-growth-audit"
 import { enquiryIntentFromLocation } from "@/lib/enquiry-intents"
 import { trackExperienceEvent } from "@/lib/experience-analytics-client"
+import {
+  industryAttributionBriefPrefix,
+  industryAttributionBusinessType,
+  parseIndustryAttribution,
+} from "@/lib/industries/attribution"
 import { motionDistances, motionDurations, motionTransitions } from "@/lib/motion"
 
 const STORAGE_KEY = "scalesmiths.quote.draft.v2"
@@ -43,7 +48,28 @@ export function QuoteBriefWizard() {
   useEffect(() => {
     try {
       const saved = JSON.parse(window.sessionStorage.getItem(STORAGE_KEY) ?? "null") as { stage?: number; data?: FormData } | null
-      if (saved?.data) setData(saved.data)
+      const attribution = parseIndustryAttribution(window.location.search)
+      const attributed: FormData = {}
+      if (attribution) {
+        const businessType = industryAttributionBusinessType(attribution)
+        if (businessType) attributed.businessType = businessType
+        const prefix = industryAttributionBriefPrefix(attribution)
+        attributed.brief = saved?.data?.brief?.startsWith("[Industry page attribution]")
+          ? saved.data.brief
+          : `${prefix}${saved?.data?.brief ?? ""}`
+        if (attribution.pathway === "build") attributed.type = "Conversion Website"
+        if (attribution.pathway === "growth") attributed.type = "Growth Partnership"
+        trackExperienceEvent("quote_form_started", {
+          metadata: {
+            source: "industry_page",
+            industry: attribution.industry,
+            hub: attribution.hub,
+            pathway: attribution.pathway,
+          },
+        })
+      }
+      if (saved?.data) setData({ ...saved.data, ...attributed, brief: attributed.brief ?? saved.data.brief })
+      else if (Object.keys(attributed).length) setData(attributed)
       if (Number.isInteger(saved?.stage)) setStage(Math.max(0, Math.min(3, saved?.stage ?? 0)))
     } catch {
       window.sessionStorage.removeItem(STORAGE_KEY)

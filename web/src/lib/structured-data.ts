@@ -73,8 +73,10 @@ export function buildOrganizationSchema(base: string, env?: PublicEnv) {
       "@type": "ContactPoint",
       contactType: "customer enquiries",
       email: CONTACT_EMAIL,
-      areaServed: BUSINESS_LOCATION.countryCode,
-      availableLanguage: "en-GB",
+      // Founding market remains GB; delivery is remote/international where commercially viable.
+      // Do not invent LocalBusiness nodes for countries without a real presence.
+      areaServed: [BUSINESS_LOCATION.countryCode, "Worldwide"],
+      availableLanguage: ["en-GB", "en"],
     },
     knowsAbout: ["Digital Growth Strategy", "Web Design", "Web Development", "E-Commerce Development", "AI Implementation", "Business Automation", "Conversion Optimisation", "Technical SEO"],
     ...(sameAs.length ? { sameAs } : {}),

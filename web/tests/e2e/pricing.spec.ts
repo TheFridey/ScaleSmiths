@@ -25,7 +25,7 @@ test.describe("pricing journeys", () => {
 
       const sme = page.locator("#web-growth")
       await expect(sme.getByRole("heading", { name: /transparent guidance for websites/i })).toBeVisible()
-      await expect(sme.getByText("£15/month", { exact: true })).toBeVisible()
+      await expect(sme.getByText("From £15/month", { exact: true })).toBeVisible()
       await expect(sme.getByRole("heading", { name: /managed business email/i })).toBeVisible()
       await expect(sme.getByRole("heading", { name: /business growth audit/i })).toBeVisible()
       await expect(sme.getByRole("heading", { name: /custom web app/i })).toHaveCount(0)

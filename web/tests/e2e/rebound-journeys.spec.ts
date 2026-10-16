@@ -37,21 +37,22 @@ test.describe("rebound customer journeys", () => {
     test("home primary CTAs remain usable at 390px", async ({ page }) => {
       const consoleGuard = await installConsoleGuards(page)
       await gotoReady(page, "/")
-      const start = page.getByRole("link", { name: /start a project/i }).first()
-      const strategy = page.getByRole("link", { name: /request a strategy call/i }).first()
-      await expect(start).toBeVisible()
+      const strategy = page.getByRole("link", { name: /discuss my business/i }).first()
       await expect(strategy).toBeVisible()
-      const startBox = await start.boundingBox()
       const strategyBox = await strategy.boundingBox()
-      expect(startBox?.height ?? 0).toBeGreaterThanOrEqual(40)
       expect(strategyBox?.height ?? 0).toBeGreaterThanOrEqual(40)
+      await page.getByRole("button", { name: /open menu/i }).click()
+      const start = page.getByRole("link", { name: /start a project/i }).first()
+      await expect(start).toBeVisible()
+      const startBox = await start.boundingBox()
+      expect(startBox?.height ?? 0).toBeGreaterThanOrEqual(40)
       await consoleGuard.expectClean()
     })
   })
 
   test("local business: Home → Local Growth → Work → Strategy Call", async ({ page }) => {
     await journey(page, [
-      { path: "/", heading: /forge your digital edge/i, cta: /request a strategy call/i },
+      { path: "/", heading: /forge your digital edge/i, cta: /discuss my business/i },
       { path: "/local-growth", heading: /turn local attention/i },
       { path: "/work", heading: /here is what we actually built/i },
       { path: "/quote?intent=strategy_call", heading: /request a strategy call/i },
@@ -120,7 +121,7 @@ test.describe("rebound customer journeys", () => {
 
     await gotoReady(page, "/work/confirm-a-kill")
     await expect(page.getByText(/^the business$/i).first()).toBeVisible()
-    await expect(page.getByText(/^the constraint$/i).first()).toBeVisible()
+    await expect(page.getByText(/^the challenge$/i).first()).toBeVisible()
     await expect(page.getByText(/^what we found$/i).first()).toBeVisible()
     await expect(page.getByRole("navigation", { name: /case study/i })).toBeVisible()
   })

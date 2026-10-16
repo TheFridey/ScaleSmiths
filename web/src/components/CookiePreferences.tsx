@@ -45,19 +45,19 @@ export function CookiePreferences() {
 
   if (!open) return null
   return <div className="pointer-events-none fixed inset-x-0 bottom-0 z-[100] p-3 sm:p-6">
-    <section role="dialog" aria-modal="false" aria-labelledby="cookie-heading" className="pointer-events-auto mx-auto w-full max-w-[760px] rounded-2xl border border-b2 bg-bg p-5 shadow-2xl sm:p-7">
+    <section role="dialog" aria-modal="false" aria-labelledby="cookie-heading" className="pointer-events-auto mx-auto max-h-[min(68vh,560px)] w-full max-w-[760px] overflow-y-auto rounded-2xl border border-b2 bg-bg p-4 shadow-2xl sm:p-7">
       <p className="text-xs font-semibold uppercase tracking-[.14em] text-acc">Privacy choices</p>
-      <h2 id="cookie-heading" className="mt-2 font-syne text-2xl font-bold">Cookies and browser storage</h2>
-      <p className="mt-3 text-sm leading-relaxed text-t2">Necessary storage keeps requested services secure and remembers this choice. Functional and analytics storage are optional and remain off until you choose them. ScaleSmiths does not use advertising trackers.</p>
+      <h2 id="cookie-heading" className="mt-1 font-syne text-xl font-bold sm:mt-2 sm:text-2xl">Cookies and browser storage</h2>
+      <p className="mt-2 text-sm leading-relaxed text-t2 sm:mt-3">Necessary storage keeps requested services secure and remembers this choice. Functional and analytics storage are optional and remain off until you choose them. ScaleSmiths does not use advertising trackers.</p>
       {manage && <div className="mt-5 space-y-3 border-y border-b1 py-5">
         <Preference label="Strictly necessary" description="Portal security and remembering this privacy choice." checked disabled onChange={() => undefined} />
         <Preference label="Functional" description="Remember experience and industry choices you make." checked={preferences.functional} onChange={(functional) => setPreferences((current) => ({ ...current, functional }))} />
         <Preference label="Analytics" description="First-party journey statistics and Google Analytics website measurement. No advertising trackers." checked={preferences.analytics} onChange={(analytics) => setPreferences((current) => ({ ...current, analytics }))} />
       </div>}
       <p className="mt-4 text-xs leading-relaxed text-t3">Read the <Link href="/legal/cookies" className="underline underline-offset-2 hover:text-t1">Cookie Policy</Link>. You can change this choice later using Cookie Settings in the footer.</p>
-      <div className="mt-5 grid gap-2 sm:grid-cols-3">
-        <button type="button" className="rounded-lg border border-b2 px-4 py-3 text-sm font-semibold text-t1 hover:border-acc" onClick={() => save({ functional: false, analytics: false, marketing: false })}>Reject non-essential</button>
-        {manage ? <button type="button" className="rounded-lg border border-b2 px-4 py-3 text-sm font-semibold text-t1 hover:border-acc" onClick={() => save({ functional: preferences.functional, analytics: preferences.analytics, marketing: false })}>Save preferences</button> : <button type="button" className="rounded-lg border border-b2 px-4 py-3 text-sm font-semibold text-t1 hover:border-acc" onClick={() => setManage(true)}>Manage preferences</button>}
+      <div className="mt-4 grid gap-2 sm:mt-5 sm:grid-cols-3">
+        <button type="button" className="min-h-11 rounded-lg border border-b2 px-4 py-2.5 text-sm font-semibold text-t1 hover:border-acc" onClick={() => save({ functional: false, analytics: false, marketing: false })}>Reject non-essential</button>
+        {manage ? <button type="button" className="min-h-11 rounded-lg border border-b2 px-4 py-2.5 text-sm font-semibold text-t1 hover:border-acc" onClick={() => save({ functional: preferences.functional, analytics: preferences.analytics, marketing: false })}>Save preferences</button> : <button type="button" className="min-h-11 rounded-lg border border-b2 px-4 py-2.5 text-sm font-semibold text-t1 hover:border-acc" onClick={() => setManage(true)}>Manage preferences</button>}
         <button type="button" className="btn-primary min-h-11 justify-center" onClick={() => save({ functional: true, analytics: true, marketing: false })}>Accept all</button>
       </div>
     </section>

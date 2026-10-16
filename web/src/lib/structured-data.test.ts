@@ -23,9 +23,15 @@ describe("organisation entity", () => {
     expect(org["@type"]).toEqual(["Organization", "ProfessionalService"])
     expect(org.address).toMatchObject({ addressLocality: "Hucknall", addressRegion: "Nottinghamshire", addressCountry: "GB" })
     expect(org.email).toBe("hello@scalesmiths.co.uk")
+    expect(org.legalName).toBe("ScaleSmiths Ltd")
+    expect(org.identifier).toEqual([
+      { "@type": "PropertyValue", propertyID: "Companies House company number", value: "17496624" },
+      { "@type": "PropertyValue", propertyID: "ICO registration number", value: "ZC265402" },
+    ])
+    expect(org.address).toMatchObject({ streetAddress: "27 Belle Isle Road", postalCode: "NG15" })
     expect(JSON.stringify(org.foundingLocation)).toContain("Hucknall")
     // Unverified identifiers must stay absent rather than guessed.
-    for (const unverified of ["legalName", "telephone", "foundingDate", "vatID", "sameAs"]) {
+    for (const unverified of ["telephone", "foundingDate", "vatID", "sameAs"]) {
       expect(org).not.toHaveProperty(unverified)
     }
   })

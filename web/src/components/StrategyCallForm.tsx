@@ -30,6 +30,7 @@ const TIMING_OPTIONS = ["This week", "This month", "This quarter", "Just explori
 type FormState = {
   name: string
   biz: string
+  businessType: string
   websiteUrl: string
   email: string
   phone: string
@@ -44,6 +45,7 @@ type FormState = {
 const initialState: FormState = {
   name: "",
   biz: "",
+  businessType: "",
   websiteUrl: "",
   email: "",
   phone: "",
@@ -169,6 +171,7 @@ export function StrategyCallForm({ intent = "strategy_call" }: StrategyCallFormP
       attribution ? industryAttributionBriefPrefix(attribution).trim() : null,
       `${label} request`,
       "",
+      form.businessType.trim() ? `Type of business: ${form.businessType.trim()}` : "Type of business: not provided",
       `What they are trying to solve: ${form.goal.trim()}`,
       problemLine,
       `Preferred contact: ${form.preferredContactMethod}`,
@@ -199,7 +202,7 @@ export function StrategyCallForm({ intent = "strategy_call" }: StrategyCallFormP
       })
       const result = await response.json()
       if (!response.ok || !result.ok) throw new Error(result.error || "Unable to send your request.")
-      trackExperienceEvent("quote_form_submitted", { metadata: { source: "strategy_call", intent } })
+      trackExperienceEvent("quote_form_submitted", { metadata: { source: "strategy_call", funnelType: intent } })
       router.push(`/quote/thanks?intent=${encodeURIComponent(intent)}`)
     } catch (caught) {
       trackExperienceEvent("experience_error", { errorCategory: "quote_submission", metadata: { source: "strategy_call", intent } })
@@ -256,6 +259,16 @@ export function StrategyCallForm({ intent = "strategy_call" }: StrategyCallFormP
             aria-describedby={invalidField === "name" ? errorId : undefined}
             className={inputClass}
             required
+          />
+        </Field>
+
+        <Field id="sc-type" label="What kind of business is it? (optional)">
+          <input
+            id="sc-type"
+            value={form.businessType}
+            onChange={(event) => update("businessType", event.target.value)}
+            className={inputClass}
+            placeholder="For example, a roofing company or a multi-site operator"
           />
         </Field>
 

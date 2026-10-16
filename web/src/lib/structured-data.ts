@@ -42,7 +42,19 @@ export function buildOrganizationSchema(base: string, env?: PublicEnv) {
     "@type": ["Organization", "ProfessionalService"],
     "@id": organizationId(base),
     name: SITE_NAME,
-    ...(legalEntity.legalName ? { legalName: legalEntity.legalName } : {}),
+    legalName: legalEntity.legalName,
+    identifier: [
+      {
+        "@type": "PropertyValue",
+        propertyID: "Companies House company number",
+        value: legalEntity.companyNumber,
+      },
+      {
+        "@type": "PropertyValue",
+        propertyID: "ICO registration number",
+        value: legalEntity.icoRegistrationNumber,
+      },
+    ],
     url: base,
     logo: { "@type": "ImageObject", url: logo },
     image: logo,
@@ -55,7 +67,11 @@ export function buildOrganizationSchema(base: string, env?: PublicEnv) {
       name: founder.name,
       url: `${base}${founderProfilePath(founder.slug)}`,
     })),
-    address: { ...postalAddress, postalCode: BUSINESS_LOCATION.postalCode },
+    address: {
+      ...postalAddress,
+      postalCode: BUSINESS_LOCATION.postalCode,
+      streetAddress: "27 Belle Isle Road",
+    },
     geo: { "@type": "GeoCoordinates", latitude: 53.0386, longitude: -1.2042 },
     foundingLocation: {
       "@type": "Place",

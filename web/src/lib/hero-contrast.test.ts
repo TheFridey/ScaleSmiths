@@ -17,8 +17,10 @@ describe("homepage hero contrast and motion", () => {
 
   it("hides the forge video when reduced motion is preferred", () => {
     expect(videoSource).toContain("useReducedMotion")
-    expect(videoSource).toContain("if (reducedMotion) return null")
+    expect(videoSource).toContain("if (reducedMotion) return")
+    expect(videoSource).not.toContain("if (reducedMotion) return null")
     expect(cssSource).toContain("@media (prefers-reduced-motion: reduce)")
     expect(cssSource).toContain(".hero-forge-video { display: none !important; }")
+    expect(cssSource).toContain(".hero-ember { animation: none; opacity: 0; }")
   })
 })

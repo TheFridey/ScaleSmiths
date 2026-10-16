@@ -2,7 +2,8 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { m, useReducedMotion } from "motion/react"
+import { m } from "motion/react"
+import { usePrefersReducedMotion } from "@/lib/use-reduced-motion"
 import { ArrowRight } from "lucide-react"
 import { AnimateIn } from "./AnimateIn"
 import { motionStagger, motionTransitions } from "@/lib/motion"
@@ -22,7 +23,7 @@ const estateNodes = [
 
 export function DigitalEstate() {
   const [activeId, setActiveId] = useState("email")
-  const reducedMotion = useReducedMotion()
+  const reducedMotion = usePrefersReducedMotion()
   const active = estateNodes.find((node) => node.id === activeId) ?? estateNodes[0]
 
   return (

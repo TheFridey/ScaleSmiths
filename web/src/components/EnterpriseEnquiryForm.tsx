@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect, useId, useRef, useState } from "react"
-import { AnimatePresence, m, useReducedMotion } from "motion/react"
+import { AnimatePresence, m } from "motion/react"
+import { usePrefersReducedMotion } from "@/lib/use-reduced-motion"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, ArrowRight, Check } from "lucide-react"
@@ -36,7 +37,7 @@ export function EnterpriseEnquiryForm() {
   const errorRef = useRef<HTMLDivElement>(null)
   const started = useRef(false)
   const submissionInFlight = useRef(false)
-  const reducedMotion = useReducedMotion()
+  const reducedMotion = usePrefersReducedMotion()
   const router = useRouter()
 
   useEffect(() => {

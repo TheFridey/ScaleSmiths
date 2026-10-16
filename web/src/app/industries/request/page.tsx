@@ -34,7 +34,7 @@ export default async function MissingIndustryRequestPage({
         <span className="mt-10 block font-dm text-xs font-semibold uppercase tracking-[0.14em] text-acc">Missing industry</span>
         <h1 className="page-hero-display mt-3">Whatever you run, tell us what is holding it back.</h1>
         <p className="mt-6 font-dm text-lg leading-relaxed text-t2">
-          We do not claim to already specialise in every sector. New industry pages are researched, differentiated and founder-approved before they publish. If you cannot find yours, start a conversation — that demand shapes the backlog.
+          If your sector is not listed, tell us what you run and what is getting in the way. We write an industry page when we can say something specific about that business. Until then, the useful next step is a conversation about yours.
         </p>
         {hint ? (
           <p className="mt-4 rounded-xl border border-b1 bg-s1 px-4 py-3 font-dm text-sm text-t2">

@@ -24,7 +24,12 @@ describe("public legal surfaces", () => {
     expect(urls).toContain("https://scalesmiths.co.uk/legal/privacy")
     expect(urls).toContain("https://scalesmiths.co.uk/legal/website-terms")
     expect(legalRoutes).toHaveLength(15)
-    expect(legalEntity.companyNumber).toBeNull()
+    expect(legalEntity.legalName).toBe("ScaleSmiths Ltd")
+    expect(legalEntity.companyNumber).toBe("17496624")
+    expect(legalEntity.icoRegistrationNumber).toBe("ZC265402")
+    expect(legalEntity.registeredOffice).toContain("27 Belle Isle Road")
+    expect(legalEntity.vatNumber).toBeNull()
+    expect(legalEntity.companyNumber).not.toBe(legalEntity.icoRegistrationNumber)
   })
 
   it("uses specific enquiry permission without inferring marketing consent", () => {

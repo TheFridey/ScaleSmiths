@@ -3,8 +3,9 @@ import { resolveConfiguredLinks, type ConfiguredLink, type PublicEnv, type Publi
 
 /**
  * The single source for how ScaleSmiths identifies itself to people and search engines.
- * Only verified facts belong here. Legal name, company number, telephone and similar
- * identifiers stay out until they are confirmed in `legal.ts` (see LEGAL_DECISIONS_REQUIRED).
+ * Only verified facts belong here. Company number, registered office and ICO
+ * registration are published from `legal.ts` after register checks. VAT number,
+ * telephone and similar identifiers stay out until they are confirmed.
  */
 
 export const SITE_NAME = "ScaleSmiths"

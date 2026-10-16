@@ -96,7 +96,7 @@ export function IndustryPageView({ page }: { page: IndustryPage }) {
               <p className="mt-4 font-dm text-sm text-t2">For {page.buyer}</p>
               <IndustryHeroCtas page={page} />
               <p className="mt-4 max-w-[680px] font-dm text-xs leading-relaxed text-t3">
-                See the published starting prices for websites, partnerships, the audit and business email. The right route is still scoped to this business.
+                <Link href="/pricing#published-prices" prefetch={false} className="underline underline-offset-2 hover:text-t1">Starting prices</Link> are published for websites, partnerships, the audit and business email. Larger work is quoted once the scope is clear.
               </p>
             </div>
           </div>
@@ -108,7 +108,7 @@ export function IndustryPageView({ page }: { page: IndustryPage }) {
               Where customers slip away
             </h2>
             <p className="mt-3 max-w-[640px] font-dm text-base text-t2">
-              The constraint we would start with: {page.primaryProblem}
+              Where we would start: {page.primaryProblem}
             </p>
             <ul className="mt-10 grid gap-4 md:grid-cols-2">
               {page.frictions.map((friction) => (
@@ -234,7 +234,7 @@ export function IndustryPageView({ page }: { page: IndustryPage }) {
                 Show us what is holding your business back
               </h3>
               <p className="mt-3 max-w-[640px] font-dm text-base text-t2">
-                We are based in Hucknall and work with businesses across the UK and remotely overseas, where delivery is viable. We do not claim local offices we do not have.
+                ScaleSmiths is based in Hucknall, Nottinghamshire, and works with businesses across the UK and remotely where the work can be delivered properly.
               </p>
               <IndustryHeroCtas page={page} />
             </div>

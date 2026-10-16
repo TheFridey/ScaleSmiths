@@ -40,7 +40,7 @@ export const industryPages: Record<string, IndustryPage> = {
       {
         title: "Trust collapses on mobile",
         symptom: "Reviews, insurance cues and response expectations sit below the fold while the call button is hard to find.",
-        fix: "Mobile-first contact hierarchy, permissioned proof, and plain-language answers to “how soon can you come?”",
+        fix: "A mobile contact path that is easy to find, proof the business can stand behind, and a plain answer to how soon someone can attend.",
       },
       {
         title: "CRM handoff is manual",
@@ -50,7 +50,7 @@ export const industryPages: Record<string, IndustryPage> = {
     ],
     strategy: [
       { title: "Journey split", description: "Domestic emergency, planned domestic and commercial paths get distinct page structures and CTAs." },
-      { title: "Visibility with substance", description: "Service and advice content that answers real pest questions, not keyword stuffing." },
+      { title: "Visibility with substance", description: "Service and advice pages that answer the questions customers actually ask." },
       { title: "Measurement that matters", description: "Track calls, form starts, qualified jobs and seasonal spikes — not vanity sessions alone." },
     ],
     journey: [
@@ -70,7 +70,7 @@ export const industryPages: Record<string, IndustryPage> = {
       workSlug: "confirm-a-kill",
       label: "Direct industry proof — Confirm-A-Kill",
       summary:
-        "ScaleSmiths rebuilt Confirm-A-Kill’s pest and service journeys, Nottinghamshire coverage architecture and advice hub. Publish only verified outcomes and permissioned assets from that case study.",
+        "ScaleSmiths rebuilt Confirm-A-Kill’s pest and service journeys, Nottinghamshire coverage and advice hub. The published search figures are the previous site’s baseline. Later performance is still being monitored.",
     },
     faqs: [
       { q: "Can you handle emergency call tracking?", a: "We can design call and form paths that capture urgency and pest context. Call-tracking products are integrated only when scoped and available in your stack." },
@@ -173,7 +173,7 @@ export const industryPages: Record<string, IndustryPage> = {
     eyebrow: "Roofing",
     h1: "Storm weeks punish roofing websites that only work on calm Tuesdays.",
     intro:
-      "Roofing demand spikes with weather, and buyers choose fast between call and quote. ScaleSmiths designs trades journeys that keep emergency contact obvious, project proof visible, and lead qualification honest — without inventing local offices you do not have.",
+      "Roofing demand spikes with weather, and buyers choose quickly between a call and a quote. ScaleSmiths designs journeys that keep emergency contact obvious, project proof visible, and the enquiry useful enough to price.",
     searchIntent:
       "For roofing companies losing high-intent local enquiries because the site is slow on mobile, light on proof, or unclear about emergency versus planned work.",
     buyer: "Roofing owners and office staff handling emergency call-outs and planned reroof quotes.",
@@ -253,7 +253,7 @@ export const industryPages: Record<string, IndustryPage> = {
     eyebrow: "Electricians",
     h1: "Electrical buyers need competence signals, not a clever slogan.",
     intro:
-      "Domestic fault calls, EV charger installs and commercial maintenance are different buying journeys. ScaleSmiths helps electrical businesses present services, credentials they can actually claim, and contact routes that match urgency — without inventing certifications.",
+      "Domestic fault calls, EV charger installs and commercial maintenance are different buying journeys. ScaleSmiths helps electrical businesses present the services they offer, the qualifications and insurance they hold, and a contact route that matches the urgency.",
     searchIntent:
       "For electricians and electrical contractors whose website under-explains services, buries credentials, or loses mobile callers before a booking is made.",
     buyer: "Owner-electricians and contracting firms balancing emergency, domestic and commercial work.",
@@ -271,7 +271,7 @@ export const industryPages: Record<string, IndustryPage> = {
       {
         title: "Credential anxiety",
         symptom: "Buyers look for competence signals; the site either hides them or overclaims.",
-        fix: "Publish only verifiable memberships and insurance details the business can stand behind.",
+        fix: "Show the memberships and insurance the business already holds, in the language a buyer uses to judge competence.",
       },
       {
         title: "Emergency path buried",
@@ -281,7 +281,7 @@ export const industryPages: Record<string, IndustryPage> = {
     ],
     strategy: [
       { title: "Service packaging", description: "Group offers the way customers search: faults, upgrades, EV, testing, commercial." },
-      { title: "Trust without inventing badges", description: "Show real credentials; never fabricate scheme logos." },
+      { title: "Credentials you can stand behind", description: "Show the qualifications, memberships and insurance the business already holds." },
       { title: "Enquiry quality", description: "Capture property type, urgency and job class before the callback." },
     ],
     journey: [
@@ -300,10 +300,10 @@ export const industryPages: Record<string, IndustryPage> = {
       workSlug: "precision-finish-plastering-rendering",
       label: "Adjacent trades proof",
       summary:
-        "No electrician-only case study is published yet. Precision Finish shows the local trades pattern we apply: clear services, coverage and quote capture. Labelled adjacent on purpose.",
+        "Precision Finish is completed local trades work: clear services, coverage and quote capture. It shows the pattern we use for trades. It is not an electrician case study.",
     },
     faqs: [
-      { q: "Will you list our accreditations automatically?", a: "We only publish credentials you confirm and can evidence. We do not scrape or invent scheme memberships." },
+      { q: "Will you list our accreditations automatically?", a: "We publish the accreditations you confirm and can show. A scheme membership is listed only when it is yours." },
       { q: "Can you integrate online booking?", a: "Yes when scoped. Many electrical firms prefer call or callback for faults; booking suits planned work better." },
       { q: "Do you work outside the UK?", a: "Yes where delivery is viable. We are UK-based; international work is quoted for location, timezone and scope." },
     ],
@@ -355,7 +355,7 @@ export const industryPages: Record<string, IndustryPage> = {
       {
         title: "Clinical overclaim risk",
         symptom: "Marketing copy drifts into outcome promises the clinic should not publish casually.",
-        fix: "Editorial review discipline: no invented results; clinical content reviewed by the practice.",
+        fix: "Treatment claims stay within what the clinic is prepared to say, and a clinician reviews that content before it is published.",
       },
     ],
     strategy: [
@@ -676,7 +676,7 @@ export const industryPages: Record<string, IndustryPage> = {
       },
     ],
     strategy: [
-      { title: "Verified capability", description: "Publish only specs and certifications the firm confirms." },
+      { title: "Verified capability", description: "List the specifications and certifications the firm confirms." },
       { title: "RFQ quality", description: "Make serious buyers successful; politely filter incomplete requests." },
       { title: "Long-cycle nurturing", description: "Content and follow-up that survive multi-stakeholder decisions." },
     ],
@@ -876,7 +876,7 @@ export const industryPages: Record<string, IndustryPage> = {
     eyebrow: "Accountants",
     h1: "Prospective clients compare process and responsiveness before they compare fees.",
     intro:
-      "Accountancy buyers look for fit: personal vs limited company, sector experience, and how onboarding works. ScaleSmiths helps firms explain services and capture qualified enquiries — without crossing professional advertising rules we are not authorised to interpret for every jurisdiction.",
+      "Accountancy buyers look for fit: personal or limited company work, sector experience, and how onboarding works. ScaleSmiths helps firms explain their services and attract enquiries that match the clients they want. Professional advertising rules are reviewed with the practice before anything is published.",
     searchIntent:
       "For accountancy partners whose website under-explains services, attracts poor-fit enquiries, or makes onboarding expectations unclear.",
     buyer: "Partners and practice managers in accountancy and bookkeeping firms.",
@@ -904,7 +904,7 @@ export const industryPages: Record<string, IndustryPage> = {
       {
         title: "Compliance advertising risk",
         symptom: "Marketing claims drift into regulated territory without review.",
-        fix: "Conservative copy and professional-body review where required — we do not invent legal clearance.",
+        fix: "Keep the copy inside the advertising rules your professional body sets, and ask the practice to review it before it goes live.",
       },
     ],
     strategy: [

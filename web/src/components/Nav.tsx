@@ -4,7 +4,8 @@ import { useEffect, useId, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { AnimatePresence, m, useReducedMotion } from "motion/react"
+import { AnimatePresence, m } from "motion/react"
+import { usePrefersReducedMotion } from "@/lib/use-reduced-motion"
 import { ArrowUpRight, ChevronDown, LogIn, Menu, X } from "lucide-react"
 import { Logo } from "./Logo"
 import { cn } from "@/lib/utils"
@@ -25,6 +26,7 @@ const serviceLinks = [
   { href: "/digital-growth-partnership", label: "Growth Partnership", description: "Ongoing, prioritised improvement after launch." },
   { href: "/services/business-growth-audit", label: "Business Growth Audit", description: "A prioritised roadmap before committing to a build." },
   { href: "/services/managed-business-email", label: "Managed Business Email", description: "Custom-domain mailboxes, configured and supported." },
+  { href: "/pricing", label: "Pricing", description: "Published starting points, and how larger work is scoped." },
 ]
 
 const links = [
@@ -41,7 +43,7 @@ export function Nav() {
   const [servicesOpen, setServicesOpen] = useState(false)
   const [portalReady, setPortalReady] = useState(false)
   const pathname = usePathname()
-  const reducedMotion = useReducedMotion()
+  const reducedMotion = usePrefersReducedMotion()
   const toggleRef = useRef<HTMLButtonElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const servicesRef = useRef<HTMLDivElement>(null)

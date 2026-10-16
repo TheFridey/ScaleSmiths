@@ -1,6 +1,7 @@
 "use client"
 
-import { m as motion, useReducedMotion } from "motion/react"
+import { m as motion } from "motion/react"
+import { usePrefersReducedMotion } from "@/lib/use-reduced-motion"
 import { AlertCircle, BarChart3, CalendarDays, CheckCircle2, ClipboardCheck, MailCheck, MessageSquarePlus, Search, Star, Workflow } from "lucide-react"
 import type { V2Industry } from "@/lib/v2/scenes"
 import { getIndustryContent } from "@/lib/v2/industryContent"
@@ -22,7 +23,7 @@ const moduleIcons: Record<V2IndustryModuleLabel, typeof MessageSquarePlus> = {
 }
 
 export function BusinessSimulationLayer({ industry }: BusinessSimulationLayerProps) {
-  const reducedMotion = useReducedMotion()
+  const reducedMotion = usePrefersReducedMotion()
   const content = getIndustryContent(industry)
 
   const containerTransition = reducedMotion ? { duration: 0 } : { staggerChildren: 0.08, delayChildren: 0.08 }

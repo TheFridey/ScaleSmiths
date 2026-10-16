@@ -2,7 +2,8 @@
 
 import type { FormEvent, ReactNode } from "react"
 import { useMemo, useRef, useState } from "react"
-import { m as motion, useReducedMotion } from "motion/react"
+import { m as motion } from "motion/react"
+import { usePrefersReducedMotion } from "@/lib/use-reduced-motion"
 import { CheckCircle2, ClipboardList, MailCheck, Send, Sparkles } from "lucide-react"
 import { trackExperienceEvent } from "@/lib/experience-analytics-client"
 import { EnquiryConsent } from "@/components/EnquiryConsent"
@@ -136,7 +137,7 @@ export function V2ConversionLayer({ industry }: V2ConversionLayerProps) {
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const formRef = useRef<HTMLFormElement | null>(null)
-  const reducedMotion = useReducedMotion()
+  const reducedMotion = usePrefersReducedMotion()
 
   const journeyContent = getIndustryContent(selectedIndustry)
   const formContent = getIndustryContent(formData.industry)

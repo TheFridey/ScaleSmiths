@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect, useId, useRef, useState } from "react"
-import { AnimatePresence, m, useReducedMotion } from "motion/react"
+import { AnimatePresence, m } from "motion/react"
+import { usePrefersReducedMotion } from "@/lib/use-reduced-motion"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, ArrowRight, Check } from "lucide-react"
 import { PageBreadcrumbs } from "@/components/Breadcrumbs"
@@ -42,7 +43,7 @@ export function QuoteBriefWizard() {
   const errorId = useId()
   const errorRef = useRef<HTMLDivElement>(null)
   const submissionInFlight = useRef(false)
-  const reducedMotion = useReducedMotion()
+  const reducedMotion = usePrefersReducedMotion()
   const router = useRouter()
 
   useEffect(() => {
@@ -206,7 +207,7 @@ export function QuoteBriefWizard() {
       })
       const result = await response.json()
       if (!response.ok || !result.ok) throw new Error(result.error || "Unable to submit your brief.")
-      trackExperienceEvent("quote_form_submitted", { metadata: { source: "standard_quote", intent } })
+      trackExperienceEvent("quote_form_submitted", { metadata: { source: "standard_quote", funnelType: intent || "website_project" } })
       window.sessionStorage.removeItem(STORAGE_KEY)
       router.push(`/quote/thanks?intent=${encodeURIComponent(intent)}`)
     } catch (caught) {

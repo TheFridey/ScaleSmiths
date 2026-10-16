@@ -1,13 +1,14 @@
 "use client"
 import { useState } from "react"
 import Link from "next/link"
-import { AnimatePresence, m, useReducedMotion } from "motion/react"
+import { AnimatePresence, m } from "motion/react"
+import { usePrefersReducedMotion } from "@/lib/use-reduced-motion"
 import { ArrowRight } from "lucide-react"
 import { AnimateIn } from "./AnimateIn"
 
 export function FAQ({ items }: { items: Array<{ q: string; a: string }> }) {
   const [open, setOpen] = useState<number | null>(null)
-  const reducedMotion = useReducedMotion()
+  const reducedMotion = usePrefersReducedMotion()
   return (
     <section aria-label="Frequently asked questions" className="px-6 md:px-12 py-20">
       <div className="max-w-[1240px] mx-auto">

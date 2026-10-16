@@ -1,9 +1,9 @@
 import type { Metadata, MetadataRoute } from "next"
 
-export const LEGAL_VERSION = "2.2"
+export const LEGAL_VERSION = "2.3"
 export const LEGAL_EFFECTIVE_DATE = "25 August 2026"
-export const LEGAL_LAST_UPDATED = "25 August 2026"
-export const LEGAL_LAST_MODIFIED_ISO = "2026-08-25T00:00:00.000Z"
+export const LEGAL_LAST_UPDATED = "16 October 2026"
+export const LEGAL_LAST_MODIFIED_ISO = "2026-10-16T00:00:00.000Z"
 
 export const legalEntity = {
   // Company and ICO identity checked against the public registers on 16 October 2026.
@@ -38,6 +38,8 @@ export const LEGAL_DECISIONS_REQUIRED = [
   "Record Resend processing region and DPA status.",
   "Confirm the Managed Business Email infrastructure and backup subprocessors.",
 ] as const
+
+// Internal decision register. This is deliberately not rendered by any public route.
 
 export const PRIVACY_CONTACT_EMAIL = legalEntity.privacyEmail
 export const ENQUIRY_CONSENT_COPY = "I agree that ScaleSmiths may store the information I submit and contact me about my enquiry."

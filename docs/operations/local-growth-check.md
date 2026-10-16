@@ -4,16 +4,9 @@
 
 ## Data and security path
 
-The page submits to `/api/quote` and therefore reuses the existing body-size limit, explicit enquiry consent, honeypot, persistent hashed IP/email rate limits, generic public errors, PostgreSQL persistence, lead scoring, email-status tracking, monitoring, and fail-open Resend behaviour. It does not create a separate lead store.
+The page does not submit its own lead. Its calls to action open the Business Growth Audit intake with `source=local_growth_check`, or a strategy call. That intake submits to `/api/quote` and therefore reuses the existing body-size limit, explicit enquiry consent, honeypot, persistent hashed IP/email rate limits, generic public errors, PostgreSQL persistence, lead scoring, email-status tracking, monitoring, and fail-open Resend behaviour. It does not create a separate lead store.
 
-The server recognises the funnel only from `funnelType=local_growth_check`, validates the short required field set, validates optional public HTTP(S) URLs and phone syntax, and then sets these authoritative values:
-
-- `lead_source=local_growth_check`
-- `funnel_type=local_growth_check`
-- `enquiry_intent=local_growth_check`
-- `project_type=Local Growth Check`
-
-Client-supplied source labels cannot turn an incomplete full-quote payload into a local-growth submission. The admin Messages view shows the source, funnel, phone and requested next step.
+The audit submission is stored as `lead_source=business_growth_audit`, `funnel_type=business_growth_audit` and `enquiry_intent=business_growth_audit`. The enquiry also records the form page, the referring page when the browser supplies it, and any campaign labels. A visitor who starts on `/local-growth-check` is therefore visible as a referrer or landing page on the audit lead. Client-supplied source labels cannot turn an incomplete full-quote payload into an audit submission. The admin Messages view shows the source, funnel, acquisition fields, phone and requested next step.
 
 ## Notifications and analytics
 

@@ -4,6 +4,7 @@ import { MotionProvider } from "@/components/MotionProvider"
 import { SiteChrome } from "@/components/SiteChrome"
 import { WebVitalsReporter } from "@/components/WebVitalsReporter"
 import { CookiePreferences } from "@/components/CookiePreferences"
+import { EnquiryAttributionCapture } from "@/components/EnquiryAttributionCapture"
 import { GoogleAnalytics } from "@/components/GoogleAnalytics"
 import { JsonLd } from "@/components/JsonLd"
 import { siteBaseUrl } from "@/lib/site-identity"
@@ -87,6 +88,7 @@ export default function RootLayout({
       </head>
       <body className="bg-bg text-t1 font-dm antialiased">
         <GoogleAnalytics />
+        <EnquiryAttributionCapture />
         <WebVitalsReporter />
         <MotionProvider>
           <SiteChrome>{children}</SiteChrome>

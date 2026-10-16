@@ -28,7 +28,7 @@ async function prepare(page) {
     window.localStorage.setItem("scalesmiths.experience", "normal")
     window.localStorage.setItem("scalesmiths.e2e.disableCanvas", "true")
     document.cookie = "ss_cookie_consent=" + encodeURIComponent(JSON.stringify({
-      version: "3.0",
+      version: "3.1",
       decidedAt: new Date().toISOString(),
       functional: true,
       analytics: false,

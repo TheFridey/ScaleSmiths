@@ -23,6 +23,13 @@ interface Lead {
   leadSource: string
   funnelType: string
   phone: string | null
+  acquisitionLandingPath: string | null
+  acquisitionSubmissionPath: string | null
+  acquisitionReferrerHost: string | null
+  acquisitionReferrerPath: string | null
+  acquisitionUtmSource: string | null
+  acquisitionUtmMedium: string | null
+  acquisitionUtmCampaign: string | null
   leadQuality: string
   emailDeliveryStatus: string
   emailFailureReason: string | null
@@ -95,6 +102,10 @@ export function Messages({ leads }: { leads: Lead[] }) {
                       ["Phone", lead.phone ?? "Not provided"],
                       ["Lead source", lead.leadSource.replaceAll("_", " ")],
                       ["Funnel", lead.funnelType.replaceAll("_", " ")],
+                      ["Submitted from", lead.acquisitionSubmissionPath ?? "Not recorded"],
+                      ["Landed on", lead.acquisitionLandingPath ?? "Not recorded"],
+                      ["Referrer", [lead.acquisitionReferrerHost, lead.acquisitionReferrerPath].filter(Boolean).join(" ") || "Not recorded"],
+                      ["Campaign", [lead.acquisitionUtmSource, lead.acquisitionUtmMedium, lead.acquisitionUtmCampaign].filter(Boolean).join(" / ") || "Not recorded"],
                       ["Website", lead.websiteUrl ?? "Not provided"],
                       ["Care plan", lead.carePlanInterest ?? "Not provided"],
                       ["Preferred contact", lead.preferredContactMethod ?? "Not provided"],

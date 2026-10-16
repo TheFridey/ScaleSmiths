@@ -6,6 +6,9 @@ import { m as motion } from "motion/react"
 import { usePrefersReducedMotion } from "@/lib/use-reduced-motion"
 import { CheckCircle2, ClipboardList, MailCheck, Send, Sparkles } from "lucide-react"
 import { trackExperienceEvent } from "@/lib/experience-analytics-client"
+import { readEnquiryAttribution } from "@/lib/enquiry-attribution-client"
+import { trackEnquiryAnalytics } from "@/lib/enquiry-analytics-client"
+import { publicProjectBudgetOptions } from "@/lib/published-starting-prices"
 import { EnquiryConsent } from "@/components/EnquiryConsent"
 import type { V2Industry } from "@/lib/v2/scenes"
 import { getIndustryContent, industryContent } from "@/lib/v2/industryContent"
@@ -48,13 +51,7 @@ const recommendedSystem = [
   "Analytics dashboard",
 ]
 
-const budgetRanges = [
-  "GBP 4,500-6,500",
-  "GBP 8,000-15,000",
-  "GBP 18,000-35,000+",
-  "Growth Partnership",
-  "Not sure yet",
-]
+const budgetRanges = [...publicProjectBudgetOptions]
 
 const timelines = [
   "ASAP, if the fit is right",
@@ -135,6 +132,8 @@ export function V2ConversionLayer({ industry }: V2ConversionLayerProps) {
   const [intent, setIntent] = useState<ConversionIntent>("strategy_call")
   const [error, setError] = useState("")
   const [submitting, setSubmitting] = useState(false)
+  const submissionInFlight = useRef(false)
+  const analyticsStarted = useRef(false)
   const [submitted, setSubmitted] = useState(false)
   const formRef = useRef<HTMLFormElement | null>(null)
   const reducedMotion = usePrefersReducedMotion()
@@ -145,6 +144,10 @@ export function V2ConversionLayer({ industry }: V2ConversionLayerProps) {
 
   function updateField<Key extends keyof ConversionFormData>(key: Key, value: ConversionFormData[Key]) {
     setError("")
+    if (!analyticsStarted.current) {
+      analyticsStarted.current = true
+      trackEnquiryAnalytics("start", { intent, funnelType: "interactive_v2" })
+    }
     trackExperienceEvent("quote_form_started", { preference: "interactive", metadata: { source: "interactive_conversion", step: key } })
     setFormData((current) => ({ ...current, [key]: value }))
   }
@@ -175,6 +178,8 @@ export function V2ConversionLayer({ industry }: V2ConversionLayerProps) {
       setError(validationError)
       return
     }
+    if (submissionInFlight.current) return
+    submissionInFlight.current = true
 
     setSubmitting(true)
     setError("")
@@ -210,6 +215,7 @@ export function V2ConversionLayer({ industry }: V2ConversionLayerProps) {
             workflow: journeyContent.simulatedWorkflow,
           }),
           website: formData.website,
+          attribution: readEnquiryAttribution(),
         }),
       })
       const json = await response.json()
@@ -218,12 +224,14 @@ export function V2ConversionLayer({ industry }: V2ConversionLayerProps) {
         throw new Error(json.error || "Unable to send this plan right now.")
       }
 
+      trackEnquiryAnalytics("complete", { intent, funnelType: "interactive_v2" })
       trackExperienceEvent("quote_form_submitted", { preference: "interactive", metadata: { source: "interactive_conversion", intent } })
       setSubmitted(true)
     } catch (err) {
       trackExperienceEvent("experience_error", { preference: "interactive", errorCategory: "quote_submission", metadata: { source: "interactive_conversion", intent } })
       setError(err instanceof Error ? err.message : "Unable to send this plan right now.")
     } finally {
+      submissionInFlight.current = false
       setSubmitting(false)
     }
   }

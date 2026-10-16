@@ -550,6 +550,12 @@
       "reason": "Adds additive client_record_id mapping from existing portal text IDs onto canonical clients.id, with a fill trigger so current insert paths remain valid."
     },
     {
+      "path": "web/drizzle/0022_quote_acquisition.sql",
+      "sha256": "a65a6f001455a8e125e4d91740f8f31f808195f33eacbcaf87d0b4052a40508d",
+      "lifecycle": "forward",
+      "reason": "Adds nullable acquisition columns on quote_requests so each enquiry records its page, referrer and campaign without a separate lead store."
+    },
+    {
       "path": "admin/drizzle/0060_tenant_rls_prototype.sql",
       "sha256": "0b3caa59fd32379b8499f4f5bfe3678acce53da4b33656789eeed1cf1800e268",
       "lifecycle": "forward",
@@ -666,6 +672,13 @@
           "version": "7",
           "when": 1788537600000,
           "tag": "0021_tenant_identity_mapping",
+          "breakpoints": true
+        },
+        {
+          "idx": 22,
+          "version": "7",
+          "when": 1788624000000,
+          "tag": "0022_quote_acquisition",
           "breakpoints": true
         }
       ]

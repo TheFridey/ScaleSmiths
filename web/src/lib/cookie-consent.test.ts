@@ -15,6 +15,7 @@ describe("cookie consent", () => {
   it("documents only evidenced storage", () => {
     expect(storageInventory.some((item) => item.name === "ss-client-session")).toBe(true)
     expect(storageInventory.some((item) => item.provider === "Google Analytics" && item.category === "Analytics" && item.consent === "Yes")).toBe(true)
+    expect(storageInventory.some((item) => item.name === "scalesmiths.enquiry.attribution" && item.category === "Strictly necessary" && item.consent.startsWith("No"))).toBe(true)
     expect(JSON.stringify(storageInventory)).not.toMatch(/meta pixel|tiktok/i)
   })
 })

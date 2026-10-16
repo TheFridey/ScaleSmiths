@@ -36,7 +36,7 @@ test.describe("public experience SEO routing", () => {
 
       expect(response.status()).toBe(200)
       expect(html).toContain('aria-label="FORGE YOUR"')
-      expect(html).toContain("Find what is holding growth back")
+      expect(html).toContain("More customers. Less wasted time.")
       expect(html).not.toContain("What experience would you like today?")
       expect(html).toContain("Launch the Project Planner")
       expect(response.headers()["cache-control"]).toMatch(/no-store/i)
@@ -92,7 +92,8 @@ test.describe("public experience SEO routing", () => {
     expect(paths).not.toContain("/traditional")
     expect(paths.filter((path) => path === "/")).toHaveLength(1)
     expect(new Set(locations).size).toBe(locations.length)
-    expect(xml).toContain("2026-08-25T00:00:00.000Z")
+    expect(xml).toContain("2026-09-23T00:00:00.000Z")
+    expect(xml).toContain("2026-10-16T00:00:00.000Z")
   })
 
   test("fails closed when commercial claims have no verified public evidence", async ({ page }) => {
@@ -376,7 +377,7 @@ test.describe("quote and contact forms", () => {
     await page.getByLabel(/main business goal/i).fill("Improve qualified enquiries.")
     await page.getByRole("checkbox", { name: /^analytics$/i }).check()
     await page.getByRole("button", { name: /continue/i }).click()
-    await page.getByRole("radio", { name: /GBP 8,000-15,000/i }).check()
+    await page.getByRole("radio", { name: /Website from £2,000/i }).check()
     await page.getByRole("radio", { name: /4-6 weeks/i }).check()
     await page.getByRole("radio", { name: /^maybe$/i }).check()
     await page.getByRole("radio", { name: /^email$/i }).check()
@@ -416,7 +417,7 @@ test.describe("quote and contact forms", () => {
     await page.getByLabel(/business name/i).fill("Riley Builds")
     await page.getByLabel(/^email/i).fill("riley@example.com")
     await page.getByLabel(/what do you want the website to do/i).fill("Win better enquiries and reduce manual follow-up.")
-    await page.getByLabel(/budget range/i).selectOption({ label: "GBP 8,000-15,000" })
+    await page.getByLabel(/budget range/i).selectOption({ label: "Website from £2,000" })
     await page.getByLabel(/timeline/i).selectOption({ label: "4-6 weeks" })
     await page.getByLabel(/store the information i submit/i).check()
     await page.locator("form").getByRole("button", { name: /request a strategy call/i }).click()
@@ -437,7 +438,7 @@ test.describe("quote and contact forms", () => {
     await page.getByLabel(/business name/i).fill("Riley Builds")
     await page.getByLabel(/^email/i).fill("riley@example.com")
     await page.getByLabel(/what do you want the website to do/i).fill("Win better enquiries and reduce manual follow-up.")
-    await page.getByLabel(/budget range/i).selectOption({ label: "GBP 8,000-15,000" })
+    await page.getByLabel(/budget range/i).selectOption({ label: "Website from £2,000" })
     await page.getByLabel(/timeline/i).selectOption({ label: "4-6 weeks" })
     await page.locator("form").getByRole("button", { name: /request a strategy call/i }).click()
 

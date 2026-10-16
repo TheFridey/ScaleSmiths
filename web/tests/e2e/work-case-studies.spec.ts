@@ -43,7 +43,7 @@ test.describe("work portfolio", () => {
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Glow Tanning")
     await expect(page.getByRole("navigation", { name: /breadcrumb/i }).getByRole("link", { name: "Work" })).toHaveAttribute("href", "/work")
     await expect(page.getByRole("heading", { name: /who glow tanning are/i })).toBeVisible()
-    await expect(page.getByRole("heading", { name: /what scalesmiths built/i })).toBeVisible()
+    await expect(page.getByRole("heading", { name: /what scalesmiths delivered/i })).toBeVisible()
     await expect(page.getByRole("region", { name: /services and work behind this project/i }).getByRole("link", { name: /local growth/i })).toHaveAttribute("href", "/local-growth")
 
     // No invented results, quotes or live links.

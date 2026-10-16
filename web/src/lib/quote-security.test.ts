@@ -134,6 +134,47 @@ describe("quote security", () => {
     expect(result.ok).toBe(false)
   })
 
+  it("persists a sanitised acquisition record and ignores a forged lead source", () => {
+    const result = validateQuotePayload({
+      name: "Alex Local",
+      email: "alex@example.com",
+      biz: "Alex Plumbing",
+      businessType: "Local service business",
+      type: "Conversion Website",
+      budget: "Website from £2,000",
+      timeframe: "4-6 weeks",
+      goal: "We need clearer local enquiries from the website.",
+      preferredContactMethod: "Email",
+      consent: true,
+      brief: "The current site does not explain the next step.",
+      leadSource: "forged-channel",
+      attribution: {
+        landingPath: "/pricing?email=person@example.com",
+        submissionPath: "/quote",
+        referrerHost: "www.google.com",
+        referrerPath: "/search?q=secret",
+        utmSource: "google",
+        utmMedium: "organic",
+        utmCampaign: "pricing",
+      },
+    })
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.data.leadSource).toBe("public_quote")
+    expect(result.data.funnelType).toBe("full_quote")
+    expect(quoteInsertValues(result.data)).toMatchObject({
+      acquisitionLandingPath: "/pricing",
+      acquisitionSubmissionPath: "/quote",
+      acquisitionReferrerHost: "www.google.com",
+      acquisitionReferrerPath: null,
+      acquisitionUtmSource: "google",
+      acquisitionUtmMedium: "organic",
+      acquisitionUtmCampaign: "pricing",
+    })
+    expect(JSON.stringify(quoteInsertValues(result.data))).not.toContain("person@example.com")
+  })
+
   it("does not let a lead-source field bypass the full quote requirements", () => {
     const result = validateQuotePayload({
       name: "Alex Local",

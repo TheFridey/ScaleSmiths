@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: validation.error }, { status: validation.status })
     }
 
-    const { name, email, biz, websiteUrl, businessType, type, budget, timeframe, goal, needs, carePlanInterest, preferredContactMethod, intent, leadSource, funnelType, phone, brief, website } = validation.data
+    const { name, email, biz, websiteUrl, businessType, type, budget, timeframe, goal, needs, carePlanInterest, preferredContactMethod, intent, leadSource, funnelType, phone, brief, website, attribution } = validation.data
     if (isHoneypotSubmission({ website })) {
       return NextResponse.json({ ok: true })
     }
@@ -148,6 +148,10 @@ export async function POST(request: NextRequest) {
             ${field("Requested Next Step", intent.replaceAll("_", " "))}
             ${field("Lead Source", leadSource)}
             ${field("Funnel Type", funnelType)}
+            ${field("Submitted from", attribution.submissionPath ?? "")}
+            ${field("Landed on", attribution.landingPath ?? "")}
+            ${field("Referrer", [attribution.referrerHost, attribution.referrerPath].filter(Boolean).join(" "))}
+            ${field("Campaign", [attribution.utmSource, attribution.utmMedium, attribution.utmCampaign].filter(Boolean).join(" / "))}
           </table>
           <div style="padding:24px 26px;">
             <div style="color:#8f8f8f;font-size:12px;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;">Brief</div>

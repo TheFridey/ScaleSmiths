@@ -47,7 +47,7 @@ erDiagram
 
 | Table | Purpose | Ownership notes |
 | --- | --- | --- |
-| `quote_requests` | Quote and local-growth leads, source/funnel, requested intent, optional phone, qualification fields, consent, delivery state, status | Written by web; read/managed by admin |
+| `quote_requests` | Quote and local-growth leads, source/funnel, requested intent, optional phone, qualification fields, consent, delivery state, status, and the page, referrer and campaign recorded with the enquiry | Written by web; read/managed by admin |
 | `quote_rate_limits` | Persistent quote throttle | Declared only by web |
 | `portal_client_accounts` | Portal client ID, email, bcrypt hash, active state | Declared only by web |
 | `login_rate_limits` | Persistent login throttles | Declared by both apps |

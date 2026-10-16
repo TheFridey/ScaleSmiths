@@ -17,7 +17,7 @@ export async function generateMetadata({
     return buildPageMetadata({
       title: ENQUIRY_INTENTS[intent],
       description: "Tell ScaleSmiths what you are trying to solve. The founders review every request and reply with a sensible next step.",
-      path: `/quote?intent=${intent}`,
+      path: "/quote",
     })
   }
 

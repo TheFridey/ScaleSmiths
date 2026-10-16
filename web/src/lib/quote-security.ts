@@ -2,6 +2,7 @@ import { createHash } from "crypto"
 import type { NextRequest } from "next/server"
 import { resolveClientIp } from "./client-ip"
 import { parseEnquiryIntent, type EnquiryIntent } from "./enquiry-intents"
+import { sanitizeEnquiryAttribution, type EnquiryAttribution } from "./enquiry-attribution"
 
 export const QUOTE_BODY_LIMIT_BYTES = 16 * 1024
 export const QUOTE_RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000
@@ -30,6 +31,7 @@ export interface QuotePayload {
   consent?: unknown
   brief?: unknown
   website?: unknown
+  attribution?: unknown
 }
 
 export interface ValidQuotePayload {
@@ -52,6 +54,7 @@ export interface ValidQuotePayload {
   consent: boolean
   brief: string
   website: string
+  attribution: EnquiryAttribution
 }
 
 export function quoteInsertValues(data: ValidQuotePayload) {
@@ -75,6 +78,13 @@ export function quoteInsertValues(data: ValidQuotePayload) {
     consent: data.consent,
     leadQuality: scoreLeadQuality(data),
     brief: data.brief,
+    acquisitionLandingPath: data.attribution.landingPath,
+    acquisitionSubmissionPath: data.attribution.submissionPath,
+    acquisitionReferrerHost: data.attribution.referrerHost,
+    acquisitionReferrerPath: data.attribution.referrerPath,
+    acquisitionUtmSource: data.attribution.utmSource,
+    acquisitionUtmMedium: data.attribution.utmMedium,
+    acquisitionUtmCampaign: data.attribution.utmCampaign,
   }
 }
 
@@ -221,6 +231,7 @@ export function validateQuotePayload(payload: QuotePayload): QuoteValidationResu
     consent: payload.consent === true,
     brief: cleanString(payload.brief, 5000),
     website: cleanString(payload.website, 200),
+    attribution: sanitizeEnquiryAttribution(payload.attribution),
   }
 
   const missingRequired = businessAudit
@@ -273,7 +284,8 @@ export function scoreLeadQuality(payload: ValidQuotePayload): LeadQuality {
 
   let score = 0
 
-  if (payload.budget.includes("18,000") || payload.budget.includes("8,000")) score += 2
+  if (payload.budget.includes("18,000") || payload.budget.includes("8,000") || payload.budget.includes("Larger build")) score += 2
+  if (payload.budget.includes("£2,000") || payload.budget.includes("£350")) score += 1
   if (!payload.budget.includes("Not sure")) score += 1
   if (payload.timeframe.includes("ASAP") || payload.timeframe.includes("4-6") || payload.timeframe.includes("8-12")) score += 1
   if (payload.needs.includes("Custom Functionality") || payload.needs.includes("Payments") || payload.needs.includes("Growth Partnership") || payload.needs.includes("Digital Growth Partnership") || payload.needs.includes("Care Plan")) score += 1

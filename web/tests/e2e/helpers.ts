@@ -139,7 +139,7 @@ export async function submitQuoteWizard(page: Page, quotePath = "/quote") {
   await page.getByLabel(/main business goal/i).fill("Book better qualified enquiries from local search.")
   await page.getByRole("checkbox", { name: /^seo$/i }).check()
   await page.getByRole("button", { name: /continue/i }).click()
-  await page.getByRole("radio", { name: /gbp 8,000-15,000/i }).click()
+  await page.getByRole("radio", { name: /website from £2,000/i }).click()
   await page.getByRole("radio", { name: /4-6 weeks/i }).click()
   await page.getByRole("radio", { name: /^maybe$/i }).click()
   await page.getByRole("radio", { name: /^email$/i }).click()

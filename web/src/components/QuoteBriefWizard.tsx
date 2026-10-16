@@ -18,13 +18,16 @@ import {
   parseIndustryAttribution,
 } from "@/lib/industries/attribution"
 import { motionDistances, motionDurations, motionTransitions } from "@/lib/motion"
+import { readEnquiryAttribution } from "@/lib/enquiry-attribution-client"
+import { trackEnquiryAnalytics } from "@/lib/enquiry-analytics-client"
+import { publicProjectBudgetOptions } from "@/lib/published-starting-prices"
 
 const STORAGE_KEY = "scalesmiths.quote.draft.v2"
 const STAGES = ["About You", "What Needs Changing", "Commercial Fit", "Brief and Consent"] as const
 const BUSINESS_TYPES = ["Local service business", "E-commerce brand", "SaaS / platform", "Professional services", "Community / membership", "Other"]
 const PROJECT_TYPES = ["Conversion Website", "Website Redesign", "E-Commerce", "Custom Web App", "SEO / Local Growth", "Growth Partnership"]
 const NEEDS = ["SEO", "Hosting", "Growth Partnership", "Custom Functionality", "Payments", "Client Portal", "Analytics", "Not sure"]
-const BUDGETS = ["GBP 4,500-6,500", "GBP 8,000-15,000", "GBP 18,000-35,000+", "Ongoing Growth Partnership", "Not sure yet"]
+const BUDGETS = [...publicProjectBudgetOptions]
 const TIMEFRAMES = ["ASAP, if the fit is right", "4-6 weeks", "8-12 weeks", "This quarter", "Planning ahead"]
 const CARE = ["Yes", "Maybe", "No", "Not sure"]
 const CONTACT = ["Email", "Phone", "Video call", "No preference"]
@@ -43,6 +46,7 @@ export function QuoteBriefWizard() {
   const errorId = useId()
   const errorRef = useRef<HTMLDivElement>(null)
   const submissionInFlight = useRef(false)
+  const analyticsStarted = useRef(false)
   const reducedMotion = usePrefersReducedMotion()
   const router = useRouter()
 
@@ -60,6 +64,8 @@ export function QuoteBriefWizard() {
           : `${prefix}${saved?.data?.brief ?? ""}`
         if (attribution.pathway === "build") attributed.type = "Conversion Website"
         if (attribution.pathway === "growth") attributed.type = "Growth Partnership"
+        analyticsStarted.current = true
+        trackEnquiryAnalytics("start", { intent: enquiryIntentFromLocation(window.location.search), funnelType: "full_quote" })
         trackExperienceEvent("quote_form_started", {
           metadata: {
             source: "industry_page",
@@ -109,6 +115,10 @@ export function QuoteBriefWizard() {
     setError("")
     setInvalidField(null)
     setData((current) => ({ ...current, [key]: value }))
+    if (!analyticsStarted.current) {
+      analyticsStarted.current = true
+      trackEnquiryAnalytics("start", { intent: enquiryIntentFromLocation(window.location.search), funnelType: "full_quote" })
+    }
     trackExperienceEvent("quote_form_started", { metadata: { source: "standard_quote", step: key } })
   }
 
@@ -203,10 +213,12 @@ export function QuoteBriefWizard() {
           consent: data.consent === "true",
           brief: data.brief ?? "",
           website: data.website ?? "",
+          attribution: readEnquiryAttribution(),
         }),
       })
       const result = await response.json()
       if (!response.ok || !result.ok) throw new Error(result.error || "Unable to submit your brief.")
+      trackEnquiryAnalytics("complete", { intent, funnelType: "full_quote" })
       trackExperienceEvent("quote_form_submitted", { metadata: { source: "standard_quote", funnelType: intent || "website_project" } })
       window.sessionStorage.removeItem(STORAGE_KEY)
       router.push(`/quote/thanks?intent=${encodeURIComponent(intent)}`)

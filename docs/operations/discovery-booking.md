@@ -4,7 +4,7 @@ The public site supports an optional external discovery-call scheduler through `
 
 - With a valid HTTPS value, discovery CTAs say **Book a Discovery Call**, open the scheduler in a new tab, identify external navigation, and record a privacy-minimised `quote_cta_clicked` event with the intent and destination hostname.
 - With an empty, malformed, non-HTTPS, or credential-bearing value, discovery CTAs say **Request a Discovery Call** and open `/quote?intent=discovery_call`.
-- Quote, V2, and local-growth submissions persist a validated canonical intent on `quote_requests.enquiry_intent`. The accepted values are `quote`, `discovery_call`, `strategy_call`, `v2_demo`, `email_plan`, and the server-normalised `local_growth_check`; arbitrary full-quote client values fall back to `quote`.
+- Quote, V2, audit, email and enterprise submissions persist a validated canonical intent on `quote_requests.enquiry_intent`. The accepted values are `quote`, `discovery_call`, `strategy_call`, `v2_demo`, `email_plan`, `business_email`, `business_growth_audit` and `enterprise`. Arbitrary full-quote client values fall back to `quote`. Each persisted enquiry also stores the form page, referring host and campaign labels after server-side sanitising. `/local-growth-check` is a landing page that hands off to the audit form; it does not create a separate lead.
 
 Because this is a `NEXT_PUBLIC_` build-time value, update it before building the web image. Staging verification should cover both an unconfigured build and a build using an operator-controlled test scheduler. Confirm the link destination and accessible external-navigation label, then confirm the outbound analytics event without submitting personal data.
 

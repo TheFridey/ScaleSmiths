@@ -6,6 +6,8 @@ import { ArrowRight } from "lucide-react"
 import { EnquiryConsent } from "./EnquiryConsent"
 import Link from "next/link"
 import { LEGAL_VERSION } from "@/lib/legal"
+import { readEnquiryAttribution } from "@/lib/enquiry-attribution-client"
+import { trackEnquiryAnalytics } from "@/lib/enquiry-analytics-client"
 
 const providers = ["None", "Microsoft 365", "Google Workspace", "Existing hosting/email provider", "Other"]
 const domainProviders = ["Cloudflare", "GoDaddy", "IONOS", "123 Reg", "Namecheap", "Squarespace", "Other", "Not sure"]
@@ -38,9 +40,16 @@ export function BusinessEmailEnquiryForm() {
   const [error, setError] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const inFlight = useRef(false)
+  const analyticsStarted = useRef(false)
   const router = useRouter()
 
-  const update = (key: keyof FormState, value: string | boolean) => setForm((current) => ({ ...current, [key]: value }))
+  const update = (key: keyof FormState, value: string | boolean) => {
+    if (!analyticsStarted.current) {
+      analyticsStarted.current = true
+      trackEnquiryAnalytics("start", { intent: "business_email", funnelType: "business_email" })
+    }
+    setForm((current) => ({ ...current, [key]: value }))
+  }
 
   async function submit(event: FormEvent) {
     event.preventDefault()
@@ -77,11 +86,13 @@ export function BusinessEmailEnquiryForm() {
           funnelType: "business_email",
           intent: "business_email",
           consent: form.consent,
+          attribution: readEnquiryAttribution(),
           website: form.website,
         }),
       })
       const result = await response.json()
       if (!response.ok || !result.ok) throw new Error(result.error || "Unable to send your enquiry.")
+      trackEnquiryAnalytics("complete", { intent: "business_email", funnelType: "business_email" })
       router.push("/services/managed-business-email/thanks")
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Unable to send your enquiry.")

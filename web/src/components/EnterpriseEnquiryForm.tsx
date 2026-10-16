@@ -23,6 +23,8 @@ import {
   type EnterpriseEnquiryDraft,
 } from "@/lib/enterprise-enquiry"
 import { trackExperienceEvent } from "@/lib/experience-analytics-client"
+import { readEnquiryAttribution } from "@/lib/enquiry-attribution-client"
+import { trackEnquiryAnalytics } from "@/lib/enquiry-analytics-client"
 import { motionDistances, motionDurations, motionTransitions } from "@/lib/motion"
 
 export function EnterpriseEnquiryForm() {
@@ -80,6 +82,7 @@ export function EnterpriseEnquiryForm() {
   function markStarted() {
     if (started.current) return
     started.current = true
+    trackEnquiryAnalytics("start", { intent: "enterprise", funnelType: "enterprise" })
     trackExperienceEvent("quote_form_started", {
       metadata: { source: "enterprise_contact", step: "form_started", funnelType: "enterprise" },
     })
@@ -151,7 +154,7 @@ export function EnterpriseEnquiryForm() {
     submissionInFlight.current = true
     setSubmitting(true)
     try {
-      const payload = buildEnterpriseQuotePayload(draft)
+      const payload = { ...buildEnterpriseQuotePayload(draft), attribution: readEnquiryAttribution() }
       const response = await fetch("/api/quote", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -159,6 +162,7 @@ export function EnterpriseEnquiryForm() {
       })
       const result = (await response.json()) as { ok?: boolean; error?: string }
       if (!response.ok || !result.ok) throw new Error(result.error || "Unable to submit your enquiry.")
+      trackEnquiryAnalytics("complete", { intent: "enterprise", funnelType: "enterprise" })
       trackExperienceEvent("quote_form_submitted", {
         metadata: { source: "enterprise_contact", funnelType: "enterprise" },
       })

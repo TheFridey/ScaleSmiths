@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { resolveDiscoveryCallAction, validBookingUrl } from "./discovery-booking"
+import { resolveDiscoveryCallAction, validBookingUrl, withBookingAttribution } from "./discovery-booking"
 
 describe("discovery booking action", () => {
   it("uses a genuine HTTPS scheduler and Book wording when configured", () => {
@@ -19,6 +19,22 @@ describe("discovery booking action", () => {
       label: "Request a Discovery Call",
       external: false,
     })
+  })
+
+  it("labels an external scheduler with the ScaleSmiths page that sent the visitor", () => {
+    const href = withBookingAttribution("https://scheduler.example.test/discovery?team=scalesmiths", "local growth check")
+    const url = new URL(href)
+    expect(url.searchParams.get("team")).toBe("scalesmiths")
+    expect(url.searchParams.get("utm_source")).toBe("scalesmiths")
+    expect(url.searchParams.get("utm_medium")).toBe("referral")
+    expect(url.searchParams.get("utm_campaign")).toBe("discovery_call")
+    expect(url.searchParams.get("utm_content")).toBe("local-growth-check")
+  })
+
+  it("does not replace campaign labels the scheduler already owns", () => {
+    const href = withBookingAttribution("https://scheduler.example.test/discovery?utm_source=existing", "homepage")
+    expect(new URL(href).searchParams.get("utm_source")).toBe("existing")
+    expect(new URL(href).searchParams.get("utm_campaign")).toBe("discovery_call")
   })
 
   it.each([

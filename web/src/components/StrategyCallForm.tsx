@@ -6,6 +6,8 @@ import { ArrowRight } from "lucide-react"
 import { PageBreadcrumbs } from "@/components/Breadcrumbs"
 import { EnquiryConsent } from "@/components/EnquiryConsent"
 import { trackExperienceEvent } from "@/lib/experience-analytics-client"
+import { readEnquiryAttribution } from "@/lib/enquiry-attribution-client"
+import { trackEnquiryAnalytics } from "@/lib/enquiry-analytics-client"
 import type { EnquiryIntent } from "@/lib/enquiry-intents"
 import { ENQUIRY_INTENTS } from "@/lib/enquiry-intents"
 import {
@@ -68,6 +70,7 @@ export function StrategyCallForm({ intent = "strategy_call" }: StrategyCallFormP
   const [submitting, setSubmitting] = useState(false)
   const [attribution, setAttribution] = useState<IndustryAttribution | null>(null)
   const inFlight = useRef(false)
+  const analyticsStarted = useRef(false)
   const errorId = useId()
   const errorRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
@@ -87,6 +90,8 @@ export function StrategyCallForm({ intent = "strategy_call" }: StrategyCallFormP
         goal: current.goal || `Industry context: ${businessHint}. Pathway interest: ${parsed.pathway}.`,
       }))
     }
+    analyticsStarted.current = true
+    trackEnquiryAnalytics("start", { intent, funnelType: "full_quote" })
     trackExperienceEvent("quote_form_started", {
       metadata: {
         source: "industry_page",
@@ -102,6 +107,10 @@ export function StrategyCallForm({ intent = "strategy_call" }: StrategyCallFormP
     setError("")
     setInvalidField(null)
     setForm((current) => ({ ...current, [key]: value }))
+    if (!analyticsStarted.current) {
+      analyticsStarted.current = true
+      trackEnquiryAnalytics("start", { intent, funnelType: "full_quote" })
+    }
   }
 
   function toggleProblem(option: string) {
@@ -198,10 +207,12 @@ export function StrategyCallForm({ intent = "strategy_call" }: StrategyCallFormP
           consent: form.consent,
           brief,
           website: form.website,
+          attribution: readEnquiryAttribution(),
         }),
       })
       const result = await response.json()
       if (!response.ok || !result.ok) throw new Error(result.error || "Unable to send your request.")
+      trackEnquiryAnalytics("complete", { intent, funnelType: "full_quote" })
       trackExperienceEvent("quote_form_submitted", { metadata: { source: "strategy_call", funnelType: intent } })
       router.push(`/quote/thanks?intent=${encodeURIComponent(intent)}`)
     } catch (caught) {

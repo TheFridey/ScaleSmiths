@@ -2,7 +2,7 @@
 
 import Script from "next/script"
 import { useEffect } from "react"
-import { COOKIE_CONSENT_COOKIE, COOKIE_POLICY_VERSION, type CookiePreferences } from "@/lib/cookie-consent"
+import { COOKIE_CONSENT_COOKIE, COOKIE_POLICY_VERSION, COOKIE_PREFERENCES_CHANGED_EVENT, type CookiePreferences } from "@/lib/cookie-consent"
 
 /**
  * GA4 measurement ID. Configured through the environment so a different property can be used per
@@ -14,8 +14,6 @@ import { COOKIE_CONSENT_COOKIE, COOKIE_POLICY_VERSION, type CookiePreferences } 
  * renders nothing and no Google script is requested.
  */
 export const GOOGLE_ANALYTICS_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID ?? "G-24NM2GTZ0C"
-
-const PREFERENCES_CHANGED_EVENT = "scalesmiths:cookie-preferences-changed"
 
 type GoogleWindow = Window & {
   dataLayer?: unknown[][]
@@ -33,8 +31,8 @@ export function GoogleAnalytics() {
     applyAnalyticsPreference(measurementId, readAnalyticsConsent())
     const onChange = (event: Event) =>
       applyAnalyticsPreference(measurementId, Boolean((event as CustomEvent<CookiePreferences>).detail?.analytics))
-    window.addEventListener(PREFERENCES_CHANGED_EVENT, onChange)
-    return () => window.removeEventListener(PREFERENCES_CHANGED_EVENT, onChange)
+    window.addEventListener(COOKIE_PREFERENCES_CHANGED_EVENT, onChange)
+    return () => window.removeEventListener(COOKIE_PREFERENCES_CHANGED_EVENT, onChange)
   }, [measurementId])
 
   if (!measurementId) return null
@@ -53,6 +51,12 @@ gtag('js', new Date());`}
       onLoad={() => applyAnalyticsPreference(measurementId, readAnalyticsConsent())}
     />
   </>
+}
+
+export function sendConsentedAnalyticsEvent(name: string, params: Record<string, string>) {
+  if (!GOOGLE_ANALYTICS_ID || !readAnalyticsConsent()) return
+  const googleWindow = window as unknown as GoogleWindow
+  googleWindow.gtag?.("event", name, params)
 }
 
 function applyAnalyticsPreference(measurementId: string, analytics: boolean) {

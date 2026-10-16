@@ -7,6 +7,8 @@ import { ArrowRight } from "lucide-react"
 import { EnquiryConsent } from "./EnquiryConsent"
 import { LEGAL_VERSION } from "@/lib/legal"
 import { trackExperienceEvent } from "@/lib/experience-analytics-client"
+import { readEnquiryAttribution } from "@/lib/enquiry-attribution-client"
+import { trackEnquiryAnalytics } from "@/lib/enquiry-analytics-client"
 
 type AuditForm = Record<string, string> & { consent: string; terms: string; websiteTrap: string }
 const initial: AuditForm = { business: "", name: "", email: "", website: "", location: "", industry: "", offer: "", idealCustomer: "", discovery: "", working: "", friction: "", leadProcess: "", operations: "", tools: "", goal: "", notes: "", consent: "", terms: "", websiteTrap: "" }
@@ -25,7 +27,7 @@ export function BusinessGrowthAuditForm() {
     const source = new URLSearchParams(window.location.search).get("source")
     return source === "local_growth_check" || source === "quote" || source === "homepage" ? source : "audit_intake"
   }
-  const markStarted = () => { if (started.current) return; started.current = true; trackExperienceEvent("quote_form_started", { metadata: { funnelType: "business_growth_audit", source: acquisitionSource() } }) }
+  const markStarted = () => { if (started.current) return; started.current = true; trackEnquiryAnalytics("start", { intent: "business_growth_audit", funnelType: "business_growth_audit" }); trackExperienceEvent("quote_form_started", { metadata: { funnelType: "business_growth_audit", source: acquisitionSource() } }) }
 
   async function submit(event: FormEvent) {
     event.preventDefault()
@@ -40,9 +42,10 @@ export function BusinessGrowthAuditForm() {
       `6–12 month goal: ${form.goal}`, `Additional context: ${form.notes || "Not provided"}`, `Acquisition source: ${acquisitionSource()}`, `B2B authority and legal terms version ${LEGAL_VERSION} accepted for Audit onboarding: Yes`,
     ].join("\n\n")
     try {
-      const response = await fetch("/api/quote", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: form.name, email: form.email, biz: form.business, websiteUrl: form.website, businessType: form.industry, goal: form.friction, brief, funnelType: "business_growth_audit", intent: "business_growth_audit", consent: form.consent === "yes", website: form.websiteTrap }) })
+      const response = await fetch("/api/quote", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: form.name, email: form.email, biz: form.business, websiteUrl: form.website, businessType: form.industry, goal: form.friction, brief, funnelType: "business_growth_audit", intent: "business_growth_audit", consent: form.consent === "yes", website: form.websiteTrap, attribution: readEnquiryAttribution() }) })
       const result = await response.json()
       if (!response.ok || !result.ok) throw new Error(result.error || "Unable to send your Audit request.")
+      trackEnquiryAnalytics("complete", { intent: "business_growth_audit", funnelType: "business_growth_audit" })
       trackExperienceEvent("quote_form_submitted", { metadata: { funnelType: "business_growth_audit", source: acquisitionSource() } })
       router.push("/services/business-growth-audit/thanks")
     } catch (caught) { setError(caught instanceof Error ? caught.message : "Unable to send your Audit request."); inFlight.current = false; setSubmitting(false) }

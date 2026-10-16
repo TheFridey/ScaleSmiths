@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 import {
   STARTING_PRICE_BOUNDARY,
   buildPublishedOfferCatalog,
+  publicProjectBudgetOptions,
   publishedStartingPrices,
 } from "./published-starting-prices"
 
@@ -16,6 +17,8 @@ describe("published starting prices", () => {
     expect(STARTING_PRICE_BOUNDARY).toMatch(/not unlimited/i)
     expect(STARTING_PRICE_BOUNDARY).toMatch(/GBP/)
     expect(JSON.stringify(publishedStartingPrices)).not.toMatch(/\$|USD|EUR|local-currency/i)
+    expect(publicProjectBudgetOptions).toContain("Website from £2,000")
+    expect(publicProjectBudgetOptions.join(" ")).not.toMatch(/4,500|8,000-15,000|450\/month/)
   })
 
   it("describes starting prices as scoped offers in the public catalog", () => {

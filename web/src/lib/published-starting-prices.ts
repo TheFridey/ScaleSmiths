@@ -74,6 +74,14 @@ export const publishedStartingPrices: readonly PublishedStartingPrice[] = [
   },
 ]
 
+/** Budget choices on the public project brief. These follow the published starting prices. */
+export const publicProjectBudgetOptions = [
+  "Website from £2,000",
+  "Growth Partnership from £350/month",
+  "Larger build, scoped after discovery",
+  "Not sure yet",
+] as const
+
 export function publishedStartingPrice(id: PublishedStartingPrice["id"]) {
   const match = publishedStartingPrices.find((item) => item.id === id)
   if (!match) throw new Error(`Unknown published starting price: ${id}`)

@@ -3,7 +3,7 @@
 import Link from "next/link"
 import type { ReactNode } from "react"
 import { ExternalLink } from "lucide-react"
-import { resolveDiscoveryCallAction } from "@/lib/discovery-booking"
+import { resolveDiscoveryCallAction, withBookingAttribution } from "@/lib/discovery-booking"
 import { trackExperienceEvent } from "@/lib/experience-analytics-client"
 
 export function DiscoveryCallLink({ className, source, children }: { className: string; source: string; children?: ReactNode }) {
@@ -24,7 +24,7 @@ export function DiscoveryCallLink({ className, source, children }: { className: 
   if (action.kind === "booking") {
     return (
       <a
-        href={action.href}
+        href={withBookingAttribution(action.href, source)}
         target="_blank"
         rel="noopener noreferrer"
         className={className}

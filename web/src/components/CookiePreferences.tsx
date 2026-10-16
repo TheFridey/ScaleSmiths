@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { COOKIE_CONSENT_COOKIE, COOKIE_CONSENT_MAX_AGE, COOKIE_POLICY_VERSION, defaultCookiePreferences, type CookiePreferences } from "@/lib/cookie-consent"
+import { COOKIE_CONSENT_COOKIE, COOKIE_CONSENT_MAX_AGE, COOKIE_POLICY_VERSION, COOKIE_PREFERENCES_CHANGED_EVENT, defaultCookiePreferences, type CookiePreferences } from "@/lib/cookie-consent"
 import { ANALYTICS_OPT_OUT_COOKIE, ANALYTICS_SENT_KEY, ANALYTICS_SESSION_KEY } from "@/lib/experience-analytics-client"
 
 const OPEN_EVENT = "scalesmiths:open-cookie-settings"
@@ -40,7 +40,7 @@ export function CookiePreferences() {
     setPreferences(value)
     setOpen(false)
     setManage(false)
-    window.dispatchEvent(new CustomEvent("scalesmiths:cookie-preferences-changed", { detail: value }))
+    window.dispatchEvent(new CustomEvent(COOKIE_PREFERENCES_CHANGED_EVENT, { detail: value }))
   }
 
   if (!open) return null

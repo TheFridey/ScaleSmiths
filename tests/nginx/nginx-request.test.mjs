@@ -59,6 +59,12 @@ test("www is canonicalised to the apex origin over HTTP", async () => {
   assert.equal(res.headers["location"], "https://scalesmiths.co.uk/pricing")
 })
 
+test("www is canonicalised to the apex origin over HTTPS", async () => {
+  const res = await request({ tls: true, host: "www.scalesmiths.co.uk", path: "/pricing?plan=partnership" })
+  assert.equal(res.status, 301)
+  assert.equal(res.headers["location"], "https://scalesmiths.co.uk/pricing?plan=partnership")
+})
+
 test("HTTP is redirected to HTTPS for the public domain", async () => {
   const res = await request({ tls: false, host: "scalesmiths.co.uk", path: "/" })
   assert.equal(res.status, 301)

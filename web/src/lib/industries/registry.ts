@@ -4,6 +4,7 @@ import { organizationReference, websiteId } from "../site-identity"
 import { commercialPathways } from "./commercial"
 import { allIndustryHubs, getIndustryHub, industryHubs } from "./hubs"
 import { getIndustryPage, industryPagesForHub, publishedIndustryPages } from "./pages"
+import { industryDemonstrationPath, industryDemonstrations } from "./demonstrations"
 import { discoverableIndustryTaxonomy } from "./taxonomy"
 import type { IndustryPage, IndustrySearchHit } from "./types"
 
@@ -207,6 +208,12 @@ export function sitemapIndustryEntries(base: string, lastModified: Date) {
       lastModified: new Date(`${page.reviewedAt}T00:00:00.000Z`),
       changeFrequency: "monthly" as const,
       priority: 0.8,
+    })),
+    ...industryDemonstrations().map((demonstration) => ({
+      url: `${base}${industryDemonstrationPath(demonstration.hubSlug)}`,
+      lastModified,
+      changeFrequency: "monthly" as const,
+      priority: 0.75,
     })),
   ]
   return entries

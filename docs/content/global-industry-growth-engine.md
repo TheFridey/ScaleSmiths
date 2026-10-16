@@ -139,4 +139,8 @@ GBP remains the reference currency for published products and proposals. CTAs pr
 | Mobile / E2E visual evidence | To capture in PR evidence after local preview |
 | Build/retainer retail prices on industry pages | Closed — scoped delivery routes show no “from” prices |
 | Search Console / Bing instrumentation | Ops follow-up post-deploy |
-| Phase 2 (25–40 pages) | Not started — gated on Phase 1 outcomes |
+| Standalone “Global 9.5 Execution Directive” file | Not located in the repository, docs, or agent stores. This document and the October 2026 execution orders were used instead. |
+| Workflow demonstrations | Four routes under `/industries/{hub}/experience` for trades, clinics and professional firms, manufacturing, and technology/commerce |
+| Second specialist wave | 14 additional published pages. Further candidates stay unpublished until they are distinct |
+| International delivery | `/international`. UK-founded, remote, GBP, no overseas offices. No hreflang |
+| Phase 2 bulk (25–40 near-duplicate pages) | Not done. The directory still holds unpublished candidates |

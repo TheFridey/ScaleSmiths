@@ -1,24 +1,22 @@
 /**
  * Commercial pathways for industry pages.
  *
- * Baselines below match the Global Industry Growth Engine production directive
- * (Trev, 15 Oct 2026) and Megaton offer catalogue. They are intentionally separate
- * from the verified public-claims registry, which still records different historical
- * package figures. Founder sign-off must reconcile claims before irreversible
- * production marketing treats these as the sole published prices.
+ * Website builds, Growth Partnerships and custom systems are scoped after discovery.
+ * Do not publish “from” prices for those routes on industry pages.
  *
- * All amounts are GBP reference currency. International proposals are quoted for
- * location and scope — never silently auto-converted into a binding foreign-currency quote.
+ * Fixed published products (Business Growth Audit £395) may still show their live price.
+ * International proposals are quoted for location and scope in GBP as the reference currency.
  */
 
 import type { CommercialPathwayId } from "./types"
 
-export const INDUSTRY_COMMERCIAL_PRICING_STATUS = "founder_review_required" as const
+export const INDUSTRY_COMMERCIAL_PRICING_STATUS = "scoped_after_discovery" as const
 
 export interface CommercialPathway {
   id: CommercialPathwayId
   label: string
   shortLabel: string
+  /** Only for fixed published products. Scoped delivery routes must stay null. */
   startingPriceLabel: string | null
   priceNote: string
   summary: string
@@ -40,9 +38,9 @@ export const commercialPathways: Record<CommercialPathwayId, CommercialPathway> 
     id: "build",
     label: "Website & digital platform builds",
     shortLabel: "Build a better website",
-    startingPriceLabel: "from £2,000",
+    startingPriceLabel: null,
     priceNote:
-      "Baseline for an eligible, clearly scoped foundation build. Complex work, advanced integrations, e-commerce, hosting and monthly maintenance are quoted individually and are not automatic inclusions.",
+      "Scoped after discovery. Cost follows content, integrations, migration risk and review requirements — not a fixed package price on this page.",
     summary:
       "Bespoke design, customer journeys, SEO foundations, and enquiry or booking routes scoped around how your customers actually choose a provider.",
     href: (industrySlug, hubSlug) => industryQuoteHref(industrySlug, hubSlug, "build"),
@@ -51,9 +49,9 @@ export const commercialPathways: Record<CommercialPathwayId, CommercialPathway> 
     id: "growth",
     label: "Digital Growth Partnership",
     shortLabel: "Grow my existing business",
-    startingPriceLabel: "from £350/month",
+    startingPriceLabel: null,
     priceNote:
-      "Baseline for an agreed minimum engagement. Deliverables, cadence, maintenance, SEO, CRO, content and support vary with needs and are written into the proposal. You do not need a new ScaleSmiths website first.",
+      "Scoped separately after discovery. Deliverables, cadence, maintenance, SEO, CRO, content and support are written into the proposal. You do not need a new ScaleSmiths website first.",
     summary:
       "Ongoing, prioritised improvement around the website and systems you already have — visibility, conversion, content and technical stewardship under one accountable roadmap.",
     href: (industrySlug, hubSlug) => industryQuoteHref(industrySlug, hubSlug, "growth", "strategy_call"),
@@ -98,4 +96,4 @@ export function missingIndustryHref(industryHint?: string) {
 
 /** Currency disclosure shown near industry commercial CTAs. */
 export const INDUSTRY_CURRENCY_DISCLOSURE =
-  "Prices are shown in GBP as the reference currency. International proposals are quoted for your location and scope."
+  "Builds, partnerships and custom systems are scoped after discovery. Published product prices (such as the Business Growth Audit) are in GBP. International proposals are quoted for your location and scope."

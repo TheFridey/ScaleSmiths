@@ -98,11 +98,13 @@ describe("industry growth engine registry", () => {
     }
   })
 
-  it("exposes commercial pathways with founder-review pricing status", () => {
-    expect(commercialPathways.build.startingPriceLabel).toBe("from £2,000")
-    expect(commercialPathways.growth.startingPriceLabel).toBe("from £350/month")
-    expect(commercialPathways.audit.startingPriceLabel).toBe("£395 one-time")
+  it("keeps scoped delivery routes unpriced and only publishes fixed product prices", () => {
+    expect(commercialPathways.build.startingPriceLabel).toBeNull()
+    expect(commercialPathways.growth.startingPriceLabel).toBeNull()
     expect(commercialPathways.systems.startingPriceLabel).toBeNull()
+    expect(commercialPathways.audit.startingPriceLabel).toBe("£395 one-time")
+    expect(commercialPathways.build.priceNote.toLowerCase()).toContain("scoped")
+    expect(commercialPathways.growth.priceNote.toLowerCase()).toContain("scoped")
     expect(commercialPathways.build.href("pest-control", "trades-home-services")).toContain("pathway=build")
     expect(commercialPathways.growth.href("pest-control", "trades-home-services")).toContain("intent=strategy_call")
   })

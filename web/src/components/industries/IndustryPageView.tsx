@@ -90,7 +90,7 @@ export function IndustryPageView({ page }: { page: IndustryPage }) {
               <p className="mt-4 font-dm text-sm text-t3">Written for: {page.buyer}</p>
               <IndustryHeroCtas page={page} />
               <p className="mt-4 font-dm text-xs text-t3">
-                Starting prices: Build from £2,000 · Growth Partnership from £350/month · Audit £395 optional. Complex work quoted individually.
+                Builds, Growth Partnerships and custom systems are scoped after discovery. Optional Business Growth Audit: £395.
               </p>
             </div>
           </div>

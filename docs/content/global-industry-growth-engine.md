@@ -13,8 +13,8 @@
 | No `/industries` | `/industries`, `/industry`, `/sectors` returned 404 |
 | Strong existing IA | Work, Insights, Services, Local Growth, Custom Systems, Quote, Portal intact |
 | UK-anchored copy | Footer/contact previously “Serving businesses across the UK”; schema `areaServed` GB-centric |
-| Pricing UI | Public fixed prices: Audit £395, Email £15/mo. Builds/partnerships largely “scoped after discovery” |
-| Claims registry | Seeded package figures differ from directive baselines (£2,500 one-page vs £2,000; care-plan from £450 vs £350) |
+| Pricing UI | Public fixed prices: Audit £395, Email £15/mo. Builds/partnerships “scoped after discovery” |
+| Claims registry | Verified package figures exist for internal/claims use; industry pages do not retail build or retainer “from” prices |
 | Proof already multi-sector | Confirm-A-Kill, Precision Finish, Foot Works, Glow Tanning, Pinkys Prints, SaaS platforms, CSDS (USA) |
 | Sitemap | ~108 URLs; locality and journey SEO strong; no industry cluster |
 
@@ -79,14 +79,14 @@ Publication states follow the directive: only `published` pages are routes + sit
 
 ## 5. Commercial flows
 
-| Pathway | Starting price (directive) | Status |
+| Pathway | Price on industry pages | Status |
 | --- | --- | --- |
-| Build | from £2,000 | **Founder review required** — conflicts with claims seed £2,500 one-page |
-| Growth Partnership | from £350/month | **Founder review required** — Confirm-A-Kill copy already uses £350; claims seed care-plan from £450 |
-| Custom systems | Individually scoped | No fake “from” price |
-| Audit | £395 | Matches live product |
+| Build | Scoped after discovery | No retail “from” price |
+| Growth Partnership | Scoped after discovery | No retail retainer “from” price |
+| Custom systems | Scoped after discovery | No fake “from” price |
+| Audit | £395 | Matches live published product |
 
-GBP is reference currency; international proposals quoted for location/scope. CTAs pre-attribute industry/hub/pathway into `/quote` briefs.
+GBP remains the reference currency for published products and proposals. CTAs pre-attribute industry/hub/pathway into `/quote` briefs.
 
 ## 6. SEO / AEO
 
@@ -112,7 +112,7 @@ GBP is reference currency; international proposals quoted for location/scope. CT
 
 | Risk | Mitigation |
 | --- | --- |
-| Price conflict with claims registry | Block production marketing freeze until Trev/Rhys reconcile £2k/£350 vs claims seed |
+| Accidental reintroduction of build/retainer “from” prices | Industry commercial module keeps scoped routes `startingPriceLabel: null`; tests enforce it |
 | Clinical / legal / financial advertising | Podiatry & accountants pages require conservative claims; professional-body review before aggressive copy |
 | Case study permissions | Only link published Work; label adjacent/illustrative clearly |
 | Thin page temptation | Tests enforce unique fingerprints, frictions, FAQs |
@@ -137,6 +137,6 @@ GBP is reference currency; international proposals quoted for location/scope. CT
 | Enquiry attribution | Done (quote/strategy forms) |
 | Unit tests | Done (`industries.test.ts`) |
 | Mobile / E2E visual evidence | To capture in PR evidence after local preview |
-| Founder pricing reconciliation | **Open — required before treating £2k/£350 as sole public truth** |
+| Build/retainer retail prices on industry pages | Closed — scoped delivery routes show no “from” prices |
 | Search Console / Bing instrumentation | Ops follow-up post-deploy |
 | Phase 2 (25–40 pages) | Not started — gated on Phase 1 outcomes |

@@ -46,7 +46,7 @@ export function IndustryPathways({ page, compact = false }: { page: IndustryPage
                 {pathway.startingPriceLabel ? (
                   <p className="mt-2 font-dm text-sm font-semibold text-acc">{pathway.startingPriceLabel}</p>
                 ) : (
-                  <p className="mt-2 font-dm text-sm font-semibold text-t3">Individually scoped</p>
+                  <p className="mt-2 font-dm text-sm font-semibold text-t3">Scoped after discovery</p>
                 )}
                 <p className="mt-3 flex-1 font-dm text-sm leading-relaxed text-t2">{detail?.whoFor ?? pathway.summary}</p>
                 <p className="mt-3 font-dm text-xs leading-relaxed text-t3">{pathway.priceNote}</p>

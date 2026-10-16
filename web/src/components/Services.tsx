@@ -94,7 +94,9 @@ export function Services({ claims }: { claims: ReadonlyMap<string, PublicClaim> 
         <AnimateIn className="mt-10 bg-s1 border border-acc/20 rounded-2xl p-7" delay={0.2}>
           <p className="font-dm text-xs font-semibold uppercase tracking-[.12em] text-acc">Ongoing growth</p>
           <h3 className="mt-2 font-syne text-2xl font-bold">Growth Partnership</h3>
-          <p className="font-dm text-sm text-t2 mb-6">
+          <p className="mt-2 font-syne text-lg font-bold text-acc">From £350/month</p>
+          <p className="mt-2 font-dm text-sm text-t3">An entry point for an agreed scope, not the price of every partnership and not an unlimited marketing package. The arrangements below are scoped separately.</p>
+          <p className="font-dm text-sm text-t2 mb-6 mt-3">
             {claimWording(claims, "service.most-clients-retain-30-days", "A Growth Partnership can begin with the website and systems you already have, or follow a ScaleSmiths build. The scope is agreed around the priorities that can move the business forward.")}
           </p>
           <div className="grid md:grid-cols-3 gap-3">

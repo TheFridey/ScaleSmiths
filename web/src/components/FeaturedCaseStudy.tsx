@@ -25,6 +25,22 @@ export function FeaturedCaseStudy({ slug = FEATURED_CASE_STUDY_SLUG }: { slug?: 
             {project.name}
           </h2>
           <p className="mt-4 font-dm text-lg leading-relaxed text-t2">{project.headline}</p>
+          {project.slug === "confirm-a-kill" ? (
+            <dl className="mt-6 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-xl border border-b1 bg-bg/70 p-4">
+                <dt className="font-dm text-[11px] font-semibold uppercase tracking-[.12em] text-acc">Completed work</dt>
+                <dd className="mt-2 font-dm text-sm leading-relaxed text-t2">The website and private operating system are live.</dd>
+              </div>
+              <div className="rounded-xl border border-b1 bg-bg/70 p-4">
+                <dt className="font-dm text-[11px] font-semibold uppercase tracking-[.12em] text-acc">Measured baseline</dt>
+                <dd className="mt-2 font-dm text-sm leading-relaxed text-t2">Search Console figures describe the previous site, not a claimed lift.</dd>
+              </div>
+              <div className="rounded-xl border border-b1 bg-bg/70 p-4">
+                <dt className="font-dm text-[11px] font-semibold uppercase tracking-[.12em] text-acc">Still being monitored</dt>
+                <dd className="mt-2 font-dm text-sm leading-relaxed text-t2">Post-launch search and enquiries are being watched. No uplift is claimed yet.</dd>
+              </div>
+            </dl>
+          ) : null}
         </AnimateIn>
 
         <div className="mt-10 grid gap-8 lg:grid-cols-[1.15fr_.85fr]">

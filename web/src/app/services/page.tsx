@@ -7,9 +7,19 @@ import { ProjectPlannerCta } from "@/components/ExperiencePreference"
 import { JsonLd } from "@/components/JsonLd"
 import { ServiceRouteChooser } from "@/components/ServiceRouteChooser"
 import { buildServiceHubSchema, serviceHubItems } from "@/lib/service-pages"
+import { STARTING_PRICE_BOUNDARY, publishedStartingPrices } from "@/lib/published-starting-prices"
 import { businessGrowthAudit, formatAuditPrice } from "@/lib/business-growth-audit"
 import { routeLabel } from "@/lib/service-routes"
 import { PageBreadcrumbs } from "@/components/Breadcrumbs"
+
+function serviceEnquiry(service: (typeof serviceHubItems)[number]) {
+  if (service.title === "Growth Partnership") return { href: "/digital-growth-partnership", label: "Explore Growth Partnerships" }
+  if (service.title === "Hosting and maintenance") return { href: "/managed-website-hosting", label: "See managed hosting" }
+  if (service.title.startsWith("SEO")) return { href: "/seo-website-audit", label: "Request a website audit" }
+  if (service.journey === "custom-systems") return { href: "/quote?intent=strategy_call", label: "Discuss this system" }
+  if (service.title === "Local business websites") return { href: "/local-growth", label: "See how we'd improve a local business" }
+  return { href: "/quote", label: "Get a Website Quote" }
+}
 
 export const metadata: Metadata = {
   title: "Web Design, SEO, Apps & Automation Services",
@@ -31,13 +41,15 @@ export default function ServicesPage() {
             Websites, search visibility and systems built to grow with you.
           </h1>
           <p className="mt-5 font-dm text-lg leading-relaxed text-t2">
-            From conversion-focused websites and local SEO to e-commerce, portals, AI automation and managed infrastructure, we connect the customer-facing experience to the systems behind it.
+            From conversion-focused websites and local SEO to e-commerce, portals, automation and managed infrastructure, we connect the customer-facing experience to the systems behind it.
+          </p>
+          <p className="mt-4 max-w-[680px] font-dm text-sm leading-relaxed text-t3">
+            {publishedStartingPrices.map((item) => `${item.name} ${item.priceLabel}`).join(" · ")}. {STARTING_PRICE_BOUNDARY}
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="/local-growth" prefetch={false} className="btn-primary font-dm">Explore Local Growth <ArrowRight size={16} aria-hidden="true" /></Link>
-            <Link href="/custom-systems" prefetch={false} className="btn-ghost font-dm">Explore Custom Systems</Link>
-            <Link href="/enterprise" prefetch={false} className="btn-ghost font-dm">Enterprise Systems</Link>
-            <Link href="/pricing" prefetch={false} className="btn-ghost font-dm">View Pricing Guidance</Link>
+            <Link href="/quote" prefetch={false} className="btn-primary font-dm">Get a Website Quote <ArrowRight size={16} aria-hidden="true" /></Link>
+            <Link href="/digital-growth-partnership" prefetch={false} className="btn-ghost font-dm">Explore Growth Partnerships</Link>
+            <Link href="/pricing#published-prices" prefetch={false} className="btn-ghost font-dm">See starting prices</Link>
           </div>
           <div className="mt-5">
             <ProjectPlannerCta source="services_hub" className="text-t2 hover:text-acc" />
@@ -77,8 +89,8 @@ export default function ServicesPage() {
                 ))}
               </div>
               <div className="mt-6 flex flex-wrap gap-2">
-                <Link href={service.journey === "local-growth" ? "/local-growth-check" : "/quote"} prefetch={false} className="btn-primary font-dm text-sm">
-                  {service.journey === "local-growth" ? "Explore the Business Growth Audit" : "Start a Project Brief"}
+                <Link href={serviceEnquiry(service).href} prefetch={false} className="btn-primary font-dm text-sm">
+                  {serviceEnquiry(service).label}
                 </Link>
                 {service.links.map((href) => (
                   <Link key={href} href={href} prefetch={false} className="btn-ghost font-dm text-sm">{routeLabel(href)}</Link>

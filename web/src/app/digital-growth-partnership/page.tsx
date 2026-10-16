@@ -8,6 +8,7 @@ import { PageBreadcrumbs } from "@/components/Breadcrumbs"
 import { ContextualFaqs } from "@/components/faq/ContextualFaqs"
 import { contextualFaqs } from "@/lib/faq-knowledge-base"
 import { buildPageMetadata } from "@/lib/page-metadata"
+import { publishedStartingPrice, STARTING_PRICE_BOUNDARY } from "@/lib/published-starting-prices"
 import { organizationReference } from "@/lib/site-identity"
 
 const description =
@@ -64,9 +65,12 @@ export default function DigitalGrowthPartnershipPage() {
           <p className="text-xs font-semibold uppercase tracking-[.14em] text-acc">Ongoing growth</p>
           <h1 className="page-hero-display mt-3">Your Growth Partnership.</h1>
           <p className="mt-7 max-w-[790px] text-lg leading-relaxed text-t2">You do not need to wait for a new website or a completed ScaleSmiths build. ScaleSmiths becomes the accountable digital partner helping decide what matters next, then actually delivering it, across search visibility, conversion, content, automation, website improvement and technical delivery, prioritised around the business rather than a predetermined list of tasks.</p>
+          <p className="mt-6 font-syne text-2xl font-bold text-acc">{publishedStartingPrice("partnership").priceLabel}</p>
+          <p className="mt-3 max-w-[720px] text-sm leading-relaxed text-t3">{publishedStartingPrice("partnership").note} {STARTING_PRICE_BOUNDARY}</p>
           <div className="mt-9 flex flex-wrap gap-3">
-            <Link href="/quote?intent=strategy_call" className="btn-primary">Discuss a Partnership <ArrowRight size={16} /></Link>
-            <Link href="/services/business-growth-audit" className="btn-ghost">Start with the Growth Audit</Link>
+            <Link href="/quote?intent=strategy_call" className="btn-primary">Explore Growth Partnerships <ArrowRight size={16} /></Link>
+            <Link href="/services/business-growth-audit" className="btn-ghost">Request a Business Audit</Link>
+            <Link href="/pricing#published-prices" className="btn-ghost">See starting prices</Link>
           </div>
         </AnimateIn>
       </section>

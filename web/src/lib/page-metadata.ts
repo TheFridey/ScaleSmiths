@@ -28,7 +28,7 @@ export interface PageMetadataInput {
  */
 export function buildPageMetadata({ title, absoluteTitle, description, path, type = "website", image, robots, authors, publishedTime, modifiedTime, section }: PageMetadataInput): Metadata {
   const socialTitle = absoluteTitle ?? `${title} | ${SITE_NAME}`
-  const socialImage = image ?? { url: "/opengraph-image", width: 1200, height: 630, alt: `${SITE_NAME} â€” Forge Your Digital Edge` }
+  const socialImage = image ?? { url: "/opengraph-image", width: 1200, height: 630, alt: `${SITE_NAME} — Forge Your Digital Edge` }
   const article = type === "article" ? {
     ...(publishedTime ? { publishedTime } : {}),
     ...(modifiedTime ? { modifiedTime } : {}),

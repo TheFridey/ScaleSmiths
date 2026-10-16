@@ -1,4 +1,6 @@
 import { businessGrowthAudit, formatAuditPrice } from "./business-growth-audit"
+import { faqEntries } from "./faq-library"
+import { publishedStartingPrice } from "./published-starting-prices"
 import { organizationReference } from "./site-identity"
 
 export const serviceHubItems = [
@@ -39,7 +41,7 @@ export const serviceHubItems = [
     title: "SEO/AEO landing pages",
     for: "Businesses that need service/location pages that answer buyer questions with depth.",
     includes: "Canonical metadata, FAQ schema, service schema, internal links, and direct buyer FAQs.",
-    outcome: "Search pages that qualify demand instead of publishing thin filler.",
+    outcome: "Pages that answer a buyer's real question and give them a clear way to enquire.",
     links: ["/web-design-hucknall", "/next-js-agency-uk"],
   },
   {
@@ -86,12 +88,13 @@ export interface PricingItem {
 
 /** Transparent Web & Growth / SME services. Kept separate from enterprise procurement. */
 export const webGrowthPricingItems: PricingItem[] = [
-  { name: "One-page business site", range: "Scoped after discovery", priceClaimId: "price.one-page", note: "Focused single-page presence for a clear offer or campaign.", href: "/local-growth" },
-  { name: "Local business growth site", range: "Scoped after discovery", priceClaimId: "price.foundation", note: "Multi-page local site with conversion and SEO foundations.", href: "/local-growth" },
-  { name: "E-commerce site", range: "Scoped after discovery", priceClaimId: "price.growth", note: "Commerce UX, product structure, payments, and admin workflows.", href: "/e-commerce-development-nottingham" },
-  { name: "Growth Partnership", range: "Scoped separately", priceClaimId: "price.care-plan", note: "A commercially bounded, roadmap-led relationship for agreed priorities across SEO, conversion, content, automation, maintenance and ongoing engineering.", href: "/digital-growth-partnership" },
-  { name: "Hosting / maintenance", range: "Scoped to stack", priceClaimId: null, note: "Deployment, SSL, backups, monitoring, and infrastructure support.", href: "/managed-website-hosting" },
-  { name: "Managed Business Email", range: "£15/month", priceClaimId: null, note: "Three professional 5GB mailboxes on your domain, with initial setup included.", href: "/services/managed-business-email" },
+  { name: publishedStartingPrice("website").name, range: publishedStartingPrice("website").priceLabel, priceClaimId: null, note: publishedStartingPrice("website").note, href: "/quote" },
+  { name: "One-page business site", range: "Scoped after discovery", priceClaimId: "price.one-page", note: "Focused single-page presence for a clear offer or campaign. The £2,000 figure is a starting point, not the price of every one-page site.", href: "/local-growth" },
+  { name: "Local business growth site", range: "Scoped after discovery", priceClaimId: "price.foundation", note: "Multi-page local site with conversion and SEO foundations. Final scope still depends on pages, content and integrations.", href: "/local-growth" },
+  { name: "E-commerce site", range: "Scoped after discovery", priceClaimId: "price.growth", note: "Commerce UX, product structure, payments, and admin workflows. Not included in the website starting price.", href: "/e-commerce-development-nottingham" },
+  { name: "Growth Partnership", range: publishedStartingPrice("partnership").priceLabel, priceClaimId: null, note: publishedStartingPrice("partnership").note, href: "/digital-growth-partnership" },
+  { name: "Hosting / maintenance", range: "Scoped to stack", priceClaimId: null, note: "Deployment, SSL, backups, monitoring, and infrastructure support. Not automatically included in a website or partnership.", href: "/managed-website-hosting" },
+  { name: "Managed Business Email", range: publishedStartingPrice("email").priceLabel, priceClaimId: null, note: publishedStartingPrice("email").note, href: "/services/managed-business-email" },
   { name: businessGrowthAudit.shortName, range: formatAuditPrice(), priceClaimId: null, note: "One-time business-wide assessment with the full fee credited against an eligible subsequent ScaleSmiths build.", href: businessGrowthAudit.slug },
 ]
 
@@ -154,9 +157,16 @@ export function buildServiceHubSchema(baseUrl = "https://scalesmiths.co.uk") {
 }
 
 export const pricingFaqs = [
-  { q: "How much does a ScaleSmiths project cost?", a: "Web & Growth work uses the transparent guidance on this page, with final prices confirmed in a proposal. Custom software and enterprise systems are scoped following discovery because integrations, security, migration and operating model change the commercial shape." },
-  { q: "Do you offer a Growth Partnership?", a: "Yes. A Growth Partnership is a scoped, prioritised relationship for continued improvement. It can begin with an existing digital estate or continue after a ScaleSmiths build." },
-  { q: "Why are enterprise systems not listed with fixed prices?", a: "User count, sites, integrations, data migration, security, mobile or offline needs, workflows, hosting and support requirements all materially affect cost. Publishing a single public figure would misrepresent the procurement decision." },
+  { q: faqEntries["project-pricing"].q, a: faqEntries["project-pricing"].a },
+  { q: faqEntries["website-included"].q, a: faqEntries["website-included"].a },
+  { q: faqEntries.cost.q, a: faqEntries.cost.a },
+  { q: "Do you offer a Growth Partnership?", a: `${faqEntries["support-included"].a} The published entry point is ${publishedStartingPrice("partnership").priceLabel}.` },
+  { q: faqEntries["manage-external-site"].q, a: faqEntries["manage-external-site"].a },
+  { q: faqEntries["website-ownership"].q, a: faqEntries["website-ownership"].a },
+  { q: "Can I work with ScaleSmiths outside the UK?", a: faqEntries["outside-nottingham"].a },
+  { q: faqEntries["after-enquiry"].q, a: faqEntries["after-enquiry"].a },
+  { q: faqEntries["improvement-measurement"].q, a: faqEntries["improvement-measurement"].a },
+  { q: "Why are enterprise systems not listed with fixed prices?", a: "User count, sites, integrations, data migration, security, mobile or offline needs, workflows, hosting and support requirements all materially affect cost. Custom software and enterprise systems are scoped following discovery because publishing a single public figure would misrepresent the procurement decision." },
   { q: "Where should enterprise buyers start?", a: "Start with discovery. Review the Enterprise and Custom Systems routes, then discuss the operating constraint so architecture and commercial scope can be defined before implementation expands." },
 ] as const
 

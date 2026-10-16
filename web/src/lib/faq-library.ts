@@ -26,9 +26,14 @@ export const faqLibrary = {
   // ---------------------------------------------------------------- web design
   cost: {
     q: "How much does a business website cost?",
-    a: "It depends on scope, content, integrations and delivery risk, so every project receives a written proposal after discovery. Any current verified price guidance is published on the pricing page rather than quoted as a generic range.",
+    a: "Website design and development starts from £2,000. That is a starting point for an agreed scope, not unlimited design, content, integrations, marketing or support. A quote is calculated from the requirements, the complexity of the journeys and systems, and the deliverables written into the proposal. The Business Growth Audit is £395, a Growth Partnership starts from £350 per month, and managed business email starts from £15 per month for three 5GB mailboxes. Prices are in GBP.",
     services: ["/pricing", "/web-design-nottingham"],
     insights: ["how-much-does-a-business-website-cost-uk-2026", "why-cheap-websites-often-become-expensive"],
+  },
+  "website-included": {
+    q: "What is included in a typical website project?",
+    a: "A typical website project covers the agreed messaging, page structure, responsive build, on-page search foundations and a route from visitor to enquiry, plus launch support for that scope. Hosting, ongoing SEO, content programmes, integrations and open-ended support are separate unless the proposal includes them. The proposal is the list of what is included.",
+    services: ["/services", "/pricing", "/web-design-nottingham"],
   },
   timeline: {
     q: "How long does a website take to build?",
@@ -339,7 +344,7 @@ export const faqLibrary = {
   // ------------------------------------------------------------------- commercial
   "project-pricing": {
     q: "How much do ScaleSmiths projects cost?",
-    a: "Projects are scoped by business outcome and complexity rather than sold as fixed packages, and the final price follows a project-specific written proposal. Two services carry published prices: the Business Growth Audit, with the full fee credited against an eligible subsequent build, and Managed Business Email from £15 per month. Everything else appears on the pricing page as guidance and is confirmed after discovery.",
+    a: "Published starting prices are website design and development from £2,000, a Growth Partnership from £350 per month, the Business Growth Audit at £395, and managed business email from £15 per month. A starting price is the entry point for an agreed scope. It is not unlimited development, marketing, support or a guaranteed outcome. The final price follows a written proposal based on requirements, complexity and the deliverables we agree. Custom software is scoped after discovery and is not sold as one of those starting prices.",
     services: ["/pricing", "/services/business-growth-audit"],
     insights: ["how-much-does-a-business-website-cost-uk-2026", "why-cheap-websites-often-become-expensive"],
   },
@@ -350,8 +355,18 @@ export const faqLibrary = {
   },
   "outside-nottingham": {
     q: "Do you work with businesses outside Nottingham?",
-    a: "Yes. ScaleSmiths is based in Hucknall, Nottinghamshire and works with businesses across the UK. Published work also includes CSDS, a computer repair firm in Pennsylvania. Projects outside the area run remotely with a review cadence agreed in the scope.",
-    services: ["/services", "/local-growth"],
+    a: "Yes. ScaleSmiths is based in Hucknall, Nottinghamshire and works with businesses across the UK. Published work also includes CSDS, a computer repair firm in Pennsylvania. Projects outside the area, including work with businesses overseas, run remotely with a review cadence agreed in the scope. We do not claim overseas offices or regional expertise we cannot substantiate. Proposals are quoted in GBP.",
+    services: ["/services", "/local-growth", "/pricing"],
+  },
+  "after-enquiry": {
+    q: "What happens after I enquire?",
+    a: "The founders review what you send and reply with a sensible next step. That may be a few clarifying questions, a recommendation to start with the Business Growth Audit, or a proposal once the scope is understood. Sending the form does not take payment and does not create a contract. The quote, audit and email journeys each say what happens next on their own confirmation pages.",
+    services: ["/pricing", "/services", "/services/business-growth-audit"],
+  },
+  "improvement-measurement": {
+    q: "How are ongoing improvements measured?",
+    a: "We agree which signals are worth watching for that business, such as enquiries, calls, Search Console and analytics where you can give access, and we review them in conversation rather than against invented targets. Confirm-A-Kill shows the pattern: a recorded pre-launch baseline, then post-launch measurement that is still being monitored. We do not publish a universal KPI or a guaranteed lift.",
+    services: ["/digital-growth-partnership", "/services/business-growth-audit"],
   },
   startups: {
     q: "Do you work with startups?",

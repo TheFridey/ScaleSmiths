@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react"
 import { useReducedMotion } from "motion/react"
 
 const HERO_VIDEO_SRC = "/brand/scalesmiths-hero-forge.webm"
-const HERO_VIDEO_POSTER = "/brand/scalesmiths-forge-atmosphere.webp"
 
 /**
  * Full-bleed forge hero video. Plays muted/looped under a light wash so the
@@ -24,6 +23,9 @@ export function HeroForgeVideo() {
 
   useEffect(() => {
     if (reducedMotion) return
+    // The 49 KB forge still is the complete mobile treatment. Avoid transferring
+    // and decoding the additional video on constrained, small-screen visits.
+    if (!window.matchMedia("(min-width: 768px) and (prefers-reduced-motion: no-preference)").matches) return
     const node = containerRef.current
     if (!node) return
 
@@ -94,7 +96,6 @@ export function HeroForgeVideo() {
         loop
         playsInline
         preload="none"
-        poster={HERO_VIDEO_POSTER}
       >
         {shouldLoad ? <source src={HERO_VIDEO_SRC} type="video/webm" /> : null}
       </video>

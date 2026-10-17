@@ -1,7 +1,7 @@
 "use client"
 
 import Script from "next/script"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { COOKIE_CONSENT_COOKIE, COOKIE_POLICY_VERSION, COOKIE_PREFERENCES_CHANGED_EVENT, type CookiePreferences } from "@/lib/cookie-consent"
 
 /**
@@ -25,24 +25,33 @@ const disableFlag = (id: string) => `ga-disable-${id}`
 
 export function GoogleAnalytics() {
   const measurementId = GOOGLE_ANALYTICS_ID
+  const [analyticsEnabled, setAnalyticsEnabled] = useState(false)
 
   useEffect(() => {
     if (!measurementId) return
-    applyAnalyticsPreference(measurementId, readAnalyticsConsent())
-    const onChange = (event: Event) =>
-      applyAnalyticsPreference(measurementId, Boolean((event as CustomEvent<CookiePreferences>).detail?.analytics))
+    const initialConsent = readAnalyticsConsent()
+    applyAnalyticsPreference(measurementId, initialConsent)
+    setAnalyticsEnabled(initialConsent)
+    const onChange = (event: Event) => {
+      const nextConsent = Boolean((event as CustomEvent<CookiePreferences>).detail?.analytics)
+      applyAnalyticsPreference(measurementId, nextConsent)
+      setAnalyticsEnabled(nextConsent)
+    }
     window.addEventListener(COOKIE_PREFERENCES_CHANGED_EVENT, onChange)
     return () => window.removeEventListener(COOKIE_PREFERENCES_CHANGED_EVENT, onChange)
   }, [measurementId])
 
-  if (!measurementId) return null
+  // Loading Google's script is itself an optional third-party request. Keep it
+  // off the page, rather than merely setting Consent Mode to denied, until the
+  // visitor has explicitly enabled analytics.
+  if (!measurementId || !analyticsEnabled) return null
 
   return <>
     <Script id="google-analytics">
       {`window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 window.gtag = gtag;
-gtag('consent', 'default', { analytics_storage: 'denied' });
+gtag('consent', 'default', { analytics_storage: 'granted' });
 gtag('js', new Date());`}
     </Script>
     <Script

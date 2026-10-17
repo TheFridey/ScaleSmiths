@@ -394,7 +394,8 @@
   /* Sticky nav clearance for Focus Not Obscured / in-page anchors */
   --nav-offset: 5.5rem;
 
-  /* Fonts set by next/font on <html>; these are fallthrough stacks only */
+  /* Syne is self-hosted through next/font; body copy uses the platform UI stack to avoid
+     transferring a 344 KB variable font before the first mobile paint. */
   --font-syne: "Syne", "Arial Black", "Arial", "Helvetica Neue", sans-serif;
   --font-dm:   "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
 }
@@ -517,6 +518,11 @@ body {
   background-size: 100% 100%, 100% 100%, 72px 72px, 72px 72px;
 }
 
+.hero-atmosphere {
+  mask-image: linear-gradient(180deg, transparent 0%, rgb(0 0 0 / 28%) 14%, rgb(0 0 0 / 72%) 44%, rgb(0 0 0 / 98%) 74%, rgb(0 0 0 / 70%) 100%);
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, rgb(0 0 0 / 28%) 14%, rgb(0 0 0 / 72%) 44%, rgb(0 0 0 / 98%) 74%, rgb(0 0 0 / 70%) 100%);
+}
+
 /* ── Hero forge video wash ───────────────────────────────────── */
 .hero-forge-video-media {
   filter: brightness(1.18) contrast(1.06) saturate(1.08);
@@ -605,6 +611,10 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .hero-ember { animation: none; opacity: 0; }
+  .hero-forge-video { display: none !important; }
+}
+
+@media (max-width: 767px) {
   .hero-forge-video { display: none !important; }
 }
 

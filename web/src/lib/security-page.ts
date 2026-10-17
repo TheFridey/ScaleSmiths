@@ -9,7 +9,7 @@ export const SECURITY_CONTACT_ANCHOR = "security-contact"
 export const securityPageCopy = {
   metaTitle: "Security & Trust | Secure Software Development UK",
   metaDescription:
-    "How ScaleSmiths approaches secure software development, enterprise software security, infrastructure, data protection and operational resilience, designed into architecture and delivery, without unverified certification claims.",
+    "ScaleSmiths' approach to secure software development: data protection, infrastructure and operational resilience designed into custom and enterprise delivery.",
   eyebrow: "Security & trust",
   title: "Security designed into the architecture, not bolted on at the end.",
   lede:

@@ -48,6 +48,20 @@ test.describe("rebound customer journeys", () => {
       expect(startBox?.height ?? 0).toBeGreaterThanOrEqual(40)
       await consoleGuard.expectClean()
     })
+
+    test("mobile uses the responsive forge still without transferring the hero video", async ({ page }) => {
+      const heroVideoRequests: string[] = []
+      page.on("request", (request) => {
+        if (request.url().includes("scalesmiths-hero-forge.webm")) heroVideoRequests.push(request.url())
+      })
+
+      await gotoReady(page, "/")
+      await page.waitForTimeout(1_500)
+
+      const currentStill = await page.locator(".hero-atmosphere img").evaluate((image) => (image as HTMLImageElement).currentSrc)
+      expect(currentStill).toContain("scalesmiths-forge-atmosphere-mobile.webp")
+      expect(heroVideoRequests).toEqual([])
+    })
   })
 
   test("local business: Home → Local Growth → Work → Strategy Call", async ({ page }) => {

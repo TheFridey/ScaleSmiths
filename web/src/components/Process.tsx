@@ -63,10 +63,6 @@ export function Process({ verifiedDeliveryClaim, verifiedRetentionClaim }: { ver
             <m.article
               key={step.n}
               className="group relative flex min-h-[260px] flex-col justify-center border-b border-b1 py-12 last:border-0 md:min-h-[300px]"
-              initial={reducedMotion ? false : { opacity: 0.56 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ amount: 0.55 }}
-              transition={{ duration: reducedMotion ? 0 : 0.32 }}
             >
               <div className="absolute -left-[40px] flex h-4 w-4 items-center justify-center rounded-full border border-b2 bg-s1 transition-colors group-hover:border-acc group-hover:bg-acc/15 md:-left-[56px] md:h-8 md:w-8">
                 <span className="h-1.5 w-1.5 rounded-full bg-acc" aria-hidden="true" />

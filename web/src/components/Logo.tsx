@@ -17,7 +17,7 @@ interface LogoProps {
 export function Logo({ size = 36, showName = true, className, href = "/", label = "ScaleSmiths" }: LogoProps) {
   const mark = (
     <Image
-      src="/brand/scalesmiths-mark.png"
+      src="/brand/scalesmiths-mark.webp"
       alt={showName ? "" : label}
       width={size}
       height={size}

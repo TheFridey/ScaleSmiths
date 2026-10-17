@@ -1,5 +1,3 @@
-"use client"
-
 /**
  * Rising forge embers for the hero. Sized and lit to read clearly over the
  * molten atmosphere / video without turning into a particle blizzard.

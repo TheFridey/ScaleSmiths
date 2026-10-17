@@ -80,6 +80,9 @@ test.describe("trust footer and contact", () => {
 
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(/speak directly to the founders/i)
     await expect(page.getByRole("link", { name: /start a project brief/i })).toHaveAttribute("href", "/quote")
+    const nextStep = page.getByRole("complementary", { name: /what happens after you get in touch/i })
+    await expect(nextStep).toContainText(/a founder reviews the context/i)
+    await expect(nextStep).toContainText(/no payment is taken and no contract is created/i)
     await expect(page.getByRole("complementary", { name: /business details/i }).getByRole("link", { name: /trevor newton-bradley/i })).toHaveAttribute("href", "/about/trevor-newton-bradley")
     const canonical = await page.locator('link[rel="canonical"]').getAttribute("href")
     expect(new URL(canonical ?? "", "https://scalesmiths.co.uk").pathname).toBe("/contact")

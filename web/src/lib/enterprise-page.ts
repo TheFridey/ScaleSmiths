@@ -15,7 +15,7 @@ export const ENTERPRISE_PROOF_SLUGS = [
 export const enterprisePageCopy = {
   metaTitle: "Enterprise Software Development UK",
   metaDescription:
-    "Founder-led enterprise software development in Nottingham and across the UK. Bespoke operational platforms, internal systems, workflow software, integrations and legacy replacement, designed around how your organisation actually operates.",
+    "Founder-led enterprise software development in Nottingham and across the UK: operational platforms, integrations and legacy replacement built around real workflows.",
   eyebrow: "Enterprise systems",
   title: "Enterprise software built around how your organisation actually operates.",
   lede:

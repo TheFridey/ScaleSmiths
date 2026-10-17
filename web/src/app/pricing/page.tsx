@@ -19,7 +19,7 @@ import { getVerifiedPublicClaims } from "@/lib/public-claims.server"
 export const metadata: Metadata = buildPageMetadata({
   title: "Pricing Guidance",
   description:
-    "Transparent Web & Growth pricing for websites, audits, managed email and retainers, with enterprise software scoped following discovery rather than published as fixed retail prices.",
+    "Transparent pricing guidance for websites, audits, managed email and retainers, with enterprise software scoped after discovery.",
   path: "/pricing",
 })
 export const dynamic = "force-dynamic"

@@ -21,13 +21,6 @@ const syne = localFont({
   weight: "400 800",
 })
 
-const inter = localFont({
-  src: "./fonts/Inter.woff2",
-  weight: "100 900",
-  variable: "--font-dm",
-  display: "swap",
-})
-
 const siteUrl = siteBaseUrl()
 
 export const metadata: Metadata = {
@@ -69,7 +62,6 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       { url: "/brand/favicon.png", type: "image/png" },
-      { url: "/brand/scalesmiths-mark.png", type: "image/png" },
     ],
   },
 }
@@ -80,7 +72,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={`${syne.variable} ${inter.variable}`}>
+    <html lang="en" className={syne.variable}>
       <head>
         <JsonLd
           data={[buildOrganizationSchema(siteUrl), buildWebsiteSchema(siteUrl)]}

@@ -1,90 +1,48 @@
-"use client"
-
 import Link from "next/link"
-import { Fragment, useLayoutEffect, useRef } from "react"
-import { m } from "motion/react"
-import { usePrefersReducedMotion } from "@/lib/use-reduced-motion"
 import { ArrowRight, ArrowUpRight } from "lucide-react"
 import { HeroEmbers } from "@/components/HeroEmbers"
 import { HeroForgeVideo } from "@/components/HeroForgeVideo"
-import { motionStagger, revealMask, revealSoft, staggerContainer } from "@/lib/motion"
 
 const HERO_LINES = ["FORGE YOUR", "DIGITAL EDGE"] as const
-
-function renderHeroLine(text: string) {
-  return text.split(" ").map((word, wordIndex, words) => (
-    <Fragment key={`${word}-${wordIndex}`}>
-      <span className="inline-block whitespace-nowrap" aria-hidden="true">
-        {word.split("").map((char, charIndex) => (
-          <span key={`${char}-${charIndex}`} className="hero-char inline-block">
-            {char}
-          </span>
-        ))}
-      </span>
-      {wordIndex < words.length - 1 ? " " : null}
-    </Fragment>
-  ))
-}
+const HERO_STILL = "/brand/scalesmiths-forge-atmosphere.webp"
+const HERO_STILL_MOBILE = "/brand/scalesmiths-forge-atmosphere-mobile.webp"
 
 /**
  * First viewport budget: brand atmosphere, one headline, one supporting sentence,
  * one CTA group. Embers + forge plate carry the visual; no secondary marketing clutter.
  */
 export function Hero() {
-  const heroRef = useRef<HTMLElement>(null)
-  const reducedMotion = usePrefersReducedMotion()
-
-  useLayoutEffect(() => {
-    const root = heroRef.current
-    if (!root) return
-
-    const lines = Array.from(root.querySelectorAll<HTMLElement>(".hero-h"))
-    const fitLines = () => {
-      lines.forEach((line) => {
-        const mask = line.parentElement
-        if (!mask) return
-        mask.style.removeProperty("transform")
-        const maxWidth = Math.max(240, root.clientWidth - 48)
-        const scale = Math.min(1, maxWidth / Math.max(1, line.scrollWidth))
-        mask.style.transform = `scale(${scale})`
-        mask.style.transformOrigin = "center top"
-      })
-    }
-    fitLines()
-    const observer = new ResizeObserver(fitLines)
-    observer.observe(root)
-    void document.fonts?.ready?.then(fitLines)
-
-    return () => {
-      observer.disconnect()
-      lines.forEach((line) => {
-        const mask = line.parentElement
-        mask?.style.removeProperty("transform")
-        mask?.style.removeProperty("transform-origin")
-      })
-    }
-  }, [])
-
   return (
-    <section
-      ref={heroRef}
-      className="hero-grid-bg relative flex min-h-[min(92vh,960px)] w-full max-w-[100vw] flex-col items-center justify-center overflow-hidden px-6 pb-28 pt-20 text-center md:px-12 md:pb-32 md:pt-24"
-      aria-label="ScaleSmiths - forge your digital edge"
-    >
+    <>
+      <link rel="preload" as="image" href={HERO_STILL_MOBILE} type="image/webp" media="(max-width: 767px)" fetchPriority="high" />
+      <link rel="preload" as="image" href={HERO_STILL} type="image/webp" media="(min-width: 768px)" fetchPriority="high" />
+      <section
+        className="hero-grid-bg relative flex min-h-[min(92vh,960px)] w-full max-w-[100vw] flex-col items-center justify-center overflow-hidden px-6 pb-28 pt-20 text-center md:px-12 md:pb-32 md:pt-24"
+        aria-label="ScaleSmiths - forge your digital edge"
+      >
       <div className="hero-scene-fallback absolute inset-0" data-hero-scene="static" aria-hidden="true" />
 
-      {/* Forge atmosphere still-frame, under video / as fallback */}
+      {/* High-priority still paints first and remains the mobile cinematic treatment. */}
       <div
-        className="pointer-events-none absolute inset-0 z-[1] opacity-[0.58] md:opacity-[0.64]"
+        className="hero-atmosphere pointer-events-none absolute inset-0 z-[1] opacity-[0.58] md:opacity-[0.64]"
         aria-hidden="true"
-        style={{
-          backgroundImage: "url(/brand/scalesmiths-forge-atmosphere.webp)",
-          backgroundSize: "cover",
-          backgroundPosition: "center 62%",
-          maskImage: "linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.28) 14%, rgba(0,0,0,0.72) 44%, rgba(0,0,0,0.98) 74%, rgba(0,0,0,0.7) 100%)",
-          WebkitMaskImage: "linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.28) 14%, rgba(0,0,0,0.72) 44%, rgba(0,0,0,0.98) 74%, rgba(0,0,0,0.7) 100%)",
-        }}
-      />
+      >
+        {/* These already-optimised WebPs are served directly so a cold Next image
+            transform cannot add seconds to the first render. */}
+        <picture>
+          <source media="(max-width: 767px)" srcSet={HERO_STILL_MOBILE} type="image/webp" />
+          <img
+            src={HERO_STILL}
+            alt=""
+            width={577}
+            height={1024}
+            loading="eager"
+            fetchPriority="high"
+            decoding="async"
+            className="absolute inset-0 h-full w-full object-cover object-[center_62%]"
+          />
+        </picture>
+      </div>
 
       <HeroForgeVideo />
 
@@ -96,56 +54,52 @@ export function Hero() {
 
       <HeroEmbers />
 
-      <m.div
-        className="relative z-10 flex w-full flex-col items-center"
-        variants={staggerContainer}
-        initial={reducedMotion ? false : "hidden"}
-        animate="visible"
-        transition={{ delayChildren: 0.04, staggerChildren: motionStagger.tight }}
-      >
+      <div className="relative z-10 flex w-full flex-col items-center">
         {/* Local text scrim, keeps brand/headline readable across forge brightness cycles */}
         <div
           aria-hidden="true"
           data-hero-text-scrim
           className="hero-text-scrim pointer-events-none absolute left-1/2 top-1/2 z-0 h-[min(78%,38rem)] w-[min(100%,52rem)] -translate-x-1/2 -translate-y-[46%] rounded-[42%]"
         />
-        <m.p
-          variants={revealSoft}
-          className="hero-copy relative mb-8 font-syne text-xs font-semibold uppercase tracking-[0.28em] text-acc md:mb-10 md:tracking-[0.32em]"
-        >
+        <p className="hero-copy relative mb-8 font-syne text-xs font-semibold uppercase tracking-[0.28em] text-acc md:mb-10 md:tracking-[0.32em]">
           ScaleSmiths
-        </m.p>
+        </p>
 
         <h1 className="relative mb-7 w-full max-w-full overflow-hidden md:mb-8">
-          <span className="hero-line-overflow block">
-            <m.span variants={revealMask} className="hero-h hero-outline hero-copy font-syne inline-block whitespace-nowrap" aria-label={HERO_LINES[0]}>
-              {renderHeroLine(HERO_LINES[0])}
-            </m.span>
+          <span className="sr-only">Forge your digital edge</span>
+          <span className="hero-line-overflow block" aria-hidden="true">
+            <span className="hero-h hero-outline hero-copy font-syne inline-block whitespace-nowrap">
+              {HERO_LINES[0]}
+            </span>
           </span>
-          <span className="hero-line-overflow block">
-            <m.span variants={revealMask} className="hero-h hero-copy text-t1 font-syne inline-block whitespace-nowrap" aria-label={HERO_LINES[1]}>
-              {renderHeroLine(HERO_LINES[1])}
-            </m.span>
+          <span className="hero-line-overflow block" aria-hidden="true">
+            <span className="hero-h hero-copy text-t1 font-syne inline-block whitespace-nowrap">
+              {HERO_LINES[1]}
+            </span>
           </span>
         </h1>
 
-        <m.h2 variants={revealSoft} className="hero-copy relative mb-4 max-w-[18ch] font-syne text-[clamp(26px,3.4vw,40px)] font-bold leading-[1.12] tracking-[-0.02em] text-t1">
+        <h2 className="hero-copy relative mb-4 max-w-[18ch] font-syne text-[clamp(26px,3.4vw,40px)] font-bold leading-[1.12] tracking-[-0.02em] text-t1">
           More customers. Less wasted time.
-        </m.h2>
+        </h2>
 
-        <m.p variants={revealSoft} className="hero-copy relative mb-10 w-full max-w-[640px] font-dm text-[clamp(15px,1.7vw,18px)] font-light leading-relaxed text-t2 md:mb-12">
+        <p className="hero-copy relative mb-10 w-full max-w-[640px] font-dm text-[clamp(15px,1.7vw,18px)] font-light leading-relaxed text-t2 md:mb-12">
           For local businesses, growing companies and established organisations. We build websites, improve how you are found, and connect the systems that waste staff time.
-        </m.p>
+        </p>
 
-        <m.div variants={revealSoft} className="relative flex flex-wrap justify-center gap-3">
+        <div className="relative flex flex-wrap justify-center gap-3">
           <Link href="/quote?intent=strategy_call" prefetch={false} className="btn-primary font-dm">
             Discuss My Business <ArrowRight size={16} aria-hidden="true" />
           </Link>
           <Link href="/work" prefetch={false} className="btn-ghost font-dm">
             See the work <ArrowUpRight size={16} aria-hidden="true" />
           </Link>
-        </m.div>
-      </m.div>
-    </section>
+        </div>
+        <p className="hero-copy relative mt-5 font-dm text-xs leading-relaxed text-t2">
+          Founder-reviewed. Submitting an enquiry does not take payment or create a contract.
+        </p>
+      </div>
+      </section>
+    </>
   )
 }

@@ -5,7 +5,7 @@ import { buildPageMetadata } from "./page-metadata"
 export const enterpriseContactCopy = {
   metaTitle: "Enterprise Discovery Enquiry",
   metaDescription:
-    "Start a focused enterprise discovery with ScaleSmiths. Share organisation context, operating constraints and system requirements so we can qualify a serious custom software conversation.",
+    "Start a focused enterprise discovery with ScaleSmiths. Share operating constraints and system requirements for a serious custom software conversation.",
   eyebrow: "Enterprise discovery",
   brand: "ScaleSmiths",
   title: "Start a focused enterprise discovery.",

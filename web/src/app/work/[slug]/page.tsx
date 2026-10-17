@@ -50,11 +50,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const study = getCaseStudy(slug)
   if (!study) return {}
   const image = primaryImage(study)
+  const description = study.slug === "confirm-a-kill"
+    ? "See how ScaleSmiths rebuilt Confirm-A-Kill's pest-control website around local search, conversion, structured content, analytics and long-term growth."
+    : study.slug === "foot-works-podiatry"
+      ? "See how ScaleSmiths improved Foot Works' existing Squarespace site around treatment discovery, patient trust and Jane App booking routes."
+      : study.summary ?? `${study.name} case study by ScaleSmiths.`
   return buildPageMetadata({
     title: study.slug === "confirm-a-kill" ? "Confirm-A-Kill Case Study | Custom Website & SEO" : `${study.name} Case Study`,
-    description: study.slug === "confirm-a-kill"
-      ? "See how ScaleSmiths rebuilt Confirm-A-Kill's pest-control website around local search, conversion, structured content, analytics and long-term growth."
-      : study.summary ?? `${study.name} case study by ScaleSmiths.`,
+    description,
     path: `/work/${study.slug}`,
     type: "article",
     image: image ? { url: image.src, alt: image.alt } : undefined,

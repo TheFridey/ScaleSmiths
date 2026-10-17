@@ -26,7 +26,7 @@ export function metadataForIndustriesIndex(): Metadata {
     title: "Industries We Help",
     absoluteTitle: "Industries We Help | ScaleSmiths",
     description:
-      "Find your industry. Sector hubs and specialist pages for trades, clinics, hospitality, retail, manufacturing, SaaS and more — with honest Build and Growth Partnership routes.",
+      "Explore ScaleSmiths sector hubs for trades, clinics, hospitality, retail, manufacturing, SaaS and more, with honest build and growth routes.",
     path: "/industries",
   })
 }

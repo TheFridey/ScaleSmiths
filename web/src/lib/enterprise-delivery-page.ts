@@ -9,7 +9,7 @@ export const ENTERPRISE_DELIVERY_CTA_ANCHOR = "start-discovery"
 export const enterpriseDeliveryCopy = {
   metaTitle: "Enterprise Software Delivery Process | ScaleSmiths",
   metaDescription:
-    "How ScaleSmiths handles complex software engagements from discovery through production rollout, founder-led engineering with structured enterprise delivery, staged risk reduction and clear change control.",
+    "How ScaleSmiths takes complex software from discovery through production with founder-led engineering, staged risk reduction and clear change control.",
   eyebrow: "Enterprise delivery",
   title: "Founder-led engineering with structured enterprise delivery.",
   lede:

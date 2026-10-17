@@ -46,7 +46,7 @@ export const enterpriseInsights: Insight[] = [
   buildEnterpriseArticle({
     slug: "when-two-saas-platforms-should-become-one-bespoke-system",
     title: "When Two SaaS Platforms Should Become One Bespoke System",
-    seoTitle: "When Two SaaS Tools Should Become One Bespoke System",
+    seoTitle: "When Two SaaS Tools Should Become One System",
     description: "How to decide when consolidating two SaaS platforms into one bespoke system reduces risk, cost and operational friction, and when it does not.",
     answer:
       "Two SaaS platforms should become one bespoke system when the shared workflow is the product of the business, not a side process you can afford to keep fragmented. The signal is structural: the same entities are duplicated, hand-offs create delay or error, permissions cannot be expressed across both products, and integrations become a permanent tax rather than a bridge. Consolidation is not a reflex against licence fees. It is justified when a single domain model, one permission boundary and one operational surface remove more risk than they introduce. ScaleSmiths treats that decision as architecture work inside [enterprise](/enterprise) delivery, not as a shopping exercise for another vendor feature list.",

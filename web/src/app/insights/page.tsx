@@ -18,7 +18,7 @@ import { buildBreadcrumbSchema } from "@/lib/structured-data"
 
 const baseMetadata = buildPageMetadata({
   title: "Insights",
-  absoluteTitle: "Insights on Enterprise Software, Engineering & Growth | ScaleSmiths",
+  absoluteTitle: "Enterprise Software, Engineering & Growth Insights | ScaleSmiths",
   description:
     "Technical guidance from ScaleSmiths on enterprise software, engineering, websites, search and infrastructure, written by the founders doing the work.",
   path: "/insights",

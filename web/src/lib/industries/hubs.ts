@@ -17,7 +17,7 @@ export const industryHubs: Record<string, IndustryHub> = {
     intro:
       "Emergency calls, planned jobs, service-area coverage and trust signals all compete for attention on a phone. These industry pages focus on the customer journeys that turn search into booked work — without pretending every trade is identical.",
     audience: "Owner-operators, estimators and office managers who lose work to missed calls, unclear service pages or slow follow-up.",
-    featuredIndustrySlugs: ["pest-control", "plastering-rendering", "roofing", "electricians"],
+    featuredIndustrySlugs: ["pest-control", "plastering-rendering", "plumbers", "roofing", "electricians", "locksmiths"],
     relatedSolutionHrefs: ["/local-growth", "/web-design-nottingham", "/digital-growth-partnership"],
   },
   "healthcare-wellness": {
@@ -32,7 +32,7 @@ export const industryHubs: Record<string, IndustryHub> = {
     intro:
       "Patients arrive with questions, anxiety and limited time. Clinic pages should make treatments, practitioners and next steps understandable — and never invent clinical outcomes ScaleSmiths cannot substantiate.",
     audience: "Practice owners, clinic managers and practitioners responsible for patient enquiries and reputation.",
-    featuredIndustrySlugs: ["podiatry"],
+    featuredIndustrySlugs: ["podiatry", "physiotherapy", "dental-practices", "veterinary-clinics"],
     relatedSolutionHrefs: ["/local-growth", "/services/business-growth-audit", "/digital-growth-partnership"],
   },
   "hospitality-experiences": {
@@ -47,7 +47,7 @@ export const industryHubs: Record<string, IndustryHub> = {
     intro:
       "Menus move, hours change, and most discovery happens on a phone between plans. These pages focus on keeping information accurate and making the next step — book, order, enquire — obvious.",
     audience: "Owners and managers of restaurants, cafes, venues and experience businesses.",
-    featuredIndustrySlugs: ["restaurants"],
+    featuredIndustrySlugs: ["restaurants", "hotels"],
     relatedSolutionHrefs: ["/local-growth", "/custom-systems", "/digital-growth-partnership"],
   },
   "retail-ecommerce": {
@@ -62,7 +62,7 @@ export const industryHubs: Record<string, IndustryHub> = {
     intro:
       "Catalogue accuracy, shipping clarity and checkout friction decide whether a visitor becomes a customer. These pages separate brochure ambition from operational commerce reality.",
     audience: "Independent retailers, DTC brands and multi-channel operators.",
-    featuredIndustrySlugs: ["independent-retail"],
+    featuredIndustrySlugs: ["independent-retail", "homeware"],
     relatedSolutionHrefs: ["/e-commerce-development-nottingham", "/custom-systems", "/digital-growth-partnership"],
   },
   "manufacturing-industrial": {
@@ -77,7 +77,7 @@ export const industryHubs: Record<string, IndustryHub> = {
     intro:
       "Procurement teams want tolerances, materials, lead times and a serious RFQ path. These pages help manufacturers present verified capability without inventing specifications ScaleSmiths has not confirmed.",
     audience: "Owner-managers, sales engineers and operations leads in B2B manufacturing.",
-    featuredIndustrySlugs: ["precision-engineering"],
+    featuredIndustrySlugs: ["precision-engineering", "metal-fabrication", "industrial-automation"],
     relatedSolutionHrefs: ["/custom-systems", "/custom-software-development-uk", "/enterprise"],
   },
   "technology-software": {
@@ -92,7 +92,7 @@ export const industryHubs: Record<string, IndustryHub> = {
     intro:
       "Demo activation, security questions and stakeholder buy-in decide pipeline quality. These pages focus on practical product and marketing engineering — not vanity growth hacks.",
     audience: "Founders, product leads and GTM owners in SaaS and specialist B2B software.",
-    featuredIndustrySlugs: ["b2b-saas"],
+    featuredIndustrySlugs: ["b2b-saas", "managed-it"],
     relatedSolutionHrefs: ["/custom-systems", "/enterprise", "/digital-growth-partnership"],
   },
   "media-creative": {
@@ -137,7 +137,7 @@ export const industryHubs: Record<string, IndustryHub> = {
     intro:
       "Prospects compare credentials, process and responsiveness before they enquire. These pages help firms explain services without crossing professional advertising lines ScaleSmiths cannot advise on alone.",
     audience: "Partners and practice managers in accountancy and adjacent professional firms.",
-    featuredIndustrySlugs: ["accountants"],
+    featuredIndustrySlugs: ["accountants", "recruiters"],
     relatedSolutionHrefs: ["/local-growth", "/custom-systems", "/digital-growth-partnership"],
   },
 }

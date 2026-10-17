@@ -17,6 +17,7 @@ import {
   traditionalHomepageRedirectUrl,
 } from "@/lib/experience-routing"
 import { shouldRespectPrivacyOptOut } from "@/lib/experience-analytics"
+import { canonicalWwwRedirectUrl } from "@/lib/canonical-host"
 import { normalizeRequestId, REQUEST_ID_HEADER } from "@/lib/request-correlation"
 
 export function middleware(request: NextRequest) {
@@ -30,6 +31,11 @@ export function middleware(request: NextRequest) {
   const correlated = <T extends NextResponse>(response: T) => {
     response.headers.set(REQUEST_ID_HEADER, requestId)
     return response
+  }
+
+  const wwwRedirect = canonicalWwwRedirectUrl(request.headers.get("host"), request.nextUrl)
+  if (wwwRedirect) {
+    return correlated(NextResponse.redirect(wwwRedirect, 308))
   }
 
   if (request.nextUrl.pathname === "/traditional") {

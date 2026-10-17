@@ -7,7 +7,9 @@ import { ProjectCard } from "@/components/work/ProjectCard"
 import { caseStudiesForSlugs } from "@/lib/case-studies"
 import {
   buildIndustryPageSchemas,
+  getIndustryDemonstration,
   getIndustryHub,
+  industryDemonstrationPath,
   industryPath,
   publishedIndustryPages,
   type IndustryPage,
@@ -55,6 +57,7 @@ function variantAtmosphere(presentation: IndustryPage["presentation"]) {
 export function IndustryPageView({ page }: { page: IndustryPage }) {
   const hub = getIndustryHub(page.hubSlug)
   const schemas = buildIndustryPageSchemas(page, siteBaseUrl())
+  const demonstration = getIndustryDemonstration(page.hubSlug)
   const proofStudies = page.proof.workSlug ? caseStudiesForSlugs([page.proof.workSlug]) : []
   const related = page.relatedIndustrySlugs
     .map((slug) => {
@@ -95,6 +98,13 @@ export function IndustryPageView({ page }: { page: IndustryPage }) {
               <p className="mt-4 max-w-[720px] font-dm text-base leading-relaxed text-t2">{page.searchIntent}</p>
               <p className="mt-4 font-dm text-sm text-t2">For {page.buyer}</p>
               <IndustryHeroCtas page={page} />
+              {demonstration ? (
+                <p className="mt-4">
+                  <Link href={industryDemonstrationPath(page.hubSlug)} prefetch={false} className="inline-flex min-h-11 items-center font-dm text-sm font-semibold text-acc">
+                    Walk through the {demonstration.shortName} workflow
+                  </Link>
+                </p>
+              ) : null}
               <p className="mt-4 max-w-[680px] font-dm text-xs leading-relaxed text-t3">
                 <Link href="/pricing#published-prices" prefetch={false} className="underline underline-offset-2 hover:text-t1">Starting prices</Link> are published for websites, partnerships, the audit and business email. Larger work is quoted once the scope is clear.
               </p>

@@ -1,4 +1,5 @@
 export * from "./commercial"
+export * from "./demonstrations"
 export * from "./hubs"
 export * from "./pages"
 export * from "./registry"

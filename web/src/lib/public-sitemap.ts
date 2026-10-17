@@ -33,6 +33,7 @@ export function buildPublicSitemap(siteUrl = "https://scalesmiths.co.uk"): Metad
     ...founders.map((founder) => ({ url: `${base}/about/${founder.slug}`, lastModified: lastModified(), changeFrequency: "monthly" as const, priority: 0.7 })),
     { url: `${base}/contact`,     lastModified: lastModified(), changeFrequency: "yearly", priority: 0.6 },
     { url: `${base}/pricing`,     lastModified: lastModified(), changeFrequency: "monthly", priority: 0.8 },
+    { url: `${base}/international`, lastModified: lastModified(), changeFrequency: "monthly", priority: 0.8 },
     { url: `${base}/digital-growth-partnership`, lastModified: lastModified(), changeFrequency: "monthly", priority: 0.9 },
     { url: `${base}/quote`,       lastModified: lastModified(), changeFrequency: "yearly", priority: 0.7 },
     { url: `${base}/local-growth-check`, lastModified: lastModified(), changeFrequency: "monthly", priority: 0.8 },

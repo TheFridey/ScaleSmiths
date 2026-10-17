@@ -97,13 +97,17 @@ test.describe("enquiry routes", () => {
     expect(attribution.utmCampaign).toBe("october")
   })
 
-  test("GA4 stays installed and denied until analytics consent", async ({ page }) => {
+  test("GA4 is not requested until analytics consent is granted", async ({ page }) => {
     await gotoReady(page, "/")
-    const html = await page.content()
-    expect(html).toContain("G-24NM2GTZ0C")
-    expect(html).toContain("analytics_storage")
-    expect(html).toContain("denied")
-    expect(html).not.toContain("analytics_storage': 'granted'")
+    expect(await page.locator('script[src*="googletagmanager.com/gtag/js"]').count()).toBe(0)
+    expect(await page.content()).not.toContain("G-24NM2GTZ0C")
+
+    await page.getByRole("button", { name: "Cookie Settings" }).click()
+    await page.getByRole("dialog", { name: "Cookies and browser storage" }).getByRole("button", { name: "Accept all" }).click()
+
+    await expect.poll(() => page.locator('script[src*="googletagmanager.com/gtag/js"]').count()).toBe(1)
+    expect(await page.content()).toContain("analytics_storage")
+    expect(await page.content()).toContain("granted")
   })
 
   test("the public registration line and enquiry acquisition disclosure are on the site", async ({ page }) => {

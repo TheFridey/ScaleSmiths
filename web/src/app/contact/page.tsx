@@ -81,6 +81,14 @@ export default function ContactPage() {
                   </li>
                 ))}
               </ul>
+
+              <aside aria-labelledby="contact-next-step" className="mt-6 rounded-2xl border border-acc/20 bg-acc/[.05] p-5">
+                <h2 id="contact-next-step" className="font-syne text-lg font-bold">What happens after you get in touch</h2>
+                <p className="mt-2 font-dm text-sm leading-relaxed text-t2">
+                  A founder reviews the context and replies with the most sensible next conversation. If ScaleSmiths is not the right fit, we will say so rather than force the enquiry into a package.
+                </p>
+                <p className="mt-3 font-dm text-xs leading-relaxed text-t3">No payment is taken and no contract is created by sending an enquiry.</p>
+              </aside>
             </AnimateIn>
 
             <AnimateIn delay={0.06}>

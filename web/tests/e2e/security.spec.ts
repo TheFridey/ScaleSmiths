@@ -16,8 +16,11 @@ const SECTION_HEADINGS = [
   /secrets stay out of source control/i,
   /make important actions reconstructable/i,
   /from design through dependency risk/i,
-  /backups, observability and incident handling/i,
+  /controls that are run, not only designed/i,
+  /backups, observability and protective controls/i,
+  /written incident response process/i,
   /meet the estate where it already has rules/i,
+  /business insurance/i,
   /certifications and assurance/i,
   /review security requirements with the people who would build the system/i,
 ] as const
@@ -46,6 +49,11 @@ test.describe("security & trust page", () => {
       }
 
       await expect(page.getByText(/does not currently claim/i)).toBeVisible()
+      await expect(page.getByRole("heading", { name: /professional indemnity/i })).toBeVisible()
+      await expect(page.getByText("£1,000,000").first()).toBeVisible()
+      await expect(page.getByText("£5,000,000").first()).toBeVisible()
+      await expect(page.getByText("£10,000,000").first()).toBeVisible()
+      await expect(page.getByRole("heading", { name: /declare and contain/i })).toBeVisible()
       await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", /\/security$/)
 
       const jsonLd = (await page.locator('script[type="application/ld+json"]').allTextContents()).join(" ")

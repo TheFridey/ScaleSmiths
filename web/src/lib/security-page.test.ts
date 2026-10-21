@@ -5,6 +5,9 @@ import {
   metadataForSecurityPage,
   securityAssurance,
   securityFaqs,
+  securityIncidentResponse,
+  securityInsurance,
+  securityOperatingControls,
   securityPageCopy,
   securitySections,
 } from "./security-page"
@@ -28,6 +31,12 @@ describe("security page content", () => {
     const blob = [
       ...securitySections.flatMap((section) => [section.title, ...section.items.map((item) => `${item.title} ${item.body}`)]),
       ...securityFaqs.map((item) => `${item.q} ${item.a}`),
+      ...securityOperatingControls.map((item) => `${item.title} ${item.body}`),
+      securityIncidentResponse.title,
+      securityIncidentResponse.intro,
+      ...securityIncidentResponse.phases.map((phase) => `${phase.title} ${phase.body}`),
+      securityInsurance.title,
+      ...securityInsurance.coverages.map((item) => `${item.name} ${item.summary} ${item.limit}`),
     ].join(" ").toLowerCase()
 
     for (const term of ["tls", "rbac", "sso", "oidc", "saml", "mfa", "csp", "secrets", "audit", "backup", "penetration"]) {
@@ -36,10 +45,48 @@ describe("security page content", () => {
     expect(securityFaqs.length).toBeGreaterThanOrEqual(8)
   })
 
+  it("publishes operating security controls and a written incident response process", () => {
+    expect(securityOperatingControls.length).toBeGreaterThanOrEqual(6)
+    expect(securityOperatingControls.map((item) => item.title).join(" ")).toMatch(/identity|change|secrets|dependency|logging|backup/i)
+
+    expect(securityIncidentResponse.title).toMatch(/written incident response/i)
+    expect(securityIncidentResponse.phases.map((phase) => phase.title)).toEqual([
+      "Declare and contain",
+      "Diagnose",
+      "Recover",
+      "Verify and close",
+    ])
+    expect(securityIncidentResponse.notification.toLowerCase()).toContain("notification")
+  })
+
+  it("states held business insurance cover with limits", () => {
+    expect(securityInsurance.coverages).toEqual([
+      {
+        name: "Professional Indemnity",
+        summary: "Negligence, professional errors, omissions and associated claims",
+        limit: "£1,000,000",
+      },
+      {
+        name: "Public & Products Liability",
+        summary: "Third-party injury and property damage",
+        limit: "£5,000,000",
+      },
+      {
+        name: "Employers' Liability",
+        summary: "Employee injuries and work-related illness",
+        limit: "£10,000,000",
+      },
+    ])
+    expect(securityInsurance.boundary.toLowerCase()).toContain("subject to the terms")
+    expect(securityFaqs.some((item) => /insurance/i.test(item.q))).toBe(true)
+  })
+
   it("publishes metadata, canonical and schemas", () => {
     const metadata = metadataForSecurityPage()
     expect(metadata.alternates?.canonical).toBe(SECURITY_PATH)
     expect(String(metadata.description)).toMatch(/secure software development/i)
+    expect(String(metadata.description)).toMatch(/incident response/i)
+    expect(String(metadata.description)).toMatch(/insurance/i)
 
     const schemas = buildSecurityPageSchemas("https://scalesmiths.co.uk")
     expect(schemas.map((schema) => schema["@type"])).toEqual(["WebPage", "FAQPage"])

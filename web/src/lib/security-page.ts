@@ -9,11 +9,11 @@ export const SECURITY_CONTACT_ANCHOR = "security-contact"
 export const securityPageCopy = {
   metaTitle: "Security & Trust | Secure Software Development UK",
   metaDescription:
-    "ScaleSmiths' approach to secure software development: data protection, infrastructure and operational resilience designed into custom and enterprise delivery.",
+    "ScaleSmiths' approach to secure software development: operating security controls, a written incident response process, business insurance cover, data protection and operational resilience for custom and enterprise delivery.",
   eyebrow: "Security & trust",
   title: "Security designed into the architecture, not bolted on at the end.",
   lede:
-    "ScaleSmiths designs security into the architecture and delivery process rather than treating it as a final checklist. This page explains how we approach identity, application security, data protection, infrastructure, resilience and secure delivery for custom and enterprise software, in language that IT, security and procurement can inspect.",
+    "ScaleSmiths designs security into the architecture and delivery process rather than treating it as a final checklist. This page explains the operating controls we run, our written incident response process, the business insurance we hold, and how we approach identity, data protection, infrastructure and secure delivery for custom and enterprise software, in language that IT, security and procurement can inspect.",
   primaryCta: {
     label: "Discuss security requirements",
     href: `${SECURITY_PATH}#${SECURITY_CONTACT_ANCHOR}`,
@@ -142,6 +142,33 @@ export const securityLifecycle = [
   },
 ] as const
 
+export const securityOperatingControls = [
+  {
+    title: "Identity and privileged access",
+    body: "Administrative access is gated by authentication, MFA where enforced for privileged roles, and role-based permissions. Least privilege is the default; elevation is an explicit decision, not ambient access.",
+  },
+  {
+    title: "Environment and change control",
+    body: "Development, staging and production stay separated. Production changes travel through controlled CI/CD promotion, review and release gates rather than ad-hoc drift on live systems.",
+  },
+  {
+    title: "Secrets and credential hygiene",
+    body: "Provider keys, auth secrets and encryption material are kept out of source control and public client bundles. Access to production secrets is limited to the people and systems that need them for delivery and support.",
+  },
+  {
+    title: "Dependency and vulnerability governance",
+    body: "Dependencies are pinned where governance requires it, scanned for material risk, and updated through controlled paths. High and critical findings are treated as release blockers until remediated or formally accepted.",
+  },
+  {
+    title: "Logging, audit and evidence",
+    body: "Structured logs and security-relevant events support investigation. Where the domain requires it, sensitive actions can be recorded in append-oriented audit trails retained for an agreed period.",
+  },
+  {
+    title: "Backup, restore and release readiness",
+    body: "Backups, restore evidence and rollback paths are part of production readiness. Operators keep incident and rollback runbooks reachable without depending on a failing application.",
+  },
+] as const
+
 export const securityResilience = [
   {
     title: "Backups and recovery",
@@ -149,17 +176,72 @@ export const securityResilience = [
   },
   {
     title: "Disaster recovery planning",
-    body: "Recovery expectations are discussed as design constraints === RPO/RTO aspirations, failover shape and restore rehearsal === rather than assumed from hosting defaults alone.",
+    body: "Recovery expectations are discussed as design constraints — RPO/RTO aspirations, failover shape and restore rehearsal — rather than assumed from hosting defaults alone.",
   },
   {
     title: "Monitoring and observability",
     body: "Health checks, error reporting, performance signals and operational dashboards are designed so failures are visible before users have to report them.",
   },
   {
-    title: "Incident response approach",
-    body: "Incidents are handled with containment, investigation, communication and remediation. Personal-data incidents follow the contractual and legal notification duties that apply to the engagement.",
+    title: "Abuse and availability controls",
+    body: "Rate limiting, health verification and proportionate protective action reduce brute-force, scraping and cascading failure pressure on public and sensitive endpoints.",
   },
 ] as const
+
+export const securityIncidentResponse = {
+  title: "Written incident response process",
+  intro:
+    "ScaleSmiths maintains a written production incident response process for authentication compromise, client-data exposure, credential leakage, database failure and bad releases. The process prioritises evidence preservation, client isolation and restoring the smallest safe service surface.",
+  phases: [
+    {
+      step: "01",
+      title: "Declare and contain",
+      body: "Name an incident lead, start a UTC timeline, assign severity and record the affected release, services and clients. Stop risky deployments. Preserve logs, audit rows and release records. Disable compromised identities, revoke exposed credentials and restrict affected surfaces before cleanup begins.",
+    },
+    {
+      step: "02",
+      title: "Diagnose",
+      body: "Capture the approved release identity, image digests and upstream state. Collect bounded application, infrastructure and database evidence with secrets and client form bodies redacted. Confirm health endpoints, migration state, failed transactions and the precise client or data scope before wider sharing.",
+    },
+    {
+      step: "03",
+      title: "Recover",
+      body: "Prefer controlled application rollback to a previously validated release where that restores a safe schema and service. Restore databases only when application rollback cannot safely continue, using isolated recovery first and an explicit recovery-point decision before any production replacement. Rotate compromised secrets with a clear session-revocation plan.",
+    },
+    {
+      step: "04",
+      title: "Verify and close",
+      body: "Re-test authentication, authorisation boundaries, client scoping, critical user journeys and health endpoints. Document impact, root cause, containment, data scope, rotations and follow-up owners. Add a regression check for the failure mode and set a dated review for every deferred action.",
+    },
+  ],
+  notification:
+    "Personal-data and contractual incidents follow the notification duties that apply to the engagement, including controller notification under the Data Processing Addendum where ScaleSmiths acts as processor. Regulatory reporting is assessed through the approved legal and incident process rather than inferred from a technical runbook alone.",
+} as const
+
+export const securityInsurance = {
+  title: "Business insurance",
+  intro:
+    "ScaleSmiths holds business insurance cover so procurement and risk teams can see the financial protections that sit alongside technical controls. Certificates of insurance can be provided on request for due diligence.",
+  coverages: [
+    {
+      name: "Professional Indemnity",
+      summary: "Negligence, professional errors, omissions and associated claims",
+      limit: "£1,000,000",
+    },
+    {
+      name: "Public & Products Liability",
+      summary: "Third-party injury and property damage",
+      limit: "£5,000,000",
+    },
+    {
+      name: "Employers' Liability",
+      summary: "Employee injuries and work-related illness",
+      limit: "£10,000,000",
+    },
+  ],
+  boundary:
+    "Cover is subject to the terms, conditions, exclusions and limits of the policies in force at the relevant time. Insurance does not replace contractual obligations, technical controls or residual-risk discussion for a specific engagement.",
+} as const
 
 export const securityHosting = [
   {
@@ -228,6 +310,18 @@ export const securityFaqs = [
   {
     q: "Can systems support audit trails?",
     a: "Yes. Systems can be architected with structured logging and, where required, append-oriented or immutable audit trails for sensitive actions and operational evidence.",
+  },
+  {
+    q: "What operating security controls do you run day to day?",
+    a: "Privileged access controls, environment separation, controlled production releases, secrets hygiene, dependency governance, structured logging and backup/restore readiness are operated as part of delivery rather than described only as design intent. Client-specific controls can be reviewed before development.",
+  },
+  {
+    q: "Do you have a written incident response process?",
+    a: "Yes. Production incidents follow a written declare-and-contain, diagnose, recover, and verify-and-close process, with evidence preservation and client isolation prioritised. Personal-data incidents follow the contractual and legal notification duties that apply to the engagement.",
+  },
+  {
+    q: "What business insurance does ScaleSmiths hold?",
+    a: "ScaleSmiths holds Professional Indemnity cover of £1,000,000 for negligence, professional errors, omissions and associated claims; Public & Products Liability of £5,000,000 for third-party injury and property damage; and Employers' Liability of £10,000,000 for employee injuries and work-related illness. Cover is subject to policy terms. Certificates can be provided on request.",
   },
 ] as const
 

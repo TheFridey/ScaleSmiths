@@ -11,7 +11,10 @@ import {
   securityAssurance,
   securityFaqs,
   securityHosting,
+  securityIncidentResponse,
+  securityInsurance,
   securityLifecycle,
+  securityOperatingControls,
   securityPageCopy,
   securityPhilosophy,
   securityResilience,
@@ -174,23 +177,68 @@ export function SecurityPage() {
         </div>
       </section>
 
-      <section aria-labelledby="security-resilience" className="border-y border-b1 bg-s1 px-6 py-20 md:px-12 md:py-24">
+      <section aria-labelledby="security-operating-controls" className="border-y border-b1 bg-s1 px-6 py-20 md:px-12 md:py-24">
+        <div className="mx-auto max-w-[1240px]">
+          <AnimateIn>
+            <SectionEyebrow>Operating security controls</SectionEyebrow>
+            <SectionHeading id="security-operating-controls">Controls that are run, not only designed.</SectionHeading>
+            <SectionLede>
+              Prospective clients can inspect the operating controls ScaleSmiths applies to privileged access, change, secrets, dependencies, evidence and restore readiness.
+            </SectionLede>
+          </AnimateIn>
+          <div className="mt-10 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {securityOperatingControls.map((item) => (
+              <article key={item.title} className="rounded-2xl border border-b1 bg-bg p-6">
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 size={15} className="mt-1 shrink-0 text-acc" aria-hidden="true" />
+                  <div>
+                    <h3 className="font-syne text-lg font-bold">{item.title}</h3>
+                    <p className="mt-2 font-dm text-sm leading-relaxed text-t2">{item.body}</p>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="security-resilience" className="px-6 py-20 md:px-12 md:py-24">
         <div className="mx-auto max-w-[1240px]">
           <AnimateIn>
             <SectionEyebrow>Resilience and operations</SectionEyebrow>
-            <SectionHeading id="security-resilience">Backups, observability and incident handling are part of the system.</SectionHeading>
+            <SectionHeading id="security-resilience">Backups, observability and protective controls are part of the system.</SectionHeading>
             <SectionLede>
               Availability and recoverability are security concerns when the software becomes operationally critical.
             </SectionLede>
           </AnimateIn>
           <div className="mt-10 grid gap-3 md:grid-cols-2">
             {securityResilience.map((item) => (
-              <article key={item.title} className="rounded-2xl border border-b1 bg-bg p-6">
+              <article key={item.title} className="rounded-2xl border border-b1 bg-s1 p-6">
                 <h3 className="font-syne text-lg font-bold">{item.title}</h3>
                 <p className="mt-3 font-dm text-sm leading-relaxed text-t2">{item.body}</p>
               </article>
             ))}
           </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="security-incident-response" className="border-y border-b1 bg-s1 px-6 py-20 md:px-12 md:py-24">
+        <div className="mx-auto max-w-[1240px]">
+          <AnimateIn className="max-w-[820px]">
+            <SectionEyebrow>Incident response</SectionEyebrow>
+            <SectionHeading id="security-incident-response">{securityIncidentResponse.title}</SectionHeading>
+            <SectionLede>{securityIncidentResponse.intro}</SectionLede>
+          </AnimateIn>
+          <ol className="mt-10 grid gap-3 lg:grid-cols-2">
+            {securityIncidentResponse.phases.map((phase) => (
+              <li key={phase.step} className="rounded-2xl border border-b1 bg-bg p-6 md:p-7">
+                <span className="font-syne text-sm font-bold text-acc">{phase.step}</span>
+                <h3 className="mt-2 font-syne text-lg font-bold">{phase.title}</h3>
+                <p className="mt-3 font-dm text-sm leading-relaxed text-t2">{phase.body}</p>
+              </li>
+            ))}
+          </ol>
+          <p className="mt-8 max-w-[820px] font-dm text-sm leading-relaxed text-t3">{securityIncidentResponse.notification}</p>
         </div>
       </section>
 
@@ -211,6 +259,26 @@ export function SecurityPage() {
               </article>
             ))}
           </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="security-insurance" className="border-y border-b1 bg-s1 px-6 py-20 md:px-12 md:py-24">
+        <div className="mx-auto max-w-[1240px]">
+          <AnimateIn className="max-w-[820px]">
+            <SectionEyebrow>Insurance</SectionEyebrow>
+            <SectionHeading id="security-insurance">{securityInsurance.title}</SectionHeading>
+            <SectionLede>{securityInsurance.intro}</SectionLede>
+          </AnimateIn>
+          <div className="mt-10 grid gap-3 lg:grid-cols-3">
+            {securityInsurance.coverages.map((coverage) => (
+              <article key={coverage.name} className="rounded-2xl border border-b1 bg-bg p-6 md:p-7">
+                <h3 className="font-syne text-lg font-bold">{coverage.name}</h3>
+                <p className="mt-3 font-dm text-sm leading-relaxed text-t2">{coverage.summary}</p>
+                <p className="mt-5 font-syne text-2xl font-extrabold tracking-[-.02em] text-t1">{coverage.limit}</p>
+              </article>
+            ))}
+          </div>
+          <p className="mt-8 max-w-[820px] font-dm text-sm leading-relaxed text-t3">{securityInsurance.boundary}</p>
         </div>
       </section>
 
@@ -243,7 +311,7 @@ export function SecurityPage() {
         id="security-faqs"
         eyebrow="Enterprise security FAQ"
         title="Direct answers before procurement deepens."
-        intro="Cloud hosting, SSO, residency, documentation, backups and audit trails, without inventing certifications."
+        intro="Operating controls, incident response, insurance, cloud hosting, SSO, residency, documentation, backups and audit trails, without inventing certifications."
         items={securityFaqs}
         hubHash="custom-development"
         className="border-t border-b1 bg-s1/50"

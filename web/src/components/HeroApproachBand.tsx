@@ -1,60 +1,56 @@
 import Link from "next/link"
 import { ArrowRight } from "lucide-react"
-import {
-  STARTING_PRICE_BOUNDARY,
-  publishedStartingPrices,
-} from "@/lib/published-starting-prices"
 
 const PROBLEMS = [
   {
-    title: "The right enquiries are not coming",
-    body: "The website, the way you are found, or the path people use to get in touch is losing work you should be winning.",
+    title: "Customer journeys no longer match the organisation",
+    body: "The public site, enquiry paths or service explanations lag how the business actually sells and delivers.",
   },
   {
-    title: "Staff time is disappearing into admin",
-    body: "Enquiries arrive incomplete, the same details are typed in twice, or the site is too awkward to keep up to date.",
+    title: "Operational friction sits behind the website",
+    body: "Enquiries arrive incomplete, details are retyped, or staff work around systems that were never designed to connect.",
   },
   {
-    title: "The digital journey does not match the business",
-    body: "A growing company has outgrown a brochure site, a stack of tools, or a process that only works when one person remembers it.",
+    title: "The estate has outgrown a brochure build",
+    body: "Multi-site, multi-offer or integration-heavy work needs architecture and scoping, not another template refresh.",
   },
   {
     title: "A larger brief needs a straight answer",
-    body: "You need platforms, integrations or a migration discussed properly, including what ScaleSmiths should not take on.",
+    body: "You need platforms, migrations or corporate digital work discussed properly, including what ScaleSmiths should not take on.",
   },
 ] as const
 
 const BUYERS = [
   {
-    title: "Smaller businesses",
-    body: "A professionally scoped website, a one-time audit, or business email. The starting point is published. The scope is agreed before work starts.",
-    href: "/services",
-    label: "See the services",
+    title: "Independent and growing businesses",
+    body: "Websites, visibility and Growth Partnerships with transparent starting prices and agreed scope before work starts.",
+    href: "/pricing#web-growth",
+    label: "Business Websites & Growth",
   },
   {
-    title: "Growing companies",
-    body: "Better enquiries, a website that can keep up, and a partnership that improves the work month by month.",
-    href: "/digital-growth-partnership",
-    label: "Explore a partnership",
+    title: "Established and multi-site organisations",
+    body: "Corporate websites, journey architecture, integrations and digital transformation scoped around real objectives.",
+    href: "/enterprise-websites",
+    label: "Enterprise websites",
   },
   {
-    title: "Established organisations",
-    body: "Bespoke platforms, integrations and operational systems, discussed with the founders and scoped to the requirement.",
+    title: "Complex platforms and operations",
+    body: "Bespoke systems, workflows, security and migrations discussed with the founders and scoped after discovery.",
     href: "/enterprise",
-    label: "Discuss a larger brief",
+    label: "Enterprise systems",
   },
 ] as const
 
 const ACTIONS = [
-  { href: "/quote?intent=strategy_call", label: "Discuss My Business" },
-  { href: "/quote", label: "Get a Website Quote" },
-  { href: "/digital-growth-partnership", label: "Explore Growth Partnerships" },
-  { href: "/services/business-growth-audit", label: "Request a Business Audit" },
+  { href: "/quote?intent=strategy_call", label: "Discuss a Project" },
+  { href: "/services", label: "Explore Our Capabilities" },
+  { href: "/digital-growth-partnership", label: "Growth Partnership" },
+  { href: "/work#engineering-complex-systems", label: "Engineering & Complex Systems" },
 ] as const
 
 /**
- * Sits under the forge hero. Outcomes and fit come before the published
- * starting prices, which stay visible and unchanged.
+ * Sits under the forge hero. Commercial clarity and buyer fit come before
+ * published starting prices, which live on /pricing rather than as a homepage retail grid.
  */
 export function HeroApproachBand({ verifiedStats = [] }: { verifiedStats?: string[] }) {
   return (
@@ -66,11 +62,11 @@ export function HeroApproachBand({ verifiedStats = [] }: { verifiedStats?: strin
       <div className="mx-auto grid max-w-[1240px] gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
         <div>
           <p className="font-dm text-xs font-semibold uppercase tracking-[0.14em] text-acc">What we help with</p>
-          <h2 id="commercial-clarity-heading" className="mt-3 max-w-[18ch] font-syne text-[clamp(32px,4.4vw,52px)] font-extrabold leading-[1.02] tracking-[-0.03em]">
-            Better enquiries. Less wasted effort.
+          <h2 id="commercial-clarity-heading" className="mt-3 max-w-[20ch] font-syne text-[clamp(32px,4.4vw,52px)] font-extrabold leading-[1.02] tracking-[-0.03em]">
+            Far more than a basic website build.
           </h2>
           <p className="mt-5 max-w-[62ch] font-dm text-base leading-relaxed text-t2">
-            ScaleSmiths helps businesses attract the right customers, improve the websites that support them, and reduce the admin that sits between an enquiry and the work. Trevor and Rhys founded the company and own it equally. You deal with the people who decide and deliver.
+            ScaleSmiths designs digital experiences, intelligent systems and measurable growth work for independent businesses and established organisations. Trevor and Rhys founded the company and own it equally. You deal with the people who decide and deliver.
           </p>
           <ul className="mt-8 grid gap-3 sm:grid-cols-2">
             {PROBLEMS.map((problem) => (
@@ -101,39 +97,10 @@ export function HeroApproachBand({ verifiedStats = [] }: { verifiedStats?: strin
         </aside>
       </div>
 
-      <div id="published-prices" className="mx-auto mt-12 max-w-[1240px] rounded-3xl border border-b1 bg-bg/70 p-6 md:p-8">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="font-dm text-xs font-semibold uppercase tracking-[0.14em] text-acc">Published starting points</p>
-            <h2 id="home-starting-prices" className="mt-2 font-syne text-2xl font-extrabold tracking-[-0.02em]">
-              Entry prices, not the size of the company.
-            </h2>
-          </div>
-          <Link href="/pricing#published-prices" prefetch={false} className="inline-flex items-center gap-2 font-dm text-sm font-semibold text-acc">
-            Read the pricing guidance <ArrowRight size={14} aria-hidden="true" />
-          </Link>
-        </div>
-        <p className="mt-4 max-w-[70ch] font-dm text-sm leading-relaxed text-t2">
-          These figures are genuine places to start. A complex website, a larger partnership, or a bespoke system is quoted from the scope. A low starting price is not a ceiling, and it is not a description of every project.
-        </p>
-        <ul className="mt-6 grid gap-3 md:grid-cols-2">
-          {publishedStartingPrices.map((item) => (
-            <li key={item.id} className="rounded-2xl border border-b1 bg-s1/50 p-5">
-              <div className="flex items-baseline justify-between gap-4">
-                <h3 className="font-syne text-base font-bold">{item.name}</h3>
-                <p className="shrink-0 font-syne text-base font-bold text-acc">{item.priceLabel}</p>
-              </div>
-              <p className="mt-2 font-dm text-sm leading-relaxed text-t2">{item.note}</p>
-            </li>
-          ))}
-        </ul>
-        <p className="mt-5 font-dm text-xs leading-relaxed text-t3">{STARTING_PRICE_BOUNDARY}</p>
-      </div>
-
       <div className="mx-auto mt-12 max-w-[1240px] border-t border-b1 pt-8">
         <h2 className="font-syne text-xl font-bold">Work you can inspect</h2>
         <p className="mt-3 max-w-[78ch] font-dm text-sm leading-relaxed text-t2">
-          Confirm-A-Kill is a live pest-control website and operating system. The Search Console figures on that case study are the previous site&apos;s baseline. Post-launch performance is being compared with that baseline under the client&apos;s Growth Partnership.
+          Confirm-A-Kill is a live pest-control website and operating system. The Search Console figures on that case study are the previous site&apos;s baseline. Post-launch performance is being compared with that baseline under the client&apos;s Growth Partnership. Complex platforms such as Prymal, VeteranFinder and The Business Circle sit in Engineering &amp; Complex Systems.
         </p>
         {verifiedStats.length > 0 ? (
           <ul className="mt-6 grid gap-4 sm:grid-cols-3" aria-label="Verified public claim">
@@ -153,6 +120,13 @@ export function HeroApproachBand({ verifiedStats = [] }: { verifiedStats?: strin
             </Link>
           ))}
         </div>
+        <p className="mt-5 font-dm text-xs leading-relaxed text-t3">
+          Transparent SME starting prices remain on the{" "}
+          <Link href="/pricing#published-prices" prefetch={false} className="text-t2 underline-offset-2 hover:text-t1 hover:underline">
+            pricing page
+          </Link>
+          . They are not the measure of every engagement.
+        </p>
       </div>
     </section>
   )

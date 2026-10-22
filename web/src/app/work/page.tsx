@@ -25,12 +25,23 @@ export default function WorkPage() {
       <div className="mx-auto max-w-[1240px] px-6 pb-16 pt-6 md:px-12 md:pb-24 md:pt-8">
         <AnimateIn>
           <span className="font-dm text-xs font-semibold uppercase tracking-[.12em] text-acc">Work / Build Logs</span>
-          <h1 className="mt-4 max-w-[16ch] font-syne text-[clamp(1.875rem,4.2vw,3rem)] font-bold leading-[1.18] tracking-[-0.01em]">
+          <h1 className="mt-4 max-w-[18ch] font-syne text-[clamp(1.875rem,4.2vw,3rem)] font-bold leading-[1.18] tracking-[-0.01em]">
             Here is what we actually built.
           </h1>
-          <p className="mt-6 max-w-[38rem] font-dm text-base leading-[1.75] text-t2">
-            Real businesses and platforms, the scope delivered for each, and the engineering notes behind the work. No fake revenue claims, no invented testimonials.
+          <p className="mt-6 max-w-[42rem] font-dm text-base leading-[1.75] text-t2">
+            Real businesses and platforms, the scope delivered for each, and the engineering notes behind the work. Client contracts, founder-owned platforms and collaborative builds are labelled honestly. No fake revenue claims, no invented enterprise endorsements.
           </p>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Link href="#engineering-complex-systems" prefetch={false} className="btn-primary font-dm">
+              Engineering &amp; Complex Systems <ArrowRight size={16} aria-hidden="true" />
+            </Link>
+            <Link href="/enterprise-websites" prefetch={false} className="btn-ghost font-dm">
+              Enterprise websites
+            </Link>
+            <Link href="/enterprise" prefetch={false} className="btn-ghost font-dm">
+              Enterprise systems
+            </Link>
+          </div>
         </AnimateIn>
       </div>
       <Portfolio showHeading={false} grouped />
@@ -62,7 +73,7 @@ export default function WorkPage() {
       <section aria-label="Where to go next" className="px-6 py-20 md:px-12">
         <div className="mx-auto grid max-w-[1240px] gap-14">
           <RelatedServices items={[
-            { href: "/local-growth", eyebrow: "Service route", title: "Local growth", description: "Websites and search work for businesses that sell in a place." },
+            { href: "/enterprise-websites", eyebrow: "Service route", title: "Enterprise websites", description: "Corporate websites and digital experiences for established organisations." },
             { href: "/custom-systems", eyebrow: "Service route", title: "Custom systems", description: "Applications, portals, integrations and the operating layer behind them." },
             { href: "/digital-growth-partnership", eyebrow: "After launch", title: "Growth Partnership", description: "How the work continues once a build is live, as it does for Confirm-A-Kill." },
           ]} />

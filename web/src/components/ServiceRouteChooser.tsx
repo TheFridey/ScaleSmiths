@@ -13,7 +13,7 @@ export function ServiceRouteChooser({ compact = false }: { compact?: boolean }) 
           <p className="mt-3 font-dm text-sm leading-relaxed text-t2">Start with the route that sounds like your business. You can move between them without committing to a scope.</p>
         </div>
 
-        <div className="mt-8 grid gap-4 lg:grid-cols-2">
+        <div className="mt-8 grid gap-4 lg:grid-cols-3">
           <RouteCard
             href="/local-growth"
             eyebrow="Local service businesses"
@@ -22,6 +22,15 @@ export function ServiceRouteChooser({ compact = false }: { compact?: boolean }) 
             cta="Explore Local Growth"
             icon={<Building2 size={22} aria-hidden="true" />}
             tone="local"
+          />
+          <RouteCard
+            href="/enterprise-websites"
+            eyebrow="Established organisations"
+            title="Enterprise Websites"
+            description="Corporate websites and digital experiences: journey architecture, integrations, visibility and migration continuity."
+            cta="Explore Enterprise Websites"
+            icon={<Factory size={22} aria-hidden="true" />}
+            tone="systems"
           />
           <RouteCard
             href="/custom-systems"

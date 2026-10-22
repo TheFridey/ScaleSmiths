@@ -13,6 +13,7 @@ describe("public sitemap", () => {
     expect(urls).toContain("https://scalesmiths.co.uk/local-growth")
     expect(urls).toContain("https://scalesmiths.co.uk/custom-systems")
     expect(urls).toContain("https://scalesmiths.co.uk/enterprise")
+    expect(urls).toContain("https://scalesmiths.co.uk/enterprise-websites")
     expect(urls).toContain("https://scalesmiths.co.uk/enterprise/delivery")
     expect(urls).toContain("https://scalesmiths.co.uk/enterprise/contact")
     expect(urls).toContain("https://scalesmiths.co.uk/security")

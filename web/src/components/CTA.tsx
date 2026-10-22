@@ -20,13 +20,13 @@ export function CTA() {
           <Logo size={52} showName={false} href="" />
         </div>
         <h2 className="mb-4 font-syne text-[clamp(28px,4.5vw,48px)] font-extrabold tracking-[-0.025em]">
-          See how we&apos;d improve your business.
+          Discuss the next digital step with the people who would build it.
         </h2>
-        <p className="mx-auto mb-10 max-w-[460px] font-dm text-base leading-relaxed text-t2">
-          Tell us what is getting in the way. We will say whether the next step is a website, a partnership, an audit, or something we should not sell you.
+        <p className="mx-auto mb-10 max-w-[520px] font-dm text-base leading-relaxed text-t2">
+          Tell us what is getting in the way. We will say whether the next step is a website, a Growth Partnership, a corporate digital transformation, a custom system, or something we should not sell you.
         </p>
         <MagneticLink href="/quote?intent=strategy_call" className="btn-primary group inline-flex font-dm">
-          Discuss My Business <ArrowRight size={16} aria-hidden="true" />
+          Discuss a Project <ArrowRight size={16} aria-hidden="true" />
         </MagneticLink>
         <div className="mt-6">
           <ProjectPlannerCta source="homepage_cta" className="justify-center text-t2 hover:text-acc" />

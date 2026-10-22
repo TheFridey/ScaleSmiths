@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { ArrowRight, Building2, Workflow } from "lucide-react"
+import { ArrowRight, Building2, Layers, Workflow } from "lucide-react"
 import { JsonLd } from "@/components/JsonLd"
 import { PageBreadcrumbs } from "@/components/Breadcrumbs"
 import { buildPageMetadata } from "@/lib/page-metadata"
@@ -19,7 +19,7 @@ import { getVerifiedPublicClaims } from "@/lib/public-claims.server"
 export const metadata: Metadata = buildPageMetadata({
   title: "Pricing Guidance",
   description:
-    "Transparent pricing guidance for websites, audits, managed email and retainers, with enterprise software scoped after discovery.",
+    "Transparent pricing for websites and Growth Partnerships, with established-business transformation and enterprise systems scoped after discovery.",
   path: "/pricing",
 })
 export const dynamic = "force-dynamic"
@@ -27,16 +27,23 @@ export const dynamic = "force-dynamic"
 const journeys = [
   {
     href: "#web-growth",
-    eyebrow: "Web & Growth",
-    title: "SME services",
-    description: "Transparent guidance for websites, audits, managed email, hosting and ongoing growth partnerships.",
+    eyebrow: "Business Websites & Growth",
+    title: "Practical solutions with transparent starting prices",
+    description: "Websites from £2,000, Growth Partnerships from £350/month, audits and managed email. Entry points for agreed SME scopes.",
     Icon: Building2,
   },
   {
+    href: "#established-transformation",
+    eyebrow: "Established Business Transformation",
+    title: "Evolution, journeys, integrations and efficiency",
+    description: "Corporate websites and digital estates for multi-site and established organisations. Independently scoped; never sold as a £2,000 package.",
+    Icon: Layers,
+  },
+  {
     href: "#enterprise-systems",
-    eyebrow: "Custom Software",
-    title: "Enterprise systems",
-    description: "Complex platforms scoped after discovery, architecture, migration, integrations and support without artificial fixed prices.",
+    eyebrow: "Custom Platforms & Enterprise",
+    title: "Bespoke architecture, workflows, security and support",
+    description: "Complex platforms scoped after discovery: migrations, integrations and production support without artificial fixed retail prices.",
     Icon: Workflow,
   },
 ] as const
@@ -57,14 +64,14 @@ export default async function PricingPage() {
       <section className="mx-auto max-w-[1240px] px-6 pb-16 pt-10 md:px-12 md:pb-20">
         <PageBreadcrumbs className="mb-10" items={[{ name: "Home", path: "/" }, { name: "Pricing", path: "/pricing" }]} />
         <span className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">Pricing</span>
-        <h1 className="page-hero-display mt-2 max-w-[860px]">
-          Two buying journeys. One clear commercial boundary.
+        <h1 className="page-hero-display mt-2 max-w-[900px]">
+          Three engagement models. One clear commercial boundary.
         </h1>
-        <p className="mt-5 max-w-[680px] font-dm text-lg leading-relaxed text-t2">
-          Web &amp; Growth services keep transparent SME guidance. Custom software and enterprise systems are scoped following discovery, so procurement is not asked to judge a complex platform against a mailbox price.
+        <p className="mt-5 max-w-[720px] font-dm text-lg leading-relaxed text-t2">
+          Small-business pricing stays transparent. Large transformations, corporate websites and custom systems are independently scoped after discovery, so procurement is never asked to judge complex work against a website starting price.
         </p>
 
-        <div className="mt-10 grid gap-4 lg:grid-cols-2" aria-label="Pricing journeys">
+        <div className="mt-10 grid gap-4 lg:grid-cols-3" aria-label="Pricing journeys">
           {journeys.map(({ href, eyebrow, title, description, Icon }) => (
             <a
               key={href}
@@ -75,7 +82,7 @@ export default async function PricingPage() {
                 <Icon size={18} aria-hidden="true" />
                 <span className="font-dm text-xs font-semibold uppercase tracking-[.12em]">{eyebrow}</span>
               </div>
-              <h2 className="mt-4 font-syne text-2xl font-extrabold">{title}</h2>
+              <h2 className="mt-4 font-syne text-xl font-extrabold md:text-2xl">{title}</h2>
               <p className="mt-3 font-dm text-sm leading-relaxed text-t2">{description}</p>
               <span className="mt-5 inline-flex items-center gap-2 font-dm text-sm font-semibold text-t1">
                 View this journey
@@ -124,11 +131,54 @@ export default async function PricingPage() {
         </div>
       </section>
 
+      <section id="established-transformation" aria-labelledby="established-transformation-heading" className="border-b border-b1 bg-s1/40 px-6 py-20 md:px-12 md:py-24">
+        <div className="mx-auto max-w-[1240px]">
+          <p className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">Established Business Transformation</p>
+          <h2 id="established-transformation-heading" className="mt-3 max-w-[860px] font-syne text-[clamp(30px,5vw,48px)] font-extrabold tracking-[-.03em]">
+            Corporate websites and digital estates are scoped independently.
+          </h2>
+          <p className="mt-5 max-w-[720px] font-dm text-base leading-relaxed text-t2">
+            Multi-site organisations, professional services firms and complex service estates need journey architecture, integrations, visibility and migration continuity. That work is not a retail website package. A £2,000 starting price does not cover enterprise websites or digital transformation programmes.
+          </p>
+          <div className="mt-10 grid gap-4 md:grid-cols-3">
+            <article className="rounded-2xl border border-b1 bg-bg p-6">
+              <h3 className="font-syne text-lg font-bold">What this covers</h3>
+              <p className="mt-3 font-dm text-sm leading-relaxed text-t2">
+                Corporate websites, customer journeys, content models, integrations to CRM and operational tools, search foundations and controlled migrations.
+              </p>
+            </article>
+            <article className="rounded-2xl border border-b1 bg-bg p-6">
+              <h3 className="font-syne text-lg font-bold">How it is priced</h3>
+              <p className="mt-3 font-dm text-sm leading-relaxed text-t2">
+                Discovery establishes improve versus integrate versus rebuild, then a written proposal sets milestones, acceptance criteria and support boundaries.
+              </p>
+            </article>
+            <article className="rounded-2xl border border-acc/25 bg-acc/[.05] p-6">
+              <h3 className="font-syne text-lg font-bold">Commercial boundary</h3>
+              <p className="mt-3 font-dm text-sm leading-relaxed text-t2">
+                SME starting prices remain available for the right briefs. They are never presented as covering established-business transformation or custom platforms.
+              </p>
+            </article>
+          </div>
+          <div className="mt-10 flex flex-wrap gap-3">
+            <Link href="/enterprise-websites" prefetch={false} className="btn-primary font-dm">
+              Enterprise websites <ArrowRight size={16} aria-hidden="true" />
+            </Link>
+            <Link href={enquiryIntentHref("enterprise")} prefetch={false} className="btn-ghost font-dm">
+              Discuss digital transformation
+            </Link>
+            <Link href="/enterprise" prefetch={false} className="btn-ghost font-dm">
+              Enterprise systems
+            </Link>
+          </div>
+        </div>
+      </section>
+
       <section id="enterprise-systems" aria-labelledby="enterprise-pricing-heading" className="px-6 py-20 md:px-12 md:py-24">
         <div className="mx-auto max-w-[1240px]">
-          <p className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">Custom software &amp; enterprise systems</p>
+          <p className="font-dm text-xs font-semibold uppercase tracking-[.14em] text-acc">Custom Platforms &amp; Enterprise Projects</p>
           <h2 id="enterprise-pricing-heading" className="mt-3 max-w-[820px] font-syne text-[clamp(30px,5vw,48px)] font-extrabold tracking-[-.03em]">
-            Enterprise software is scoped following discovery.
+            Custom platforms and enterprise software are scoped following discovery.
           </h2>
           <p className="mt-5 max-w-[720px] font-dm text-base leading-relaxed text-t2">
             Complex operational platforms, portals, integrations and multi-site systems are not sold as fixed retail packages. Commercial scope follows the operating model, risk and first dependable release, so IT, Operations and procurement can inspect the decision properly.
@@ -171,6 +221,7 @@ export default async function PricingPage() {
               Discuss an Enterprise System <ArrowRight size={16} aria-hidden="true" />
             </Link>
             <Link href="/enterprise" prefetch={false} className="btn-ghost font-dm">Enterprise systems</Link>
+            <Link href="/enterprise-websites" prefetch={false} className="btn-ghost font-dm">Enterprise websites</Link>
             <Link href="/custom-systems" prefetch={false} className="btn-ghost font-dm">Custom systems</Link>
             <Link href="/enterprise/delivery" prefetch={false} className="btn-ghost font-dm">Delivery process</Link>
           </div>

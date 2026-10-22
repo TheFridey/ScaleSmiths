@@ -103,16 +103,20 @@ export function EnterprisePage() {
                 {enterprisePageCopy.secondaryCta.label}
               </Link>
             </div>
-            <p className="mt-6 max-w-[640px] font-dm text-sm leading-relaxed text-t3">
-              Complements our{" "}
+            <p className="mt-6 max-w-[720px] font-dm text-sm leading-relaxed text-t3">
+              Complements{" "}
+              <Link href="/enterprise-websites" prefetch={false} className="text-t2 underline-offset-2 hover:text-t1 hover:underline">
+                enterprise websites
+              </Link>
+              ,{" "}
               <Link href="/local-growth" prefetch={false} className="text-t2 underline-offset-2 hover:text-t1 hover:underline">
                 local growth
               </Link>{" "}
               and{" "}
               <Link href="/custom-systems" prefetch={false} className="text-t2 underline-offset-2 hover:text-t1 hover:underline">
                 custom systems
-              </Link>{" "}
-              routes, for organisations whose operational software has become a strategic constraint.
+              </Link>
+              , for organisations whose operational software has become a strategic constraint.
             </p>
           </AnimateIn>
         </div>

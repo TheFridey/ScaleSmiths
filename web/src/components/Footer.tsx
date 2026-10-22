@@ -32,6 +32,7 @@ const navigationGroups = [
       { href: "/local-growth", label: "Local Growth" },
       { href: "/custom-systems", label: "Custom Systems" },
       { href: "/enterprise", label: "Enterprise" },
+      { href: "/enterprise-websites", label: "Enterprise Websites" },
       { href: "/enterprise/delivery", label: "Enterprise Delivery" },
       { href: "/security", label: "Security & Trust" },
       { href: "/web-design-nottingham", label: "Web Design Nottingham" },
@@ -72,7 +73,7 @@ export function Footer() {
         <div className="grid gap-12 pb-14 md:grid-cols-[minmax(260px,1fr)_minmax(420px,1.6fr)] md:gap-16 md:pb-16">
           <div>
             <Logo size={36} showName className="max-w-full [&_img]:max-w-full" />
-            <p className="mt-5 max-w-[360px] font-dm text-sm leading-relaxed text-t2">Founder-led business growth and engineering for ambitious organisations.</p>
+            <p className="mt-5 max-w-[360px] font-dm text-sm leading-relaxed text-t2">Digital experiences, intelligent systems and measurable growth for independent businesses and established organisations.</p>
             <address className="mt-6 grid gap-1 font-dm text-sm not-italic leading-relaxed text-t2">
               <span className="font-semibold text-t1">{SITE_NAME}</span>
               <span>{BUSINESS_LOCATION.locality}, {BUSINESS_LOCATION.region}</span>

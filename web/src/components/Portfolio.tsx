@@ -59,19 +59,25 @@ export function Portfolio({ limit, showHeading = true, grouped = false, excludeS
           <div className="grid gap-12 md:gap-14">
             <div>
               <AnimateIn className="mb-6 border-b border-paper-border/50 pb-3">
-                <p className="paper-label">01 · Client work</p>
+                <p className="paper-label">01 · Client contracts</p>
                 <h2 className="paper-display mt-3 max-w-none text-[clamp(1.25rem,2.2vw,1.625rem)]">
-                  Commercial delivery.
+                  Commercial delivery for client organisations.
                 </h2>
+                <p className="mt-3 max-w-[40rem] font-dm text-sm leading-relaxed text-paper-muted">
+                  Paid client work with agreed scope. Not founder-owned products and not demo material.
+                </p>
               </AnimateIn>
               <CaseStudyGrid items={clientWork} />
             </div>
-            <div>
+            <div id="engineering-complex-systems">
               <AnimateIn className="mb-6 border-b border-paper-border/50 pb-3">
-                <p className="paper-label">02 · Product / platform work</p>
+                <p className="paper-label">02 · Engineering &amp; Complex Systems</p>
                 <h2 className="paper-display mt-3 max-w-none text-[clamp(1.25rem,2.2vw,1.625rem)]">
-                  Systems built for complexity.
+                  Platforms, SaaS, integrations and production infrastructure.
                 </h2>
+                <p className="mt-3 max-w-[40rem] font-dm text-sm leading-relaxed text-paper-muted">
+                  Founder-owned and collaborative platforms used as engineering proof. Case studies state ownership and limitations honestly.
+                </p>
               </AnimateIn>
               <CaseStudyGrid items={platformWork} />
             </div>

@@ -26,13 +26,13 @@ test.describe("homepage proof and trust", () => {
       return {
         trust: top('[aria-labelledby="client-trust-heading"]'),
         work: top('section[aria-label="Selected work"]'),
-        services: top('section[aria-label="Services and pricing"]'),
+        routes: top('[aria-labelledby="home-service-routes"]'),
         founders: top('[aria-labelledby="home-founders-heading"]'),
       }
     })
     expect(order.trust).toBeLessThan(order.work)
-    expect(order.work).toBeLessThan(order.services)
-    expect(order.services).toBeLessThan(order.founders)
+    expect(order.work).toBeLessThan(order.routes)
+    expect(order.routes).toBeLessThan(order.founders)
   })
 
   test("introduces both founders with links to their profiles", async ({ page }) => {

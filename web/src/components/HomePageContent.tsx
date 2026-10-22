@@ -1,5 +1,6 @@
 import { ClientTrustStrip } from "@/components/ClientTrustStrip"
 import { CTA } from "@/components/CTA"
+import { EngagementModels } from "@/components/EngagementModels"
 import { ExperienceQuerySync } from "@/components/ExperiencePreference"
 import { FAQ } from "@/components/FAQ"
 import { FeaturedCaseStudy, FEATURED_CASE_STUDY_SLUG } from "@/components/FeaturedCaseStudy"
@@ -13,7 +14,6 @@ import { BuildProofBlocks } from "@/components/BuildProofBlocks"
 import { EntryProducts } from "@/components/EntryProducts"
 import { Portfolio } from "@/components/Portfolio"
 import { Process } from "@/components/Process"
-import { Services } from "@/components/Services"
 import { ServiceRouteChooser } from "@/components/ServiceRouteChooser"
 import { Testimonials } from "@/components/Testimonials"
 import { faqs } from "@/lib/data"
@@ -27,7 +27,6 @@ import { buildFaqSchema } from "@/lib/structured-data"
 export async function HomePageContent() {
   const publicClaims = await getVerifiedPublicClaims({ route: "/" })
   const heroClaims = mapForComponents(publicClaims, "hero_stats")
-  const serviceClaims = mapForComponents(publicClaims, "services_intro", "service_pricing", "retainer_pricing")
   const processClaims = mapForComponents(publicClaims, "process")
   const faqClaims = mapForComponents(publicClaims, "faq")
   const heroStats = ["hero.projects-delivered", "hero.revenue-generated"]
@@ -47,17 +46,18 @@ export async function HomePageContent() {
     ...libraryFaqs(["website-included", "after-enquiry", "improvement-measurement"]),
   ]
 
-  // Problem and offer first, then proof, then the detailed routes.
+  // Positioning and engagement models first, then proof and detailed routes.
+  // Retail pricing grids live on /pricing and /services, not the homepage lead narrative.
   return (
     <>
       <JsonLd data={buildFaqSchema(faqItems)} />
       <ExperienceQuerySync />
       <Hero />
       <HeroApproachBand verifiedStats={heroStats} />
+      <EngagementModels />
       <ClientTrustStrip />
       <Portfolio limit={2} excludeSlugs={[FEATURED_CASE_STUDY_SLUG]} />
       <ServiceRouteChooser compact />
-      <Services claims={serviceClaims} />
       <EntryProducts />
       <FoundersSection />
       <Testimonials testimonials={testimonials} />

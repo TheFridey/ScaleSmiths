@@ -35,8 +35,8 @@ test.describe("public experience SEO routing", () => {
       const html = await response.text()
 
       expect(response.status()).toBe(200)
-      expect(html).toContain('aria-label="FORGE YOUR"')
-      expect(html).toContain("More customers. Less wasted time.")
+      expect(html).toContain('aria-label="ScaleSmiths - forge your digital edge"')
+      expect(html).toContain("Digital Experiences. Intelligent Systems. Measurable Growth.")
       expect(html).not.toContain("What experience would you like today?")
       expect(html).toContain("Launch the Project Planner")
       expect(response.headers()["cache-control"]).toMatch(/no-store/i)
@@ -110,7 +110,7 @@ test.describe("public experience SEO routing", () => {
         await expect(page.getByText(unsupported, { exact: false })).toHaveCount(0)
       }
       await expect(page.locator('section[aria-label="Client testimonials"]')).toHaveCount(0)
-      await expect(page.getByRole("heading", { name: /built for the way you actually work/i })).toBeVisible()
+      await expect(page.getByRole("heading", { name: /far more than a basic website build/i })).toBeVisible()
 
       await gotoReady(page, "/pricing")
       await expect(page.getByText("GBP 4,500-6,500", { exact: false })).toHaveCount(0)

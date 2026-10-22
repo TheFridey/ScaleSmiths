@@ -267,6 +267,7 @@ export const architectureCapabilityGroups: readonly ArchitectureCapabilityGroup[
 
 export const architectureRelatedLinks = [
   { href: "/enterprise", label: "Enterprise systems", description: "Complex operational platforms and multi-site software." },
+  { href: "/enterprise-websites", label: "Enterprise websites", description: "Corporate websites and digital experiences for established organisations." },
   { href: "/security", label: "Security & Trust", description: "Identity, data protection, infrastructure and secure delivery posture." },
   { href: "/enterprise/delivery", label: "Enterprise delivery", description: "Discovery through production rollout with staged risk reduction." },
 ] as const

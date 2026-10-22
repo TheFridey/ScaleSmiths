@@ -44,7 +44,7 @@ Committed SQL and each journal's historical prefix are immutable under `scripts/
 
 ## Nginx routing
 
-- `scalesmiths.co.uk` and `www.scalesmiths.co.uk` redirect/terminate at the public host and proxy to web.
+- `www.scalesmiths.co.uk` permanently redirects to `https://scalesmiths.co.uk` on HTTP and HTTPS. The apex host proxies to web. The Next.js app repeats that redirect when the `Host` header is still `www`, so a duplicate origin cannot keep a second cookie or enquiry-attribution store.
 - `admin.scalesmiths.co.uk` proxies to admin; optional IP allowlist directives are present but commented.
 - An optional Forge hostname example proxies to the same authenticated admin service, never to a workspace.
 - Host configuration forwards client IP and protocol headers; the container configuration is simpler and does not currently forward the full equivalent header set.

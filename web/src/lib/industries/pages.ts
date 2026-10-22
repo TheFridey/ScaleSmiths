@@ -1,10 +1,11 @@
 import type { IndustryPage } from "./types"
+import { industryPagesWaveTwo } from "./pages-wave-two"
 
 /**
  * First-wave published industry pages. Each must fail the “swap the industry name
  * and it still works” test. Only entries with state "published" are routable.
  */
-export const industryPages: Record<string, IndustryPage> = {
+const industryPagesWaveOne: Record<string, IndustryPage> = {
   "pest-control": {
     id: "ind.pest-control",
     slug: "pest-control",
@@ -941,6 +942,11 @@ export const industryPages: Record<string, IndustryPage> = {
     unknowns: ["Ideal client profile", "Jurisdictions you serve", "Which claims partners will approve"],
     showCustomSystems: true,
   },
+}
+
+export const industryPages: Record<string, IndustryPage> = {
+  ...industryPagesWaveOne,
+  ...industryPagesWaveTwo,
 }
 
 export function allIndustryPages(): IndustryPage[] {

@@ -37,7 +37,7 @@ test.describe("rebound customer journeys", () => {
     test("home primary CTAs remain usable at 390px", async ({ page }) => {
       const consoleGuard = await installConsoleGuards(page)
       await gotoReady(page, "/")
-      const strategy = page.getByRole("link", { name: /discuss my business/i }).first()
+      const strategy = page.getByRole("link", { name: /discuss a project/i }).first()
       await expect(strategy).toBeVisible()
       const strategyBox = await strategy.boundingBox()
       expect(strategyBox?.height ?? 0).toBeGreaterThanOrEqual(40)
@@ -66,7 +66,7 @@ test.describe("rebound customer journeys", () => {
 
   test("local business: Home → Local Growth → Work → Strategy Call", async ({ page }) => {
     await journey(page, [
-      { path: "/", heading: /forge your digital edge/i, cta: /discuss my business/i },
+      { path: "/", heading: /forge your digital edge/i, cta: /discuss a project/i },
       { path: "/local-growth", heading: /turn local attention/i },
       { path: "/work", heading: /here is what we actually built/i },
       { path: "/quote?intent=strategy_call", heading: /request a strategy call/i },

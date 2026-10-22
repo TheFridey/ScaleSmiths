@@ -72,6 +72,7 @@ describe("enterprise architecture framework", () => {
   it("links to enterprise, security and delivery routes", () => {
     expect(architectureRelatedLinks.map((link) => link.href)).toEqual([
       "/enterprise",
+      "/enterprise-websites",
       "/security",
       "/enterprise/delivery",
     ])

@@ -79,20 +79,20 @@ export function Hero() {
           </span>
         </h1>
 
-        <h2 className="hero-copy relative mb-4 max-w-[18ch] font-syne text-[clamp(26px,3.4vw,40px)] font-bold leading-[1.12] tracking-[-0.02em] text-t1">
-          More customers. Less wasted time.
+        <h2 className="hero-copy relative mb-4 max-w-[22ch] font-syne text-[clamp(22px,3.2vw,36px)] font-bold leading-[1.15] tracking-[-0.02em] text-t1">
+          Digital Experiences. Intelligent Systems. Measurable Growth.
         </h2>
 
-        <p className="hero-copy relative mb-10 w-full max-w-[640px] font-dm text-[clamp(15px,1.7vw,18px)] font-light leading-relaxed text-t2 md:mb-12">
-          For local businesses, growing companies and established organisations. We build websites, improve how you are found, and connect the systems that waste staff time.
+        <p className="hero-copy relative mb-10 w-full max-w-[680px] font-dm text-[clamp(15px,1.7vw,18px)] font-light leading-relaxed text-t2 md:mb-12">
+          ScaleSmiths designs, develops and improves high-performance websites, digital platforms and connected business systems. From ambitious independent businesses to established multi-site organisations, we help teams create better customer experiences, remove operational friction and build technology around real business objectives.
         </p>
 
         <div className="relative flex flex-wrap justify-center gap-3">
-          <Link href="/quote?intent=strategy_call" prefetch={false} className="btn-primary font-dm">
-            Discuss My Business <ArrowRight size={16} aria-hidden="true" />
+          <Link href="/#engagement-models" prefetch={false} className="btn-primary font-dm">
+            Explore Our Capabilities <ArrowRight size={16} aria-hidden="true" />
           </Link>
-          <Link href="/work" prefetch={false} className="btn-ghost font-dm">
-            See the work <ArrowUpRight size={16} aria-hidden="true" />
+          <Link href="/quote?intent=strategy_call" prefetch={false} className="btn-ghost font-dm">
+            Discuss a Project <ArrowUpRight size={16} aria-hidden="true" />
           </Link>
         </div>
         <p className="hero-copy relative mt-5 font-dm text-xs leading-relaxed text-t2">

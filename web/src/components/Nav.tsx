@@ -21,6 +21,7 @@ const serviceLinks = [
   { href: "/local-growth", label: "Local growth", description: "Websites and search work for businesses selling in a place." },
   { href: "/custom-systems", label: "Custom systems", description: "Applications, portals, integrations and automation." },
   { href: "/enterprise", label: "Enterprise", description: "Bespoke platforms for complex operational and multi-site software." },
+  { href: "/enterprise-websites", label: "Enterprise Websites", description: "Corporate websites and digital experiences for established organisations." },
   { href: "/enterprise/delivery", label: "Enterprise Delivery", description: "Discovery through production rollout for complex software engagements." },
   { href: "/security", label: "Security & Trust", description: "Architecture-led security, delivery controls and assurance posture." },
   { href: "/digital-growth-partnership", label: "Growth Partnership", description: "Ongoing, prioritised improvement after launch." },

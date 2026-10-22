@@ -36,7 +36,7 @@ test.describe("public experience SEO routing", () => {
 
       expect(response.status()).toBe(200)
       expect(html).toContain('aria-label="FORGE YOUR"')
-      expect(html).toContain("More customers. Less wasted time.")
+      expect(html).toContain("Digital Experiences. Intelligent Systems. Measurable Growth.")
       expect(html).not.toContain("What experience would you like today?")
       expect(html).toContain("Launch the Project Planner")
       expect(response.headers()["cache-control"]).toMatch(/no-store/i)

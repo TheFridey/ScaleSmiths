@@ -19,9 +19,10 @@ test.describe("pricing journeys", () => {
       const response = await gotoReady(page, "/pricing")
       expect(response?.status()).toBe(200)
 
-      await expect(page.getByRole("heading", { level: 1 })).toContainText(/two buying journeys/i)
-      await expect(page.getByRole("link", { name: /sme services/i })).toHaveAttribute("href", "#web-growth")
-      await expect(page.getByRole("link", { name: /enterprise systems/i }).first()).toHaveAttribute("href", "#enterprise-systems")
+      await expect(page.getByRole("heading", { level: 1 })).toContainText(/three engagement models/i)
+      await expect(page.locator('a[href="#web-growth"]').first()).toHaveAttribute("href", "#web-growth")
+      await expect(page.locator('a[href="#established-transformation"]').first()).toHaveAttribute("href", "#established-transformation")
+      await expect(page.locator('a[href="#enterprise-systems"]').first()).toHaveAttribute("href", "#enterprise-systems")
 
       const sme = page.locator("#web-growth")
       await expect(sme.getByRole("heading", { name: /transparent guidance for websites/i })).toBeVisible()
@@ -30,11 +31,17 @@ test.describe("pricing journeys", () => {
       await expect(sme.getByRole("heading", { name: /business growth audit/i })).toBeVisible()
       await expect(sme.getByRole("heading", { name: /custom web app/i })).toHaveCount(0)
 
+      const transformation = page.locator("#established-transformation")
+      await expect(transformation.getByRole("heading", { name: /scoped independently/i })).toBeVisible()
+      await expect(transformation.getByRole("link", { name: /enterprise websites/i })).toHaveAttribute("href", "/enterprise-websites")
+      await expect(transformation.getByText(/£2,000 starting price does not cover/i)).toBeVisible()
+
       const enterprise = page.locator("#enterprise-systems")
       await expect(enterprise.getByRole("heading", { name: /scoped following discovery/i })).toBeVisible()
       await expect(enterprise.getByRole("heading", { name: /why enterprise software is scoped differently/i })).toBeVisible()
       await expect(enterprise.getByRole("link", { name: /discuss an enterprise system/i })).toHaveAttribute("href", "/enterprise/contact")
       await expect(enterprise.getByRole("link", { name: /^enterprise systems$/i })).toHaveAttribute("href", "/enterprise")
+      await expect(enterprise.getByRole("link", { name: /^enterprise websites$/i })).toHaveAttribute("href", "/enterprise-websites")
       await expect(enterprise.getByRole("link", { name: /^custom systems$/i })).toHaveAttribute("href", "/custom-systems")
 
       const bodyText = await page.locator("body").innerText()

@@ -5,10 +5,10 @@ import { siteBaseUrl } from "@/lib/site-identity"
 import { buildWebPageSchema } from "@/lib/structured-data"
 
 const homeDescription =
-  "Websites, visibility and business systems that attract enquiries and reduce wasted time. Founder-led from Hucknall, working across the UK and remotely."
+  "Digital experiences, intelligent systems and measurable growth. ScaleSmiths designs high-performance websites, platforms and connected business systems for independent businesses and established organisations."
 
 export const metadata: Metadata = {
-  title: { absolute: "Websites, Visibility and Business Systems | ScaleSmiths" },
+  title: { absolute: "Digital Experiences, Intelligent Systems, Measurable Growth | ScaleSmiths" },
   description: homeDescription,
   alternates: { canonical: "/" },
   openGraph: {

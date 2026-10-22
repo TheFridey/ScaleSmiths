@@ -74,10 +74,12 @@ test.describe("enterprise landing page", () => {
     const mainNavigation = page.getByRole("navigation", { name: /main navigation/i })
     await mainNavigation.getByRole("button", { name: "Services", exact: true }).click()
     await expect(mainNavigation.locator('a[href="/enterprise"]')).toBeVisible()
+    await expect(mainNavigation.locator('a[href="/enterprise-websites"]')).toBeVisible()
     await expect(mainNavigation.locator('a[href="/enterprise/delivery"]')).toBeVisible()
 
     const footer = page.getByRole("navigation", { name: /footer navigation/i })
     await expect(footer.getByRole("link", { name: "Enterprise", exact: true })).toHaveAttribute("href", "/enterprise")
+    await expect(footer.getByRole("link", { name: "Enterprise Websites", exact: true })).toHaveAttribute("href", "/enterprise-websites")
     await expect(footer.getByRole("link", { name: "Enterprise Delivery", exact: true })).toHaveAttribute("href", "/enterprise/delivery")
   })
 })

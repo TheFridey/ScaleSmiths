@@ -1,0 +1,1 @@
+Music: Happy Beats / Business Moves Vol.12 by Sascha Ende, https://ende.app/en (CC BY 4.0, https://creativecommons.org/licenses/by/4.0/). Edited to 20 seconds with fades. SFX: Kenney, CC0. Brand artwork and Syne font copied from the ScaleSmiths repository. Video created with latent-spaces/brag (MIT) and Hyperframes.

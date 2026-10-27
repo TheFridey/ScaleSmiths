@@ -195,10 +195,11 @@ export function industryAzIndex(): Array<{ letter: string; items: IndustrySearch
 export function sitemapIndustryEntries(base: string, lastModified: Date) {
   const entries = [
     { url: `${base}/industries`, lastModified, changeFrequency: "weekly" as const, priority: 0.9 },
-    { url: `${base}/industries/request`, lastModified, changeFrequency: "monthly" as const, priority: 0.5 },
+    // /industries/request is a form, including ?hint= variants from the directory.
+    // It stays linked and crawlable, but it is noindex and omitted here.
     ...allIndustryHubs().map((hub) => ({
       url: `${base}${industryPath(hub.slug)}`,
-      lastModified,
+      lastModified: new Date(`${hub.reviewedAt}T00:00:00.000Z`),
       changeFrequency: "weekly" as const,
       priority: 0.85,
     })),
@@ -216,7 +217,7 @@ export function buildIndustryPageSchemas(page: IndustryPage, base = "https://sca
   const url = `${base}${industryPath(page.hubSlug, page.slug)}`
   const hub = getIndustryHub(page.hubSlug)
   const breadcrumbs = [
-    { name: "Home", item: `${base}/` },
+    { name: "Home", item: base },
     { name: "Industries", item: `${base}/industries` },
     ...(hub ? [{ name: hub.shortName, item: `${base}${industryPath(hub.slug)}` }] : []),
     { name: page.name, item: url },
@@ -284,7 +285,7 @@ export function buildIndustriesIndexSchemas(base = "https://scalesmiths.co.uk") 
       "@context": "https://schema.org",
       "@type": "BreadcrumbList",
       itemListElement: [
-        { "@type": "ListItem", position: 1, name: "Home", item: `${base}/` },
+        { "@type": "ListItem", position: 1, name: "Home", item: base },
         { "@type": "ListItem", position: 2, name: "Industries", item: url },
       ],
     },
@@ -316,7 +317,7 @@ export function buildIndustryHubSchemas(hubSlug: string, base = "https://scalesm
       "@context": "https://schema.org",
       "@type": "BreadcrumbList",
       itemListElement: [
-        { "@type": "ListItem", position: 1, name: "Home", item: `${base}/` },
+        { "@type": "ListItem", position: 1, name: "Home", item: base },
         { "@type": "ListItem", position: 2, name: "Industries", item: `${base}/industries` },
         { "@type": "ListItem", position: 3, name: hub.shortName, item: url },
       ],

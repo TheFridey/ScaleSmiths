@@ -10,8 +10,8 @@ export interface BuildLog {
   status: "Production note" | "System note"
   /**
    * Where a reader should go next. Service hrefs must exist in serviceRouteCatalogue(); article
-   * slugs must be published. These notes are short by design, so the onward routes matter: they
-   * are the reason the page is worth reaching rather than a dead end in the sitemap.
+   * slugs must be published. These notes are short by design. They stay linked from Work, but
+   * they are noindex and omitted from the sitemap until each one is a founder article.
    */
   relatedServiceHrefs?: string[]
   relatedInsightSlugs?: string[]
@@ -101,3 +101,6 @@ export const buildLogs: BuildLog[] = [
 export function getBuildLog(slug: string) {
   return buildLogs.find((log) => log.slug === slug)
 }
+
+/** Short production notes are useful to readers and too thin to ask Google to index. */
+export const BUILD_LOGS_ROBOTS = { index: false, follow: true } as const

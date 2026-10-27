@@ -36,6 +36,7 @@ const navigationGroups = [
       { href: "/enterprise/delivery", label: "Enterprise Delivery" },
       { href: "/security", label: "Security & Trust" },
       { href: "/web-design-nottingham", label: "Web Design Nottingham" },
+      { href: "/web-design-hucknall", label: "Web Design Hucknall" },
       { href: "/local-seo-nottingham", label: "Local SEO Nottingham" },
       { href: "/managed-website-hosting", label: "Managed Hosting" },
       { href: "/services/managed-business-email", label: "Managed Business Email" },

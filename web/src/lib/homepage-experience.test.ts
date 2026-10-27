@@ -13,6 +13,20 @@ describe("homepage experience defaults", () => {
     expect(pageSource).not.toContain("HomeExperienceGate")
   })
 
+  it("keeps the interactive planner public but out of the index", () => {
+    const pageSource = readFileSync(new URL("../app/interactive/page.tsx", import.meta.url), "utf8")
+    expect(pageSource).toContain("index: false")
+    expect(pageSource).toContain("follow: true")
+    expect(pageSource).toContain('canonical: "/interactive"')
+  })
+
+  it("renders the project brief in the first HTML response", () => {
+    const wizard = readFileSync(new URL("../components/QuoteBriefWizard.tsx", import.meta.url), "utf8")
+    expect(wizard).not.toContain('aria-busy="true" />')
+    expect(wizard).toContain("About You")
+    expect(wizard).not.toContain("<main")
+  })
+
   it("keeps the interactive planner as a public secondary CTA destination", () => {
     const preferenceSource = readFileSync(new URL("../components/ExperiencePreference.tsx", import.meta.url), "utf8")
     expect(preferenceSource).toContain('PROJECT_PLANNER_HREF = "/interactive"')

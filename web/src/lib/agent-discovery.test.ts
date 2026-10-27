@@ -36,7 +36,7 @@ describe("agent discovery metadata", () => {
       `${SITE_ORIGIN}/api/health`,
       `${SITE_ORIGIN}/sitemap.xml`,
       `${SITE_ORIGIN}/llms.txt`,
-      `${SITE_ORIGIN}/`,
+      SITE_ORIGIN,
     ])
     for (const target of targets) expect(served.has(target), `${target} is advertised but not served`).toBe(true)
   })

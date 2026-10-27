@@ -101,6 +101,11 @@ export interface IndustryPage {
   showCustomSystems: boolean
 }
 
+export interface IndustryHubSection {
+  title: string
+  paragraphs: string[]
+}
+
 export interface IndustryHub {
   slug: string
   name: string
@@ -111,6 +116,10 @@ export interface IndustryHub {
   h1: string
   intro: string
   audience: string
+  /** Date the hub copy was last materially revised, used as sitemap lastmod. */
+  reviewedAt: string
+  /** Distinct guidance for this vertical. Not a renamed copy of another hub. */
+  sections: IndustryHubSection[]
   featuredIndustrySlugs: string[]
   relatedSolutionHrefs: string[]
 }

@@ -5,7 +5,7 @@ Two Next.js apps (`web/` port 3000, `admin/` port 3001) share one PostgreSQL dat
 ## Toolchain
 
 - Node `>=22 <23`, npm `~10.9` (pinned).
-- Next.js is **15.5.27**.
+- Next.js is **15.5.28**.
 - Unit tests: Vitest.
 - E2E: Playwright.
 - Database: Drizzle, with separate migration ownership under `web/drizzle` and `admin/drizzle`.

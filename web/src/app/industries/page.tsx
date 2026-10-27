@@ -54,7 +54,7 @@ export default function IndustriesIndexPage() {
           </div>
         </section>
 
-        <section aria-labelledby="industry-workflows" className="border-y border-b1 px-6 py-16 md:px-12">
+        <section aria-labelledby="industry-workflows" className="border-t border-b1 px-6 py-16 md:px-12">
           <div className="mx-auto max-w-[1240px]">
             <h2 id="industry-workflows" className="font-syne text-[clamp(26px,3.6vw,40px)] font-extrabold tracking-[-0.025em]">
               Four worked workflows

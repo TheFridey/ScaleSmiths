@@ -143,4 +143,4 @@ GBP remains the reference currency for published products and proposals. CTAs pr
 | Workflow demonstrations | Four routes under `/industries/{hub}/experience` for trades, clinics and professional firms, manufacturing, and technology/commerce |
 | Second specialist wave | 14 additional published pages. Further candidates stay unpublished until they are distinct |
 | International delivery | `/international`. UK-founded, remote, GBP, no overseas offices. No hreflang |
-| Phase 2 bulk (25–40 near-duplicate pages) | Not done. The directory still holds unpublished candidates |
+| Phase 2 bulk (25 to 40 near-duplicate pages) | Not done. The directory still holds unpublished candidates |

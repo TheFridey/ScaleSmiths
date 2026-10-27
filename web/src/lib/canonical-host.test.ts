@@ -12,6 +12,27 @@ describe("www canonical host", () => {
     expect(destination?.toString()).toBe(`${CANONICAL_PUBLIC_ORIGIN}/pricing?plan=partnership`)
   })
 
+  it("keeps a scheme-relative path on the apex host", () => {
+    const destination = canonicalWwwRedirectUrl(
+      "www.scalesmiths.co.uk",
+      new URL("https://www.scalesmiths.co.uk//evil.example/pricing?plan=partnership"),
+    )
+    expect(destination?.hostname).toBe("scalesmiths.co.uk")
+    expect(destination?.href.startsWith(`${CANONICAL_PUBLIC_ORIGIN}/`)).toBe(true)
+    expect(destination?.search).toBe("?plan=partnership")
+  })
+
+  it("does not redirect the apex destination again", () => {
+    const destination = canonicalWwwRedirectUrl(
+      "www.scalesmiths.co.uk",
+      new URL("https://www.scalesmiths.co.uk/quote?intent=strategy_call&industry=plumbers"),
+    )
+    expect(destination?.hostname).toBe("scalesmiths.co.uk")
+    expect(destination?.pathname).toBe("/quote")
+    expect(destination?.search).toBe("?intent=strategy_call&industry=plumbers")
+    expect(canonicalWwwRedirectUrl(destination?.host, destination!)).toBeNull()
+  })
+
   it("ignores the apex host, admin host and local development", () => {
     const pricing = new URL("https://scalesmiths.co.uk/pricing")
     expect(canonicalWwwRedirectUrl("scalesmiths.co.uk", pricing)).toBeNull()

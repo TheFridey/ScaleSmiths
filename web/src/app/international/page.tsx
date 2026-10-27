@@ -62,8 +62,8 @@ export default function InternationalPage() {
                 <Link href="/quote?intent=strategy_call&industry=international&hub=international&pathway=growth" prefetch={false} className="btn-primary font-dm">
                   Discuss an international project
                 </Link>
-                <Link href="/pricing#published-prices" prefetch={false} className="btn-ghost font-dm">
-                  Published starting prices
+                <Link href="/services/business-growth-audit" prefetch={false} className="btn-ghost font-dm">
+                  Business Growth Audit
                 </Link>
               </div>
             </div>
@@ -82,10 +82,10 @@ export default function InternationalPage() {
 
             <section aria-labelledby="international-prices" className="mt-16">
               <h2 id="international-prices" className="font-syne text-[clamp(26px,3.6vw,40px)] font-extrabold tracking-[-0.025em]">
-                The same published prices
+                Published offers
               </h2>
               <p className="mt-3 max-w-[720px] font-dm text-base leading-relaxed text-t2">
-                A starting price is the entry point for an agreed scope. It is not a ceiling on the company and it is not unlimited work. Enterprise systems are scoped individually.
+                International work is quoted in GBP. The Business Growth Audit is £395. Business email starts from £15/month. Website builds, Growth Partnerships and custom systems are scoped after discovery, and we do not publish a converted price in another currency.
               </p>
               <ul className="mt-8 grid gap-4 md:grid-cols-2">
                 {prices.map((price) => (

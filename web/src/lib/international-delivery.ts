@@ -20,7 +20,7 @@ export const internationalDelivery = {
     },
     {
       title: "Billing",
-      body: "Proposals and invoices are in GBP. Published starting prices are the same figures as on the pricing page. Work that is larger than those starting points, including multi-country or operational systems, is scoped individually. We do not publish converted prices in other currencies.",
+      body: "Proposals and invoices are in GBP. The published figures are the Business Growth Audit at £395 and business email from £15/month. Website builds, partnerships and multi-country or operational systems are scoped individually. We do not publish converted prices in other currencies.",
     },
     {
       title: "After launch",
@@ -47,11 +47,15 @@ export const internationalDelivery = {
   ],
 }
 
+const PUBLISHED_INTERNATIONAL_PRICE_IDS = new Set(["audit", "email"])
+
 export function internationalPriceLines() {
-  return publishedStartingPrices.map((item) => ({
-    name: item.name,
-    priceLabel: item.priceLabel,
-    href: item.href,
-    note: item.note,
-  }))
+  return publishedStartingPrices
+    .filter((item) => PUBLISHED_INTERNATIONAL_PRICE_IDS.has(item.id))
+    .map((item) => ({
+      name: item.name,
+      priceLabel: item.priceLabel,
+      href: item.href,
+      note: item.note,
+    }))
 }

@@ -63,7 +63,7 @@ export const industryPagesWaveTwo: Record<string, IndustryPage> = {
     proof: {
       level: "adjacent",
       workSlug: "confirm-a-kill",
-      label: "Adjacent trades proof — Confirm-A-Kill",
+      label: "Adjacent trades proof: Confirm-A-Kill",
       summary:
         "Confirm-A-Kill is a pest-control site, not a plumbing delivery. It shows the emergency-versus-planned split a plumbing office can use. It is not a claim that the same result was delivered for a plumber.",
     },
@@ -137,7 +137,7 @@ export const industryPagesWaveTwo: Record<string, IndustryPage> = {
     proof: {
       level: "adjacent",
       workSlug: "confirm-a-kill",
-      label: "Adjacent emergency-service proof — Confirm-A-Kill",
+      label: "Adjacent emergency-service proof: Confirm-A-Kill",
       summary:
         "The adjacent example is a pest-control emergency journey, not a heating installation. Use it as the pattern for separating urgent and planned work. It is not a heating case study.",
     },
@@ -211,12 +211,12 @@ export const industryPagesWaveTwo: Record<string, IndustryPage> = {
     proof: {
       level: "adjacent",
       workSlug: "precision-finish-plastering-rendering",
-      label: "Adjacent home-improvement proof — Precision Finish",
+      label: "Adjacent home-improvement proof: Precision Finish",
       summary:
         "Precision Finish is a plastering and rendering site, not a main-contractor case study. It shows specialist proof and a quote path for home improvement work. It is not a claimed building-firm delivery.",
     },
     faqs: [
-      { q: "Should a builder publish prices?", a: "A budget band the buyer selects is more honest than a fixed extension price. Published build prices for the website itself stay on the ScaleSmiths pricing page." },
+      { q: "Should a builder publish prices?", a: "A budget band the buyer selects is more honest than a fixed extension price. This page does not publish a ScaleSmiths build price." },
       { q: "Can homeowners upload plans?", a: "Yes when scoped. File types, size limits and how long you keep the files are agreed first." },
       { q: "Do you design the extension as well as the website?", a: "No. We build the digital system. Architectural design stays with the people qualified to do it." },
     ],
@@ -240,7 +240,7 @@ export const industryPagesWaveTwo: Record<string, IndustryPage> = {
     eyebrow: "Locksmiths",
     h1: "A lockout is decided in the time it takes to find a number.",
     intro:
-      "Locksmith buyers are often locked out, on a phone, and comparing whoever answers clearly. Planned work — locks, access control, a shopfront — can wait for a quote. The website has to do both without looking like a national call centre you are not.",
+      "Locksmith buyers are often locked out, on a phone, and comparing whoever answers clearly. Planned work, such as locks, access control and a shopfront, can wait for a quote. The website has to do both without looking like a national call centre you are not.",
     searchIntent:
       "For locksmiths whose emergency number is hard to find on a phone, or whose planned security work has no serious quote path.",
     buyer: "Locksmith owners covering domestic call-outs and planned security work.",
@@ -285,7 +285,7 @@ export const industryPagesWaveTwo: Record<string, IndustryPage> = {
     proof: {
       level: "adjacent",
       workSlug: "confirm-a-kill",
-      label: "Adjacent emergency-call proof — Confirm-A-Kill",
+      label: "Adjacent emergency-call proof: Confirm-A-Kill",
       summary:
         "Confirm-A-Kill shows an urgent mobile journey for pest control. A locksmith can use the same clarity. It is adjacent proof, not a locksmith project.",
     },
@@ -387,7 +387,7 @@ export const industryPagesWaveTwo: Record<string, IndustryPage> = {
     eyebrow: "Physiotherapy",
     h1: "Patients need to know if this clinic sees their problem.",
     intro:
-      "People looking for physiotherapy arrive with a pain, a referral or a sport, and a limited sense of who can help. The site should explain who the clinic sees, what the first visit involves, and how to book — without promising a recovery the clinician has not assessed.",
+      "People looking for physiotherapy arrive with a pain, a referral or a sport, and a limited sense of who can help. The site should explain who the clinic sees, what the first visit involves, and how to book, without promising a recovery the clinician has not assessed.",
     searchIntent:
       "For physiotherapy clinics whose treatment pages are vague and whose booking path does not tell reception what the patient is asking about.",
     buyer: "Clinic owners, practice managers and physiotherapists responsible for new-patient enquiries.",
@@ -432,7 +432,7 @@ export const industryPagesWaveTwo: Record<string, IndustryPage> = {
     proof: {
       level: "adjacent",
       workSlug: "foot-works-podiatry",
-      label: "Adjacent clinic proof — Foot Works",
+      label: "Adjacent clinic proof: Foot Works",
       summary:
         "Foot Works is a podiatry website, not a physiotherapy delivery. It is adjacent proof of a clinic journey. It is not a claim of clinical outcomes for physiotherapy.",
     },
@@ -506,7 +506,7 @@ export const industryPagesWaveTwo: Record<string, IndustryPage> = {
     proof: {
       level: "adjacent",
       workSlug: "foot-works-podiatry",
-      label: "Adjacent clinical-practice proof — Foot Works",
+      label: "Adjacent clinical-practice proof: Foot Works",
       summary:
         "Foot Works is podiatry, not dentistry. The adjacent lesson is clarity and a contact path. Dental advertising rules and clinical claims remain the practice’s to approve. This is not a dental case study.",
     },
@@ -799,7 +799,7 @@ export const industryPagesWaveTwo: Record<string, IndustryPage> = {
     proof: {
       level: "adjacent",
       workSlug: "csds",
-      label: "Adjacent service-business proof — CSDS",
+      label: "Adjacent service-business proof: CSDS",
       summary:
         "CSDS is a computer-repair firm in Pennsylvania, not a managed-service contract. The adjacent proof is a quote path and an admin panel the owner uses. It is not an MSP case study.",
     },
@@ -1019,9 +1019,9 @@ export const industryPagesWaveTwo: Record<string, IndustryPage> = {
     proof: {
       level: "adjacent",
       workSlug: "pinkys-prints",
-      label: "Adjacent retail proof — Pinky’s Prints",
+      label: "Adjacent retail proof: Pinkys Prints",
       summary:
-        "Pinky’s Prints is a print and retail business, not a furniture warehouse. The adjacent lesson is a catalogue a merchant can run. It is not a claimed homeware delivery or a revenue figure.",
+        "Pinkys Prints is a print and retail business, not a furniture warehouse. The adjacent lesson is a catalogue a merchant can run. It is not a claimed homeware delivery or a revenue figure.",
     },
     faqs: [
       { q: "Do you only launch furniture brands on Shopify?", a: "No. Platform choice follows catalogue complexity, delivery rules and who will operate the store." },

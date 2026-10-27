@@ -12,7 +12,13 @@ export const WWW_ALIAS_HOSTNAME = "www.scalesmiths.co.uk"
 export function canonicalWwwRedirectUrl(hostHeader: string | null | undefined, url: URL): URL | null {
   const hostname = hostnameFromHostHeader(hostHeader) ?? hostnameFromHostHeader(url.host)
   if (hostname !== WWW_ALIAS_HOSTNAME) return null
-  return new URL(`${url.pathname}${url.search}`, CANONICAL_PUBLIC_ORIGIN)
+  // Assign path and query on a fixed origin. Building the URL from a raw
+  // path string would treat `//host` or `/\host` as a different origin.
+  const destination = new URL(CANONICAL_PUBLIC_ORIGIN)
+  destination.pathname = url.pathname || "/"
+  destination.search = url.search
+  if (destination.hostname !== "scalesmiths.co.uk") return null
+  return destination
 }
 
 function hostnameFromHostHeader(value: string | null | undefined) {

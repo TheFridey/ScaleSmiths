@@ -6,8 +6,10 @@ import { ArrowRight } from "lucide-react"
 import { EnquiryConsent } from "./EnquiryConsent"
 import Link from "next/link"
 import { LEGAL_VERSION } from "@/lib/legal"
+import { createBusinessEmailEnquiryAnalytics } from "@/lib/business-email-enquiry-analytics"
 import { readEnquiryAttribution } from "@/lib/enquiry-attribution-client"
 import { trackEnquiryAnalytics } from "@/lib/enquiry-analytics-client"
+import { trackExperienceEvent } from "@/lib/experience-analytics-client"
 
 const providers = ["None", "Microsoft 365", "Google Workspace", "Existing hosting/email provider", "Other"]
 const domainProviders = ["Cloudflare", "GoDaddy", "IONOS", "123 Reg", "Namecheap", "Squarespace", "Other", "Not sure"]
@@ -40,14 +42,14 @@ export function BusinessEmailEnquiryForm() {
   const [error, setError] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const inFlight = useRef(false)
-  const analyticsStarted = useRef(false)
+  const analytics = useRef(createBusinessEmailEnquiryAnalytics({
+    trackEnquiry: trackEnquiryAnalytics,
+    trackExperience: trackExperienceEvent,
+  })).current
   const router = useRouter()
 
   const update = (key: keyof FormState, value: string | boolean) => {
-    if (!analyticsStarted.current) {
-      analyticsStarted.current = true
-      trackEnquiryAnalytics("start", { intent: "business_email", funnelType: "business_email" })
-    }
+    analytics.onInteraction()
     setForm((current) => ({ ...current, [key]: value }))
   }
 
@@ -92,9 +94,10 @@ export function BusinessEmailEnquiryForm() {
       })
       const result = await response.json()
       if (!response.ok || !result.ok) throw new Error(result.error || "Unable to send your enquiry.")
-      trackEnquiryAnalytics("complete", { intent: "business_email", funnelType: "business_email" })
+      analytics.onSubmitSuccess()
       router.push("/services/managed-business-email/thanks")
     } catch (caught) {
+      analytics.onSubmitFailure()
       setError(caught instanceof Error ? caught.message : "Unable to send your enquiry.")
       inFlight.current = false
       setSubmitting(false)

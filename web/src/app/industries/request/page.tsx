@@ -7,8 +7,9 @@ import { missingIndustryHref } from "@/lib/industries/commercial"
 export const metadata = buildPageMetadata({
   title: "Tell us your industry",
   description:
-    "Cannot find your industry page yet? Tell ScaleSmiths what you run and what is holding growth back. We expand the directory from real demand — not thin duplicates.",
+    "Cannot find your industry page yet? Tell ScaleSmiths what you run and what is holding growth back. We expand the directory from real demand, not thin copies.",
   path: "/industries/request",
+  robots: { index: false, follow: true },
 })
 
 export default async function MissingIndustryRequestPage({

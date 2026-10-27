@@ -107,10 +107,6 @@ export function QuoteBriefWizard() {
     return () => window.removeEventListener("popstate", onPopState)
   }, [restored, stage])
 
-  if (!restored) {
-    return <main className="mx-auto max-w-[780px] px-6 py-12 md:px-12 md:py-16" aria-busy="true" />
-  }
-
   function update(key: string, value: string) {
     setError("")
     setInvalidField(null)
@@ -233,7 +229,7 @@ export function QuoteBriefWizard() {
   }
 
   return (
-    <main className="mx-auto max-w-[780px] px-6 py-12 md:px-12 md:py-16">
+    <div className="mx-auto max-w-[780px] px-6 py-12 md:px-12 md:py-16">
       <PageBreadcrumbs className="mb-8" items={[{ name: "Home", path: "/" }, { name: "Start a project", path: "/quote" }]} />
       <button
         type="button"
@@ -315,7 +311,7 @@ export function QuoteBriefWizard() {
       </section>
         </m.div>
       </AnimatePresence>
-    </main>
+    </div>
   )
 }
 

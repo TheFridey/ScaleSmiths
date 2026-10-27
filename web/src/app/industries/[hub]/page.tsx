@@ -7,6 +7,8 @@ import {
   allIndustryHubs,
   buildIndustryHubSchemas,
   getIndustryHub,
+  getIndustryDemonstration,
+  industryDemonstrationPath,
   industryPagesForHub,
   industryPath,
   metadataForIndustryHub,
@@ -29,6 +31,7 @@ export default async function IndustryHubPage({ params }: { params: Promise<{ hu
   if (!hub) notFound()
 
   const pages = industryPagesForHub(hub.slug)
+  const demonstration = getIndustryDemonstration(hub.slug)
   const schemas = buildIndustryHubSchemas(hub.slug, siteBaseUrl())
 
   return (
@@ -49,6 +52,13 @@ export default async function IndustryHubPage({ params }: { params: Promise<{ hu
               <h1 className="page-hero-display mt-3">{hub.h1}</h1>
               <p className="mt-6 font-dm text-lg leading-relaxed text-t2">{hub.intro}</p>
               <p className="mt-4 border-l border-acc pl-4 font-dm text-sm text-t3">{hub.audience}</p>
+              {demonstration ? (
+                <p className="mt-6">
+                  <Link href={industryDemonstrationPath(hub.slug)} prefetch={false} className="btn-primary inline-flex font-dm">
+                    Walk through the workflow
+                  </Link>
+                </p>
+              ) : null}
             </div>
             <div className="mt-14 grid gap-10 md:grid-cols-2">
               {hub.sections.map((section, index) => (

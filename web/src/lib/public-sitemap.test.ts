@@ -28,6 +28,7 @@ describe("public sitemap", () => {
     expect(urls).toContain("https://scalesmiths.co.uk/local-seo-nottingham")
     expect(urls).toContain("https://scalesmiths.co.uk/managed-website-hosting")
     expect(urls).toContain("https://scalesmiths.co.uk/faq")
+    expect(urls).toContain("https://scalesmiths.co.uk/international")
     expect(new Set(urls).size).toBe(urls.length)
   })
 

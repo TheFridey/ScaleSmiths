@@ -30,11 +30,12 @@ export const industryHubs: Record<string, IndustryHub> = {
         title: "Proof stays specific to the trade",
         paragraphs: [
           "Pest control can point at the published Confirm-A-Kill rebuild. Plastering and rendering can point at Precision Finish. Roofing and electrical pages use adjacent trades evidence only, and they say so.",
+          "Plumbers and locksmiths use that same adjacent trades evidence, and each page says it is not a plumbing or locksmith delivery. Heating and ventilation, building and cleaning pages are illustrative where no case study is published.",
           "A town does not get its own URL just because a van can reach it. Coverage belongs in a plain note unless that place has its own services, proof and enquiry path.",
         ],
       },
     ],
-    featuredIndustrySlugs: ["pest-control", "plastering-rendering", "roofing", "electricians"],
+    featuredIndustrySlugs: ["pest-control", "plastering-rendering", "plumbers", "roofing", "electricians", "locksmiths"],
     relatedSolutionHrefs: ["/local-growth", "/web-design-nottingham", "/digital-growth-partnership"],
   },
   "healthcare-wellness": {
@@ -59,14 +60,14 @@ export const industryHubs: Record<string, IndustryHub> = {
         ],
       },
       {
-        title: "What the published clinic work actually is",
+        title: "Clinic proof stays with the clinic",
         paragraphs: [
-          "The specialist page in this hub is podiatry. The published project is Foot Works Podiatry: an existing Squarespace site improved around treatment discovery, patient trust and Jane App booking routes.",
-          "That is one clinic. A dental practice, a physio or a vet would need its own facts before it earned a page. This hub does not pretend the podiatry project covers them.",
+          "Foot Works Podiatry is the published clinic project: an existing Squarespace site improved around treatment discovery, patient trust and Jane App booking. Physiotherapy and dental pages use that work as adjacent clinic proof. They say so, and they do not borrow podiatry outcomes.",
+          "The veterinary page has no case study. Its emergency and routine split is illustrative. A recovery rate, a review score or a clinical result still has to come from that practice before it can be published.",
         ],
       },
     ],
-    featuredIndustrySlugs: ["podiatry"],
+    featuredIndustrySlugs: ["podiatry", "physiotherapy", "dental-practices", "veterinary-clinics"],
     relatedSolutionHrefs: ["/local-growth", "/services/business-growth-audit", "/digital-growth-partnership"],
   },
   "hospitality-experiences": {
@@ -91,14 +92,14 @@ export const industryHubs: Record<string, IndustryHub> = {
         ],
       },
       {
-        title: "No restaurant case study is published yet",
+        title: "No hospitality case study is published yet",
         paragraphs: [
-          "ScaleSmiths has published local service and appointment-led websites. It has not published a restaurant delivery. The restaurant page says its examples are patterns, not claimed hospitality projects.",
-          "A venue page should not be produced by renaming a salon or trades page. Menus, covers and private dining are a different job, and this hub exists to keep that distinction visible.",
+          "ScaleSmiths has published local service and appointment-led websites. It has not published a restaurant or a hotel delivery. The restaurant page says its examples are patterns. The hotel page is a separate specialist page, and its room and enquiry pattern is illustrative, not a claimed stay or a booking-platform result.",
+          "A venue page should not be produced by renaming a salon or a trades page. Menus, covers, rooms and functions are different jobs, and this hub exists to keep that distinction visible.",
         ],
       },
     ],
-    featuredIndustrySlugs: ["restaurants"],
+    featuredIndustrySlugs: ["restaurants", "hotels"],
     relatedSolutionHrefs: ["/local-growth", "/custom-systems", "/digital-growth-partnership"],
   },
   "retail-ecommerce": {
@@ -125,12 +126,12 @@ export const industryHubs: Record<string, IndustryHub> = {
       {
         title: "Commerce proof, with the limit written down",
         paragraphs: [
-          "The independent retail page cites Pinkys Prints as direct commerce proof, and it says every catalogue and fulfilment model differs. This hub does not add a stronger claim than that page.",
+          "The independent retail page cites Pinkys Prints as direct commerce proof, and it says every catalogue and fulfilment model differs. The homeware page uses the same project as adjacent retail proof. It is not a claimed furniture or home-furnishings delivery.",
           "Printing and signage sit in their own hub, where the same project is adjacent evidence. A retailer should start here. A print shop should start there.",
         ],
       },
     ],
-    featuredIndustrySlugs: ["independent-retail"],
+    featuredIndustrySlugs: ["independent-retail", "homeware"],
     relatedSolutionHrefs: ["/e-commerce-development-nottingham", "/custom-systems", "/digital-growth-partnership"],
   },
   "manufacturing-industrial": {
@@ -155,14 +156,14 @@ export const industryHubs: Record<string, IndustryHub> = {
         ],
       },
       {
-        title: "There is no precision-engineering case study yet",
+        title: "There is no manufacturing case study yet",
         paragraphs: [
-          "ScaleSmiths builds custom systems and has published operational software. It has not published a precision-engineering website as a case study. The specialist page says its examples are patterns until that proof exists.",
+          "ScaleSmiths builds custom systems and has published operational software. It has not published a precision-engineering, fabrication or automation website as a case study. Those specialist pages say their examples are patterns until that proof exists.",
           "A list of towns is the wrong shape for a manufacturer who sells nationally. The useful page describes capability and the request for quote.",
         ],
       },
     ],
-    featuredIndustrySlugs: ["precision-engineering"],
+    featuredIndustrySlugs: ["precision-engineering", "metal-fabrication", "industrial-automation"],
     relatedSolutionHrefs: ["/custom-systems", "/custom-software-development-uk", "/enterprise"],
   },
   "technology-software": {
@@ -189,12 +190,12 @@ export const industryHubs: Record<string, IndustryHub> = {
       {
         title: "Platform work is adjacent proof",
         paragraphs: [
-          "The Business Circle and Prymal are published platform projects. The B2B SaaS page uses them as adjacent product-engineering proof, not as a growth-marketing case study for every niche.",
-          "This hub keeps that limit in view. A product company still has to supply its own customers, security position and demo path before those can be published.",
+          "The Business Circle and Prymal are published platform projects. The B2B SaaS page uses them as adjacent product-engineering proof, not as a growth-marketing case study for every niche. The managed IT page uses CSDS, a computer-repair firm, as adjacent service proof. It is not a managed-service case study.",
+          "This hub keeps that limit in view. A product company or a support provider still has to supply its own customers, security position and enquiry path before those can be published.",
         ],
       },
     ],
-    featuredIndustrySlugs: ["b2b-saas"],
+    featuredIndustrySlugs: ["b2b-saas", "managed-it"],
     relatedSolutionHrefs: ["/custom-systems", "/enterprise", "/digital-growth-partnership"],
   },
   "media-creative": {
@@ -285,12 +286,12 @@ export const industryHubs: Record<string, IndustryHub> = {
       {
         title: "No accountancy case study is published yet",
         paragraphs: [
-          "The accountants page is explicit: there is no published accountancy project, and the patterns are illustrative. They have to be checked against the firm's own rules before they go live.",
+          "The accountants page is explicit: there is no published accountancy project, and the patterns are illustrative. They have to be checked against the firm's own rules before they go live. The recruitment page is also illustrative. It is not a claimed placement result.",
           "Enquiry volume is not something this hub offers. Clearer positioning can improve the quality of an enquiry. The market, the reputation and the firm's capacity decide the rest.",
         ],
       },
     ],
-    featuredIndustrySlugs: ["accountants"],
+    featuredIndustrySlugs: ["accountants", "recruiters"],
     relatedSolutionHrefs: ["/local-growth", "/custom-systems", "/digital-growth-partnership"],
   },
 }

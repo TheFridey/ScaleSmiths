@@ -7,6 +7,8 @@ import {
   allIndustryHubs,
   buildIndustriesIndexSchemas,
   industryAzIndex,
+  industryDemonstrationPath,
+  industryDemonstrations,
   industryPath,
   metadataForIndustriesIndex,
   publishedIndustryPages,
@@ -18,6 +20,7 @@ export const metadata = metadataForIndustriesIndex()
 export default function IndustriesIndexPage() {
   const hubs = allIndustryHubs()
   const published = publishedIndustryPages()
+  const demonstrations = industryDemonstrations()
   const az = industryAzIndex()
   const schemas = buildIndustriesIndexSchemas(siteBaseUrl())
 
@@ -42,9 +45,34 @@ export default function IndustriesIndexPage() {
                 <p className="mt-4 font-dm text-sm text-t3">
                   {published.length} published industry pages · {hubs.length} groups · if yours is not listed, you can still tell us about the business
                 </p>
+                <p className="mt-4 font-dm text-sm text-t2">
+                  <Link href="/international" prefetch={false} className="underline underline-offset-2">International clients</Link> are served remotely from the UK.
+                </p>
               </div>
               <IndustryExplorer featuredHints={["pest control", "podiatry", "roofing", "SaaS", "restaurant", "CNC"]} />
             </div>
+          </div>
+        </section>
+
+        <section aria-labelledby="industry-workflows" className="border-t border-b1 px-6 py-16 md:px-12">
+          <div className="mx-auto max-w-[1240px]">
+            <h2 id="industry-workflows" className="font-syne text-[clamp(26px,3.6vw,40px)] font-extrabold tracking-[-0.025em]">
+              Four worked workflows
+            </h2>
+            <p className="mt-3 max-w-[640px] font-dm text-base text-t2">
+              Enquiry, the system that captures it, and what the business gets back. These are patterns from real delivery work or clearly marked illustrations. They are not performance claims.
+            </p>
+            <ul className="mt-8 grid gap-4 md:grid-cols-2">
+              {demonstrations.map((item) => (
+                <li key={item.hubSlug}>
+                  <Link href={industryDemonstrationPath(item.hubSlug)} prefetch={false} className="block h-full rounded-2xl border border-b1 bg-s1 p-6 hover:border-acc/40">
+                    <span className="font-dm text-xs font-semibold uppercase tracking-[0.14em] text-acc">{item.eyebrow}</span>
+                    <h3 className="mt-2 font-syne text-xl font-bold">{item.h1}</h3>
+                    <p className="mt-3 font-dm text-sm leading-relaxed text-t2">{item.intro}</p>
+                  </Link>
+                </li>
+              ))}
+            </ul>
           </div>
         </section>
 
@@ -83,7 +111,7 @@ export default function IndustriesIndexPage() {
               Published specialist pages
             </h2>
             <p className="mt-3 max-w-[640px] font-dm text-base text-t2">
-              First-wave pages spanning trades, clinics, hospitality, print, retail, manufacturing, SaaS, beauty and professional services — each meaningfully different.
+              Specialist pages for trades, clinics, hospitality, print, retail, manufacturing, software, beauty and professional firms. Each page has to describe that business specifically.
             </p>
             <ul className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {published.map((page) => (

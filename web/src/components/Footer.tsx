@@ -49,6 +49,7 @@ const navigationGroups = [
       { href: "/services/business-growth-audit", label: "Business Growth Audit" },
       { href: "/digital-growth-partnership", label: "Growth Partnership" },
       { href: "/seo-website-audit", label: "SEO Website Audit" },
+      { href: "/international", label: "International clients" },
       { href: "/quote", label: "Start a Project" },
     ],
   },

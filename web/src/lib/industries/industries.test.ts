@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs"
 import { describe, expect, it } from "vitest"
 import { projects } from "../data"
 import { serviceRouteCatalogue } from "../service-routes"
@@ -5,7 +6,10 @@ import { buildPublicSitemap } from "../public-sitemap"
 import {
   allIndustryHubs,
   commercialPathways,
+  getIndustryDemonstration,
   industryAzIndex,
+  industryDemonstrationPath,
+  industryDemonstrations,
   industryDifferenceFingerprint,
   industryPath,
   industryTaxonomy,
@@ -19,21 +23,35 @@ const BANNED_CLAIMS =
   /\b(?:#1|number one|best (?:web|agency|designer|developer)|industry[- ]leading|guaranteed rankings?|award[- ]winning|world[- ]class|cutting[- ]edge|guaranteed (?:leads|roi|results))\b/i
 
 describe("industry growth engine registry", () => {
-  it("publishes exactly the first-wave specialist set", () => {
+  it("publishes the specialist set and no extra pages", () => {
     const slugs = publishedIndustryPages().map((page) => page.slug).sort()
     expect(slugs).toEqual([
       "accountants",
       "b2b-saas",
       "beauty-salons",
+      "builders",
+      "cleaning",
+      "dental-practices",
       "electricians",
+      "homeware",
+      "hotels",
+      "hvac",
       "independent-retail",
+      "industrial-automation",
+      "locksmiths",
+      "managed-it",
+      "metal-fabrication",
       "pest-control",
+      "physiotherapy",
       "plastering-rendering",
+      "plumbers",
       "podiatry",
       "precision-engineering",
       "printing-signage",
+      "recruiters",
       "restaurants",
       "roofing",
+      "veterinary-clinics",
     ].sort())
   })
 
@@ -55,9 +73,15 @@ describe("industry growth engine registry", () => {
   it("fails the swap-the-industry-name test: fingerprints stay unique", () => {
     const fingerprints = publishedIndustryPages().map(industryDifferenceFingerprint)
     expect(new Set(fingerprints).size).toBe(fingerprints.length)
-    for (const key of ["h1", "intro", "primaryProblem", "searchIntent"] as const) {
+    for (const key of ["h1", "intro", "primaryProblem", "searchIntent", "metaTitle", "description"] as const) {
       expect(new Set(publishedIndustryPages().map((page) => page[key])).size, key).toBe(publishedIndustryPages().length)
     }
+    const demonstrationTitles = industryDemonstrations().map((item) => item.metaTitle)
+    const demonstrationDescriptions = industryDemonstrations().map((item) => item.description)
+    const titles = [...publishedIndustryPages().map((page) => page.metaTitle), ...demonstrationTitles]
+    const descriptions = [...publishedIndustryPages().map((page) => page.description), ...demonstrationDescriptions]
+    expect(new Set(titles).size).toBe(titles.length)
+    expect(new Set(descriptions).size).toBe(descriptions.length)
   })
 
   it("never reuses a friction title or FAQ question across pages", () => {
@@ -134,7 +158,9 @@ describe("industry growth engine registry", () => {
     expect(chiropody.some((hit) => hit.name.toLowerCase().includes("podiatry"))).toBe(true)
     const missing = searchIndustries("underwater basket weaving xyz")
     expect(missing.every((hit) => !hit.href.includes("?"))).toBe(true)
-    const candidate = searchIndustries("plumber")
+    const plumber = searchIndustries("plumber")
+    expect(plumber.some((hit) => hit.kind === "published" && hit.href === "/industries/trades-home-services/plumbers")).toBe(true)
+    const candidate = searchIndustries("solicitor")
     expect(candidate.some((hit) => hit.kind === "candidate" && hit.href.startsWith("/industries/request"))).toBe(true)
   })
 
@@ -150,10 +176,58 @@ describe("industry growth engine registry", () => {
     expect(urls).toContain("https://scalesmiths.co.uk/industries/trades-home-services")
     expect(urls).toContain("https://scalesmiths.co.uk/industries/trades-home-services/pest-control")
     expect(urls).toContain("https://scalesmiths.co.uk/industries/healthcare-wellness/podiatry")
+    expect(urls).toContain("https://scalesmiths.co.uk/industries/trades-home-services/experience")
+    expect(urls).toContain("https://scalesmiths.co.uk/industries/healthcare-wellness/experience")
+    expect(urls).toContain("https://scalesmiths.co.uk/industries/manufacturing-industrial/experience")
+    expect(urls).toContain("https://scalesmiths.co.uk/industries/technology-software/experience")
+    expect(urls).toContain("https://scalesmiths.co.uk/industries/retail-ecommerce/homeware")
     expect(urls).not.toContain("https://scalesmiths.co.uk/industries/request")
+    for (const page of publishedIndustryPages()) {
+      expect(urls, page.slug).toContain(`https://scalesmiths.co.uk${industryPath(page.hubSlug, page.slug)}`)
+    }
     expect(urls.filter((url) => url.includes("/industries")).length).toBe(
       new Set(urls.filter((url) => url.includes("/industries"))).size,
     )
+  })
+
+  it("publishes four distinct workflow demonstrations on the hubs that can support them", () => {
+    const demos = industryDemonstrations()
+    expect(demos.map((item) => item.hubSlug).sort()).toEqual([
+      "healthcare-wellness",
+      "manufacturing-industrial",
+      "technology-software",
+      "trades-home-services",
+    ])
+    for (const demo of demos) {
+      expect(demo.tracks.length, demo.hubSlug).toBeGreaterThan(0)
+      expect(demo.metaTitle.length, demo.hubSlug).toBeLessThanOrEqual(60)
+      expect(demo.description.length, demo.hubSlug).toBeLessThanOrEqual(160)
+      expect(getIndustryDemonstration(demo.hubSlug)?.h1).toBe(demo.h1)
+      expect(industryDemonstrationPath(demo.hubSlug)).toBe(`/industries/${demo.hubSlug}/experience`)
+    }
+    const questions = demos.flatMap((demo) => demo.faqs.map((item) => item.q.toLowerCase()))
+    expect(new Set(questions).size).toBe(questions.length)
+  })
+
+  it("keeps new industry and workflow copy free of dashes and extra prices", () => {
+    const sources = [
+      new URL("./pages-wave-two.ts", import.meta.url),
+      new URL("./demonstrations.ts", import.meta.url),
+    ]
+    for (const source of sources) {
+      const copy = readFileSync(source, "utf8")
+      expect(copy, source.pathname).not.toMatch(/[\u2013\u2014]/)
+      expect(copy, source.pathname).not.toMatch(/£\s?\d/)
+    }
+  })
+
+  it("only links related industries that are actually published", () => {
+    const slugs = new Set(publishedIndustryPages().map((page) => page.slug))
+    for (const page of publishedIndustryPages()) {
+      for (const related of page.relatedIndustrySlugs) {
+        expect(slugs.has(related), `${page.slug} → ${related}`).toBe(true)
+      }
+    }
   })
 
   it("gives every industry hub distinct guidance worth indexing", () => {

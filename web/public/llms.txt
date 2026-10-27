@@ -21,6 +21,7 @@ ScaleSmiths does not start by selling a fixed package. The correct solution may 
 
 - Based in Hucknall, Nottinghamshire (NG15), United Kingdom.
 - Serves Nottingham, Hucknall, Nottinghamshire, the East Midlands and clients across the UK.
+- Works remotely with clients outside the UK when delivery is viable. No overseas offices. English only; no translated regional sites.
 
 ## Key pages
 
@@ -34,6 +35,8 @@ ScaleSmiths does not start by selling a fixed package. The correct solution may 
 - [Work](https://scalesmiths.co.uk/work): Case studies and build evidence.
 - [Insights](https://scalesmiths.co.uk/insights): ScaleSmiths Knowledge Library: technical articles with honest publication presentation.
 - [Pricing](https://scalesmiths.co.uk/pricing): How SME/web/growth work is scoped; enterprise remains discovery-led.
+- [Industries](https://scalesmiths.co.uk/industries): Specialist pages for trades, clinics, hospitality, retail, manufacturing and software. Unpublished sectors stay as directory requests.
+- [International clients](https://scalesmiths.co.uk/international): Remote delivery from the UK. GBP pricing. No overseas offices.
 - [Strategy Call](https://scalesmiths.co.uk/quote?intent=strategy_call): Light enquiry to talk through the constraint.
 - [Start a Project](https://scalesmiths.co.uk/quote): Full project brief when the scope is clearer.
 - [Contact](https://scalesmiths.co.uk/contact): Enquiry routes and business details.

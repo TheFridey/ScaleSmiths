@@ -42,7 +42,7 @@ const agentDiscoveryLinkHeader = [
   `<${siteOrigin}/api/health>; rel="status"`,
   `<${siteOrigin}/sitemap.xml>; rel="sitemap"; type="application/xml"`,
   `<${siteOrigin}/llms.txt>; rel="describedby"; type="text/plain"`,
-  `<${siteOrigin}/>; rel="canonical"`,
+  `<${siteOrigin}>; rel="canonical"`,
 ].join(", ")
 
 const nextConfig = {

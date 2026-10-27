@@ -39,7 +39,9 @@ One page owns each intent. New pages must not target an intent already owned bel
 | High | `/local-growth-check` vs `/services/business-growth-audit` | Same product and price. Keep the local page only if it is used for local campaigns; otherwise 301 to the audit page or set its canonical to it. |
 | Medium | `/web-development-nottingham` vs `/custom-web-app-development-uk` vs `/custom-systems` | Repositioned: Nottingham development now owns integrations, admin and takeovers; portals/SaaS belong to the UK apps page. Keep examples distinct. |
 | Medium | `/web-design-nottingham` vs `/web-design-hucknall` | Differentiated by locality evidence and angle (Hucknall base vs city-wide service-business structure). Revisit after 3 months of Search Console data; merge if Google treats them as one. |
-| Medium | Build logs `/work/<log>` (~200 words each) | Thin indexable pages. Expand into founder articles, or add `noindex` until expanded. |
+| Medium | Build logs `/work/<log>` (~200 words each) | Noindexed and omitted from the sitemap until each note is expanded into a founder article. They stay linked from Work and from the service pages that cite them. |
+| Low | `/interactive` | Kept indexable. The performance budget requires Lighthouse SEO of at least 88 on this route, and `noindex` fails that check. The visible text is still short, so Search Console may leave it crawled and not indexed. |
+| Low | `/industries/request` and `?hint=` variants | Form for industries that do not have a page yet. Noindex, omitted from the sitemap, still linked from the directory. |
 | Low | `/e-commerce-development-nottingham` | Nottingham in the slug with no Nottingham e-commerce proof. Keep the URL; add local commerce proof when available rather than more place-name copy. |
 | Article | "Next.js vs WordPress" vs "Why we stopped recommending WordPress for complex platforms" | Publish the comparison first; fold the second in unless it has its own platform evidence. |
 | Article | "Website rebuild SEO" vs "Keeping existing URLs during migration" | Rebuild article owns the broad query; the URL article must stay redirect-specific or become a section. |

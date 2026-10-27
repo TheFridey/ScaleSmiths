@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { buildPublicSitemap, PUBLIC_CONTENT_LAST_MODIFIED_ISO } from "./public-sitemap"
+import { buildLogs } from "./build-logs"
+import { buildPublicSitemap, LOCATIONS_HUB_LAST_MODIFIED_ISO, PUBLIC_CONTENT_LAST_MODIFIED_ISO, QUOTE_PAGE_LAST_MODIFIED_ISO } from "./public-sitemap"
 
 describe("public sitemap", () => {
   it("publishes one canonical normal homepage and excludes the redirect-only legacy route", () => {
@@ -7,8 +8,11 @@ describe("public sitemap", () => {
     const urls = entries.map((entry) => entry.url)
 
     expect(urls.filter((url) => url === "https://scalesmiths.co.uk")).toHaveLength(1)
+    expect(urls).not.toContain("https://scalesmiths.co.uk/")
     expect(urls).not.toContain("https://scalesmiths.co.uk/traditional")
     expect(urls).toContain("https://scalesmiths.co.uk/interactive")
+    expect(urls).not.toContain("https://scalesmiths.co.uk/industries/request")
+    for (const log of buildLogs) expect(urls).not.toContain(`https://scalesmiths.co.uk/work/${log.slug}`)
     expect(urls).toContain("https://scalesmiths.co.uk/local-growth-check")
     expect(urls).toContain("https://scalesmiths.co.uk/local-growth")
     expect(urls).toContain("https://scalesmiths.co.uk/custom-systems")
@@ -40,5 +44,12 @@ describe("public sitemap", () => {
 
     expect(first).toEqual(second)
     expect(first).toContain(PUBLIC_CONTENT_LAST_MODIFIED_ISO)
+    expect(first).toContain(LOCATIONS_HUB_LAST_MODIFIED_ISO)
+    expect(first).toContain(QUOTE_PAGE_LAST_MODIFIED_ISO)
+    const byUrl = new Map(buildPublicSitemap().map((entry) => [entry.url, entry.lastModified instanceof Date ? entry.lastModified.toISOString() : entry.lastModified]))
+    expect(byUrl.get("https://scalesmiths.co.uk/locations")).toBe(LOCATIONS_HUB_LAST_MODIFIED_ISO)
+    expect(byUrl.get("https://scalesmiths.co.uk/quote")).toBe(QUOTE_PAGE_LAST_MODIFIED_ISO)
+    expect(byUrl.get("https://scalesmiths.co.uk/industries/trades-home-services")).toBe("2026-10-27T00:00:00.000Z")
+    expect(byUrl.get("https://scalesmiths.co.uk")).toBe(PUBLIC_CONTENT_LAST_MODIFIED_ISO)
   })
 })

@@ -50,6 +50,16 @@ export default async function IndustryHubPage({ params }: { params: Promise<{ hu
               <p className="mt-6 font-dm text-lg leading-relaxed text-t2">{hub.intro}</p>
               <p className="mt-4 border-l border-acc pl-4 font-dm text-sm text-t3">{hub.audience}</p>
             </div>
+            <div className="mt-14 grid gap-10 md:grid-cols-2">
+              {hub.sections.map((section, index) => (
+                <section key={section.title} aria-labelledby={`${hub.slug}-guidance-${index}`}>
+                  <h2 id={`${hub.slug}-guidance-${index}`} className="font-syne text-2xl font-bold">{section.title}</h2>
+                  {section.paragraphs.map((paragraph) => (
+                    <p key={paragraph} className="mt-4 font-dm text-base leading-relaxed text-t2">{paragraph}</p>
+                  ))}
+                </section>
+              ))}
+            </div>
           </div>
         </section>
 
@@ -87,6 +97,24 @@ export default async function IndustryHubPage({ params }: { params: Promise<{ hu
             )}
           </div>
         </section>
+
+        {pages.length > 0 ? (
+          <section aria-labelledby={`${hub.slug}-evidence`} className="px-6 py-16 md:px-12">
+            <div className="mx-auto max-w-[1240px]">
+              <h2 id={`${hub.slug}-evidence`} className="font-syne text-2xl font-bold">Evidence the specialist pages will stand behind</h2>
+              <ul className="mt-8 grid gap-4">
+                {pages.map((page) => (
+                  <li key={page.id} className="rounded-2xl border border-b1 bg-s1 p-6">
+                    <h3 className="font-syne text-xl font-bold">
+                      <Link href={industryPath(page.hubSlug, page.slug)} prefetch={false} className="hover:text-acc">{page.name}</Link>
+                    </h3>
+                    <p className="mt-3 font-dm text-sm leading-relaxed text-t2">{page.proof.label}. {page.proof.summary}</p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </section>
+        ) : null}
 
         <section className="px-6 py-16 md:px-12">
           <div className="mx-auto max-w-[1240px]">

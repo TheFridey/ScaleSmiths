@@ -13,7 +13,7 @@ import { CaseStudyGallery, ResponsiveShowcase, hasGalleryShots, hasResponsiveSho
 import { ConfirmAKillStory } from "@/components/work/ConfirmAKillStory"
 import { ProjectCard } from "@/components/work/ProjectCard"
 import { ProjectScreenshot, hostFromUrl, isDevelopment } from "@/components/work/ProjectScreenshot"
-import { getBuildLog, type BuildLog } from "@/lib/build-logs"
+import { BUILD_LOGS_ROBOTS, getBuildLog, type BuildLog } from "@/lib/build-logs"
 import { Breadcrumbs } from "@/components/Breadcrumbs"
 import { getInsight } from "@/lib/insights"
 import { serviceRoutes } from "@/lib/service-routes"
@@ -44,6 +44,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description: log.summary,
       path: `/work/${log.slug}`,
       type: "article",
+      robots: BUILD_LOGS_ROBOTS,
     })
   }
 

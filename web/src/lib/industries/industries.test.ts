@@ -147,11 +147,29 @@ describe("industry growth engine registry", () => {
   it("includes industry routes in the public sitemap once", () => {
     const urls = buildPublicSitemap().map((entry) => entry.url)
     expect(urls).toContain("https://scalesmiths.co.uk/industries")
+    expect(urls).toContain("https://scalesmiths.co.uk/industries/trades-home-services")
     expect(urls).toContain("https://scalesmiths.co.uk/industries/trades-home-services/pest-control")
     expect(urls).toContain("https://scalesmiths.co.uk/industries/healthcare-wellness/podiatry")
+    expect(urls).not.toContain("https://scalesmiths.co.uk/industries/request")
     expect(urls.filter((url) => url.includes("/industries")).length).toBe(
       new Set(urls.filter((url) => url.includes("/industries"))).size,
     )
+  })
+
+  it("gives every industry hub distinct guidance worth indexing", () => {
+    const hubs = allIndustryHubs()
+    const sectionTitles = hubs.flatMap((hub) => hub.sections.map((section) => section.title))
+    expect(new Set(sectionTitles).size).toBe(sectionTitles.length)
+    for (const hub of hubs) {
+      expect(hub.reviewedAt).toBe("2026-10-27")
+      expect(hub.sections.length).toBeGreaterThanOrEqual(2)
+      const copy = hub.sections.flatMap((section) => [section.title, ...section.paragraphs]).join(" ")
+      const words = copy.split(/\s+/).filter(Boolean)
+      expect(words.length, hub.slug).toBeGreaterThan(110)
+      expect(copy, hub.slug).not.toMatch(/[—–]/)
+      expect(copy, hub.slug).not.toMatch(/£/)
+      expect(copy, hub.slug).not.toMatch(BANNED_CLAIMS)
+    }
   })
 
   it("parses industry attribution for quote handoff", () => {

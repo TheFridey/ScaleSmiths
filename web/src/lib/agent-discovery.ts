@@ -25,7 +25,8 @@ export const HOMEPAGE_LINK_HEADER = [
   `<${absoluteUrl("/api/health")}>; rel="status"`,
   `<${absoluteUrl("/sitemap.xml")}>; rel="sitemap"; type="application/xml"`,
   `<${absoluteUrl("/llms.txt")}>; rel="describedby"; type="text/plain"`,
-  `<${SITE_ORIGIN}/>; rel="canonical"`,
+  // Same canonical string as the homepage HTML tag and the sitemap loc: no trailing slash.
+  `<${SITE_ORIGIN}>; rel="canonical"`,
 ].join(", ")
 
 /**

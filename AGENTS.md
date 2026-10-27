@@ -435,6 +435,20 @@ Highest-value sources are typically:
 Do not preserve a stale architectural claim merely because it already appears in documentation.
 
 
+## Cursor Cloud specific instructions
+
+Cloud Agents use host PostgreSQL 16 and the two npm dev servers. Docker Compose is not part of this environment.
+
+- `install` installs the PostgreSQL packages when `pg_isready` is missing, then runs `npm ci` in `web/` and `admin/`.
+- `start` starts PostgreSQL, creates the `ssadmin` role and `scalesmiths` database when they are missing, and writes a gitignored `.env` from `.env.example` when `.env` is missing.
+- Local `DATABASE_URL` and `MIGRATION_DATABASE_URL` use `127.0.0.1`. The hostname `postgres` in `.env.example` is the Compose service name.
+- `start` runs `npm run db:migrate` and `npm --prefix admin run admin:bootstrap`, then launches `npm run dev` in tmux sessions `scalesmiths-web` (port 3000) and `scalesmiths-admin` (port 3001).
+- The generated `.env` sets `AUTH_URL=http://localhost:3001`, `FORGE_SANDBOX_RUNNER=local`, and `FORGE_ENABLE_AI=false`. Keep Forge AI on the mock provider.
+- Owner login is `ADMIN_EMAIL` / `ADMIN_PASSWORD` from `.env`. The example values are `admin@scalesmiths.co.uk` and `changeme_in_production`. Development mode does not require MFA.
+- Quote rows are stored without a Resend key. `email_delivery_status` stays `failed` until `RESEND_API_KEY` is set.
+- Dev server logs are `/tmp/scalesmiths-web.log` and `/tmp/scalesmiths-admin.log`.
+
+
 ## Nova Venture Lab
 
 Venture Lab is a bounded domain inside `admin/`; it is not a third application and must not create a parallel auth, database, migration or deployment stack without an accepted ADR.

@@ -100,7 +100,7 @@ No High or Critical finding is being accepted as contextually non-exploitable. T
 | --- | --- | --- |
 | `next > postcss = 8.5.25` | Next.js 15.5.25 still embeds vulnerable PostCSS 8.4.31. | Remove when a supported stable Next.js 15 patch declares an audit-safe PostCSS and both CSS/build/E2E gates pass without it. |
 | `next > sharp = 0.35.4` | Next.js 15.5.25 optionally allows Sharp `^0.34.3`, which remains inside GHSA-rgj7-g3m4-5g8c. | Remove when the supported Next.js line declares Sharp 0.35.4 or newer as the only optional range and production audit remains clean. |
-| `fast-uri = 3.1.8` | Transitive AJV/schema-utils resolutions otherwise stay on 3.1.5, which is inside the 2026 URI-normalization advisory range. | Remove when every declared dependency range resolves `fast-uri` >= 3.1.6 without a global override. |
+| `fast-uri = 3.1.9` | Transitive AJV/schema-utils resolutions otherwise stay on 3.1.5. 3.1.8 closed the earlier URI-normalization range and is itself inside CVE-2026-110180 and CVE-2026-110306, which 3.1.9 fixes. | Remove when every declared dependency range resolves `fast-uri` >= 3.1.9 without a global override. |
 | `brace-expansion = 5.0.9` | All earlier dependency branches fall inside the npm advisory range. | Remove when every declared dependency range resolves an audit-safe release without a global override. |
 
 The overrides are identical in web and admin so framework behavior remains aligned.

@@ -10,7 +10,7 @@ describe("public sitemap", () => {
     expect(urls.filter((url) => url === "https://scalesmiths.co.uk")).toHaveLength(1)
     expect(urls).not.toContain("https://scalesmiths.co.uk/")
     expect(urls).not.toContain("https://scalesmiths.co.uk/traditional")
-    expect(urls).not.toContain("https://scalesmiths.co.uk/interactive")
+    expect(urls).toContain("https://scalesmiths.co.uk/interactive")
     expect(urls).not.toContain("https://scalesmiths.co.uk/industries/request")
     for (const log of buildLogs) expect(urls).not.toContain(`https://scalesmiths.co.uk/work/${log.slug}`)
     expect(urls).toContain("https://scalesmiths.co.uk/local-growth-check")

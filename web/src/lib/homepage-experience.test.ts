@@ -13,9 +13,9 @@ describe("homepage experience defaults", () => {
     expect(pageSource).not.toContain("HomeExperienceGate")
   })
 
-  it("keeps the interactive planner public but out of the index", () => {
+  it("keeps the interactive planner indexable", () => {
     const pageSource = readFileSync(new URL("../app/interactive/page.tsx", import.meta.url), "utf8")
-    expect(pageSource).toContain("index: false")
+    expect(pageSource).toContain("index: true")
     expect(pageSource).toContain("follow: true")
     expect(pageSource).toContain('canonical: "/interactive"')
   })

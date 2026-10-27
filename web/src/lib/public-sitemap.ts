@@ -17,7 +17,8 @@ export function buildPublicSitemap(siteUrl = "https://scalesmiths.co.uk"): Metad
   const lastModified = () => new Date(PUBLIC_CONTENT_LAST_MODIFIED_ISO)
   const entries: MetadataRoute.Sitemap = [
     { url: base,                  lastModified: lastModified(), changeFrequency: "monthly", priority: 1 },
-    // /interactive is a client-rendered planner. Its server HTML is a shell, so it is noindex and omitted.
+    // The planner stays indexable: the public performance budget requires its Lighthouse SEO score.
+    { url: `${base}/interactive`, lastModified: lastModified(), changeFrequency: "monthly", priority: 0.7 },
     { url: `${base}/work`,        lastModified: lastModified(), changeFrequency: "monthly", priority: 0.9 },
     { url: `${base}/services`,    lastModified: lastModified(), changeFrequency: "monthly", priority: 0.9 },
     { url: `${base}/services/managed-business-email`, lastModified: lastModified(), changeFrequency: "monthly", priority: 0.85 },

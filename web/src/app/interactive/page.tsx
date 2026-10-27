@@ -10,8 +10,7 @@ export const metadata: Metadata = {
     canonical: "/interactive",
   },
   openGraph: { url: "/interactive" },
-  // The planner is a client application. Its server HTML is a short shell, so it is not a search document.
-  robots: { index: false, follow: true },
+  robots: { index: true, follow: true },
 }
 
 export default function InteractivePage() {

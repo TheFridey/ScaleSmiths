@@ -61,7 +61,7 @@ test.describe("public experience SEO routing", () => {
     await expect.poll(() => page.evaluate((key) => localStorage.getItem(key), EXPERIENCE_KEY)).toBe("normal")
   })
 
-  test("publishes route-specific canonical metadata and keeps the planner out of the index", async ({ page }) => {
+  test("publishes route-specific canonical metadata and intentional interactive indexing", async ({ page }) => {
     for (const [path, canonicalPath] of [
       ["/?experience=normal", "/"],
       ["/interactive", "/interactive"],
@@ -76,7 +76,7 @@ test.describe("public experience SEO routing", () => {
     }
 
     await gotoReady(page, "/interactive")
-    await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/i)
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /index, follow/i)
   })
 
   test("excludes the redirect-only route and duplicate URLs from the sitemap", async ({ request }) => {

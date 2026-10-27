@@ -8,6 +8,9 @@ export const ANALYTICS_SESSION_KEY = "scalesmiths.analytics.session"
 export const ANALYTICS_SENT_KEY = "scalesmiths.analytics.sent"
 export const ANALYTICS_OPT_OUT_COOKIE = "ss_analytics_opt_out"
 
+const EXPERIENCE_EVENTS_ENDPOINT = "/api/experience-events"
+const inFlightEventKeys = new Set<string>()
+
 type TrackInput = {
   preference?: ExperiencePreferenceValue
   returningPreference?: boolean
@@ -24,7 +27,7 @@ export function trackExperienceEvent(eventName: ExperienceEventName, input: Trac
 
   const sessionId = getSessionId()
   const eventKey = `${sessionId}:${eventName}:${input.interactiveStep ?? ""}:${input.toExperience ?? ""}:${input.metadata?.target ?? ""}`
-  if (alreadySent(eventKey)) return
+  if (inFlightEventKeys.has(eventKey) || alreadySent(eventKey)) return
 
   const metadata = { variant: readCookie(EXPERIENCE_EXPERIMENT_COOKIE), ...input.metadata }
   const payload = {
@@ -46,17 +49,13 @@ export function trackExperienceEvent(eventName: ExperienceEventName, input: Trac
   }
 
   const body = JSON.stringify(payload)
-  if (navigator.sendBeacon) {
-    navigator.sendBeacon("/api/experience-events", new Blob([body], { type: "application/json" }))
+  // A true sendBeacon() result means the browser queued the request, not that the server stored it.
+  if (queueBeacon(body)) {
+    markSent(eventKey)
     return
   }
 
-  void fetch("/api/experience-events", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body,
-    keepalive: true,
-  }).catch(() => undefined)
+  sendWithFetch(eventKey, body)
 }
 
 export function trackQuoteCta(target = "/quote") {
@@ -85,16 +84,58 @@ function getSessionId() {
   }
 }
 
-function alreadySent(eventKey: string) {
+function queueBeacon(body: string) {
   try {
-    const sent = new Set(JSON.parse(window.sessionStorage.getItem(ANALYTICS_SENT_KEY) ?? "[]") as string[])
-    if (sent.has(eventKey)) return true
-    sent.add(eventKey)
-    window.sessionStorage.setItem(ANALYTICS_SENT_KEY, JSON.stringify(Array.from(sent).slice(-80)))
-    return false
+    if (typeof navigator.sendBeacon !== "function") return false
+    return navigator.sendBeacon(EXPERIENCE_EVENTS_ENDPOINT, new Blob([body], { type: "application/json" }))
   } catch {
     return false
   }
+}
+
+function sendWithFetch(eventKey: string, body: string) {
+  inFlightEventKeys.add(eventKey)
+  const release = () => { inFlightEventKeys.delete(eventKey) }
+  try {
+    void fetch(EXPERIENCE_EVENTS_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body,
+      keepalive: true,
+    })
+      .then((response) => { if (isFinalResponse(response.status)) markSent(eventKey) })
+      .catch(() => undefined)
+      .finally(release)
+  } catch {
+    release()
+  }
+}
+
+// Client errors other than timeout/rate limiting will fail identically on resend.
+function isFinalResponse(status: number) {
+  return status >= 200 && status < 500 && status !== 408 && status !== 429
+}
+
+function alreadySent(eventKey: string) {
+  try {
+    return readSentKeys().includes(eventKey)
+  } catch {
+    return false
+  }
+}
+
+function markSent(eventKey: string) {
+  try {
+    const sent = new Set(readSentKeys())
+    sent.add(eventKey)
+    window.sessionStorage.setItem(ANALYTICS_SENT_KEY, JSON.stringify(Array.from(sent).slice(-80)))
+  } catch {
+    // Storage may be unavailable (private mode, quota); the server de-duplicates on eventKey.
+  }
+}
+
+function readSentKeys() {
+  return JSON.parse(window.sessionStorage.getItem(ANALYTICS_SENT_KEY) ?? "[]") as string[]
 }
 
 function readPreference(): ExperiencePreferenceValue {

@@ -1,4 +1,4 @@
-export const ADMIN_ROLES = ["owner", "administrator", "venture_controller", "sales", "project_manager", "developer", "finance", "viewer"] as const
+export const ADMIN_ROLES = ["owner", "administrator", "venture_controller", "sales", "project_manager", "developer", "finance", "viewer", "independent_partner"] as const
 export type AdminRole = (typeof ADMIN_ROLES)[number]
 
 export class AdminIdentityError extends Error {
@@ -31,9 +31,14 @@ export function validateNewAdminUser(input: Record<string, unknown>) {
   if (displayName.length < 2 || displayName.length > 120) throw new AdminIdentityError("Display name must be between 2 and 120 characters.")
   if (password.length < 12) throw new AdminIdentityError("Password must be at least 12 characters.")
   if (!role) throw new AdminIdentityError("A valid role is required.")
+  if (role === "independent_partner") throw new AdminIdentityError("Partner identities require the approved invitation workflow.", 403, "partner_invitation_required")
   return { email, displayName, password, role }
 }
 export function bootstrapAction(existing: { id: string } | null) { return existing ? "unchanged" as const : "create" as const }
+export function assertPartnerIdentityMutation(targetRole: AdminRole, input: Record<string, unknown>) {
+  if (input.role === "independent_partner" && targetRole !== "independent_partner") throw new AdminIdentityError("Use the approved partner invitation workflow.", 403, "partner_invitation_required")
+  if (targetRole === "independent_partner" && ((input.role !== undefined && input.role !== "independent_partner") || input.active === true)) throw new AdminIdentityError("Partner activation and role changes require the partner workflow.", 403, "partner_identity_locked")
+}
 export function resolveAdminUserMutation(input: { targetId: string; actorId: string; targetRole: AdminRole; targetActive: boolean; targetSessionVersion: number; requestedRole?: AdminRole; requestedActive?: boolean; revokeSessions?: boolean; activeOwnerCount: number }) {
   const role = input.requestedRole ?? input.targetRole
   const active = input.requestedActive ?? input.targetActive

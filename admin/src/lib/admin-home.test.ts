@@ -9,6 +9,7 @@ describe("admin presentation entry points", () => {
   })
   it("routes developers to delivery and keeps unknown identities at login", () => {
     expect(adminHomeForRole("developer")).toBe("/dashboard")
+    expect(adminHomeForRole("independent_partner")).toBe("/partner")
     expect(adminHomeForRole("venture_controller")).toBe("/command-centre")
     for (const role of [null, undefined, "super_admin", {}]) expect(adminHomeForRole(role)).toBe("/login")
   })

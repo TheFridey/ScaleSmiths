@@ -63,7 +63,7 @@ export default function LoginPage() {
         <div className="bg-s1 border border-b1 rounded-2xl p-8">
           <h1 className="font-syne text-xl font-bold mb-1">Sign in</h1>
           <p className="font-dm text-sm text-t2 mb-7">
-            Access your ScaleSmiths admin panel.
+            Sign in to your ScaleSmiths workspace.
           </p>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div>
@@ -79,7 +79,7 @@ export default function LoginPage() {
                 autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@scalesmiths.co.uk"
+                placeholder="name@example.com"
                 required
               />
             </div>

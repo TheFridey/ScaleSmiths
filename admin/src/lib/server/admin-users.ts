@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs"
 import { and, asc, count, eq, sql } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { adminSecurityAudit, adminUsers } from "@/lib/schema"
-import { AdminIdentityError, normalizeAdminEmail, resolveAdminUserMutation, validateNewAdminUser, type AdminRole } from "@/lib/admin-users"
+import { AdminIdentityError, assertPartnerIdentityMutation, isAdminRole, normalizeAdminEmail, resolveAdminUserMutation, validateNewAdminUser, type AdminRole } from "@/lib/admin-users"
 import { hasCapability, isPrivilegeReduction } from "@/lib/rbac"
 import { consumeRecoveryCode, decryptMfaSecret, generateMfaSetup, isMfaRequired, readStoredMfaState, verifyTotp } from "./mfa"
 
@@ -51,7 +51,7 @@ export async function revokeOwnAdminSessions(userId: string) {
 }
 
 export async function listAdminUsers() {
-  return db.select({ id: adminUsers.id, email: adminUsers.email, displayName: adminUsers.displayName, role: adminUsers.role, active: adminUsers.active, mfaEnabled: adminUsers.mfaEnabled, sessionVersion: adminUsers.sessionVersion, lastLoginAt: adminUsers.lastLoginAt, passwordChangedAt: adminUsers.passwordChangedAt, createdAt: adminUsers.createdAt, updatedAt: adminUsers.updatedAt }).from(adminUsers).orderBy(asc(adminUsers.displayName))
+  return db.select({ id: adminUsers.id, email: adminUsers.email, displayName: adminUsers.displayName, role: adminUsers.role, active: adminUsers.active, mfaEnabled: adminUsers.mfaEnabled, sessionVersion: adminUsers.sessionVersion, lastLoginAt: adminUsers.lastLoginAt, passwordChangedAt: adminUsers.passwordChangedAt, createdAt: adminUsers.createdAt, updatedAt: adminUsers.updatedAt }).from(adminUsers).where(sql`${adminUsers.role} <> 'independent_partner'`).orderBy(asc(adminUsers.displayName))
 }
 
 export async function createAdminUser(input: Record<string, unknown>) {
@@ -70,6 +70,9 @@ export async function updateAdminUser(targetId: string, input: Record<string, un
   return db.transaction(async (tx) => {
     const [target] = await tx.select().from(adminUsers).where(eq(adminUsers.id, targetId)).limit(1)
     if (!target) throw new AdminIdentityError("Admin user not found.", 404, "not_found")
+    if (target.role === "independent_partner" && !hasCapability(actor.role, "expansion.manage")) throw new AdminIdentityError("Founder authority is required to manage partner identities.", 403, "forbidden")
+    assertPartnerIdentityMutation(target.role, input)
+    if (target.role === "independent_partner" && (input.active === false || input.revokeSessions === true)) await tx.execute(sql`update expansion_partners set invitation_hash=null,invitation_expires_at=null where user_id=${target.id}`)
     const [ownerCount] = await tx.select({ value: count() }).from(adminUsers).where(and(eq(adminUsers.role, "owner"), eq(adminUsers.active, true)))
     const nextRole = input.role === undefined ? target.role : input.role
     const nextActive = input.active === undefined ? target.active : input.active
@@ -168,5 +171,5 @@ export async function writeAdminSecurityAudit(input: { actorUserId?: string | nu
   await db.insert(adminSecurityAudit).values({ actorUserId: input.actorUserId ?? null, targetUserId: input.targetUserId ?? null, action: input.action, success: input.success, metadataJson: input.metadataJson })
 }
 
-function isRole(value: unknown): value is AdminRole { return typeof value === "string" && ["owner", "administrator", "venture_controller", "sales", "project_manager", "developer", "finance", "viewer"].includes(value) }
+function isRole(value: unknown): value is AdminRole { return isAdminRole(value) }
 function isUniqueViolation(error: unknown) { return Boolean(error && typeof error === "object" && "code" in error && error.code === "23505") }

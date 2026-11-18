@@ -9,6 +9,9 @@ const docker = process.platform === "win32" ? "docker.exe" : "docker"
 const npmCli = process.env.npm_execpath
 if (!npmCli) throw new Error("Run this harness through npm so npm_execpath identifies the pinned npm CLI.")
 const suffix = `${process.pid}-${Date.now()}`
+// Disposable verification only: never a durability or backup proof, and never
+// applied to production Compose or PostgreSQL settings.
+const postgresStorageArgs = process.env.SS_TEST_POSTGRES_TMPFS === "true" ? ["--tmpfs", "/var/lib/postgresql/data:rw"] : []
 const containerName = `scalesmiths-privileges-${suffix}`
 const database = "scalesmiths_privilege_test"
 const passwords = {
@@ -22,7 +25,7 @@ const passwords = {
 
 let containerId = ""
 try {
-  containerId = run(docker, ["run", "--detach", "--rm", "--name", containerName, "--publish", "127.0.0.1::5432", "--env", `POSTGRES_DB=${database}`, "--env", "POSTGRES_USER=scalesmiths_provision", "--env", `POSTGRES_PASSWORD=${passwords.provisioning}`, "postgres:16-alpine"], { quiet: true }).trim()
+  containerId = run(docker, ["run", "--detach", "--rm", "--name", containerName, ...postgresStorageArgs, "--publish", "127.0.0.1::5432", "--env", `POSTGRES_DB=${database}`, "--env", "POSTGRES_USER=scalesmiths_provision", "--env", `POSTGRES_PASSWORD=${passwords.provisioning}`, "postgres:16-alpine"], { quiet: true }).trim()
   if (!/^[a-f0-9]{12,64}$/.test(containerId)) throw new Error("Docker did not return a valid disposable PostgreSQL container ID.")
   waitForPostgres()
   const portOutput = run(docker, ["port", containerId, "5432/tcp"], { quiet: true }).trim()
@@ -47,12 +50,36 @@ try {
   run(process.execPath, ["admin/scripts/provision-postgres-roles.mjs", "--confirm-provision"], { env })
   run(process.execPath, ["admin/scripts/verify-postgres-privileges.mjs"], { env })
 
+  // Runtime DML must fire the migration-owned lifecycle trigger while direct
+  // function execution stays revoked. Run only in this disposable database and
+  // roll back the representative identity/resource after checking publication.
+  run(docker, ["exec", containerId, "psql", "--username", "scalesmiths_provision", "--dbname", database, "--set", "ON_ERROR_STOP=1", "--command", `
+    BEGIN;
+    DO $$ BEGIN
+      IF has_function_privilege('scalesmiths_admin','public.expansion_resource_lifecycle()','EXECUTE')
+      THEN RAISE EXCEPTION 'Admin must not receive direct trigger-function execution'; END IF;
+    END $$;
+    SET LOCAL ROLE scalesmiths_admin;
+    INSERT INTO admin_users(id,email,display_name,password_hash,role)
+      VALUES('90000000-0000-4000-8000-000000000001','privilege-smoke@example.test','Privilege smoke','unused-test-only','owner');
+    INSERT INTO expansion_resources(id,title,category,version,audience,content,status,created_by)
+      VALUES('90000000-0000-4000-8000-000000000002','Privilege smoke','test',1,'partner','Test only','draft','90000000-0000-4000-8000-000000000001');
+    UPDATE expansion_resources SET status='published' WHERE id='90000000-0000-4000-8000-000000000002';
+    DO $$ BEGIN
+      IF NOT EXISTS(SELECT 1 FROM expansion_resources WHERE id='90000000-0000-4000-8000-000000000002' AND status='published')
+      THEN RAISE EXCEPTION 'Runtime trigger publication did not complete'; END IF;
+    END $$;
+    ROLLBACK;
+  `], { quiet: true })
+
   // Each case injects a real grant, proves the verifier rejects it, then proves reprovisioning
   // repairs it. DDL and destructive drift are covered separately because they are revoked by
   // different provisioning statements.
   assertDriftDetectedAndRepaired(env, "GRANT CREATE ON SCHEMA public TO scalesmiths_admin;", "admin: public CREATE", "admin schema CREATE")
   assertDriftDetectedAndRepaired(env, "GRANT DELETE ON TABLE public.clients TO scalesmiths_admin;", "admin: public.clients DELETE", "admin DELETE outside the declared lifecycle tables")
   assertDriftDetectedAndRepaired(env, "GRANT INSERT ON TABLE public.clients TO scalesmiths_web;", "web: public.clients INSERT", "web write access to a read-only table")
+  assertDriftDetectedAndRepaired(env, "GRANT SELECT ON TABLE public.partner_applications TO scalesmiths_web;", "web: public.partner_applications SELECT", "web applicant enumeration")
+  assertDriftDetectedAndRepaired(env, "GRANT UPDATE ON TABLE public.partner_applications TO scalesmiths_web;", "web: public.partner_applications UPDATE", "web founder-onboarding mutation")
   console.log("Real PostgreSQL privilege test passed, including injected-drift rejection and repair.")
 
   function assertDriftDetectedAndRepaired(environment, sql, expectedFailure, description) {

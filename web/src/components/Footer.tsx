@@ -19,6 +19,7 @@ const navigationGroups = [
       { href: founderProfilePath("rhys"), label: "Rhys Lacy" },
       { href: founderProfilePath("trevor-newton-bradley"), label: "Trevor Newton-Bradley" },
       { href: "/work", label: "Work" },
+      { href: "/partners", label: "Independent partners" },
       { href: "/industries", label: "Industries" },
       { href: "/locations", label: "Locations" },
       { href: "/faq", label: "FAQ" },

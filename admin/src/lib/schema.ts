@@ -45,7 +45,7 @@ export const requestMessageVisibility = pgEnum("request_message_visibility", ["c
 export const monthlyReportStatus = pgEnum("monthly_report_status", MONTHLY_REPORT_STATUSES)
 export const monthlyReportGeneratedBy = pgEnum("monthly_report_generated_by", ["forge", "manual"])
 export const salesProposalGeneratedBy = pgEnum("sales_proposal_generated_by", ["forge", "manual"])
-export const adminUserRole = pgEnum("admin_user_role", ["owner", "administrator", "venture_controller", "sales", "project_manager", "developer", "finance", "viewer"])
+export const adminUserRole = pgEnum("admin_user_role", ["owner", "administrator", "venture_controller", "sales", "project_manager", "developer", "finance", "viewer", "independent_partner"])
 export const deliveryCapacityAdjustmentType = pgEnum("delivery_capacity_adjustment_type", ["capacity_override", "time_off", "contractor_capacity", "sales_commitment", "actual_delivery"])
 export const operatingBriefActionStatus = pgEnum("operating_brief_action_status", ["dismissed", "completed", "snoozed"])
 export const analyticsProvider = pgEnum("analytics_provider", ["manual", "google_search_console", "google_analytics", "plausible", "uptime", "core_web_vitals", "custom"])
@@ -2407,3 +2407,5 @@ export const megatonSocialOutreach = pgTable('megaton_social_outreach', {
   providerReference: text('provider_reference'), startedAt: timestamp('started_at',{withTimezone:true}), completedAt: timestamp('completed_at',{withTimezone:true}),
   createdAt: timestamp('created_at',{withTimezone:true}).notNull().defaultNow(),
 },t=>[index('megaton_social_due').on(t.state,t.dueAt)])
+
+export * from "./expansion-schema"

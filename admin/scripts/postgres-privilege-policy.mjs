@@ -1,6 +1,8 @@
 export const APPLICATION_SCHEMAS = ["public", "drizzle"]
 
 export const WEB_TABLE_GRANTS = new Map([
+  // Public recruitment can submit only; founder review and all reads stay private.
+  ["partner_applications", ["INSERT"]],
   ["quote_requests", ["SELECT", "INSERT", "UPDATE"]],
   ["quote_rate_limits", ["SELECT", "INSERT", "UPDATE"]],
   ["login_rate_limits", ["SELECT", "INSERT", "UPDATE"]],
@@ -49,6 +51,8 @@ export const TENANT_RLS_FUNCTION_GRANTS = [
 ]
 
 export const ADMIN_DELETE_TABLES = [
+  // Founder retention workflow deletes expired, unlinked applicants only.
+  "partner_applications",
   // Revoked/expired notification endpoints must be removed by the private runtime.
   "megaton_push_devices",
   "delivery_forge_integrations",

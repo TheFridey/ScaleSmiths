@@ -22,6 +22,11 @@ export interface RateLimitPolicy {
 }
 
 export const WEB_RATE_LIMIT_POLICIES = {
+  partnerApplication: {
+    limit: 3,
+    windowMs: 60 * 60 * 1000,
+    purpose: "Independent partner recruitment applications and malformed attempts.",
+  },
   experienceEvents: {
     limit: 120,
     windowMs: 60_000,

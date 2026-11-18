@@ -162,6 +162,7 @@
       "when": 1788624000000,
       "tag": "0022_quote_acquisition",
       "breakpoints": true
-    }
+    },
+    { "idx": 23, "version": "7", "when": 1794950400000, "tag": "0023_partner_applications", "breakpoints": true }
   ]
 }

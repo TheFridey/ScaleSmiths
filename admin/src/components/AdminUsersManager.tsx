@@ -1,13 +1,15 @@
 "use client"
 
 import { useState } from "react"
-import { ADMIN_ROLES, type AdminRole } from "@/lib/admin-users"
+import { ADMIN_ROLES as ALL_ROLES, type AdminRole } from "@/lib/admin-users"
 import { canUseControl } from "@/lib/rbac"
+
+const ADMIN_ROLES = ALL_ROLES.filter((role) => role !== "independent_partner")
 
 interface UserRow { id: string; email: string; displayName: string; role: AdminRole; active: boolean; mfaEnabled: boolean; sessionVersion: number; lastLoginAt: Date | string | null; createdAt: Date | string }
 
 export function AdminUsersManager({ initialUsers, actorRole, embedded = false }: { initialUsers: UserRow[]; actorRole: AdminRole; embedded?: boolean }) {
-  const [users, setUsers] = useState(initialUsers)
+  const [users, setUsers] = useState(initialUsers.filter((user) => user.role !== "independent_partner"))
   const [form, setForm] = useState({ email: "", displayName: "", password: "", role: "viewer" as AdminRole })
   const [error, setError] = useState("")
   const [busy, setBusy] = useState(false)
@@ -18,7 +20,7 @@ export function AdminUsersManager({ initialUsers, actorRole, embedded = false }:
     const response = await fetch("/api/admin-users", { cache: "no-store" })
     const data = await response.json()
     if (!response.ok) throw new Error(data.error || "Unable to load users.")
-    setUsers(data.users)
+    setUsers(data.users.filter((user: UserRow) => user.role !== "independent_partner"))
   }
   async function createUser(event: React.FormEvent) {
     event.preventDefault(); setBusy(true); setError("")

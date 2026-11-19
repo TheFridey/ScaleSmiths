@@ -34,6 +34,8 @@ export function matchExclusivity(opportunity: OpportunityFacts, exclusivity: Exc
   if (!area) return "review"
   const nested = area === exArea || area.includes(exArea) || exArea.includes(area)
   if (nested) return sameSector ? "restricted" : "review"
+  // An area made only of stop words ("UK", "England", "region") carries no stem to compare, so it can never prove a difference.
+  if (!stems(area).size || !stems(exArea).size) return "review"
   return overlaps(stems(area), stems(exArea)) ? "review" : "none"      // same sector, geographically positively different
 }
 

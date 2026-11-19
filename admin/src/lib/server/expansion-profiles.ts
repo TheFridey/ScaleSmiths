@@ -28,7 +28,7 @@ const audit = (tx: Executor, actorId: string, entity: string, action: string, de
   tx.execute(sql`insert into expansion_audit(actor_id,entity_id,action,details) values(${actorId},${entity},${action},${JSON.stringify(details)}::jsonb)`)
 
 /** Private contact details are never published without separate consent, so they are rejected in public wording altogether. */
-const CONTACT = /([a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,})|(https?:\/\/|www\.)|(\b[a-z0-9-]+\.(com|co\.uk|uk|net|org|io|app|dev)\b)|((\+?\d[\s().-]?){9,})/i
+const CONTACT = /([a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,})|(https?:\/\/|www\.)|(\b[a-z0-9-]+\.(com|co\.uk|uk|net|org|io|app|dev)\b)|((\+?\d[\s().-]?){10,})/i
 const MISREPRESENTATION = /(equity|shareholder|co-?owner of scalesmiths|director of scalesmiths|employee of scalesmiths|scalesmiths employee|official scalesmiths|guaranteed (income|earnings|employment|results|commission))/i
 const MONEY = /(£|\$|€|\bcommission\b|\bearn(ed|ings)?\b|\bpaid\b|\bbonus\b|\bpayout\b|\brevenue\b|\bturnover\b)/i
 export function validateProfileContent(input: { displayName?: unknown; biography?: unknown; operatingArea?: unknown; enquiryMode?: unknown }) {
@@ -209,6 +209,19 @@ export async function revokePublication(input: { publicationId: string; reason: 
     await tx.execute(sql`update expansion_profile_publications set status='revoked',ended_by=${actor.id},ended_at=now(),end_reason=${reason} where id=${id}`)
     await audit(tx, actor.id, id, "profile_publication_revoked", { reason })
     return { publicationId: id, replayed: false }
+  })
+}
+
+/** A partner can always take their own page down: withdrawal of consent must be as easy as giving it. Needs no founder. */
+export async function withdrawProfileConsent() {
+  const actor = await requireCapability("expansion.partner")
+  return db.transaction(async (tx) => {
+    const partnerId = await partnerGuard(tx, actor)
+    const [pub] = await rows(tx, sql`select id,status from expansion_profile_publications where partner_id=${partnerId} and status='live' for update`)
+    if (!pub) return { removed: false }
+    await tx.execute(sql`update expansion_profile_publications set status='revoked',ended_at=now(),end_reason='Consent withdrawn by the partner' where id=${String(pub.id)}`)
+    await audit(tx, actor.id, String(pub.id), "profile_consent_withdrawn", {})
+    return { removed: true }
   })
 }
 

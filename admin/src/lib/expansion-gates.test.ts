@@ -38,6 +38,9 @@ describe("exclusivity matching is conservative", () => {
   it("clears only on positive evidence, never on the absence of a shared word", () => {
     expect(matchExclusivity({ sector: "Dentistry", area: "Nottingham" }, ex)).toBe("review")                    // wording cannot clear
     expect(matchExclusivity({ sector: "Plumbing & Heating", area: "Leeds" }, ex)).toBe("none")                // same sector, positively different area
+    // an area with no comparable stem (only stop words) can never prove a difference, whichever side it is on
+    expect(matchExclusivity({ sector: "Plumbing & Heating", area: "Leeds" }, { ...ex, area: "UK" })).toBe("review")
+    expect(matchExclusivity({ sector: "Plumbing & Heating", area: "UK" }, ex)).toBe("review")
     expect(matchExclusivity({ clientId: 7, sector: "Plumbing & Heating", area: "Nottingham" }, ex)).toBe("none")  // own customer
     expect(matchExclusivity({ sector: "Kitchen retailer", area: "Leeds" }, { clientId: 8, sector: "Kitchen installation", area: "Leeds" })).toBe("review")
     expect(matchExclusivity({ sector: "Pest management", area: "Leeds" }, { clientId: 8, sector: "Exterminator", area: "Leeds" })).toBe("review")

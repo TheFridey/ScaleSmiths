@@ -37,7 +37,7 @@ import { resolveQualificationFlag } from "../../src/lib/server/expansion-program
 import { requestMeeting, decideMeeting, correctMeeting } from "../../src/lib/server/expansion-operations"
 import { allocateCandidate, checkCandidate, editCandidate, clearCandidateExclusivity, createCandidate, excludeCandidate, getResearchAdmin, markCandidateEligible, recordScreening, reassignCandidate, releaseCandidate } from "../../src/lib/server/expansion-research"
 import { addRecognitionEvidence, approveRecognitionBenefit, correctRecognition, decideRecognition, getPartnerRecognition, getRecognitionAdmin, nominateFoundingPartner, recordBenefitFulfilment, revokeRecognition, startRecognitionReview } from "../../src/lib/server/expansion-recognition"
-import { getPartnerProfile, publishProfile, recordProfileConsent, reviewProfile, revokePublication, saveProfileDraft, submitProfile } from "../../src/lib/server/expansion-profiles"
+import { getPartnerProfile, publishProfile, withdrawProfileConsent, recordProfileConsent, reviewProfile, revokePublication, saveProfileDraft, submitProfile } from "../../src/lib/server/expansion-profiles"
 import { translateDbError } from "../../src/lib/db-errors"
 import { approveProgramme, attributeReferral, createProgramme, createReferralCode, decideQualification, getProgrammeOverview, revokeQualification, reviewAchievementReward } from "../../src/lib/server/expansion-programme"
 import { allocateExpansionInvoice, approveExpansionPayout, cancelExpansionPayout, cancelWithdrawal, getWithdrawalOverview, prepareWithdrawalPayout, requestWithdrawal, reviewWithdrawal, setWithdrawalPolicy, getPartnerFinance, prepareExpansionPayout, refundExpansionPayment, settleExpansionPayout, verifyExpansionPayment } from "../../src/lib/server/expansion-finance"
@@ -1397,6 +1397,15 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("Expansion real separa
       await pool.query("update admin_users set active=true where id=$1", [a.actor.id]); expect(await view(slug)).toHaveLength(1)
       // withdrawn reward entitlement
       await runAs(founder, () => reviewAchievementReward({ rewardId: a.reward, decision: "withdrawn", note: "TEST ONLY entitlement withdrawn" })); expect(await view(slug)).toHaveLength(0)
+    })
+    it("a partner can take their own page down at once, without a founder, and cannot touch another partner's", async () => {
+      const a = await entitledPartner("wd-a"), b = await entitledPartner("wd-b"); const va = await approvedVersion(a, "wd-a"), vb = await approvedVersion(b, "wd-b")
+      await runAs(founder, () => publishProfile({ versionId: va, slug: slugFor("wd-a") })); await runAs(founder, () => publishProfile({ versionId: vb, slug: slugFor("wd-b") }))
+      expect(await runAs(b.actor, () => withdrawProfileConsent())).toEqual({ removed: true })
+      expect(await view(slugFor("wd-b"))).toHaveLength(0); expect(await view(slugFor("wd-a"))).toHaveLength(1)
+      expect(await runAs(b.actor, () => withdrawProfileConsent())).toEqual({ removed: false })
+      expect((await pool.query("select status,end_reason from expansion_profile_publications where partner_id=$1", [b.partnerId])).rows).toEqual([{ status: "revoked", end_reason: "Consent withdrawn by the partner" }])
+      await expect(withdrawProfileConsent()).rejects.toThrow()
     })
     it("shows approved Founding Partner recognition only while it stands, and an opted-in referral identifier only", async () => {
       const a = await entitledPartner("fp"); const v = await approvedVersion(a, "fp", { enquiryMode: "referral_code" }); const slug = slugFor("fp")

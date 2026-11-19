@@ -236,16 +236,26 @@ test('allocation, market and exclusivity enforcement, recognition and a syntheti
     await tab(founderPage, 'Recruitment'); const row = founderPage.locator('.ex-resource').filter({ hasText: emailA })
     await row.getByRole('button', { name: 'Revoke access and sessions', exact: true }).click()
     await expect.poll(async () => (await visitor.request.get(`${web()}/partners/${slug}`)).status()).toBe(404)
-    // Publication revocation, second partner: [API] draft, consent, submission, review, publication; [UI] the founder removes it; the page is gone immediately
+    // Partner B: [API] draft, consent, submission, review, publication. [UI] the PARTNER withdraws consent and the page goes at once, with no founder.
     const slugB = `synthetic-b-${suffix}`
-    const vB = await command(b, { action: 'save_profile_draft', displayName: `Synthetic Partner B ${suffix}`, biography: 'A second fictional partner used to demonstrate removal of a published page by a founder, straight away.', operatingArea: 'Synthetic Testshire' })
-    await command(b, { action: 'record_profile_consent', versionId: vB.versionId, accept: true }); await command(b, { action: 'submit_profile', versionId: vB.versionId })
-    await command(founder, { action: 'review_profile', versionId: vB.versionId, decision: 'approved', note: 'DEMO approved' }, true)
-    await command(founder, { action: 'publish_profile', versionId: vB.versionId, slug: slugB }, true)
+    const publishB = async (tag: string) => {
+      const v = await command(b, { action: 'save_profile_draft', displayName: `Synthetic Partner B ${suffix}`, biography: `A second fictional partner used to demonstrate removal of a published page, version ${tag}, straight away.`, operatingArea: 'Synthetic Testshire' })
+      await command(b, { action: 'record_profile_consent', versionId: v.versionId, accept: true }); await command(b, { action: 'submit_profile', versionId: v.versionId })
+      await command(founder, { action: 'review_profile', versionId: v.versionId, decision: 'approved', note: 'DEMO approved' }, true)
+      await command(founder, { action: 'publish_profile', versionId: v.versionId, slug: slugB }, true)
+    }
+    await publishB('one')
+    expect((await visitor.request.get(`${web()}/partners/${slugB}`)).status()).toBe(200)
+    await pageB.reload(); await tab(pageB, 'My web page')
+    await pageB.getByRole('button', { name: 'Withdraw my consent and remove my page', exact: true }).click()
+    await expect.poll(async () => (await visitor.request.get(`${web()}/partners/${slugB}`)).status()).toBe(404)
+    await pageB.screenshot({ path: `${evidence}/partner-profile-withdrawn.png`, fullPage: true })
+    // A newer version for the same address is published, then a FOUNDER removes it in the UI.
+    await publishB('two')
     expect((await visitor.request.get(`${web()}/partners/${slugB}`)).status()).toBe(200)
     await founderPage.reload(); await tab(founderPage, 'Web pages')
-    const pubRow = founderPage.locator('.ex-resource').filter({ hasText: `/partners/${slugB}` })
-    const removal = form(pubRow, 'Remove from public view'); await removal.locator('textarea[name=reason]').fill('DEMO removed at the partner request'); await removal.getByRole('button', { name: 'Remove from public view', exact: true }).click()
+    const pubRow = founderPage.locator('.ex-resource').filter({ hasText: `/partners/${slugB}` }).filter({ has: founderPage.getByRole('button', { name: 'Remove from public view' }) })
+    const removal = form(pubRow, 'Remove from public view'); await removal.locator('textarea[name=reason]').fill('DEMO removed by a founder'); await removal.getByRole('button', { name: 'Remove from public view', exact: true }).click()
     await expect.poll(async () => (await visitor.request.get(`${web()}/partners/${slugB}`)).status()).toBe(404)
     await founderPage.screenshot({ path: `${evidence}/founder-profile-revoked.png`, fullPage: true })
   } finally { await pool.end(); await Promise.all([founder.close(), a.close(), b.close(), visitor.close()]) }

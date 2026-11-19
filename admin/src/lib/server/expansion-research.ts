@@ -319,9 +319,10 @@ export async function releaseCandidate(input: { candidateId: string; note: strin
     const [owner] = await rows(tx, sql`select user_id from expansion_partners where id=${from}`)
     await tx.execute(sql`select id from admin_users where id=${String(owner.user_id)} for share`)
     await tx.execute(sql`select id from expansion_partners where id=${from} for update`)
+    // Opportunity row before candidate row, the same order as allocation (an independent review found these inverted, a deadlock risk).
+    const [opp] = await rows(tx, sql`select id,prospect_id,status from expansion_opportunities where research_candidate_id=${id} for update`)
     const [cand] = await rows(tx, sql`select status,allocated_partner_id from expansion_research_candidates where id=${id} for update`)
     if (cand.status !== "allocated" || String(cand.allocated_partner_id) !== from) conflict("This prospect has changed hands or been released. Refresh and try again.")
-    const [opp] = await rows(tx, sql`select id,prospect_id,status from expansion_opportunities where research_candidate_id=${id} for update`)
     if (!opp || !["registered", "withdrawn"].includes(String(opp.status))) conflict("The partner has already worked on this prospect, so it cannot be released.")
     await tx.execute(sql`select set_config('app.opportunity_reassign','verified',true)`)
     try {

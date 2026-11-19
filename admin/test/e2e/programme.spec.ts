@@ -48,14 +48,16 @@ test('founder and partner complete the discounted, withdrawal and isolation jour
     await pool.query('truncate expansion_withdrawal_policies cascade'); await pool.query('update expansion_plan_settings set enabled=false')
     await pool.query('truncate expansion_markets cascade'); await pool.query("update expansion_exclusivities set status='ended',ended_at=now() where status='active'")
     await pool.query('truncate expansion_reservations,expansion_capacity')
-    await pool.query('truncate expansion_meeting_requests,expansion_toolkit_items')
-    await pool.query('truncate expansion_referral_rewards,expansion_referrals,expansion_referral_codes,expansion_achievement_rewards,expansion_client_qualifications,expansion_achievement_milestones,expansion_achievement_programmes cascade')
+    await pool.query('truncate expansion_meeting_corrections,expansion_meeting_requests,expansion_toolkit_items cascade')
+    await pool.query('truncate expansion_qualification_flags,expansion_referral_rewards,expansion_referrals,expansion_referral_codes,expansion_achievement_rewards,expansion_client_qualifications,expansion_achievement_milestones,expansion_achievement_programmes cascade')
     await pool.query('delete from login_rate_limits')
     // ---- Set-up [API]: synthetic applicants -> reviewed -> invited -> activated; both then log in through the real login screen [UI]
     for (const [name, email] of [[`DEMO Programme A ${suffix}`, emailA], [`DEMO Programme B ${suffix}`, emailB]]) {
       await pool.query("insert into partner_applications(name,email,region,experience,motivation,privacy_version,status,retention_until,onboarding_confirmations) values($1,$2,'DEMO','Demonstration only','Isolated acceptance only','test-reviewed-v1','onboarding',now()+interval '30 days','{\"agreement\":true,\"legal\":true,\"independentStatus\":true,\"operations\":true}')", [name, email])
     }
     await login(founderPage, 'expansion-founder@example.invalid')
+    // [API] Markets are approved before any partner is invited or progresses: operating (GB) and customer (FR) markets both fail closed otherwise.
+    for (const [countryCode, countryName] of [['GB', 'United Kingdom'], ['FR', 'France']]) await command(founder, { action: 'set_market', countryCode, countryName, status: 'approved', planKeys: ['growth-only-v1', 'bespoke-v1'], legalReviewed: true, accountingReviewed: true, privacyReviewed: true, operationsReviewed: true, approvalReference: 'DEMO synthetic market approval (set-up)' }, true)
     for (const [email, ctx] of [[emailA, a], [emailB, b]] as const) {
       const app = (await snapshot(founder, true)).workspace.applications.find((x: { email: string }) => x.email === email)
       await command(founder, { action: 'review_application', id: app.id, status: 'onboarding', notes: 'DEMO reviewed prerequisites.', legal: true, agreement: true, independentStatus: true, operations: true }, true)
@@ -136,9 +138,17 @@ test('founder and partner complete the discounted, withdrawal and isolation jour
       return accept
     }
     // [UI] Case M: the customer's market (FR) is unapproved, so acceptance is refused in the browser
+    // [UI] Case M: the founder suspends France AFTER the opportunity progressed; progression is gated, but acceptance must still catch a later change.
+    await tab(founderPage, 'Commission centre')
+    await founderPage.getByText('Set a market status').click()
+    const suspendForm = founderPage.locator('form').filter({ has: founderPage.getByRole('button', { name: 'Save market' }) })
+    await suspendForm.locator('input[name=countryCode]').fill('FR'); await suspendForm.locator('input[name=countryName]').fill('France'); await suspendForm.locator('select[name=status]').selectOption('suspended')
+    await suspendForm.getByRole('button', { name: 'Save market' }).click()
+    await expect(founderPage.locator('.ex-list-row').filter({ hasText: 'France (FR)' })).toContainText('Suspended')
+    await tab(founderPage, 'Prospects & scope'); await founderPage.getByRole('button', { name: new RegExp(business) }).click()
     let accept = await fillAccept()
     await accept.getByRole('button', { name: 'Record accepted contract' }).click()
-    await expect(founderPage.getByRole('alert').filter({ hasText: 'customer market is not approved' })).toBeVisible()
+    await expect(founderPage.locator('.ex-form-error').filter({ hasText: 'customer market is not approved' })).toBeVisible()
     expect((await pool.query('select count(*)::int c from expansion_contracts where opportunity_id=$1', [opp.id])).rows[0].c).toBe(0)
     await founderPage.screenshot({ path: `${evidence}/founder-market-blocked.png`, fullPage: true })
     // [UI] A founder approves France for standard-v2 after recording every review
@@ -215,6 +225,13 @@ test('founder and partner complete the discounted, withdrawal and isolation jour
     // ---- Case L: customer sector exclusivity. [UI] founder records it; [API] set-up of a second matching prospect; [UI] decision
     const protectedName = `DEMO Protected Customer ${suffix}`
     const protectedId = (await pool.query("insert into clients(name,invoice_client_code,billing_address_line_1,billing_city,billing_postcode,billing_country) values($2,$1,'1 Test Street','Nottingham','NG1 1AA','United Kingdom') returning id", [`DP${suffix.toUpperCase().slice(0, 6)}`, protectedName])).rows[0].id
+    // [API] Progression is refused once a restriction exists, so the second matching prospect is progressed and approved first.
+    const second = `DEMO Restricted Business ${suffix}`
+    const reg2 = await command(a, { action: 'register', businessName: second, website: `demo-restricted-${suffix}.example`, industry: 'DEMO Sector', region: 'DEMO Area', country: 'FR' })
+    await command(a, { action: 'discovery', id: reg2.id, discovery: { objectives: 'DEMO', pages: 'Five', functionality: 'Form', budget: 'Standard', timescale: 'Assessed', decisionProcess: 'Owner' } })
+    await command(a, { action: 'submit_scope', id: reg2.id, summary: 'DEMO scope.' })
+    await command(founder, { action: 'set_opportunity_market', id: reg2.id, countryCode: 'FR' }, true)   // [API] founder confirmation, UI-proven above
+    await command(founder, { action: 'review_scope', id: reg2.id, decision: 'approved', period: '2099-01-05', hours: 5, technicalConfirmed: true, commercialConfirmed: true, notes: 'DEMO reviewed.' }, true)
     await founderPage.reload(); await tab(founderPage, 'Commission centre'); await founderPage.getByText('Record an exclusivity').click()
     const exForm = founderPage.locator('form').filter({ has: founderPage.getByRole('button', { name: 'Save exclusivity' }) })
     await exForm.locator('select[name=clientId]').selectOption(String(protectedId))
@@ -223,12 +240,6 @@ test('founder and partner complete the discounted, withdrawal and isolation jour
     await exForm.locator('input[name=effectiveFrom]').fill('2020-01-01')
     await exForm.getByRole('button', { name: 'Save exclusivity' }).click()
     await expect(founderPage.locator('.ex-list-row').filter({ hasText: protectedName })).toContainText('Active')
-    const second = `DEMO Restricted Business ${suffix}`
-    const reg2 = await command(a, { action: 'register', businessName: second, website: `demo-restricted-${suffix}.example`, industry: 'DEMO Sector', region: 'DEMO Area', country: 'FR' })
-    await command(a, { action: 'discovery', id: reg2.id, discovery: { objectives: 'DEMO', pages: 'Five', functionality: 'Form', budget: 'Standard', timescale: 'Assessed', decisionProcess: 'Owner' } })
-    await command(a, { action: 'submit_scope', id: reg2.id, summary: 'DEMO scope.' })
-    await command(founder, { action: 'set_opportunity_market', id: reg2.id, countryCode: 'FR' }, true)   // [API] founder confirmation, UI-proven above
-    await command(founder, { action: 'review_scope', id: reg2.id, decision: 'approved', period: '2099-01-05', hours: 5, technicalConfirmed: true, commercialConfirmed: true, notes: 'DEMO reviewed.' }, true)
     await founderPage.reload(); await tab(founderPage, 'Prospects & scope'); await founderPage.getByRole('button', { name: new RegExp(second) }).click()
     await expect(founderPage.getByText('Restricted', { exact: true }).first()).toBeVisible()
     await founderPage.screenshot({ path: `${evidence}/founder-exclusivity-restricted.png`, fullPage: true })
@@ -355,7 +366,7 @@ test('founder and partner complete the discounted, withdrawal and isolation jour
     await expect(partnerPage.locator('details.ex-resource').filter({ hasText: 'Joint customer sales meeting' })).toContainText('Requested')
     await founderPage.reload(); await tab(founderPage, 'Partner operations')
     const meeting = founderPage.locator('details.ex-resource').filter({ hasText: `DEMO Programme A ${suffix}` }).filter({ hasText: 'Joint customer sales meeting' })
-    await meeting.locator('summary').click(); await meeting.locator('select[name=decision]').selectOption('propose_alternative')
+    await meeting.locator('summary').first().click(); await meeting.locator('select[name=decision]').selectOption('propose_alternative')
     await meeting.locator('input[name=start]').fill('2099-03-02T11:00'); await meeting.locator('textarea[name=note]').fill('DEMO: I can attend at this time.')
     await meeting.getByRole('button', { name: 'Record meeting decision' }).click()
     await expect.poll(async () => (await snapshot(a)).meetings[0].status).toBe('alternative_proposed')
@@ -380,6 +391,69 @@ test('founder and partner complete the discounted, withdrawal and isolation jour
     }
     expect((await a.request.get(`${origin()}/api/expansion`)).status()).toBeGreaterThanOrEqual(401)
     expect((await pool.query("select enabled from expansion_plan_settings where plan_key='bespoke-v1'")).rows[0].enabled).toBe(false)
+
+    // ---- Checkpoint 5 residual-fix interfaces. [UI]: programme approval, reward decisions, flag resolution, reward withdrawal, meeting correction.
+    // [API]: only the verified partial refund, which is the real financial service the flag trigger must react to.
+    await founderPage.setViewportSize({ width: 1440, height: 1000 }); await founderPage.reload(); await tab(founderPage, 'Programme')
+    await founderPage.getByText('Draft a programme version').click()
+    const draftForm = founderPage.locator('form').filter({ has: founderPage.getByRole('button', { name: 'Create draft from the planned schedule' }) })
+    await draftForm.locator('input[name=label]').fill(`DEMO B0 programme ${suffix}`)
+    await draftForm.getByRole('button', { name: 'Create draft from the planned schedule' }).click()
+    const version = founderPage.locator('.ex-list-row').filter({ hasText: `DEMO B0 programme ${suffix}` })
+    await expect(version).toContainText('Draft')
+    await version.locator('input[name=approvalReference]').fill('DEMO synthetic programme approval')
+    await version.getByRole('button', { name: 'Approve this version' }).click()
+    await expect(founderPage.locator('.ex-list-row').filter({ hasText: `DEMO B0 programme ${suffix}` })).toContainText('Approved')
+    const poloCard = () => founderPage.locator('details.ex-resource').filter({ hasText: `DEMO Programme A ${suffix}` }).filter({ hasText: 'Optional ScaleSmiths branded polo' })
+    const decideReward = async (decision: string, note?: string) => {
+      const card = poloCard(); if (!(await card.evaluate((el) => (el as HTMLDetailsElement).open))) await card.locator('summary').first().click()
+      await card.locator('select[name=decision]').selectOption(decision); if (note) await card.locator('input[name=note]').fill(note)
+      await card.getByRole('button', { name: 'Record reward decision' }).click()
+    }
+    await decideReward('under_review'); await expect.poll(async () => (await pool.query("select status from expansion_achievement_rewards where partner_id=$1 and milestone_clients=1", [partnerA.id])).rows[0].status).toBe('under_review')
+    await decideReward('approved', 'DEMO approved on the reviewed qualification'); await expect.poll(async () => (await pool.query("select status from expansion_achievement_rewards where partner_id=$1 and milestone_clients=1", [partnerA.id])).rows[0].status).toBe('approved')
+    const paymentId = (await pool.query("select id from expansion_payment_events where contract_id=$1 and net_pence>0 order by created_at limit 1", [contractId])).rows[0].id
+    await command(founder, { action: 'refund_payment', paymentId, reference: `demo-b0-refund-${suffix}`, netPence: '10000', grossPence: '10000', reason: 'DEMO verified partial refund' }, true)
+    await founderPage.reload(); await tab(founderPage, 'Programme')
+    await expect(founderPage.getByRole('heading', { name: 'Qualification review queue' })).toBeVisible()
+    const flagCard = founderPage.locator('details.ex-resource').filter({ hasText: `DEMO Programme A ${suffix}` }).filter({ has: founderPage.getByRole('button', { name: 'Resolve this review' }) })
+    await expect(flagCard).toHaveCount(1); await founderPage.screenshot({ path: `${evidence}/founder-review-queue.png`, fullPage: true })
+    // a refused resolution without evidence is a precise form error, then the real resolution
+    await flagCard.locator('select[name=resolution]').selectOption('revoked')
+    await flagCard.getByRole('button', { name: 'Resolve this review' }).click()
+    expect(await flagCard.locator('textarea[name=note]').evaluate((el) => (el as HTMLTextAreaElement).validity.valueMissing)).toBe(true)   // the browser itself refuses an empty evidence field
+    await flagCard.locator('textarea[name=note]').fill('DEMO full review: the refund removes the qualifying collection for this client.')
+    await flagCard.getByRole('button', { name: 'Resolve this review' }).click()
+    await expect(founderPage.getByText('No qualification is awaiting review.')).toBeVisible()
+    expect((await pool.query("select status from expansion_client_qualifications where contract_id=$1", [contractId])).rows[0].status).toBe('revoked')
+    // the approved reward cannot progress; it is withdrawn only with a new recorded reason
+    await decideReward('fulfilment_pending')
+    await expect(poloCard().locator('.ex-form-error')).toContainText('disputed, revoked or awaiting review')
+    await decideReward('withdrawn')
+    await expect(poloCard().locator('.ex-form-error')).toBeVisible()
+    expect((await pool.query("select status from expansion_achievement_rewards where partner_id=$1 and milestone_clients=1", [partnerA.id])).rows[0].status).toBe('approved')
+    await decideReward('withdrawn', 'DEMO qualification revoked after refund; no entitlement')
+    await expect.poll(async () => (await pool.query("select status from expansion_achievement_rewards where partner_id=$1 and milestone_clients=1", [partnerA.id])).rows[0].status).toBe('withdrawn')
+    await founderPage.screenshot({ path: `${evidence}/founder-reward-withdrawn.png`, fullPage: true })
+    // closed-meeting correction [UI]: complete the confirmed meeting, then correct its wording with a reason
+    await tab(founderPage, 'Partner operations')
+    const closing = founderPage.locator('details.ex-resource').filter({ hasText: `DEMO Programme A ${suffix}` }).filter({ hasText: 'Joint customer sales meeting' })
+    await closing.locator('summary').first().click(); await closing.locator('select[name=decision]').selectOption('complete')
+    await closing.getByRole('button', { name: 'Record meeting decision' }).click()
+    await expect.poll(async () => (await snapshot(founder, true)).meetings[0].status).toBe('completed')
+    await expect(closing.locator('form').filter({ has: founderPage.getByRole('button', { name: 'Record meeting decision' }) })).toHaveCount(0)
+    await closing.getByText('Correct the submitted wording').click()
+    const correction = closing.locator('form').filter({ has: founderPage.getByRole('button', { name: 'Record correction' }) })
+    await correction.locator('textarea[name=purpose]').fill('DEMO corrected purpose: joint meeting to present the revised website proposal.')
+    await correction.getByRole('button', { name: 'Record correction' }).click()
+    expect(await correction.locator('textarea[name=reason]').evaluate((el) => (el as HTMLTextAreaElement).validity.valueMissing)).toBe(true)   // a reason is required
+    await correction.locator('textarea[name=reason]').fill('DEMO clarified wording at the partner\'s request')
+    await correction.getByRole('button', { name: 'Record correction' }).click()
+    await expect.poll(async () => (await snapshot(founder, true)).meetings[0].purpose).toContain('revised website proposal')
+    expect((await pool.query('select count(*)::int c from expansion_meeting_corrections')).rows[0].c).toBe(1)
+    await founderPage.screenshot({ path: `${evidence}/founder-meeting-corrected.png`, fullPage: true })
+    await partnerPage.setViewportSize({ width: 1440, height: 900 }); await partnerPage.reload(); await tab(partnerPage, 'Meetings')
+    await expect.poll(async () => (await snapshot(a)).meetings[0].purpose).toContain('revised website proposal')   // the partner's data carries the corrected wording (the screen lists type, status and schedule only)
 
     // ---- Responsive evidence for the Commission Centre
     for (const width of [320, 390, 768, 1024, 1440]) {

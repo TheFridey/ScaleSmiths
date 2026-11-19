@@ -4,7 +4,7 @@ import { sql, type SQL } from "drizzle-orm"
 import { db, type AdminDatabaseTransaction } from "@/lib/db"
 import { type AdminRole } from "@/lib/admin-users"
 import { hasCapability } from "@/lib/rbac"
-import { ExpansionError, expansionText, prospectDomain } from "@/lib/expansion"
+import { ExpansionError, prospectDomain } from "@/lib/expansion"
 import { marketGate, matchExclusivity, normaliseCountry } from "@/lib/expansion-gates"
 import { safeDbMessage } from "@/lib/db-errors"
 import { requireCapability } from "./rbac"
@@ -39,12 +39,6 @@ const event = (tx: Executor, candidateId: string, name: string, actorId: string,
 async function founderGuard(tx: Executor, actor: Actor) {
   const [user] = await rows(tx, sql`select role::text,active,session_version from admin_users where id=${actor.id} for share`)
   if (!user?.active || user.session_version !== actor.sessionVersion || !hasCapability(user.role as AdminRole, "expansion.manage")) throw new ResearchError("Founder authority was revoked.", 403)
-}
-async function partnerGuard(tx: Executor, actor: Actor) {
-  await tx.execute(sql`select id from admin_users where id=${actor.id} for share`)
-  const [partner] = await rows(tx, sql`select p.id from expansion_partners p join admin_users u on u.id=p.user_id where p.user_id=${actor.id} and p.activated_at is not null and u.active=true and u.session_version=${actor.sessionVersion} and u.role::text='independent_partner'`)
-  if (!partner) throw new ResearchError("Active partner profile required.", 403)
-  return String(partner.id)
 }
 /** Lock one or two active partners in the hierarchy order: every admin_users row first, then every partner row, ascending id. */
 async function lockActivePartners(tx: Executor, ids: string[], inactiveOk: string[] = []) {
@@ -338,7 +332,7 @@ export async function getResearchAdmin() {
   return db.transaction(async (tx) => {
     await tx.execute(sql`set transaction isolation level repeatable read`)
     await founderGuard(tx, actor)
-    const candidates = await rows(tx, sql`select c.id,c.business_name,c.website_url,c.industry,c.sector_id,s.label sector_label,c.country,c.region,c.area,c.public_source,c.researched_on,c.partner_notes,c.internal_notes,c.status,c.screening_status,c.screening_evidence,
+    const candidates = await rows(tx, sql`select c.id,c.business_name,c.website_url,c.normalized_domain,c.industry,c.sector_id,s.label sector_label,c.country,c.region,c.area,c.public_source,c.researched_on,c.partner_notes,c.internal_notes,c.status,c.screening_status,c.screening_evidence,
         c.allocated_partner_id,c.allocated_at,u.display_name partner_name,c.exclusion_reason,c.created_at from expansion_research_candidates c left join expansion_sectors s on s.id=c.sector_id
         left join expansion_partners p on p.id=c.allocated_partner_id left join admin_users u on u.id=p.user_id order by c.created_at desc limit 300`)
     const out: Row[] = []

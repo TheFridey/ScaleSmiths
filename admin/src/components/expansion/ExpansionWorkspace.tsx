@@ -210,7 +210,7 @@ function ProfilePanel({p,command}:{p:Row;command:Command}) {
   const versions=rows(p.versions),open=versions.find(v=>['draft','changes_requested','submitted'].includes(str(v.status))),pub=(p.publication||null) as Row|null
   const latest=open||versions[0]
   return <section className="ex-panel"><p className="ex-overline">PERSONAL WEB PAGE</p><h2>Your ScaleSmiths partner page</h2>
-    {!p.eligible?<p>A personal web page becomes available when you have five qualifying clients and the programme rules are approved. Nothing is published without your consent and a founder's approval.</p>:<>
+    {!p.eligible?<p>A personal web page becomes available when you have five qualifying clients and the programme rules are approved. Nothing is published without your consent and a founder&apos;s approval.</p>:<>
     <p>Prepare the wording for your page. It is reviewed by a founder and, if approved, kept as a fixed version. Nothing is public until a founder publishes it{p.publicationEnabled?'':', and public publication is not switched on yet'}. Private contact details are never published: enquiries are directed through ScaleSmiths.</p>
     {pub && <p>Publication: <strong>{label(pub.status)}</strong> at <code>/partners/{str(pub.slug)}</code></p>}
     {open?.status==='submitted'?<><h3>With a founder for review</h3><dl><div><dt>Display name</dt><dd>{str(open.display_name)}</dd></div><div><dt>Biography</dt><dd className="ex-prewrap">{str(open.biography)}</dd></div><div><dt>Operating area</dt><dd>{str(open.operating_area)}</dd></div></dl><p>You cannot change it while it is being reviewed.</p></>:<>

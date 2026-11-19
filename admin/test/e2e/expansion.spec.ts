@@ -56,6 +56,8 @@ test('complete isolated commercial journey reconciles £705 and denies partner B
     await publicPage.screenshot({path:`${evidence}/application-confirmation-mobile.png`,fullPage:true})
     expect((await partner.request.get(`${localOrigin(adminOrigin)}/api/partner`)).status()).toBe(401)
     await login(founderPage,'expansion-founder@example.invalid')
+    // The operating market (GB) is approved first: invitations, activation and partner progression fail closed on an unapproved market. Same approval record as below.
+    await command(founder,{action:'set_market',countryCode:'GB',countryName:'United Kingdom',status:'approved',planKeys:['standard-v2'],legalReviewed:true,accountingReviewed:true,privacyReviewed:true,operationsReviewed:true,approvalReference:'DEMO synthetic market approval'},true)
     await founderPage.goto(`${localOrigin(adminOrigin)}/expansion`)
     const applicant=(await snapshot(founder,true)).workspace.applications.find((a:{email:string})=>a.email===email)
     expect(applicant).toBeTruthy()

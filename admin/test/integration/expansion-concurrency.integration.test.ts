@@ -1086,6 +1086,16 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("Expansion real separa
       expect((await state(other)).status).toBe("eligible")
       await expect(runAs(revoked.actor, () => partnerSnapshot())).rejects.toBeTruthy()
     })
+    it("the founder's live checks reflect suppression and existing prospects by domain (regression: the listing must carry the normalised domain)", async () => {
+      const a = await activePartner("live-a"); const id = await mk("livechk"); const domain = `research-${suffix}-livechk${n}.example`
+      const checksOf = async () => ((await runAs(founder, () => getResearchAdmin())).candidates.find(c => c.id === id) as { checks: { suppressed: boolean; existingProspect: boolean; blockers: string[] } }).checks
+      expect(await checksOf()).toMatchObject({ suppressed: false, existingProspect: false })
+      await runAs(founder, () => founderMutation({ action: "suppress", domain, reason: "TEST ONLY live-check suppression" }))
+      expect(await checksOf()).toMatchObject({ suppressed: true }); expect((await checksOf()).blockers.join(" ")).toContain("suppression list")
+      const other = await mk("livechk2"); const d2 = `research-${suffix}-livechk2${n}.example`
+      await runAs(a.actor, () => partnerMutation({ action: "register", country: "QA", businessName: `Independent ${suffix} livechk2`, website: d2 }))
+      expect(((await runAs(founder, () => getResearchAdmin())).candidates.find(c => c.id === other) as { checks: { existingProspect: boolean } }).checks.existingProspect).toBe(true)
+    })
     it("an excluded candidate is closed, and screening failure withdraws eligibility", async () => {
       const id = await eligible("excl")
       await runAs(founder, () => recordScreening({ candidateId: id, outcome: "failed", evidence: "TEST ONLY screening reason recorded" }))

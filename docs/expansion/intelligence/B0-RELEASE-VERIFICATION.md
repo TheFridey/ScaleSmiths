@@ -75,4 +75,19 @@ Intake (`PARTNER_APPLICATIONS_ENABLED`), activation (`PARTNER_ACTIVATION_ENABLED
 **Production operations:** protected-area review; backup and restore verified on the production host before migrating; maintenance window and the rollback plan (restore the pre-migration backup); setting the secrets and switches deliberately and leaving profile publication unset; running the Expansion concurrency suite in CI; an IPv6-capable runner for `safe-outbound` (GitHub already provides one); founder procedures for items 2 and 3 above.
 
 ## 11. Pull request and PR-triggered checks
-PRLINK
+**Draft pull request:** https://github.com/TheFridey/ScaleSmiths/pull/155 (state: open, draft, not merged). Head `ba43cba522a745985d592269795411a465721711`, base `master` `4c399b87e833b12d15791f6b5f8b08ab35871667`, mergeable state clean, 37 commits, 166 files.
+
+**PR-triggered runs on `ba43cba` (all completed, all success):**
+
+| Workflow | Run | Result |
+|---|---|---|
+| CI | 44625426542 | success |
+| Security | 44625426572 | success |
+| CodeQL | 44625426565 | success |
+
+CI jobs, all **success**: PR Metadata (steps "Test pull request metadata rules" and "Check pull request metadata" both succeeded, so the PR-only gate that could not run on dispatch is now confirmed), Admin (its "Unit tests" step runs `safe-outbound.test.ts` on GitHub's IPv6-capable runner: **the IPv6 DNS-rebinding test passed**), Database and Migrations ("Run real PostgreSQL integration suite" and "Verify least-privilege PostgreSQL roles against real catalogs" against the real Docker PostgreSQL service both succeeded), Web ("Chromium journeys and visual regression" succeeded, so the four visual-baseline tests pass on the baseline machine), Admin Forge E2E, Forge Workflow E2E, Cross-browser Smoke, Backup and Restore, Nginx Topology, Root Hygiene.
+
+No check failed, so there was nothing further to investigate. The documentation-only commit that records these results triggers one more PR run; it changes no application code.
+
+## 12. Merge-readiness verdict
+**Not ready to merge, by design.** Engineering evidence is strong: every PR-triggered check, the Security and CodeQL scans and the Docker least-privilege verification pass on the PR head, and local evidence (restricted-role concurrency suite, browser journeys, upgrade check) agrees. What blocks a merge decision is not a failing check: the four medium findings above, the outstanding legal, accounting, privacy and commercial approvals, and the need for a human review (model reviews are not an audit). The recommended order is independent human review, founder procedures for medium findings 2 and 3, a decision on a geography vocabulary for finding 1, and wiring the concurrency suite into CI (finding 4, a protected-area workflow change) before any release decision. Applicant intake, partner activation, bonus payments, withdrawals and public profile publication remain disabled; nothing was merged or deployed.

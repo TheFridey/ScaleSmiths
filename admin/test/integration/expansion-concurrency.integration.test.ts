@@ -35,7 +35,7 @@ vi.mock("../../src/lib/server/rbac", () => ({ requireCapability: async (capabili
 import { founderMutation, partnerMutation, partnerSnapshot } from "../../src/lib/server/expansion"
 import { resolveQualificationFlag } from "../../src/lib/server/expansion-programme"
 import { requestMeeting, decideMeeting, correctMeeting } from "../../src/lib/server/expansion-operations"
-import { allocateCandidate, checkCandidate, clearCandidateExclusivity, createCandidate, excludeCandidate, getResearchAdmin, markCandidateEligible, recordScreening, reassignCandidate, releaseCandidate } from "../../src/lib/server/expansion-research"
+import { allocateCandidate, checkCandidate, editCandidate, clearCandidateExclusivity, createCandidate, excludeCandidate, getResearchAdmin, markCandidateEligible, recordScreening, reassignCandidate, releaseCandidate } from "../../src/lib/server/expansion-research"
 import { addRecognitionEvidence, approveRecognitionBenefit, correctRecognition, decideRecognition, getPartnerRecognition, getRecognitionAdmin, nominateFoundingPartner, recordBenefitFulfilment, revokeRecognition, startRecognitionReview } from "../../src/lib/server/expansion-recognition"
 import { getPartnerProfile, publishProfile, recordProfileConsent, reviewProfile, revokePublication, saveProfileDraft, submitProfile } from "../../src/lib/server/expansion-profiles"
 import { translateDbError } from "../../src/lib/db-errors"
@@ -1097,6 +1097,18 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("Expansion real separa
       await runAs(a.actor, () => partnerMutation({ action: "register", country: "QA", businessName: `Independent ${suffix} livechk2`, website: d2 }))
       expect(((await runAs(founder, () => getResearchAdmin())).candidates.find(c => c.id === other) as { checks: { existingProspect: boolean } }).checks.existingProspect).toBe(true)
     })
+    it("review fixes: facts are fixed once a prospect or clearance exists, and allocation needs the receiving partner's operating market approved", async () => {
+      const a = await activePartner("fix-a"); const id = await eligible("fix")
+      await runAs(founder, () => editCandidate({ candidateId: id, ...fresh(`fix${n}`, { area: "Edited area" }) }))   // allowed before any prospect exists
+      await expect(allocate(id, a.partnerId)).rejects.toMatchObject({ status: 409 })                                 // the edit withdrew eligibility
+      await screen(id); await runAs(founder, () => markCandidateEligible({ candidateId: id }))
+      await pool.query("update expansion_partners set operating_country='QN' where id=$1", [a.partnerId])
+      await expect(allocate(id, a.partnerId)).rejects.toMatchObject({ status: 409, message: expect.stringContaining("operating market is not approved") })
+      await pool.query("update expansion_partners set operating_country='GB' where id=$1", [a.partnerId])
+      await allocate(id, a.partnerId)
+      await runAs(founder, () => releaseCandidate({ candidateId: id, note: "TEST ONLY released" }))
+      await expect(runAs(founder, () => editCandidate({ candidateId: id, ...fresh(`fix${n}`, { country: "QB" }) }))).rejects.toMatchObject({ status: 409, message: expect.stringContaining("facts are fixed") })
+    })
     it("an excluded candidate is closed, and screening failure withdraws eligibility", async () => {
       const id = await eligible("excl")
       await runAs(founder, () => recordScreening({ candidateId: id, outcome: "failed", evidence: "TEST ONLY screening reason recorded" }))
@@ -1116,7 +1128,7 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("Expansion real separa
     const discover = (id: string, actor = first) => runAs(actor, () => partnerMutation({ action: "discovery", id, discovery: disc }))
     const scope = (id: string, actor = first) => runAs(actor, () => partnerMutation({ action: "submit_scope", id, summary: "TEST ONLY scope" }))
 
-    it("registration is a preliminary record; progression needs an approved market and no unresolved exclusivity, and every refusal reads identically to the partner", async () => {
+    it("registration is a preliminary record; partner progression needs an approved market, never reveals exclusivity, and founders enforce exclusivity at scope approval", async () => {
       const unknown = await reg("unknown", undefined)                                        // research may be recorded without authorising sales
       const unapproved = await reg("unapproved", "QZ")
       const unknownMsg = await discover(unknown).catch(e => e), unapprovedMsg = await discover(unapproved).catch(e => e)
@@ -1127,10 +1139,12 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("Expansion real separa
       const protectedOpp = await reg("probe", "QY", { industry: sector, region: area })
       await runAs(founder, () => founderMutation({ action: "create_exclusivity", clientId, sector, area, contractualReference: "TEST ONLY clause", effectiveFrom: "2020-01-01" }))
       try {
-        const exclusivityMsg = await discover(protectedOpp).catch(e => e)
-        expect(exclusivityMsg.message).toBe(unknownMsg.message)                              // exclusivity cannot be probed: identical wording and status
-        expect(exclusivityMsg.status).toBe(409)
-        await runAs(first, () => partnerMutation({ action: "stage", id: protectedOpp, status: "withdrawn" }))   // leaving the pipeline is never blocked
+        // No oracle: a partner's request is NEVER refused or delayed because of an exclusivity, so it cannot reveal which sectors and areas are protected.
+        await discover(protectedOpp); await scope(protectedOpp)
+        const week = (await pool.query<{ next: string }>("select (max(period)+7)::text as next from expansion_capacity")).rows[0].next
+        await runAs(founder, () => founderMutation({ action: "capacity", period: week, hours: 10, commitmentsReviewed: true, rationale: "TEST ONLY 5C probe" }))
+        // The founder enforces it at scope approval, with a specific reason the partner never sees.
+        await expect(approveRaw(protectedOpp, week)).rejects.toMatchObject({ status: 409, message: expect.stringContaining("exclusivity review is unresolved") })
       } finally { await pool.query("update expansion_exclusivities set status='ended',ended_at=now() where status='active' and sector=$1", [sector]) }
       await discover(await reg("after", "QY"))                                              // once the restriction ends, an approved market progresses normally
     })
@@ -1235,6 +1249,7 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("Expansion real separa
       await expect(pool.query("update expansion_recognition_evidence set description='tampered' where recognition_id=$1", [n.id])).rejects.toThrow()
       await expect(pool.query("update expansion_recognitions set recognition_date='2001-01-01' where id=$1", [n.id])).rejects.toThrow(/recorded correction/)
       await expect(runAs(founder, () => correctRecognition({ recognitionId: n.id, recognitionDate: today, reason: "" }))).rejects.toMatchObject({ status: 400 })
+      await expect(runAs(founder, () => correctRecognition({ recognitionId: n.id, recognitionDate: "2999-01-01", reason: "TEST ONLY future date" }))).rejects.toMatchObject({ status: 400 })
       await runAs(founder, () => correctRecognition({ recognitionId: n.id, recognitionDate: "2026-01-05", reason: "TEST ONLY date recorded one day late" }))
       expect((await pool.query("select before_value->>'recognitionDate' b,after_value->>'recognitionDate' a from expansion_recognition_corrections where recognition_id=$1", [n.id])).rows).toEqual([{ b: today, a: "2026-01-05" }])
       // revocation: terminal, visible nowhere to the partner, and a new nomination needs new evidence

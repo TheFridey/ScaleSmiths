@@ -157,6 +157,7 @@ export async function correctRecognition(input: { recognitionId: string; recogni
     await founderGuard(tx, actor)
     const r = await lockRecognition(tx, id)
     if (r.status !== "approved") conflict("Only an approved recognition can be corrected.")
+    if (date && date > new Date().toISOString().slice(0, 10)) throw new RecognitionError("The recognition date cannot be in the future.")
     const after = { rationale: rationale ?? r.rationale, recognitionDate: date ?? String(r.recognition_date).slice(0, 10) }
     await tx.execute(sql`insert into expansion_recognition_corrections(id,recognition_id,before_value,after_value,reason,corrected_by) values(${randomUUID()},${id},${JSON.stringify({ rationale: r.rationale, recognitionDate: String(r.recognition_date).slice(0, 10) })}::jsonb,${JSON.stringify(after)}::jsonb,${reason},${actor.id})`)
     await tx.execute(sql`select set_config('app.recognition_correction','verified',true)`)

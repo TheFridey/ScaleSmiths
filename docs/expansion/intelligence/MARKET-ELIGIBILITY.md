@@ -10,5 +10,6 @@
 - **Partner operating market** (`expansion_partners.operating_country`, default GB): must be an approved market before an invitation is issued and again, under advisory lock 7102, at the moment of activation. A refused activation consumes nothing. A founder can change it. If it later becomes unapproved, the partner's new progression stops while accepted contracts and the ledger are untouched.
 - **Customer commercial market** (`expansion_opportunities.customer_country`): gates partner progression, founder scope approval, researched allocation and contract acceptance. Registration is a preliminary record and is not blocked.
 - Everything fails closed on an unknown or unapproved market. The default operating market (GB) authorises nothing until it is approved with every review.
-- Partner-facing refusals are one generic sentence; founders see specific reasons.
+- Partner-facing refusals are one generic sentence; founders see specific reasons. Allocation also needs the receiving partner's operating market approved.
+- Known limits (independent review, low severity): a partner-supplied customer country counts for progression before a founder confirms it (acceptance still requires the confirmation); contract acceptance does not re-check the partner's operating market, so already scope-approved work and legitimate servicing continue; changing a partner's operating market takes no 7102 lock, so one in-flight partner request can pass a just-committed change.
 - No international pricing, tax or currency conversion exists. Currency stays GBP.

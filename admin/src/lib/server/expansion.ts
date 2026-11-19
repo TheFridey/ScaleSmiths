@@ -89,9 +89,11 @@ async function assertCommercialClearance(tx: AdminDatabaseTransaction, row: Row,
   const operating = (await tx.execute(sql`select operating_country from expansion_partners where id=${partnerId}`)).rows[0]?.operating_country as string | undefined
   const customerOk = marketGate(customerCountry, await marketOf(customerCountry), '*') === 'approved'
   const operatingOk = marketGate(operating ?? null, await marketOf(operating ?? null), '*') === 'approved'
+  // Partners are gated on markets only. A sector/area exclusivity is never evaluated for a partner request, because any difference in
+  // outcome would let a partner probe which sectors and areas are protected. Founders enforce exclusivity at scope approval and acceptance.
+  if (audience === 'partner') { if (customerOk && operatingOk) return; throw new ExpansionError(PENDING_CLEARANCE,409) }
   const exclusivity = await exclusivityOutcome(tx,row)
   if (customerOk && operatingOk && exclusivity.unresolved.length === 0) return
-  if (audience === 'partner') throw new ExpansionError(PENDING_CLEARANCE,409)
   const reasons = [!customerOk && "the customer market is unknown or not approved", !operatingOk && "the partner's operating market is not approved", exclusivity.unresolved.length > 0 && "an exclusivity review is unresolved"].filter(Boolean)
   throw new ExpansionError(`Scope cannot be approved: ${reasons.join(', ')}. Set the customer market and record the decisions first.`,409)
 }

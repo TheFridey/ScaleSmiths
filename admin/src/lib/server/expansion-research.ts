@@ -145,6 +145,9 @@ export async function editCandidate(input: CandidateInput & { candidateId: strin
     const [cand] = await rows(tx, sql`select status from expansion_research_candidates where id=${id} for update`)
     if (!cand) throw new ResearchError("Candidate not found.", 404)
     if (!["draft", "eligible"].includes(String(cand.status))) conflict("Only a draft or eligible candidate can be edited. Release an allocated one first.")
+    // Once a prospect exists, or a founder has cleared an exclusivity for these facts, the facts are fixed: exclude and record a new candidate instead.
+    if ((await rows(tx, sql`select 1 from expansion_opportunities where research_candidate_id=${id}`))[0] || (await rows(tx, sql`select 1 from expansion_candidate_exclusivity_decisions where candidate_id=${id}`))[0])
+      conflict("This candidate has already been allocated or reviewed, so its facts are fixed. Exclude it and record a new candidate if something was wrong.")
     try {
       // Facts changed: every earlier check and screening decision is stale, so the candidate returns to draft.
       await tx.execute(sql`update expansion_research_candidates set business_name=${c.name},website_url=${`https://${c.domain}`},normalized_domain=${c.domain},industry=${c.industry},sector_id=${c.sectorId},country=${c.country},region=${c.region},area=${c.area},public_source=${c.publicSource},researched_on=${c.researchedOn},partner_notes=${c.partnerNotes},internal_notes=${c.internalNotes},
@@ -244,6 +247,8 @@ type Outcome = { id: string; opportunityId?: string; refused?: string[] }
 async function place(tx: AdminDatabaseTransaction, actor: Actor, id: string, partnerId: string, from: string | null, note: string | null): Promise<Outcome> {
   await lockActivePartners(tx, from ? [from, partnerId] : [partnerId], from ? [from] : [])
   await tx.execute(sql`select pg_advisory_xact_lock(621908148)`)
+  // The opportunity row is taken BEFORE advisory lock 7102, matching every other path (classify, decide, partner progression): row, then 7102.
+  const existing = (await rows(tx, sql`select id,prospect_id,status from expansion_opportunities where research_candidate_id=${id} for update`))[0]
   await tx.execute(sql`select pg_advisory_xact_lock_shared(7102)`)
   const [cand] = await rows(tx, sql`select * from expansion_research_candidates where id=${id} for update`)
   if (!cand) throw new ResearchError("Candidate not found.", 404)
@@ -257,9 +262,12 @@ async function place(tx: AdminDatabaseTransaction, actor: Actor, id: string, par
     if (!from) { await tx.execute(sql`update expansion_research_candidates set status='draft',updated_at=now() where id=${id}`); await event(tx, id, "checked", actor.id, { note: `Eligibility withdrawn at allocation: ${checks.blockers.join(" ")}` }) }
     return { id, refused: checks.blockers }
   }
+  // The receiving partner's operating market must be approved too, or the prospect would be stuck on arrival.
+  const [target] = await rows(tx, sql`select user_id,operating_country from expansion_partners where id=${partnerId}`)
+  const targetMarket = (await rows(tx, sql`select status,plan_keys from expansion_markets where country_code=${String(target.operating_country)} for share`))[0] as { status: string; plan_keys: string[] } | undefined
+  if (marketGate(String(target.operating_country), targetMarket, "*") !== "approved") return { id, refused: ["The receiving partner's operating market is not approved."] }
   await tx.execute(sql`select set_config('app.opportunity_reassign','verified',true)`)
-  const [owner] = await rows(tx, sql`select user_id from expansion_partners where id=${partnerId}`)
-  const existing = (await rows(tx, sql`select id,prospect_id,status from expansion_opportunities where research_candidate_id=${id} for update`))[0]
+  const owner = target
   let opportunityId: string
   try {
     if (existing) {

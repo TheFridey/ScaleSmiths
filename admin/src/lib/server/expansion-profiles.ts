@@ -17,8 +17,8 @@ import { requireCapability } from "./rbac"
 type Row = Record<string, unknown>
 type Executor = Pick<AdminDatabaseTransaction, "execute">
 type Actor = Awaited<ReturnType<typeof requireCapability>>
-export const PROFILE_CONSENT_VERSION = "profile-consent-v1"
-export const PROFILE_CONSENT_TEXT = "I consent to ScaleSmiths publishing the display name, biography and operating area shown in this draft on a public ScaleSmiths web page for as long as I am an active ScaleSmiths partner and the page remains approved. I understand that no private contact details are published, that I can ask for the page to be removed, and that a founder can remove it at any time."
+export const PROFILE_CONSENT_VERSION = "profile-consent-v2"
+export const PROFILE_CONSENT_TEXT = "I consent to ScaleSmiths publishing the display name, biography and operating area shown in this draft on a public ScaleSmiths web page for as long as I am an active ScaleSmiths partner and the page remains approved. I understand that the page may also show a ScaleSmiths partner reference if I choose that enquiry route, achievement wording a founder approves, and any Founding Partner recognition a founder has granted me, and that no private contact details are published, that I can ask for the page to be removed, and that a founder can remove it at any time."
 export class ProfileError extends ExpansionError { constructor(message: string, status = 400) { super(message, status); this.name = "ProfileError" } }
 const rows = async (tx: Executor, query: SQL): Promise<Row[]> => (await tx.execute(query)).rows as Row[]
 const conflict = (message: string): never => { throw new ProfileError(message, 409) }

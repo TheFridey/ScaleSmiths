@@ -465,6 +465,7 @@
     {"idx":76,"version":"7","when":1794951000009,"tag":"0076_expansion_market_and_exclusivity_gates","breakpoints":true},
     {"idx":77,"version":"7","when":1794951000010,"tag":"0077_expansion_gate_hardening","breakpoints":true},
     {"idx":78,"version":"7","when":1794951000011,"tag":"0078_expansion_state_integrity","breakpoints":true},
-    {"idx":79,"version":"7","when":1794951000012,"tag":"0079_expansion_achievements_referrals","breakpoints":true}
+    {"idx":79,"version":"7","when":1794951000012,"tag":"0079_expansion_achievements_referrals","breakpoints":true},
+    {"idx":80,"version":"7","when":1794951000013,"tag":"0080_expansion_sector_taxonomy","breakpoints":true}
   ]
 }

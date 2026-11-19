@@ -27,6 +27,14 @@ describe("exclusivity matching is conservative", () => {
     expect(matchExclusivity({ sector: "Dental", area: "Leeds" }, { clientId: 9, sector: "歯科", area: "Leeds" })).toBe("review")
     expect(matchExclusivity({ sector: "Dental", area: "Leeds" }, { clientId: 9, sector: "Dental", area: "" })).toBe("review")
   })
+  it("a founder classification overrides wording on both sides, and unclassified sides stay conservative", () => {
+    const a = "sector-dental", b = "sector-orthodontics"
+    const ex = { clientId: 9, sector: "Dental", area: "Leeds", sectorId: a }
+    expect(matchExclusivity({ sector: "Dentist", area: "Leeds", sectorId: a }, ex)).toBe("restricted")      // synonym with no shared stem, classified
+    expect(matchExclusivity({ sector: "Dental clinic", area: "Leeds", sectorId: b }, ex)).toBe("none")        // similar words, but the founder says a different sector
+    expect(matchExclusivity({ sector: "Plumber", area: "Leeds" }, ex)).toBe("review")                          // prospect unclassified against a classified restriction: only a founder can clear it
+    expect(matchExclusivity({ sector: "Dentist", area: "" , sectorId: a }, ex)).toBe("review")
+  })
   it("clears what is positively different, and never restricts a customer by its own exclusivity", () => {
     expect(matchExclusivity({ sector: "Dentistry", area: "Nottingham" }, ex)).toBe("none")
     expect(matchExclusivity({ sector: "Plumbing & Heating", area: "Leeds" }, ex)).toBe("none")
@@ -42,6 +50,7 @@ describe("market gate fails closed", () => {
     expect(marketGate("GB", { status: "suspended", plan_keys: ["standard-v2"] }, "standard-v2")).toBe("not_approved")
     expect(marketGate("FR", undefined, "standard-v2")).toBe("not_approved")
     expect(marketGate(null, approved, "standard-v2")).toBe("unknown")
+    expect(marketGate("GB", approved, "*")).toBe("approved"); expect(marketGate("GB", { status: "suspended", plan_keys: ["standard-v2"] }, "*")).toBe("not_approved"); expect(marketGate("GB", undefined, "*")).toBe("not_approved")
   })
   it("normalises and validates country codes", () => {
     expect(normaliseCountry(" gb ")).toBe("GB"); expect(normaliseCountry("")).toBeNull()

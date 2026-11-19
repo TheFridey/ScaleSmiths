@@ -64,10 +64,11 @@ describe("production Expansion prospect/scope/capacity service against PostgreSQ
     await state.database.exec(readFileSync(new URL("../../../drizzle/0076_expansion_market_and_exclusivity_gates.sql", import.meta.url), "utf8"))
     await state.database.exec(readFileSync(new URL("../../../drizzle/0077_expansion_gate_hardening.sql", import.meta.url), "utf8"))
     await state.database.exec(readFileSync(new URL("../../../drizzle/0078_expansion_state_integrity.sql", import.meta.url), "utf8"))
+    await state.database.exec(readFileSync(new URL("../../../drizzle/0080_expansion_sector_taxonomy.sql", import.meta.url), "utf8"))
   }, 30000)
   beforeEach(async () => {
     asFounder()
-    await state.database!.exec("truncate expansion_exclusivity_decisions,expansion_exclusivities,expansion_markets,expansion_discount_reservations,expansion_discount_policies,expansion_additional_claims,expansion_audit,expansion_suppressions,expansion_resources,expansion_contracts,expansion_reservations,expansion_capacity,expansion_opportunities,expansion_partners,commercial_contracts,commercial_contacts,prospects,clients,partner_applications,admin_users restart identity cascade")
+    await state.database!.exec("truncate expansion_sector_aliases,expansion_sectors,expansion_exclusivity_decisions,expansion_exclusivities,expansion_markets,expansion_discount_reservations,expansion_discount_policies,expansion_additional_claims,expansion_audit,expansion_suppressions,expansion_resources,expansion_contracts,expansion_reservations,expansion_capacity,expansion_opportunities,expansion_partners,commercial_contracts,commercial_contacts,prospects,clients,partner_applications,admin_users restart identity cascade")
     await state.database!.query("insert into admin_users values($1,'owner',true,1,'Founder','founder@example.invalid'),($2,'independent_partner',true,1,'Partner A','a@example.invalid'),($3,'independent_partner',true,1,'Partner B','b@example.invalid')", [FOUNDER, USER, OTHER_USER])
     await state.database!.exec("insert into partner_applications(name,email,status) values('Partner A','a@example.invalid','activated'),('Partner B','b@example.invalid','activated'); insert into clients(id,name) values(1,'Canonical client');")
     await state.database!.query("insert into expansion_partners(id,user_id,application_id,agreement_version,confirmed_at,activated_at) values($1,$2,1,'test-approved-v1',now(),now()),($3,$4,2,'test-approved-v1',now(),now())", [PARTNER, USER, OTHER_PARTNER, OTHER_USER])
@@ -345,7 +346,7 @@ describe("production Expansion prospect/scope/capacity service against PostgreSQ
     const ready = async (tag: string, extra: Record<string, unknown> = {}) => {
       asPartner(); const rec = await partnerMutation({ action: "register", country: "GB", businessName: `Gate ${tag}`, website: `gate-${tag}.example`, region: "Nottingham", industry: "Plumbing & Heating", ...extra })
       await partnerMutation({ action: "discovery", id: rec.id, discovery }); await partnerMutation({ action: "submit_scope", id: rec.id, summary: "Approved scope." })
-      asFounder(); await capacity(30); await approval(String(rec.id)); await enable(); return String(rec.id)
+      asFounder(); await capacity(90); await approval(String(rec.id)); await enable(); return String(rec.id)
     }
     const accept = (id: string) => founderMutation({ action: "accept_contract", id, clientId: 1, plan: { plan: "standard-v2" }, agreementReference: "Signed" })
     const market = (over: Record<string, unknown> = {}) => founderMutation({ action: "set_market", countryCode: "FR", countryName: "France", status: "approved", planKeys: ["standard-v2"], legalReviewed: true, accountingReviewed: true, privacyReviewed: true, operationsReviewed: true, approvalReference: "SYNTHETIC approval", ...over })
@@ -438,6 +439,53 @@ describe("production Expansion prospect/scope/capacity service against PostgreSQ
       await expect(state.database!.query("update expansion_exclusivities set status='active',ended_at=null where id=$1", [oldId])).rejects.toThrow("ended exclusivity cannot change")
       await expect(founderMutation({ action: "correct_exclusivity", exclusivityId: oldId, sector: "x", area: "y", contractualReference: "z", effectiveFrom: "2020-01-01", reason: "again" })).rejects.toThrow("active exclusivity")
       asPartner(); await expect(founderMutation({ action: "correct_exclusivity", exclusivityId: corrected.exclusivityId, sector: "x", area: "y", contractualReference: "z", effectiveFrom: "2020-01-01", reason: "no" })).rejects.toThrow()
+    })
+    it("Case M: a new acquisition through legacy standard-v1 gets no exemption, while accepted contracts are grandfathered", async () => {
+      await state.database!.exec("insert into clients(id,name) values(2,'Protected Customer')")
+      const legacy = (id: string) => founderMutation({ action: "accept_contract", id, clientId: 1, terms: standardCommissionTerms(), agreementReference: "Historical v1 agreement" })
+      const unknown = await ready("legacy-unknown", { country: undefined }); await expect(legacy(unknown)).rejects.toThrow("not approved")
+      const accepted = await ready("legacy-ok"); await legacy(accepted)
+      const before = (await state.database!.query("select id,terms from expansion_contracts")).rows
+      expect(before).toHaveLength(1)
+      await market({ countryCode: "GB", countryName: "United Kingdom", status: "suspended", planKeys: ["standard-v2"] })
+      const later = await ready("legacy-after-suspension"); await expect(legacy(later)).rejects.toThrow("not approved")
+      expect((await state.database!.query("select id,terms from expansion_contracts")).rows).toEqual(before)   // the accepted contract is untouched
+      await market({ countryCode: "GB", countryName: "United Kingdom", status: "approved", planKeys: ["standard-v2"] })
+      await exclusivity(); const restricted = await ready("legacy-restricted"); await expect(legacy(restricted)).rejects.toThrow("exclusivity review")
+    })
+    it("Case L: structured classification decides by canonical sector, not wording, and stays conservative when unclassified", async () => {
+      await state.database!.exec("insert into clients(id,name) values(2,'Protected Customer')")
+      asFounder()
+      const dental = (await founderMutation({ action: "create_sector", key: "dental", label: "Dental services" }) as { sectorId: string }).sectorId
+      const ortho = (await founderMutation({ action: "create_sector", key: "orthodontics", label: "Orthodontics" }) as { sectorId: string }).sectorId
+      await expect(founderMutation({ action: "create_sector", key: "dental", label: "dup" })).rejects.toThrow("already exists")
+      await founderMutation({ action: "add_sector_alias", sectorId: dental, alias: "Dentist / Dental Clinic" })
+      await expect(founderMutation({ action: "add_sector_alias", sectorId: ortho, alias: "dentist dental clinic" })).rejects.toThrow("already assigned")
+      await exclusivity({ sectorId: dental, sector: "Dental", area: "Nottingham" })
+      // a synonym with no shared word stem, classified by the founder, is restricted
+      const syn = await ready("syn", { industry: "Teeth specialist", region: "Nottingham" })
+      await expect(accept(syn)).rejects.toThrow("exclusivity review")                       // unclassified: uncomparable wording goes to review
+      await founderMutation({ action: "classify_opportunity", id: syn, sectorId: dental })
+      expect((await founderSnapshot()).exclusivityStatus[syn]).toBe("restricted")
+      await expect(accept(syn)).rejects.toThrow("exclusivity review")
+      // similar words, but classified as a different sector: positively cleared
+      const similar = await ready("similar", { industry: "Dental clinic", region: "Nottingham" })
+      await founderMutation({ action: "classify_opportunity", id: similar, sectorId: ortho })
+      expect((await founderSnapshot()).exclusivityStatus[similar]).toBe("clear")
+      await accept(similar)
+      // classification is founder-only and cannot be changed after acceptance
+      asPartner(); await expect(founderMutation({ action: "classify_opportunity", id: syn, sectorId: ortho })).rejects.toThrow()
+      asFounder(); await expect(founderMutation({ action: "classify_opportunity", id: similar, sectorId: dental })).rejects.toThrow("accepted contract")
+    })
+    it("the canonical sector is part of the immutable exclusivity terms and can be corrected only by supersession", async () => {
+      await state.database!.exec("insert into clients(id,name) values(2,'Protected Customer')")
+      asFounder(); const a = (await founderMutation({ action: "create_sector", key: "kitchens", label: "Kitchens" }) as { sectorId: string }).sectorId
+      const b = (await founderMutation({ action: "create_sector", key: "bathrooms", label: "Bathrooms" }) as { sectorId: string }).sectorId
+      await exclusivity({ sectorId: a })
+      await expect(state.database!.query("update expansion_exclusivities set sector_id=$1", [b])).rejects.toThrow(/immutable/)
+      const oldId = (await state.database!.query<{ id: string }>("select id from expansion_exclusivities")).rows[0].id
+      await founderMutation({ action: "correct_exclusivity", exclusivityId: oldId, sectorId: b, sector: "Bathrooms", area: "Nottingham", contractualReference: "SYNTHETIC corrected", effectiveFrom: "2020-01-01", reason: "Wrong sector recorded" })
+      expect((await state.database!.query("select sector_id,status from expansion_exclusivities order by created_at")).rows).toEqual([{ sector_id: a, status: "ended" }, { sector_id: b, status: "active" }])
     })
   })
 })

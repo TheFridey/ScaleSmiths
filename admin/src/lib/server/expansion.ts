@@ -34,7 +34,7 @@ async function opportunity(tx: AdminDatabaseTransaction, id: string, partnerId?:
   return result.rows[0] as Row
 }
 async function activeExclusivities(tx: AdminDatabaseTransaction) {
-  return (await tx.execute(sql`select id,client_id,sector,area from expansion_exclusivities where status='active' and effective_from<=(now() at time zone 'Europe/London')::date and (effective_to is null or effective_to>(now() at time zone 'Europe/London')::date)`)).rows as Row[]
+  return (await tx.execute(sql`select id,client_id,sector,area,sector_id from expansion_exclusivities where status='active' and effective_from<=(now() at time zone 'Europe/London')::date and (effective_to is null or effective_to>(now() at time zone 'Europe/London')::date)`)).rows as Row[]
 }
 /** Conservative exclusivity outcome for one opportunity. Never discloses which customer or agreement is involved. */
 async function exclusivityOutcome(tx: AdminDatabaseTransaction, row: Row, clientId?: number | null) {
@@ -42,7 +42,7 @@ async function exclusivityOutcome(tx: AdminDatabaseTransaction, row: Row, client
   const unresolved: string[] = []
   let status: 'clear'|'review_required'|'restricted'|'exception_approved' = 'clear', sawException = false
   for (const ex of await activeExclusivities(tx)) {
-    const match = matchExclusivity({clientId: clientId ?? (row.client_id as number|null), sector: facts?.industry as string|null, area: facts?.location as string|null}, {clientId:Number(ex.client_id),sector:String(ex.sector),area:String(ex.area)})
+    const match = matchExclusivity({clientId: clientId ?? (row.client_id as number|null), sector: facts?.industry as string|null, area: facts?.location as string|null, sectorId: (row.sector_id as string|null) ?? null}, {clientId:Number(ex.client_id),sector:String(ex.sector),area:String(ex.area),sectorId:(ex.sector_id as string|null) ?? null})
     if (match === 'none') continue
     const decision = (await tx.execute(sql`select decision from expansion_exclusivity_decisions where opportunity_id=${String(row.id)} and exclusivity_id=${String(ex.id)}`)).rows[0] as Row | undefined
     if (decision && (decision.decision === 'exception_approved' || (match === 'review' && decision.decision === 'cleared'))) { sawException = sawException || decision.decision === 'exception_approved'; continue }
@@ -79,7 +79,7 @@ export async function founderSnapshot() {
   const actor = await requireCapability('expansion.manage')
   return db.transaction(async tx=>{
   await currentActor(tx,actor,'expansion.manage')
-  const [applications,partners,opportunities,capacity,resources,clients,planSettings,discountPolicies,claims,markets,exclusivities] = await Promise.all([
+  const [applications,partners,opportunities,capacity,resources,clients,planSettings,discountPolicies,claims,markets,exclusivities,sectors] = await Promise.all([
     tx.execute(sql`select * from partner_applications order by submitted_at desc limit 200`),
     tx.execute(sql`select p.id,p.user_id,p.agreement_version,p.activated_at,u.display_name,u.email,u.active from expansion_partners p join admin_users u on u.id=p.user_id order by p.created_at desc`),
     tx.execute(sql`select o.*,p.business_name,u.display_name partner_name,c.id contract_id from expansion_opportunities o join prospects p on p.id=o.prospect_id join expansion_partners ep on ep.id=o.partner_id join admin_users u on u.id=ep.user_id left join expansion_contracts c on c.opportunity_id=o.id order by o.created_at desc limit 500`),
@@ -91,10 +91,11 @@ export async function founderSnapshot() {
     tx.execute(sql`select c.id,c.business_name,c.normalized_domain,c.project_label,c.contribution,c.status,c.created_at,u.display_name partner_name from expansion_additional_claims c join expansion_partners ep on ep.id=c.partner_id join admin_users u on u.id=ep.user_id order by (c.status='pending') desc,c.created_at desc limit 100`),
     tx.execute(sql`select country_code,country_name,status,plan_keys,legal_reviewed,accounting_reviewed,privacy_reviewed,operations_reviewed,approval_reference from expansion_markets order by country_code`),
     tx.execute(sql`select e.id,e.sector,e.area,e.contractual_reference,e.effective_from,e.effective_to,e.status,c.name client_name from expansion_exclusivities e join clients c on c.id=e.client_id order by e.status,e.created_at desc limit 200`),
+    tx.execute(sql`select s.id,s.key,s.label,coalesce((select array_agg(a.alias order by a.alias) from expansion_sector_aliases a where a.sector_id=s.id),'{}') aliases from expansion_sectors s order by s.label`),
   ])
   const gates: Row = {}
   for (const o of opportunities.rows as Row[]) if (!['closed_lost','withdrawn','contract_accepted'].includes(String(o.status))) gates[String(o.id)] = (await exclusivityOutcome(tx,o)).status
-  return { markets:markets.rows,exclusivities:exclusivities.rows,exclusivityStatus:gates,discountPolicies:discountPolicies.rows,additionalClaims:claims.rows,planSettings:planSettings.rows,applications:applications.rows,partners:partners.rows,opportunities:opportunities.rows,capacity:capacity.rows,resources:resources.rows,clients:clients.rows }
+  return { sectors:sectors.rows,markets:markets.rows,exclusivities:exclusivities.rows,exclusivityStatus:gates,discountPolicies:discountPolicies.rows,additionalClaims:claims.rows,planSettings:planSettings.rows,applications:applications.rows,partners:partners.rows,opportunities:opportunities.rows,capacity:capacity.rows,resources:resources.rows,clients:clients.rows }
   })
 }
 export async function partnerMutation(input: Input) {
@@ -304,9 +305,27 @@ export async function founderMutation(input: Input) {
       if (!realDate(from) || (to && (!realDate(to) || to <= from))) throw new ExpansionError('Choose valid effective dates. The expiry date is the first unprotected day.')
       await tx.execute(sql`select pg_advisory_xact_lock(7102)`)
       const exclusivityId = randomUUID()
-      await tx.execute(sql`insert into expansion_exclusivities(id,client_id,sector,area,contractual_reference,effective_from,effective_to,created_by) values(${exclusivityId},${clientId},${expansionText(input.sector,'Sector',120)},${expansionText(input.area,'Geographic area',120)},${expansionText(input.contractualReference,'Accepted contractual reference',500)},${from}::date,${to}::date,${actor.id})`)
+      await tx.execute(sql`insert into expansion_exclusivities(id,client_id,sector_id,sector,area,contractual_reference,effective_from,effective_to,created_by) values(${exclusivityId},${clientId},${input.sectorId ? expansionId(input.sectorId) : null},${expansionText(input.sector,'Sector',120)},${expansionText(input.area,'Geographic area',120)},${expansionText(input.contractualReference,'Accepted contractual reference',500)},${from}::date,${to}::date,${actor.id})`)
       await audit(tx,actor.id,exclusivityId,'exclusivity_created',{clientId,sector:input.sector,area:input.area})
       return {exclusivityId}
+    }
+    if (input.action === 'create_sector') {
+      const key = expansionText(input.key,'Sector key',60).toLowerCase()
+      if (!/^[a-z0-9-]{2,60}$/.test(key)) throw new ExpansionError('Use lower-case letters, digits and hyphens for the sector key.')
+      const sectorId = randomUUID()
+      const created = await tx.execute(sql`insert into expansion_sectors(id,key,label,created_by) values(${sectorId},${key},${expansionText(input.label,'Sector label',120)},${actor.id}) on conflict(key) do nothing returning id`)
+      if (!created.rows[0]) throw new ExpansionError('That sector key already exists.',409)
+      await audit(tx,actor.id,sectorId,'sector_created',{key})
+      return {sectorId}
+    }
+    if (input.action === 'add_sector_alias') {
+      const alias = expansionText(input.alias,'Alias',80).toLowerCase().replace(/[^a-z0-9]+/g,' ').trim()
+      if (alias.length < 2) throw new ExpansionError('Enter a meaningful alias.')
+      const sectorId = expansionId(input.sectorId)
+      const added = await tx.execute(sql`insert into expansion_sector_aliases(alias,sector_id,created_by) values(${alias},${sectorId},${actor.id}) on conflict(alias) do nothing returning alias`)
+      if (!added.rows[0]) throw new ExpansionError('That alias is already assigned.',409)
+      await audit(tx,actor.id,sectorId,'sector_alias_added',{alias})
+      return {alias}
     }
     if (input.action === 'correct_exclusivity') {
       // Accepted terms are never edited: a correction is a new record that supersedes (and ends) the old one.
@@ -319,7 +338,7 @@ export async function founderMutation(input: Input) {
       if (!realDate(from) || (to && (!realDate(to) || to <= from))) throw new ExpansionError('Choose valid effective dates.')
       const reason = expansionText(input.reason,'Reason for the correction',1000)
       const newId = randomUUID()
-      await tx.execute(sql`insert into expansion_exclusivities(id,client_id,sector,area,contractual_reference,effective_from,effective_to,created_by) values(${newId},${Number(old.client_id)},${expansionText(input.sector,'Sector',120)},${expansionText(input.area,'Geographic area',120)},${expansionText(input.contractualReference,'Accepted contractual reference',500)},${from}::date,${to}::date,${actor.id})`)
+      await tx.execute(sql`insert into expansion_exclusivities(id,client_id,sector_id,sector,area,contractual_reference,effective_from,effective_to,created_by) values(${newId},${Number(old.client_id)},${input.sectorId ? expansionId(input.sectorId) : null},${expansionText(input.sector,'Sector',120)},${expansionText(input.area,'Geographic area',120)},${expansionText(input.contractualReference,'Accepted contractual reference',500)},${from}::date,${to}::date,${actor.id})`)
       await tx.execute(sql`update expansion_exclusivities set status='ended',ended_at=now(),superseded_by=${newId} where id=${oldId}`)
       await audit(tx,actor.id,newId,'exclusivity_corrected',{supersedes:oldId,reason})
       return {exclusivityId:newId,supersedes:oldId}
@@ -334,6 +353,15 @@ export async function founderMutation(input: Input) {
     }
     const id = expansionId(input.id)
     const row = await opportunity(tx,id)
+    if (input.action === 'classify_opportunity') {
+      if (row.status === 'contract_accepted') throw new ExpansionError('An accepted contract cannot be reclassified.',409)
+      const sectorId = input.sectorId ? expansionId(input.sectorId) : null
+      if (sectorId && !(await tx.execute(sql`select id from expansion_sectors where id=${sectorId}`)).rows[0]) throw new ExpansionError('Choose a defined sector.')
+      await tx.execute(sql`select pg_advisory_xact_lock(7102)`)
+      await tx.execute(sql`update expansion_opportunities set sector_id=${sectorId},sector_classified_by=${sectorId ? actor.id : null},updated_at=now() where id=${id}`)
+      await audit(tx,actor.id,id,'opportunity_sector_classified',{sectorId})
+      return {id}
+    }
     if (input.action === 'set_opportunity_market') {
       let code: string | null = null
       try { code = normaliseCountry(input.countryCode) } catch { throw new ExpansionError('Use a two-letter ISO country code.') }
@@ -347,10 +375,10 @@ export async function founderMutation(input: Input) {
       const decision = String(input.decision)
       if (!['cleared','exception_approved'].includes(decision)) throw new ExpansionError('Choose cleared or exception approved.')
       await tx.execute(sql`select pg_advisory_xact_lock(7102)`)
-      const ex = (await tx.execute(sql`select id,client_id,sector,area from expansion_exclusivities where id=${exclusivityId} and status='active'`)).rows[0] as Row | undefined
+      const ex = (await tx.execute(sql`select id,client_id,sector,area,sector_id from expansion_exclusivities where id=${exclusivityId} and status='active'`)).rows[0] as Row | undefined
       if (!ex) throw new ExpansionError('Choose an active exclusivity.',409)
       const facts = (await tx.execute(sql`select industry,location from prospects where id=${row.prospect_id}`)).rows[0] as Row
-      const match = matchExclusivity({clientId:row.client_id as number|null,sector:facts?.industry as string|null,area:facts?.location as string|null},{clientId:Number(ex.client_id),sector:String(ex.sector),area:String(ex.area)})
+      const match = matchExclusivity({clientId:row.client_id as number|null,sector:facts?.industry as string|null,area:facts?.location as string|null,sectorId:(row.sector_id as string|null) ?? null},{clientId:Number(ex.client_id),sector:String(ex.sector),area:String(ex.area),sectorId:(ex.sector_id as string|null) ?? null})
       if (match === 'none') throw new ExpansionError('There is no exclusivity conflict to decide.',409)
       if (decision === 'cleared' && match === 'restricted') throw new ExpansionError('A confirmed restriction can only be released by an approved exception.',409)
       const decided = await tx.execute(sql`insert into expansion_exclusivity_decisions(id,opportunity_id,exclusivity_id,decision,reference,decided_by) values(${randomUUID()},${id},${exclusivityId},${decision},${expansionText(input.reference,'Decision evidence and reference',1000)},${actor.id}) on conflict(opportunity_id,exclusivity_id) do nothing returning id`)
@@ -448,6 +476,9 @@ export async function founderMutation(input: Input) {
         try { planTerms = buildAcceptedTerms(request) } catch (error) { throw new ExpansionError(error instanceof Error ? error.message : 'Invalid commercial plan.', (error as { status?: number }).status ?? 400) }
         planPricing = { websitePence: Number(planTerms.commitment!.buildPence), monthlyPence: Number(planTerms.commitment!.recurringPence) }
       }
+      // Legacy standard-v1 terms are for historical records and replays. A NEW acceptance through them gets no exemption from the
+      // current market and exclusivity gates; existing accepted contracts are never re-evaluated (grandfathered, immutable).
+      if (!planTerms) await assertAcceptanceGates(tx,row,'*',clientId)
       const terms = planTerms ?? parseCommissionTerms(input.terms)
       await tx.execute(sql`insert into expansion_commission_plans(version,terms,created_by) values(${terms.planVersion},${JSON.stringify(terms)}::jsonb,${actor.id}) on conflict(version) do nothing`)
       const plan = await tx.execute(sql`select terms from expansion_commission_plans where version=${terms.planVersion}`)

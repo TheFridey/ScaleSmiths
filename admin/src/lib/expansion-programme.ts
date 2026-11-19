@@ -18,8 +18,7 @@ export function cumulativeBonusPence(clients: number, milestones: readonly Miles
 }
 export function progressTowardsNext(count: number, milestones: readonly MilestoneDefinition[] = PROPOSED_MILESTONES) {
   const next = [...milestones].sort((a, b) => a.clients - b.clients).find(m => m.clients > count) ?? null
-  const previous = [...milestones].filter(m => m.clients <= count).sort((a, b) => b.clients - a.clients)[0]?.clients ?? 0
-  return { next, remaining: next ? next.clients - count : 0, fraction: next ? (count - previous) / (next.clients - previous) : 1 }
+  return { next, remaining: next ? next.clients - count : 0, fraction: next ? count / next.clients : 1 }
 }
 const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
 /** `SS-` plus eight base32 characters from caller-supplied random bytes (no ambiguous 0/1/8/9). */

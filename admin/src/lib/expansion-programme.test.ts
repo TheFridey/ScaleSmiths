@@ -8,7 +8,7 @@ describe("proposed achievement schedule", () => {
     expect(PROPOSED_MILESTONES).toHaveLength(8)
   })
   it("derives progress towards the next milestone", () => {
-    expect(progressTowardsNext(7)).toMatchObject({ remaining: 3, next: { clients: 10 } })
+    expect(progressTowardsNext(7)).toMatchObject({ remaining: 3, next: { clients: 10 }, fraction: 0.7 })
     expect(progressTowardsNext(0)).toMatchObject({ remaining: 1, next: { clients: 1 }, fraction: 0 })
     expect(progressTowardsNext(500)).toMatchObject({ next: null, fraction: 1 })
   })

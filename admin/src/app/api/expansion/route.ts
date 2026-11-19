@@ -6,7 +6,7 @@ import { requireCapability } from '@/lib/server/rbac'
 import { checkDurableRateLimit } from '@/lib/server/rate-limit-store'
 export const dynamic = 'force-dynamic'
 export async function GET() {
-  try { const [workspace,financial] = await Promise.all([founderSnapshot(),finance.getExpansionFinance()]); return NextResponse.json({workspace,finance:financial},{headers:expansionHeaders}) } catch(error) { return expansionFailure(error) }
+  try { const [workspace,financial,withdrawals] = await Promise.all([founderSnapshot(),finance.getExpansionFinance(),finance.getWithdrawalAdmin()]); return NextResponse.json({workspace,finance:financial,withdrawals},{headers:expansionHeaders}) } catch(error) { return expansionFailure(error) }
 }
 export async function POST(request: Request) {
   try {
@@ -19,6 +19,7 @@ export async function POST(request: Request) {
       prepare_payout:finance.prepareExpansionPayout, approve_payout:finance.approveExpansionPayout, settle_payout:finance.settleExpansionPayout,
       cancel_payout:finance.cancelExpansionPayout,
       retain_refund_entitlement:finance.retainRefundEntitlement,
+      set_withdrawal_policy:finance.setWithdrawalPolicy, review_withdrawal:finance.reviewWithdrawal, prepare_withdrawal_payout:finance.prepareWithdrawalPayout,
     }
     const command = Object.hasOwn(commands,String(input.action)) ? commands[String(input.action)] : undefined
     const result = command ? await command(input as never) : await founderMutation(input)

@@ -5,7 +5,7 @@ import { db, type AdminDatabaseTransaction } from "@/lib/db"
 import { type AdminRole } from "@/lib/admin-users"
 import { hasCapability } from "@/lib/rbac"
 import { requireCapability } from "./rbac"
-import { BUILD_MILESTONES, commissionAt, commissionDelta, commissionGroup, COMMISSION_MILESTONES, isPooledCommission, milestoneCap, ExpansionFinanceError, financeText, financeUuid, parseCommissionTerms, pence, type CommissionMilestone } from "@/lib/expansion-finance"
+import { BUILD_MILESTONES, commissionAt, commissionDelta, commissionGroup, COMMISSION_MILESTONES, isPooledCommission, milestoneCap, ExpansionFinanceError, financeText, financeUuid, formatPence, parseCommissionTerms, pence, type CommissionMilestone } from "@/lib/expansion-finance"
 
 type Row = Record<string, unknown>
 type Executor = Pick<AdminDatabaseTransaction, "execute">
@@ -231,6 +231,9 @@ export async function refundExpansionPayment(input: ExpansionRefund) {
         join expansion_commission_ledger l on l.id=pe.ledger_id join expansion_payment_events e on e.id=l.payment_event_id
         where l.contract_id=${String(source.contract_id)} and e.milestone in (${sql.join(commissionGroup(parseCommissionTerms(contract.terms), source.milestone as CommissionMilestone).map(m => sql`${m}`), sql`, `)}) limit 1`)
       if (allocated) conflict("Resolve the prepared payout or seek manual review of previously approved or paid commission.")
+      const [reserved] = await rows(tx, sql`select w.id from expansion_withdrawal_entries w join expansion_commission_ledger l on l.id=w.ledger_id join expansion_payment_events e on e.id=l.payment_event_id
+        where w.released_at is null and l.contract_id=${String(source.contract_id)} and e.milestone in (${sql.join(commissionGroup(parseCommissionTerms(contract.terms), source.milestone as CommissionMilestone).map(m => sql`${m}`), sql`, `)}) limit 1`)
+      if (reserved) conflict("Resolve the partner withdrawal request reserving this commission before adjusting it.")
     }
     await tx.execute(sql`select id from invoices where id=${String(source.invoice_id)}::integer for update`)
     const before = await collected(tx, String(source.contract_id), source.milestone as CommissionMilestone)
@@ -263,7 +266,7 @@ export async function prepareExpansionPayout(input: { partnerId: string; invoice
       return { payoutId: String(old.id), amountPence: String(old.amount_pence), replayed: true }
     }
     await assertNoRefundReview(tx, partnerId)
-    const entries = await rows(tx, sql`select l.id,l.amount_pence::text from expansion_commission_ledger l where l.partner_id=${partnerId} and not exists(select 1 from expansion_payout_claims pe where pe.ledger_id=l.id) order by l.created_at,l.id for update of l`)
+    const entries = await rows(tx, sql`select l.id,l.amount_pence::text from expansion_commission_ledger l where l.partner_id=${partnerId} and not exists(select 1 from expansion_payout_claims pe where pe.ledger_id=l.id) and not exists(select 1 from expansion_withdrawal_entries w where w.ledger_id=l.id and w.released_at is null) order by l.created_at,l.id for update of l`)
     const total = entries.reduce((sum, row) => sum + BigInt(String(row.amount_pence)), BigInt(0))
     if (total <= BigInt(0)) conflict("No positive unallocated commission is available for payout.")
     if (total !== invoiceNet) conflict("Partner invoice net amount does not match payable ledger entries.")
@@ -310,6 +313,7 @@ export async function cancelExpansionPayout(input: { payoutId: string; reason: s
     }
     if (payout.status !== "prepared") conflict("Only a prepared payout with no external settlement may be cancelled.")
     await tx.execute(sql`insert into expansion_payout_cancellations(payout_id,cancelled_by,reason) values(${payoutId},${actor.id},${reason})`)
+    await tx.execute(sql`update expansion_withdrawal_requests set status='approved',payout_id=null,updated_at=now() where payout_id=${payoutId}`)
     await audit(tx, actor.id, payoutId, "payout_cancelled", { reason, noExternalSettlement: true })
     return { payoutId, status: "cancelled", replayed: false }
   })
@@ -384,5 +388,203 @@ export async function getExpansionFinance() {
       from expansion_payment_events e left join commercial_payments p on p.id=e.commercial_payment_id left join invoices i on i.id=p.invoice_id order by e.created_at desc,e.id`)
     const payouts = await rows(tx, sql`select id,partner_id,amount_pence::text,invoice_reference,case when c.payout_id is not null then 'cancelled' else p.status end as status,created_at,approved_at,paid_at,settlement_reference,c.cancelled_at,c.reason as cancellation_reason from expansion_payouts p left join expansion_payout_cancellations c on c.payout_id=p.id order by created_at desc,id`)
     return { partners, payments, payouts }
+  })
+}
+
+
+/* ================= Partner withdrawal requests (checkpoint 3B) =================
+ * A request reserves specific ledger entries (no second ledger). Founder approval then creates an ordinary payout over
+ * exactly those entries. Everything serialises on the same partner row lock used by payout preparation, cancellation and refunds,
+ * and the database independently guarantees at most one live reservation per ledger entry. Nothing here moves money. */
+async function currentWithdrawalPolicy(tx: Executor) {
+  const [policy] = await rows(tx, sql`select version,enabled,min_amount_pence,invoice_required,approval_reference,created_at from expansion_withdrawal_policies order by version desc limit 1`)
+  return policy
+}
+function withdrawalUnavailable(policy: Row | undefined): string | null {
+  if (!policy) return "Withdrawal requests are not available yet: no payout policy has been approved."
+  if (!policy.enabled) return "Withdrawal requests are currently disabled by ScaleSmiths."
+  return null
+}
+async function activePartnerId(tx: Executor, actor: Actor) {
+  const [partner] = await rows(tx, sql`select p.id from expansion_partners p join admin_users u on u.id=p.user_id where p.user_id=${actor.id} and p.activated_at is not null and u.active=true and u.session_version=${actor.sessionVersion} and u.role::text='independent_partner'`)
+  if (!partner) throw new ExpansionFinanceError("Active partner profile required.", 403)
+  return String(partner.id)
+}
+const availableEntries = (tx: Executor, partnerId: string, lock = false) => rows(tx, sql`select l.id,l.amount_pence::text,l.created_at,e.milestone,i.client_name_snapshot as client_name
+  from expansion_commission_ledger l join expansion_payment_events e on e.id=l.payment_event_id
+  left join commercial_payments cp on cp.id=e.commercial_payment_id left join invoices i on i.id=cp.invoice_id
+  where l.partner_id=${partnerId} and not exists(select 1 from expansion_payout_claims pc where pc.ledger_id=l.id)
+    and not exists(select 1 from expansion_withdrawal_entries w where w.ledger_id=l.id and w.released_at is null)
+  order by l.created_at,l.id ${lock ? sql`for update of l` : sql``}`)
+const sumPence = (items: Row[], key = "amount_pence") => items.reduce((sum, row) => sum + BigInt(String(row[key])), BigInt(0))
+
+export async function getWithdrawalOverview() {
+  const actor = await requireCapability("expansion.partner")
+  return db.transaction(async (tx) => {
+    await tx.execute(sql`set transaction isolation level repeatable read`)
+    const partnerId = await activePartnerId(tx, actor)
+    const policy = await currentWithdrawalPolicy(tx)
+    const entries = await availableEntries(tx, partnerId)
+    const [pending] = await rows(tx, sql`select count(*)::int c,coalesce(sum(e.calculated_adjustment_pence),0)::text amount from expansion_payment_events e
+      join expansion_contracts c on c.id=e.contract_id join expansion_opportunities o on o.id=c.opportunity_id
+      where o.partner_id=${partnerId} and e.refund_treatment='manual_review'
+        and not exists(select 1 from commercial_audit a where a.entity='partner_finance' and a.record_id=e.id::text and a.action='refund_entitlement_retained')`)
+    const [totals] = await rows(tx, sql`select
+      coalesce((select sum(l.amount_pence) from expansion_commission_ledger l where l.partner_id=${partnerId}),0)::text earned,
+      coalesce((select sum(l.amount_pence) from expansion_commission_ledger l where l.partner_id=${partnerId} and l.amount_pence<0),0)::text adjusted,
+      coalesce((select sum(l.amount_pence) from expansion_withdrawal_entries w join expansion_withdrawal_requests r on r.id=w.request_id join expansion_commission_ledger l on l.id=w.ledger_id where r.partner_id=${partnerId} and w.released_at is null and r.status in ('submitted','approved')),0)::text requested,
+      coalesce((select sum(p.amount_pence) from expansion_payouts p where p.partner_id=${partnerId} and p.status in ('prepared','approved') and not exists(select 1 from expansion_payout_cancellations c where c.payout_id=p.id)),0)::text prepared,
+      coalesce((select sum(p.amount_pence) from expansion_payouts p where p.partner_id=${partnerId} and p.status='paid'),0)::text paid`)
+    const requests = await rows(tx, sql`select r.id,r.amount_pence::text,r.invoice_reference,r.status,r.partner_note,
+      r.review_note,r.created_at,r.reviewed_at,
+      case when c.payout_id is not null then 'cancelled' else p.status end payout_status,
+      (select count(*) from expansion_withdrawal_entries w where w.request_id=r.id)::int entries
+      from expansion_withdrawal_requests r left join expansion_payouts p on p.id=r.payout_id left join expansion_payout_cancellations c on c.payout_id=r.payout_id
+      where r.partner_id=${partnerId} order by r.created_at desc,r.id`)
+    const policyReason = withdrawalUnavailable(policy)
+    const disputed = Number(pending.c) > 0
+    const available = sumPence(entries)
+    return {
+      policy: { available: policyReason === null && !disputed, unavailableReason: policyReason ?? (disputed ? "A refund review is outstanding. Withdrawals resume once ScaleSmiths resolves it." : null),
+        minAmountPence: policy?.min_amount_pence == null ? null : String(policy.min_amount_pence), invoiceRequired: policy ? Boolean(policy.invoice_required) : true, version: policy ? Number(policy.version) : null },
+      balances: { earnedPence: String(totals.earned), availablePence: available.toString(), requestedPence: String(totals.requested), preparedPence: String(totals.prepared), paidPence: String(totals.paid),
+        adjustmentsPence: String(totals.adjusted), disputedPence: String(pending.amount) },
+      entries, requests,
+    }
+  })
+}
+
+export async function requestWithdrawal(input: { ledgerIds?: string[]; all?: boolean; invoiceReference?: string; note?: string }) {
+  const actor = await requireCapability("expansion.partner")
+  const note = input.note === undefined || input.note === "" ? null : financeText(input.note, "Note", 1000)
+  const wanted = input.all === true ? null : (Array.isArray(input.ledgerIds) ? [...new Set(input.ledgerIds.map(financeUuid))] : [])
+  if (wanted !== null && (wanted.length === 0 || wanted.length > 200)) throw new ExpansionFinanceError("Choose the commission entries to withdraw, or withdraw everything available.")
+  return db.transaction(async (tx) => {
+    const partnerId = await activePartnerId(tx, actor)
+    // Same lock as payout preparation, payout cancellation and refunds.
+    await tx.execute(sql`select id from expansion_partners where id=${partnerId} for update`)
+    const policy = await currentWithdrawalPolicy(tx)
+    const reason = withdrawalUnavailable(policy)
+    if (reason) conflict(reason)
+    const invoice = input.invoiceReference === undefined || input.invoiceReference === "" ? null : financeText(input.invoiceReference, "Your invoice reference")
+    if (policy.invoice_required && !invoice) throw new ExpansionFinanceError("Your invoice reference is required for a withdrawal request.")
+    await assertNoRefundReview(tx, partnerId)
+    const entries = await availableEntries(tx, partnerId, true)
+    if (invoice) {
+      // Replaying the same invoice reference returns the original request instead of reserving anything twice.
+      const [existing] = await rows(tx, sql`select r.id,r.amount_pence::text,(select array_agg(w.ledger_id::text order by w.ledger_id::text) from expansion_withdrawal_entries w where w.request_id=r.id) ids
+        from expansion_withdrawal_requests r where r.partner_id=${partnerId} and lower(r.invoice_reference)=lower(${invoice}) and r.status in ('submitted','approved','payout_prepared')`)
+      if (existing) {
+        const same = wanted === null ? entries.length === 0 : JSON.stringify([...wanted].sort()) === JSON.stringify(existing.ids)
+        if (same) return { requestId: String(existing.id), amountPence: String(existing.amount_pence), replayed: true }
+        conflict("A withdrawal request already uses that invoice reference.")
+      }
+    }
+    const chosen = wanted === null ? entries : entries.filter(row => wanted.includes(String(row.id)))
+    if (wanted !== null && chosen.length !== wanted.length) conflict("Some of those commission entries are no longer available. Refresh and try again.")
+    const total = sumPence(chosen)
+    if (chosen.length === 0 || total <= BigInt(0)) conflict("There is no positive available commission to withdraw.")
+    if (policy.min_amount_pence != null && total < BigInt(Number(policy.min_amount_pence))) conflict(`The minimum withdrawal is ${formatPence(String(policy.min_amount_pence))}.`)
+    const requestId = randomUUID()
+    await tx.execute(sql`insert into expansion_withdrawal_requests(id,partner_id,policy_version,amount_pence,invoice_reference,partner_note) values(${requestId},${partnerId},${Number(policy.version)},${total.toString()}::bigint,${invoice},${note})`)
+    for (const entry of chosen) await tx.execute(sql`insert into expansion_withdrawal_entries(id,request_id,ledger_id) values(${randomUUID()},${requestId},${String(entry.id)})`)
+    await audit(tx, actor.id, requestId, "withdrawal_requested", { partnerId, amountPence: total.toString(), ledgerIds: chosen.map(row => row.id), policyVersion: Number(policy.version) })
+    return { requestId, amountPence: total.toString(), replayed: false }
+  })
+}
+
+async function releaseReservations(tx: Executor, requestId: string) {
+  await tx.execute(sql`update expansion_withdrawal_entries set released_at=now() where request_id=${requestId} and released_at is null`)
+}
+
+export async function cancelWithdrawal(input: { requestId: string }) {
+  const actor = await requireCapability("expansion.partner"), requestId = financeUuid(input.requestId)
+  return db.transaction(async (tx) => {
+    const partnerId = await activePartnerId(tx, actor)
+    await tx.execute(sql`select id from expansion_partners where id=${partnerId} for update`)
+    const [request] = await rows(tx, sql`select status from expansion_withdrawal_requests where id=${requestId} and partner_id=${partnerId} for update`)
+    if (!request) throw new ExpansionFinanceError("Withdrawal request not found.", 404)
+    if (request.status === "cancelled") return { requestId, status: "cancelled", replayed: true }
+    if (!["submitted", "approved"].includes(String(request.status))) conflict("Only a request that has not been prepared for payout can be cancelled.")
+    await tx.execute(sql`update expansion_withdrawal_requests set status='cancelled',updated_at=now() where id=${requestId}`)
+    await releaseReservations(tx, requestId)
+    await audit(tx, actor.id, requestId, "withdrawal_cancelled", { by: "partner" })
+    return { requestId, status: "cancelled", replayed: false }
+  })
+}
+
+export async function setWithdrawalPolicy(input: { enabled: boolean; minAmountPence?: string; invoiceRequired: boolean; approvalReference: string }) {
+  const actor = await requireCapability("expansion.manage")
+  if (typeof input.enabled !== "boolean" || typeof input.invoiceRequired !== "boolean") throw new ExpansionFinanceError("State whether withdrawals are enabled and whether an invoice is required.")
+  const approval = financeText(input.approvalReference, "Policy approval reference", 500)
+  const min = input.minAmountPence === undefined || input.minAmountPence === "" ? null : pence(input.minAmountPence)
+  return db.transaction(async (tx) => {
+    await lockedActor(tx, actor)
+    const [created] = await rows(tx, sql`insert into expansion_withdrawal_policies(enabled,min_amount_pence,invoice_required,approval_reference,approved_by) values(${input.enabled},${min === null ? null : min.toString()}::integer,${input.invoiceRequired},${approval},${actor.id}) returning version`)
+    await audit(tx, actor.id, String(created.version), "withdrawal_policy_set", { enabled: input.enabled, minAmountPence: min?.toString() ?? null, invoiceRequired: input.invoiceRequired, approval })
+    return { version: Number(created.version) }
+  })
+}
+
+export async function reviewWithdrawal(input: { requestId: string; decision: "approved" | "rejected"; note: string }) {
+  const actor = await requireCapability("expansion.manage"), requestId = financeUuid(input.requestId)
+  if (!["approved", "rejected"].includes(input.decision)) throw new ExpansionFinanceError("Choose approve or reject.")
+  const note = financeText(input.note, "Review decision and reason", 2000)
+  return db.transaction(async (tx) => {
+    await lockedActor(tx, actor)
+    const [source] = await rows(tx, sql`select partner_id from expansion_withdrawal_requests where id=${requestId}`)
+    if (!source) throw new ExpansionFinanceError("Withdrawal request not found.", 404)
+    await tx.execute(sql`select id from expansion_partners where id=${String(source.partner_id)} for update`)
+    const [request] = await rows(tx, sql`select status,review_note from expansion_withdrawal_requests where id=${requestId} for update`)
+    if (request.status === input.decision && request.review_note === note) return { requestId, status: input.decision, replayed: true }
+    if (request.status !== "submitted") conflict("Only a submitted request can be reviewed.")
+    if (input.decision === "approved") await assertNoRefundReview(tx, String(source.partner_id))
+    await tx.execute(sql`update expansion_withdrawal_requests set status=${input.decision},review_note=${note},reviewed_by=${actor.id},reviewed_at=now(),updated_at=now() where id=${requestId}`)
+    if (input.decision === "rejected") await releaseReservations(tx, requestId)
+    await audit(tx, actor.id, requestId, `withdrawal_${input.decision}`, { note })
+    return { requestId, status: input.decision, replayed: false }
+  })
+}
+
+/** Creates an ordinary prepared payout over exactly the reserved entries. Approval, manual settlement and reconciliation then use the existing payout workflow. */
+export async function prepareWithdrawalPayout(input: { requestId: string; invoiceReference?: string }) {
+  const actor = await requireCapability("expansion.manage"), requestId = financeUuid(input.requestId)
+  return db.transaction(async (tx) => {
+    await lockedActor(tx, actor)
+    const [source] = await rows(tx, sql`select partner_id from expansion_withdrawal_requests where id=${requestId}`)
+    if (!source) throw new ExpansionFinanceError("Withdrawal request not found.", 404)
+    const partnerId = String(source.partner_id)
+    await tx.execute(sql`select id from expansion_partners where id=${partnerId} for update`)
+    const [request] = await rows(tx, sql`select * from expansion_withdrawal_requests where id=${requestId} for update`)
+    if (request.status === "payout_prepared") return { requestId, payoutId: String(request.payout_id), replayed: true }
+    if (request.status !== "approved") conflict("Approve the withdrawal request before preparing its payout.")
+    await assertNoRefundReview(tx, partnerId)
+    const reference = input.invoiceReference ? financeText(input.invoiceReference, "Payout invoice reference") : request.invoice_reference ? String(request.invoice_reference) : null
+    if (!reference) throw new ExpansionFinanceError("A partner invoice reference is required to prepare a payout.")
+    const [used] = await rows(tx, sql`select id from expansion_payouts where partner_id=${partnerId} and lower(invoice_reference)=lower(${reference})`)
+    if (used) conflict("That invoice reference already has a payout (possibly cancelled). Supply a replacement invoice reference.")
+    const entries = await rows(tx, sql`select l.id,l.amount_pence::text from expansion_withdrawal_entries w join expansion_commission_ledger l on l.id=w.ledger_id where w.request_id=${requestId} and w.released_at is null order by l.created_at,l.id for update of l`)
+    const total = sumPence(entries)
+    if (total !== BigInt(String(request.amount_pence)) || total <= BigInt(0)) conflict("The reserved commission no longer matches the approved request.")
+    const payoutId = randomUUID()
+    await tx.execute(sql`insert into expansion_payouts(id,partner_id,amount_pence,invoice_reference,prepared_by) values(${payoutId},${partnerId},${total.toString()}::bigint,${reference},${actor.id})`)
+    await tx.execute(sql`update expansion_withdrawal_requests set status='payout_prepared',payout_id=${payoutId},updated_at=now() where id=${requestId}`)
+    for (const entry of entries) await tx.execute(sql`insert into expansion_payout_entries(payout_id,ledger_id) values(${payoutId},${String(entry.id)})`)
+    await audit(tx, actor.id, payoutId, "payout_prepared", { partnerId, invoiceReference: reference, amountPence: total.toString(), ledgerIds: entries.map(row => row.id), withdrawalRequestId: requestId })
+    return { requestId, payoutId, amountPence: total.toString(), replayed: false }
+  })
+}
+
+export async function getWithdrawalAdmin() {
+  const actor = await requireCapability("expansion.manage")
+  return db.transaction(async (tx) => {
+    await tx.execute(sql`set transaction isolation level repeatable read`)
+    await lockedActor(tx, actor)
+    const policy = await currentWithdrawalPolicy(tx)
+    const requests = await rows(tx, sql`select r.id,r.partner_id,u.display_name partner_name,r.amount_pence::text,r.invoice_reference,r.status,r.partner_note,r.review_note,r.created_at,r.reviewed_at,r.payout_id,r.policy_version,
+      case when c.payout_id is not null then 'cancelled' else p.status end payout_status,(select count(*) from expansion_withdrawal_entries w where w.request_id=r.id)::int entries
+      from expansion_withdrawal_requests r join expansion_partners ep on ep.id=r.partner_id join admin_users u on u.id=ep.user_id
+      left join expansion_payouts p on p.id=r.payout_id left join expansion_payout_cancellations c on c.payout_id=r.payout_id order by (r.status='submitted') desc,r.created_at desc limit 200`)
+    return { policy: policy ?? null, unavailableReason: withdrawalUnavailable(policy), requests }
   })
 }

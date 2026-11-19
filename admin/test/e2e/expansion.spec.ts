@@ -131,6 +131,8 @@ test('complete isolated commercial journey reconciles £705 and denies partner B
     expect(client).toBeTruthy()
     await founderPage.locator('select[name=clientId]').selectOption(String(client.id))
     await founderPage.getByLabel('Accepted agreement evidence reference',{exact:true}).fill(`DEMO accepted agreement ${suffix}`)
+    // The original £705 journey is a historical standard-v1 agreement: select the legacy terms explicitly now that plans exist.
+    await founderPage.locator('select[name=planKey]').selectOption('legacy')
     await founderPage.getByRole('button',{name:'Record accepted contract',exact:true}).click()
     const acceptedOpportunity=async()=>(await snapshot(founder,true)).workspace.opportunities.find((row:{id:string})=>row.id===prospect.id)
     await expect.poll(async()=>(await acceptedOpportunity())?.contract_id).toBeTruthy()

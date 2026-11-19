@@ -33,7 +33,7 @@ vi.mock("../../src/lib/server/rbac", () => ({ requireCapability: async (capabili
 } }))
 
 import { founderMutation, partnerMutation, partnerSnapshot } from "../../src/lib/server/expansion"
-import { allocateExpansionInvoice, approveExpansionPayout, cancelExpansionPayout, getPartnerFinance, prepareExpansionPayout, refundExpansionPayment, settleExpansionPayout, verifyExpansionPayment } from "../../src/lib/server/expansion-finance"
+import { allocateExpansionInvoice, approveExpansionPayout, cancelExpansionPayout, cancelWithdrawal, getWithdrawalOverview, prepareWithdrawalPayout, requestWithdrawal, reviewWithdrawal, setWithdrawalPolicy, getPartnerFinance, prepareExpansionPayout, refundExpansionPayment, settleExpansionPayout, verifyExpansionPayment } from "../../src/lib/server/expansion-finance"
 import { activatePartnerInvitation } from "../../src/lib/server/partner-invitations"
 import { createInvoice, transitionInvoice } from "../../src/lib/server/invoices"
 
@@ -489,6 +489,118 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("Expansion real separa
       expect(await ledger(accepted.id)).toBe("300000")
       expect(await ledger(acceptedContractId)).toBe(historicalBefore)
       expect((await pool.query("select l.partner_id from expansion_commission_ledger l where l.contract_id=$1 group by 1", [accepted.id])).rows).toEqual([{ partner_id: firstPartnerId }])
+    })
+  })
+
+  describe("checkpoint 3B: withdrawal requests on separate connections", () => {
+    type Funded = Awaited<ReturnType<typeof fundedPartner>>
+    const policy = () => runAs(founder, () => setWithdrawalPolicy({ enabled: true, invoiceRequired: true, approvalReference: "TEST ONLY payout policy" }))
+    const ask = (p: Funded, ref: string, extra: Record<string, unknown> = {}) => runAs(p.actor, () => requestWithdrawal({ all: true, invoiceReference: `${suffix}-${ref}`, ...extra }))
+    const live = async (partnerId: string) => (await pool.query("select count(*)::int c from expansion_withdrawal_entries w join expansion_withdrawal_requests r on r.id=w.request_id where r.partner_id=$1 and w.released_at is null", [partnerId])).rows[0].c
+    /** A second £300 ledger entry so a partner has two independently reservable entries. */
+    async function withSecondEntry(p: Funded, tag: string) {
+      const invoice = await createInvoice({ clientId, items: [{ title: "TEST ONLY final", quantity: 1, unitAmount: 100000 }] }, founder.id)
+      await transitionInvoice(invoice.id, "issue", founder.id)
+      await runAs(founder, () => allocateExpansionInvoice({ contractId: p.contractId, invoiceId: invoice.id, milestone: "final", netPence: "100000", evidenceReference: "TEST ONLY reviewed allocation" }))
+      await runAs(founder, () => verifyExpansionPayment({ contractId: p.contractId, invoiceId: invoice.id, milestone: "final", reference: `${suffix}-${tag}-second`, netPence: "100000", grossPence: "100000", evidenceReference: "TEST ONLY receipt", confirmed: true }))
+      return p
+    }
+    const refund = (p: Funded, ref: string, extra: Record<string, unknown> = {}) => runAs(founder, () => refundExpansionPayment({ paymentId: p.paymentId, reference: `${suffix}-${ref}`, reason: "TEST ONLY verified refund", netPence: "20000", ...extra }))
+
+    it("two simultaneous requests for the same balance reserve it once", async () => {
+      await policy(); const p = await fundedPartner("w1")
+      const results = await race([() => ask(p, "w1-a"), () => ask(p, "w1-b")])
+      expectSingleWinner(results, /no positive available commission/)
+      expect(await live(p.partnerId)).toBe(1)
+    })
+    it("overlapping explicit entry requests reserve each ledger entry at most once", async () => {
+      await policy(); const p = await withSecondEntry(await fundedPartner("w3"), "w3")
+      const ids = (await pool.query<{ id: string }>("select id from expansion_commission_ledger where partner_id=$1 order by id", [p.partnerId])).rows.map(r => r.id)
+      expect(ids).toHaveLength(2)
+      const results = await race([() => runAs(p.actor, () => requestWithdrawal({ ledgerIds: ids, invoiceReference: `${suffix}-w3-a` })), () => runAs(p.actor, () => requestWithdrawal({ ledgerIds: [ids[0]], invoiceReference: `${suffix}-w3-b` }))])
+      expectSingleWinner(results, /no longer available/)
+      expect(await live(p.partnerId)).toBeGreaterThanOrEqual(1)
+    })
+    it("a withdrawal request versus founder payout preparation: exactly one allocates the commission", async () => {
+      await policy(); const p = await fundedPartner("w2")
+      const results = await race<unknown>([() => ask(p, "w2-req"), () => prepare(p.partnerId, "w2-founder")])
+      expect(results.filter(r => r.status === "fulfilled")).toHaveLength(1)
+      const claimed = (await pool.query("select (select count(*) from expansion_payout_claims pc join expansion_commission_ledger l on l.id=pc.ledger_id where l.partner_id=$1)::int payout,(select count(*) from expansion_withdrawal_entries w join expansion_withdrawal_requests r on r.id=w.request_id where r.partner_id=$1 and w.released_at is null)::int reserved", [p.partnerId])).rows[0]
+      expect(claimed.payout + claimed.reserved).toBe(1)
+    })
+    it("duplicate simultaneous replay yields one reservation", async () => {
+      await policy(); const p = await fundedPartner("w9")
+      const results = await race([() => ask(p, "w9"), () => ask(p, "w9")])
+      expect(results.every(r => r.status === "fulfilled")).toBe(true)
+      const values = results.map(r => r.status === "fulfilled" ? r.value : null)
+      expect(values.filter(v => v?.replayed === false)).toHaveLength(1)
+      expect(await live(p.partnerId)).toBe(1)
+    })
+    it("request versus a partial refund: the dispute gate holds in either order", async () => {
+      await policy(); const p = await fundedPartner("w4")
+      const results = await race<Record<string, unknown>>([() => ask(p, "w4"), () => refund(p, "w4-refund")])
+      expect(results[1].status).toBe("fulfilled")
+      if (results[0].status === "fulfilled") {
+        const id = String(results[0].value.requestId)
+        await expect(runAs(founder, () => reviewWithdrawal({ requestId: id, decision: "approved", note: "TEST ONLY" }))).rejects.toMatchObject({ status: 409, message: expect.stringContaining("refund entitlement review") })
+      } else expect(results[0].reason).toMatchObject({ status: 409, message: expect.stringContaining("refund entitlement review") })
+      expect((await runAs(p.actor, () => getWithdrawalOverview())).policy.available).toBe(false)
+    })
+    it("request versus an unpaid-refund adjustment: commission is never both reserved and reduced", async () => {
+      await policy(); const p = await fundedPartner("w5")
+      const results = await race<Record<string, unknown>>([() => ask(p, "w5"), () => refund(p, "w5-adjust", { treatment: "adjust_unpaid", termsApprovalReference: refundClause })])
+      expect(results.filter(r => r.status === "fulfilled")).toHaveLength(1)
+      const rejected = results.find(r => r.status === "rejected") as PromiseRejectedResult
+      expect(rejected.reason).toMatchObject({ status: 409 })
+      const ledgerTotal = (await pool.query("select coalesce(sum(amount_pence),0)::text t from expansion_commission_ledger where partner_id=$1", [p.partnerId])).rows[0].t
+      expect(ledgerTotal).toBe(results[1].status === "fulfilled" ? "24000" : "30000")
+      expect(await live(p.partnerId)).toBe(results[0].status === "fulfilled" ? 1 : 0)
+    })
+    it("approval versus refund review: payout preparation is blocked whichever wins", async () => {
+      await policy(); const p = await fundedPartner("w6")
+      const req = await ask(p, "w6")
+      const results = await race<unknown>([() => runAs(founder, () => reviewWithdrawal({ requestId: req.requestId, decision: "approved", note: "TEST ONLY" })), () => refund(p, "w6-refund")])
+      expect(results[1].status).toBe("fulfilled")
+      await expect(runAs(founder, () => prepareWithdrawalPayout({ requestId: req.requestId }))).rejects.toMatchObject({ status: 409 })
+      expect((await pool.query("select count(*)::int c from expansion_payouts where partner_id=$1", [p.partnerId])).rows[0].c).toBe(0)
+    })
+    it("cancellation versus payout preparation: exactly one outcome", async () => {
+      await policy(); const p = await fundedPartner("w7")
+      const req = await ask(p, "w7")
+      await runAs(founder, () => reviewWithdrawal({ requestId: req.requestId, decision: "approved", note: "TEST ONLY" }))
+      const results = await race<unknown>([() => runAs(p.actor, () => cancelWithdrawal({ requestId: req.requestId })), () => runAs(founder, () => prepareWithdrawalPayout({ requestId: req.requestId }))])
+      expect(results.filter(r => r.status === "fulfilled")).toHaveLength(1)
+      const status = (await pool.query("select status from expansion_withdrawal_requests where id=$1", [req.requestId])).rows[0].status
+      expect(status).toBe(results[0].status === "fulfilled" ? "cancelled" : "payout_prepared")
+      expect(await live(p.partnerId)).toBe(results[0].status === "fulfilled" ? 0 : 1)
+    })
+    it("cancellation versus settlement: a prepared request can never be cancelled, and settlement is unaffected", async () => {
+      await policy(); const p = await fundedPartner("w8")
+      const req = await ask(p, "w8")
+      await runAs(founder, () => reviewWithdrawal({ requestId: req.requestId, decision: "approved", note: "TEST ONLY" }))
+      const payout = await runAs(founder, () => prepareWithdrawalPayout({ requestId: req.requestId }))
+      await runAs(founder, () => approveExpansionPayout({ payoutId: payout.payoutId }))
+      const results = await race<unknown>([() => runAs(p.actor, () => cancelWithdrawal({ requestId: req.requestId })), () => runAs(founder, () => settleExpansionPayout({ payoutId: payout.payoutId, settlementReference: `${suffix}-w8-settlement` }))])
+      expect(results[0].status).toBe("rejected"); expect(results[1].status).toBe("fulfilled")
+      expect((await runAs(p.actor, () => getWithdrawalOverview())).balances).toMatchObject({ paidPence: "30000", availablePence: "0" })
+    })
+    it("commission is reallocated after an authorised cancellation, and released history is preserved", async () => {
+      await policy(); const p = await fundedPartner("w10")
+      const first = await ask(p, "w10-a")
+      await runAs(p.actor, () => cancelWithdrawal({ requestId: first.requestId }))
+      const second = await ask(p, "w10-b")
+      expect(second.requestId).not.toBe(first.requestId)
+      const rows = await pool.query("select count(*)::int total,count(*) filter (where released_at is null)::int live from expansion_withdrawal_entries w join expansion_withdrawal_requests r on r.id=w.request_id where r.partner_id=$1", [p.partnerId])
+      expect(rows.rows[0]).toEqual({ total: 2, live: 1 })
+    })
+    it("partners cannot use withdrawals to reach another partner's commission or mutate founder-only state", async () => {
+      await policy(); const a = await fundedPartner("w11a"), b = await fundedPartner("w11b")
+      const bEntry = (await pool.query<{ id: string }>("select id from expansion_commission_ledger where partner_id=$1", [b.partnerId])).rows[0].id
+      await expect(runAs(a.actor, () => requestWithdrawal({ ledgerIds: [bEntry], invoiceReference: `${suffix}-w11-x` }))).rejects.toMatchObject({ status: 409 })
+      const req = await ask(a, "w11")
+      await expect(runAs(b.actor, () => cancelWithdrawal({ requestId: req.requestId }))).rejects.toMatchObject({ status: 404 })
+      await expect(runAs(a.actor, () => reviewWithdrawal({ requestId: req.requestId, decision: "approved", note: "self" }))).rejects.toThrow()
+      expect((await pool.query("select status from expansion_withdrawal_requests where id=$1", [req.requestId])).rows[0].status).toBe("submitted")
     })
   })
 })

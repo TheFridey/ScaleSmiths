@@ -460,6 +460,7 @@
     {"idx":71,"version":"7","when":1794951000004,"tag":"0071_expansion_financial_hardening","breakpoints":true},
     {"idx":72,"version":"7","when":1794951000005,"tag":"0072_expansion_applicant_retention_holds","breakpoints":true},
     {"idx":73,"version":"7","when":1794951000006,"tag":"0073_expansion_commercial_plans","breakpoints":true},
-    {"idx":74,"version":"7","when":1794951000007,"tag":"0074_expansion_allowances_and_additional_claims","breakpoints":true}
+    {"idx":74,"version":"7","when":1794951000007,"tag":"0074_expansion_allowances_and_additional_claims","breakpoints":true},
+    {"idx":75,"version":"7","when":1794951000008,"tag":"0075_expansion_withdrawals","breakpoints":true}
   ]
 }

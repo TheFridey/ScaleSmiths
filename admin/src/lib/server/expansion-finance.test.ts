@@ -27,7 +27,7 @@ vi.mock("./rbac", () => ({ requireCapability: async (capability: string) => {
   return { ...state.actor }
 } }))
 
-import { allocateExpansionInvoice, approveExpansionPayout, cancelExpansionPayout, getExpansionFinance, getPartnerFinance, prepareExpansionPayout, refundExpansionPayment, retainRefundEntitlement, settleExpansionPayout, verifyExpansionPayment } from "./expansion-finance"
+import { allocateExpansionInvoice, approveExpansionPayout, cancelExpansionPayout, cancelWithdrawal, getWithdrawalAdmin, getWithdrawalOverview, prepareWithdrawalPayout, requestWithdrawal, reviewWithdrawal, setWithdrawalPolicy, getExpansionFinance, getPartnerFinance, prepareExpansionPayout, refundExpansionPayment, retainRefundEntitlement, settleExpansionPayout, verifyExpansionPayment } from "./expansion-finance"
 
 const clause = "Synthetic accepted agreement clause 4"
 
@@ -54,6 +54,7 @@ describe("production partner financial service against PostgreSQL via PGlite", (
     await database.exec(readFileSync(new URL("../../../drizzle/0070_expansion_cancellations.sql", import.meta.url), "utf8"))
     await database.exec(readFileSync(new URL("../../../drizzle/0071_expansion_financial_hardening.sql", import.meta.url), "utf8"))
     await database.exec(readFileSync(new URL("../../../drizzle/0073_expansion_commercial_plans.sql", import.meta.url), "utf8"))
+    await database.exec(readFileSync(new URL("../../../drizzle/0075_expansion_withdrawals.sql", import.meta.url), "utf8"))
   }, 30000)
   beforeEach(async () => {
     state.actor = { id: FOUNDER, role: "owner", sessionVersion: 1, active: true }
@@ -299,5 +300,139 @@ describe("production partner financial service against PostgreSQL via PGlite", (
     const refund = await refundExpansionPayment({ paymentId: final.paymentId, reference: "o-refund", reason: "Verified £200 cash refund", netPence: "20000" })
     expect(refund).toMatchObject({ commissionPence: "0", calculatedAdjustmentPence: "-6000", treatment: "manual_review" })
     expect(await ledgerTotal()).toBe("60000")
+  })
+
+  // ---- Checkpoint 3B: withdrawal requests over the existing ledger and payout engine ----
+  describe("partner withdrawal requests", () => {
+    const asFounder = () => { state.actor = { id: FOUNDER, role: "owner", sessionVersion: 1, active: true } }
+    const policy = (over: Record<string, unknown> = {}) => { asFounder(); return setWithdrawalPolicy({ enabled: true, minAmountPence: "10000", invoiceRequired: true, approvalReference: "SYNTHETIC accounting approval", ...over }) }
+    async function earnAll() {
+      for (const [m, a] of [["deposit", "100000"], ["final", "100000"], ["first_retainer", "35000"]] as const) await verifyExpansionPayment(payment(m, a, `w-${m}`))
+    }
+    const entryIds = async () => (await state.database!.query<{ id: string; amount_pence: string }>("select id,amount_pence::text from expansion_commission_ledger order by amount_pence desc")).rows
+    const overview = () => { asPartner(); return getWithdrawalOverview() }
+
+    it("is unavailable by default and explains why; a disabled policy also blocks requests", async () => {
+      await earnAll()
+      const o = await overview()
+      expect(o.policy).toMatchObject({ available: false, unavailableReason: expect.stringContaining("no payout policy has been approved") })
+      expect(o.balances.availablePence).toBe("70500")
+      await expect(requestWithdrawal({ all: true, invoiceReference: "INV-1" })).rejects.toThrow("not available yet")
+      await policy({ enabled: false })
+      asPartner(); await expect(requestWithdrawal({ all: true, invoiceReference: "INV-1" })).rejects.toThrow("currently disabled")
+    })
+    it("Case I: request, review, payout, manual settlement and reconciliation, with balances that never double count", async () => {
+      await earnAll(); await policy()
+      asPartner()
+      await expect(requestWithdrawal({ all: true })).rejects.toThrow("invoice reference is required")
+      const req = await requestWithdrawal({ all: true, invoiceReference: "PARTNER-INV-1", note: "Synthetic" })
+      expect(req).toMatchObject({ amountPence: "70500", replayed: false })
+      expect(await requestWithdrawal({ all: true, invoiceReference: "partner-inv-1" })).toMatchObject({ requestId: req.requestId, replayed: true })
+      let o = await getWithdrawalOverview()
+      expect(o.balances).toMatchObject({ earnedPence: "70500", availablePence: "0", requestedPence: "70500", preparedPence: "0", paidPence: "0" })
+      asFounder(); await expect(prepareWithdrawalPayout({ requestId: req.requestId })).rejects.toThrow("Approve the withdrawal request")
+      await reviewWithdrawal({ requestId: req.requestId, decision: "approved", note: "Invoice checked" })
+      const prepared = await prepareWithdrawalPayout({ requestId: req.requestId })
+      expect(prepared).toMatchObject({ amountPence: "70500", replayed: false })
+      await approveExpansionPayout({ payoutId: prepared.payoutId })
+      o = await overview()
+      expect(o.balances).toMatchObject({ requestedPence: "0", preparedPence: "70500", paidPence: "0" })
+      asFounder(); await settleExpansionPayout({ payoutId: prepared.payoutId, settlementReference: "SYNTHETIC-SETTLEMENT-W1" })
+      o = await overview()
+      expect(o.balances).toMatchObject({ earnedPence: "70500", availablePence: "0", preparedPence: "0", paidPence: "70500" })
+      expect(o.requests[0]).toMatchObject({ status: "payout_prepared", payout_status: "paid", amount_pence: "70500" })
+      expect((await getPartnerFinance()).paidPence).toBe("70500")
+      asPartner(); await expect(cancelWithdrawal({ requestId: req.requestId })).rejects.toThrow("not been prepared")
+    })
+    it("reserves only the chosen entries; founder-initiated payouts cannot take reserved commission, in the service or the database", async () => {
+      await earnAll(); await policy()
+      const [first, second, retainer] = await entryIds()
+      asPartner(); const req = await requestWithdrawal({ ledgerIds: [first.id, second.id], invoiceReference: "PARTNER-INV-2" })
+      expect(req.amountPence).toBe("60000")
+      asFounder()
+      await expect(prepareExpansionPayout({ partnerId: PARTNER, invoiceReference: "FOUNDER-ALL", invoiceNetPence: "70500" })).rejects.toThrow("does not match")
+      const founderPayout = await prepareExpansionPayout({ partnerId: PARTNER, invoiceReference: "FOUNDER-RETAINER", invoiceNetPence: retainer.amount_pence })
+      expect(founderPayout.amountPence).toBe("10500")
+      await state.database!.query("insert into expansion_payouts(id,partner_id,amount_pence,invoice_reference,prepared_by) values('50000000-0000-4000-8000-000000000009',$1,30000,'RAW-1',$2)", [PARTNER, FOUNDER])
+      await expect(state.database!.query("insert into expansion_payout_entries(payout_id,ledger_id) values('50000000-0000-4000-8000-000000000009',$1)", [first.id])).rejects.toThrow("reserved by a partner withdrawal")
+      asPartner(); await expect(requestWithdrawal({ ledgerIds: [retainer.id], invoiceReference: "PARTNER-INV-3" })).rejects.toThrow("no longer available")
+    })
+    it("rejection and cancellation release reservations exactly once and allow a fresh request", async () => {
+      await earnAll(); await policy()
+      asPartner(); const a = await requestWithdrawal({ all: true, invoiceReference: "INV-A" })
+      asFounder(); await reviewWithdrawal({ requestId: a.requestId, decision: "rejected", note: "Invoice does not match" })
+      expect(await reviewWithdrawal({ requestId: a.requestId, decision: "rejected", note: "Invoice does not match" })).toMatchObject({ replayed: true })
+      expect((await overview()).balances.availablePence).toBe("70500")
+      asPartner(); const b = await requestWithdrawal({ all: true, invoiceReference: "INV-B" })
+      expect(await cancelWithdrawal({ requestId: b.requestId })).toMatchObject({ status: "cancelled", replayed: false })
+      expect(await cancelWithdrawal({ requestId: b.requestId })).toMatchObject({ replayed: true })
+      expect((await getWithdrawalOverview()).balances).toMatchObject({ availablePence: "70500", requestedPence: "0" })
+      const live = await state.database!.query<{ c: number }>("select count(*)::int c from expansion_withdrawal_entries where released_at is null")
+      expect(live.rows[0].c).toBe(0)
+      await expect(state.database!.query("delete from expansion_withdrawal_entries")).rejects.toThrow("released once")
+      await expect(state.database!.query("update expansion_withdrawal_requests set amount_pence=1")).rejects.toThrow("immutable")
+    })
+    it("cancelling a prepared payout returns the request to approved and a replacement payout needs a new invoice reference", async () => {
+      await earnAll(); await policy()
+      asPartner(); const req = await requestWithdrawal({ all: true, invoiceReference: "INV-C" })
+      asFounder(); await reviewWithdrawal({ requestId: req.requestId, decision: "approved", note: "ok" })
+      const first = await prepareWithdrawalPayout({ requestId: req.requestId })
+      await cancelExpansionPayout({ payoutId: first.payoutId, reason: "Wrong partner invoice", noExternalSettlement: true })
+      expect((await getWithdrawalAdmin()).requests[0]).toMatchObject({ status: "approved", payout_id: null })
+      await expect(prepareWithdrawalPayout({ requestId: req.requestId })).rejects.toThrow("replacement invoice reference")
+      const second = await prepareWithdrawalPayout({ requestId: req.requestId, invoiceReference: "INV-C-REPLACEMENT" })
+      expect(second.amountPence).toBe("70500")
+      expect((await state.database!.query<{ c: number }>("select count(*)::int c from expansion_payout_claims")).rows[0].c).toBe(3)
+    })
+    it("honours the policy minimum, and a partner can never reserve another partner's commission", async () => {
+      await earnAll(); await policy({ minAmountPence: "20000" })
+      const [, , retainer] = await entryIds()
+      asPartner(); await expect(requestWithdrawal({ ledgerIds: [retainer.id], invoiceReference: "INV-MIN" })).rejects.toThrow("minimum withdrawal")
+      asPartner(OTHER_USER); await expect(requestWithdrawal({ ledgerIds: [retainer.id], invoiceReference: "INV-X" })).rejects.toThrow("no longer available")
+      asPartner(); const req = await requestWithdrawal({ all: true, invoiceReference: "INV-OK" })
+      asPartner(OTHER_USER); await expect(cancelWithdrawal({ requestId: req.requestId })).rejects.toThrow("not found")
+    })
+    it("denies partners every founder action and founders the partner request action", async () => {
+      await earnAll(); await policy()
+      asPartner(); const req = await requestWithdrawal({ all: true, invoiceReference: "INV-AUTH" })
+      await expect(setWithdrawalPolicy({ enabled: true, invoiceRequired: false, approvalReference: "x" })).rejects.toThrow("Forbidden capability")
+      await expect(reviewWithdrawal({ requestId: req.requestId, decision: "approved", note: "self approval" })).rejects.toThrow("Forbidden capability")
+      await expect(prepareWithdrawalPayout({ requestId: req.requestId })).rejects.toThrow("Forbidden capability")
+      await expect(getWithdrawalAdmin()).rejects.toThrow("Forbidden capability")
+      asFounder(); await expect(requestWithdrawal({ all: true, invoiceReference: "INV-F" })).rejects.toThrow("Forbidden capability")
+    })
+    it("Case O: a £200 partial refund is a disputed amount that blocks withdrawal and approval, and leaves paid commission untouched", async () => {
+      await earnAll(); await policy()
+      asPartner(); const req = await requestWithdrawal({ ledgerIds: [(await entryIds())[0].id], invoiceReference: "INV-R" })
+      asFounder(); const final = (await state.database!.query<{ id: string }>("select id from expansion_payment_events where milestone='final' and net_pence>0")).rows[0].id
+      const refund = await refundExpansionPayment({ paymentId: final, reference: "w-refund", reason: "Verified £200 cash refund", netPence: "20000" })
+      expect(refund).toMatchObject({ commissionPence: "0", calculatedAdjustmentPence: "-6000" })
+      const o = await overview()
+      expect(o.policy).toMatchObject({ available: false, unavailableReason: expect.stringContaining("refund review") })
+      expect(o.balances.disputedPence).toBe("-6000")
+      asPartner(); await expect(requestWithdrawal({ all: true, invoiceReference: "INV-R2" })).rejects.toThrow("refund entitlement review")
+      asFounder(); await expect(reviewWithdrawal({ requestId: req.requestId, decision: "approved", note: "try" })).rejects.toThrow("refund entitlement review")
+      await retainRefundEntitlement({ paymentId: refund.paymentId, evidenceReference: "Accepted clause: no clawback of earned commission" })
+      await reviewWithdrawal({ requestId: req.requestId, decision: "approved", note: "Dispute resolved" })
+      expect((await state.database!.query<{ t: string }>("select coalesce(sum(amount_pence),0)::text t from expansion_commission_ledger")).rows[0].t).toBe("70500")
+    })
+    it("an approved unpaid-refund adjustment cannot silently cut commission already reserved by a withdrawal", async () => {
+      await earnAll(); await policy()
+      asPartner(); await requestWithdrawal({ all: true, invoiceReference: "INV-ADJ" })
+      asFounder(); const final = (await state.database!.query<{ id: string }>("select id from expansion_payment_events where milestone='final' and net_pence>0")).rows[0].id
+      await expect(refundExpansionPayment({ paymentId: final, reference: "w-adj", reason: "Verified refund", netPence: "20000", treatment: "adjust_unpaid", termsApprovalReference: clause })).rejects.toThrow("reserving this commission")
+    })
+    it("commission already settled stays historically correct when a later partial refund is raised", async () => {
+      await earnAll(); await policy()
+      asPartner(); const req = await requestWithdrawal({ all: true, invoiceReference: "INV-PAID" })
+      asFounder(); await reviewWithdrawal({ requestId: req.requestId, decision: "approved", note: "ok" })
+      const payout = await prepareWithdrawalPayout({ requestId: req.requestId })
+      await approveExpansionPayout({ payoutId: payout.payoutId }); await settleExpansionPayout({ payoutId: payout.payoutId, settlementReference: "SYNTHETIC-SETTLEMENT-W9" })
+      const final = (await state.database!.query<{ id: string }>("select id from expansion_payment_events where milestone='final' and net_pence>0")).rows[0].id
+      expect(await refundExpansionPayment({ paymentId: final, reference: "w-late", reason: "Verified £200 cash refund", netPence: "20000" })).toMatchObject({ commissionPence: "0", calculatedAdjustmentPence: "-6000" })
+      const o = await overview()
+      expect(o.balances).toMatchObject({ paidPence: "70500", earnedPence: "70500", availablePence: "0", disputedPence: "-6000" })
+      expect(o.policy.available).toBe(false)
+    })
   })
 })

@@ -407,4 +407,88 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("Expansion real separa
       expect((await pool.query("select count(*)::int c from clients where id=$1", [clientId])).rows[0].c).toBe(1)
     })
   })
+
+  describe("checkpoint 3A: persisted discounted, free-build and additional-customer journeys", () => {
+    type Ref = { contractId: string; invoiceId: number }
+    type M = "deposit" | "interim" | "final" | "first_retainer"
+    const allocate = (c: Ref, milestone: M, netPence: string) => runAs(founder, () => allocateExpansionInvoice({ ...c, milestone, netPence, evidenceReference: "TEST ONLY reviewed 3A allocation" }))
+    const collect = (c: Ref, milestone: M, netPence: string, reference: string) => runAs(founder, () => verifyExpansionPayment({ ...c, milestone, reference: `${suffix}-${reference}`, netPence, grossPence: netPence, evidenceReference: "TEST ONLY verified receipt", confirmed: true }))
+    const ledger = async (contractId: string) => (await pool.query<{ t: string }>("select coalesce(sum(amount_pence),0)::text t from expansion_commission_ledger where contract_id=$1", [contractId])).rows[0].t
+    const nextWeek = async () => (await pool.query<{ next: string }>("select (max(period)+7)::text as next from expansion_capacity")).rows[0].next
+    const enable = (planKey: string) => runAs(founder, () => founderMutation({ action: "set_plan_enabled", planKey, enabled: true, reason: "TEST ONLY 3A" }))
+    const policy = () => runAs(founder, () => founderMutation({ action: "set_discount_policy", partnerId: firstPartnerId, periodStart: "2020-01-01", periodEnd: "2099-01-01", allowanceCount: 20, permittedFeesPence: [150000, 0], approvalReference: "TEST ONLY 3A allowance" }))
+    async function approvedOpportunity(tag: string) {
+      const id = await submitted(tag), week = await nextWeek()
+      await runAs(founder, () => founderMutation({ action: "capacity", period: week, hours: 10, commitmentsReviewed: true, rationale: "TEST ONLY 3A allocation" }))
+      await approve(id, week)
+      return { id, week }
+    }
+    async function invoiceFor(items: Array<[string, number]>) {
+      const invoice = await createInvoice({ clientId, items: items.map(([title, unitAmount]) => ({ title: `TEST ONLY ${title}`, quantity: 1, unitAmount })) }, founder.id)
+      await transitionInvoice(invoice.id, "issue", founder.id)
+      return invoice.id
+    }
+
+    it("Case E: approved £1,500 build under an allowance earns £450 + £105 = £555 from verified collections", async () => {
+      await enable("standard-v2"); await policy()
+      const { id } = await approvedOpportunity("3a-e")
+      await runAs(founder, () => founderMutation({ action: "reserve_discount", id, feePence: 150000, reason: "TEST ONLY approved £1,500 build" }))
+      const accepted = await runAs(founder, () => founderMutation({ action: "accept_contract", id, clientId, plan: { plan: "standard-v2", buildFeePence: 150000 }, agreementReference: `TEST ONLY 3A-E ${suffix}` })) as { id: string }
+      const stored = (await pool.query("select terms from expansion_contracts where id=$1", [accepted.id])).rows[0].terms
+      expect(stored.commitment).toMatchObject({ buildPence: "150000", minTermMonths: 12, minimumContractValuePence: "570000", buildInstalments: ["75000", "75000"] })
+      expect((await pool.query("select status,contract_id from expansion_discount_reservations where opportunity_id=$1", [id])).rows).toEqual([{ status: "consumed", contract_id: accepted.id }])
+      const c = { contractId: accepted.id, invoiceId: await invoiceFor([["build", 150000], ["retainer", 35000]]) }
+      await allocate(c, "deposit", "75000"); await allocate(c, "final", "75000"); await allocate(c, "first_retainer", "35000")
+      expect((await collect(c, "deposit", "75000", "3ae-1")).commissionPence).toBe("22500")
+      expect((await collect(c, "final", "75000", "3ae-2")).commissionPence).toBe("22500")
+      expect(await ledger(accepted.id)).toBe("45000")
+      expect((await collect(c, "first_retainer", "35000", "3ae-3")).commissionPence).toBe("10500")
+      expect(await ledger(accepted.id)).toBe("55500")
+    })
+    it("Case F: approved free build earns only £105 on the first £350, with a £4,200 twelve-month commitment", async () => {
+      await enable("standard-v2"); await policy()
+      const { id } = await approvedOpportunity("3a-f")
+      expect((await pool.query("select hours,status from expansion_reservations where opportunity_id=$1", [id])).rows[0]).toMatchObject({ hours: 10, status: "provisional" })
+      await runAs(founder, () => founderMutation({ action: "reserve_discount", id, feePence: 0, reason: "TEST ONLY approved free build" }))
+      const accepted = await runAs(founder, () => founderMutation({ action: "accept_contract", id, clientId, plan: { plan: "standard-v2", buildFeePence: 0 }, agreementReference: `TEST ONLY 3A-F ${suffix}` })) as { id: string }
+      expect((await pool.query("select terms->'commitment' c from expansion_contracts where id=$1", [accepted.id])).rows[0].c).toMatchObject({ buildPence: "0", recurringPence: "35000", minimumContractValuePence: "420000", minTermMonths: 12, buildInstalments: [] })
+      expect((await pool.query("select one_off_amount,monthly_amount from commercial_contracts where id=(select commercial_contract_id from expansion_contracts where id=$1)", [accepted.id])).rows).toEqual([{ one_off_amount: 0, monthly_amount: 35000 }])
+      const c = { contractId: accepted.id, invoiceId: await invoiceFor([["retainer", 35000], ["second retainer", 35000]]) }
+      await expect(allocate(c, "deposit", "1")).rejects.toMatchObject({ status: 409 })
+      await allocate(c, "first_retainer", "35000")
+      expect((await collect(c, "first_retainer", "35000", "3af-1")).commissionPence).toBe("10500")
+      await expect(collect(c, "first_retainer", "35000", "3af-2")).rejects.toMatchObject({ status: 409 })
+      expect(await ledger(accepted.id)).toBe("10500")
+    })
+    it("Case H: an approved additional project for an existing customer earns commission only on its own allocated collections", async () => {
+      await enable("bespoke-v1")
+      const clientsBefore = (await pool.query("select count(*)::int c from clients")).rows[0].c
+      const domain = `additional-3a-${suffix}.example`
+      const { id: claimId } = await runAs(first, () => partnerMutation({ action: "request_additional", businessName: "TEST ONLY Existing Customer", website: domain, projectLabel: "Booking platform", contribution: "TEST ONLY introduced the director and led requirements." })) as { id: string }
+      const { opportunityId } = await runAs(founder, () => founderMutation({ action: "review_additional", claimId, decision: "approved", clientId, attributionConfirmed: true, notes: "TEST ONLY attribution evidence reviewed." })) as { opportunityId: string }
+      await runAs(first, async () => {
+        await partnerMutation({ action: "discovery", id: opportunityId, discovery: { objectives: "Bookings", pages: "Five", functionality: "Booking", budget: "Subject to approval", timescale: "Assessed", decisionProcess: "Director" } })
+        await partnerMutation({ action: "submit_scope", id: opportunityId, summary: "TEST ONLY booking platform approved separately." })
+      })
+      const week = await nextWeek()
+      await runAs(founder, () => founderMutation({ action: "capacity", period: week, hours: 10, commitmentsReviewed: true, rationale: "TEST ONLY 3A-H allocation" }))
+      await approve(opportunityId, week)
+      const plan = { plan: "bespoke-v1", buildInstalmentsPence: [400000, 600000] }
+      await expect(runAs(founder, () => founderMutation({ action: "accept_contract", id: opportunityId, clientId: clientId + 100000, plan, agreementReference: "TEST ONLY wrong client" }))).rejects.toThrow()
+      const accepted = await runAs(founder, () => founderMutation({ action: "accept_contract", id: opportunityId, clientId, plan, agreementReference: `TEST ONLY 3A-H ${suffix}` })) as { id: string }
+      expect((await pool.query("select count(*)::int c from clients")).rows[0].c).toBe(clientsBefore)
+      expect(await ledger(accepted.id)).toBe("0")
+      const historicalBefore = await ledger(acceptedContractId)
+      // Historical revenue on the same customer is not claimable: the old invoice has no reviewed allocation to the new contract.
+      await expect(collect({ contractId: accepted.id, invoiceId }, "deposit", "1000", "3ah-old")).rejects.toMatchObject({ status: 409, message: expect.stringContaining("reviewed allocation") })
+      const c = { contractId: accepted.id, invoiceId: await invoiceFor([["booking build", 1000000]]) }
+      await allocate(c, "deposit", "400000"); await allocate(c, "final", "600000")
+      expect((await collect(c, "deposit", "400000", "3ah-1")).commissionPence).toBe("120000")
+      expect(await ledger(accepted.id)).toBe("120000")
+      expect((await collect(c, "final", "600000", "3ah-2")).commissionPence).toBe("180000")
+      expect(await ledger(accepted.id)).toBe("300000")
+      expect(await ledger(acceptedContractId)).toBe(historicalBefore)
+      expect((await pool.query("select l.partner_id from expansion_commission_ledger l where l.contract_id=$1 group by 1", [accepted.id])).rows).toEqual([{ partner_id: firstPartnerId }])
+    })
+  })
 })

@@ -376,7 +376,8 @@ jobs:
 
   backup-recovery:
     name: Backup and Restore
-    runs-on: ubuntu-latest
+    # Ubuntu 24.04 packages the PostgreSQL 16 client used by this drill.
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
     services:
       postgres:

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { commissionAt, commissionDelta, formatPence, parseCommissionTerms, pence, standardCommissionTerms } from "./expansion-finance"
+import { flexibleCommissionTermsV2, minimumContractValuePence, retainerOnlyCommissionTerms, scheduleCommissionTerms, standardCommissionTermsV2, commissionAt, commissionDelta, formatPence, parseCommissionTerms, pence, standardCommissionTerms } from "./expansion-finance"
 
 describe("versioned exact partner commission", () => {
   it("earns exactly £705 from the three standard VAT-exclusive milestones", () => {
@@ -31,5 +31,41 @@ describe("versioned exact partner commission", () => {
   it("rejects collection over the contract cap, later retainers and excessive reversal", () => {
     expect(() => commissionDelta(standardCommissionTerms(), "first_retainer", BigInt(35000), BigInt(1))).toThrow()
     expect(() => commissionDelta(standardCommissionTerms(), "deposit", BigInt(0), -BigInt(1))).toThrow()
+  })
+
+  const earn = (terms: ReturnType<typeof standardCommissionTermsV2>, paid: Array<["deposit" | "final" | "first_retainer", bigint]>) =>
+    paid.map(([milestone, amount]) => commissionDelta(terms, milestone, BigInt(0), amount).toString())
+  it("Case A: historical six-month terms are unchanged", () => {
+    expect(standardCommissionTerms()).toEqual({ planVersion: "standard-v1", rateBps: 3000, milestones: { deposit: "100000", final: "100000", first_retainer: "35000" } })
+  })
+  it("Case B: twelve-month standard terms earn £705 on a £6,200 minimum contract", () => {
+    expect(standardCommissionTermsV2().planVersion).toBe("standard-v2")
+    expect(minimumContractValuePence(200000)).toBe(BigInt(620000))
+    expect(earn(standardCommissionTermsV2(), [["deposit", BigInt(100000)], ["final", BigInt(100000)], ["first_retainer", BigInt(35000)]])).toEqual(["30000", "30000", "10500"])
+  })
+  it("Case C: £750/£1,250 schedule earns £225 + £375 + £105 = £705", () => {
+    const parts = earn(flexibleCommissionTermsV2(), [["deposit", BigInt(75000)], ["final", BigInt(125000)], ["first_retainer", BigInt(35000)]])
+    expect(parts).toEqual(["22500", "37500", "10500"])
+    expect(parts.reduce((a, b) => a + BigInt(b), BigInt(0))).toBe(BigInt(70500))
+  })
+  it("Case D: retainer-only earns £105 once and nothing more on later payments", () => {
+    const terms = retainerOnlyCommissionTerms()
+    expect(commissionDelta(terms, "first_retainer", BigInt(0), BigInt(35000))).toBe(BigInt(10500))
+    expect(() => commissionDelta(terms, "first_retainer", BigInt(35000), BigInt(35000))).toThrow()
+    expect(() => commissionDelta(terms, "deposit", BigInt(0), BigInt(1))).toThrow()
+    expect(minimumContractValuePence(0)).toBe(BigInt(420000))
+  })
+  it("Cases E/F: discounted and free-build websites follow the approved build fee", () => {
+    const total = (build: number) => { const terms = scheduleCommissionTerms({ build }); return commissionAt(BigInt(build), 3000) + commissionDelta(terms, "first_retainer", BigInt(0), BigInt(35000)) }
+    expect(total(150000)).toBe(BigInt(55500)); expect(total(100000)).toBe(BigInt(40500)); expect(total(50000)).toBe(BigInt(25500)); expect(total(0)).toBe(BigInt(10500))
+  })
+  it("Case G: bespoke £25,000 accrues only from verified collections", () => {
+    const terms = parseCommissionTerms({ planVersion: "bespoke-approved-1", rateBps: 3000, milestones: { deposit: "1000000", final: "1500000", first_retainer: "0" } })
+    expect(commissionDelta(terms, "deposit", BigInt(0), BigInt(1000000))).toBe(BigInt(300000))
+    expect(commissionDelta(terms, "final", BigInt(0), BigInt(1500000))).toBe(BigInt(450000))
+  })
+  it("rejects schedules that do not add up to the approved build fee", () => {
+    expect(() => scheduleCommissionTerms({ build: 200000, split: { deposit: 75000, final: 100000 } })).toThrow()
+    expect(() => scheduleCommissionTerms({ build: -1 })).toThrow()
   })
 })

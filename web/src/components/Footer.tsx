@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { Logo } from "./Logo"
 import { CookieSettingsButton } from "./CookieSettingsButton"
+import { partnerLoginUrl } from "@/lib/partner-programme"
 import { legalEntity, publicRegistrationSummary } from "@/lib/legal"
 import {
   BUSINESS_LOCATION,
@@ -19,7 +20,8 @@ const navigationGroups = [
       { href: founderProfilePath("rhys"), label: "Rhys Lacy" },
       { href: founderProfilePath("trevor-newton-bradley"), label: "Trevor Newton-Bradley" },
       { href: "/work", label: "Work" },
-      { href: "/partners", label: "Independent partners" },
+      { href: "/partners", label: "Become a Partner" },
+      { href: partnerLoginUrl(), label: "Partner Login", external: true },
       { href: "/industries", label: "Industries" },
       { href: "/locations", label: "Locations" },
       { href: "/faq", label: "FAQ" },
@@ -98,7 +100,7 @@ export function Footer() {
               <div key={group.label}>
                 <p className="font-dm text-[11px] font-semibold uppercase tracking-[.16em] text-t3">{group.label}</p>
                 <ul className="mt-4 grid gap-3">
-                  {group.links.map((link) => <li key={link.href}><Link href={link.href} prefetch={false} className="footer-link inline-flex min-h-6 items-center font-dm text-sm text-t2">{link.label}</Link></li>)}
+                  {group.links.map((link) => <li key={link.href}>{"external" in link ? <a href={link.href} className="footer-link inline-flex min-h-6 items-center font-dm text-sm text-t2">{link.label}</a> : <Link href={link.href} prefetch={false} className="footer-link inline-flex min-h-6 items-center font-dm text-sm text-t2">{link.label}</Link>}</li>)}
                 </ul>
               </div>
             ))}

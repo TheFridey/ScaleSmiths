@@ -36,7 +36,7 @@ Branch `claude/modest-newton-jo2d95`. Starting head `4417203`; this report cover
 | Authenticated programme journey | Passed twice, now also driving flag resolution, reward withdrawal and meeting correction in the UI |
 | New B0 journey (`b0-finalisation.spec.ts`) | Passed twice |
 | Public recruitment tests | 10 of 10 against a default-configuration production server (the intake-closed assertion needs defaults) |
-| Full web Playwright chromium project | WEBE2E |
+| Full web Playwright chromium project | 174 passed, 10 skipped, 5 failed: four visual-baseline tests (screenshot size differs by about 41px on pages this work did not touch, a platform rendering difference from the committed baselines) and `public-site.spec.ts:99` (commercial-claims evidence, which reads a database state this disposable stack does not reproduce; claims code was not changed). I did not confirm the cause of that last one on a baseline checkout, so treat it as unverified |
 
 The browser stacks ran production builds with the restricted runtime roles (`scalesmiths_admin`, `scalesmiths_web`). Steps are labelled [UI], [API] or [SQL] in the specs. The B0 journey uses [SQL] only to give two synthetic partners an approved personal-webpage reward (the five-qualifying-client path is proven separately on real PostgreSQL). Evidence: `evidence/b0/` (desktop and 390px mobile) and `evidence/programme/`.
 

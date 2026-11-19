@@ -1,8 +1,14 @@
 # B0 release verification
 
-Branch `claude/modest-newton-jo2d95`. **Starting head** `0f71e96` (end of B0 finalisation). **Final head** `FINALHEAD` (application code changed after the first CI run; both heads are reported). Base `master` `4c399b8`, with **0 commits ahead of this branch since development began**, so there is no unrelated drift to reconcile.
+Branch `claude/modest-newton-jo2d95`. **Starting head** `0f71e96` (end of B0 finalisation). **Application head** `30a38cb` (application code changed after the first CI run; both heads are reported). The pushed branch head is the later documentation-only commit that contains this report; the pull-request run below covers that exact head. Base `master` `4c399b8`, with **0 commits ahead of this branch since development began**, so there is no unrelated drift to reconcile.
 
-**Pull request:** none opened. Opening one needs your explicit authorisation, which this brief makes conditional ("where authorised") without granting it. The description is prepared in `PR-DESCRIPTION.md` in the repository template format and passes the real `check:pr-metadata` gate when run against a synthetic pull-request event. Nothing was merged or deployed.
+**Pull request:** opened as a DRAFT on explicit authorisation (see the PR link and the PR-triggered results in the final section). The description is used in `PR-DESCRIPTION.md` in the repository template format and passes the real `check:pr-metadata` gate when run against a synthetic pull-request event. Nothing was merged or deployed.
+
+## Four medium findings (carried into the pull request)
+1. **Geographic exclusivity matching can fail open** for a region against a city inside it ("North West England" against "Manchester"). Only stop-word areas are forced to review.
+2. **A public profile can stay live after a qualification is revoked**, because an approved webpage reward is not withdrawn automatically; the page persists until a founder withdraws the reward.
+3. **Excluding a previously released candidate permanently locks its domain**, with no in-app remedy.
+4. **Remote CI does not run the Expansion real-PostgreSQL concurrency suite.**
 
 ## Engineering verdict: CONDITIONAL RELEASE CANDIDATE
 
@@ -27,16 +33,16 @@ Remote CI normally triggers only for pushes to `master` or for pull requests, so
 
 | Workflow | First head `0f71e96` | Final head `FINALHEAD` |
 |---|---|---|
-| CI (run 44617306801 / `FINALCIRUN`) | success: Web, Admin, Admin Forge E2E, Forge Workflow E2E, Database and Migrations, Backup and Restore, Cross-browser Smoke, Nginx Topology, Root Hygiene; **PR Metadata skipped** (needs a pull request) | FINALCI |
-| Security (44617312102 / `FINALSECRUN`) | success | FINALSEC |
-| CodeQL (44617316618 / `FINALCQLRUN`) | success | FINALCQL |
+| CI (run 44617306801 / 44623575658) | success: Web, Admin, Admin Forge E2E, Forge Workflow E2E, Database and Migrations, Backup and Restore, Cross-browser Smoke, Nginx Topology, Root Hygiene; **PR Metadata skipped** (needs a pull request) | **success** (`44623575658`, `30a38cb`): Web, Admin, Admin Forge E2E, Forge Workflow E2E, Database and Migrations, Backup and Restore, Cross-browser Smoke, Nginx Topology, Root Hygiene all succeeded; PR Metadata skipped (not a pull-request event) |
+| Security (44617312102 / 44623581997) | success | **success** (`44623581997`) |
+| CodeQL (44617316618 / 44623587785) | success | **success** (`44623587785`) |
 
 CI covers: admin and web lint and unit tests, both production builds, Playwright chromium journeys and visual regression, portal lifecycle, cross-browser smoke, Forge and Golden Path journeys, the full PostgreSQL integration suite, migration journals, and the least-privilege role verification against real catalogs (below).
 
 **Gaps in what CI proves.** (a) `PR Metadata` only runs on a real pull request. (b) CI sets only `TEST_DATABASE_URL`, so the **Expansion real-PostgreSQL concurrency suite is skipped in CI**; its results (86 tests as restricted `scalesmiths_admin`, plus `scalesmiths_web` profile-role tests) are local evidence only, on native PostgreSQL 16. Wiring it into CI is a protected-area workflow change that needs separate authorisation. I recommend it.
 
 ## 4. Docker privilege verification
-- **Real Docker, GitHub runner:** CI step "Verify least-privilege PostgreSQL roles against real catalogs" succeeded on both heads' runs (first head confirmed above; final head: see table).
+- **Real Docker, GitHub runner:** CI step "Verify least-privilege PostgreSQL roles against real catalogs" succeeded on both runs (`44617306801` on `0f71e96`, `44623575658` on `30a38cb`), against GitHub's real Docker PostgreSQL service.
 - **Local:** the canonical harness passed through a command shim onto native PostgreSQL 16 (not Docker), including injected-drift rejection and repair. The policy test now asserts the web role holds exactly one named view, SELECT only.
 
 ## 5. Database and migration evidence
@@ -67,3 +73,6 @@ Intake (`PARTNER_APPLICATIONS_ENABLED`), activation (`PARTNER_ACTIVATION_ENABLED
 **Legal and accounting:** independent-contractor status and the partner agreement; earnings and "uncapped" marketing claims; programme version, bonus amounts, referral reward, refund and clawback semantics; withdrawal policy, VAT and invoicing; per-market legal, tax and accounting review before any market is approved; exclusivity terms and vocabulary.
 **Privacy and commercial:** consent text `profile-consent-v2`, privacy notice, indexing decision and enquiry route; applicant retention period; researched-prospect screening standard and volumes; Founding Partner benefits and wording; four-eyes approval policy; photographs (not built).
 **Production operations:** protected-area review; backup and restore verified on the production host before migrating; maintenance window and the rollback plan (restore the pre-migration backup); setting the secrets and switches deliberately and leaving profile publication unset; running the Expansion concurrency suite in CI; an IPv6-capable runner for `safe-outbound` (GitHub already provides one); founder procedures for items 2 and 3 above.
+
+## 11. Pull request and PR-triggered checks
+PRLINK

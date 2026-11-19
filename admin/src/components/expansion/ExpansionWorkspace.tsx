@@ -13,7 +13,7 @@ import { ApplicantRetention } from './ApplicantRetention'
 import './expansion.css'
 
 type Row = Record<string, unknown>
-type Snapshot = {workspace:Record<string,unknown>;finance:Record<string,unknown>;withdrawals?:Record<string,unknown>;programme?:Record<string,unknown>;programmeAdmin?:Record<string,unknown>;toolkit?:unknown;toolkitAdmin?:Record<string,unknown>;meetings?:unknown;researchAdmin?:Record<string,unknown>;recognitionAdmin?:Record<string,unknown>;recognition?:Record<string,unknown>}
+type Snapshot = {workspace:Record<string,unknown>;finance:Record<string,unknown>;withdrawals?:Record<string,unknown>;programme?:Record<string,unknown>;programmeAdmin?:Record<string,unknown>;toolkit?:unknown;toolkitAdmin?:Record<string,unknown>;meetings?:unknown;researchAdmin?:Record<string,unknown>;recognitionAdmin?:Record<string,unknown>;recognition?:Record<string,unknown>;profile?:Record<string,unknown>;profilesAdmin?:Record<string,unknown>}
 type Command = (input:Row)=>Promise<Row>
 const str = (value:unknown) => value == null ? '' : String(value)
 const rows = (value:unknown): Row[] => Array.isArray(value) ? value : []
@@ -61,10 +61,10 @@ export function ExpansionWorkspace({founder=false}:{founder?:boolean}) {
     }
     return result.result || {}
   }
-  const workspace = data?.workspace || {}; const finance = data?.finance || {}; const withdrawals = data?.withdrawals || {}; const programme = data?.programme || {}; const programmeAdmin = data?.programmeAdmin || {}; const toolkitAdmin = data?.toolkitAdmin || {}; const researchAdmin = data?.researchAdmin || {}; const recognitionAdmin = data?.recognitionAdmin || {}; const recognition = data?.recognition || {}
+  const workspace = data?.workspace || {}; const finance = data?.finance || {}; const withdrawals = data?.withdrawals || {}; const programme = data?.programme || {}; const programmeAdmin = data?.programmeAdmin || {}; const toolkitAdmin = data?.toolkitAdmin || {}; const researchAdmin = data?.researchAdmin || {}; const recognitionAdmin = data?.recognitionAdmin || {}; const recognition = data?.recognition || {}; const profile = data?.profile || {}; const profilesAdmin = data?.profilesAdmin || {}
   const opportunities = rows(workspace.opportunities)
   const active = opportunities.find(row=>row.id===selected)
-  const items = [{id:'overview',name:'Overview',icon:LayoutDashboard},{id:'pipeline',name:'Prospects & scope',icon:BriefcaseBusiness},{id:'resources',name:'Resource library',icon:BookOpen},{id:'finance',name:'Commission centre',icon:PoundSterling},...(founder?[{id:'research',name:'Research & allocation',icon:BriefcaseBusiness},{id:'recognition',name:'Recognition',icon:ShieldCheck},{id:'programme',name:'Programme',icon:Users},{id:'operations',name:'Partner operations',icon:ShieldCheck}]:[{id:'achievements',name:'Achievements',icon:ShieldCheck},{id:'referrals',name:'Referrals',icon:Users},{id:'onboarding',name:'Onboarding',icon:BookOpen},{id:'meetings',name:'Meetings',icon:LayoutDashboard}]),...(founder?[{id:'recruitment',name:'Recruitment',icon:Users},{id:'capacity',name:'Delivery capacity',icon:ShieldCheck}]:[])]
+  const items = [{id:'overview',name:'Overview',icon:LayoutDashboard},{id:'pipeline',name:'Prospects & scope',icon:BriefcaseBusiness},{id:'resources',name:'Resource library',icon:BookOpen},{id:'finance',name:'Commission centre',icon:PoundSterling},...(founder?[{id:'research',name:'Research & allocation',icon:BriefcaseBusiness},{id:'recognition',name:'Recognition',icon:ShieldCheck},{id:'profiles',name:'Web pages',icon:BookOpen},{id:'programme',name:'Programme',icon:Users},{id:'operations',name:'Partner operations',icon:ShieldCheck}]:[{id:'achievements',name:'Achievements',icon:ShieldCheck},{id:'profile',name:'My web page',icon:BookOpen},{id:'referrals',name:'Referrals',icon:Users},{id:'onboarding',name:'Onboarding',icon:BookOpen},{id:'meetings',name:'Meetings',icon:LayoutDashboard}]),...(founder?[{id:'recruitment',name:'Recruitment',icon:Users},{id:'capacity',name:'Delivery capacity',icon:ShieldCheck}]:[])]
   return <div className={`expansion ${founder?'expansion-founder':''}`}>
     <header className="ex-header"><a href={founder?'/expansion':'/partner'} className="ex-brand"><Image src="/brand/favicon.png" alt="ScaleSmiths emblem" width={38} height={38} unoptimized /><span>SCALESMITHS<small>{founder?'COMMERCIAL OPERATIONS':'INDEPENDENT PARTNER NETWORK'}</small></span></a><div className="ex-header-right"><span className="ex-badge">{founder?'Founder workspace':'Partner workspace'}</span>{!founder && <button className="ex-link" onClick={()=>signOut({callbackUrl:'/login'})}>Sign out</button>}</div></header>
     <div className="ex-body"><aside className="ex-sidebar"><p className="ex-overline">YOUR WORKSPACE</p><nav aria-label="Partner workspace">{items.map(({id,name,icon:Icon})=><button key={id} aria-current={tab===id?'page':undefined} onClick={()=>{setTab(id);setSelected('')}}><Icon size={18}/>{name}</button>)}</nav><div className="ex-sidebar-note"><ShieldCheck size={20}/><strong>You sell. We deliver.</strong><p>Scope, pricing and delivery commitments require ScaleSmiths approval.</p></div></aside>
@@ -80,6 +80,8 @@ export function ExpansionWorkspace({founder=false}:{founder?:boolean}) {
       {tab==='onboarding' && !founder && <ToolkitView items={rows(data?.toolkit)}/>}
       {tab==='meetings' && !founder && <MeetingsView meetings={rows(data?.meetings)} opportunities={opportunities} command={command}/>}
       {tab==='operations' && founder && <OperationsAdmin toolkit={toolkitAdmin} meetings={rows(data?.meetings)} command={command}/>}
+      {tab==='profiles' && founder && <ProfilesAdmin a={profilesAdmin} command={command}/>}
+      {tab==='profile' && !founder && <ProfilePanel p={profile} command={command}/>}
       {tab==='recognition' && founder && <RecognitionAdmin r={recognitionAdmin} command={command}/>}
       {tab==='research' && founder && <ResearchAdmin r={researchAdmin} sectors={rows(workspace.sectors)} exclusivities={rows(workspace.exclusivities)} command={command}/>}
       {tab==='programme' && founder && <ProgrammeAdmin a={programmeAdmin} command={command}/>}
@@ -203,6 +205,33 @@ function RecognitionAdmin({r,command}:{r:Row;command:Command}) {
         <Action action="revoke_recognition" title="Revoke recognition" initial={{recognitionId:x.id}} command={command}><Field name="reason" title="Reason for revocation" area/></Action></>}
       {cs.length>0 && <><h4>Corrections</h4><ul>{cs.map((c,i)=><li key={i}>{new Date(str(c.created_at)).toLocaleDateString('en-GB')} · {str(c.reason)}</li>)}</ul></>}</details>}):<Empty text="No nominations yet."/>}</section>
 }
+
+function ProfilePanel({p,command}:{p:Row;command:Command}) {
+  const versions=rows(p.versions),open=versions.find(v=>['draft','changes_requested','submitted'].includes(str(v.status))),pub=(p.publication||null) as Row|null
+  const latest=open||versions[0]
+  return <section className="ex-panel"><p className="ex-overline">PERSONAL WEB PAGE</p><h2>Your ScaleSmiths partner page</h2>
+    {!p.eligible?<p>A personal web page becomes available when you have five qualifying clients and the programme rules are approved. Nothing is published without your consent and a founder's approval.</p>:<>
+    <p>Prepare the wording for your page. It is reviewed by a founder and, if approved, kept as a fixed version. Nothing is public until a founder publishes it{p.publicationEnabled?'':', and public publication is not switched on yet'}. Private contact details are never published: enquiries are directed through ScaleSmiths.</p>
+    {pub && <p>Publication: <strong>{label(pub.status)}</strong> at <code>/partners/{str(pub.slug)}</code></p>}
+    {open?.status==='submitted'?<><h3>With a founder for review</h3><dl><div><dt>Display name</dt><dd>{str(open.display_name)}</dd></div><div><dt>Biography</dt><dd className="ex-prewrap">{str(open.biography)}</dd></div><div><dt>Operating area</dt><dd>{str(open.operating_area)}</dd></div></dl><p>You cannot change it while it is being reviewed.</p></>:<>
+      {Boolean(open?.feedback) && <p role="status"><strong>Founder feedback:</strong> {str(open?.feedback)}</p>}
+      <Action action="save_profile_draft" title={open?'Save draft':'Start a draft'} command={command}><Field name="displayName" title="Display name (your own name or business name)" value={str(open?.display_name)}/><Field name="biography" title="Professional biography (20 to 1,200 characters; no contact details)" area value={str(open?.biography)}/><Field name="operatingArea" title="Geographic operating area" value={str(open?.operating_area)}/><Select name="enquiryMode" title="How enquiries are directed" options={['scalesmiths_contact','referral_code']}/></Action>
+      {open && <><h3>Publication consent</h3><p className="ex-note">{str(p.consentText)}</p><p>{open.consent_at?`Consent recorded for the current wording on ${new Date(str(open.consent_at)).toLocaleDateString('en-GB')}. Changing the wording clears it.`:'No consent is recorded for the current wording.'}</p>
+        <Action action="record_profile_consent" title="Record my consent" initial={{versionId:open.id}} command={command}><Check name="accept" title="I have read and agree to the statement above"/></Action>
+        <Action action="submit_profile" title="Submit for founder review" initial={{versionId:open.id}} command={command}/></>}</>}
+    {latest && !open && <p>Latest version: {label(latest.status)}.{latest.feedback?` Feedback: ${str(latest.feedback)}`:''}</p>}</>}</section>
+}
+function ProfilesAdmin({a,command}:{a:Row;command:Command}) {
+  const versions=rows(a.versions),pubs=rows(a.publications)
+  return <section className="ex-panel"><p className="ex-overline">PERSONAL WEB PAGES</p><h2>Review and publication</h2>
+    <p>{a.publicationEnabled?'Public publication is enabled for this environment.':'Public publication is switched off for this environment. You can review and approve wording, but nothing can be published.'} Approving wording never publishes it. Publication, supersession and removal are separate founder acts.</p>
+    <h3>Versions</h3>{versions.length?versions.map(v=><details className="ex-resource" key={str(v.id)} open={v.status==='submitted'}><summary>{str(v.partner_name)} · v{str(v.version)} <span className="ex-badge">{label(v.status)}</span></summary>
+      <dl><div><dt>Display name</dt><dd>{str(v.display_name)}</dd></div><div><dt>Biography</dt><dd className="ex-prewrap">{str(v.biography)}</dd></div><div><dt>Operating area</dt><dd>{str(v.operating_area)}</dd></div><div><dt>Enquiries</dt><dd>{label(v.enquiry_mode)}</dd></div><div><dt>Consent</dt><dd>{v.consent_at?`${str(v.consent_version)} · ${new Date(str(v.consent_at)).toLocaleDateString('en-GB')}`:'None'}</dd></div></dl>
+      {v.status==='submitted' && <Action action="review_profile" title="Record review decision" initial={{versionId:v.id}} command={command}><Select name="decision" title="Decision" options={['approved','changes_requested','rejected']}/><Field name="note" title="Reason (the partner sees it when you request changes)" area/></Action>}
+      {v.status==='approved' && <Action action="publish_profile" title="Publish this version" initial={{versionId:v.id}} command={command}><Field name="slug" title="Web address (lowercase letters, numbers, hyphens; fixed once assigned)" required={false}/><Field name="achievements" title="Approved achievements to show, one per line (no money or earnings)" area required={false}/></Action>}</details>):<Empty text="No profile has been prepared."/>}
+    <h3>Publications</h3>{pubs.length?pubs.map(x=><div className="ex-resource" key={str(x.id)}><strong>{str(x.partner_name)}</strong> · /partners/{str(x.slug)} · <span className="ex-badge">{label(x.status)}</span>{Boolean(x.end_reason) && <p>{str(x.end_reason)}</p>}
+      {x.status==='live' && <Action action="revoke_publication" title="Remove from public view" initial={{publicationId:x.id}} command={command}><Field name="reason" title="Reason for removal" area/></Action>}</div>):<Empty text="Nothing has been published."/>}</section>
+}
 function ProgrammeAdmin({a,command}:{a:Row;command:Command}) {
   const flags=rows(a.flags),programmes=rows(a.programmes),candidates=rows(a.candidates),rewards=rows(a.rewards),referrals=rows(a.referrals),open=rows(a.openApplications)
   return <section className="ex-panel"><p className="ex-overline">ACHIEVEMENTS AND REFERRALS</p><h2>Programme administration</h2>
@@ -298,6 +327,7 @@ function Action({action,title,command,initial={},children}:{action:string;title:
     if(action==='request_meeting') {input.preferredSlots=[input.slot1,input.slot2].filter(Boolean);delete input.slot1;delete input.slot2;if(!input.opportunityId) delete input.opportunityId;if(!input.context) delete input.context}
     if(action==='decide_meeting') {if(input.start) input.start=new Date(String(input.start)).toISOString();else delete input.start;if(!input.note) delete input.note}
     if(['create_candidate'].includes(action)) {for(const k of ['industry','sectorId','region','area','partnerNotes','internalNotes']) if(!input[k]) delete input[k]}
+    if(action==='publish_profile') {for(const k of ['slug','achievements']) if(!input[k]) delete input[k]}
     if(action==='correct_recognition') {for(const k of ['recognitionDate','rationale']) if(!input[k]) delete input[k]}
     if(action==='decide_recognition' && !input.recognitionDate) delete input.recognitionDate
     if(action==='add_recognition_evidence' && !input.reference) delete input.reference

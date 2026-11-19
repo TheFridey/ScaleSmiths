@@ -693,4 +693,62 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("Expansion real separa
       await expect(runAs(founder, () => founderMutation({ action: "accept_contract", id, clientId, plan: { plan: "standard-v2" }, agreementReference: "TEST ONLY" }))).rejects.toMatchObject({ status: 409, message: expect.stringContaining("not approved") })
     })
   })
+
+  describe("checkpoint 4A: lock hierarchy on real PostgreSQL", () => {
+    /** One partner, two contracts, and one issued invoice allocated across both: the only shape where invoice and partner locks can cross. */
+    async function sharedInvoice(tag: string) {
+      const p = await fundedPartner(tag)
+      const opp2 = await submitted(`${tag}-c2`, p.actor)
+      const week = (await pool.query<{ next: string }>("select (max(period)+7)::text as next from expansion_capacity")).rows[0].next
+      await runAs(founder, () => founderMutation({ action: "capacity", period: week, hours: 10, commitmentsReviewed: true, rationale: "TEST ONLY 4A allocation" }))
+      await approve(opp2, week)
+      const second = await runAs(founder, () => founderMutation({ action: "accept_contract", id: opp2, clientId, terms: { ...standardCommissionTerms(), planVersion: "concurrency-approved-refund-v1", unpaidRefundApprovalReference: refundClause }, agreementReference: `TEST ONLY 4A ${suffix}-${tag}` })) as { id: string }
+      const invoice = await createInvoice({ clientId, items: [{ title: "TEST ONLY shared", quantity: 1, unitAmount: 200000 }] }, founder.id)
+      await transitionInvoice(invoice.id, "issue", founder.id)
+      const alloc = (contractId: string, milestone: "deposit" | "final") => runAs(founder, () => allocateExpansionInvoice({ contractId, invoiceId: invoice.id, milestone, netPence: "100000", evidenceReference: "TEST ONLY shared allocation" }))
+      await alloc(p.contractId, "final"); await alloc(second.id, "deposit")
+      const first = await runAs(founder, () => verifyExpansionPayment({ contractId: p.contractId, invoiceId: invoice.id, milestone: "final", reference: `${suffix}-${tag}-x`, netPence: "100000", grossPence: "100000", evidenceReference: "TEST ONLY receipt", confirmed: true }))
+      return { p, secondContractId: second.id, invoiceId: invoice.id, paymentX: first.paymentId }
+    }
+    it("a refund and a collection on one shared invoice never deadlock (repeated)", async () => {
+      const deadlocks: string[] = []
+      for (let i = 0; i < 6; i++) {
+        const s = await sharedInvoice(`lh${i}`)
+        const results = await race<unknown>([
+          () => runAs(founder, () => refundExpansionPayment({ paymentId: s.paymentX, reference: `${suffix}-lh${i}-refund`, reason: "TEST ONLY refund", netPence: "20000" })),
+          () => runAs(founder, () => verifyExpansionPayment({ contractId: s.secondContractId, invoiceId: s.invoiceId, milestone: "deposit", reference: `${suffix}-lh${i}-collect`, netPence: "100000", grossPence: "100000", evidenceReference: "TEST ONLY receipt", confirmed: true })),
+        ])
+        for (const r of results) if (r.status === "rejected" && (String((r.reason as { cause?: { code?: string } })?.cause?.code) === "40P01" || /deadlock/i.test(String((r.reason as Error)?.message)))) deadlocks.push(`iteration ${i}`)
+        const failures = results.flatMap(r => r.status === "rejected" ? [String((r.reason as Error)?.message)] : [])
+        expect({ iteration: i, failures }).toEqual({ iteration: i, failures: [] })
+      }
+      expect(deadlocks).toEqual([])
+    })
+    it("pairwise stress across refund, withdrawal, payout and cancellation: no deadlock, no double allocation", async () => {
+      await runAs(founder, () => setWithdrawalPolicy({ enabled: true, invoiceRequired: true, approvalReference: "TEST ONLY policy" }))
+      type Funded = Awaited<ReturnType<typeof fundedPartner>>
+      const ops: Record<string, (p: Funded, tag: string) => Promise<unknown>> = {
+        ask: (p, t) => runAs(p.actor, () => requestWithdrawal({ all: true, invoiceReference: `${suffix}-${t}-ask` })),
+        payout: (p, t) => runAs(founder, () => prepareExpansionPayout({ partnerId: p.partnerId, invoiceReference: `${suffix}-${t}-pay`, invoiceNetPence: "30000" })),
+        refund: (p, t) => runAs(founder, () => refundExpansionPayment({ paymentId: p.paymentId, reference: `${suffix}-${t}-rf`, reason: "TEST ONLY", netPence: "20000" })),
+        adjust: (p, t) => runAs(founder, () => refundExpansionPayment({ paymentId: p.paymentId, reference: `${suffix}-${t}-adj`, reason: "TEST ONLY", netPence: "10000", treatment: "adjust_unpaid", termsApprovalReference: refundClause })),
+        cancelContract: (p, t) => runAs(founder, () => founderMutation({ action: "cancel_contract", id: p.opportunityId, reason: `TEST ONLY ${t}`, deliveryReviewed: true })),
+        collect: (p, t) => runAs(founder, () => verifyExpansionPayment({ contractId: p.contractId, invoiceId: p.invoiceId, milestone: "deposit", reference: `${suffix}-${t}-dup`, netPence: "100000", grossPence: "120000", evidenceReference: "TEST ONLY", confirmed: true })),
+      }
+      const pairs: Array<[string, string]> = [["ask", "payout"], ["ask", "refund"], ["ask", "adjust"], ["payout", "adjust"], ["payout", "refund"], ["ask", "cancelContract"], ["payout", "cancelContract"], ["adjust", "cancelContract"], ["adjust", "adjust"], ["collect", "adjust"]]
+      const deadlocks: string[] = []
+      for (const [a, b] of pairs) for (let i = 0; i < 2; i++) {
+        const tag = `st-${a}-${b}-${i}`, p = await fundedPartner(tag)
+        const results = await race<unknown>([() => ops[a](p, `${tag}a`), () => ops[b](p, `${tag}b`)])
+        for (const r of results) if (r.status === "rejected") {
+          const reason = r.reason as { cause?: { code?: string }; status?: number; message?: string }
+          if (reason?.cause?.code === "40P01" || /deadlock/i.test(String(reason?.message))) deadlocks.push(`${a}/${b}`)
+          else expect([400, 409]).toContain(reason?.status)   // only deliberate business refusals
+        }
+      }
+      expect(deadlocks).toEqual([])
+      const doubled = await pool.query("select count(*)::int c from expansion_commission_ledger l where exists(select 1 from expansion_payout_claims pc where pc.ledger_id=l.id) and exists(select 1 from expansion_withdrawal_entries w join expansion_withdrawal_requests r on r.id=w.request_id where w.ledger_id=l.id and w.released_at is null and r.payout_id is null)")
+      expect(doubled.rows[0].c).toBe(0)
+    })
+  })
 })

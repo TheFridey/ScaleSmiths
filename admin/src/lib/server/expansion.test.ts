@@ -63,6 +63,7 @@ describe("production Expansion prospect/scope/capacity service against PostgreSQ
     await state.database.exec(readFileSync(new URL("../../../drizzle/0074_expansion_allowances_and_additional_claims.sql", import.meta.url), "utf8"))
     await state.database.exec(readFileSync(new URL("../../../drizzle/0076_expansion_market_and_exclusivity_gates.sql", import.meta.url), "utf8"))
     await state.database.exec(readFileSync(new URL("../../../drizzle/0077_expansion_gate_hardening.sql", import.meta.url), "utf8"))
+    await state.database.exec(readFileSync(new URL("../../../drizzle/0078_expansion_state_integrity.sql", import.meta.url), "utf8"))
   }, 30000)
   beforeEach(async () => {
     asFounder()
@@ -423,6 +424,20 @@ describe("production Expansion prospect/scope/capacity service against PostgreSQ
     it("rejects impossible calendar dates for an exclusivity", async () => {
       await state.database!.exec("insert into clients(id,name) values(2,'Other Customer')")
       await expect(exclusivity({ effectiveFrom: "2026-02-31" })).rejects.toThrow("valid effective dates")
+    })
+    it("accepted exclusivity terms are immutable; corrections supersede, and prior decisions do not carry over", async () => {
+      await state.database!.exec("insert into clients(id,name) values(2,'Other Customer')")
+      const id = await ready("supersede"); await exclusivity()
+      const oldId = (await state.database!.query<{ id: string }>("select id from expansion_exclusivities")).rows[0].id
+      for (const sql of ["update expansion_exclusivities set sector='Changed'", "update expansion_exclusivities set area='Changed'", "update expansion_exclusivities set effective_to='2099-01-01'", "update expansion_exclusivities set contractual_reference='x'", "delete from expansion_exclusivities"]) await expect(state.database!.query(sql)).rejects.toThrow(/immutable|append-only/)
+      await founderMutation({ action: "decide_exclusivity", id, exclusivityId: oldId, decision: "exception_approved", reference: "SYNTHETIC exception" })
+      await accept(id).catch(() => undefined)
+      const corrected = await founderMutation({ action: "correct_exclusivity", exclusivityId: oldId, sector: "Plumbing and Heating", area: "Nottingham and Derby", contractualReference: "SYNTHETIC amended clause 9a", effectiveFrom: "2020-01-01", reason: "Agreement amended to add Derby" }) as { exclusivityId: string; supersedes: string }
+      const rows = (await state.database!.query<{ id: string; status: string; superseded_by: string | null }>("select id,status,superseded_by from expansion_exclusivities order by created_at")).rows
+      expect(rows).toEqual([{ id: oldId, status: "ended", superseded_by: corrected.exclusivityId }, { id: corrected.exclusivityId, status: "active", superseded_by: null }])
+      await expect(state.database!.query("update expansion_exclusivities set status='active',ended_at=null where id=$1", [oldId])).rejects.toThrow("ended exclusivity cannot change")
+      await expect(founderMutation({ action: "correct_exclusivity", exclusivityId: oldId, sector: "x", area: "y", contractualReference: "z", effectiveFrom: "2020-01-01", reason: "again" })).rejects.toThrow("active exclusivity")
+      asPartner(); await expect(founderMutation({ action: "correct_exclusivity", exclusivityId: corrected.exclusivityId, sector: "x", area: "y", contractualReference: "z", effectiveFrom: "2020-01-01", reason: "no" })).rejects.toThrow()
     })
   })
 })

@@ -463,6 +463,7 @@
     {"idx":74,"version":"7","when":1794951000007,"tag":"0074_expansion_allowances_and_additional_claims","breakpoints":true},
     {"idx":75,"version":"7","when":1794951000008,"tag":"0075_expansion_withdrawals","breakpoints":true},
     {"idx":76,"version":"7","when":1794951000009,"tag":"0076_expansion_market_and_exclusivity_gates","breakpoints":true},
-    {"idx":77,"version":"7","when":1794951000010,"tag":"0077_expansion_gate_hardening","breakpoints":true}
+    {"idx":77,"version":"7","when":1794951000010,"tag":"0077_expansion_gate_hardening","breakpoints":true},
+    {"idx":78,"version":"7","when":1794951000011,"tag":"0078_expansion_state_integrity","breakpoints":true}
   ]
 }

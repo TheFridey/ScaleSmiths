@@ -55,7 +55,9 @@ describe("production partner financial service against PostgreSQL via PGlite", (
     await database.exec(readFileSync(new URL("../../../drizzle/0071_expansion_financial_hardening.sql", import.meta.url), "utf8"))
     await database.exec(readFileSync(new URL("../../../drizzle/0073_expansion_commercial_plans.sql", import.meta.url), "utf8"))
     await database.exec(readFileSync(new URL("../../../drizzle/0075_expansion_withdrawals.sql", import.meta.url), "utf8"))
+    await database.exec(readFileSync(new URL("../../../drizzle/0076_expansion_market_and_exclusivity_gates.sql", import.meta.url), "utf8"))
     await database.exec(readFileSync(new URL("../../../drizzle/0077_expansion_gate_hardening.sql", import.meta.url), "utf8"))
+    await database.exec(readFileSync(new URL("../../../drizzle/0078_expansion_state_integrity.sql", import.meta.url), "utf8"))
   }, 30000)
   beforeEach(async () => {
     state.actor = { id: FOUNDER, role: "owner", sessionVersion: 1, active: true }
@@ -446,6 +448,36 @@ describe("production partner financial service against PostgreSQL via PGlite", (
       await policy(); asPartner(); const b = await requestWithdrawal({ all: true, invoiceReference: "INV-REV2" })
       await policy({ enabled: false }); asFounder()
       await expect(reviewWithdrawal({ requestId: b.requestId, decision: "approved", note: "x" })).rejects.toThrow("currently disabled")
+    })
+    it("the database itself rejects impossible withdrawal transitions and payout mismatches", async () => {
+      await earnAll(); await policy()
+      asPartner(); const req = await requestWithdrawal({ all: true, invoiceReference: "INV-DB" })
+      const q = (sql: string, params: unknown[] = []) => state.database!.query(sql, params)
+      const id = req.requestId
+      await expect(q("update expansion_withdrawal_requests set status='payout_prepared' where id=$1", [id])).rejects.toThrow()           // skips approval and has no payout
+      await expect(q("update expansion_withdrawal_requests set status='approved' where id=$1", [id])).rejects.toThrow("founder review")   // no reviewer recorded
+      asFounder(); await reviewWithdrawal({ requestId: id, decision: "approved", note: "ok" })
+      await q("insert into expansion_payouts(id,partner_id,amount_pence,invoice_reference,prepared_by) values('70000000-0000-4000-8000-000000000001',$1,1,'WRONG',$2)", [PARTNER, FOUNDER])
+      await expect(q("update expansion_withdrawal_requests set status='payout_prepared',payout_id='70000000-0000-4000-8000-000000000001' where id=$1", [id])).rejects.toThrow("exactly the requested amount")
+      const payout = await prepareWithdrawalPayout({ requestId: id })
+      await expect(q("update expansion_withdrawal_requests set status='cancelled' where id=$1", [id])).rejects.toThrow("Invalid withdrawal transition")
+      await expect(q("update expansion_withdrawal_requests set status='approved',payout_id=null where id=$1", [id])).rejects.toThrow("payout was cancelled")
+      await expect(q("update expansion_withdrawal_requests set payout_id='70000000-0000-4000-8000-000000000001' where id=$1", [id])).rejects.toThrow("swapped")
+      await approveExpansionPayout({ payoutId: payout.payoutId }); await settleExpansionPayout({ payoutId: payout.payoutId, settlementReference: "SYNTHETIC-SETTLEMENT-DB1" })
+      await expect(q("update expansion_withdrawal_requests set status='approved',payout_id=null where id=$1", [id])).rejects.toThrow()       // a settled request can never be reopened
+      await expect(q("update expansion_withdrawal_requests set status='rejected' where id=$1", [id])).rejects.toThrow("Invalid withdrawal transition")
+      await expect(q("delete from expansion_withdrawal_requests where id=$1", [id])).rejects.toThrow("append-only")
+    })
+    it("closed requests stay closed and a legitimate payout cancellation still returns the request to approved", async () => {
+      await earnAll(); await policy()
+      asPartner(); const a = await requestWithdrawal({ all: true, invoiceReference: "INV-C1" })
+      asFounder(); await reviewWithdrawal({ requestId: a.requestId, decision: "rejected", note: "no" })
+      await expect(state.database!.query("update expansion_withdrawal_requests set status='approved' where id=$1", [a.requestId])).rejects.toThrow("closed")
+      asPartner(); const b = await requestWithdrawal({ all: true, invoiceReference: "INV-C2" })
+      asFounder(); await reviewWithdrawal({ requestId: b.requestId, decision: "approved", note: "ok" })
+      const payout = await prepareWithdrawalPayout({ requestId: b.requestId })
+      await cancelExpansionPayout({ payoutId: payout.payoutId, reason: "Wrong invoice", noExternalSettlement: true })
+      expect((await state.database!.query("select status,payout_id from expansion_withdrawal_requests where id=$1", [b.requestId])).rows).toEqual([{ status: "approved", payout_id: null }])
     })
   })
 })

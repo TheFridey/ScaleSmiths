@@ -593,7 +593,8 @@
     {"path":"admin/drizzle/0074_expansion_allowances_and_additional_claims.sql","sha256":"27a46682001c3ac25f301e2675ed12f73df400b0a3bea9a4ba1cc99eac174a86","lifecycle":"forward","reason":"Operation Intelligence discount allowances (default none) and founder-reviewed existing-customer additional claims."},
     {"path":"admin/drizzle/0075_expansion_withdrawals.sql","sha256":"02cce7d3f44ecc1b3ef0d466ca02f0edc54421cd26e94a32ec8f16ecfc1e88a6","lifecycle":"forward","reason":"Operation Intelligence partner withdrawal requests reserving existing commission ledger entries; append-only, no runtime DELETE."},
     {"path":"admin/drizzle/0076_expansion_market_and_exclusivity_gates.sql","sha256":"58cd1650ea99c8e31a7e8f7e795941f7d750f905d8512c7042314289d6a131c3","lifecycle":"forward","reason":"Operation Intelligence fail-closed market eligibility and customer sector exclusivity decisions."},
-    {"path":"admin/drizzle/0077_expansion_gate_hardening.sql","sha256":"e365388b49751c28281576f5ba967e6b7689d16d67971280ce61e31bf4f0c936","lifecycle":"forward","reason":"Independent-review hardening: founder-confirmed customer market and partner-matched withdrawal reservations."}
+    {"path":"admin/drizzle/0077_expansion_gate_hardening.sql","sha256":"e365388b49751c28281576f5ba967e6b7689d16d67971280ce61e31bf4f0c936","lifecycle":"forward","reason":"Independent-review hardening: founder-confirmed customer market and partner-matched withdrawal reservations."},
+    {"path":"admin/drizzle/0078_expansion_state_integrity.sql","sha256":"e0b39654d4c89e255c9c332c0689f0833a7937e6a6a009a81d298495dae06baf","lifecycle":"forward","reason":"Database-enforced withdrawal state transitions and immutable exclusivity history with explicit supersession."}
   ],
   "journals": {
     "web": {
@@ -867,7 +868,8 @@
         {"idx":74,"version":"7","when":1794951000007,"tag":"0074_expansion_allowances_and_additional_claims","breakpoints":true},
         {"idx":75,"version":"7","when":1794951000008,"tag":"0075_expansion_withdrawals","breakpoints":true},
         {"idx":76,"version":"7","when":1794951000009,"tag":"0076_expansion_market_and_exclusivity_gates","breakpoints":true},
-        {"idx":77,"version":"7","when":1794951000010,"tag":"0077_expansion_gate_hardening","breakpoints":true}
+        {"idx":77,"version":"7","when":1794951000010,"tag":"0077_expansion_gate_hardening","breakpoints":true},
+        {"idx":78,"version":"7","when":1794951000011,"tag":"0078_expansion_state_integrity","breakpoints":true}
       ]
     }
   },

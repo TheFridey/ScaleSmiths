@@ -308,6 +308,22 @@ export async function founderMutation(input: Input) {
       await audit(tx,actor.id,exclusivityId,'exclusivity_created',{clientId,sector:input.sector,area:input.area})
       return {exclusivityId}
     }
+    if (input.action === 'correct_exclusivity') {
+      // Accepted terms are never edited: a correction is a new record that supersedes (and ends) the old one.
+      const oldId = expansionId(input.exclusivityId)
+      await tx.execute(sql`select pg_advisory_xact_lock(7102)`)
+      const old = (await tx.execute(sql`select client_id from expansion_exclusivities where id=${oldId} and status='active' for update`)).rows[0] as Row | undefined
+      if (!old) throw new ExpansionError('Choose an active exclusivity to correct.',409)
+      const from = expansionText(input.effectiveFrom,'Effective date',10), to = input.effectiveTo ? expansionText(input.effectiveTo,'Expiry date',10) : null
+      const realDate = (v: string) => /^\d{4}-\d\d-\d\d$/.test(v) && new Date(`${v}T00:00:00Z`).toISOString().slice(0,10) === v
+      if (!realDate(from) || (to && (!realDate(to) || to <= from))) throw new ExpansionError('Choose valid effective dates.')
+      const reason = expansionText(input.reason,'Reason for the correction',1000)
+      const newId = randomUUID()
+      await tx.execute(sql`insert into expansion_exclusivities(id,client_id,sector,area,contractual_reference,effective_from,effective_to,created_by) values(${newId},${Number(old.client_id)},${expansionText(input.sector,'Sector',120)},${expansionText(input.area,'Geographic area',120)},${expansionText(input.contractualReference,'Accepted contractual reference',500)},${from}::date,${to}::date,${actor.id})`)
+      await tx.execute(sql`update expansion_exclusivities set status='ended',ended_at=now(),superseded_by=${newId} where id=${oldId}`)
+      await audit(tx,actor.id,newId,'exclusivity_corrected',{supersedes:oldId,reason})
+      return {exclusivityId:newId,supersedes:oldId}
+    }
     if (input.action === 'end_exclusivity') {
       const exclusivityId = expansionId(input.exclusivityId)
       await tx.execute(sql`select pg_advisory_xact_lock(7102)`)

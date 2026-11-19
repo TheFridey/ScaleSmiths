@@ -20,6 +20,20 @@ async function lockedActor(tx: Executor, actor: Actor) {
 async function audit(tx: Executor, actorId: string, id: string, action: string, value: unknown) {
   await tx.execute(sql`insert into commercial_audit(actor_user_id,entity,record_id,action,after_value) values(${actorId},'partner_finance',${id},${action},${JSON.stringify(value)}::jsonb)`)
 }
+/*
+ * LOCK HIERARCHY (acquire strictly in this order; never wait for an earlier level while holding a later one):
+ *   1. admin_users (FOR SHARE)           2. expansion_partners (FOR UPDATE)      3. withdrawal request / payout row
+ *   4. expansion_contracts (FOR UPDATE)  5. collection reference advisory lock   6. invoices (FOR UPDATE)
+ *   7. commission ledger rows / inserts (their partner foreign key needs a key-share on level 2)
+ * Every path that writes the ledger or reserves/allocates commission therefore takes the partner lock FIRST. Before this was
+ * enforced, a refund (contract, partner, invoice) and a collection on another contract sharing that invoice
+ * (contract, invoice, then the ledger's partner foreign key) could deadlock; reproduced on real PostgreSQL.
+ */
+async function partnerOfContract(tx: Executor, contractId: string) {
+  const [row] = await rows(tx, sql`select o.partner_id from expansion_contracts c join expansion_opportunities o on o.id=c.opportunity_id where c.id=${contractId}`)
+  if (!row) conflict("An accepted, approved contract is required.")
+  return String(row.partner_id)
+}
 async function lockedContract(tx: Executor, id: string, allowCancelled = false) {
   const [contract] = await rows(tx, sql`select c.*,o.partner_id from expansion_contracts c join expansion_opportunities o on o.id=c.opportunity_id where c.id=${id} for update of c`)
   if (!contract?.accepted_at) conflict("An accepted, approved contract is required.")
@@ -141,6 +155,7 @@ export async function verifyExpansionPayment(input: VerifiedExpansionPayment) {
   const hash = fingerprint({ contractId, invoiceId: input.invoiceId, milestone: input.milestone, reference, net: net.toString(), gross: gross.toString(), evidence, receivedAt: input.receivedAt === undefined ? null : receivedAt })
   return db.transaction(async (tx) => {
     await lockedActor(tx, actor)
+    await tx.execute(sql`select id from expansion_partners where id=${await partnerOfContract(tx, contractId)} for update`)
     const contract = await lockedContract(tx, contractId, true)
     // Same reference on different contracts must serialize before checking uniqueness.
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${reference}))`)
@@ -206,8 +221,8 @@ export async function refundExpansionPayment(input: ExpansionRefund) {
     await lockedActor(tx, actor)
     const [source] = await rows(tx, sql`select e.*,p.invoice_id,p.client_id,p.category from expansion_payment_events e join commercial_payments p on p.id=e.commercial_payment_id where e.id=${paymentId}`)
     if (!source || BigInt(String(source.net_pence)) <= BigInt(0)) conflict("Choose an original verified collection.")
+    await tx.execute(sql`select id from expansion_partners where id=${await partnerOfContract(tx, String(source.contract_id))} for update`)
     const contract = await lockedContract(tx, String(source.contract_id), true)
-    await tx.execute(sql`select id from expansion_partners where id=${String(contract.partner_id)} for update`)
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${reference}))`)
     const [old] = await rows(tx, sql`select id,fingerprint from expansion_payment_events where reference=${reference}`)
     if (old) {

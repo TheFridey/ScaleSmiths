@@ -24,4 +24,9 @@ Columns: blocks recruitment (R), activation (A), financial operations (F). Owner
 | Custom payment schedules (e.g. four £500 instalments) | Synthetic example only; custom schedules need a recorded approval reference | Allow per deal, or catalogue approved schedules | Founders | N | Y | Y |
 | Pooled-build rounding for new plans | Differs deliberately from historical per-milestone rounding | Confirm before activation | Accounting | N | N | Y |
 | Additional-business attribution evidence standard | What counts as documented partner contribution | Introduction record, meeting notes, joint sign-off | Founders | N | Y | Y |
+| Withdrawal policy (enable, minimum, invoice requirement, frequency, methods) | No policy exists, so partners cannot request withdrawals | Enable with documented minimum and invoicing | Founders, accounting | N | N | Y |
+| Treatment of earned commission after later refunds | Currently held for review, never auto-deducted | Contractual clawback, or retention | Founders, accounting, legal | N | Y | Y |
+| Approving each customer market and its permitted plans | Nothing can be accepted in any market until approved | Approve UK first, others one by one | Founders, legal, tax | N | Y | Y |
+| Exclusivity vocabulary and recording standard | Matching is string-based and conservative | Controlled sector/area lists | Founders | N | Y | N |
+| Applicant and partner-residence market rules | Not modelled yet | Add gating before activation | Founders, legal | Y (claims) | Y | N |
 

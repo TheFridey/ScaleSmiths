@@ -83,7 +83,7 @@ async function application(name: string, email: string, status = "activated") {
 }
 async function submitted(tag: string, actor = first) {
   return runAs(actor, async () => {
-    const record = await partnerMutation({ action: "register", businessName: `TEST ONLY concurrency ${suffix} ${tag}`, website: `concurrency-${suffix}-${tag}.example`, contactName: "Test director" })
+    const record = await partnerMutation({ action: "register", country: "GB", businessName: `TEST ONLY concurrency ${suffix} ${tag}`, website: `concurrency-${suffix}-${tag}.example`, contactName: "Test director" })
     await partnerMutation({ action: "discovery", id: record.id, discovery: { objectives: "Test enquiries", pages: "Five", functionality: "Contact form", budget: "Subject to founder approval", timescale: "Assessed availability", decisionProcess: "Director" } })
     await partnerMutation({ action: "submit_scope", id: record.id, summary: "TEST ONLY five-page approved scope" })
     return record.id
@@ -142,6 +142,8 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("Expansion real separa
     const client = await pool.query<{ id: number }>("insert into clients(name,invoice_client_code,billing_address_line_1,billing_city,billing_postcode,billing_country) values($1,$2,'1 Test Street','Nottingham','NG1 1AA','United Kingdom') returning id", [`TEST ONLY concurrency client ${suffix}`, `T${suffix.toUpperCase()}`])
     clientId = client.rows[0].id
     await pool.query("insert into invoice_supplier_settings(id,legal_name,address_line_1,city,postcode,country,payment_instructions) values(1,'TEST ONLY ScaleSmiths','1 Test Street','Nottingham','NG1 1AA','United Kingdom','No real transfer') on conflict(id) do nothing")
+    // Gate prerequisite: explicitly approved synthetic market (the production default is fail-closed, no rows).
+    await pool.query("insert into expansion_markets(country_code,country_name,status,plan_keys,legal_reviewed,accounting_reviewed,privacy_reviewed,operations_reviewed,approval_reference,approved_by) values('GB','United Kingdom','approved','{standard-v2,growth-only-v1,bespoke-v1}',true,true,true,true,'TEST ONLY market approval',$1) on conflict(country_code) do update set status='approved',plan_keys=excluded.plan_keys,legal_reviewed=true,accounting_reviewed=true,privacy_reviewed=true,operations_reviewed=true,approval_reference=excluded.approval_reference,approved_by=excluded.approved_by", [founder.id])
     acceptedOpportunityId = await submitted("accepted")
     // Additive reruns choose fresh future Mondays and preserve every previous fixture/demo reservation.
     const weeks = await pool.query<{ initial: string; race: string }>("select greatest(date '2100-01-04',coalesce(max(period)+7,date '2100-01-04'))::text initial,(greatest(date '2100-01-04',coalesce(max(period)+7,date '2100-01-04'))+7)::text race from expansion_capacity")
@@ -466,6 +468,7 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("Expansion real separa
       const domain = `additional-3a-${suffix}.example`
       const { id: claimId } = await runAs(first, () => partnerMutation({ action: "request_additional", businessName: "TEST ONLY Existing Customer", website: domain, projectLabel: "Booking platform", contribution: "TEST ONLY introduced the director and led requirements." })) as { id: string }
       const { opportunityId } = await runAs(founder, () => founderMutation({ action: "review_additional", claimId, decision: "approved", clientId, attributionConfirmed: true, notes: "TEST ONLY attribution evidence reviewed." })) as { opportunityId: string }
+      await runAs(founder, () => founderMutation({ action: "set_opportunity_market", id: opportunityId, countryCode: "GB" }))
       await runAs(first, async () => {
         await partnerMutation({ action: "discovery", id: opportunityId, discovery: { objectives: "Bookings", pages: "Five", functionality: "Booking", budget: "Subject to approval", timescale: "Assessed", decisionProcess: "Director" } })
         await partnerMutation({ action: "submit_scope", id: opportunityId, summary: "TEST ONLY booking platform approved separately." })
@@ -601,6 +604,53 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("Expansion real separa
       await expect(runAs(b.actor, () => cancelWithdrawal({ requestId: req.requestId }))).rejects.toMatchObject({ status: 404 })
       await expect(runAs(a.actor, () => reviewWithdrawal({ requestId: req.requestId, decision: "approved", note: "self" }))).rejects.toThrow()
       expect((await pool.query("select status from expansion_withdrawal_requests where id=$1", [req.requestId])).rows[0].status).toBe("submitted")
+    })
+  })
+
+  describe("checkpoint 3E: market and exclusivity gates versus acceptance on separate connections", () => {
+    const enable = () => runAs(founder, () => founderMutation({ action: "set_plan_enabled", planKey: "standard-v2", enabled: true, reason: "TEST ONLY 3E" }))
+    async function approvedOpportunity(tag: string, extra: Record<string, unknown> = {}) {
+      const id = await runAs(first, async () => {
+        const rec = await partnerMutation({ action: "register", country: "GB", businessName: `TEST ONLY gate ${suffix} ${tag}`, website: `gate-${suffix}-${tag}.example`, industry: `Sector ${suffix} ${tag}`, region: "Nottingham", ...extra })
+        await partnerMutation({ action: "discovery", id: rec.id, discovery: { objectives: "Test", pages: "Five", functionality: "Form", budget: "Subject", timescale: "Assessed", decisionProcess: "Owner" } })
+        await partnerMutation({ action: "submit_scope", id: rec.id, summary: "TEST ONLY scope." })
+        return String(rec.id)
+      })
+      const week = (await pool.query<{ next: string }>("select (max(period)+7)::text as next from expansion_capacity")).rows[0].next
+      await runAs(founder, () => founderMutation({ action: "capacity", period: week, hours: 10, commitmentsReviewed: true, rationale: "TEST ONLY 3E allocation" }))
+      await approve(id, week)
+      return id
+    }
+    const accept = (id: string) => runAs(founder, () => founderMutation({ action: "accept_contract", id, clientId, plan: { plan: "standard-v2" }, agreementReference: `TEST ONLY 3E ${suffix}` }))
+    const contracts = async (id: string) => (await pool.query("select count(*)::int c from expansion_contracts where opportunity_id=$1", [id])).rows[0].c
+
+    it("Case L: a restriction created concurrently with acceptance is either seen by acceptance or committed after it, never lost", async () => {
+      await enable(); const id = await approvedOpportunity("race-ex")
+      const protectedClient = (await pool.query<{ id: number }>("insert into clients(name,invoice_client_code,billing_address_line_1,billing_city,billing_postcode,billing_country) values($1,$2,'1 Test Street','Nottingham','NG1 1AA','United Kingdom') returning id", [`TEST ONLY protected ${suffix}`, `P${suffix.toUpperCase()}`])).rows[0].id
+      const create = () => runAs(founder, () => founderMutation({ action: "create_exclusivity", clientId: protectedClient, sector: `Sector ${suffix} race-ex`, area: "Nottingham", contractualReference: "TEST ONLY clause", effectiveFrom: "2020-01-01" }))
+      const results = await race<unknown>([() => accept(id), create])
+      expect(results[1].status).toBe("fulfilled")
+      if (results[0].status === "fulfilled") expect(await contracts(id)).toBe(1)
+      else { expect(results[0].reason).toMatchObject({ status: 409, message: expect.stringContaining("exclusivity") }); expect(await contracts(id)).toBe(0) }
+      // Afterwards, with the restriction committed, acceptance of a second matching opportunity is blocked for certain.
+      const second = await approvedOpportunity("race-ex2", { industry: `Sector ${suffix} race-ex` })
+      await expect(accept(second)).rejects.toMatchObject({ status: 409, message: expect.stringContaining("exclusivity") })
+      expect(await contracts(second)).toBe(0)
+      await pool.query("update expansion_exclusivities set status='ended',ended_at=now() where sector like $1", [`Sector ${suffix}%`])
+    })
+    it("Case M: suspending a market concurrently with acceptance leaves a consistent outcome and then blocks acceptance", async () => {
+      await enable(); const id = await approvedOpportunity("race-mk")
+      const suspend = () => runAs(founder, () => founderMutation({ action: "set_market", countryCode: "GB", countryName: "United Kingdom", status: "suspended", planKeys: ["standard-v2", "growth-only-v1", "bespoke-v1"], legalReviewed: true, accountingReviewed: true, privacyReviewed: true, operationsReviewed: true, approvalReference: "TEST ONLY suspension" }))
+      try {
+        const results = await race<unknown>([() => accept(id), suspend])
+        expect(results[1].status).toBe("fulfilled")
+        if (results[0].status === "fulfilled") expect(await contracts(id)).toBe(1)
+        else { expect(results[0].reason).toMatchObject({ status: 409, message: expect.stringContaining("not approved") }); expect(await contracts(id)).toBe(0) }
+        const next = await approvedOpportunity("race-mk2")
+        await expect(accept(next)).rejects.toMatchObject({ status: 409, message: expect.stringContaining("not approved") })
+      } finally {
+        await pool.query("update expansion_markets set status='approved',approved_by=$1,approval_reference='TEST ONLY restored' where country_code='GB'", [founder.id])
+      }
     })
   })
 })

@@ -14,9 +14,9 @@ Status values: DONE, PARTIAL, PLANNED (public label only), NOT STARTED.
 | Existing-customer additional sales | Explained | Claims table | Request and status | Review | PARTIAL: workflow persisted, no commission run | Attribution rules | none |
 | Achievements | Planned, conditional | Schedule constants only | No | No | PLANNED | Qualification rules | partner-programme.test.ts |
 | Referral £250 | Planned, conditional | No | No | No | PLANNED | Written terms | none |
-| Withdrawal requests | Planned | No | No | No | PLANNED | Frequency, minimum, invoicing | none |
+| Withdrawal requests | Planned (label unchanged: no approved payout policy) | Versioned policy, disabled until approved | Commission Centre request/cancel | Policy, review, payout prep | IMPLEMENTED and tested, NOT operational | Frequency, minimum, invoicing, VAT | 31 service, 11 race, browser |
 | Dedicated email, CircleCard, prospects, Academy, personal page, Founding Partner | Planned labels | No | No | No | PLANNED / NOT STARTED | Provisioning, screening | none |
-| Sector exclusivity | Explained | No | No | No | NOT STARTED | Legal | none |
-| International eligibility | Disclosed | No eligibility register | No | No | PARTIAL (disclosure only) | Per-market review | none |
+| Sector exclusivity | Explained | Acceptance gate | Generic notice only | Register, decide | PARTIAL: enforced at acceptance only | Legal | service, race, browser |
+| International eligibility | Disclosed | Fail-closed market register | Customer-country field | Markets panel | PARTIAL: acceptance gate only | Per-market review | service, race, browser |
 | Future employment | Qualified | n/a | n/a | n/a | DONE (copy) | None | none |
 | Digital agreements, invoicing, payment links, AI assistance | Not claimed as available | No | No | No | NOT STARTED | Provider, legal | none |

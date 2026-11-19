@@ -591,7 +591,8 @@
     {"path":"admin/drizzle/0072_expansion_applicant_retention_holds.sql","sha256":"197a4c6d3c4fa11a9573e9f853693f2023051210a78e46cba4426b8d3d3fa9dd","lifecycle":"forward","reason":"Operator-controlled applicant retention holds."},
     {"path":"admin/drizzle/0073_expansion_commercial_plans.sql","sha256":"98814cbb8926a0c1231d552be2907bc0d53a03fbc43504ab0d0b085d7960bafc","lifecycle":"forward","reason":"Operation Intelligence commercial plan integration: interim milestone and disabled-by-default plan settings."},
     {"path":"admin/drizzle/0074_expansion_allowances_and_additional_claims.sql","sha256":"27a46682001c3ac25f301e2675ed12f73df400b0a3bea9a4ba1cc99eac174a86","lifecycle":"forward","reason":"Operation Intelligence discount allowances (default none) and founder-reviewed existing-customer additional claims."},
-    {"path":"admin/drizzle/0075_expansion_withdrawals.sql","sha256":"02cce7d3f44ecc1b3ef0d466ca02f0edc54421cd26e94a32ec8f16ecfc1e88a6","lifecycle":"forward","reason":"Operation Intelligence partner withdrawal requests reserving existing commission ledger entries; append-only, no runtime DELETE."}
+    {"path":"admin/drizzle/0075_expansion_withdrawals.sql","sha256":"02cce7d3f44ecc1b3ef0d466ca02f0edc54421cd26e94a32ec8f16ecfc1e88a6","lifecycle":"forward","reason":"Operation Intelligence partner withdrawal requests reserving existing commission ledger entries; append-only, no runtime DELETE."},
+    {"path":"admin/drizzle/0076_expansion_market_and_exclusivity_gates.sql","sha256":"58cd1650ea99c8e31a7e8f7e795941f7d750f905d8512c7042314289d6a131c3","lifecycle":"forward","reason":"Operation Intelligence fail-closed market eligibility and customer sector exclusivity decisions."}
   ],
   "journals": {
     "web": {
@@ -863,7 +864,8 @@
         {"idx":72,"version":"7","when":1794951000005,"tag":"0072_expansion_applicant_retention_holds","breakpoints":true},
         {"idx":73,"version":"7","when":1794951000006,"tag":"0073_expansion_commercial_plans","breakpoints":true},
         {"idx":74,"version":"7","when":1794951000007,"tag":"0074_expansion_allowances_and_additional_claims","breakpoints":true},
-        {"idx":75,"version":"7","when":1794951000008,"tag":"0075_expansion_withdrawals","breakpoints":true}
+        {"idx":75,"version":"7","when":1794951000008,"tag":"0075_expansion_withdrawals","breakpoints":true},
+        {"idx":76,"version":"7","when":1794951000009,"tag":"0076_expansion_market_and_exclusivity_gates","breakpoints":true}
       ]
     }
   },

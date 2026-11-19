@@ -46,6 +46,8 @@ test('founder and partner complete the discounted, withdrawal and isolation jour
   try {
     origin() // asserts the disposable database name before any mutation
     await pool.query('truncate expansion_withdrawal_policies cascade'); await pool.query('update expansion_plan_settings set enabled=false')
+    await pool.query('truncate expansion_markets cascade'); await pool.query("update expansion_exclusivities set status='ended',ended_at=now() where status='active'")
+    await pool.query('truncate expansion_reservations,expansion_capacity')
     await pool.query('delete from login_rate_limits')
     // ---- Set-up [API]: synthetic applicants -> reviewed -> invited -> activated; both then log in through the real login screen [UI]
     for (const [name, email] of [[`DEMO Programme A ${suffix}`, emailA], [`DEMO Programme B ${suffix}`, emailB]]) {
@@ -92,6 +94,7 @@ test('founder and partner complete the discounted, withdrawal and isolation jour
     await tab(partnerPage, 'Register prospect')
     await partnerPage.getByLabel('Business name', { exact: true }).fill(business)
     await partnerPage.getByLabel('Business website', { exact: true }).fill(`demo-programme-${suffix}.example`)
+    await partnerPage.locator('input[name=country]').fill('FR')
     await partnerPage.getByRole('button', { name: 'Register business', exact: true }).click()
     await expect.poll(async () => (await snapshot(a)).workspace.opportunities.some((r: { business_name: string }) => r.business_name === business)).toBe(true)
     const opp = (await snapshot(a)).workspace.opportunities.find((r: { business_name: string }) => r.business_name === business)
@@ -121,12 +124,34 @@ test('founder and partner complete the discounted, withdrawal and isolation jour
     await founderPage.getByRole('button', { name: 'Reserve discount allowance' }).click()
     await expect.poll(async () => (await snapshot(a)).workspace.discountAllowances[0]?.used).toBe(1)
     const client = (await snapshot(founder, true)).workspace.clients.find((c: { name: string }) => c.name === 'DEMO Expansion Client')
-    const accept = founderPage.locator('form').filter({ has: founderPage.getByRole('button', { name: 'Record accepted contract' }) })
-    await accept.locator('select[name=clientId]').selectOption(String(client.id))
-    await accept.locator('input[name=agreementReference]').fill(`DEMO accepted agreement ${suffix}`)
-    await accept.locator('select[name=planKey]').selectOption('standard-v2')
-    await accept.locator('select[name=scheduleId]').selectOption('equal')
-    await accept.locator('input[name=buildFeePence]').fill('150000')
+    const fillAccept = async () => {
+      const accept = founderPage.locator('form').filter({ has: founderPage.getByRole('button', { name: 'Record accepted contract' }) })
+      await accept.locator('select[name=clientId]').selectOption(String(client.id))
+      await accept.locator('input[name=agreementReference]').fill(`DEMO accepted agreement ${suffix}`)
+      await accept.locator('select[name=planKey]').selectOption('standard-v2')
+      await accept.locator('select[name=scheduleId]').selectOption('equal')
+      await accept.locator('input[name=buildFeePence]').fill('150000')
+      return accept
+    }
+    // [UI] Case M: the customer's market (FR) is unapproved, so acceptance is refused in the browser
+    let accept = await fillAccept()
+    await accept.getByRole('button', { name: 'Record accepted contract' }).click()
+    await expect(founderPage.getByRole('alert').filter({ hasText: 'customer market is not approved' })).toBeVisible()
+    expect((await pool.query('select count(*)::int c from expansion_contracts where opportunity_id=$1', [opp.id])).rows[0].c).toBe(0)
+    await founderPage.screenshot({ path: `${evidence}/founder-market-blocked.png`, fullPage: true })
+    // [UI] A founder approves France for standard-v2 after recording every review
+    await tab(founderPage, 'Commission centre')
+    await founderPage.getByText('Set a market status').click()
+    const market = founderPage.locator('form').filter({ has: founderPage.getByRole('button', { name: 'Save market' }) })
+    await market.locator('input[name=countryCode]').fill('FR'); await market.locator('input[name=countryName]').fill('France')
+    await market.locator('select[name=status]').selectOption('approved'); await market.locator('input[name="plan_standard-v2"]').check()
+    for (const name of ['legalReviewed', 'accountingReviewed', 'privacyReviewed', 'operationsReviewed']) await market.locator(`input[name=${name}]`).check()
+    await market.locator('input[name=approvalReference]').fill('DEMO synthetic market approval')
+    await market.getByRole('button', { name: 'Save market' }).click()
+    await expect(founderPage.locator('.ex-list-row').filter({ hasText: 'France (FR)' })).toContainText('Approved')
+    await founderPage.screenshot({ path: `${evidence}/founder-markets.png`, fullPage: true })
+    await tab(founderPage, 'Prospects & scope'); await founderPage.getByRole('button', { name: new RegExp(business) }).click()
+    accept = await fillAccept()
     await founderPage.screenshot({ path: `${evidence}/founder-plan-selection.png`, fullPage: true })
     await accept.getByRole('button', { name: 'Record accepted contract' }).click()
     await expect.poll(async () => (await snapshot(founder, true)).workspace.opportunities.find((r: { id: string }) => r.id === opp.id)?.contract_id).toBeTruthy()
@@ -156,6 +181,61 @@ test('founder and partner complete the discounted, withdrawal and isolation jour
     expect((await command(founder, pay('first_retainer', '35000'), true)).commissionPence).toBe('10500')
     expect((await snapshot(a)).finance.earnedPence).toBe('55500')   // £450 + £105 = £555 (Case E, through the browser-accepted contract)
 
+    // ---- Case H [UI]: partner claims new work for an existing customer; founder approves; canonical client is reused, not duplicated
+    const clientsBefore = (await pool.query('select count(*)::int c from clients')).rows[0].c
+    const claimBusiness = `DEMO Existing Customer ${suffix}`
+    await partnerPage.reload(); await tab(partnerPage, 'Commission centre')
+    await partnerPage.getByText('Request attribution for new work with an existing customer').click()
+    const claimForm = partnerPage.locator('form').filter({ has: partnerPage.getByRole('button', { name: 'Submit request' }) })
+    await claimForm.locator('input[name=businessName]').fill(claimBusiness)
+    await claimForm.locator('input[name=website]').fill(`demo-existing-${suffix}.example`)
+    await claimForm.locator('input[name=projectLabel]').fill('Booking platform')
+    await claimForm.locator('textarea[name=contribution]').fill('DEMO introduced the director and led the booking requirements.')
+    await claimForm.getByRole('button', { name: 'Submit request' }).click()
+    await expect.poll(async () => (await snapshot(a)).workspace.additionalClaims.length).toBe(1)
+    await founderPage.reload(); await tab(founderPage, 'Commission centre')
+    const claimRow = founderPage.locator('details.ex-resource').filter({ hasText: claimBusiness })
+    await claimRow.locator('summary').click()
+    await claimRow.locator('select[name=decision]').selectOption('approved')
+    await claimRow.locator('select[name=clientId]').selectOption(String(client.id))
+    await claimRow.locator('textarea[name=notes]').fill('DEMO attribution evidence reviewed.')
+    await claimRow.locator('input[name=attributionConfirmed]').check()
+    await claimRow.getByRole('button', { name: 'Record attribution decision' }).click()
+    await expect.poll(async () => (await snapshot(a)).workspace.opportunities.some((r: { business_name: string }) => r.business_name.includes('Booking platform'))).toBe(true)
+    expect((await pool.query('select count(*)::int c from clients')).rows[0].c).toBe(clientsBefore)
+    await founderPage.screenshot({ path: `${evidence}/founder-additional-claim-approved.png`, fullPage: true })
+
+    // ---- Case L: customer sector exclusivity. [UI] founder records it; [API] set-up of a second matching prospect; [UI] decision
+    const protectedName = `DEMO Protected Customer ${suffix}`
+    const protectedId = (await pool.query("insert into clients(name,invoice_client_code,billing_address_line_1,billing_city,billing_postcode,billing_country) values($2,$1,'1 Test Street','Nottingham','NG1 1AA','United Kingdom') returning id", [`DP${suffix.toUpperCase().slice(0, 6)}`, protectedName])).rows[0].id
+    await founderPage.reload(); await tab(founderPage, 'Commission centre'); await founderPage.getByText('Record an exclusivity').click()
+    const exForm = founderPage.locator('form').filter({ has: founderPage.getByRole('button', { name: 'Save exclusivity' }) })
+    await exForm.locator('select[name=clientId]').selectOption(String(protectedId))
+    await exForm.locator('input[name=sector]').fill('DEMO Sector'); await exForm.locator('input[name=area]').fill('DEMO Area')
+    await exForm.locator('input[name=contractualReference]').fill('DEMO accepted agreement clause 9')
+    await exForm.locator('input[name=effectiveFrom]').fill('2020-01-01')
+    await exForm.getByRole('button', { name: 'Save exclusivity' }).click()
+    await expect(founderPage.locator('.ex-list-row').filter({ hasText: protectedName })).toContainText('Active')
+    const second = `DEMO Restricted Business ${suffix}`
+    const reg2 = await command(a, { action: 'register', businessName: second, website: `demo-restricted-${suffix}.example`, industry: 'DEMO Sector', region: 'DEMO Area', country: 'FR' })
+    await command(a, { action: 'discovery', id: reg2.id, discovery: { objectives: 'DEMO', pages: 'Five', functionality: 'Form', budget: 'Standard', timescale: 'Assessed', decisionProcess: 'Owner' } })
+    await command(a, { action: 'submit_scope', id: reg2.id, summary: 'DEMO scope.' })
+    await command(founder, { action: 'review_scope', id: reg2.id, decision: 'approved', period: '2099-01-05', hours: 5, technicalConfirmed: true, commercialConfirmed: true, notes: 'DEMO reviewed.' }, true)
+    await founderPage.reload(); await tab(founderPage, 'Prospects & scope'); await founderPage.getByRole('button', { name: new RegExp(second) }).click()
+    await expect(founderPage.getByText('Restricted', { exact: true }).first()).toBeVisible()
+    await founderPage.screenshot({ path: `${evidence}/founder-exclusivity-restricted.png`, fullPage: true })
+    const blocked = await founder.request.post(`${origin()}/api/expansion`, { headers: { origin: origin() }, data: { action: 'accept_contract', id: reg2.id, clientId: client.id, plan: { plan: 'standard-v2' }, agreementReference: 'DEMO' } })
+    expect(blocked.status()).toBe(409); expect(await blocked.text()).toContain('exclusivity'); expect(await blocked.text()).not.toContain(protectedName)
+    await partnerPage.reload(); await tab(partnerPage, 'Prospects & scope'); await partnerPage.getByRole('button', { name: new RegExp(second) }).click()
+    await expect(partnerPage.getByText('Commercial checks in progress')).toBeVisible()
+    expect(JSON.stringify(await snapshot(a))).not.toMatch(/DEMO Protected Customer|clause 9/)
+    await founderPage.locator('select[name=exclusivityId]').selectOption({ index: 0 })
+    await founderPage.locator('form').filter({ has: founderPage.getByRole('button', { name: 'Record exclusivity decision' }) }).locator('select[name=decision]').selectOption('exception_approved')
+    await founderPage.locator('textarea[name=reference]').fill('DEMO founder exception with protected customer consent')
+    await founderPage.getByRole('button', { name: 'Record exclusivity decision' }).click()
+    await expect.poll(async () => (await snapshot(founder, true)).workspace.exclusivityStatus[reg2.id]).toBe('exception_approved')
+    expect((await founder.request.post(`${origin()}/api/expansion`, { headers: { origin: origin() }, data: { action: 'accept_contract', id: reg2.id, clientId: client.id, plan: { plan: 'standard-v2' }, agreementReference: 'DEMO exception accepted' } })).ok()).toBeTruthy()
+
     // ---- [UI] Founder approves the payout policy; partner requests a withdrawal; founder reviews and prepares payout
     await partnerPage.reload(); await tab(partnerPage, 'Commission centre')
     await expect(partnerPage.getByText('no payout policy has been approved')).toBeVisible()
@@ -177,16 +257,17 @@ test('founder and partner complete the discounted, withdrawal and isolation jour
     expect((await overview()).balances).toMatchObject({ availablePence: '0', requestedPence: '55500' })
     await partnerPage.screenshot({ path: `${evidence}/partner-withdrawal-submitted.png`, fullPage: true })
     await founderPage.reload(); await tab(founderPage, 'Commission centre')
-    const row = founderPage.locator('details.ex-resource').filter({ hasText: 'DEMO Programme A' }).filter({ hasText: '£555' })
+    const row = founderPage.locator('details.ex-resource').filter({ hasText: `DEMO Programme A ${suffix}` }).filter({ hasText: '£555' })
     await row.locator('summary').click()
     await row.locator('select[name=decision]').selectOption('approved')
     await row.locator('textarea[name=note]').fill('DEMO invoice checked; commission verified.')
     await row.getByRole('button', { name: 'Record decision' }).click()
-    await expect(founderPage.locator('details.ex-resource').filter({ hasText: 'DEMO Programme A' }).first()).toContainText('Approved')
-    await founderPage.locator('details.ex-resource').filter({ hasText: 'DEMO Programme A' }).first().getByRole('button', { name: 'Prepare payout' }).click()
-    await expect.poll(async () => (await snapshot(founder, true)).finance.payouts.length).toBe(1)
+    await expect(founderPage.locator('details.ex-resource').filter({ hasText: `DEMO Programme A ${suffix}` }).first()).toContainText('Approved')
+    await founderPage.locator('details.ex-resource').filter({ hasText: `DEMO Programme A ${suffix}` }).first().getByRole('button', { name: 'Prepare payout' }).click()
+    const myPayout = async () => (await snapshot(founder, true)).finance.payouts.find((p: { invoice_reference: string }) => p.invoice_reference === `DEMO-PARTNER-INV-${suffix}`)
+    await expect.poll(async () => Boolean(await myPayout())).toBe(true)
     await founderPage.screenshot({ path: `${evidence}/founder-withdrawal-review.png`, fullPage: true })
-    const payoutId = (await snapshot(founder, true)).finance.payouts[0].id
+    const payoutId = (await myPayout()).id
     await command(founder, { action: 'approve_payout', payoutId }, true)               // [API] existing, previously UI-proven payout forms
     await command(founder, { action: 'settle_payout', payoutId, settlementReference: `DEMO-SETTLEMENT-${suffix}` }, true)
     await partnerPage.reload(); await tab(partnerPage, 'Commission centre')

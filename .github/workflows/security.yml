@@ -133,6 +133,8 @@ jobs:
           format: sarif
           output: trivy-${{ matrix.app }}.sarif
           severity: HIGH,CRITICAL
+          # SARIF otherwise includes all severities and changes the exit-code gate.
+          limit-severities-for-sarif: true
           ignore-unfixed: true
           exit-code: "1"
       - name: Generate application-image SPDX SBOM

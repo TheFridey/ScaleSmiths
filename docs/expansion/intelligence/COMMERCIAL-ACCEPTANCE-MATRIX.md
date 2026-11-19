@@ -13,10 +13,10 @@
 | G bespoke £25,000 | PASS, persisted | £0 at acceptance; £3,000, then £1,500, then £3,000 per collection, reaching £7,500 only after all three |
 | H additional customer sale | PASS, persisted (3A) and browser | claim → approval → new accepted terms → allocated invoice → £3,000 commission; old invoice unclaimable; no client duplicated; historical contract ledger unchanged |
 | I withdrawal | PASS: 31 service tests, 11 real-PostgreSQL races, browser | request/replay/reject/cancel/approve/prepare/settle; over-withdrawal and double allocation impossible; refund dispute gate; no transfer |
-| J achievement | NOT STARTED | |
-| K referral | NOT STARTED | |
-| L exclusivity | PASS at acceptance (plan path): service, real-PostgreSQL race, browser | restricted/review/exception/cleared/ended; customer identity not disclosed |
-| M international eligibility | PARTIAL: acceptance gate PASS (unknown, unapproved, suspended, wrong-plan, approved; race; browser). Applicant/activation gating NOT implemented | |
+| J achievement | PASS (service, real PostgreSQL, browser) | derived progress, conditional rewards, no automatic liability, duplicates and bypasses refused in the database, ledger unchanged |
+| K referral | PASS (service, real PostgreSQL, browser) | code, attribution, vetting unchanged, five-client conditional £250, no payable liability, no recurring commission, privacy-limited view |
+| L exclusivity | PASS at acceptance (plan and legacy paths) and structured classification: service, race, browser. NOT enforced at registration or allocation (allocation not built) | classified/unclassified, review, exception, supersession, confidentiality |
+| M international eligibility | PARTIAL: acceptance gate PASS for plan and legacy paths (unknown, unconfirmed, unapproved, suspended, wrong-plan, approved; grandfathering; race; browser). Applicant, activation, allocation and scope-approval gating NOT implemented | |
 | N discount concurrency | PASS, real PostgreSQL | three race tests |
 | O refund/payout regression | PASS | existing hardening suite plus new pooled £200 partial refund = −£60 held for review |
 | P four £500 instalments | PASS, persisted and real-PostgreSQL concurrent | £150 × 4 + £105 = £705; concurrent interim collections serialise; over-allocation admits one |

@@ -12,8 +12,8 @@ Status values: DONE, PARTIAL, PLANNED (public label only), NOT STARTED.
 | Bespoke 30% | Yes | engine (per-quote terms) | Existing scope review | Existing | PARTIAL | Eligibility definition | Case G |
 | Discretionary discounts | Table, "not yet approved" | Allowance policies (none by default) | Remaining count | Policy, reserve, release | PARTIAL: integrated, no allowances approved | Allowance amounts (default disabled) | Cases E, F; no concurrency (Case N) |
 | Existing-customer additional sales | Explained | Claims table | Request and status | Review | PARTIAL: workflow persisted, no commission run | Attribution rules | none |
-| Achievements | Planned, conditional | Schedule constants only | No | No | PLANNED | Qualification rules | partner-programme.test.ts |
-| Referral £250 | Planned, conditional | No | No | No | PLANNED | Written terms | none |
+| Achievements | Planned, conditional | Versioned programme, derived qualification | Achievement Centre | Programme, qualification, rewards | IMPLEMENTED and tested; rewards NOT payable | Qualification rules, written terms | service, race, browser |
+| Referral £250 | Planned, conditional | Codes, attribution, conditional reward | Referrals view | Attribution, reward review | IMPLEMENTED and tested; NOT payable | Written terms | service, race, browser |
 | Withdrawal requests | Planned (label unchanged: no approved payout policy) | Versioned policy, disabled until approved | Commission Centre request/cancel | Policy, review, payout prep | IMPLEMENTED and tested, NOT operational | Frequency, minimum, invoicing, VAT | 31 service, 11 race, browser |
 | Dedicated email, CircleCard, prospects, Academy, personal page, Founding Partner | Planned labels | No | No | No | PLANNED / NOT STARTED | Provisioning, screening | none |
 | Sector exclusivity | Explained | Acceptance gate | Generic notice only | Register, decide | PARTIAL: enforced at acceptance only | Legal | service, race, browser |

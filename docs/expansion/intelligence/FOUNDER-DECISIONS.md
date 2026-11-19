@@ -29,4 +29,9 @@ Columns: blocks recruitment (R), activation (A), financial operations (F). Owner
 | Approving each customer market and its permitted plans | Nothing can be accepted in any market until approved | Approve UK first, others one by one | Founders, legal, tax | N | Y | Y |
 | Exclusivity vocabulary and recording standard | Matching is string-based and conservative | Controlled sector/area lists | Founders | N | Y | N |
 | Applicant and partner-residence market rules | Not modelled yet | Add gating before activation | Founders, legal | Y (claims) | Y | N |
+| Achievement qualification rules (minimum payment, duration, refund/cancellation effect, common ownership, additional-customer and bespoke treatment) | Defaults are manual review, one count per canonical client | Decide before approving a programme version | Founders, accounting, legal | N | N | Y |
+| Approving a programme version and enabling financial or referral rewards | Disabled by default; the database refuses reward approval otherwise | Approve in writing after accounting review | Founders, accounting | N | N | Y |
+| Whether to record referrals at application time | Today a founder records attribution before activation | Add a referral code to the public form | Founders, privacy | Y | N | N |
+| Sector taxonomy and exclusivity recording standard | Classified sectors decide by id; unclassified fall back to review | Define sectors and aliases before relying on matching | Founders | N | Y | N |
+| Toolkit fulfilment standard and external services (email, CircleCard) | Tracked manually; no provisioning exists | Approve providers and costs separately | Founders | N | N | N |
 

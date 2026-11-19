@@ -113,7 +113,7 @@ test('allocation, market and exclusivity enforcement, recognition and a syntheti
     await form(cNl, 'Mark eligible (re-runs every check)').getByRole('button', { name: 'Mark eligible (re-runs every check)', exact: true }).click()
     await expect(form(cNl, 'Mark eligible (re-runs every check)').locator('.ex-form-error')).toContainText('market is not approved')
     // [UI] suppression: a suppressed domain is blocked everywhere
-    const cSup = await createCandidate('sup')
+    await createCandidate('sup')
     await founderPage.getByText('Suppress a business domain').click()
     const supForm = form(founderPage, 'Record suppression'); await supForm.locator('input[name=domain]').fill(domain('sup')); await supForm.locator('textarea[name=reason]').fill('DEMO: business asked not to be approached')
     await supForm.getByRole('button', { name: 'Record suppression', exact: true }).click()

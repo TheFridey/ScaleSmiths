@@ -875,7 +875,6 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("Expansion real separa
     })
     it("a partner cannot resolve flags", async () => {
       const p = await fundedPartner("5a-flag-auth")
-      const c = await ownContract(p, "5a-flag-auth")
       await expect(runAs(p.actor, () => resolveQualificationFlag({ flagId: randomUUID(), resolution: "maintained", note: "x" }))).rejects.toThrow("Forbidden")
     })
     it("an approved reward whose qualification is revoked cannot progress and is withdrawn only with a new recorded reason", async () => {
@@ -1092,6 +1091,8 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("Expansion real separa
       expect(await checksOf()).toMatchObject({ suppressed: false, existingProspect: false })
       await runAs(founder, () => founderMutation({ action: "suppress", domain, reason: "TEST ONLY live-check suppression" }))
       expect(await checksOf()).toMatchObject({ suppressed: true }); expect((await checksOf()).blockers.join(" ")).toContain("suppression list")
+      const recorded = await runAs(founder, () => checkCandidate({ candidateId: id }))          // an explicit, recorded check
+      expect(recorded.checks).toMatchObject({ suppressed: true }); expect(await events(id)).toContain("checked")
       const other = await mk("livechk2"); const d2 = `research-${suffix}-livechk2${n}.example`
       await runAs(a.actor, () => partnerMutation({ action: "register", country: "QA", businessName: `Independent ${suffix} livechk2`, website: d2 }))
       expect(((await runAs(founder, () => getResearchAdmin())).candidates.find(c => c.id === other) as { checks: { existingProspect: boolean } }).checks.existingProspect).toBe(true)

@@ -480,8 +480,11 @@ export async function requestWithdrawal(input: { ledgerIds?: string[]; all?: boo
         conflict("A withdrawal request already uses that invoice reference.")
       }
     }
-    const chosen = wanted === null ? entries : entries.filter(row => wanted.includes(String(row.id)))
-    if (wanted !== null && chosen.length !== wanted.length) conflict("Some of those commission entries are no longer available. Refresh and try again.")
+    // Refund adjustments (negative entries) can never be left behind: they always travel with a request.
+    const negatives = entries.filter(row => BigInt(String(row.amount_pence)) < BigInt(0))
+    const picked = wanted === null ? entries : entries.filter(row => wanted.includes(String(row.id)))
+    const chosen = [...new Map([...picked, ...negatives].map(row => [String(row.id), row])).values()]
+    if (wanted !== null && wanted.some(id => !entries.some(row => String(row.id) === id))) conflict("Some of those commission entries are no longer available. Refresh and try again.")
     const total = sumPence(chosen)
     if (chosen.length === 0 || total <= BigInt(0)) conflict("There is no positive available commission to withdraw.")
     if (policy.min_amount_pence != null && total < BigInt(Number(policy.min_amount_pence))) conflict(`The minimum withdrawal is ${formatPence(String(policy.min_amount_pence))}.`)
@@ -537,8 +540,12 @@ export async function reviewWithdrawal(input: { requestId: string; decision: "ap
     await tx.execute(sql`select id from expansion_partners where id=${String(source.partner_id)} for update`)
     const [request] = await rows(tx, sql`select status,review_note from expansion_withdrawal_requests where id=${requestId} for update`)
     if (request.status === input.decision && request.review_note === note) return { requestId, status: input.decision, replayed: true }
-    if (request.status !== "submitted") conflict("Only a submitted request can be reviewed.")
-    if (input.decision === "approved") await assertNoRefundReview(tx, String(source.partner_id))
+    if (request.status !== "submitted" && !(request.status === "approved" && input.decision === "rejected")) conflict("Only a submitted request can be approved, and only a submitted or approved request can be rejected.")
+    if (input.decision === "approved") {
+      const reason = withdrawalUnavailable(await currentWithdrawalPolicy(tx))
+      if (reason) conflict(reason)
+      await assertNoRefundReview(tx, String(source.partner_id))
+    }
     await tx.execute(sql`update expansion_withdrawal_requests set status=${input.decision},review_note=${note},reviewed_by=${actor.id},reviewed_at=now(),updated_at=now() where id=${requestId}`)
     if (input.decision === "rejected") await releaseReservations(tx, requestId)
     await audit(tx, actor.id, requestId, `withdrawal_${input.decision}`, { note })
@@ -558,6 +565,8 @@ export async function prepareWithdrawalPayout(input: { requestId: string; invoic
     const [request] = await rows(tx, sql`select * from expansion_withdrawal_requests where id=${requestId} for update`)
     if (request.status === "payout_prepared") return { requestId, payoutId: String(request.payout_id), replayed: true }
     if (request.status !== "approved") conflict("Approve the withdrawal request before preparing its payout.")
+    const policyReason = withdrawalUnavailable(await currentWithdrawalPolicy(tx))
+    if (policyReason) conflict(policyReason)
     await assertNoRefundReview(tx, partnerId)
     const reference = input.invoiceReference ? financeText(input.invoiceReference, "Payout invoice reference") : request.invoice_reference ? String(request.invoice_reference) : null
     if (!reference) throw new ExpansionFinanceError("A partner invoice reference is required to prepare a payout.")

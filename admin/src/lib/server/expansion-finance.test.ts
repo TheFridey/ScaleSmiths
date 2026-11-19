@@ -55,6 +55,7 @@ describe("production partner financial service against PostgreSQL via PGlite", (
     await database.exec(readFileSync(new URL("../../../drizzle/0071_expansion_financial_hardening.sql", import.meta.url), "utf8"))
     await database.exec(readFileSync(new URL("../../../drizzle/0073_expansion_commercial_plans.sql", import.meta.url), "utf8"))
     await database.exec(readFileSync(new URL("../../../drizzle/0075_expansion_withdrawals.sql", import.meta.url), "utf8"))
+    await database.exec(readFileSync(new URL("../../../drizzle/0077_expansion_gate_hardening.sql", import.meta.url), "utf8"))
   }, 30000)
   beforeEach(async () => {
     state.actor = { id: FOUNDER, role: "owner", sessionVersion: 1, active: true }
@@ -433,6 +434,18 @@ describe("production partner financial service against PostgreSQL via PGlite", (
       const o = await overview()
       expect(o.balances).toMatchObject({ paidPence: "70500", earnedPence: "70500", availablePence: "0", disputedPence: "-6000" })
       expect(o.policy.available).toBe(false)
+    })
+    it("a founder can revoke an approved request, and a disabled policy stops approval and payout preparation", async () => {
+      await earnAll(); await policy()
+      asPartner(); const a = await requestWithdrawal({ all: true, invoiceReference: "INV-REV" })
+      asFounder(); await reviewWithdrawal({ requestId: a.requestId, decision: "approved", note: "ok" })
+      await policy({ enabled: false })
+      await expect(prepareWithdrawalPayout({ requestId: a.requestId })).rejects.toThrow("currently disabled")
+      await reviewWithdrawal({ requestId: a.requestId, decision: "rejected", note: "Founder revoked after policy suspension" })
+      expect((await overview()).balances.availablePence).toBe("70500")
+      await policy(); asPartner(); const b = await requestWithdrawal({ all: true, invoiceReference: "INV-REV2" })
+      await policy({ enabled: false }); asFounder()
+      await expect(reviewWithdrawal({ requestId: b.requestId, decision: "approved", note: "x" })).rejects.toThrow("currently disabled")
     })
   })
 })

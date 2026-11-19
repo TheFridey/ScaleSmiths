@@ -15,6 +15,18 @@ describe("exclusivity matching is conservative", () => {
   it("treats ampersands and the word and as the same", () => {
     expect(matchExclusivity({ sector: "Plumbing and Heating", area: "Nottingham" }, ex)).toBe("restricted")
   })
+  it("sends similar sectors and overlapping areas to review instead of clearing them", () => {
+    const dental = { clientId: 9, sector: "Dental", area: "Greater Manchester" }
+    expect(matchExclusivity({ sector: "Dental clinic", area: "Manchester, UK" }, dental)).toBe("review")
+    expect(matchExclusivity({ sector: "Dentistry", area: "Greater Manchester" }, dental)).toBe("review")
+    expect(matchExclusivity({ sector: "Dental", area: "Manchester city" }, dental)).toBe("review")
+    expect(matchExclusivity({ sector: "Dental", area: "Salford and Manchester" }, dental)).toBe("review")
+    expect(matchExclusivity({ sector: "Dental", area: "Greater Manchester area" }, dental)).toBe("restricted")
+  })
+  it("sends uncomparable records to review rather than clearing them", () => {
+    expect(matchExclusivity({ sector: "Dental", area: "Leeds" }, { clientId: 9, sector: "歯科", area: "Leeds" })).toBe("review")
+    expect(matchExclusivity({ sector: "Dental", area: "Leeds" }, { clientId: 9, sector: "Dental", area: "" })).toBe("review")
+  })
   it("clears what is positively different, and never restricts a customer by its own exclusivity", () => {
     expect(matchExclusivity({ sector: "Dentistry", area: "Nottingham" }, ex)).toBe("none")
     expect(matchExclusivity({ sector: "Plumbing & Heating", area: "Leeds" }, ex)).toBe("none")

@@ -37,7 +37,8 @@ async function submitted(suffix = "one") {
   return String(record.id)
 }
 const capacity = (hours = 10) => founderMutation({ action: "capacity", period: "2026-11-23", hours, commitmentsReviewed: true, rationale: "Remaining allocation after existing projects, retainers and founder availability" })
-const approval = (id: string, hours = 10) => founderMutation({ action: "review_scope", id, decision: "approved", period: "2026-11-23", hours, technicalConfirmed: true, commercialConfirmed: true, notes: "Technical feasibility, effort, scope, migration risk, price and delivery reviewed" })
+const confirmMarket = (id: string) => state.database!.query("update expansion_opportunities set customer_country_confirmed_by=$1 where id=$2 and customer_country is not null", [FOUNDER, id])
+const approval = async (id: string, hours = 10) => { const r = await founderMutation({ action: "review_scope", id, decision: "approved", period: "2026-11-23", hours, technicalConfirmed: true, commercialConfirmed: true, notes: "Technical feasibility, effort, scope, migration risk, price and delivery reviewed" }); await confirmMarket(id); return r }
 
 describe("production Expansion prospect/scope/capacity service against PostgreSQL via PGlite", () => {
   beforeAll(async () => {
@@ -61,6 +62,7 @@ describe("production Expansion prospect/scope/capacity service against PostgreSQ
     await state.database.exec(plans.slice(plans.indexOf("CREATE TABLE expansion_plan_settings")))
     await state.database.exec(readFileSync(new URL("../../../drizzle/0074_expansion_allowances_and_additional_claims.sql", import.meta.url), "utf8"))
     await state.database.exec(readFileSync(new URL("../../../drizzle/0076_expansion_market_and_exclusivity_gates.sql", import.meta.url), "utf8"))
+    await state.database.exec(readFileSync(new URL("../../../drizzle/0077_expansion_gate_hardening.sql", import.meta.url), "utf8"))
   }, 30000)
   beforeEach(async () => {
     asFounder()
@@ -372,7 +374,7 @@ describe("production Expansion prospect/scope/capacity service against PostgreSQ
       await expect(founderMutation({ action: "decide_exclusivity", id, exclusivityId, decision: "cleared", reference: "x" })).rejects.toThrow("approved exception")
       expect((await founderSnapshot()).exclusivityStatus[id]).toBe("restricted")
       asPartner(); const snap = await partnerSnapshot()
-      expect(snap.commercialChecks[id]).toBe("pending"); expect(JSON.stringify(snap)).not.toMatch(/Confidential Competitor|SYNTHETIC agreement|Plumbing and Heating/)
+      expect(snap).not.toHaveProperty("commercialChecks"); expect(JSON.stringify(snap)).not.toMatch(/Confidential Competitor|SYNTHETIC agreement|Plumbing and Heating/)
       await expect(founderMutation({ action: "decide_exclusivity", id, exclusivityId, decision: "exception_approved", reference: "x" })).rejects.toThrow()
       asFounder(); await founderMutation({ action: "decide_exclusivity", id, exclusivityId, decision: "exception_approved", reference: "SYNTHETIC founder exception with the protected customer's consent" })
       expect((await founderSnapshot()).exclusivityStatus[id]).toBe("exception_approved")
@@ -402,6 +404,25 @@ describe("production Expansion prospect/scope/capacity service against PostgreSQ
     })
     it("a partner cannot register an invalid market code", async () => {
       asPartner(); await expect(partnerMutation({ action: "register", country: "United Kingdom", businessName: "Bad", website: "bad.example" })).rejects.toThrow("ISO country code")
+    })
+    it("a partner-supplied country is not trusted until a founder confirms it", async () => {
+      asPartner(); const rec = await partnerMutation({ action: "register", country: "GB", businessName: "Unconfirmed", website: "unconfirmed.example", industry: "X", region: "Y" })
+      await partnerMutation({ action: "discovery", id: rec.id, discovery }); await partnerMutation({ action: "submit_scope", id: rec.id, summary: "Scope." })
+      asFounder(); await capacity(30)
+      await founderMutation({ action: "review_scope", id: rec.id, decision: "approved", period: "2026-11-23", hours: 10, technicalConfirmed: true, commercialConfirmed: true, notes: "Reviewed" }); await enable()
+      await expect(accept(String(rec.id))).rejects.toThrow("not approved for this plan")
+      await founderMutation({ action: "set_opportunity_market", id: rec.id, countryCode: "GB" }); await accept(String(rec.id))
+    })
+    it("a decision is final: a second decision conflicts instead of silently succeeding", async () => {
+      await state.database!.exec("insert into clients(id,name) values(2,'Other Customer')")
+      const id = await ready("final", { region: "" }); await exclusivity()
+      const exclusivityId = (await state.database!.query<{ id: string }>("select id from expansion_exclusivities")).rows[0].id
+      await founderMutation({ action: "decide_exclusivity", id, exclusivityId, decision: "cleared", reference: "first" })
+      await expect(founderMutation({ action: "decide_exclusivity", id, exclusivityId, decision: "exception_approved", reference: "second" })).rejects.toThrow("already recorded")
+    })
+    it("rejects impossible calendar dates for an exclusivity", async () => {
+      await state.database!.exec("insert into clients(id,name) values(2,'Other Customer')")
+      await expect(exclusivity({ effectiveFrom: "2026-02-31" })).rejects.toThrow("valid effective dates")
     })
   })
 })

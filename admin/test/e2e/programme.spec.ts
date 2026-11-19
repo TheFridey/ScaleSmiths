@@ -151,6 +151,11 @@ test('founder and partner complete the discounted, withdrawal and isolation jour
     await expect(founderPage.locator('.ex-list-row').filter({ hasText: 'France (FR)' })).toContainText('Approved')
     await founderPage.screenshot({ path: `${evidence}/founder-markets.png`, fullPage: true })
     await tab(founderPage, 'Prospects & scope'); await founderPage.getByRole('button', { name: new RegExp(business) }).click()
+    // [UI] The founder confirms the customer's market; a partner-supplied country is never trusted on its own.
+    const marketForm = founderPage.locator('form').filter({ has: founderPage.getByRole('button', { name: 'Set customer market' }) })
+    await marketForm.locator('input[name=countryCode]').fill('FR'); await marketForm.getByRole('button', { name: 'Set customer market' }).click()
+    await expect(founderPage.getByText('Customer market:').first()).toContainText('FR')
+    await expect.poll(async () => Boolean((await pool.query('select customer_country_confirmed_by c from expansion_opportunities where id=$1', [opp.id])).rows[0].c)).toBe(true)
     accept = await fillAccept()
     await founderPage.screenshot({ path: `${evidence}/founder-plan-selection.png`, fullPage: true })
     await accept.getByRole('button', { name: 'Record accepted contract' }).click()
@@ -220,6 +225,7 @@ test('founder and partner complete the discounted, withdrawal and isolation jour
     const reg2 = await command(a, { action: 'register', businessName: second, website: `demo-restricted-${suffix}.example`, industry: 'DEMO Sector', region: 'DEMO Area', country: 'FR' })
     await command(a, { action: 'discovery', id: reg2.id, discovery: { objectives: 'DEMO', pages: 'Five', functionality: 'Form', budget: 'Standard', timescale: 'Assessed', decisionProcess: 'Owner' } })
     await command(a, { action: 'submit_scope', id: reg2.id, summary: 'DEMO scope.' })
+    await command(founder, { action: 'set_opportunity_market', id: reg2.id, countryCode: 'FR' }, true)   // [API] founder confirmation, UI-proven above
     await command(founder, { action: 'review_scope', id: reg2.id, decision: 'approved', period: '2099-01-05', hours: 5, technicalConfirmed: true, commercialConfirmed: true, notes: 'DEMO reviewed.' }, true)
     await founderPage.reload(); await tab(founderPage, 'Prospects & scope'); await founderPage.getByRole('button', { name: new RegExp(second) }).click()
     await expect(founderPage.getByText('Restricted', { exact: true }).first()).toBeVisible()
@@ -227,7 +233,7 @@ test('founder and partner complete the discounted, withdrawal and isolation jour
     const blocked = await founder.request.post(`${origin()}/api/expansion`, { headers: { origin: origin() }, data: { action: 'accept_contract', id: reg2.id, clientId: client.id, plan: { plan: 'standard-v2' }, agreementReference: 'DEMO' } })
     expect(blocked.status()).toBe(409); expect(await blocked.text()).toContain('exclusivity'); expect(await blocked.text()).not.toContain(protectedName)
     await partnerPage.reload(); await tab(partnerPage, 'Prospects & scope'); await partnerPage.getByRole('button', { name: new RegExp(second) }).click()
-    await expect(partnerPage.getByText('Commercial checks in progress')).toBeVisible()
+    await expect(partnerPage.getByText('Commercial checks are completed by a founder')).toBeVisible()
     expect(JSON.stringify(await snapshot(a))).not.toMatch(/DEMO Protected Customer|clause 9/)
     await founderPage.locator('select[name=exclusivityId]').selectOption({ index: 0 })
     await founderPage.locator('form').filter({ has: founderPage.getByRole('button', { name: 'Record exclusivity decision' }) }).locator('select[name=decision]').selectOption('exception_approved')

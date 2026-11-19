@@ -89,7 +89,8 @@ async function submitted(tag: string, actor = first) {
     return record.id
   })
 }
-const approve = (id: string, deliveryPeriod: string, hours = 10) => runAs(founder, () => founderMutation({ action: "review_scope", id, decision: "approved", period: deliveryPeriod, hours, technicalConfirmed: true, commercialConfirmed: true, notes: "TEST ONLY reviewed technical feasibility, price, delivery effort and commercial terms" }))
+const approve = async (id: string, deliveryPeriod: string, hours = 10) => { const r = await approveRaw(id, deliveryPeriod, hours); await runAs(founder, async () => { await pool.query("update expansion_opportunities set customer_country_confirmed_by=$1 where id=$2 and customer_country is not null", [founder.id, id]) }); return r }
+const approveRaw = (id: string, deliveryPeriod: string, hours = 10) => runAs(founder, () => founderMutation({ action: "review_scope", id, decision: "approved", period: deliveryPeriod, hours, technicalConfirmed: true, commercialConfirmed: true, notes: "TEST ONLY reviewed technical feasibility, price, delivery effort and commercial terms" }))
 
 const refundClause = "TEST ONLY signed clause authorising unpaid commission adjustment"
 async function fundedPartner(tag: string) {
@@ -651,6 +652,45 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("Expansion real separa
       } finally {
         await pool.query("update expansion_markets set status='approved',approved_by=$1,approval_reference='TEST ONLY restored' where country_code='GB'", [founder.id])
       }
+    })
+  })
+
+  describe("checkpoint 3 review fixes on real PostgreSQL", () => {
+    const policy = () => runAs(founder, () => setWithdrawalPolicy({ enabled: true, invoiceRequired: true, approvalReference: "TEST ONLY payout policy" }))
+    it("negative refund adjustments always travel with a withdrawal request", async () => {
+      await policy(); const p = await fundedPartner("rv-neg")
+      await runAs(founder, () => refundExpansionPayment({ paymentId: p.paymentId, reference: `${suffix}-rv-neg-refund`, reason: "TEST ONLY verified refund", netPence: "20000", treatment: "adjust_unpaid", termsApprovalReference: refundClause }))
+      const entries = (await pool.query<{ id: string; amount_pence: string }>("select id,amount_pence::text from expansion_commission_ledger where partner_id=$1 order by amount_pence desc", [p.partnerId])).rows
+      expect(entries.map(e => e.amount_pence)).toEqual(["30000", "-6000"])
+      const req = await runAs(p.actor, () => requestWithdrawal({ ledgerIds: [entries[0].id], invoiceReference: `${suffix}-rv-neg` }))
+      expect(req.amountPence).toBe("24000")
+      expect((await pool.query("select count(*)::int c from expansion_withdrawal_entries where request_id=$1 and released_at is null", [req.requestId])).rows[0].c).toBe(2)
+    })
+    it("the database itself refuses a reservation on another partner's commission", async () => {
+      await policy(); const a = await fundedPartner("rv-own-a"), b = await fundedPartner("rv-own-b")
+      const req = await runAs(a.actor, () => requestWithdrawal({ all: true, invoiceReference: `${suffix}-rv-own` }))
+      const bEntry = (await pool.query<{ id: string }>("select id from expansion_commission_ledger where partner_id=$1", [b.partnerId])).rows[0].id
+      await expect(pool.query("insert into expansion_withdrawal_entries(id,request_id,ledger_id) values($1,$2,$3)", [randomUUID(), req.requestId, bEntry])).rejects.toThrow("own commission")
+    })
+    it("a founder can revoke an approved request so reservations never stay stuck", async () => {
+      await policy(); const p = await fundedPartner("rv-revoke")
+      const req = await runAs(p.actor, () => requestWithdrawal({ all: true, invoiceReference: `${suffix}-rv-revoke` }))
+      await runAs(founder, () => reviewWithdrawal({ requestId: req.requestId, decision: "approved", note: "TEST ONLY" }))
+      await runAs(founder, () => reviewWithdrawal({ requestId: req.requestId, decision: "rejected", note: "TEST ONLY revoked" }))
+      expect((await pool.query("select count(*)::int c from expansion_withdrawal_entries where request_id=$1 and released_at is null", [req.requestId])).rows[0].c).toBe(0)
+    })
+    it("an unconfirmed partner-supplied market never passes the gate", async () => {
+      const id = await runAs(first, async () => {
+        const rec = await partnerMutation({ action: "register", country: "GB", businessName: `TEST ONLY unconfirmed ${suffix}`, website: `unconfirmed-${suffix}.example`, industry: "Unconfirmed", region: "Nowhere" })
+        await partnerMutation({ action: "discovery", id: rec.id, discovery: { objectives: "T", pages: "F", functionality: "F", budget: "S", timescale: "A", decisionProcess: "O" } })
+        await partnerMutation({ action: "submit_scope", id: rec.id, summary: "TEST ONLY scope." })
+        return String(rec.id)
+      })
+      const week = (await pool.query<{ next: string }>("select (max(period)+7)::text as next from expansion_capacity")).rows[0].next
+      await runAs(founder, () => founderMutation({ action: "capacity", period: week, hours: 10, commitmentsReviewed: true, rationale: "TEST ONLY" }))
+      await runAs(founder, () => founderMutation({ action: "review_scope", id, decision: "approved", period: week, hours: 10, technicalConfirmed: true, commercialConfirmed: true, notes: "TEST ONLY reviewed" }))
+      await runAs(founder, () => founderMutation({ action: "set_plan_enabled", planKey: "standard-v2", enabled: true, reason: "TEST ONLY" }))
+      await expect(runAs(founder, () => founderMutation({ action: "accept_contract", id, clientId, plan: { plan: "standard-v2" }, agreementReference: "TEST ONLY" }))).rejects.toMatchObject({ status: 409, message: expect.stringContaining("not approved") })
     })
   })
 })

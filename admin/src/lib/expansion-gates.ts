@@ -9,15 +9,24 @@ export interface OpportunityFacts { clientId?: number | null; sector?: string | 
  * Same sector and an equal or nested area -> restricted. Same sector with an unknown area, or an unknown sector, -> founder review.
  * Anything that can be positively distinguished -> none. A customer is never restricted by its own exclusivity.
  */
+const STOP = new Set(["and", "the", "of", "for", "in", "ltd", "limited", "services", "service", "uk"])
+/** Word stems (first four letters) so "dental", "dentist" and "dentistry" overlap. Non-Latin text yields none. */
+const stems = (value: string) => new Set(value.split(" ").filter((w) => w.length >= 3 && !STOP.has(w)).map((w) => w.slice(0, 4)))
+const overlaps = (a: Set<string>, b: Set<string>) => [...a].some((t) => b.has(t))
+
 export function matchExclusivity(opportunity: OpportunityFacts, exclusivity: ExclusivityRecord): ExclusivityMatch {
   if (opportunity.clientId != null && opportunity.clientId === exclusivity.clientId) return "none"
   const sector = norm(opportunity.sector), area = norm(opportunity.area)
   const exSector = norm(exclusivity.sector), exArea = norm(exclusivity.area)
-  if (!sector) return "review"
-  if (sector !== exSector) return "none"
+  // Anything we cannot compare reliably needs a founder, on either side.
+  if (!sector || !exSector || !exArea) return "review"
+  const sameSector = sector === exSector
+  if (!sameSector && !overlaps(stems(sector), stems(exSector))) return "none"
   if (!area) return "review"
-  if (area === exArea || area.includes(exArea) || exArea.includes(area)) return "restricted"
-  return "none"
+  const nested = area === exArea || area.includes(exArea) || exArea.includes(area)
+  // An exact sector in an equal or nested area is a confirmed restriction; any looser overlap is a founder review.
+  if (nested) return sameSector ? "restricted" : "review"
+  return overlaps(stems(area), stems(exArea)) ? "review" : "none"
 }
 
 export function normaliseCountry(value: unknown): string | null {

@@ -472,6 +472,7 @@
     {"idx":83,"version":"7","when":1794951000016,"tag":"0083_expansion_review_flags_and_meeting_history","breakpoints":true},
     {"idx":84,"version":"7","when":1794951001016,"tag":"0084_expansion_research_allocation","breakpoints":true},
     {"idx":85,"version":"7","when":1794951002016,"tag":"0085_expansion_market_enforcement","breakpoints":true},
-    {"idx":86,"version":"7","when":1794951003016,"tag":"0086_expansion_founding_recognition","breakpoints":true}
+    {"idx":86,"version":"7","when":1794951003016,"tag":"0086_expansion_founding_recognition","breakpoints":true},
+    {"idx":87,"version":"7","when":1794951004016,"tag":"0087_expansion_partner_profiles","breakpoints":true}
   ]
 }

@@ -17,6 +17,8 @@ export const WEB_TABLE_GRANTS = new Map([
   ["monthly_reports", ["SELECT"]],
   ["experience_events", ["INSERT"]],
   ["public_verified_claims", ["SELECT"]],
+  // The ONLY partner-profile surface the public web role may read: a security-barrier view of founder-published, still-live, still-entitled profiles.
+  ["expansion_public_partner_profiles", ["SELECT"]],
   ["clients", ["SELECT"]],
   ["invoices", ["SELECT"]],
   ["invoice_items", ["SELECT"]],

@@ -37,6 +37,7 @@ import { resolveQualificationFlag } from "../../src/lib/server/expansion-program
 import { requestMeeting, decideMeeting, correctMeeting } from "../../src/lib/server/expansion-operations"
 import { allocateCandidate, checkCandidate, clearCandidateExclusivity, createCandidate, excludeCandidate, getResearchAdmin, markCandidateEligible, recordScreening, reassignCandidate, releaseCandidate } from "../../src/lib/server/expansion-research"
 import { addRecognitionEvidence, approveRecognitionBenefit, correctRecognition, decideRecognition, getPartnerRecognition, getRecognitionAdmin, nominateFoundingPartner, recordBenefitFulfilment, revokeRecognition, startRecognitionReview } from "../../src/lib/server/expansion-recognition"
+import { getPartnerProfile, publishProfile, recordProfileConsent, reviewProfile, revokePublication, saveProfileDraft, submitProfile } from "../../src/lib/server/expansion-profiles"
 import { translateDbError } from "../../src/lib/db-errors"
 import { approveProgramme, attributeReferral, createProgramme, createReferralCode, decideQualification, getProgrammeOverview, revokeQualification, reviewAchievementReward } from "../../src/lib/server/expansion-programme"
 import { allocateExpansionInvoice, approveExpansionPayout, cancelExpansionPayout, cancelWithdrawal, getWithdrawalOverview, prepareWithdrawalPayout, requestWithdrawal, reviewWithdrawal, setWithdrawalPolicy, getPartnerFinance, prepareExpansionPayout, refundExpansionPayment, settleExpansionPayout, verifyExpansionPayment } from "../../src/lib/server/expansion-finance"
@@ -125,6 +126,21 @@ async function fundedPartner(tag: string) {
 }
 
 const prepare = (partnerId: string, reference: string) => runAs(founder, () => prepareExpansionPayout({ partnerId, invoiceReference: `${suffix}-${reference}`, invoiceNetPence: "30000" }))
+
+/** An accepted, collected contract for a NEW canonical client (qualification counts each client once). */
+async function ownContract(p: Awaited<ReturnType<typeof fundedPartner>>, tag: string) {
+  const cid = (await pool.query<{ id: number }>("insert into clients(name,invoice_client_code,billing_address_line_1,billing_city,billing_postcode,billing_country) values($1,$2,'1 Test Street','Nottingham','NG1 1AA','United Kingdom') returning id", [`TEST ONLY 5A ${suffix} ${tag}`, `F${randomUUID().replace(/-/g, "").slice(0, 8).toUpperCase()}`])).rows[0].id
+  const opp = await submitted(`5a-${tag}`, p.actor)
+  const week = (await pool.query<{ next: string }>("select (max(period)+7)::text as next from expansion_capacity")).rows[0].next
+  await runAs(founder, () => founderMutation({ action: "capacity", period: week, hours: 10, commitmentsReviewed: true, rationale: "TEST ONLY 5A" }))
+  await approve(opp, week)
+  const accepted = await runAs(founder, () => founderMutation({ action: "accept_contract", id: opp, clientId: cid, terms: { ...standardCommissionTerms(), planVersion: "concurrency-approved-refund-v1", unpaidRefundApprovalReference: refundClause }, agreementReference: `TEST ONLY 5A ${suffix}-${tag}` })) as { id: string }
+  const invoice = await createInvoice({ clientId: cid, items: [{ title: "TEST ONLY 5A deposit", quantity: 1, unitAmount: 100000 }] }, founder.id)
+  await transitionInvoice(invoice.id, "issue", founder.id)
+  await runAs(founder, () => allocateExpansionInvoice({ contractId: accepted.id, invoiceId: invoice.id, milestone: "deposit", netPence: "100000", evidenceReference: "TEST ONLY 5A allocation" }))
+  const col = await runAs(founder, () => verifyExpansionPayment({ contractId: accepted.id, invoiceId: invoice.id, milestone: "deposit", reference: `${suffix}-5a-${tag}`, netPence: "100000", grossPence: "120000", evidenceReference: "TEST ONLY receipt", confirmed: true }))
+  return { contractId: accepted.id, paymentId: col.paymentId }
+}
 
 function expectSingleWinner(results: PromiseSettledResult<unknown>[], rejection: RegExp) {
   expect(results.filter(result => result.status === "fulfilled")).toHaveLength(1)
@@ -828,20 +844,6 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("Expansion real separa
   })
 
   describe("checkpoint 5A: review flags, reward withdrawal, meeting history and safe errors on real PostgreSQL", () => {
-    /** An accepted, collected contract for a NEW canonical client (qualification counts each client once). */
-    async function ownContract(p: Awaited<ReturnType<typeof fundedPartner>>, tag: string) {
-      const cid = (await pool.query<{ id: number }>("insert into clients(name,invoice_client_code,billing_address_line_1,billing_city,billing_postcode,billing_country) values($1,$2,'1 Test Street','Nottingham','NG1 1AA','United Kingdom') returning id", [`TEST ONLY 5A ${suffix} ${tag}`, `F${randomUUID().replace(/-/g, "").slice(0, 8).toUpperCase()}`])).rows[0].id
-      const opp = await submitted(`5a-${tag}`, p.actor)
-      const week = (await pool.query<{ next: string }>("select (max(period)+7)::text as next from expansion_capacity")).rows[0].next
-      await runAs(founder, () => founderMutation({ action: "capacity", period: week, hours: 10, commitmentsReviewed: true, rationale: "TEST ONLY 5A" }))
-      await approve(opp, week)
-      const accepted = await runAs(founder, () => founderMutation({ action: "accept_contract", id: opp, clientId: cid, terms: { ...standardCommissionTerms(), planVersion: "concurrency-approved-refund-v1", unpaidRefundApprovalReference: refundClause }, agreementReference: `TEST ONLY 5A ${suffix}-${tag}` })) as { id: string }
-      const invoice = await createInvoice({ clientId: cid, items: [{ title: "TEST ONLY 5A deposit", quantity: 1, unitAmount: 100000 }] }, founder.id)
-      await transitionInvoice(invoice.id, "issue", founder.id)
-      await runAs(founder, () => allocateExpansionInvoice({ contractId: accepted.id, invoiceId: invoice.id, milestone: "deposit", netPence: "100000", evidenceReference: "TEST ONLY 5A allocation" }))
-      const col = await runAs(founder, () => verifyExpansionPayment({ contractId: accepted.id, invoiceId: invoice.id, milestone: "deposit", reference: `${suffix}-5a-${tag}`, netPence: "100000", grossPence: "120000", evidenceReference: "TEST ONLY receipt", confirmed: true }))
-      return { contractId: accepted.id, paymentId: col.paymentId }
-    }
     const qualifyOwn = (contractId: string) => runAs(founder, () => decideQualification({ contractId, decision: "qualified", note: "TEST ONLY evidence" }))
     const refundOf = (paymentId: string, ref: string, net: string, gross: string) => runAs(founder, () => refundExpansionPayment({ paymentId, reference: `${suffix}-5a-${ref}`, netPence: net, grossPence: gross, reason: "TEST ONLY verified refund" }))
     const flagsOf = (contractId: string) => pool.query<{ id: string; status: string; reason: string; resolution: string | null }>("select f.id,f.status,f.reason,f.resolution from expansion_qualification_flags f join expansion_client_qualifications q on q.id=f.qualification_id where q.contract_id=$1 order by f.created_at", [contractId])
@@ -1258,6 +1260,155 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("Expansion real separa
       await pool.query("update admin_users set active=false where id=$1", [gone.actor.id])
       await expect(runAs(founder, () => decideRecognition({ recognitionId: n.id, decision: "approved", note: "TEST ONLY should be refused" }))).rejects.toMatchObject({ status: 409, message: expect.stringContaining("no longer active") })
       await expect(runAs(gone.actor, () => getPartnerRecognition())).rejects.toBeTruthy()
+    })
+  })
+
+  describe("checkpoint 5E: personal partner webpages and the restricted public role", () => {
+    const PUBLIC_COLUMNS = ["achievements", "biography", "display_name", "enquiry_mode", "founding_recognition_date", "operating_area", "published_at", "referral_code", "slug"]
+    let webPool: Pool | null = null
+    beforeAll(async () => {
+      vi.stubEnv("PARTNER_PROFILE_PUBLICATION_ENABLED", "true")
+      const url = process.env.EXPANSION_WEB_TEST_DATABASE_URL
+      if (url) { safeExpansionConcurrencyUrl(url); webPool = new Pool({ connectionString: url, max: 2, connectionTimeoutMillis: 5000 }) }
+      const prog = await runAs(founder, () => createProgramme({ label: `TEST ONLY 5E ${suffix}` }))
+      await runAs(founder, () => approveProgramme({ version: prog.version, approvalReference: `TEST ONLY 5E ${suffix}` }))
+    }, 60000)
+    afterAll(async () => { vi.unstubAllEnvs(); await webPool?.end() })
+    /** A partner with five founder-decided qualifying clients and an approved personal-webpage reward. */
+    async function entitledPartner(tag: string) {
+      const p = await fundedPartner(`5e-${tag}`)
+      for (let i = 0; i < 5; i++) { const c = await ownContract(p, `5e-${tag}-${i}`); await runAs(founder, () => decideQualification({ contractId: c.contractId, decision: "qualified", note: "TEST ONLY evidence" })) }
+      const reward = (await pool.query<{ id: string }>("select id from expansion_achievement_rewards where partner_id=$1 and kind='webpage'", [p.partnerId])).rows[0].id
+      await runAs(founder, () => reviewAchievementReward({ rewardId: reward, decision: "under_review" }))
+      await runAs(founder, () => reviewAchievementReward({ rewardId: reward, decision: "approved", note: "TEST ONLY approved under the approved programme" }))
+      return { ...p, reward }
+    }
+    const content = (tag: string, extra: Record<string, unknown> = {}) => ({ displayName: `Synthetic Partner ${tag} ${suffix}`, biography: `Synthetic biography ${tag}: a fictional independent partner used only to test the profile workflow end to end.`, operatingArea: "Synthetic Testshire", ...extra })
+    const approvedVersion = async (p: Awaited<ReturnType<typeof entitledPartner>>, tag: string, extra: Record<string, unknown> = {}) => {
+      const d = await runAs(p.actor, () => saveProfileDraft(content(tag, extra)))
+      await runAs(p.actor, () => recordProfileConsent({ versionId: d.versionId, accept: true }))
+      await runAs(p.actor, () => submitProfile({ versionId: d.versionId }))
+      await runAs(founder, () => reviewProfile({ versionId: d.versionId, decision: "approved", note: "TEST ONLY content reviewed and approved" }))
+      return d.versionId
+    }
+    const view = async (slug: string) => (await pool.query("select * from expansion_public_partner_profiles where slug=$1", [slug])).rows
+    const slugFor = (tag: string) => `synthetic-${suffix}-${tag}`.toLowerCase()
+
+    it("is gated on the personal-webpage reward: five qualifying clients make a partner eligible to prepare a draft, and nobody else", async () => {
+      const none = await fundedPartner("5e-none")
+      await expect(runAs(none.actor, () => saveProfileDraft(content("none")))).rejects.toMatchObject({ status: 409, message: expect.stringContaining("five qualifying clients") })
+      expect((await runAs(none.actor, () => getPartnerProfile())).eligible).toBe(false)
+      const p = await entitledPartner("elig")
+      expect((await runAs(p.actor, () => getPartnerProfile())).eligible).toBe(true)
+      await runAs(p.actor, () => saveProfileDraft(content("elig")))
+    })
+    it("runs draft, consent, submission, change request, approval and publication; edits after consent invalidate it, and approved content is immutable", async () => {
+      const p = await entitledPartner("flow")
+      const d = await runAs(p.actor, () => saveProfileDraft(content("flow")))
+      await expect(runAs(p.actor, () => submitProfile({ versionId: d.versionId }))).rejects.toMatchObject({ status: 409, message: expect.stringContaining("consent") })
+      await expect(runAs(p.actor, () => recordProfileConsent({ versionId: d.versionId, accept: false as unknown as true }))).rejects.toMatchObject({ status: 400 })
+      await runAs(p.actor, () => recordProfileConsent({ versionId: d.versionId, accept: true }))
+      await runAs(p.actor, () => saveProfileDraft(content("flow", { biography: "Edited synthetic biography after consent was given, so the consent no longer applies." })))
+      expect((await pool.query("select consent_at from expansion_profile_versions where id=$1", [d.versionId])).rows[0].consent_at).toBeNull()
+      await expect(runAs(p.actor, () => submitProfile({ versionId: d.versionId }))).rejects.toMatchObject({ status: 409 })
+      await expect(pool.query("update expansion_profile_versions set status='submitted',submitted_at=now() where id=$1", [d.versionId])).rejects.toThrow()   // the database refuses submission without matching consent
+      await runAs(p.actor, () => recordProfileConsent({ versionId: d.versionId, accept: true })); await runAs(p.actor, () => submitProfile({ versionId: d.versionId }))
+      await expect(runAs(p.actor, () => saveProfileDraft(content("flow")))).rejects.toMatchObject({ status: 409 })                 // frozen while under review
+      await runAs(founder, () => reviewProfile({ versionId: d.versionId, decision: "changes_requested", note: "TEST ONLY please shorten the biography" }))
+      expect((await runAs(p.actor, () => getPartnerProfile())).versions[0]).toMatchObject({ status: "changes_requested", feedback: "TEST ONLY please shorten the biography" })
+      await runAs(p.actor, () => saveProfileDraft(content("flow", { biography: "Shorter synthetic biography that still describes the fictional test partner clearly." })))
+      await expect(runAs(p.actor, () => submitProfile({ versionId: d.versionId }))).rejects.toMatchObject({ status: 409 })           // consent was cleared again by the edit
+      await runAs(p.actor, () => recordProfileConsent({ versionId: d.versionId, accept: true })); await runAs(p.actor, () => submitProfile({ versionId: d.versionId }))
+      await runAs(founder, () => reviewProfile({ versionId: d.versionId, decision: "approved", note: "TEST ONLY approved" }))
+      await expect(pool.query("update expansion_profile_versions set biography='tampered after approval, long enough to pass the length check' where id=$1", [d.versionId])).rejects.toThrow(/immutable/)
+      await expect(pool.query("delete from expansion_profile_versions where id=$1", [d.versionId])).rejects.toThrow()
+      // approved is not published: the public view shows nothing until a founder publishes
+      expect((await pool.query("select count(*)::int c from expansion_profile_publications where version_id=$1", [d.versionId])).rows[0].c).toBe(0)
+    })
+    it("rejects private contact details, misleading authority and income promises, and impersonation of ScaleSmiths", async () => {
+      const p = await entitledPartner("val")
+      for (const bad of [{ biography: "Reach me at someone@example.com for anything you need from a partner." }, { biography: "Call me on 07700 900123 any time you would like to talk it through." }, { biography: "Find my own site at https://example.com for much more information." }, { biography: "I am a director of ScaleSmiths and I can promise results for every client." }, { biography: "Guaranteed income of a very large amount every month for every partner." }, { displayName: "ScaleSmiths Official" }, { displayName: "Head Office Staff" }])
+        await expect(runAs(p.actor, () => saveProfileDraft(content("val", bad)))).rejects.toMatchObject({ status: 400 })
+      expect((await pool.query("select count(*)::int c from expansion_profile_versions where partner_id=$1", [p.partnerId])).rows[0].c).toBe(0)
+    })
+    it("publication is a separate, flag-gated, founder-only act with unique and reserved slugs bound to one partner for life", async () => {
+      const a = await entitledPartner("slug-a"), b = await entitledPartner("slug-b")
+      const va = await approvedVersion(a, "slug-a"), vb = await approvedVersion(b, "slug-b")
+      await expect(runAs(a.actor, () => publishProfile({ versionId: va, slug: slugFor("slug-a") }))).rejects.toThrow("Forbidden")
+      vi.stubEnv("PARTNER_PROFILE_PUBLICATION_ENABLED", "false")
+      await expect(runAs(founder, () => publishProfile({ versionId: va, slug: slugFor("slug-a") }))).rejects.toMatchObject({ status: 403, message: expect.stringContaining("not enabled") })
+      vi.stubEnv("PARTNER_PROFILE_PUBLICATION_ENABLED", "true")
+      for (const reserved of ["admin", "api", "login", "scalesmiths", "partners", "founder"]) await expect(runAs(founder, () => publishProfile({ versionId: va, slug: reserved }))).rejects.toMatchObject({ status: expect.any(Number) })
+      await expect(runAs(founder, () => publishProfile({ versionId: va, slug: "Bad Slug!" }))).rejects.toMatchObject({ status: 400 })
+      expect((await view("admin")).length + (await view("api")).length).toBe(0)
+      await runAs(founder, () => publishProfile({ versionId: va, slug: slugFor("slug-a"), achievements: ["Personal webpage recognition"] }))
+      await expect(runAs(founder, () => publishProfile({ versionId: vb, slug: slugFor("slug-a") }))).rejects.toMatchObject({ status: 409, message: expect.stringContaining("already in use") })
+      await expect(runAs(founder, () => publishProfile({ versionId: va, slug: slugFor("other") }))).rejects.toMatchObject({ status: 409 })   // a partner's address cannot be changed
+      await expect(runAs(founder, () => publishProfile({ versionId: va, achievements: ["Earned £5,000 in commission"] }))).rejects.toMatchObject({ status: 400 })
+      await expect(pool.query("update expansion_profile_slugs set partner_id=$1 where slug=$2", [b.partnerId, slugFor("slug-a")])).rejects.toThrow()
+      const live = (await pool.query<{ id: string }>("select id from expansion_profile_publications where partner_id=$1", [a.partnerId])).rows[0].id
+      await runAs(founder, () => revokePublication({ publicationId: live, reason: "TEST ONLY removed at the partner's request" }))
+      await expect(runAs(founder, () => publishProfile({ versionId: vb, slug: slugFor("slug-a") }))).rejects.toMatchObject({ status: 409 })  // revoked slugs are never re-bound
+      await runAs(founder, () => publishProfile({ versionId: vb, slug: slugFor("slug-b") }))
+    })
+    it("never lets one partner publish under another's live display name, or touch another partner's profile", async () => {
+      const a = await entitledPartner("imp-a"), b = await entitledPartner("imp-b")
+      const va = await approvedVersion(a, "imp"), vb = await approvedVersion(b, "imp", { displayName: `Synthetic Partner imp ${suffix}` })   // identical display name
+      await runAs(founder, () => publishProfile({ versionId: va, slug: slugFor("imp-a") }))
+      await expect(runAs(founder, () => publishProfile({ versionId: vb, slug: slugFor("imp-b") }))).rejects.toMatchObject({ status: 409, message: expect.stringContaining("display name") })
+      await expect(runAs(b.actor, () => recordProfileConsent({ versionId: va, accept: true }))).rejects.toMatchObject({ status: 404 })
+      await expect(runAs(b.actor, () => submitProfile({ versionId: va }))).rejects.toMatchObject({ status: 404 })
+      expect(JSON.stringify(await runAs(b.actor, () => getPartnerProfile()))).not.toContain(va)
+      await expect(runAs(b.actor, () => reviewProfile({ versionId: vb, decision: "approved", note: "TEST ONLY self approval" }))).rejects.toThrow("Forbidden")
+      await expect(runAs(founder, () => publishProfile({ versionId: randomUUID(), slug: "no-such" }))).rejects.toMatchObject({ status: 404 })
+    })
+    it("removes the public page at once when the publication, the partner, the recognition or the reward entitlement is revoked", async () => {
+      const a = await entitledPartner("live"); const v = await approvedVersion(a, "live"); const slug = slugFor("live")
+      await runAs(founder, () => publishProfile({ versionId: v, slug }))
+      expect(await view(slug)).toHaveLength(1)
+      // partner revocation
+      await pool.query("update admin_users set active=false where id=$1", [a.actor.id]); expect(await view(slug)).toHaveLength(0)
+      await pool.query("update admin_users set active=true where id=$1", [a.actor.id]); expect(await view(slug)).toHaveLength(1)
+      // withdrawn reward entitlement
+      await runAs(founder, () => reviewAchievementReward({ rewardId: a.reward, decision: "withdrawn", note: "TEST ONLY entitlement withdrawn" })); expect(await view(slug)).toHaveLength(0)
+    })
+    it("shows approved Founding Partner recognition only while it stands, and an opted-in referral identifier only", async () => {
+      const a = await entitledPartner("fp"); const v = await approvedVersion(a, "fp", { enquiryMode: "referral_code" }); const slug = slugFor("fp")
+      const code = (await runAs(a.actor, () => createReferralCode())).code
+      await runAs(founder, () => publishProfile({ versionId: v, slug }))
+      expect((await view(slug))[0]).toMatchObject({ referral_code: code, founding_recognition_date: null })
+      const n = await runAs(founder, () => nominateFoundingPartner({ partnerId: a.partnerId, rationale: "TEST ONLY nominated for the profile test" }))
+      await runAs(founder, () => addRecognitionEvidence({ recognitionId: n.id, description: "TEST ONLY evidence reviewed by a founder" })); await runAs(founder, () => startRecognitionReview({ recognitionId: n.id }))
+      await runAs(founder, () => decideRecognition({ recognitionId: n.id, decision: "approved", note: "TEST ONLY approved" }))
+      expect((await view(slug))[0].founding_recognition_date).not.toBeNull()
+      await runAs(founder, () => revokeRecognition({ recognitionId: n.id, reason: "TEST ONLY revoked" }))
+      expect((await view(slug))[0].founding_recognition_date).toBeNull()
+    })
+    it("a newer approved version supersedes the live one; two founders publishing the same version race to one live page", async () => {
+      const a = await entitledPartner("sup"); const v1 = await approvedVersion(a, "sup1"); const slug = slugFor("sup")
+      const results = await race<unknown>([() => runAs(founder, () => publishProfile({ versionId: v1, slug })), () => runAs(founder2, () => publishProfile({ versionId: v1, slug }))])
+      expect(results.filter(r => r.status === "fulfilled").length).toBeGreaterThanOrEqual(1)
+      expect((await pool.query("select count(*)::int c from expansion_profile_publications where partner_id=$1 and status='live'", [a.partnerId])).rows[0].c).toBe(1)
+      const v2 = await approvedVersion(a, "sup2", { biography: "Second synthetic biography, a newer approved wording that should replace the first one." })
+      await runAs(founder, () => publishProfile({ versionId: v2 }))
+      expect((await pool.query("select status from expansion_profile_publications where partner_id=$1 order by published_at", [a.partnerId])).rows.map(r => r.status)).toEqual(["superseded", "live"])
+      expect((await view(slug))[0].biography).toContain("Second synthetic biography")
+    })
+    it.skipIf(!process.env.EXPANSION_WEB_TEST_DATABASE_URL)("the restricted public role reads only the narrow projection and nothing private", async () => {
+      const a = await entitledPartner("role"); const v = await approvedVersion(a, "role"); const slug = slugFor("role")
+      await runAs(founder, () => publishProfile({ versionId: v, slug, achievements: ["Personal webpage recognition"] }))
+      const asWeb = webPool!
+      const row = (await asWeb.query("select * from expansion_public_partner_profiles where slug=$1", [slug])).rows[0]
+      expect(Object.keys(row).sort()).toEqual(PUBLIC_COLUMNS)
+      expect(JSON.stringify(row)).not.toMatch(/@example\.invalid|review_note|consent|partner_id|user_id/i)
+      for (const table of ["expansion_partners", "admin_users", "expansion_profile_versions", "expansion_profile_publications", "expansion_profile_slugs", "expansion_referral_codes", "expansion_recognitions", "expansion_achievement_rewards", "expansion_commission_ledger", "partner_applications"])
+        await expect(asWeb.query(`select 1 from ${table} limit 1`)).rejects.toMatchObject({ code: "42501" })
+      for (const write of ["insert into expansion_public_partner_profiles(slug) values('x')", `update expansion_public_partner_profiles set display_name='x'`, "delete from expansion_public_partner_profiles"])
+        await expect(asWeb.query(write)).rejects.toBeTruthy()
+      // revocation is visible to the public role immediately, on a separate connection
+      const pub = (await pool.query<{ id: string }>("select id from expansion_profile_publications where partner_id=$1 and status='live'", [a.partnerId])).rows[0].id
+      await runAs(founder, () => revokePublication({ publicationId: pub, reason: "TEST ONLY removal visible to the public role" }))
+      expect((await asWeb.query("select 1 from expansion_public_partner_profiles where slug=$1", [slug])).rows).toHaveLength(0)
     })
   })
 })

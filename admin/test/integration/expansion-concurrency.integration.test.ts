@@ -368,7 +368,6 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("Expansion real separa
 
     it("Case N: two simultaneous reservations against one remaining allowance admit exactly one", async () => {
       const partner = await fundedPartner("allowance-n")
-      await pool.query("delete from expansion_discount_policies where partner_id=$1", [partner.partnerId])
       await setPolicy(partner.partnerId, 1)
       const a = await approvedFor(partner.actor, "n-a"), b = await approvedFor(partner.actor, "n-b")
       const results = await race([() => reserve(a), () => reserve(b)])
@@ -378,7 +377,6 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("Expansion real separa
     })
     it("never overspends under six-way contention for a three-slot allowance", async () => {
       const partner = await fundedPartner("allowance-six")
-      await pool.query("delete from expansion_discount_reservations where policy_id in (select id from expansion_discount_policies where partner_id=$1)", [partner.partnerId]).catch(() => undefined)
       await setPolicy(partner.partnerId, 3)
       const ids: string[] = []
       for (let i = 0; i < 6; i++) ids.push(await approvedFor(partner.actor, `six-${i}`))

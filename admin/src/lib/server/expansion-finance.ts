@@ -5,7 +5,7 @@ import { db, type AdminDatabaseTransaction } from "@/lib/db"
 import { type AdminRole } from "@/lib/admin-users"
 import { hasCapability } from "@/lib/rbac"
 import { requireCapability } from "./rbac"
-import { commissionAt, commissionDelta, COMMISSION_MILESTONES, ExpansionFinanceError, financeText, financeUuid, parseCommissionTerms, pence, type CommissionMilestone } from "@/lib/expansion-finance"
+import { BUILD_MILESTONES, commissionAt, commissionDelta, commissionGroup, COMMISSION_MILESTONES, isPooledCommission, milestoneCap, ExpansionFinanceError, financeText, financeUuid, parseCommissionTerms, pence, type CommissionMilestone } from "@/lib/expansion-finance"
 
 type Row = Record<string, unknown>
 type Executor = Pick<AdminDatabaseTransaction, "execute">
@@ -33,6 +33,17 @@ async function lockedContract(tx: Executor, id: string, allowCancelled = false) 
 async function collected(tx: Executor, contractId: string, milestone: CommissionMilestone) {
   const [total] = await rows(tx, sql`select coalesce(sum(net_pence),0)::text as total from expansion_payment_events where contract_id=${contractId} and milestone=${milestone}`)
   return BigInt(String(total.total))
+}
+/** Net collected across every milestone that shares one commission rounding with `milestone`. */
+async function collectedGroup(tx: Executor, contractId: string, milestones: CommissionMilestone[]) {
+  const [total] = await rows(tx, sql`select coalesce(sum(net_pence),0)::text as total from expansion_payment_events where contract_id=${contractId} and milestone in (${sql.join(milestones.map(m => sql`${m}`), sql`, `)})`)
+  return BigInt(String(total.total))
+}
+async function earnedGroup(tx: Executor, contractId: string, milestones: CommissionMilestone[]) {
+  const [ledger] = await rows(tx, sql`select coalesce(sum(l.amount_pence),0)::text as earned
+    from expansion_commission_ledger l join expansion_payment_events e on e.id=l.payment_event_id
+    where l.contract_id=${contractId} and e.milestone in (${sql.join(milestones.map(m => sql`${m}`), sql`, `)})`)
+  return BigInt(String(ledger.earned))
 }
 async function assertNoRefundReview(tx: Executor, partnerId: string) {
   const [pending] = await rows(tx, sql`select e.id from expansion_payment_events e
@@ -112,7 +123,7 @@ export async function allocateExpansionInvoice(input: {
       coalesce(sum((after_value->>'netPence')::bigint) filter (where after_value->>'contractId'=${contractId} and after_value->>'milestone'=${input.milestone}),0)::text as milestone
       from commercial_audit where entity='partner_finance' and action='invoice_allocation_approved'`)
     if (BigInt(String(totals.invoice)) + net > BigInt(String(invoice.total)) ||
-        BigInt(String(totals.milestone)) + net > pence(parseCommissionTerms(contract.terms).milestones[input.milestone],true)) {
+        BigInt(String(totals.milestone)) + net > milestoneCap(parseCommissionTerms(contract.terms), input.milestone)) {
       conflict("Allocation exceeds the invoice total or approved milestone.")
     }
     await audit(tx, actor.id, key, "invoice_allocation_approved", details)
@@ -158,14 +169,13 @@ export async function verifyExpansionPayment(input: VerifiedExpansionPayment) {
     if (BigInt(String(bound.total)) + net > BigInt(String(binding.limit_pence))) conflict("Collection exceeds the approved milestone allocation for this invoice.")
     const [allocated] = await rows(tx, sql`select coalesce(sum(amount),0)::text as total from commercial_payments where invoice_id=${input.invoiceId}`)
     if (BigInt(String(allocated.total)) + net > BigInt(String(invoice.total))) conflict("Collection exceeds the outstanding VAT-exclusive invoice balance.")
-    const before = await collected(tx, contractId, input.milestone)
-    const increment = commissionDelta(contract.terms, input.milestone, before, net)
     const terms = parseCommissionTerms(contract.terms)
-    const [ledger] = await rows(tx, sql`select coalesce(sum(l.amount_pence),0)::text as earned
-      from expansion_commission_ledger l join expansion_payment_events e on e.id=l.payment_event_id
-      where l.contract_id=${contractId} and e.milestone=${input.milestone}`)
+    const group = commissionGroup(terms, input.milestone)
+    const before = await collected(tx, contractId, input.milestone)
+    const groupBefore = await collectedGroup(tx, contractId, group)
+    const increment = commissionDelta(contract.terms, input.milestone, before, net, groupBefore)
     // Cash refunds awaiting review must not reopen commission headroom.
-    const available = commissionAt(before + net, terms.rateBps) - BigInt(String(ledger.earned))
+    const available = commissionAt(groupBefore + net, terms.rateBps) - await earnedGroup(tx, contractId, group)
     const delta = available <= BigInt(0) ? BigInt(0) : available < increment ? available : increment
     const [payment] = await rows(tx, sql`insert into commercial_payments(client_id,invoice_id,category,amount,evidence,reference,actor_user_id,received_at) values(${String(contract.client_id)}::integer,${input.invoiceId},${input.milestone === "first_retainer" ? "retainer" : "website_build"},${net.toString()}::integer,${evidence},${reference},${actor.id},${receivedAt}::timestamptz) returning id`)
     const eventId = randomUUID()
@@ -219,13 +229,14 @@ export async function refundExpansionPayment(input: ExpansionRefund) {
       }
       const [allocated] = await rows(tx, sql`select p.status from expansion_payouts p join expansion_payout_claims pe on pe.payout_id=p.id
         join expansion_commission_ledger l on l.id=pe.ledger_id join expansion_payment_events e on e.id=l.payment_event_id
-        where l.contract_id=${String(source.contract_id)} and e.milestone=${String(source.milestone)} limit 1`)
+        where l.contract_id=${String(source.contract_id)} and e.milestone in (${sql.join(commissionGroup(parseCommissionTerms(contract.terms), source.milestone as CommissionMilestone).map(m => sql`${m}`), sql`, `)}) limit 1`)
       if (allocated) conflict("Resolve the prepared payout or seek manual review of previously approved or paid commission.")
     }
     await tx.execute(sql`select id from invoices where id=${String(source.invoice_id)}::integer for update`)
     const before = await collected(tx, String(source.contract_id), source.milestone as CommissionMilestone)
     const net = -refundNet, gross = -refundGross
-    const calculated = commissionDelta(contract.terms, source.milestone as CommissionMilestone, before, net)
+    const groupBefore = await collectedGroup(tx, String(source.contract_id), commissionGroup(parseCommissionTerms(contract.terms), source.milestone as CommissionMilestone))
+    const calculated = commissionDelta(contract.terms, source.milestone as CommissionMilestone, before, net, groupBefore)
     const delta = treatment === "adjust_unpaid" ? calculated : BigInt(0)
     await tx.execute(sql`select set_config('app.expansion_finance','verified',true)`)
     const [payment] = await rows(tx, sql`insert into commercial_payments(client_id,invoice_id,category,amount,evidence,reference,reverses_payment_id,actor_user_id,received_at,expansion_refund) values(${String(source.client_id)}::integer,${String(source.invoice_id)}::integer,${String(source.category)},${net.toString()}::integer,${reason},${reference},${String(source.commercial_payment_id)}::integer,${actor.id},now(),true) returning id`)
@@ -347,7 +358,11 @@ export async function getPartnerFinance(userId?: string): Promise<PartnerFinance
     for (const contract of contracts) {
       const terms = parseCommissionTerms(contract.terms)
       let maximum = BigInt(0)
-      for (const milestone of COMMISSION_MILESTONES) maximum += commissionAt(pence(terms.milestones[milestone], true), terms.rateBps)
+      if (isPooledCommission(terms)) {
+        // Pooled plans round once on the build total, matching how entitlement is actually earned.
+        const build = BUILD_MILESTONES.reduce((sum, m) => sum + milestoneCap(terms, m), BigInt(0))
+        maximum = commissionAt(build, terms.rateBps) + commissionAt(milestoneCap(terms, "first_retainer"), terms.rateBps)
+      } else for (const milestone of COMMISSION_MILESTONES) maximum += commissionAt(milestoneCap(terms, milestone), terms.rateBps)
       const contractEarned = ledger.filter(row => row.contract_id === contract.id).reduce((sum,row) => sum + BigInt(String(row.amount_pence)),BigInt(0))
       if (maximum > contractEarned) conditional += maximum - contractEarned
     }

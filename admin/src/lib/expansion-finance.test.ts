@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { flexibleCommissionTermsV2, minimumContractValuePence, retainerOnlyCommissionTerms, scheduleCommissionTerms, standardCommissionTermsV2, commissionAt, commissionDelta, formatPence, parseCommissionTerms, pence, standardCommissionTerms } from "./expansion-finance"
+import { buildAcceptedTerms, minimumContractValuePence, commissionAt, commissionDelta, formatPence, parseCommissionTerms, pence, standardCommissionTerms } from "./expansion-finance"
 
 describe("versioned exact partner commission", () => {
   it("earns exactly £705 from the three standard VAT-exclusive milestones", () => {
@@ -33,39 +33,76 @@ describe("versioned exact partner commission", () => {
     expect(() => commissionDelta(standardCommissionTerms(), "deposit", BigInt(0), -BigInt(1))).toThrow()
   })
 
-  const earn = (terms: ReturnType<typeof standardCommissionTermsV2>, paid: Array<["deposit" | "final" | "first_retainer", bigint]>) =>
-    paid.map(([milestone, amount]) => commissionDelta(terms, milestone, BigInt(0), amount).toString())
-  it("Case A: historical six-month terms are unchanged", () => {
+  /** Collect each instalment in order against the pooled model; returns per-collection commission. */
+  const run = (terms: ReturnType<typeof buildAcceptedTerms>, payments: Array<["deposit" | "interim" | "final" | "first_retainer", number]>) => {
+    const milestoneTotals: Record<string, bigint> = {}; let group = BigInt(0); const out: bigint[] = []
+    for (const [m, amount] of payments) {
+      const before = milestoneTotals[m] ?? BigInt(0)
+      const base = m === "first_retainer" ? (milestoneTotals.first_retainer ?? BigInt(0)) : group
+      out.push(commissionDelta(terms, m, before, BigInt(amount), base))
+      milestoneTotals[m] = before + BigInt(amount); if (m !== "first_retainer") group += BigInt(amount)
+    }
+    return out.map(Number)
+  }
+  it("Case A: historical six-month terms are unchanged and carry no pooled commitment", () => {
     expect(standardCommissionTerms()).toEqual({ planVersion: "standard-v1", rateBps: 3000, milestones: { deposit: "100000", final: "100000", first_retainer: "35000" } })
+    expect(parseCommissionTerms(standardCommissionTerms()).commitment).toBeUndefined()
   })
-  it("Case B: twelve-month standard terms earn £705 on a £6,200 minimum contract", () => {
-    expect(standardCommissionTermsV2().planVersion).toBe("standard-v2")
+  it("Case B: standard-v2 stores a twelve-month £6,200 commitment and earns £705", () => {
+    const terms = buildAcceptedTerms({ plan: "standard-v2" })
+    expect(terms.commitment).toMatchObject({ currency: "GBP", buildPence: "200000", recurringPence: "35000", minTermMonths: 12, minimumContractValuePence: "620000", buildInstalments: ["100000", "100000"] })
+    expect(run(terms, [["deposit", 100000], ["final", 100000], ["first_retainer", 35000]])).toEqual([30000, 30000, 10500])
     expect(minimumContractValuePence(200000)).toBe(BigInt(620000))
-    expect(earn(standardCommissionTermsV2(), [["deposit", BigInt(100000)], ["final", BigInt(100000)], ["first_retainer", BigInt(35000)]])).toEqual(["30000", "30000", "10500"])
   })
-  it("Case C: £750/£1,250 schedule earns £225 + £375 + £105 = £705", () => {
-    const parts = earn(flexibleCommissionTermsV2(), [["deposit", BigInt(75000)], ["final", BigInt(125000)], ["first_retainer", BigInt(35000)]])
-    expect(parts).toEqual(["22500", "37500", "10500"])
-    expect(parts.reduce((a, b) => a + BigInt(b), BigInt(0))).toBe(BigInt(70500))
+  it("Case C: £750/£1,250 earns £225 + £375 + £105 under its own immutable plan version", () => {
+    const terms = buildAcceptedTerms({ plan: "standard-v2", scheduleId: "deposit-completion" })
+    expect(terms.planVersion).toBe("standard-v2.deposit-completion")
+    expect(run(terms, [["deposit", 75000], ["final", 125000], ["first_retainer", 35000]])).toEqual([22500, 37500, 10500])
   })
-  it("Case D: retainer-only earns £105 once and nothing more on later payments", () => {
-    const terms = retainerOnlyCommissionTerms()
-    expect(commissionDelta(terms, "first_retainer", BigInt(0), BigInt(35000))).toBe(BigInt(10500))
-    expect(() => commissionDelta(terms, "first_retainer", BigInt(35000), BigInt(35000))).toThrow()
-    expect(() => commissionDelta(terms, "deposit", BigInt(0), BigInt(1))).toThrow()
-    expect(minimumContractValuePence(0)).toBe(BigInt(420000))
+  it("Case P: four £500 instalments pool into deposit/interim/final and earn £150 x 4 + £105", () => {
+    const terms = buildAcceptedTerms({ plan: "standard-v2", scheduleId: "custom", buildInstalmentsPence: [50000, 50000, 50000, 50000], scheduleApprovalReference: "SYNTHETIC founder approval" })
+    expect(terms.milestones).toMatchObject({ deposit: "50000", interim: "100000", final: "50000" })
+    expect(run(terms, [["deposit", 50000], ["interim", 50000], ["interim", 50000], ["final", 50000], ["first_retainer", 35000]])).toEqual([15000, 15000, 15000, 15000, 10500])
   })
-  it("Cases E/F: discounted and free-build websites follow the approved build fee", () => {
-    const total = (build: number) => { const terms = scheduleCommissionTerms({ build }); return commissionAt(BigInt(build), 3000) + commissionDelta(terms, "first_retainer", BigInt(0), BigInt(35000)) }
-    expect(total(150000)).toBe(BigInt(55500)); expect(total(100000)).toBe(BigInt(40500)); expect(total(50000)).toBe(BigInt(25500)); expect(total(0)).toBe(BigInt(10500))
+  it("rejects custom schedules without approval or that do not add up, and unapproved discounts", () => {
+    expect(() => buildAcceptedTerms({ plan: "standard-v2", scheduleId: "custom", buildInstalmentsPence: [50000, 50000, 50000, 50000] })).toThrow(/approval reference/)
+    expect(() => buildAcceptedTerms({ plan: "standard-v2", scheduleId: "custom", buildInstalmentsPence: [50000, 50000], scheduleApprovalReference: "x" })).toThrow(/add up/)
+    expect(() => buildAcceptedTerms({ plan: "standard-v2", scheduleId: "nonsense" })).toThrow(/approved payment schedule/)
+    expect(() => buildAcceptedTerms({ plan: "standard-v2", buildFeePence: 150000 })).toThrow(/discount allowance/)
+    expect(() => buildAcceptedTerms({ plan: "standard-v2", recurringPence: 1 })).toThrow()
   })
-  it("Case G: bespoke £25,000 accrues only from verified collections", () => {
-    const terms = parseCommissionTerms({ planVersion: "bespoke-approved-1", rateBps: 3000, milestones: { deposit: "1000000", final: "1500000", first_retainer: "0" } })
-    expect(commissionDelta(terms, "deposit", BigInt(0), BigInt(1000000))).toBe(BigInt(300000))
-    expect(commissionDelta(terms, "final", BigInt(0), BigInt(1500000))).toBe(BigInt(450000))
+  it("Cases D/F: Growth Partnership-only earns £105 once on a £4,200 commitment with no build", () => {
+    const terms = buildAcceptedTerms({ plan: "growth-only-v1" })
+    expect(terms.commitment).toMatchObject({ buildPence: "0", minimumContractValuePence: "420000", minTermMonths: 12 })
+    expect(run(terms, [["first_retainer", 35000]])).toEqual([10500])
+    expect(() => commissionDelta(terms, "first_retainer", BigInt(35000), BigInt(35000), BigInt(35000))).toThrow()
+    expect(() => commissionDelta(terms, "deposit", BigInt(0), BigInt(1), BigInt(0))).toThrow()
+    expect(() => buildAcceptedTerms({ plan: "growth-only-v1", buildFeePence: 100000 })).toThrow()
   })
-  it("rejects schedules that do not add up to the approved build fee", () => {
-    expect(() => scheduleCommissionTerms({ build: 200000, split: { deposit: 75000, final: 100000 } })).toThrow()
-    expect(() => scheduleCommissionTerms({ build: -1 })).toThrow()
+  it("Case G: bespoke £25,000 accrues per collection, never a £705 cap", () => {
+    const terms = buildAcceptedTerms({ plan: "bespoke-v1", buildInstalmentsPence: [1000000, 500000, 1000000] })
+    expect(terms.commitment?.buildPence).toBe("2500000")
+    expect(run(terms, [["deposit", 1000000], ["interim", 500000], ["final", 1000000]])).toEqual([300000, 150000, 300000])
+    expect(() => buildAcceptedTerms({ plan: "bespoke-v1", buildInstalmentsPence: [100], rateBps: 2500 })).toThrow(/approval reference/)
+  })
+  it("pooled rounding: fragmenting odd-penny payments across milestones never beats one cumulative rounding", () => {
+    const terms = buildAcceptedTerms({ plan: "bespoke-v1", buildInstalmentsPence: [5, 5, 5, 5] })
+    // £0.05 x 4 = 20p: exactly 6p cumulatively, while naive per-milestone rounding would pay 2p+2p+4p... = 8p
+    const total = run(terms, [["deposit", 5], ["interim", 5], ["interim", 5], ["final", 5]]).reduce((a, b) => a + b, 0)
+    expect(total).toBe(Number(commissionAt(BigInt(20), 3000)))
+    expect(total).toBe(6)
+  })
+  it("pooled refunds reverse exactly what was earned and cannot exceed collected amounts", () => {
+    const terms = buildAcceptedTerms({ plan: "standard-v2", scheduleId: "deposit-completion" })
+    expect(commissionDelta(terms, "final", BigInt(125000), -BigInt(125000), BigInt(200000))).toBe(-BigInt(37500))
+    expect(() => commissionDelta(terms, "final", BigInt(0), -BigInt(1), BigInt(200000))).toThrow()
+  })
+  it("tampered or inconsistent snapshots are rejected", () => {
+    const good = buildAcceptedTerms({ plan: "standard-v2" })
+    const bad = (mutate: (t: any) => void) => { const t = JSON.parse(JSON.stringify(good)); mutate(t); return () => parseCommissionTerms(t) }
+    expect(bad(t => { t.commitment.minTermMonths = 6; t.commitment.minimumContractValuePence = "410000" })).toThrow(/twelve-month/)
+    expect(bad(t => { t.milestones.final = "100001" })).toThrow(/add up/)
+    expect(bad(t => { t.commitment.minimumContractValuePence = "1" })).toThrow(/contract value/)
+    expect(bad(t => { delete t.commitment })).toThrow(/commitment/)
   })
 })

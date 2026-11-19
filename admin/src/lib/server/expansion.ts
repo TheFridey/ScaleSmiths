@@ -6,7 +6,7 @@ import { requireCapability } from './rbac'
 import { issueInvitation } from './partner-invitations'
 import { runApplicantRetention } from './expansion-retention'
 import { ExpansionError, expansionText, expansionId, expansionInteger, prospectDomain, parseDiscovery, technicalReviewFlags, assertPartnerTransition, capacityPeriod } from '@/lib/expansion'
-import { parseCommissionTerms } from '@/lib/expansion-finance'
+import { buildAcceptedTerms, COMMERCIAL_PLAN_KEYS, parseCommissionTerms, type CommercialPlanKey, type PlanRequest } from '@/lib/expansion-finance'
 import { hasCapability, type Capability } from '@/lib/rbac'
 import type { AdminRole } from '@/lib/admin-users'
 
@@ -46,15 +46,16 @@ export async function founderSnapshot() {
   const actor = await requireCapability('expansion.manage')
   return db.transaction(async tx=>{
   await currentActor(tx,actor,'expansion.manage')
-  const [applications,partners,opportunities,capacity,resources,clients] = await Promise.all([
+  const [applications,partners,opportunities,capacity,resources,clients,planSettings] = await Promise.all([
     tx.execute(sql`select * from partner_applications order by submitted_at desc limit 200`),
     tx.execute(sql`select p.id,p.user_id,p.agreement_version,p.activated_at,u.display_name,u.email,u.active from expansion_partners p join admin_users u on u.id=p.user_id order by p.created_at desc`),
     tx.execute(sql`select o.*,p.business_name,u.display_name partner_name,c.id contract_id from expansion_opportunities o join prospects p on p.id=o.prospect_id join expansion_partners ep on ep.id=o.partner_id join admin_users u on u.id=ep.user_id left join expansion_contracts c on c.opportunity_id=o.id order by o.created_at desc limit 500`),
     tx.execute(sql`select c.*,coalesce(sum(r.hours) filter(where r.status<>'released'),0)::integer reserved_hours from expansion_capacity c left join expansion_reservations r on r.period=c.period group by c.period order by c.period`),
     tx.execute(sql`select * from expansion_resources order by created_at desc`),
     tx.execute(sql`select id,name from clients order by name`),
+    tx.execute(sql`select plan_key,enabled,updated_at from expansion_plan_settings order by plan_key`),
   ])
-  return { applications:applications.rows,partners:partners.rows,opportunities:opportunities.rows,capacity:capacity.rows,resources:resources.rows,clients:clients.rows }
+  return { planSettings:planSettings.rows,applications:applications.rows,partners:partners.rows,opportunities:opportunities.rows,capacity:capacity.rows,resources:resources.rows,clients:clients.rows }
   })
 }
 export async function partnerMutation(input: Input) {
@@ -173,6 +174,14 @@ export async function founderMutation(input: Input) {
       await audit(tx,actor.id,domain,'business_suppressed')
       return {domain}
     }
+    if (input.action === 'set_plan_enabled') {
+      const planKey = String(input.planKey)
+      if (!(COMMERCIAL_PLAN_KEYS as readonly string[]).includes(planKey) || typeof input.enabled !== 'boolean') throw new ExpansionError('Choose a known commercial plan and state.')
+      const reason = expansionText(input.reason,'Reason for the change',1000)
+      await tx.execute(sql`update expansion_plan_settings set enabled=${input.enabled},updated_by=${actor.id},updated_at=now() where plan_key=${planKey}`)
+      await audit(tx,actor.id,planKey,'plan_availability_changed',{enabled:input.enabled,reason})
+      return {planKey,enabled:input.enabled}
+    }
     const id = expansionId(input.id)
     const row = await opportunity(tx,id)
     if (input.action === 'cancel_contract') {
@@ -219,15 +228,27 @@ export async function founderMutation(input: Input) {
       const canonicalProspect = await tx.execute(sql`select converted_client_id from prospects where id=${row.prospect_id} for update`)
       const existingConversion = await tx.execute(sql`select client_id from prospect_conversions where prospect_id=${row.prospect_id}`)
       if ((canonicalProspect.rows[0]?.converted_client_id && canonicalProspect.rows[0].converted_client_id!==clientId) || (existingConversion.rows[0] && existingConversion.rows[0].client_id!==clientId)) throw new ExpansionError('This prospect is already linked to a different client. Resolve the canonical CRM relationship before acceptance.',409)
-      const terms = parseCommissionTerms(input.terms)
+      let planPricing: { websitePence: number; monthlyPence: number } | null = null
+      let planTerms = null as ReturnType<typeof parseCommissionTerms> | null
+      if (input.plan !== undefined) {
+        if (input.terms !== undefined) throw new ExpansionError('Choose either an approved plan or legacy terms, not both.')
+        const request = input.plan as PlanRequest
+        if (!request || typeof request !== 'object' || !(COMMERCIAL_PLAN_KEYS as readonly string[]).includes(request.plan)) throw new ExpansionError('Choose an approved commercial plan.')
+        // Share-lock serialises acceptance against a founder disabling the plan.
+        const setting = await tx.execute(sql`select enabled from expansion_plan_settings where plan_key=${request.plan as CommercialPlanKey} for share`)
+        if (!setting.rows[0]?.enabled) throw new ExpansionError('This commercial plan is not enabled.',409)
+        try { planTerms = buildAcceptedTerms(request) } catch (error) { throw new ExpansionError(error instanceof Error ? error.message : 'Invalid commercial plan.', (error as { status?: number }).status ?? 400) }
+        planPricing = { websitePence: Number(planTerms.commitment!.buildPence), monthlyPence: Number(planTerms.commitment!.recurringPence) }
+      }
+      const terms = planTerms ?? parseCommissionTerms(input.terms)
       await tx.execute(sql`insert into expansion_commission_plans(version,terms,created_by) values(${terms.planVersion},${JSON.stringify(terms)}::jsonb,${actor.id}) on conflict(version) do nothing`)
       const plan = await tx.execute(sql`select terms from expansion_commission_plans where version=${terms.planVersion}`)
       if (JSON.stringify(parseCommissionTerms(plan.rows[0]?.terms)) !== JSON.stringify(terms)) throw new ExpansionError('This commission version already has different terms. Create a new version.',409)
       const reference = expansionText(input.agreementReference,'Accepted agreement evidence',500)
       const contractId = randomUUID()
-      const qualifyingWebsite = BigInt(terms.milestones.deposit) + BigInt(terms.milestones.final)
-      const pricing = input.commercialPricing as Record<string,unknown> | undefined
-      const standardPricing = terms.milestones.deposit === '100000' && terms.milestones.final === '100000' && terms.milestones.first_retainer === '35000'
+      const qualifyingWebsite = BigInt(terms.milestones.deposit) + BigInt(terms.milestones.interim ?? '0') + BigInt(terms.milestones.final)
+      const pricing = (planPricing ?? input.commercialPricing) as Record<string,unknown> | undefined
+      const standardPricing = !planPricing && terms.milestones.deposit === '100000' && terms.milestones.final === '100000' && terms.milestones.first_retainer === '35000'
       if (!pricing && !standardPricing) throw new ExpansionError('Record actual signed website and recurring prices separately from bespoke commission limits.')
       const website = pricing ? expansionInteger(pricing.websitePence,'signed website price',0,2147483647) : 200000
       const monthly = pricing ? expansionInteger(pricing.monthlyPence,'signed recurring price',0,2147483647) : 35000

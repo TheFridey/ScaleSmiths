@@ -296,4 +296,58 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("Expansion real separa
     }
     expect((await runAs(partner.actor, () => getPartnerFinance())).earnedPence).toBe("30000")
   })
+
+  describe("checkpoint 2A: pooled commercial plans on separate connections", () => {
+    const enable = (planKey: string, enabled: boolean) => runAs(founder, () => founderMutation({ action: "set_plan_enabled", planKey, enabled, reason: "TEST ONLY isolated plan gate" }))
+    async function planContract(tag: string, plan: Record<string, unknown>, invoiceItems: Array<[string, number]>) {
+      const opportunityId = await submitted(tag)
+      const week = (await pool.query<{ next: string }>("select (max(period)+7)::text as next from expansion_capacity")).rows[0].next
+      await runAs(founder, () => founderMutation({ action: "capacity", period: week, hours: 10, commitmentsReviewed: true, rationale: "TEST ONLY plan race allocation" }))
+      await approve(opportunityId, week)
+      const accepted = await runAs(founder, () => founderMutation({ action: "accept_contract", id: opportunityId, clientId, plan, agreementReference: `TEST ONLY signed plan fixture ${suffix}-${tag}` }))
+      const contractId = String((accepted as { id: string }).id)
+      const invoice = await createInvoice({ clientId, items: invoiceItems.map(([title, unitAmount]) => ({ title: `TEST ONLY ${title}`, quantity: 1, unitAmount })) }, founder.id)
+      await transitionInvoice(invoice.id, "issue", founder.id)
+      return { contractId, invoiceId: invoice.id }
+    }
+    const allocate = (c: { contractId: string; invoiceId: number }, milestone: "deposit" | "interim" | "final" | "first_retainer", netPence: string) =>
+      runAs(founder, () => allocateExpansionInvoice({ ...c, milestone, netPence, evidenceReference: "TEST ONLY reviewed plan allocation" }))
+    const collect = (c: { contractId: string; invoiceId: number }, milestone: "deposit" | "interim" | "final" | "first_retainer", netPence: string, reference: string) =>
+      runAs(founder, () => verifyExpansionPayment({ ...c, milestone, reference: `${suffix}-${reference}`, netPence, grossPence: netPence, evidenceReference: "TEST ONLY verified receipt", confirmed: true }))
+    const ledger = async (contractId: string) => (await pool.query<{ t: string }>("select coalesce(sum(amount_pence),0)::text t from expansion_commission_ledger where contract_id=$1", [contractId])).rows[0].t
+
+    it("serialises concurrent instalments on one interim milestone: pooled commission is exact and the allocation cap holds", async () => {
+      await enable("standard-v2", true)
+      const c = await planContract("pooled-a", { plan: "standard-v2", scheduleId: "custom", buildInstalmentsPence: [50000, 50000, 50000, 50000], scheduleApprovalReference: "TEST ONLY approval" }, [["build", 200000], ["retainer", 35000]])
+      await allocate(c, "deposit", "50000"); await allocate(c, "interim", "100000"); await allocate(c, "final", "50000"); await allocate(c, "first_retainer", "35000")
+      await collect(c, "deposit", "50000", "pa-1")
+      const results = await race([() => collect(c, "interim", "50000", "pa-2"), () => collect(c, "interim", "50000", "pa-3")])
+      expect(results.every(r => r.status === "fulfilled")).toBe(true)
+      await collect(c, "final", "50000", "pa-4"); await collect(c, "first_retainer", "35000", "pa-5")
+      expect(await ledger(c.contractId)).toBe("70500")
+      await expect(collect(c, "interim", "1", "pa-6")).rejects.toMatchObject({ status: 409 })
+    })
+    it("admits only one of two concurrent collections that together exceed the interim allocation", async () => {
+      const c = await planContract("pooled-b", { plan: "standard-v2", scheduleId: "custom", buildInstalmentsPence: [50000, 50000, 50000, 50000], scheduleApprovalReference: "TEST ONLY approval" }, [["build", 200000]])
+      await allocate(c, "interim", "100000")
+      const results = await race([() => collect(c, "interim", "60000", "pb-1"), () => collect(c, "interim", "60000", "pb-2")])
+      expectSingleWinner(results, /exceeds the approved milestone allocation|exceeds the approved milestone/)
+      expect(await ledger(c.contractId)).toBe("18000")
+    })
+    it("never creates a contract on a plan disabled before acceptance, and a concurrent disable leaves a consistent outcome", async () => {
+      await enable("growth-only-v1", false)
+      const id = await submitted("gate"), week = (await pool.query<{ next: string }>("select (max(period)+7)::text as next from expansion_capacity")).rows[0].next
+      await runAs(founder, () => founderMutation({ action: "capacity", period: week, hours: 10, commitmentsReviewed: true, rationale: "TEST ONLY gate allocation" }))
+      await approve(id, week)
+      const accept = () => runAs(founder, () => founderMutation({ action: "accept_contract", id, clientId, plan: { plan: "growth-only-v1" }, agreementReference: "TEST ONLY gate" }))
+      await expect(accept()).rejects.toMatchObject({ status: 409, message: expect.stringContaining("not enabled") })
+      await enable("growth-only-v1", true)
+      const results = await race([accept, () => enable("growth-only-v1", false)])
+      expect(results[1].status).toBe("fulfilled")
+      const contracts = (await pool.query("select count(*)::int c from expansion_contracts where opportunity_id=$1", [id])).rows[0].c
+      expect(contracts).toBe(results[0].status === "fulfilled" ? 1 : 0)
+      if (results[0].status === "rejected") expect(results[0].reason).toMatchObject({ status: 409, message: expect.stringContaining("not enabled") })
+      expect((await pool.query("select enabled from expansion_plan_settings where plan_key='growth-only-v1'")).rows[0].enabled).toBe(false)
+    })
+  })
 })

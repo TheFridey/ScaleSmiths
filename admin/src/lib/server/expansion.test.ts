@@ -56,6 +56,9 @@ describe("production Expansion prospect/scope/capacity service against PostgreSQ
       create function commercial_history_immutable() returns trigger language plpgsql as $$ begin raise exception 'Commercial history is append-only'; end $$;
     `)
     await state.database.exec(readFileSync(new URL("../../../drizzle/0068_expansion_foundation.sql", import.meta.url), "utf8"))
+    // 0073 also widens a finance-table constraint (covered in expansion-finance.test.ts); this suite needs only its plan-settings table.
+    const plans = readFileSync(new URL("../../../drizzle/0073_expansion_commercial_plans.sql", import.meta.url), "utf8")
+    await state.database.exec(plans.slice(plans.indexOf("CREATE TABLE expansion_plan_settings")))
   }, 30000)
   beforeEach(async () => {
     asFounder()
@@ -65,6 +68,7 @@ describe("production Expansion prospect/scope/capacity service against PostgreSQ
     await state.database!.query("insert into expansion_partners(id,user_id,application_id,agreement_version,confirmed_at,activated_at) values($1,$2,1,'test-approved-v1',now(),now()),($3,$4,2,'test-approved-v1',now(),now())", [PARTNER, USER, OTHER_PARTNER, OTHER_USER])
   })
   afterAll(async () => { await state.database?.close() })
+  beforeEach(async () => { await state.database!.exec("truncate expansion_plan_settings; insert into expansion_plan_settings(plan_key) values('standard-v2'),('growth-only-v1'),('bespoke-v1')") })
 
   it("persists canonical prospect, discovery, technical flags, founder approval, reservation and accepted immutable contract", async () => {
     const id = await submitted()
@@ -175,5 +179,53 @@ describe("production Expansion prospect/scope/capacity service against PostgreSQ
     await state.database!.query("insert into prospect_conversions(prospect_id,client_id,actor_user_id,client_action,metadata_json) select prospect_id,2,$2,'linked','{}' from expansion_opportunities where id=$1",[id,FOUNDER])
     await expect(founderMutation({action:'accept_contract',id,clientId:1,terms:standardCommissionTerms(),agreementReference:'Must not overwrite conversion history'})).rejects.toThrow('different client')
     expect((await state.database!.query('select * from commercial_contracts')).rows).toEqual([])
+  })
+
+  describe("checkpoint 2A: founder-approved commercial plans", () => {
+    const enable = (planKey: string, enabled = true) => founderMutation({ action: "set_plan_enabled", planKey, enabled, reason: "Synthetic approval for test" })
+    const ready = async () => { const id = await submitted(); asFounder(); await capacity(); await approval(id); return id }
+    it("refuses a plan that is disabled by default, then accepts it once a founder enables it", async () => {
+      const id = await ready()
+      await expect(founderMutation({ action: "accept_contract", id, clientId: 1, plan: { plan: "standard-v2" }, agreementReference: "Signed" })).rejects.toThrow("not enabled")
+      await enable("standard-v2")
+      const accepted = await founderMutation({ action: "accept_contract", id, clientId: 1, plan: { plan: "standard-v2", scheduleId: "deposit-completion" }, agreementReference: "Signed" })
+      const [contract] = (await state.database!.query("select terms from expansion_contracts where id=$1", [String((accepted as { id: string }).id)])).rows as Array<{ terms: { planVersion: string; commitment: Record<string, unknown> } }>
+      expect(contract.terms.planVersion).toBe("standard-v2.deposit-completion")
+      expect(contract.terms.commitment).toMatchObject({ currency: "GBP", minTermMonths: 12, minimumContractValuePence: "620000", buildInstalments: ["75000", "125000"] })
+    })
+    it("derives canonical pricing server-side and ignores client-supplied pricing or rate overrides", async () => {
+      const id = await ready(); await enable("standard-v2")
+      await founderMutation({ action: "accept_contract", id, clientId: 1, plan: { plan: "standard-v2" }, commercialPricing: { websitePence: 1, monthlyPence: 1 }, rateBps: 9000, agreementReference: "Signed" })
+      const [row] = (await state.database!.query("select one_off_amount,monthly_amount from commercial_contracts")).rows
+      expect(row).toEqual({ one_off_amount: 200000, monthly_amount: 35000 })
+      expect((await state.database!.query("select terms->>'rateBps' r from expansion_contracts")).rows).toEqual([{ r: "3000" }])
+    })
+    it("rejects unapproved discounts, mixed legacy/plan input and custom schedules without approval", async () => {
+      const id = await ready(); await enable("standard-v2")
+      await expect(founderMutation({ action: "accept_contract", id, clientId: 1, plan: { plan: "standard-v2", buildFeePence: 150000 }, agreementReference: "Signed" })).rejects.toThrow("discount allowance")
+      await expect(founderMutation({ action: "accept_contract", id, clientId: 1, plan: { plan: "standard-v2" }, terms: standardCommissionTerms(), agreementReference: "Signed" })).rejects.toThrow("not both")
+      await expect(founderMutation({ action: "accept_contract", id, clientId: 1, plan: { plan: "standard-v2", scheduleId: "custom", buildInstalmentsPence: [100000, 100000] }, agreementReference: "Signed" })).rejects.toThrow("approval reference")
+      expect((await state.database!.query("select count(*)::int c from expansion_contracts")).rows).toEqual([{ c: 0 }])
+    })
+    it("accepts Growth Partnership-only with no build price and a recorded £4,200 commitment", async () => {
+      const id = await ready(); await enable("growth-only-v1")
+      const accepted = await founderMutation({ action: "accept_contract", id, clientId: 1, plan: { plan: "growth-only-v1" }, agreementReference: "Signed" })
+      expect((await state.database!.query("select one_off_amount,monthly_amount from commercial_contracts")).rows).toEqual([{ one_off_amount: 0, monthly_amount: 35000 }])
+      const [c] = (await state.database!.query("select terms->'commitment'->>'minimumContractValuePence' v from expansion_contracts where id=$1", [String((accepted as { id: string }).id)])).rows
+      expect(c).toEqual({ v: "420000" })
+    })
+    it("keeps legacy standard-v1 acceptance working without any plan setting", async () => {
+      const id = await ready()
+      await founderMutation({ action: "accept_contract", id, clientId: 1, terms: standardCommissionTerms(), agreementReference: "Historical v1" })
+      expect((await state.database!.query("select terms->>'planVersion' v, terms ? 'commitment' c from expansion_contracts")).rows).toEqual([{ v: "standard-v1", c: false }])
+    })
+    it("denies plan administration and plan-based acceptance to partners", async () => {
+      const id = await ready(); await enable("standard-v2")
+      asPartner()
+      await expect(enable("standard-v2", false)).rejects.toThrow()
+      await expect(founderMutation({ action: "accept_contract", id, clientId: 1, plan: { plan: "standard-v2" }, agreementReference: "x" })).rejects.toThrow()
+      asFounder()
+      await expect(founderMutation({ action: "set_plan_enabled", planKey: "nonsense", enabled: true, reason: "x" })).rejects.toThrow("known commercial plan")
+    })
   })
 })

@@ -33,6 +33,9 @@ vi.mock("../../src/lib/server/rbac", () => ({ requireCapability: async (capabili
 } }))
 
 import { founderMutation, partnerMutation, partnerSnapshot } from "../../src/lib/server/expansion"
+import { resolveQualificationFlag } from "../../src/lib/server/expansion-programme"
+import { requestMeeting, decideMeeting, correctMeeting } from "../../src/lib/server/expansion-operations"
+import { translateDbError } from "../../src/lib/db-errors"
 import { approveProgramme, attributeReferral, createProgramme, createReferralCode, decideQualification, getProgrammeOverview, revokeQualification, reviewAchievementReward } from "../../src/lib/server/expansion-programme"
 import { allocateExpansionInvoice, approveExpansionPayout, cancelExpansionPayout, cancelWithdrawal, getWithdrawalOverview, prepareWithdrawalPayout, requestWithdrawal, reviewWithdrawal, setWithdrawalPolicy, getPartnerFinance, prepareExpansionPayout, refundExpansionPayment, settleExpansionPayout, verifyExpansionPayment } from "../../src/lib/server/expansion-finance"
 import { activatePartnerInvitation } from "../../src/lib/server/partner-invitations"
@@ -817,6 +820,95 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("Expansion real separa
       expect((await pool.query("select count(*)::int c from expansion_referrals where application_id=$1", [app.rows[0].id])).rows[0].c).toBe(1)
       const prog = await runAs(founder, () => createProgramme({ label: `TEST ONLY ${suffix}` }))
       expect(prog.version).toBeGreaterThan(0)   // left unapproved: draft versions never gate or enable anything
+    })
+  })
+
+  describe("checkpoint 5A: review flags, reward withdrawal, meeting history and safe errors on real PostgreSQL", () => {
+    /** An accepted, collected contract for a NEW canonical client (qualification counts each client once). */
+    async function ownContract(p: Awaited<ReturnType<typeof fundedPartner>>, tag: string) {
+      const cid = (await pool.query<{ id: number }>("insert into clients(name,invoice_client_code,billing_address_line_1,billing_city,billing_postcode,billing_country) values($1,$2,'1 Test Street','Nottingham','NG1 1AA','United Kingdom') returning id", [`TEST ONLY 5A ${suffix} ${tag}`, `F${randomUUID().replace(/-/g, "").slice(0, 8).toUpperCase()}`])).rows[0].id
+      const opp = await submitted(`5a-${tag}`, p.actor)
+      const week = (await pool.query<{ next: string }>("select (max(period)+7)::text as next from expansion_capacity")).rows[0].next
+      await runAs(founder, () => founderMutation({ action: "capacity", period: week, hours: 10, commitmentsReviewed: true, rationale: "TEST ONLY 5A" }))
+      await approve(opp, week)
+      const accepted = await runAs(founder, () => founderMutation({ action: "accept_contract", id: opp, clientId: cid, terms: { ...standardCommissionTerms(), planVersion: "concurrency-approved-refund-v1", unpaidRefundApprovalReference: refundClause }, agreementReference: `TEST ONLY 5A ${suffix}-${tag}` })) as { id: string }
+      const invoice = await createInvoice({ clientId: cid, items: [{ title: "TEST ONLY 5A deposit", quantity: 1, unitAmount: 100000 }] }, founder.id)
+      await transitionInvoice(invoice.id, "issue", founder.id)
+      await runAs(founder, () => allocateExpansionInvoice({ contractId: accepted.id, invoiceId: invoice.id, milestone: "deposit", netPence: "100000", evidenceReference: "TEST ONLY 5A allocation" }))
+      const col = await runAs(founder, () => verifyExpansionPayment({ contractId: accepted.id, invoiceId: invoice.id, milestone: "deposit", reference: `${suffix}-5a-${tag}`, netPence: "100000", grossPence: "120000", evidenceReference: "TEST ONLY receipt", confirmed: true }))
+      return { contractId: accepted.id, paymentId: col.paymentId }
+    }
+    const qualifyOwn = (contractId: string) => runAs(founder, () => decideQualification({ contractId, decision: "qualified", note: "TEST ONLY evidence" }))
+    const refundOf = (paymentId: string, ref: string, net: string, gross: string) => runAs(founder, () => refundExpansionPayment({ paymentId, reference: `${suffix}-5a-${ref}`, netPence: net, grossPence: gross, reason: "TEST ONLY verified refund" }))
+    const flagsOf = (contractId: string) => pool.query<{ id: string; status: string; reason: string; resolution: string | null }>("select f.id,f.status,f.reason,f.resolution from expansion_qualification_flags f join expansion_client_qualifications q on q.id=f.qualification_id where q.contract_id=$1 order by f.created_at", [contractId])
+    it("a real partial refund raises exactly one review flag; maintaining it keeps the qualification, and a later full refund raises a new one that revocation resolves", async () => {
+      const p = await fundedPartner("5a-refund")
+      const c = await ownContract(p, "5a-refund")
+      await qualifyOwn(c.contractId)
+      await refundOf(c.paymentId, "partial", "20000", "24000")
+      expect((await flagsOf(c.contractId)).rows.map(r => [r.reason, r.status])).toEqual([["refund", "open"]])
+      const first = (await flagsOf(c.contractId)).rows[0].id
+      await expect(runAs(founder, () => resolveQualificationFlag({ flagId: first, resolution: "maintained", note: "" }))).rejects.toMatchObject({ status: 400 })
+      await runAs(founder, () => resolveQualificationFlag({ flagId: first, resolution: "maintained", note: "TEST ONLY partial refund does not alter the qualifying collection" }))
+      expect((await pool.query("select status from expansion_client_qualifications where contract_id=$1", [c.contractId])).rows[0].status).toBe("qualified")
+      await expect(runAs(founder, () => resolveQualificationFlag({ flagId: first, resolution: "maintained", note: "TEST ONLY again" }))).rejects.toMatchObject({ status: 409 })
+      await refundOf(c.paymentId, "remainder", "80000", "96000")
+      const flags = (await flagsOf(c.contractId)).rows
+      expect(flags.map(r => r.status)).toEqual(["resolved", "open"])
+      await runAs(founder, () => resolveQualificationFlag({ flagId: flags[1].id, resolution: "revoked", note: "TEST ONLY full refund: client no longer a paying customer" }))
+      expect((await pool.query("select status from expansion_client_qualifications where contract_id=$1", [c.contractId])).rows[0].status).toBe("revoked")
+      expect((await flagsOf(c.contractId)).rows.map(r => r.status)).toEqual(["resolved", "resolved"])
+    })
+    it("two founders resolving the same flag on separate connections: one winner", async () => {
+      const p = await fundedPartner("5a-flag-race")
+      const c = await ownContract(p, "5a-flag-race")
+      await qualifyOwn(c.contractId); await refundOf(c.paymentId, "race", "20000", "24000")
+      const id = (await flagsOf(c.contractId)).rows[0].id
+      const results = await race<unknown>([() => runAs(founder, () => resolveQualificationFlag({ flagId: id, resolution: "maintained", note: "TEST ONLY a" })), () => runAs(founder, () => resolveQualificationFlag({ flagId: id, resolution: "revoked", note: "TEST ONLY b" }))])
+      expectSingleWinner(results, /already been resolved/)
+    })
+    it("a partner cannot resolve flags", async () => {
+      const p = await fundedPartner("5a-flag-auth")
+      const c = await ownContract(p, "5a-flag-auth")
+      await expect(runAs(p.actor, () => resolveQualificationFlag({ flagId: randomUUID(), resolution: "maintained", note: "x" }))).rejects.toThrow("Forbidden")
+    })
+    it("an approved reward whose qualification is revoked cannot progress and is withdrawn only with a new recorded reason", async () => {
+      const p = await fundedPartner("5a-withdraw")
+      const c = await ownContract(p, "5a-withdraw")
+      const q = await qualifyOwn(c.contractId)
+      const prog = await runAs(founder, () => createProgramme({ label: `TEST ONLY 5A ${suffix}` }))
+      await runAs(founder, () => approveProgramme({ version: prog.version, approvalReference: `TEST ONLY ${suffix}` }))
+      const reward = (await pool.query<{ id: string }>("select id from expansion_achievement_rewards where partner_id=$1", [p.partnerId])).rows[0].id
+      await runAs(founder, () => reviewAchievementReward({ rewardId: reward, decision: "under_review" }))
+      await runAs(founder, () => reviewAchievementReward({ rewardId: reward, decision: "approved", note: "TEST ONLY approved on evidence" }))
+      await runAs(founder, () => revokeQualification({ qualificationId: q.qualificationId, reason: "TEST ONLY entered in error" }))
+      await expect(runAs(founder, () => reviewAchievementReward({ rewardId: reward, decision: "fulfilled" }))).rejects.toMatchObject({ status: 409, message: expect.stringContaining("disputed, revoked or awaiting review") })
+      await expect(runAs(founder, () => reviewAchievementReward({ rewardId: reward, decision: "withdrawn" }))).rejects.toMatchObject({ status: 400 })
+      // the database itself refuses a withdrawal that re-uses the approval note
+      await expect(pool.query("update expansion_achievement_rewards set status='withdrawn' where id=$1", [reward])).rejects.toThrow(/recorded reason/)
+      await runAs(founder, () => reviewAchievementReward({ rewardId: reward, decision: "withdrawn", note: "TEST ONLY qualification revoked; no entitlement" }))
+      expect((await pool.query("select status,review_note from expansion_achievement_rewards where id=$1", [reward])).rows[0]).toEqual({ status: "withdrawn", review_note: "TEST ONLY qualification revoked; no entitlement" })
+    })
+    it("a closed meeting's content changes only through an audited founder correction", async () => {
+      const p = await fundedPartner("5a-meeting")
+      const m = await runAs(p.actor, () => requestMeeting({ meetingType: "joint_sales", preferredSlots: ["2100-02-01T10:00:00Z"], timeZone: "Europe/London", purpose: "TEST ONLY original purpose" }))
+      await runAs(founder, () => decideMeeting({ meetingId: m.meetingId, decision: "decline", note: "TEST ONLY not available" }))
+      await expect(pool.query("update expansion_meeting_requests set purpose='tampered' where id=$1", [m.meetingId])).rejects.toThrow()
+      await expect(runAs(p.actor, () => correctMeeting({ meetingId: m.meetingId, purpose: "x", reason: "x" }))).rejects.toThrow("Forbidden")
+      await expect(runAs(founder, () => correctMeeting({ meetingId: m.meetingId, purpose: "TEST ONLY corrected", reason: "" }))).rejects.toMatchObject({ status: 400 })
+      await runAs(founder, () => correctMeeting({ meetingId: m.meetingId, purpose: "TEST ONLY corrected purpose", reason: "TEST ONLY clarified wording" }))
+      expect((await pool.query("select purpose,status from expansion_meeting_requests where id=$1", [m.meetingId])).rows[0]).toEqual({ purpose: "TEST ONLY corrected purpose", status: "declined" })
+      const c = (await pool.query("select before_value->>'purpose' b,after_value->>'purpose' a,reason from expansion_meeting_corrections where meeting_id=$1", [m.meetingId])).rows
+      expect(c).toEqual([{ b: "TEST ONLY original purpose", a: "TEST ONLY corrected purpose", reason: "TEST ONLY clarified wording" }])
+    })
+    it("database refusals reach callers only as safe, generic messages; an invalid sector id is a clear 400", async () => {
+      await expect(runAs(founder, () => founderMutation({ action: "add_sector_alias", sectorId: "no-such-sector", alias: "synthetic alias" }))).rejects.toMatchObject({ status: expect.any(Number) })
+      const bad = await runAs(founder, () => founderMutation({ action: "add_sector_alias", sectorId: "no-such-sector", alias: "synthetic alias" })).catch(e => e)
+      expect(bad.status).toBeGreaterThanOrEqual(400); expect(bad.status).toBeLessThan(500)
+      expect(String(bad.message)).not.toMatch(/violates|constraint|relation "|sql|select |insert /i)
+      const dup = await pool.query("insert into expansion_qualification_flags(id,qualification_id,reason) values($1,$1,'refund')", [randomUUID()]).catch(e => e)
+      const t = translateDbError(dup)
+      expect(t).toMatchObject({ status: 409 }); expect(t!.message).not.toMatch(/expansion_|constraint|violates|key/i)
     })
   })
 })

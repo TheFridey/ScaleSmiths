@@ -43,6 +43,9 @@ export const ADMIN_FUNCTION_GRANTS = [
   { schema: "public", name: "digest", arguments: "bytea, text" },
   { schema: "public", name: "digest", arguments: "text, text" },
   { schema: "public", name: "gen_random_uuid", arguments: "" },
+  // Called by name from inside trigger bodies, which run as the invoking runtime role (trigger functions themselves need no grant).
+  { schema: "public", name: "expansion_flag_qualifications", arguments: "uuid, text, text" },
+  { schema: "public", name: "expansion_partner_entitlement_ok", arguments: "uuid, integer" },
 ]
 
 export const TENANT_RLS_FUNCTION_GRANTS = [

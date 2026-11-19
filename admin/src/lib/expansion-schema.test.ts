@@ -16,10 +16,11 @@ describe("Expansion schema agrees with production forward migrations", () => {
         create table prospects(id integer primary key);
         create table clients(id integer primary key);
         create table commercial_contracts(id integer primary key);
-        create table commercial_payments(id integer primary key, reverses_payment_id integer);
+        create table commercial_payments(id integer primary key, reverses_payment_id integer unique, client_id integer, invoice_id integer, category text, amount integer);
         create function commercial_history_immutable() returns trigger language plpgsql as $$ begin raise exception 'immutable'; end $$;
       `)
-      for (const name of ["0068_expansion_foundation.sql", "0069_expansion_finance.sql", "0070_expansion_cancellations.sql"]) await postgres.exec(readFileSync(`drizzle/${name}`, "utf8"))
+      for (const name of ["0068_expansion_foundation.sql", "0069_expansion_finance.sql", "0070_expansion_cancellations.sql", "0071_expansion_financial_hardening.sql"]) await postgres.exec(readFileSync(`drizzle/${name}`, "utf8"))
+      await postgres.exec(readFileSync("drizzle/0072_expansion_applicant_retention_holds.sql", "utf8"))
       const columns = (await postgres.query<{ table_name: string; column_name: string; data_type: string; is_nullable: string }>("select table_name,column_name,data_type,is_nullable from information_schema.columns where table_schema='public' and table_name like 'expansion_%' order by table_name,column_name")).rows
       const constraints = (await postgres.query<{ table_name: string; conname: string; contype: string }>("select t.relname as table_name,c.conname,c.contype from pg_constraint c join pg_class t on t.oid=c.conrelid where t.relname like 'expansion_%' and c.contype in ('c','f')")).rows
       const tables = Object.values(expansionSchema).map(getTableConfig)

@@ -14,6 +14,7 @@ let database: PgliteDatabase
 const founderId = "00000000-0000-4000-8000-000000000001"
 
 beforeEach(async () => {
+  vi.stubEnv("PARTNER_ACTIVATION_ENABLED", "true")
   postgres = new PGlite()
   database = drizzle(postgres)
   runtime.transaction.mockImplementation((operation) => database.transaction(operation))
@@ -47,13 +48,24 @@ beforeEach(async () => {
   await database.execute(sql`insert into admin_users (id,email,display_name,password_hash,role) values (${founderId},'founder@example.test','Founder','unused','owner')`)
   await database.execute(sql`insert into partner_applications (name,email,status,onboarding_confirmations) values ('Partner','partner@example.test','onboarding','{"agreement":true,"legal":true,"independentStatus":true,"operations":true}'::jsonb)`)
 }, 30000)
-afterEach(async () => { await postgres?.close() }, 30000)
+afterEach(async () => { vi.unstubAllEnvs(); await postgres?.close() }, 30000)
 
 function invite() {
   return database.transaction((tx) => issueInvitation(tx as unknown as AdminDatabaseTransaction, 1, founderId, "agreement-test-v1"))
 }
 
 describe("partner invitations against PostgreSQL", () => {
+  it("blocks issuance by default and leaves an already-issued invitation unconsumed while closed", async () => {
+    vi.stubEnv("PARTNER_ACTIVATION_ENABLED", undefined)
+    await expect(invite()).rejects.toThrow("activation is currently closed")
+    expect((await postgres.query("select id from expansion_partners")).rows).toEqual([])
+    vi.stubEnv("PARTNER_ACTIVATION_ENABLED", "true")
+    const invitation = await invite()
+    vi.stubEnv("PARTNER_ACTIVATION_ENABLED", "false")
+    await expect(activatePartnerInvitation(invitation.invitationToken, "secure-example-password")).rejects.toThrow("activation is currently closed")
+    expect((await postgres.query("select u.active, p.invitation_hash from admin_users u join expansion_partners p on p.user_id=u.id")).rows)
+      .toEqual([{ active: false, invitation_hash: invitationHash(invitation.invitationToken) }])
+  })
   it("stores a hash, consumes once, activates only the external identity and audits both events", async () => {
     const invitation = await invite()
     const before = await postgres.query<{ active: boolean; role: string; invitation_hash: string }>("select u.active,u.role,p.invitation_hash from expansion_partners p join admin_users u on u.id=p.user_id")

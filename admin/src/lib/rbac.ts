@@ -95,7 +95,7 @@ export function authorizeRequest(role: AdminRole, request: RbacRequest) {
   // External identities cannot inherit permissive handling for unknown pages or
   // protocol exceptions. Middleware handles the public auth protocol separately.
   if (role === "independent_partner") {
-    const partnerPage = (request.pathname === "/partner" || request.pathname.startsWith("/partner/")) && ["GET", "HEAD"].includes(request.method.toUpperCase())
+    const partnerPage = request.pathname === "/partner" && ["GET", "HEAD"].includes(request.method.toUpperCase())
     const partnerApi = (request.pathname === "/api/partner" || request.pathname.startsWith("/api/partner/")) && capability === "expansion.partner"
     const logout = request.pathname === "/api/security/logout" && request.method.toUpperCase() === "POST"
     if (!partnerPage && !partnerApi && !logout) return { allowed: false as const, capability, reason: "external_identity_boundary" as const }

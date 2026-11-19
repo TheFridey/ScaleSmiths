@@ -1,6 +1,6 @@
 import process from "node:process"
 import { Client } from "pg"
-import { ADMIN_DELETE_TABLES, ADMIN_FUNCTION_GRANTS, APPLICATION_SCHEMAS, RUNTIME_FORBIDDEN_TABLE_PRIVILEGES, TENANT_RLS_FUNCTION_GRANTS, WEB_INSERT_TABLES, WEB_TABLE_GRANTS } from "./postgres-privilege-policy.mjs"
+import { ADMIN_DELETE_TABLES, ADMIN_FUNCTION_GRANTS, APPLICATION_SCHEMAS, RUNTIME_FORBIDDEN_TABLE_PRIVILEGES, TENANT_RLS_FUNCTION_GRANTS, WEB_APPLICANT_INSERT_COLUMNS, WEB_INSERT_TABLES, WEB_TABLE_GRANTS } from "./postgres-privilege-policy.mjs"
 
 const provisioning = requiredPrincipal("POSTGRES_PROVISIONING_DATABASE_URL")
 const roles = {
@@ -97,6 +97,19 @@ async function verifyRelations() {
         if (kind === "web" && relation.schema === "public") expected = WEB_TABLE_GRANTS.get(relation.name)?.includes(privilege) ?? false
         const actual = await scalar("SELECT has_table_privilege($1,$2,$3)", [role.name, `${relation.schema}.${relation.name}`, privilege])
         compare(`${kind}: ${relation.schema}.${relation.name} ${privilege}`, actual, expected)
+      }
+    }
+  }
+  if (result.rows.some(({ schema, name }) => schema === "public" && name === "partner_applications")) {
+    const applicantColumns = await client.query("SELECT attname FROM pg_attribute WHERE attrelid='public.partner_applications'::regclass AND attnum>0 AND NOT attisdropped")
+    for (const column of WEB_APPLICANT_INSERT_COLUMNS) {
+      if (!applicantColumns.rows.some(({ attname }) => attname === column)) failures.push(`web: public.partner_applications.${column} missing from schema`)
+    }
+    for (const { attname } of applicantColumns.rows) {
+      for (const operation of ["SELECT", "INSERT", "UPDATE", "REFERENCES"]) {
+        const expected = operation === "INSERT" && WEB_APPLICANT_INSERT_COLUMNS.includes(attname)
+        const actual = await scalar("SELECT has_column_privilege($1,'public.partner_applications',$2,$3)", [roles.web.name, attname, operation])
+        compare(`web: public.partner_applications.${attname} ${operation}`, actual, expected)
       }
     }
   }

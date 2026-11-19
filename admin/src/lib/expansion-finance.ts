@@ -4,6 +4,7 @@ export interface CommissionTerms {
   planVersion: string
   rateBps: number
   milestones: Record<CommissionMilestone, string>
+  unpaidRefundApprovalReference?: string
 }
 
 export class ExpansionFinanceError extends Error {
@@ -24,7 +25,11 @@ export function parseCommissionTerms(input: unknown): CommissionTerms {
   if (typeof terms.planVersion !== "string" || !/^[A-Za-z0-9_.-]{1,80}$/.test(terms.planVersion) || !Number.isInteger(terms.rateBps) || terms.rateBps! < 0 || terms.rateBps! > 10000 || !terms.milestones) throw new ExpansionFinanceError("Commission plan version or rate is invalid.")
   const milestones = {} as Record<CommissionMilestone, string>
   for (const key of COMMISSION_MILESTONES) milestones[key] = pence(terms.milestones[key], true).toString()
-  return { planVersion: terms.planVersion, rateBps: terms.rateBps!, milestones }
+  const result: CommissionTerms = { planVersion: terms.planVersion, rateBps: terms.rateBps!, milestones }
+  if (terms.unpaidRefundApprovalReference !== undefined) {
+    result.unpaidRefundApprovalReference = financeText(terms.unpaidRefundApprovalReference, "Accepted unpaid refund clause reference")
+  }
+  return result
 }
 
 export function standardCommissionTerms(): CommissionTerms {

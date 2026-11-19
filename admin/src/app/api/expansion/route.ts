@@ -15,8 +15,10 @@ export async function POST(request: Request) {
     if (!limit.ok) return NextResponse.json({error:'Please wait before making another change.'},{status:429,headers:expansionHeaders})
     const input = await expansionBody(request)
     const commands: Record<string,(value: never)=>Promise<unknown>> = {
-      verify_payment:finance.verifyExpansionPayment, refund_payment:finance.refundExpansionPayment,
+      allocate_invoice:finance.allocateExpansionInvoice, verify_payment:finance.verifyExpansionPayment, refund_payment:finance.refundExpansionPayment,
       prepare_payout:finance.prepareExpansionPayout, approve_payout:finance.approveExpansionPayout, settle_payout:finance.settleExpansionPayout,
+      cancel_payout:finance.cancelExpansionPayout,
+      retain_refund_entitlement:finance.retainRefundEntitlement,
     }
     const command = Object.hasOwn(commands,String(input.action)) ? commands[String(input.action)] : undefined
     const result = command ? await command(input as never) : await founderMutation(input)

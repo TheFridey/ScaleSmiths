@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { AdminIdentityError } from "@/lib/admin-users"
 import { checkLoginRateLimit, getAuthRequestIp, loginRateLimitKeys } from "@/lib/login-limiter"
-import { activatePartnerInvitation } from "@/lib/server/partner-invitations"
+import { activatePartnerInvitation, requirePartnerActivationEnabled } from "@/lib/server/partner-invitations"
 
 export const dynamic = "force-dynamic"
 
@@ -11,6 +11,7 @@ export async function POST(request: Request) {
     const origin = request.headers.get("origin")
     const expectedOrigin = process.env.AUTH_URL ? new URL(process.env.AUTH_URL).origin : new URL(request.url).origin
     if (origin !== expectedOrigin) return NextResponse.json({ error: "Invalid request origin." }, { status: 403, headers })
+    requirePartnerActivationEnabled()
     if (!await checkLoginRateLimit(loginRateLimitKeys("partner-activation", getAuthRequestIp(request), ""))) return NextResponse.json({ error: "Too many attempts. Try again later." }, { status: 429, headers })
     if (!request.headers.get("content-type")?.startsWith("application/json")) return NextResponse.json({ error: "JSON is required." }, { status: 415, headers })
     const reader = request.body?.getReader()

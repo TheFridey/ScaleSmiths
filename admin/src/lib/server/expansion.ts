@@ -4,6 +4,7 @@ import { sql } from 'drizzle-orm'
 import { db, type AdminDatabaseTransaction } from '@/lib/db'
 import { requireCapability } from './rbac'
 import { issueInvitation } from './partner-invitations'
+import { runApplicantRetention } from './expansion-retention'
 import { ExpansionError, expansionText, expansionId, expansionInteger, prospectDomain, parseDiscovery, technicalReviewFlags, assertPartnerTransition, capacityPeriod } from '@/lib/expansion'
 import { parseCommissionTerms } from '@/lib/expansion-finance'
 import { hasCapability, type Capability } from '@/lib/rbac'
@@ -35,8 +36,8 @@ export async function partnerSnapshot() {
   const actor = await requireCapability('expansion.partner')
   return db.transaction(async tx => {
     const id = await partner(tx,actor)
-    const opportunities = await tx.execute(sql`select o.id,o.status,o.discovery,o.scope,o.scope_version,o.review_notes,o.created_at,p.business_name,p.website_url,p.contact_name,p.contact_email,p.next_follow_up_at,c.id contract_id from expansion_opportunities o join prospects p on p.id=o.prospect_id left join expansion_contracts c on c.opportunity_id=o.id where o.partner_id=${id} order by o.created_at desc`)
-    const resources = await tx.execute(sql`select id,title,category,version,audience,content,status,created_at from expansion_resources where status='published' order by created_at desc`)
+    const opportunities = await tx.execute(sql`select o.id,o.status,o.discovery,o.scope,o.scope_version,o.created_at,p.business_name,p.website_url,p.contact_name,p.contact_email,p.next_follow_up_at,c.id contract_id from expansion_opportunities o join prospects p on p.id=o.prospect_id left join expansion_contracts c on c.opportunity_id=o.id where o.partner_id=${id} order by o.created_at desc`)
+    const resources = await tx.execute(sql`select id,title,category,version,audience,content,status,created_at from expansion_resources where status='published' and audience='partner' order by created_at desc`)
     const capacity = await tx.execute(sql`select c.period,greatest(0,c.available_hours-coalesce(sum(r.hours) filter(where r.status<>'released'),0))::integer remaining_hours from expansion_capacity c left join expansion_reservations r on r.period=c.period where c.period>=current_date-7 group by c.period order by c.period`)
     return { partnerId:id, displayName:actor.displayName, opportunities:opportunities.rows, resources:resources.rows, capacity:capacity.rows }
   })
@@ -108,10 +109,9 @@ export async function founderMutation(input: Input) {
   const actor = await requireCapability('expansion.manage')
   return db.transaction(async tx => {
     await currentActor(tx,actor,'expansion.manage')
-    if (input.action === 'purge_applicants') {
-      const deleted = await tx.execute(sql`delete from partner_applications a where a.retention_until<=now() and not exists(select 1 from expansion_partners p where p.application_id=a.id) returning id`)
-      await audit(tx,actor.id,'applicant_retention','expired_unlinked_applicants_purged',{count:deleted.rows.length})
-      return {purged:deleted.rows.length}
+    if (input.action === 'preview_applicant_retention' || input.action === 'purge_applicants' ||
+        input.action === 'set_applicant_retention_hold' || input.action === 'release_applicant_retention_hold') {
+      return runApplicantRetention(tx, actor.id, input)
     }
     if (input.action === 'review_application') {
       const id = expansionInteger(input.id,'application',1,2147483647)
@@ -166,7 +166,10 @@ export async function founderMutation(input: Input) {
     }
     if (input.action === 'suppress') {
       const domain = prospectDomain(input.domain)
-      await tx.execute(sql`insert into expansion_suppressions(normalized_domain,reason,created_by) values(${domain},${expansionText(input.reason,'Reason',3000)},${actor.id}) on conflict(normalized_domain) do nothing`)
+      const reason = expansionText(input.reason,'Reason',3000)
+      // Serialize suppression with this service's prospect-admission check.
+      await tx.execute(sql`select pg_advisory_xact_lock(621908148)`)
+      await tx.execute(sql`insert into expansion_suppressions(normalized_domain,reason,created_by) values(${domain},${reason},${actor.id}) on conflict(normalized_domain) do nothing`)
       await audit(tx,actor.id,domain,'business_suppressed')
       return {domain}
     }
@@ -175,8 +178,15 @@ export async function founderMutation(input: Input) {
     if (input.action === 'cancel_contract') {
       if (row.status !== 'contract_accepted') throw new ExpansionError('Choose an accepted contract for cancellation.',409)
       const reason = expansionText(input.reason,'Approved cancellation evidence and reason',3000)
-      const contract = await tx.execute(sql`select id from expansion_contracts where opportunity_id=${id} for update`)
+      const contract = await tx.execute(sql`select id,commercial_contract_id from expansion_contracts where opportunity_id=${id} for update`)
       if (!contract.rows[0]) throw new ExpansionError('Accepted contract not found.',409)
+      const canonicalId = contract.rows[0].commercial_contract_id
+      const ended = await tx.execute(sql`update commercial_contracts
+        set status='ended', ends_at=case when starts_at<now() then least(coalesce(ends_at,now()),now()) else ends_at end,
+          version=version+1, actor_user_id=${actor.id}, updated_at=now()
+        where id=${canonicalId} and status='confirmed' returning id`)
+      if (ended.rows[0]) await tx.execute(sql`insert into commercial_audit(actor_user_id,entity,record_id,action,after_value)
+        values(${actor.id},'contract',${String(canonicalId)},'expansion_contract_cancelled',${JSON.stringify({reason,status:'ended'})}::jsonb)`)
       await tx.execute(sql`insert into expansion_contract_cancellations(contract_id,reason,created_by) values(${contract.rows[0].id},${reason},${actor.id})`)
       await tx.execute(sql`update expansion_opportunities set status='withdrawn',updated_at=now() where id=${id}`)
       if (input.deliveryReviewed === true) await tx.execute(sql`update expansion_reservations set status='released' where opportunity_id=${id}`)
@@ -215,15 +225,23 @@ export async function founderMutation(input: Input) {
       if (JSON.stringify(parseCommissionTerms(plan.rows[0]?.terms)) !== JSON.stringify(terms)) throw new ExpansionError('This commission version already has different terms. Create a new version.',409)
       const reference = expansionText(input.agreementReference,'Accepted agreement evidence',500)
       const contractId = randomUUID()
-      const website = Number(BigInt(terms.milestones.deposit)+BigInt(terms.milestones.final))
-      expansionInteger(website,'website total',0,2147483647)
-      const commercial = await tx.execute(sql`insert into commercial_contracts(client_id,prospect_id,category,status,monthly_amount,one_off_amount,evidence,starts_at,actor_user_id) values(${clientId},${row.prospect_id},'premium_partnership','confirmed',${Number(terms.milestones.first_retainer)},${website},${reference},now(),${actor.id}) returning id`)
+      const qualifyingWebsite = BigInt(terms.milestones.deposit) + BigInt(terms.milestones.final)
+      const pricing = input.commercialPricing as Record<string,unknown> | undefined
+      const standardPricing = terms.milestones.deposit === '100000' && terms.milestones.final === '100000' && terms.milestones.first_retainer === '35000'
+      if (!pricing && !standardPricing) throw new ExpansionError('Record actual signed website and recurring prices separately from bespoke commission limits.')
+      const website = pricing ? expansionInteger(pricing.websitePence,'signed website price',0,2147483647) : 200000
+      const monthly = pricing ? expansionInteger(pricing.monthlyPence,'signed recurring price',0,2147483647) : 35000
+      if (BigInt(website) < qualifyingWebsite || BigInt(monthly) < BigInt(terms.milestones.first_retainer)) {
+        throw new ExpansionError('Qualifying limits cannot exceed signed prices.')
+      }
+      const category = monthly > 0 ? 'premium_partnership' : 'website_build'
+      const commercial = await tx.execute(sql`insert into commercial_contracts(client_id,prospect_id,category,status,monthly_amount,one_off_amount,evidence,starts_at,actor_user_id) values(${clientId},${row.prospect_id},${category},'confirmed',${monthly},${website},${reference},now(),${actor.id}) returning id`)
       await tx.execute(sql`insert into expansion_contracts(id,opportunity_id,client_id,commercial_contract_id,terms,scope_snapshot,scope_version,agreement_reference,accepted_at,created_by) values(${contractId},${id},${clientId},${commercial.rows[0].id},${JSON.stringify(terms)}::jsonb,${JSON.stringify(row.scope)}::jsonb,${row.scope_version},${reference},now(),${actor.id})`)
       await tx.execute(sql`update expansion_opportunities set status='contract_accepted',client_id=${clientId},updated_at=now() where id=${id}`)
       await tx.execute(sql`update prospects set stage='won',converted_client_id=${clientId},won_at=now(),updated_at=now() where id=${row.prospect_id}`)
       if (!existingConversion.rows[0]) await tx.execute(sql`insert into prospect_conversions(prospect_id,client_id,actor_user_id,client_action,metadata_json) values(${row.prospect_id},${clientId},${actor.id},'linked',${JSON.stringify({source:'operation-expansion',contractId,scopeVersion:row.scope_version,scopeSnapshot:row.scope,agreementReference:reference})}::jsonb)`)
       await tx.execute(sql`update expansion_reservations set status='confirmed' where opportunity_id=${id} and status='provisional'`)
-      await audit(tx,actor.id,id,'contract_accepted',{contractId,terms,reference})
+      await audit(tx,actor.id,id,'contract_accepted',{contractId,terms,reference,commercialPricing:{websitePence:website,monthlyPence:monthly}})
       return {id:contractId}
     } else if (input.action === 'release_capacity') {
       if (row.status === 'contract_accepted') throw new ExpansionError('Accepted contracts need explicit delivery review before capacity release.',409)

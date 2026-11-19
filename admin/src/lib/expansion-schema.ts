@@ -10,6 +10,17 @@ function fk(column: AnyPgColumn, target: AnyPgColumn, name: string, deletion: "r
   return foreignKey({ columns: [column], foreignColumns: [target], name }).onDelete(deletion)
 }
 
+export const expansionApplicantRetentionHolds = pgTable("expansion_applicant_retention_holds", {
+  applicationId: integer("application_id").primaryKey(),
+  reasonCode: text("reason_code").notNull(),
+  heldBy: uuid("held_by").notNull(),
+  heldAt: time("held_at").notNull().defaultNow(),
+}, t => [
+  fk(t.applicationId, partnerApplicationsReference.id, "expansion_applicant_retention_holds_application_id_fkey"),
+  fk(t.heldBy, adminUsers.id, "expansion_applicant_retention_holds_held_by_fkey"),
+  check("expansion_applicant_retention_holds_reason_code_check", sql`${t.reasonCode} in ('legal_review', 'privacy_request', 'commercial_dispute')`),
+])
+
 export const expansionPartners = pgTable("expansion_partners", {
   id: uuid("id").primaryKey(), userId: uuid("user_id").notNull().unique("expansion_partners_user_id_key"),
   applicationId: integer("application_id").notNull().unique("expansion_partners_application_id_key"),
@@ -104,7 +115,9 @@ export const expansionPaymentEvents = pgTable("expansion_payment_events", {
   reference: text("reference").notNull().unique("expansion_payment_events_reference_key"), milestone: text("milestone").notNull(),
   netPence: bigint("net_pence", { mode: "bigint" }).notNull(), grossPence: bigint("gross_pence", { mode: "bigint" }).notNull(),
   evidenceReference: text("evidence_reference").notNull(), fingerprint: text("fingerprint").notNull(),
-  reversesEventId: uuid("reverses_event_id").unique("expansion_payment_events_reverses_event_id_key"), termsApprovalReference: text("terms_approval_reference"),
+  reversesEventId: uuid("reverses_event_id"), termsApprovalReference: text("terms_approval_reference"),
+  calculatedAdjustmentPence: bigint("calculated_adjustment_pence", { mode: "bigint" }),
+  refundTreatment: text("refund_treatment"),
   verifiedBy: uuid("verified_by").notNull(), createdAt: time("created_at").notNull().defaultNow(),
 }, t => [
   fk(t.contractId, expansionContracts.id, "expansion_payment_events_contract_id_fkey"), fk(t.commercialPaymentId, commercialPayments.id, "expansion_payment_events_commercial_payment_id_fkey"),
@@ -113,6 +126,8 @@ export const expansionPaymentEvents = pgTable("expansion_payment_events", {
   check("expansion_payment_events_net_pence_check", sql`${t.netPence} <> 0`), check("expansion_payment_events_gross_pence_check", sql`${t.grossPence} <> 0`),
   check("expansion_payment_events_check", sql`(${t.netPence} > 0 and ${t.grossPence} >= ${t.netPence} and ${t.reversesEventId} is null) or (${t.netPence} < 0 and ${t.grossPence} <= ${t.netPence} and ${t.reversesEventId} is not null and ${t.termsApprovalReference} is not null)`),
   index("expansion_payment_contract_idx").on(t.contractId, t.milestone),
+  index("expansion_payment_refund_source_idx").on(t.reversesEventId),
+  check("expansion_payment_events_refund_treatment_check", sql`${t.refundTreatment} in ('manual_review','retain_entitlement','adjust_unpaid')`),
 ])
 
 export const expansionCommissionLedger = pgTable("expansion_commission_ledger", {
@@ -139,10 +154,28 @@ export const expansionPayouts = pgTable("expansion_payouts", {
 ])
 
 export const expansionPayoutEntries = pgTable("expansion_payout_entries", {
-  payoutId: uuid("payout_id").notNull(), ledgerId: uuid("ledger_id").notNull().unique("expansion_payout_entries_ledger_id_key"),
+  payoutId: uuid("payout_id").notNull(), ledgerId: uuid("ledger_id").notNull(),
 }, t => [
   primaryKey({ columns: [t.payoutId, t.ledgerId] }), fk(t.payoutId, expansionPayouts.id, "expansion_payout_entries_payout_id_fkey"), fk(t.ledgerId, expansionCommissionLedger.id, "expansion_payout_entries_ledger_id_fkey"),
+  index("expansion_payout_entries_ledger_idx").on(t.ledgerId),
 ])
+
+export const expansionPayoutCancellations = pgTable("expansion_payout_cancellations", {
+  payoutId: uuid("payout_id").primaryKey(), cancelledBy: uuid("cancelled_by").notNull(),
+  reason: text("reason").notNull(), cancelledAt: time("cancelled_at").notNull().defaultNow(),
+}, t => [
+  fk(t.payoutId, expansionPayouts.id, "expansion_payout_cancellations_payout_id_fkey"),
+  fk(t.cancelledBy, adminUsers.id, "expansion_payout_cancellations_cancelled_by_fkey"),
+  check("expansion_payout_cancellations_reason_check", sql`length(btrim(${t.reason})) between 1 and 2000`),
+])
+
+export const expansionPayoutClaims = pgTable("expansion_payout_claims", {
+  ledgerId: uuid("ledger_id").primaryKey(), payoutId: uuid("payout_id").notNull(),
+}, t => [foreignKey({
+  columns: [t.payoutId, t.ledgerId],
+  foreignColumns: [expansionPayoutEntries.payoutId, expansionPayoutEntries.ledgerId],
+  name: "expansion_payout_claims_payout_id_ledger_id_fkey",
+}).onDelete("restrict")])
 
 // SQL triggers enforce append-only history, payout reconciliation and canonical
 // payment reversal admission. Preserve those forward-migration controls; Drizzle

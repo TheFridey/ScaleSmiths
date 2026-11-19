@@ -27,7 +27,9 @@ vi.mock("./rbac", () => ({ requireCapability: async (capability: string) => {
   return { ...state.actor }
 } }))
 
-import { approveExpansionPayout, getExpansionFinance, getPartnerFinance, prepareExpansionPayout, refundExpansionPayment, settleExpansionPayout, verifyExpansionPayment } from "./expansion-finance"
+import { allocateExpansionInvoice, approveExpansionPayout, cancelExpansionPayout, getExpansionFinance, getPartnerFinance, prepareExpansionPayout, refundExpansionPayment, retainRefundEntitlement, settleExpansionPayout, verifyExpansionPayment } from "./expansion-finance"
+
+const clause = "Synthetic accepted agreement clause 4"
 
 const payment = (milestone: "deposit" | "final" | "first_retainer" = "deposit", amount = "100000", reference = "bank-deposit-1") => ({ contractId: CONTRACT, invoiceId: 1, milestone, netPence: amount, grossPence: amount, reference, evidenceReference: "Bank statement verified by founder", confirmed: true })
 function asPartner(id = USER) { state.actor = { id, role: "independent_partner", sessionVersion: 1, active: true } }
@@ -50,6 +52,7 @@ describe("production partner financial service against PostgreSQL via PGlite", (
     `)
     await database.exec(readFileSync(new URL("../../../drizzle/0069_expansion_finance.sql", import.meta.url), "utf8"))
     await database.exec(readFileSync(new URL("../../../drizzle/0070_expansion_cancellations.sql", import.meta.url), "utf8"))
+    await database.exec(readFileSync(new URL("../../../drizzle/0071_expansion_financial_hardening.sql", import.meta.url), "utf8"))
   }, 30000)
   beforeEach(async () => {
     state.actor = { id: FOUNDER, role: "owner", sessionVersion: 1, active: true }
@@ -58,7 +61,10 @@ describe("production partner financial service against PostgreSQL via PGlite", (
     await state.database!.query("insert into expansion_partners(id,user_id,activated_at) values($1,$2,now()),($3,$4,now())", [PARTNER, USER, OTHER_PARTNER, OTHER_USER])
     await state.database!.exec("insert into clients(id) values(1),(2); insert into invoices(id,client_id,total,status) values(1,1,235000,'issued'),(2,2,100000,'issued'),(3,1,100000,'draft')")
     await state.database!.query("insert into expansion_opportunities values($1,$2)", [OPPORTUNITY, PARTNER])
-    await state.database!.query("insert into expansion_contracts values($1,$2,1,$3,now())", [CONTRACT, OPPORTUNITY, JSON.stringify(standardCommissionTerms())])
+    await state.database!.query("insert into expansion_contracts values($1,$2,1,$3,now())", [CONTRACT, OPPORTUNITY, JSON.stringify({...standardCommissionTerms(), unpaidRefundApprovalReference:clause})])
+    for (const [milestone, amount] of Object.entries(standardCommissionTerms().milestones)) {
+      await allocateExpansionInvoice({contractId:CONTRACT,invoiceId:1,milestone:milestone as "deposit"|"final"|"first_retainer",netPence:amount,evidenceReference:"Reviewed milestone breakdown"})
+    }
   })
   afterAll(async () => { await state.database?.close() })
 
@@ -68,7 +74,7 @@ describe("production partner financial service against PostgreSQL via PGlite", (
     expect((await verifyExpansionPayment(payment())).replayed).toBe(true)
     await verifyExpansionPayment(payment("final", "100000", "bank-final-1"))
     await verifyExpansionPayment(payment("first_retainer", "35000", "bank-retainer-1"))
-    const prepared = await prepareExpansionPayout({ partnerId: PARTNER, invoiceReference: "PARTNER-A-001" })
+    const prepared = await prepareExpansionPayout({ partnerId: PARTNER, invoiceReference: "PARTNER-A-001", invoiceNetPence: "70500" })
     expect(prepared.amountPence).toBe("70500")
     await approveExpansionPayout({ payoutId: prepared.payoutId })
     await settleExpansionPayout({ payoutId: prepared.payoutId, settlementReference: "MANUALLY-VERIFIED-SETTLEMENT-001" })
@@ -96,6 +102,11 @@ describe("production partner financial service against PostgreSQL via PGlite", (
     await expect(verifyExpansionPayment({ ...payment("final", "100000", "draft"), invoiceId: 3 })).rejects.toThrow("issued invoice")
     expect((await state.database!.query("select * from commercial_payments")).rows).toHaveLength(1)
   })
+  it("rejects same-client receipts without a reviewed invoice allocation", async () => {
+    await state.database!.exec("insert into invoices(id,client_id,total,status) values(4,1,100000,'issued')")
+    await expect(verifyExpansionPayment({...payment(),invoiceId:4})).rejects.toThrow("reviewed allocation")
+    await expect(allocateExpansionInvoice({contractId:CONTRACT,invoiceId:4,milestone:"deposit",netPence:"1",evidenceReference:"Exceeds accepted allocation"})).rejects.toThrow("approved milestone")
+  })
   it("uses VAT-exclusive receipts and cumulative partial rounding with transaction rollback", async () => {
     await verifyExpansionPayment({ ...payment("deposit", "1", "part-1"), grossPence: "2" })
     await verifyExpansionPayment(payment("deposit", "1", "part-2"))
@@ -117,7 +128,7 @@ describe("production partner financial service against PostgreSQL via PGlite", (
   it("appends a full approved refund, replays once and rejects bypass reversal and history rewrite", async () => {
     const original = await verifyExpansionPayment(payment())
     await expect(state.database!.query("insert into commercial_payments(client_id,invoice_id,category,amount,evidence,reference,reverses_payment_id,actor_user_id,received_at) select client_id,invoice_id,category,-amount,'bypass','bypass-ref',id,actor_user_id,now() from commercial_payments limit 1")).rejects.toThrow("financial reconciliation")
-    const refund = { paymentId: original.paymentId, reference: "refund-1", reason: "Refund verified against bank statement", termsApprovalReference: "Founder reviewed clause 4 and approved full reversal" }
+    const refund = { paymentId: original.paymentId, reference: "refund-1", reason: "Refund verified against bank statement", termsApprovalReference: clause, treatment: "adjust_unpaid" as const }
     expect((await refundExpansionPayment(refund)).commissionPence).toBe("-30000")
     expect((await refundExpansionPayment(refund)).replayed).toBe(true)
     await expect(refundExpansionPayment({ ...refund, reference: "refund-2" })).rejects.toThrow("already been refunded")
@@ -127,18 +138,18 @@ describe("production partner financial service against PostgreSQL via PGlite", (
   })
   it("prevents duplicate payouts, direct settlement and refunds of reserved entitlement", async () => {
     const original = await verifyExpansionPayment(payment())
-    const payout = await prepareExpansionPayout({ partnerId: PARTNER, invoiceReference: "INV-001" })
-    expect((await prepareExpansionPayout({ partnerId: PARTNER, invoiceReference: "INV-001" })).replayed).toBe(true)
-    await expect(prepareExpansionPayout({ partnerId: PARTNER, invoiceReference: "INV-002" })).rejects.toThrow("No positive")
+    const payout = await prepareExpansionPayout({ partnerId: PARTNER, invoiceReference: "INV-001", invoiceNetPence: "30000" })
+    expect((await prepareExpansionPayout({ partnerId: PARTNER, invoiceReference: "INV-001", invoiceNetPence: "30000" })).replayed).toBe(true)
+    await expect(prepareExpansionPayout({ partnerId: PARTNER, invoiceReference: "INV-002", invoiceNetPence: "30000" })).rejects.toThrow("No positive")
     await expect(settleExpansionPayout({ payoutId: payout.payoutId, settlementReference: "bank" })).rejects.toThrow("manually approved")
-    await expect(refundExpansionPayment({ paymentId: original.paymentId, reference: "refund", reason: "approved", termsApprovalReference: "agreement" })).rejects.toThrow("prepared payout")
+    await expect(refundExpansionPayment({ paymentId: original.paymentId, reference: "refund", reason: "approved", termsApprovalReference: clause, treatment: "adjust_unpaid" })).rejects.toThrow("prepared payout")
   })
   it("freezes payout allocations at approval and rejects a mismatched prepared total", async () => {
     await verifyExpansionPayment(payment())
-    const payout = await prepareExpansionPayout({ partnerId: PARTNER, invoiceReference: "INV-LOCKED" })
+    const payout = await prepareExpansionPayout({ partnerId: PARTNER, invoiceReference: "INV-LOCKED", invoiceNetPence: "30000" })
     await approveExpansionPayout({ payoutId: payout.payoutId })
     await verifyExpansionPayment(payment("final", "100000", "final-after-approval"))
-    await expect(state.database!.query("insert into expansion_payout_entries(payout_id,ledger_id) select $1,l.id from expansion_commission_ledger l where not exists(select 1 from expansion_payout_entries e where e.ledger_id=l.id) limit 1", [payout.payoutId])).rejects.toThrow("unapproved payout")
+    await expect(state.database!.query("insert into expansion_payout_entries(payout_id,ledger_id) select $1,l.id from expansion_commission_ledger l where not exists(select 1 from expansion_payout_entries e where e.ledger_id=l.id) limit 1", [payout.payoutId])).rejects.toThrow("live prepared payout")
     const mismatched = "50000000-0000-4000-8000-000000000001"
     await state.database!.query("insert into expansion_payouts(id,partner_id,amount_pence,invoice_reference,prepared_by) values($1,$2,1,'MISMATCH',$3)", [mismatched, PARTNER, FOUNDER])
     await expect(approveExpansionPayout({ payoutId: mismatched })).rejects.toThrow("does not reconcile")
@@ -169,6 +180,54 @@ describe("production partner financial service against PostgreSQL via PGlite", (
     expect([statement.earnedPence, statement.unpaidPence, statement.conditionalPence]).toEqual(["30000", "30000", "0"])
     expect(statement.ledger[0].rate_bps).toBe("3000")
     state.actor = { id: FOUNDER, role: "owner", sessionVersion: 1, active: true }
-    expect((await refundExpansionPayment({ paymentId: original.paymentId, reference: "cancelled-refund", reason: "Approved refund after cancellation", termsApprovalReference: "Reviewed cancellation clause" })).commissionPence).toBe("-30000")
+    expect((await refundExpansionPayment({ paymentId: original.paymentId, reference: "cancelled-refund", reason: "Approved refund after cancellation", termsApprovalReference: clause, treatment: "adjust_unpaid" })).commissionPence).toBe("-30000")
+  })
+
+  it("records partial VAT refunds, rejects invalid components and releases cancelled claims once", async () => {
+    const original = await verifyExpansionPayment({...payment(),grossPence:"120000"})
+    const prepared = await prepareExpansionPayout({partnerId:PARTNER,invoiceReference:"FIRST",invoiceNetPence:"30000"})
+    const cancellation = {payoutId:prepared.payoutId,reason:"Correct invoice before approval",noExternalSettlement:true}
+    expect(await cancelExpansionPayout(cancellation)).toMatchObject({status:"cancelled",replayed:false})
+    expect(await cancelExpansionPayout(cancellation)).toMatchObject({replayed:true})
+    await expect(approveExpansionPayout({payoutId:prepared.payoutId})).rejects.toThrow("prepared payout")
+    const refund = {paymentId:original.paymentId,reference:"partial-refund",reason:"Matched synthetic bank refund",termsApprovalReference:clause,treatment:"adjust_unpaid" as const,netPence:"20000",grossPence:"24000"}
+    await expect(refundExpansionPayment({...refund,grossPence:"41000"})).rejects.toThrow("VAT balance")
+    expect(await refundExpansionPayment(refund)).toMatchObject({commissionPence:"-6000",calculatedAdjustmentPence:"-6000"})
+    expect(await refundExpansionPayment(refund)).toMatchObject({replayed:true})
+    await expect(refundExpansionPayment({...refund,netPence:"19000"})).rejects.toThrow("different details")
+    expect(await refundExpansionPayment({...refund,reference:"partial-2",netPence:"10000",grossPence:"12000"})).toMatchObject({commissionPence:"-3000"})
+    const replacement = await prepareExpansionPayout({partnerId:PARTNER,invoiceReference:"REPLACEMENT",invoiceNetPence:"21000"})
+    expect(replacement.amountPence).toBe("21000")
+    expect((await getExpansionFinance()).payouts.map(row=>row.status).sort()).toEqual(["cancelled","prepared"])
+    await approveExpansionPayout(replacement)
+    await expect(cancelExpansionPayout({...cancellation,payoutId:replacement.payoutId})).rejects.toThrow("Only a prepared")
+    await settleExpansionPayout({...replacement,settlementReference:"MONITORED-BANK-1"})
+    const remaining = await refundExpansionPayment({paymentId:original.paymentId,reference:"remaining",reason:"Remaining refund now recorded"})
+    expect(remaining).toMatchObject({treatment:"manual_review",commissionPence:"0",calculatedAdjustmentPence:"-21000"})
+    asPartner()
+    expect(await getPartnerFinance()).toMatchObject({earnedPence:"21000",paidPence:"21000",unpaidPence:"0"})
+  })
+
+  it("preserves cap when retained or unreviewed cash refunds are replaced", async () => {
+    const original = await verifyExpansionPayment(payment())
+    const refund = await refundExpansionPayment({paymentId:original.paymentId,reference:"manual",reason:"Review needed",netPence:"20000"})
+    expect(await verifyExpansionPayment(payment("deposit","20000","replacement"))).toMatchObject({commissionPence:"0"})
+    const payout = {partnerId:PARTNER,invoiceReference:"AFTER-REVIEW",invoiceNetPence:"30000"}
+    await expect(prepareExpansionPayout(payout)).rejects.toThrow("outstanding refund entitlement")
+    const decision = {paymentId:refund.paymentId,evidenceReference:"Reviewed accepted terms preserve entitlement"}
+    expect(await retainRefundEntitlement(decision)).toMatchObject({replayed:false})
+    expect(await retainRefundEntitlement(decision)).toMatchObject({replayed:true})
+    await expect(retainRefundEntitlement({...decision,evidenceReference:"Conflicting disposition"})).rejects.toThrow("different decision evidence")
+    expect(await prepareExpansionPayout(payout)).toMatchObject({amountPence:"30000"})
+  })
+
+  it.each([
+    {milestone:"final" as const, received:"100000", refunded:"20000", adjustment:"-6000"},
+    {milestone:"first_retainer" as const, received:"35000", refunded:"5000", adjustment:"-1500"},
+  ])("applies an authorised partial $milestone adjustment", async ({milestone,received,refunded,adjustment}) => {
+    const original = await verifyExpansionPayment(payment(milestone,received,"collection"))
+    const input = {paymentId:original.paymentId,reference:"partial",reason:"Verified cash refund",netPence:refunded,treatment:"adjust_unpaid" as const}
+    await expect(refundExpansionPayment({...input,termsApprovalReference:"An unrelated clause"})).rejects.toThrow("does not authorise")
+    expect(await refundExpansionPayment({...input,termsApprovalReference:clause})).toMatchObject({commissionPence:adjustment})
   })
 })

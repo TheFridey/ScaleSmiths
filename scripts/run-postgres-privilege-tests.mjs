@@ -55,6 +55,17 @@ try {
   // roll back the representative identity/resource after checking publication.
   run(docker, ["exec", containerId, "psql", "--username", "scalesmiths_provision", "--dbname", database, "--set", "ON_ERROR_STOP=1", "--command", `
     BEGIN;
+    SET LOCAL ROLE scalesmiths_web;
+    INSERT INTO partner_applications(name,email,phone,region,experience,business_activity,networks,industries,motivation,linkedin,privacy_version,retention_until)
+      VALUES('TEST ONLY applicant','privilege-applicant@example.invalid','','Demo region','Synthetic experience','','','','Synthetic motivation',NULL,'test-v1',now()+interval '1 day');
+    DO $$ BEGIN
+      BEGIN
+        INSERT INTO partner_applications(status) VALUES('onboarding');
+        RAISE EXCEPTION 'Web must not insert a founder-owned lifecycle status';
+      EXCEPTION WHEN insufficient_privilege THEN NULL;
+      END;
+    END $$;
+    RESET ROLE;
     DO $$ BEGIN
       IF has_function_privilege('scalesmiths_admin','public.expansion_resource_lifecycle()','EXECUTE')
       THEN RAISE EXCEPTION 'Admin must not receive direct trigger-function execution'; END IF;
@@ -80,6 +91,9 @@ try {
   assertDriftDetectedAndRepaired(env, "GRANT INSERT ON TABLE public.clients TO scalesmiths_web;", "web: public.clients INSERT", "web write access to a read-only table")
   assertDriftDetectedAndRepaired(env, "GRANT SELECT ON TABLE public.partner_applications TO scalesmiths_web;", "web: public.partner_applications SELECT", "web applicant enumeration")
   assertDriftDetectedAndRepaired(env, "GRANT UPDATE ON TABLE public.partner_applications TO scalesmiths_web;", "web: public.partner_applications UPDATE", "web founder-onboarding mutation")
+  assertDriftDetectedAndRepaired(env, "GRANT INSERT ON TABLE public.partner_applications TO scalesmiths_web;", "web: public.partner_applications INSERT", "web applicant table-level insertion")
+  assertDriftDetectedAndRepaired(env, "GRANT INSERT (onboarding_confirmations) ON TABLE public.partner_applications TO scalesmiths_web;", "web: public.partner_applications.onboarding_confirmations INSERT", "web applicant approval-field insertion")
+  assertDriftDetectedAndRepaired(env, "REVOKE INSERT (privacy_version) ON TABLE public.partner_applications FROM scalesmiths_web;", "web: public.partner_applications.privacy_version INSERT", "missing web applicant insertion column")
   console.log("Real PostgreSQL privilege test passed, including injected-drift rejection and repair.")
 
   function assertDriftDetectedAndRepaired(environment, sql, expectedFailure, description) {

@@ -2,7 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 const mocks = vi.hoisted(() => ({ limit: vi.fn(), activate: vi.fn() }))
 vi.mock("@/lib/login-limiter", () => ({ checkLoginRateLimit: mocks.limit, getAuthRequestIp: () => "127.0.0.1", loginRateLimitKeys: () => ["partner-activation:test"] }))
-vi.mock("@/lib/server/partner-invitations", () => ({ activatePartnerInvitation: mocks.activate }))
+vi.mock("@/lib/server/partner-invitations", async (importOriginal) => ({
+  ...await importOriginal<typeof import("@/lib/server/partner-invitations")>(),
+  activatePartnerInvitation: mocks.activate,
+}))
 import { POST } from "./route"
 
 function request(body: string, origin = "http://localhost:3001", contentType = "application/json") {
@@ -10,8 +13,14 @@ function request(body: string, origin = "http://localhost:3001", contentType = "
 }
 
 describe("public invitation consumer", () => {
-  beforeEach(() => { vi.stubEnv("AUTH_URL", "http://localhost:3001"); mocks.limit.mockReset().mockResolvedValue(true); mocks.activate.mockReset().mockResolvedValue(undefined) })
+  beforeEach(() => { vi.stubEnv("AUTH_URL", "http://localhost:3001"); vi.stubEnv("PARTNER_ACTIVATION_ENABLED", "true"); mocks.limit.mockReset().mockResolvedValue(true); mocks.activate.mockReset().mockResolvedValue(undefined) })
   afterEach(() => vi.unstubAllEnvs())
+  it.each([undefined, "false", "TRUE", "1"])("closes activation for unapproved configuration %s", async (value) => {
+    vi.stubEnv("PARTNER_ACTIVATION_ENABLED", value)
+    expect((await POST(request("{}"))).status).toBe(403)
+    expect(mocks.limit).not.toHaveBeenCalled()
+    expect(mocks.activate).not.toHaveBeenCalled()
+  })
   it("rejects cross-origin requests before the token consumer", async () => {
     expect((await POST(request("{}", "https://attacker.example"))).status).toBe(403)
     expect(mocks.activate).not.toHaveBeenCalled()

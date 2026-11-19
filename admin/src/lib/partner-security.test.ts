@@ -15,7 +15,7 @@ describe("external independent partner boundary", () => {
   })
 
   it("denies known and unknown internal pages and direct API calls", () => {
-    for (const pathname of ["/", "/dashboard", "/command-centre", "/users", "/clients/1", "/prospects", "/finance", "/forge", "/venture-lab", "/expansion", "/unmapped-private-page", "/partnerish", "/api/forge/projects", "/api/prospects", "/api/invoices", "/api/admin-users", "/api/expansion", "/api/partnerish", "/api/partner/unknown"]) {
+    for (const pathname of ["/", "/dashboard", "/command-centre", "/users", "/clients/1", "/prospects", "/finance", "/forge", "/venture-lab", "/expansion", "/unmapped-private-page", "/partnerish", "/partner/unmapped", "/api/forge/projects", "/api/prospects", "/api/invoices", "/api/admin-users", "/api/expansion", "/api/partnerish", "/api/partner/unknown"]) {
       for (const method of ["GET", "POST", "PATCH", "DELETE"]) expect(authorizeRequest("independent_partner", { pathname, method }).allowed, `${method} ${pathname}`).toBe(false)
     }
   })

@@ -6,7 +6,10 @@ const bcrypt = require('bcryptjs')
 
 // Deliberately independent of DATABASE_URL and root .env. Never seed a normal runtime database.
 const url = new URL(process.env.EXPANSION_TEST_DATABASE_URL || 'invalid:')
-if (process.env.NODE_ENV === 'production' || !['127.0.0.1','localhost'].includes(url.hostname) || url.pathname !== '/ss_expansion_test') throw new Error('An explicit loopback ss_expansion_test database is required.')
+const demoDatabases = ['/ss_expansion_test', '/ss_expansion_hardening_browser']
+if (process.env.NODE_ENV === 'production' || !['127.0.0.1', 'localhost'].includes(url.hostname) || !demoDatabases.includes(url.pathname)) {
+  throw new Error('An explicit loopback Expansion demonstration database is required.')
+}
 if (!process.env.MFA_ENCRYPTION_KEY) throw new Error('A dedicated test MFA_ENCRYPTION_KEY is required; do not reuse a production key.')
 const pool = new Pool({connectionString:url.toString()})
 try {

@@ -705,9 +705,13 @@ export const commercialContracts = pgTable("commercial_contracts", {
 })
 export const commercialPayments = pgTable("commercial_payments", {
   id: serial("id").primaryKey(), clientId: integer("client_id").notNull().references(() => clients.id, { onDelete: "restrict" }), invoiceId: integer("invoice_id").references(() => invoices.id, { onDelete: "restrict" }),
-  category: text("category").notNull(), amount: integer("amount").notNull(), evidence: text("evidence").notNull(), reference: text("reference").notNull().unique(), reversesPaymentId: integer("reverses_payment_id").unique(),
+  category: text("category").notNull(), amount: integer("amount").notNull(), evidence: text("evidence").notNull(), reference: text("reference").notNull().unique(), reversesPaymentId: integer("reverses_payment_id"),
+  expansionRefund: boolean("expansion_refund").notNull().default(false),
   actorUserId: uuid("actor_user_id").notNull().references(() => adminUsers.id, { onDelete: "restrict" }), receivedAt: timestamp("received_at", { withTimezone: true }).notNull(), createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-})
+}, t => [
+  uniqueIndex("commercial_payments_ordinary_reversal_idx").on(t.reversesPaymentId).where(sql`not ${t.expansionRefund}`),
+  index("commercial_payments_refund_source_idx").on(t.reversesPaymentId),
+])
 export const commercialForecasts = pgTable("commercial_forecasts", {
   id: serial("id").primaryKey(), clientId: integer("client_id").notNull().references(() => clients.id, { onDelete: "restrict" }), amount: integer("amount").notNull(), expectedAt: timestamp("expected_at", { withTimezone: true }).notNull(), notes: text("notes").notNull(),
   actorUserId: uuid("actor_user_id").notNull().references(() => adminUsers.id, { onDelete: "restrict" }), createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),

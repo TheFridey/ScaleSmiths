@@ -8,6 +8,12 @@ import { adminSecurityAudit, adminUsers } from "@/lib/schema"
 import { AdminIdentityError } from "@/lib/admin-users"
 import { hasCapability } from "@/lib/rbac"
 
+export function requirePartnerActivationEnabled() {
+  if (process.env.PARTNER_ACTIVATION_ENABLED !== "true") {
+    throw new AdminIdentityError("Partner activation is currently closed.", 403, "partner_activation_closed")
+  }
+}
+
 export function invitationHash(token: string) {
   return createHash("sha256").update(token).digest("hex")
 }
@@ -20,6 +26,7 @@ export function validateActivationCredential(token: unknown, password: unknown) 
 
 /** Caller owns the transaction; applicant lock prevents two founders issuing twice. */
 export async function issueInvitation(tx: AdminDatabaseTransaction, applicationId: number, founderId: string, agreementVersion: string) {
+  requirePartnerActivationEnabled()
   const [founder] = await tx.select().from(adminUsers).where(eq(adminUsers.id, founderId)).for("share").limit(1)
   if (!founder?.active || !hasCapability(founder.role, "expansion.manage")) throw new AdminIdentityError("Founder authority is required.", 403, "forbidden")
   if (!Number.isSafeInteger(applicationId) || applicationId < 1 || !agreementVersion.trim() || agreementVersion.length > 120) throw new AdminIdentityError("Application and agreement version are required.")
@@ -53,6 +60,7 @@ export async function issueInvitation(tx: AdminDatabaseTransaction, applicationI
 
 /** Token is consumed and password committed atomically; never creates a session. */
 export async function activatePartnerInvitation(tokenInput: unknown, passwordInput: unknown): Promise<void> {
+  requirePartnerActivationEnabled()
   const credential = validateActivationCredential(tokenInput, passwordInput)
   // Hash before locking to bound lock duration. Rate limiting precedes this service.
   const passwordHash = await bcrypt.hash(credential.password, 12)

@@ -97,3 +97,17 @@
 /admin/src/components/finance/ @TheFridey
 /admin/src/lib/invoice*.ts @TheFridey
 /admin/src/lib/server/invoice*.ts @TheFridey
+
+# Independent partner identity, ownership, commercial approval and financial history
+/web/src/app/api/partner-applications/ @TheFridey
+/web/src/lib/partner-applications.ts @TheFridey
+/admin/src/app/partner/ @TheFridey
+/admin/src/app/api/partner/ @TheFridey
+/admin/src/app/api/expansion/ @TheFridey
+/admin/src/app/(protected)/expansion/ @TheFridey
+/admin/src/components/expansion/ @TheFridey
+/admin/src/lib/expansion*.ts @TheFridey
+/admin/src/lib/server/expansion*.ts @TheFridey
+/admin/src/lib/server/partner-invitations*.ts @TheFridey
+/admin/scripts/postgres-privilege-policy.mjs @TheFridey
+/scripts/run-postgres-privilege-tests.mjs @TheFridey

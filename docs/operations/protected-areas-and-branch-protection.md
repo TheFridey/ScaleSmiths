@@ -16,6 +16,7 @@ The CODEOWNERS file uses the repository owner `@TheFridey`, has a fail-safe defa
 | Database migrations | both Drizzle histories, schema/config files, checksums and migration checks | Both apps share PostgreSQL; history and ownership order are safety invariants. |
 | Forge providers, budgets and sandbox | Forge AI/provider, economics, reservation, workspace, QA and deploy modules | These paths control secrets, provider spend, generated code and deployment authority. |
 | Finance and billing | invoice APIs, protected finance pages, finance components and invoice modules | Money, document and delivery behaviour is business-critical. |
+| Independent partner network | partner intake, invitation/activation, scoped portal, Expansion services/schema and PostgreSQL grants | External identities, commercial approvals, commission entitlement and payout history require security and finance review. |
 | Deployment, release and recovery | Compose, Dockerfiles, Nginx, release scripts and backup scripts | Bad changes can expose private services, lose data, or break rollback. |
 | Environment handling | environment examples, hygiene checks and topology policy | Misclassified variables can expose secrets or create unsafe defaults. |
 

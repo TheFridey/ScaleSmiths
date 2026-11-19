@@ -45,7 +45,7 @@ export const requestMessageVisibility = pgEnum("request_message_visibility", ["c
 export const monthlyReportStatus = pgEnum("monthly_report_status", MONTHLY_REPORT_STATUSES)
 export const monthlyReportGeneratedBy = pgEnum("monthly_report_generated_by", ["forge", "manual"])
 export const salesProposalGeneratedBy = pgEnum("sales_proposal_generated_by", ["forge", "manual"])
-export const adminUserRole = pgEnum("admin_user_role", ["owner", "administrator", "venture_controller", "sales", "project_manager", "developer", "finance", "viewer"])
+export const adminUserRole = pgEnum("admin_user_role", ["owner", "administrator", "venture_controller", "sales", "project_manager", "developer", "finance", "viewer", "independent_partner"])
 export const deliveryCapacityAdjustmentType = pgEnum("delivery_capacity_adjustment_type", ["capacity_override", "time_off", "contractor_capacity", "sales_commitment", "actual_delivery"])
 export const operatingBriefActionStatus = pgEnum("operating_brief_action_status", ["dismissed", "completed", "snoozed"])
 export const analyticsProvider = pgEnum("analytics_provider", ["manual", "google_search_console", "google_analytics", "plausible", "uptime", "core_web_vitals", "custom"])
@@ -705,9 +705,13 @@ export const commercialContracts = pgTable("commercial_contracts", {
 })
 export const commercialPayments = pgTable("commercial_payments", {
   id: serial("id").primaryKey(), clientId: integer("client_id").notNull().references(() => clients.id, { onDelete: "restrict" }), invoiceId: integer("invoice_id").references(() => invoices.id, { onDelete: "restrict" }),
-  category: text("category").notNull(), amount: integer("amount").notNull(), evidence: text("evidence").notNull(), reference: text("reference").notNull().unique(), reversesPaymentId: integer("reverses_payment_id").unique(),
+  category: text("category").notNull(), amount: integer("amount").notNull(), evidence: text("evidence").notNull(), reference: text("reference").notNull().unique(), reversesPaymentId: integer("reverses_payment_id"),
+  expansionRefund: boolean("expansion_refund").notNull().default(false),
   actorUserId: uuid("actor_user_id").notNull().references(() => adminUsers.id, { onDelete: "restrict" }), receivedAt: timestamp("received_at", { withTimezone: true }).notNull(), createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-})
+}, t => [
+  uniqueIndex("commercial_payments_ordinary_reversal_idx").on(t.reversesPaymentId).where(sql`not ${t.expansionRefund}`),
+  index("commercial_payments_refund_source_idx").on(t.reversesPaymentId),
+])
 export const commercialForecasts = pgTable("commercial_forecasts", {
   id: serial("id").primaryKey(), clientId: integer("client_id").notNull().references(() => clients.id, { onDelete: "restrict" }), amount: integer("amount").notNull(), expectedAt: timestamp("expected_at", { withTimezone: true }).notNull(), notes: text("notes").notNull(),
   actorUserId: uuid("actor_user_id").notNull().references(() => adminUsers.id, { onDelete: "restrict" }), createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -2407,3 +2411,5 @@ export const megatonSocialOutreach = pgTable('megaton_social_outreach', {
   providerReference: text('provider_reference'), startedAt: timestamp('started_at',{withTimezone:true}), completedAt: timestamp('completed_at',{withTimezone:true}),
   createdAt: timestamp('created_at',{withTimezone:true}).notNull().defaultNow(),
 },t=>[index('megaton_social_due').on(t.state,t.dueAt)])
+
+export * from "./expansion-schema"

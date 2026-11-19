@@ -2,8 +2,35 @@ import { boolean, customType, index, integer, jsonb, pgEnum, pgTable, pgView, se
 import { CLIENT_REQUEST_STATUSES } from "./client-requests"
 import { INVOICE_STATUSES } from "./invoice-status"
 import { MONTHLY_REPORT_STATUSES } from "./monthly-reports"
+import { PARTNER_APPLICATION_STATUSES } from "./partner-applications"
 
 const bytea = customType<{ data: Buffer }>({ dataType: () => "bytea" })
+
+// Public acquisition ownership stays in the web migration history. Admin reads
+// and reviews these records; it does not create another applicant database.
+export const partnerApplications = pgTable("partner_applications", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  phone: text("phone").default("").notNull(),
+  region: text("region").notNull(),
+  experience: text("experience").notNull(),
+  businessActivity: text("business_activity").default("").notNull(),
+  networks: text("networks").default("").notNull(),
+  industries: text("industries").default("").notNull(),
+  motivation: text("motivation").notNull(),
+  linkedin: text("linkedin"),
+  privacyVersion: text("privacy_version").notNull(),
+  status: text("status").$type<(typeof PARTNER_APPLICATION_STATUSES)[number]>().default("submitted").notNull(),
+  submittedAt: timestamp("submitted_at", { withTimezone: true }).defaultNow().notNull(),
+  retentionUntil: timestamp("retention_until", { withTimezone: true }).notNull(),
+  reviewNotes: text("review_notes").default("").notNull(),
+  onboardingConfirmations: jsonb("onboarding_confirmations").$type<Record<string, unknown>>().default({}).notNull(),
+}, (table) => [
+  index("partner_applications_status_submitted_idx").on(table.status, table.submittedAt),
+  index("partner_applications_retention_idx").on(table.retentionUntil),
+  index("partner_applications_email_idx").on(table.email),
+])
 
 export const quoteStatus = pgEnum("quote_status", ["new", "read", "replied", "reviewed", "contacted", "qualified", "won", "lost"])
 export const invoiceStatus = pgEnum("invoice_status", INVOICE_STATUSES)

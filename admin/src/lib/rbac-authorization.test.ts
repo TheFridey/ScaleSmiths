@@ -15,7 +15,7 @@ const ownerAdminPMDev: AdminRole[] = ["owner", "administrator", "venture_control
 const ownerAdminDev: AdminRole[] = ["owner", "administrator", "venture_controller", "developer"]
 const forgeReadRoles: AdminRole[] = ["owner", "administrator", "venture_controller", "project_manager", "developer", "viewer"]
 const auditReadRoles: AdminRole[] = ["owner", "administrator", "venture_controller", "project_manager", "developer", "finance"]
-const generalAdminRoles: AdminRole[] = [...ADMIN_ROLES]
+const generalAdminRoles: AdminRole[] = ADMIN_ROLES.filter((role) => role !== "independent_partner")
 
 describe("RBAC — bypass paths (no capability required)", () => {
   const bypassPaths = [
@@ -37,7 +37,7 @@ describe("RBAC — bypass paths (no capability required)", () => {
 
   it("all roles are allowed on bypass paths", () => {
     for (const pathname of bypassPaths) {
-      for (const role of ADMIN_ROLES) {
+      for (const role of generalAdminRoles) {
         const result = authorizeRequest(role, { pathname, method: "GET" })
         expect(result.allowed).toBe(true)
         expect(result.capability).toBeNull()
@@ -117,10 +117,11 @@ describe("RBAC — security settings", () => {
     }
   })
 
-  it("allows every authenticated identity to manage only its own MFA", () => {
-    for (const role of ADMIN_ROLES) {
+  it("allows every internal identity to manage only its own MFA", () => {
+    for (const role of generalAdminRoles) {
       expect(authorizeRequest(role, { pathname: "/api/security/mfa", method: "POST" })).toMatchObject({ allowed: true, capability: null })
     }
+    expect(authorizeRequest("independent_partner", { pathname: "/api/security/mfa", method: "POST" }).allowed).toBe(false)
   })
 })
 
@@ -560,7 +561,7 @@ describe("RBAC — unrecognised paths", () => {
   })
 
   it("unknown pages remain layout decisions while unknown APIs fail closed", () => {
-    for (const role of ADMIN_ROLES) {
+    for (const role of generalAdminRoles) {
       expect(authorizeRequest(role, { pathname: "/unknown/route", method: "GET" }).allowed).toBe(true)
       expect(authorizeRequest(role, { pathname: "/api/unknown-route", method: "GET" }).allowed).toBe(false)
     }

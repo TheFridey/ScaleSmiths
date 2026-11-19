@@ -1,5 +1,10 @@
 export const APPLICATION_SCHEMAS = ["public", "drizzle"]
 
+export const WEB_APPLICANT_INSERT_COLUMNS = [
+  "name", "email", "phone", "region", "experience", "business_activity",
+  "networks", "industries", "motivation", "linkedin", "privacy_version", "retention_until",
+]
+
 export const WEB_TABLE_GRANTS = new Map([
   ["quote_requests", ["SELECT", "INSERT", "UPDATE"]],
   ["quote_rate_limits", ["SELECT", "INSERT", "UPDATE"]],
@@ -29,9 +34,10 @@ export const WEB_TABLE_GRANTS = new Map([
   ["web_rate_limits", ["SELECT", "INSERT", "UPDATE"]],
 ])
 
-export const WEB_INSERT_TABLES = [...WEB_TABLE_GRANTS]
-  .filter(([, operations]) => operations.includes("INSERT"))
-  .map(([table]) => table)
+export const WEB_INSERT_TABLES = [
+  "partner_applications", // Column-level INSERT still needs its sequence.
+  ...[...WEB_TABLE_GRANTS].filter(([, operations]) => operations.includes("INSERT")).map(([table]) => table),
+]
 
 export const ADMIN_FUNCTION_GRANTS = [
   { schema: "public", name: "digest", arguments: "bytea, text" },
@@ -49,6 +55,10 @@ export const TENANT_RLS_FUNCTION_GRANTS = [
 ]
 
 export const ADMIN_DELETE_TABLES = [
+  "expansion_payout_claims",
+  "expansion_applicant_retention_holds",
+  // Founder retention workflow deletes expired, unlinked applicants only.
+  "partner_applications",
   // Revoked/expired notification endpoints must be removed by the private runtime.
   "megaton_push_devices",
   "delivery_forge_integrations",

@@ -5,8 +5,9 @@ import { ADMIN_ROLES } from "./admin-users"
 import { CAPABILITIES, ROLE_CAPABILITIES, authorizeRequest, databaseQueryScope, hasCapability, isPrivilegeReduction, requiredCapabilityForRequest, type Capability } from "./rbac"
 
 const expected: Record<(typeof ADMIN_ROLES)[number], Capability[]> = {
-  owner: CAPABILITIES.filter((capability) => capability !== "venture.finance.approve" && capability !== "venture.launch.approve"),
-  administrator: CAPABILITIES.filter((capability) => capability !== "admin_users.credentials.reset" && capability !== "admin_users.owner.assign" && capability !== "venture.finance.approve" && capability !== "venture.launch.approve"),
+  owner: CAPABILITIES.filter((capability) => capability !== "expansion.partner" && capability !== "venture.finance.approve" && capability !== "venture.launch.approve"),
+  administrator: CAPABILITIES.filter((capability) => capability !== "expansion.partner" && capability !== "admin_users.credentials.reset" && capability !== "admin_users.owner.assign" && capability !== "venture.finance.approve" && capability !== "venture.launch.approve"),
+  independent_partner: ["expansion.partner"],
   venture_controller: ["megaton.read", "megaton.write", "megaton.approve", "megaton.configure", "admin_users.read", "admin_users.manage", "portal_users.read", "portal_users.manage", "portal_users.credentials.reset", "leads.read", "leads.write", "prospects.convert", "clients.read", "clients.write", "projects.read", "projects.write", "forge.read", "forge.execute", "forge.approve", "forge.configure", "finance.read", "finance.write", "settings.manage", "audit.read", "deployments.execute", "analytics.read", "analytics.write", "claims.read", "claims.manage", "venture.read", "venture.write", "venture.finance.read", "venture.finance.approve", "venture.experiment.manage", "venture.launch.approve", "venture.integration.manage", "venture.emergency_stop", "venture.audit.read"],
   sales: ["leads.read", "leads.write", "prospects.convert", "clients.read", "projects.read", "finance.read", "analytics.read"],
   project_manager: ["portal_users.read", "portal_users.manage", "leads.read", "prospects.convert", "clients.read", "clients.write", "projects.read", "projects.write", "forge.read", "forge.execute", "forge.approve", "forge.configure", "finance.read", "audit.read", "analytics.read", "analytics.write"],
@@ -124,7 +125,7 @@ describe("server request enforcement", () => {
     const unmapped = routeFiles.map((file) => `/${path.relative(path.resolve("src", "app"), path.dirname(file)).replaceAll("\\", "/").replace(/\[[^/]+\]/g, "resource")}`)
       // Auth, self-service logout, health and monitoring self-test authenticate with dedicated protocol-specific controls.
       .filter((pathname) => !pathname.startsWith("/api/auth") && pathname !== "/api/security/logout" && pathname !== "/api/security/mfa" && pathname !== "/api/health" && pathname !== "/api/monitoring/self-test" && pathname !== "/api/venture-lab/mcp" && requiredCapabilityForRequest({ pathname, method: "GET" }) === null && requiredCapabilityForRequest({ pathname, method: "POST" }) === null)
-    expect(unmapped.filter(pathname => !/^\/api\/jarvis\/v1\/[^/]+$/.test(pathname) && pathname !== "/api/megaton/worker")).toEqual([])
+    expect(unmapped.filter(pathname => !/^\/api\/jarvis\/v1\/[^/]+$/.test(pathname) && pathname !== "/api/megaton/worker" && pathname !== "/api/partner/activate")).toEqual([])
   })
 })
 

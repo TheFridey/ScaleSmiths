@@ -2,6 +2,7 @@ import type { AdminRole } from "./admin-users"
 import { authorizationExpectation } from "./authorization-policy"
 
 export const CAPABILITIES = [
+  "expansion.manage", "expansion.partner",
   "megaton.read", "megaton.write", "megaton.approve", "megaton.configure",
   "admin_users.read", "admin_users.manage", "admin_users.credentials.reset", "admin_users.owner.assign",
   "portal_users.read", "portal_users.manage", "portal_users.credentials.reset",
@@ -18,12 +19,13 @@ export type Capability = (typeof CAPABILITIES)[number]
 // Operational admin access excludes owner-only identity controls and does not
 // confer Venture Lab authority. The controller retains its separate approvals.
 const OPERATIONAL_ADMIN_CAPABILITIES = CAPABILITIES.filter((capability) =>
-  !capability.startsWith("venture.") && capability !== "admin_users.credentials.reset" && capability !== "admin_users.owner.assign",
+  !capability.startsWith("venture.") && !capability.startsWith("expansion.") && capability !== "admin_users.credentials.reset" && capability !== "admin_users.owner.assign",
 )
 
 export const ROLE_CAPABILITIES: Readonly<Record<AdminRole, readonly Capability[]>> = {
-  owner: CAPABILITIES.filter((capability) => capability !== "venture.finance.approve" && capability !== "venture.launch.approve"),
-  administrator: CAPABILITIES.filter((capability) => capability !== "admin_users.credentials.reset" && capability !== "admin_users.owner.assign" && capability !== "venture.finance.approve" && capability !== "venture.launch.approve"),
+  owner: CAPABILITIES.filter((capability) => capability !== "expansion.partner" && capability !== "venture.finance.approve" && capability !== "venture.launch.approve"),
+  administrator: CAPABILITIES.filter((capability) => capability !== "expansion.partner" && capability !== "admin_users.credentials.reset" && capability !== "admin_users.owner.assign" && capability !== "venture.finance.approve" && capability !== "venture.launch.approve"),
+  independent_partner: ["expansion.partner"],
   venture_controller: [...OPERATIONAL_ADMIN_CAPABILITIES, "venture.read", "venture.write", "venture.finance.read", "venture.finance.approve", "venture.experiment.manage", "venture.launch.approve", "venture.integration.manage", "venture.emergency_stop", "venture.audit.read"],
   sales: ["leads.read", "leads.write", "prospects.convert", "clients.read", "projects.read", "finance.read", "analytics.read"],
   project_manager: ["portal_users.read", "portal_users.manage", "leads.read", "prospects.convert", "clients.read", "clients.write", "projects.read", "projects.write", "forge.read", "forge.execute", "forge.approve", "forge.configure", "finance.read", "audit.read", "analytics.read", "analytics.write"],
@@ -48,6 +50,8 @@ export interface RbacRequest { pathname: string; method: string }
 export function requiredCapabilityForRequest({ pathname, method }: RbacRequest): Capability | null {
   const apiExpectation = authorizationExpectation(pathname, method)
   if (apiExpectation) return apiExpectation.capability
+  if (pathname === "/partner" || pathname.startsWith("/partner/")) return "expansion.partner"
+  if (pathname === "/expansion" || pathname.startsWith("/expansion/")) return "expansion.manage"
   const write = !["GET", "HEAD", "OPTIONS"].includes(method.toUpperCase())
   if (pathname.startsWith("/api/auth") || pathname.startsWith("/login")) return null
   if (pathname === "/api/security/logout") return null
@@ -88,6 +92,14 @@ export function requiredCapabilityForRequest({ pathname, method }: RbacRequest):
 
 export function authorizeRequest(role: AdminRole, request: RbacRequest) {
   const capability = requiredCapabilityForRequest(request)
+  // External identities cannot inherit permissive handling for unknown pages or
+  // protocol exceptions. Middleware handles the public auth protocol separately.
+  if (role === "independent_partner") {
+    const partnerPage = request.pathname === "/partner" && ["GET", "HEAD"].includes(request.method.toUpperCase())
+    const partnerApi = (request.pathname === "/api/partner" || request.pathname.startsWith("/api/partner/")) && capability === "expansion.partner"
+    const logout = request.pathname === "/api/security/logout" && request.method.toUpperCase() === "POST"
+    if (!partnerPage && !partnerApi && !logout) return { allowed: false as const, capability, reason: "external_identity_boundary" as const }
+  }
   const protocolException = request.pathname.startsWith("/api/auth") || request.pathname === "/api/security/logout" || request.pathname === "/api/health" || request.pathname === "/api/monitoring/self-test"
   if (request.pathname.startsWith("/api/") && !authorizationExpectation(request.pathname, request.method) && capability === null && !protocolException) {
     return { allowed: false as const, capability: null, reason: "unmapped_api_operation" as const }
@@ -95,7 +107,8 @@ export function authorizeRequest(role: AdminRole, request: RbacRequest) {
   return capability ? { ...requireRoleCapability(role, capability), capability } : { allowed: true as const, capability: null }
 }
 
-export type QueryScope = "global" | "none"
+export type QueryScope = "global" | "partner" | "none"
 export function databaseQueryScope(role: AdminRole, capability: Capability): QueryScope {
+  if (role === "independent_partner") return capability === "expansion.partner" ? "partner" : "none"
   return hasCapability(role, capability) ? "global" : "none"
 }

@@ -37,10 +37,20 @@
     {
       "owner": "web",
       "from": 22,
-      "through": 22
+      "through": 23
+    },
+    {
+      "owner": "admin",
+      "from": 68,
+      "through": 72
     }
   ],
   "crossHistoryDependencies": [
+    {
+      "migration": "admin/0068_expansion_foundation",
+      "requires": "web/0023_partner_applications",
+      "objects": ["partner_applications"]
+    },
     {
       "migration": "admin/0012_client_request_threads",
       "requires": "web/0005_client_requests",

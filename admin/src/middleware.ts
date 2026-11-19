@@ -57,6 +57,10 @@ export default auth(async (req) => {
     return next()
   }
 
+  // Only the invitation consumer is public; every other partner endpoint uses
+  // the same persisted Auth.js identity and revocation checks as internal users.
+  if ((pathname === "/partner/activate" && ["GET", "HEAD"].includes(req.method)) || (pathname === "/api/partner/activate" && req.method === "POST")) return next()
+
   // Only these non-sensitive installation assets are public on the admin origin.
   if (isPublicAdminBrandAsset(pathname) || pathname === "/manifest.webmanifest" || pathname === "/command-centre-sw.js" || /^\/app-icon\/(192|512|180)$/.test(pathname)) return next()
 
@@ -66,9 +70,13 @@ export default auth(async (req) => {
     return next()
   }
 
+  // The middleware Auth.js configuration decodes JWT state but does not reload
+  // identities. Check the persisted version before redirecting away from login,
+  // otherwise a revoked cookie bounces between its workspace and the login page.
+  const persistedUser = req.auth?.user?.id ? await findAdminUserById(req.auth.user.id).catch(() => null) : null
   if (pathname.startsWith("/login")) {
-    if (req.auth) {
-      const url = redirectUrl(adminHomeForRole(req.auth.user.role))
+    if (persistedUser && isAdminSessionCurrent(persistedUser, req.auth?.user?.sessionVersion)) {
+      const url = redirectUrl(adminHomeForRole(persistedUser.role))
       return correlated(NextResponse.redirect(url))
     }
 
@@ -84,7 +92,6 @@ export default auth(async (req) => {
     return correlated(NextResponse.redirect(url))
   }
 
-  const persistedUser = req.auth.user?.id ? await findAdminUserById(req.auth.user.id).catch(() => null) : null
   if (!persistedUser || !isAdminSessionCurrent(persistedUser, req.auth.user.sessionVersion)) {
     if (pathname.startsWith("/api/")) return correlated(NextResponse.json({ error: "Session revoked or account disabled." }, { status: 401 }))
     const url = redirectUrl("/login")

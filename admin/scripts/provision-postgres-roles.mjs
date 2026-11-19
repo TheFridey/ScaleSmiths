@@ -1,6 +1,6 @@
 import process from "node:process"
 import { Client } from "pg"
-import { ADMIN_DELETE_TABLES, ADMIN_FUNCTION_GRANTS, APPLICATION_SCHEMAS, TENANT_RLS_FUNCTION_GRANTS, WEB_INSERT_TABLES, WEB_TABLE_GRANTS } from "./postgres-privilege-policy.mjs"
+import { ADMIN_DELETE_TABLES, ADMIN_FUNCTION_GRANTS, APPLICATION_SCHEMAS, TENANT_RLS_FUNCTION_GRANTS, WEB_APPLICANT_INSERT_COLUMNS, WEB_INSERT_TABLES, WEB_TABLE_GRANTS } from "./postgres-privilege-policy.mjs"
 
 if (!process.argv.includes("--confirm-provision")) {
   throw new Error("Refusing to change PostgreSQL roles without --confirm-provision.")
@@ -68,6 +68,14 @@ try {
   for (const [table, operations] of WEB_TABLE_GRANTS) {
     if (await tableExists("public", table)) await client.query(`GRANT ${operations.join(", ")} ON TABLE public.${identifier(table)} TO ${identifier(web.name)}`)
   }
+  if (await tableExists("public", "partner_applications")) {
+    const result = await client.query("SELECT attname FROM pg_attribute WHERE attrelid='public.partner_applications'::regclass AND attnum>0 AND NOT attisdropped")
+    const allColumns = result.rows.map((row) => identifier(row.attname)).join(", ")
+    // Table-level REVOKE does not repair separately granted column privileges.
+    await client.query(`REVOKE ALL (${allColumns}) ON TABLE public.partner_applications FROM PUBLIC, ${identifier(web.name)}`)
+    const insertColumns = WEB_APPLICANT_INSERT_COLUMNS.map(identifier).join(", ")
+    await client.query(`GRANT INSERT (${insertColumns}) ON TABLE public.partner_applications TO ${identifier(web.name)}`)
+  }
   const webSequences = await sequencesForTables("public", WEB_INSERT_TABLES)
   for (const sequence of webSequences) await client.query(`GRANT USAGE, SELECT ON SEQUENCE public.${identifier(sequence)} TO ${identifier(web.name)}`)
 
@@ -112,7 +120,14 @@ async function ensureLoginRole(principal) {
 }
 
 async function transferSchemaObjects(schema, owner) {
-  const relations = await client.query("SELECT c.relname, c.relkind FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname=$1 AND c.relkind IN ('r','p','S','v','m')", [schema])
+  // Changing a table owner also transfers its owned serial and identity
+  // sequences. PostgreSQL rejects changing a linked sequence first.
+  const relations = await client.query(`
+    SELECT c.relname, c.relkind FROM pg_class c
+    JOIN pg_namespace n ON n.oid=c.relnamespace
+    WHERE n.nspname=$1 AND c.relkind IN ('r','p','S','v','m')
+    ORDER BY CASE WHEN c.relkind='S' THEN 1 ELSE 0 END, c.relname
+  `, [schema])
   for (const row of relations.rows) {
     const kind = row.relkind === "S" ? "SEQUENCE" : row.relkind === "v" ? "VIEW" : row.relkind === "m" ? "MATERIALIZED VIEW" : "TABLE"
     await client.query(`ALTER ${kind} ${identifier(schema)}.${identifier(row.relname)} OWNER TO ${identifier(owner)}`)

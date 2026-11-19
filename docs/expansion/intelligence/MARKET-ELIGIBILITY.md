@@ -5,6 +5,10 @@
 - Currency stays GBP. No international pricing, tax or conversion exists.
 - Suspension racing acceptance is serialised by a row share lock; tested on separate connections.
 
-## Not enforced yet
-
-Applicant onboarding, partner activation and scope approval are **not** gated by market. The legacy `standard-v1` acceptance path is intentionally unchanged to preserve historical behaviour, so it is not gated either. Partner-residence eligibility (distinct from customer market) has no data model yet.
+## Enforcement points (checkpoint 5)
+- **Applicant residence** (`partner_applications.residence_country`): recorded for information at review. It never authorises anything. International applicants can be reviewed and taken to onboarding.
+- **Partner operating market** (`expansion_partners.operating_country`, default GB): must be an approved market before an invitation is issued and again, under advisory lock 7102, at the moment of activation. A refused activation consumes nothing. A founder can change it. If it later becomes unapproved, the partner's new progression stops while accepted contracts and the ledger are untouched.
+- **Customer commercial market** (`expansion_opportunities.customer_country`): gates partner progression, founder scope approval, researched allocation and contract acceptance. Registration is a preliminary record and is not blocked.
+- Everything fails closed on an unknown or unapproved market. The default operating market (GB) authorises nothing until it is approved with every review.
+- Partner-facing refusals are one generic sentence; founders see specific reasons.
+- No international pricing, tax or currency conversion exists. Currency stays GBP.

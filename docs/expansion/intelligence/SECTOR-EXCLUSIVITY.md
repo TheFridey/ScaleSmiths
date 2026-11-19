@@ -9,3 +9,6 @@
 ## Limits
 
 Matching is word-stem based, not semantic; it is not a legal determination and a synonym with no shared stem can still be cleared, so founders should record exclusivities in the vocabulary partners use. Dates use Europe/London and the expiry date is the first unprotected day. Exclusivity terms rows have no immutability trigger (only decisions do). If any exclusivity is active, any prospect with an unknown sector needs review. Exclusivity is checked at **acceptance** (plan path only), not yet at registration, allocation or scope review.
+
+## Checkpoint 5: where the check now applies
+Registration (a preliminary record, no refusal that could be probed), partner progression, founder scope approval, researched-candidate eligibility and allocation, and contract acceptance. Partners always receive the same sentence whether the cause is a market or an exclusivity, so protected customers and terms cannot be probed. Candidate-level clearance is allowed only for a review-level match and is copied onto the opportunity at allocation; a confirmed restriction can only be released by an approved exception on an opportunity.

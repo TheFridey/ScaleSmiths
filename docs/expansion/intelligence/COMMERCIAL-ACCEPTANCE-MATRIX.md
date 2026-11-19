@@ -15,10 +15,19 @@
 | I withdrawal | PASS: 31 service tests, 11 real-PostgreSQL races, browser | request/replay/reject/cancel/approve/prepare/settle; over-withdrawal and double allocation impossible; refund dispute gate; no transfer |
 | J achievement | PASS (service, real PostgreSQL, browser) | derived progress, conditional rewards, no automatic liability, duplicates and bypasses refused in the database, ledger unchanged |
 | K referral | PASS (service, real PostgreSQL, browser) | code, attribution, vetting unchanged, five-client conditional £250, no payable liability, no recurring commission, privacy-limited view |
-| L exclusivity | PASS at acceptance (plan and legacy paths) and structured classification: service, race, browser. NOT enforced at registration or allocation (allocation not built) | classified/unclassified, review, exception, supersession, confidentiality |
-| M international eligibility | PARTIAL: acceptance gate PASS for plan and legacy paths (unknown, unconfirmed, unapproved, suspended, wrong-plan, approved; grandfathering; race; browser). Applicant, activation, allocation and scope-approval gating NOT implemented | |
+| L exclusivity | PASS: acceptance (plan and legacy), structured classification and aliases, and (checkpoint 5) partner progression, founder scope approval, researched-candidate review and allocation. Service, real-PostgreSQL race and browser | classified/unclassified, review, exception, supersession, confidentiality, one generic partner message |
+| M international eligibility | PASS: customer-market acceptance gate (checkpoint 3) plus, in checkpoint 5, operating-market gating of invitation and activation (re-checked under lock 7102), customer-market gating of partner progression and founder scope approval, and allocation. Applicant residence is recorded for information only. International applicants can be reviewed but not invited or activated while the market is unapproved. Real-PostgreSQL races: suspension against progression, scope approval, activation and allocation | grandfathering, fail-closed, no international pricing |
 | N discount concurrency | PASS, real PostgreSQL | three race tests |
 | O refund/payout regression | PASS | existing hardening suite plus new pooled £200 partial refund = −£60 held for review |
 | P four £500 instalments | PASS, persisted and real-PostgreSQL concurrent | £150 × 4 + £105 = £705; concurrent interim collections serialise; over-allocation admits one |
 
 Rounding fragmentation: unit and persisted tests show 5p × 4 pays 6p (cumulative) rather than 7p.
+
+## Checkpoint 5 additions (A–P above are unchanged and still pass)
+| Case | Result | Evidence |
+|---|---|---|
+| Q refund-raised qualification review | PASS | triggers raise one open flag per qualification and reason on every refund or cancellation; maintain or revoke needs a recorded reason; revocation rejects unapproved rewards; real service refund, partial then full, real PostgreSQL; browser |
+| R reward withdrawal | PASS | an approved reward cannot progress while its qualification is revoked, disputed or under review; withdrawal needs a new recorded reason, enforced by the database; browser |
+| S researched allocation | PASS | create, mandatory evidenced screening, live checks, eligibility, allocate, release, reassign, history; twelve real-PostgreSQL race and authorisation scenarios; browser |
+| T Founding Partner recognition | PASS | founder-only, evidence-gated, audited correction and revocation, forbidden-wording guard; races; browser |
+| U personal partner webpages | PASS with publication off by default | consent bound by database-computed hash, immutable versions and publications, permanent slugs, restricted public role reads one view only; browser including revocation |

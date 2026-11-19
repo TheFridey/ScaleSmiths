@@ -50,7 +50,7 @@ test('founder and partner complete the discounted, withdrawal and isolation jour
     await pool.query('truncate expansion_reservations,expansion_capacity')
     await pool.query('truncate expansion_meeting_corrections,expansion_meeting_requests,expansion_toolkit_items cascade')
     await pool.query('truncate expansion_qualification_flags,expansion_referral_rewards,expansion_referrals,expansion_referral_codes,expansion_achievement_rewards,expansion_client_qualifications,expansion_achievement_milestones,expansion_achievement_programmes cascade')
-    await pool.query('delete from login_rate_limits')
+    await pool.query('delete from login_rate_limits'); await pool.query('delete from web_rate_limits')
     // ---- Set-up [API]: synthetic applicants -> reviewed -> invited -> activated; both then log in through the real login screen [UI]
     for (const [name, email] of [[`DEMO Programme A ${suffix}`, emailA], [`DEMO Programme B ${suffix}`, emailB]]) {
       await pool.query("insert into partner_applications(name,email,region,experience,motivation,privacy_version,status,retention_until,onboarding_confirmations) values($1,$2,'DEMO','Demonstration only','Isolated acceptance only','test-reviewed-v1','onboarding',now()+interval '30 days','{\"agreement\":true,\"legal\":true,\"independentStatus\":true,\"operations\":true}')", [name, email])

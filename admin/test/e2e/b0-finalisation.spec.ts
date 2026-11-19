@@ -44,6 +44,7 @@ test('allocation, market and exclusivity enforcement, recognition and a syntheti
   const suffix = Date.now().toString(36), today = new Date().toISOString().slice(0, 10)
   const emailA = `b0-a-${suffix}@example.invalid`, emailB = `b0-b-${suffix}@example.invalid`, nameA = `DEMO B0 A ${suffix}`, nameB = `DEMO B0 B ${suffix}`
   await mkdir(evidence, { recursive: true })
+  for (const [name, pg] of [['founder', founderPage], ['partnerA', pageA], ['partnerB', pageB]] as const) pg.on('response', async (r) => { if (r.url().includes('/api/') && r.request().method() === 'POST' && r.status() >= 429) console.log(`NON-OK ${name} POST ${r.url().replace(/^.*\/api/, '/api')} ${r.status()} ${(await r.text().catch(() => '')).slice(0, 120)}`) })
   try {
     admin()
     // ---- [SQL] clean slate for this journey (disposable database only)
@@ -149,6 +150,7 @@ test('allocation, market and exclusivity enforcement, recognition and a syntheti
     await founderPage.screenshot({ path: `${evidence}/founder-allocation-history.png`, fullPage: true })
     await pageA.reload(); await tab(pageA, 'Prospects & scope'); await expect(pageA.getByRole('button', { name: new RegExp(business('review')) })).toHaveCount(0)
 
+    await pool.query('delete from web_rate_limits')   // the app's durable 120-per-minute founder limit is production behaviour; the journey resets it between sections
     // ================= Market and exclusivity at partner progression [UI] =================
     await tab(pageA, 'Prospects & scope')
     const reg = form(pageA, 'Register business'); await reg.getByLabel('Business name', { exact: true }).fill(business('nl-own')); await reg.getByLabel('Business website', { exact: true }).fill(domain('nl-own')); await reg.locator('input[name=country]').fill('NL')
@@ -159,6 +161,7 @@ test('allocation, market and exclusivity enforcement, recognition and a syntheti
     await expect(d2.locator('.ex-form-error')).toContainText('awaiting commercial approval from a founder')
     await pageA.screenshot({ path: `${evidence}/partner-market-restricted.png`, fullPage: true })
 
+    await pool.query('delete from web_rate_limits')   // the app's durable 120-per-minute founder limit is production behaviour; the journey resets it between sections
     // ================= Founding Partner recognition =================
     await tab(founderPage, 'Recognition')
     const nom = form(founderPage, 'Record nomination'); await nom.locator('select[name=partnerId]').selectOption(partnerA.id); await nom.locator('textarea[name=rationale]').fill('DEMO nomination for sustained contribution to the programme.')
@@ -183,6 +186,7 @@ test('allocation, market and exclusivity enforcement, recognition and a syntheti
     await pageA.setViewportSize({ width: 390, height: 844 }); await pageA.reload(); await tab(pageA, 'Achievements'); await noOverflow(pageA); await pageA.screenshot({ path: `${evidence}/partner-founding-partner-mobile-390.png`, fullPage: true }); await pageA.setViewportSize({ width: 1440, height: 1000 })
     await pageB.reload(); await tab(pageB, 'Achievements'); await expect(pageB.getByRole('heading', { name: 'ScaleSmiths Founding Partner' })).toHaveCount(0)
 
+    await pool.query('delete from web_rate_limits')   // the app's durable 120-per-minute founder limit is production behaviour; the journey resets it between sections
     // ================= Personal partner web pages =================
     // [API]+[SQL] Entitlement set-up: the five-qualifying-clients path is proven on real PostgreSQL (integration suite 5E). Here an approved programme version
     // and an approved personal-webpage reward are created directly in the disposable database so the browser journey can focus on the profile workflow.

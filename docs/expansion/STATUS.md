@@ -1,5 +1,7 @@
 # Operation Expansion status
 
+This is the foundation checkpoint. Later Phase A.1 verification and release decisions are recorded in the [hardening report](hardening/FINAL-REPORT.md).
+
 18 November 2026. Critical foundation journey: COMPLETE in isolated local acceptance. Overall programme: PARTIAL. Production activation: BLOCKED by the release decisions below. See FINAL-REPORT.md and CHANGED-FILES.md for the full inventory, evidence and operating instructions.
 
 ## Repository checkpoints

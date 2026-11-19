@@ -34,7 +34,7 @@ test('complete isolated commercial journey reconciles £705 and denies partner B
   const founder=await browser.newContext(),partner=await browser.newContext(),other=await browser.newContext(),publicContext=await browser.newContext()
   const founderPage=await founder.newPage(),partnerPage=await partner.newPage(),otherPage=await other.newPage(),publicPage=await publicContext.newPage()
   const suffix=Date.now().toString(36),email=`expansion-browser-${suffix}@example.invalid`
-  const evidence='../.tmp/expansion-evidence'
+  const evidence='../.tmp/expansion-hardening-evidence'
   await mkdir(evidence,{recursive:true})
   try {
     await publicPage.goto(`${localOrigin(webOrigin)}/partners`)
@@ -176,6 +176,9 @@ test('complete isolated commercial journey reconciles £705 and denies partner B
     const intrusion=await other.request.post(`${localOrigin(adminOrigin)}/api/partner`,{headers:{origin:localOrigin(adminOrigin)},data:{action:'discovery',id:prospect.id,discovery}})
     expect(intrusion.status()).toBe(404)
     expect((await other.request.get(`${localOrigin(adminOrigin)}/api/expansion`)).status()).toBe(403)
+    expect((await other.request.post(`${localOrigin(adminOrigin)}/api/expansion`,{
+      headers:{origin:localOrigin(adminOrigin)},data:{action:'prepare_payout',partnerId:otherSnapshot.workspace.partnerId,invoiceReference:'DEMO forbidden',invoiceNetPence:'1'},
+    })).status()).toBe(403)
     const partnerId=(await snapshot(partner)).workspace.partnerId
     await founderPage.reload()
     await founderPage.getByRole('button',{name:'Commission centre',exact:true}).click()
@@ -240,5 +243,9 @@ test('complete isolated commercial journey reconciles £705 and denies partner B
     const refunded=await snapshot(partner)
     expect(refunded.finance.refunds[0]).toMatchObject({treatment:'manual_review',net_pence:'-20000',calculated_adjustment_pence:'-6000'})
     expect([refunded.finance.earnedPence,refunded.finance.paidPence,refunded.finance.unpaidPence]).toEqual(['70500','70500','0'])
+    await founderPage.getByRole('button',{name:'Recruitment',exact:true}).click()
+    await founderPage.getByRole('button',{name:'Preview eligible applications',exact:true}).click()
+    await expect(founderPage.getByText('0 eligible in this batch.',{exact:true})).toBeVisible()
+    await expect(founderPage.getByText('Deletion is disabled by configuration.',{exact:true})).toBeVisible()
   } finally {await Promise.all([founder.close(),partner.close(),other.close(),publicContext.close()])}
 })

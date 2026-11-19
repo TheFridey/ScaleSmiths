@@ -65,6 +65,8 @@ describe("production Expansion prospect/scope/capacity service against PostgreSQ
     await state.database.exec(readFileSync(new URL("../../../drizzle/0077_expansion_gate_hardening.sql", import.meta.url), "utf8"))
     await state.database.exec(readFileSync(new URL("../../../drizzle/0078_expansion_state_integrity.sql", import.meta.url), "utf8"))
     await state.database.exec(readFileSync(new URL("../../../drizzle/0080_expansion_sector_taxonomy.sql", import.meta.url), "utf8"))
+    await state.database.exec(readFileSync(new URL("../../../drizzle/0084_expansion_research_allocation.sql", import.meta.url), "utf8"))
+    await state.database.exec(readFileSync(new URL("../../../drizzle/0085_expansion_market_enforcement.sql", import.meta.url), "utf8"))
   }, 30000)
   beforeEach(async () => {
     asFounder()
@@ -343,10 +345,15 @@ describe("production Expansion prospect/scope/capacity service against PostgreSQ
 
   describe("checkpoint 3E: fail-closed market and exclusivity gates", () => {
     const enable = () => founderMutation({ action: "set_plan_enabled", planKey: "standard-v2", enabled: true, reason: "Synthetic" })
+    // Progression needs an approved market and no unresolved exclusivity, so setup progresses first; a country override models a market
+    // position that changed AFTER approval, which is exactly what the acceptance gate must still catch.
     const ready = async (tag: string, extra: Record<string, unknown> = {}) => {
-      asPartner(); const rec = await partnerMutation({ action: "register", country: "GB", businessName: `Gate ${tag}`, website: `gate-${tag}.example`, region: "Nottingham", industry: "Plumbing & Heating", ...extra })
+      const { country, ...rest } = extra
+      asPartner(); const rec = await partnerMutation({ action: "register", country: "GB", businessName: `Gate ${tag}`, website: `gate-${tag}.example`, region: "Nottingham", industry: "Plumbing & Heating", ...rest })
       await partnerMutation({ action: "discovery", id: rec.id, discovery }); await partnerMutation({ action: "submit_scope", id: rec.id, summary: "Approved scope." })
-      asFounder(); await capacity(90); await approval(String(rec.id)); await enable(); return String(rec.id)
+      asFounder(); await capacity(90); await approval(String(rec.id)); await enable()
+      if ("country" in extra) await state.database!.query("update expansion_opportunities set customer_country=$1 where id=$2", [country ?? null, rec.id])
+      return String(rec.id)
     }
     const accept = (id: string) => founderMutation({ action: "accept_contract", id, clientId: 1, plan: { plan: "standard-v2" }, agreementReference: "Signed" })
     const market = (over: Record<string, unknown> = {}) => founderMutation({ action: "set_market", countryCode: "FR", countryName: "France", status: "approved", planKeys: ["standard-v2"], legalReviewed: true, accountingReviewed: true, privacyReviewed: true, operationsReviewed: true, approvalReference: "SYNTHETIC approval", ...over })
@@ -384,18 +391,18 @@ describe("production Expansion prospect/scope/capacity service against PostgreSQ
     })
     it("uncertain matches need founder review, ended or unrelated exclusivities do not block, and a customer's own is ignored", async () => {
       await state.database!.exec("insert into clients(id,name) values(2,'Other Customer')")
-      const unknownArea = await ready("unknown-area", { region: "" }); await exclusivity()
+      const unknownArea = await ready("unknown-area", { region: "" }); const unrelated = await ready("dentist", { industry: "Dentistry" }); const ended = await ready("ended"); await exclusivity()
       await expect(accept(unknownArea)).rejects.toThrow("exclusivity review")
       const exclusivityId = (await state.database!.query<{ id: string }>("select id from expansion_exclusivities")).rows[0].id
       await founderMutation({ action: "decide_exclusivity", id: unknownArea, exclusivityId, decision: "cleared", reference: "SYNTHETIC reviewed: different location confirmed with partner" })
       await accept(unknownArea)
       // different wording is never proof of difference: it needs a founder
-      const unrelated = await ready("dentist", { industry: "Dentistry" }); await expect(accept(unrelated)).rejects.toThrow("exclusivity review")
+      await expect(accept(unrelated)).rejects.toThrow("exclusivity review")
       asFounder(); const dentSector = (await founderMutation({ action: "create_sector", key: "dentistry", label: "Dentistry" }) as { sectorId: string }).sectorId
       await founderMutation({ action: "classify_opportunity", id: unrelated, sectorId: dentSector })
       await expect(accept(unrelated)).rejects.toThrow("exclusivity review")                 // still review: the exclusivity itself is unclassified
       await founderMutation({ action: "decide_exclusivity", id: unrelated, exclusivityId, decision: "cleared", reference: "SYNTHETIC reviewed: different sector confirmed" }); await accept(unrelated)
-      const ended = await ready("ended"); await founderMutation({ action: "end_exclusivity", exclusivityId, reason: "Agreement expired" })
+      await founderMutation({ action: "end_exclusivity", exclusivityId, reason: "Agreement expired" })
       await expect(founderMutation({ action: "decide_exclusivity", id: ended, exclusivityId, decision: "cleared", reference: "x" })).rejects.toThrow("active exclusivity")
       await accept(ended)
     })
@@ -448,15 +455,15 @@ describe("production Expansion prospect/scope/capacity service against PostgreSQ
     it("Case M: a new acquisition through legacy standard-v1 gets no exemption, while accepted contracts are grandfathered", async () => {
       await state.database!.exec("insert into clients(id,name) values(2,'Protected Customer')")
       const legacy = (id: string) => founderMutation({ action: "accept_contract", id, clientId: 1, terms: standardCommissionTerms(), agreementReference: "Historical v1 agreement" })
-      const unknown = await ready("legacy-unknown", { country: undefined }); await expect(legacy(unknown)).rejects.toThrow("not approved")
-      const accepted = await ready("legacy-ok"); await legacy(accepted)
+      const unknown = await ready("legacy-unknown", { country: undefined }); const accepted = await ready("legacy-ok"); const later = await ready("legacy-after-suspension"); const restricted = await ready("legacy-restricted")
+      await expect(legacy(unknown)).rejects.toThrow("not approved"); await legacy(accepted)
       const before = (await state.database!.query("select id,terms from expansion_contracts")).rows
       expect(before).toHaveLength(1)
       await market({ countryCode: "GB", countryName: "United Kingdom", status: "suspended", planKeys: ["standard-v2"] })
-      const later = await ready("legacy-after-suspension"); await expect(legacy(later)).rejects.toThrow("not approved")
+      await expect(legacy(later)).rejects.toThrow("not approved")
       expect((await state.database!.query("select id,terms from expansion_contracts")).rows).toEqual(before)   // the accepted contract is untouched
       await market({ countryCode: "GB", countryName: "United Kingdom", status: "approved", planKeys: ["standard-v2"] })
-      await exclusivity(); const restricted = await ready("legacy-restricted"); await expect(legacy(restricted)).rejects.toThrow("exclusivity review")
+      await exclusivity(); await expect(legacy(restricted)).rejects.toThrow("exclusivity review")
     })
     it("Case L: structured classification decides by canonical sector, not wording, and stays conservative when unclassified", async () => {
       await state.database!.exec("insert into clients(id,name) values(2,'Protected Customer')")
@@ -466,15 +473,14 @@ describe("production Expansion prospect/scope/capacity service against PostgreSQ
       await expect(founderMutation({ action: "create_sector", key: "dental", label: "dup" })).rejects.toThrow("already exists")
       await founderMutation({ action: "add_sector_alias", sectorId: dental, alias: "Dentist / Dental Clinic" })
       await expect(founderMutation({ action: "add_sector_alias", sectorId: ortho, alias: "dentist dental clinic" })).rejects.toThrow("already assigned")
+      const syn = await ready("syn", { industry: "Teeth specialist", region: "Nottingham" }); const similar = await ready("similar", { industry: "Dental clinic", region: "Nottingham" })
       await exclusivity({ sectorId: dental, sector: "Dental", area: "Nottingham" })
       // a synonym with no shared word stem, classified by the founder, is restricted
-      const syn = await ready("syn", { industry: "Teeth specialist", region: "Nottingham" })
       await expect(accept(syn)).rejects.toThrow("exclusivity review")                       // unclassified: uncomparable wording goes to review
       await founderMutation({ action: "classify_opportunity", id: syn, sectorId: dental })
       expect((await founderSnapshot()).exclusivityStatus[syn]).toBe("restricted")
       await expect(accept(syn)).rejects.toThrow("exclusivity review")
       // similar words, but classified as a different sector: positively cleared
-      const similar = await ready("similar", { industry: "Dental clinic", region: "Nottingham" })
       await founderMutation({ action: "classify_opportunity", id: similar, sectorId: ortho })
       expect((await founderSnapshot()).exclusivityStatus[similar]).toBe("clear")
       await accept(similar)
@@ -495,8 +501,8 @@ describe("production Expansion prospect/scope/capacity service against PostgreSQ
     it("C: a founder-approved alias classifies the prospect, so a synonym is restricted instead of silently cleared", async () => {
       await state.database!.exec("insert into clients(id,name) values(2,'Protected Customer')")
       asFounder(); const dental = (await founderMutation({ action: "create_sector", key: "dental", label: "Dental" }) as { sectorId: string }).sectorId
-      await exclusivity({ sectorId: dental, sector: "Dental", area: "Nottingham" })
       const noAlias = await ready("alias-no", { industry: "Tooth doctor", region: "Nottingham" })
+      await exclusivity({ sectorId: dental, sector: "Dental", area: "Nottingham" })
       expect((await founderSnapshot()).exclusivityStatus[noAlias]).toBe("review_required")                // unknown wording: review, never clear
       await founderMutation({ action: "add_sector_alias", sectorId: dental, alias: "Tooth doctor" })
       expect((await founderSnapshot()).exclusivityStatus[noAlias]).toBe("restricted")                     // the approved alias resolves it

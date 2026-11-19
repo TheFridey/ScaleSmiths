@@ -45,6 +45,9 @@ beforeEach(async () => {
   const profileDdl = migration.match(/CREATE TABLE expansion_partners\s*\([\s\S]*?\n\);/)?.[0]
   if (!profileDdl) throw new Error("Production partner profile migration was not found.")
   await postgres.exec(profileDdl)
+  // The real market-enforcement migration, over a minimal markets fixture (the launch market starts approved so existing cases are unchanged).
+  await postgres.exec(readFileSync("drizzle/0085_expansion_market_enforcement.sql", "utf8"))
+  await postgres.exec(`create table expansion_markets(country_code text primary key, status text not null, plan_keys text[] not null default '{}'); insert into expansion_markets values('GB','approved','{standard-v2}')`)
   await database.execute(sql`insert into admin_users (id,email,display_name,password_hash,role) values (${founderId},'founder@example.test','Founder','unused','owner')`)
   await database.execute(sql`insert into partner_applications (name,email,status,onboarding_confirmations) values ('Partner','partner@example.test','onboarding','{"agreement":true,"legal":true,"independentStatus":true,"operations":true}'::jsonb)`)
 }, 30000)
@@ -55,6 +58,21 @@ function invite() {
 }
 
 describe("partner invitations against PostgreSQL", () => {
+  it("fails closed on the operating market: unknown and unapproved markets cannot be invited, and activation re-checks without consuming the token", async () => {
+    const issue = (country?: string) => database.transaction((tx) => issueInvitation(tx as unknown as AdminDatabaseTransaction, 1, founderId, "agreement-test-v1", country))
+    await expect(issue("FR")).rejects.toThrow("operating market is not approved")          // never configured: international applicants are reviewed, not invited
+    await expect(issue("France")).rejects.toThrow("two-letter")
+    expect((await postgres.query("select id from expansion_partners")).rows).toEqual([])
+    const invitation = await issue("GB")
+    expect((await postgres.query("select operating_country from expansion_partners")).rows).toEqual([{ operating_country: "GB" }])
+    await postgres.query("update expansion_markets set status='suspended' where country_code='GB'")
+    await expect(issue("GB")).rejects.toThrow()
+    await expect(activatePartnerInvitation(invitation.invitationToken, "secure-example-password")).rejects.toThrow("Activation is not available for this market")
+    expect((await postgres.query("select u.active,p.invitation_hash is not null pending,p.activated_at from admin_users u join expansion_partners p on p.user_id=u.id where u.role='independent_partner'")).rows).toEqual([{ active: false, pending: true, activated_at: null }])
+    await postgres.query("update expansion_markets set status='approved' where country_code='GB'")
+    await activatePartnerInvitation(invitation.invitationToken, "secure-example-password")
+    expect((await postgres.query("select active from admin_users where role='independent_partner'")).rows).toEqual([{ active: true }])
+  })
   it("blocks issuance by default and leaves an already-issued invitation unconsumed while closed", async () => {
     vi.stubEnv("PARTNER_ACTIVATION_ENABLED", undefined)
     await expect(invite()).rejects.toThrow("activation is currently closed")

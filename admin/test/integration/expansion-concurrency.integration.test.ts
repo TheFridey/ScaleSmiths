@@ -632,25 +632,26 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("Expansion real separa
       await enable(); const id = await approvedOpportunity("race-ex")
       const protectedClient = (await pool.query<{ id: number }>("insert into clients(name,invoice_client_code,billing_address_line_1,billing_city,billing_postcode,billing_country) values($1,$2,'1 Test Street','Nottingham','NG1 1AA','United Kingdom') returning id", [`TEST ONLY protected ${suffix}`, `P${suffix.toUpperCase()}`])).rows[0].id
       const create = () => runAs(founder, () => founderMutation({ action: "create_exclusivity", clientId: protectedClient, sector: `Sector ${suffix} race-ex`, area: "Nottingham", contractualReference: "TEST ONLY clause", effectiveFrom: "2020-01-01" }))
+      // Progression is refused once a restriction exists, so the second prospect is progressed to approval first.
+      const second = await approvedOpportunity("race-ex2", { industry: `Sector ${suffix} race-ex` })
+      try {
       const results = await race<unknown>([() => accept(id), create])
       expect(results[1].status).toBe("fulfilled")
       if (results[0].status === "fulfilled") expect(await contracts(id)).toBe(1)
       else { expect(results[0].reason).toMatchObject({ status: 409, message: expect.stringContaining("exclusivity") }); expect(await contracts(id)).toBe(0) }
       // Afterwards, with the restriction committed, acceptance of a second matching opportunity is blocked for certain.
-      const second = await approvedOpportunity("race-ex2", { industry: `Sector ${suffix} race-ex` })
       await expect(accept(second)).rejects.toMatchObject({ status: 409, message: expect.stringContaining("exclusivity") })
       expect(await contracts(second)).toBe(0)
-      await pool.query("update expansion_exclusivities set status='ended',ended_at=now() where sector like $1", [`Sector ${suffix}%`])
+      } finally { await pool.query("update expansion_exclusivities set status='ended',ended_at=now() where status='active' and sector like $1", [`Sector ${suffix}%`]) }
     })
     it("Case M: suspending a market concurrently with acceptance leaves a consistent outcome and then blocks acceptance", async () => {
-      await enable(); const id = await approvedOpportunity("race-mk")
+      await enable(); const id = await approvedOpportunity("race-mk"); const next = await approvedOpportunity("race-mk2")
       const suspend = () => runAs(founder, () => founderMutation({ action: "set_market", countryCode: "GB", countryName: "United Kingdom", status: "suspended", planKeys: ["standard-v2", "growth-only-v1", "bespoke-v1"], legalReviewed: true, accountingReviewed: true, privacyReviewed: true, operationsReviewed: true, approvalReference: "TEST ONLY suspension" }))
       try {
         const results = await race<unknown>([() => accept(id), suspend])
         expect(results[1].status).toBe("fulfilled")
         if (results[0].status === "fulfilled") expect(await contracts(id)).toBe(1)
         else { expect(results[0].reason).toMatchObject({ status: 409, message: expect.stringContaining("not approved") }); expect(await contracts(id)).toBe(0) }
-        const next = await approvedOpportunity("race-mk2")
         await expect(accept(next)).rejects.toMatchObject({ status: 409, message: expect.stringContaining("not approved") })
       } finally {
         await pool.query("update expansion_markets set status='approved',approved_by=$1,approval_reference='TEST ONLY restored' where country_code='GB'", [founder.id])
@@ -1091,6 +1092,86 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("Expansion real separa
       await expect(runAs(founder, () => markCandidateEligible({ candidateId: id }))).rejects.toMatchObject({ status: 409 })
       await expect(pool.query("update expansion_research_candidates set status='draft' where id=$1", [id])).rejects.toThrow(/closed/)
       await expect(pool.query("delete from expansion_candidate_events where candidate_id=$1", [id])).rejects.toThrow()
+    })
+  })
+
+  describe("checkpoint 5C: market and exclusivity enforcement across progression, scope approval and activation", () => {
+    const GENERIC = "awaiting commercial approval"
+    const setMkt = (code: string, status: "approved" | "suspended") => runAs(founder, () => founderMutation({ action: "set_market", countryCode: code, countryName: `Testland ${code}`, status, planKeys: ["standard-v2"], legalReviewed: true, accountingReviewed: true, privacyReviewed: true, operationsReviewed: true, approvalReference: `TEST ONLY ${suffix} ${status}` }))
+    const disc = { objectives: "Test", pages: "Five", functionality: "Form", budget: "Subject", timescale: "Assessed", decisionProcess: "Owner" }
+    const reg = (tag: string, country: string | undefined, extra: Record<string, unknown> = {}, actor = first) => runAs(actor, () => partnerMutation({ action: "register", country, businessName: `TEST ONLY 5C ${suffix} ${tag}`, website: `five-c-${suffix}-${tag}.example`, industry: `Sector ${suffix} ${tag}`, region: `Area ${suffix} ${tag}`, ...extra })).then(r => String(r.id))
+    const discover = (id: string, actor = first) => runAs(actor, () => partnerMutation({ action: "discovery", id, discovery: disc }))
+    const scope = (id: string, actor = first) => runAs(actor, () => partnerMutation({ action: "submit_scope", id, summary: "TEST ONLY scope" }))
+
+    it("registration is a preliminary record; progression needs an approved market and no unresolved exclusivity, and every refusal reads identically to the partner", async () => {
+      const unknown = await reg("unknown", undefined)                                        // research may be recorded without authorising sales
+      const unapproved = await reg("unapproved", "QZ")
+      const unknownMsg = await discover(unknown).catch(e => e), unapprovedMsg = await discover(unapproved).catch(e => e)
+      expect(unknownMsg).toMatchObject({ status: 409, message: expect.stringContaining(GENERIC) })
+      expect(unapprovedMsg.message).toBe(unknownMsg.message)
+      await setMkt("QY", "approved")
+      const sector = `Sector ${suffix} probe`, area = `Area ${suffix} probe`
+      const protectedOpp = await reg("probe", "QY", { industry: sector, region: area })
+      await runAs(founder, () => founderMutation({ action: "create_exclusivity", clientId, sector, area, contractualReference: "TEST ONLY clause", effectiveFrom: "2020-01-01" }))
+      try {
+        const exclusivityMsg = await discover(protectedOpp).catch(e => e)
+        expect(exclusivityMsg.message).toBe(unknownMsg.message)                              // exclusivity cannot be probed: identical wording and status
+        expect(exclusivityMsg.status).toBe(409)
+        await runAs(first, () => partnerMutation({ action: "stage", id: protectedOpp, status: "withdrawn" }))   // leaving the pipeline is never blocked
+      } finally { await pool.query("update expansion_exclusivities set status='ended',ended_at=now() where status='active' and sector=$1", [sector]) }
+      await discover(await reg("after", "QY"))                                              // once the restriction ends, an approved market progresses normally
+    })
+    it("market suspension racing partner progression: consistent, and nothing progresses afterwards", async () => {
+      await setMkt("QX", "approved"); const id = await reg("prog-race", "QX")
+      const results = await race<unknown>([() => discover(id), () => setMkt("QX", "suspended")])
+      expect(results[1].status).toBe("fulfilled")
+      if (results[0].status === "rejected") expect(results[0].reason).toMatchObject({ status: 409, message: expect.stringContaining(GENERIC) })
+      await expect(scope(id)).rejects.toMatchObject({ status: 409, message: expect.stringContaining(GENERIC) })
+    })
+    it("scope approval racing a market suspension or a new restriction: seen, or committed after, never lost", async () => {
+      await setMkt("QW", "approved")
+      const submittedIn = async (tag: string, country: string, extra: Record<string, unknown> = {}) => { const id = await reg(tag, country, extra); await discover(id); await scope(id); return id }
+      const week = async () => { const w = (await pool.query<{ next: string }>("select (max(period)+7)::text as next from expansion_capacity")).rows[0].next; await runAs(founder, () => founderMutation({ action: "capacity", period: w, hours: 10, commitmentsReviewed: true, rationale: "TEST ONLY 5C" })); return w }
+      const a = await submittedIn("scope-m", "QW")
+      const wa = await week()
+      const results = await race<unknown>([() => approveRaw(a, wa), () => setMkt("QW", "suspended")])
+      expect(results[1].status).toBe("fulfilled")
+      const approved = (await pool.query("select status from expansion_opportunities where id=$1", [a])).rows[0].status === "approved"
+      if (results[0].status === "rejected") expect(results[0].reason).toMatchObject({ status: 409, message: expect.stringContaining("Scope cannot be approved") })
+      expect(approved).toBe(results[0].status === "fulfilled")
+      // with the market suspended, no further scope can be approved: founders see the reason
+      await setMkt("QV", "approved"); const b = await submittedIn("scope-x", "QV")
+      await setMkt("QV", "suspended")
+      await expect(approveRaw(b, await week())).rejects.toMatchObject({ status: 409, message: expect.stringContaining("customer market") })
+      expect((await pool.query("select count(*)::int c from expansion_reservations where opportunity_id=$1 and status<>'released'", [b])).rows[0].c).toBe(0)
+    })
+    it("activation racing suspension of the partner's operating market: one consistent outcome, and a refused activation consumes nothing", async () => {
+      vi.stubEnv("PARTNER_ACTIVATION_ENABLED", "true")
+      try {
+        await setMkt("QU", "approved")
+        const applicantId = await application(`TEST ONLY 5C activation ${suffix}`, `five-c-activate-${suffix}@example.invalid`, "onboarding")
+        await expect(runAs(founder, () => founderMutation({ action: "invite", id: applicantId, agreementVersion: "test-reviewed-v1", operatingCountry: "QT" }))).rejects.toMatchObject({ status: 409 })   // never configured: international applicants are not invited
+        const invitation = await runAs(founder, () => founderMutation({ action: "invite", id: applicantId, agreementVersion: "test-reviewed-v1", operatingCountry: "QU" }))
+        const token = String((invitation as { invitationToken: string }).invitationToken)
+        const results = await race<unknown>([() => activatePartnerInvitation(token, "TestOnly!Activation-5C-123"), () => setMkt("QU", "suspended")])
+        expect(results[1].status).toBe("fulfilled")
+        const row = async () => (await pool.query("select p.activated_at is not null activated,p.invitation_hash is not null pending,p.operating_country from expansion_partners p where p.application_id=$1", [applicantId])).rows[0]
+        if (results[0].status === "fulfilled") expect(await row()).toMatchObject({ activated: true, pending: false })
+        else { expect(await row()).toMatchObject({ activated: false, pending: true, operating_country: "QU" }); await expect(activatePartnerInvitation(token, "TestOnly!Activation-5C-123")).rejects.toMatchObject({ status: 409 }); await setMkt("QU", "approved"); await activatePartnerInvitation(token, "TestOnly!Activation-5C-123"); expect(await row()).toMatchObject({ activated: true }) }
+      } finally { vi.unstubAllEnvs() }
+    })
+    it("revoking a partner's operating market stops new progression without touching accepted contracts or ledger", async () => {
+      const p = await fundedPartner("5c-operating")
+      const ledgerBefore = (await pool.query("select count(*)::int c,coalesce(sum(amount_pence),0)::text s from expansion_commission_ledger where partner_id=$1", [p.partnerId])).rows[0]
+      const id = await reg("operating", "GB", {}, p.actor)
+      await discover(id, p.actor)                                                          // allowed while the operating market (GB) is approved
+      await runAs(founder, () => founderMutation({ action: "set_partner_operating_market", id: p.partnerId, countryCode: "QS" }))
+      await expect(scope(id, p.actor)).rejects.toMatchObject({ status: 409, message: expect.stringContaining(GENERIC) })
+      expect((await pool.query("select count(*)::int c from expansion_contracts where id=$1", [p.contractId])).rows[0].c).toBe(1)
+      expect((await pool.query("select count(*)::int c,coalesce(sum(amount_pence),0)::text s from expansion_commission_ledger where partner_id=$1", [p.partnerId])).rows[0]).toEqual(ledgerBefore)
+      await runAs(founder, () => founderMutation({ action: "set_partner_operating_market", id: p.partnerId, countryCode: "GB" }))
+      await scope(id, p.actor)
+      await expect(runAs(p.actor, () => founderMutation({ action: "set_partner_operating_market", id: p.partnerId, countryCode: "GB" }))).rejects.toBeTruthy()
     })
   })
 })

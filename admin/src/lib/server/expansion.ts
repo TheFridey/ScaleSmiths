@@ -75,6 +75,26 @@ async function assertAcceptanceGates(tx: AdminDatabaseTransaction, row: Row, pla
   if (marketGate(country, market, planKey) !== 'approved') throw new ExpansionError("This opportunity's customer market is not approved for this plan. Confirm the customer country and market eligibility first.",409)
   if ((await exclusivityOutcome(tx,row,clientId)).unresolved.length) throw new ExpansionError('An unresolved customer exclusivity review prevents acceptance. A founder must record a decision.',409)
 }
+
+/**
+ * Commercial clearance for partner progression and founder scope approval. Fails closed on an unknown or unapproved customer market,
+ * on an unapproved partner operating market, and on any unresolved exclusivity. For partners every failure is the SAME sentence, so the
+ * response can never be used to probe which sectors, areas or customers are protected.
+ */
+const PENDING_CLEARANCE = 'This opportunity is awaiting commercial approval from a founder. You will be told when it can progress.'
+async function assertCommercialClearance(tx: AdminDatabaseTransaction, row: Row, partnerId: string, audience: 'partner'|'founder') {
+  await tx.execute(sql`select pg_advisory_xact_lock_shared(7102)`)
+  const marketOf = async (country: string | null) => country ? (await tx.execute(sql`select status,plan_keys from expansion_markets where country_code=${country} for share`)).rows[0] as { status: string; plan_keys: string[] } | undefined : undefined
+  const customerCountry = (row.customer_country as string | null) ?? null
+  const operating = (await tx.execute(sql`select operating_country from expansion_partners where id=${partnerId}`)).rows[0]?.operating_country as string | undefined
+  const customerOk = marketGate(customerCountry, await marketOf(customerCountry), '*') === 'approved'
+  const operatingOk = marketGate(operating ?? null, await marketOf(operating ?? null), '*') === 'approved'
+  const exclusivity = await exclusivityOutcome(tx,row)
+  if (customerOk && operatingOk && exclusivity.unresolved.length === 0) return
+  if (audience === 'partner') throw new ExpansionError(PENDING_CLEARANCE,409)
+  const reasons = [!customerOk && "the customer market is unknown or not approved", !operatingOk && "the partner's operating market is not approved", exclusivity.unresolved.length > 0 && "an exclusivity review is unresolved"].filter(Boolean)
+  throw new ExpansionError(`Scope cannot be approved: ${reasons.join(', ')}. Set the customer market and record the decisions first.`,409)
+}
 export async function partnerSnapshot() {
   const actor = await requireCapability('expansion.partner')
   return db.transaction(async tx => {
@@ -100,7 +120,7 @@ export async function founderSnapshot() {
   await currentActor(tx,actor,'expansion.manage')
   const [applications,partners,opportunities,capacity,resources,clients,planSettings,discountPolicies,claims,markets,exclusivities,sectors] = await Promise.all([
     tx.execute(sql`select * from partner_applications order by submitted_at desc limit 200`),
-    tx.execute(sql`select p.id,p.user_id,p.agreement_version,p.activated_at,u.display_name,u.email,u.active from expansion_partners p join admin_users u on u.id=p.user_id order by p.created_at desc`),
+    tx.execute(sql`select p.id,p.user_id,p.agreement_version,p.activated_at,p.operating_country,u.display_name,u.email,u.active from expansion_partners p join admin_users u on u.id=p.user_id order by p.created_at desc`),
     tx.execute(sql`select o.*,p.business_name,u.display_name partner_name,c.id contract_id from expansion_opportunities o join prospects p on p.id=o.prospect_id join expansion_partners ep on ep.id=o.partner_id join admin_users u on u.id=ep.user_id left join expansion_contracts c on c.opportunity_id=o.id order by o.created_at desc limit 500`),
     tx.execute(sql`select c.*,coalesce(sum(r.hours) filter(where r.status<>'released'),0)::integer reserved_hours from expansion_capacity c left join expansion_reservations r on r.period=c.period group by c.period order by c.period`),
     tx.execute(sql`select * from expansion_resources order by created_at desc`),
@@ -157,17 +177,21 @@ export async function partnerMutation(input: Input) {
     const row = await opportunity(tx,id,partnerId)
     if (input.action === 'stage') {
       const stage = assertPartnerTransition(String(row.status),input.status)
+      // Leaving the pipeline is always allowed; anything that advances active selling needs commercial clearance.
+      if (!['closed_lost','withdrawn'].includes(stage)) await assertCommercialClearance(tx,row,partnerId,'partner')
       await tx.execute(sql`update expansion_opportunities set status=${stage},updated_at=now() where id=${id}`)
       const canonicalStage = stage==='qualified' ? 'qualified' : stage==='contacted' ? 'contacted' : ['closed_lost','withdrawn'].includes(stage) ? 'lost' : null
       if (canonicalStage) await tx.execute(sql`update prospects set stage=${canonicalStage}::prospect_stage,updated_at=now() where id=${row.prospect_id}`)
       await audit(tx,actor.id,id,'stage_changed',{from:row.status,to:stage})
     } else if (input.action === 'discovery') {
       if (!['registered','contacted','discovery','qualified','more_information','bespoke_required','deferred'].includes(String(row.status))) throw new ExpansionError('This discovery is locked. Request a new review.',409)
+      await assertCommercialClearance(tx,row,partnerId,'partner')
       const discovery = parseDiscovery(input.discovery)
       await tx.execute(sql`update expansion_opportunities set discovery=${JSON.stringify(discovery)}::jsonb,status='discovery',updated_at=now() where id=${id}`)
       await audit(tx,actor.id,id,'discovery_saved')
     } else if (input.action === 'submit_scope') {
       if (!['discovery','qualified','more_information','bespoke_required','deferred'].includes(String(row.status))) throw new ExpansionError('Complete discovery before submitting scope.',409)
+      await assertCommercialClearance(tx,row,partnerId,'partner')
       const discovery = parseDiscovery(row.discovery)
       if (!discovery.objectives || !discovery.pages || !discovery.functionality || !discovery.budget || !discovery.timescale || !discovery.decisionProcess) throw new ExpansionError('Complete objectives, pages, functionality, budget, timescale and decision process.')
       const scope = {summary:expansionText(input.summary,'Scope summary',6000),technicalFlags:technicalReviewFlags(discovery)}
@@ -193,14 +217,29 @@ export async function founderMutation(input: Input) {
       const current = await tx.execute(sql`select * from partner_applications where id=${id} for update`)
       if (!current.rows[0] || ['activated','archived'].includes(String(current.rows[0].status))) throw new ExpansionError('Application cannot be reviewed.',409)
       const confirmations = {legal:input.legal===true,agreement:input.agreement===true,independentStatus:input.independentStatus===true,operations:input.operations===true,confirmedBy:actor.id,confirmedAt:new Date().toISOString()}
-      await tx.execute(sql`update partner_applications set status=${String(input.status)},review_notes=${expansionText(input.notes,'Review notes',6000)},onboarding_confirmations=${JSON.stringify(confirmations)}::jsonb where id=${id}`)
+      let residence: string | null = null
+      try { residence = normaliseCountry(input.residenceCountry) } catch { throw new ExpansionError('Use a two-letter ISO country code for the applicant residence.') }
+      // Residence is recorded for review only. International applicants may be considered; nothing here authorises operating or activation.
+      await tx.execute(sql`update partner_applications set status=${String(input.status)},review_notes=${expansionText(input.notes,'Review notes',6000)},onboarding_confirmations=${JSON.stringify(confirmations)}::jsonb,residence_country=coalesce(${residence},residence_country) where id=${id}`)
       await audit(tx,actor.id,id,'application_reviewed',{status:input.status,confirmations})
       return {id}
     }
     if (input.action === 'invite') {
-      const result = await issueInvitation(tx,expansionInteger(input.id,'application',1,2147483647),actor.id,expansionText(input.agreementVersion,'Agreement version',100))
+      let operatingCountry: string | null = null
+      try { operatingCountry = input.operatingCountry === undefined || input.operatingCountry === '' ? 'GB' : normaliseCountry(input.operatingCountry) } catch { throw new ExpansionError('Use a two-letter ISO country code for the operating market.') }
+      const result = await issueInvitation(tx,expansionInteger(input.id,'application',1,2147483647),actor.id,expansionText(input.agreementVersion,'Agreement version',100),operatingCountry as string)
       await audit(tx,actor.id,result.partnerId,'invitation_issued')
       return result
+    }
+    if (input.action === 'set_partner_operating_market') {
+      const id = expansionId(input.id)
+      let code: string | null = null
+      try { code = normaliseCountry(input.countryCode) } catch { throw new ExpansionError('Use a two-letter ISO country code.') }
+      if (!code) throw new ExpansionError('A country code is required.')
+      if (!(await tx.execute(sql`select id from expansion_partners where id=${id} for update`)).rows[0]) throw new ExpansionError('Partner not found.',404)
+      await tx.execute(sql`update expansion_partners set operating_country=${code} where id=${id}`)
+      await audit(tx,actor.id,id,'partner_operating_market_set',{country:code})
+      return {id,countryCode:code}
     }
     if (input.action === 'revoke_partner') {
       const id = expansionId(input.id)
@@ -456,6 +495,7 @@ export async function founderMutation(input: Input) {
       const notes = expansionText(input.notes,'Review decision and feasibility/price/risk assessment',6000)
       if (decision === 'approved') {
         if (input.technicalConfirmed !== true || input.commercialConfirmed !== true) throw new ExpansionError('Technical and commercial approval are both required.')
+        await assertCommercialClearance(tx,row,String(row.partner_id),'founder')
         const period = capacityPeriod(input.period)
         const hours = expansionInteger(input.hours,'delivery hours')
         await tx.execute(sql`select pg_advisory_xact_lock(621908149)`)

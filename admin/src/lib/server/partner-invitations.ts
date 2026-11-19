@@ -7,6 +7,7 @@ import { db, type AdminDatabaseTransaction } from "@/lib/db"
 import { adminSecurityAudit, adminUsers } from "@/lib/schema"
 import { AdminIdentityError } from "@/lib/admin-users"
 import { hasCapability } from "@/lib/rbac"
+import { marketGate } from "@/lib/expansion-gates"
 
 export function requirePartnerActivationEnabled() {
   if (process.env.PARTNER_ACTIVATION_ENABLED !== "true") {
@@ -25,7 +26,13 @@ export function validateActivationCredential(token: unknown, password: unknown) 
 }
 
 /** Caller owns the transaction; applicant lock prevents two founders issuing twice. */
-export async function issueInvitation(tx: AdminDatabaseTransaction, applicationId: number, founderId: string, agreementVersion: string) {
+/** Fails closed: an unknown or unapproved operating market can never be invited or activated. Shared with market administration via advisory lock 7102. */
+async function assertOperatingMarketApproved(tx: AdminDatabaseTransaction, country: string, code: string, message: string) {
+  await tx.execute(sql`select pg_advisory_xact_lock_shared(7102)`)
+  const market = (await tx.execute(sql`select status,plan_keys from expansion_markets where country_code=${country} for share`)).rows[0] as { status: string; plan_keys: string[] } | undefined
+  if (marketGate(country, market, "*") !== "approved") throw new AdminIdentityError(message, 409, code)
+}
+export async function issueInvitation(tx: AdminDatabaseTransaction, applicationId: number, founderId: string, agreementVersion: string, operatingCountry = "GB") {
   requirePartnerActivationEnabled()
   const [founder] = await tx.select().from(adminUsers).where(eq(adminUsers.id, founderId)).for("share").limit(1)
   if (!founder?.active || !hasCapability(founder.role, "expansion.manage")) throw new AdminIdentityError("Founder authority is required.", 403, "forbidden")
@@ -34,6 +41,9 @@ export async function issueInvitation(tx: AdminDatabaseTransaction, applicationI
   const applicant = result.rows[0] as { id: number; name: string; email: string; status: string; confirmations: Record<string, unknown> } | undefined
   const prerequisites = applicant?.confirmations
   if (!applicant || applicant.status !== "onboarding" || !prerequisites || !["agreement", "legal", "independentStatus", "operations"].every((key) => prerequisites[key] === true)) throw new AdminIdentityError("Record every onboarding confirmation before inviting a partner.", 409, "onboarding_incomplete")
+  if (!/^[A-Z]{2}$/.test(operatingCountry)) throw new AdminIdentityError("Use a two-letter ISO country code for the operating market.")
+  // International applicants can be reviewed and progressed to onboarding, but are not invited until a founder has approved their operating market.
+  await assertOperatingMarketApproved(tx, operatingCountry, "operating_market_not_approved", "This partner's operating market is not approved, so an invitation cannot be issued. The application can still be reviewed.")
   const now = new Date()
   const expiresAt = new Date(now.getTime() + 48 * 60 * 60 * 1000)
   const token = randomBytes(32).toString("base64url")
@@ -44,7 +54,7 @@ export async function issueInvitation(tx: AdminDatabaseTransaction, applicationI
     // revoked or activated identity cannot be silently revived by this command.
     if (pending.active !== false || pending.role !== "independent_partner" || pending.activated_at !== null || !pending.invitation_hash || pending.invitation_expired !== true) throw new AdminIdentityError("An invitation already exists or this partner requires explicit founder review.", 409, "invitation_exists")
     const partnerId = String(pending.id)
-    await tx.execute(sql`update expansion_partners set invitation_hash=${invitationHash(token)}, invitation_expires_at=${expiresAt}, agreement_version=${agreementVersion.trim()}, confirmed_at=${now} where id=${partnerId}`)
+    await tx.execute(sql`update expansion_partners set invitation_hash=${invitationHash(token)}, invitation_expires_at=${expiresAt}, agreement_version=${agreementVersion.trim()}, confirmed_at=${now}, operating_country=${operatingCountry} where id=${partnerId}`)
     await tx.insert(adminSecurityAudit).values({ actorUserId: founder.id, targetUserId: String(pending.user_id), action: "partner_invitation_reissued", success: true, metadataJson: { partnerId, applicationId, agreementVersion: agreementVersion.trim(), expiresAt: expiresAt.toISOString() } })
     return { partnerId, invitationToken: token, expiresAt: expiresAt.toISOString() }
   }
@@ -53,7 +63,7 @@ export async function issueInvitation(tx: AdminDatabaseTransaction, applicationI
   if (collision.rows.length) throw new AdminIdentityError("An identity already exists for this email; founder review is required.", 409, "identity_exists")
   const partnerId = randomUUID()
   const [identity] = await tx.insert(adminUsers).values({ email, displayName: applicant.name, role: "independent_partner", active: false, passwordHash: await bcrypt.hash(randomBytes(48).toString("base64url"), 12) }).returning({ id: adminUsers.id })
-  await tx.execute(sql`insert into expansion_partners (id, user_id, application_id, agreement_version, confirmed_at, invitation_hash, invitation_expires_at, created_at) values (${partnerId}, ${identity.id}, ${applicationId}, ${agreementVersion.trim()}, ${now}, ${invitationHash(token)}, ${expiresAt}, ${now})`)
+  await tx.execute(sql`insert into expansion_partners (id, user_id, application_id, agreement_version, confirmed_at, invitation_hash, invitation_expires_at, operating_country, created_at) values (${partnerId}, ${identity.id}, ${applicationId}, ${agreementVersion.trim()}, ${now}, ${invitationHash(token)}, ${expiresAt}, ${operatingCountry}, ${now})`)
   await tx.insert(adminSecurityAudit).values({ actorUserId: founder.id, targetUserId: identity.id, action: "partner_invitation_issued", success: true, metadataJson: { partnerId, applicationId, agreementVersion: agreementVersion.trim(), expiresAt: expiresAt.toISOString() } })
   return { partnerId, invitationToken: token, expiresAt: expiresAt.toISOString() }
 }
@@ -65,9 +75,11 @@ export async function activatePartnerInvitation(tokenInput: unknown, passwordInp
   // Hash before locking to bound lock duration. Rate limiting precedes this service.
   const passwordHash = await bcrypt.hash(credential.password, 12)
   await db.transaction(async (tx) => {
-    const result = await tx.execute(sql`select p.id, p.user_id, p.application_id from expansion_partners p join admin_users u on u.id = p.user_id join partner_applications a on a.id = p.application_id where p.invitation_hash = ${invitationHash(credential.token)} and p.invitation_expires_at > now() and p.activated_at is null and u.active = false and u.role = 'independent_partner' and a.status = 'onboarding' and a.onboarding_confirmations @> '{"agreement":true,"legal":true,"independentStatus":true,"operations":true}'::jsonb for update of p, u, a`)
-    const invitation = result.rows[0] as { id: string; user_id: string; application_id: number } | undefined
+    const result = await tx.execute(sql`select p.id, p.user_id, p.application_id, p.operating_country from expansion_partners p join admin_users u on u.id = p.user_id join partner_applications a on a.id = p.application_id where p.invitation_hash = ${invitationHash(credential.token)} and p.invitation_expires_at > now() and p.activated_at is null and u.active = false and u.role = 'independent_partner' and a.status = 'onboarding' and a.onboarding_confirmations @> '{"agreement":true,"legal":true,"independentStatus":true,"operations":true}'::jsonb for update of p, u, a`)
+    const invitation = result.rows[0] as { id: string; user_id: string; application_id: number; operating_country: string } | undefined
     if (!invitation) throw new AdminIdentityError("Invitation is invalid or unavailable.", 400, "invitation_invalid")
+    // Re-checked at the moment of activation: a market suspended after the invitation was issued stops the activation, and nothing is consumed.
+    await assertOperatingMarketApproved(tx, invitation.operating_country, "operating_market_not_approved", "Activation is not available for this market yet. Contact ScaleSmiths.")
     const now = new Date()
     await tx.update(adminUsers).set({ passwordHash, active: true, passwordChangedAt: now, sessionVersion: sql`${adminUsers.sessionVersion} + 1`, updatedAt: now }).where(eq(adminUsers.id, invitation.user_id))
     await tx.execute(sql`update expansion_partners set invitation_hash = null, invitation_expires_at = null, activated_at = ${now} where id = ${invitation.id}`)

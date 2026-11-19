@@ -33,6 +33,7 @@ vi.mock("../../src/lib/server/rbac", () => ({ requireCapability: async (capabili
 } }))
 
 import { founderMutation, partnerMutation, partnerSnapshot } from "../../src/lib/server/expansion"
+import { approveProgramme, attributeReferral, createProgramme, createReferralCode, decideQualification, getProgrammeOverview, revokeQualification, reviewAchievementReward } from "../../src/lib/server/expansion-programme"
 import { allocateExpansionInvoice, approveExpansionPayout, cancelExpansionPayout, cancelWithdrawal, getWithdrawalOverview, prepareWithdrawalPayout, requestWithdrawal, reviewWithdrawal, setWithdrawalPolicy, getPartnerFinance, prepareExpansionPayout, refundExpansionPayment, settleExpansionPayout, verifyExpansionPayment } from "../../src/lib/server/expansion-finance"
 import { activatePartnerInvitation } from "../../src/lib/server/partner-invitations"
 import { createInvoice, transitionInvoice } from "../../src/lib/server/invoices"
@@ -749,6 +750,75 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("Expansion real separa
       expect(deadlocks).toEqual([])
       const doubled = await pool.query("select count(*)::int c from expansion_commission_ledger l where exists(select 1 from expansion_payout_claims pc where pc.ledger_id=l.id) and exists(select 1 from expansion_withdrawal_entries w join expansion_withdrawal_requests r on r.id=w.request_id where w.ledger_id=l.id and w.released_at is null and r.payout_id is null)")
       expect(doubled.rows[0].c).toBe(0)
+    })
+  })
+
+  describe("checkpoint 4B: achievements and referrals on separate connections", () => {
+    type Funded = Awaited<ReturnType<typeof fundedPartner>>
+    /** An accepted contract with a verified collection for a NEW canonical client (or a supplied one). */
+    async function contractFor(p: Funded, tag: string, existingClient?: number) {
+      const cid = existingClient ?? (await pool.query<{ id: number }>("insert into clients(name,invoice_client_code,billing_address_line_1,billing_city,billing_postcode,billing_country) values($1,$2,'1 Test Street','Nottingham','NG1 1AA','United Kingdom') returning id", [`TEST ONLY 4B ${suffix} ${tag}`, `Q${randomUUID().replace(/-/g, "").slice(0, 8).toUpperCase()}`])).rows[0].id
+      const opp = await submitted(`4b-${tag}`, p.actor)
+      const week = (await pool.query<{ next: string }>("select (max(period)+7)::text as next from expansion_capacity")).rows[0].next
+      await runAs(founder, () => founderMutation({ action: "capacity", period: week, hours: 10, commitmentsReviewed: true, rationale: "TEST ONLY 4B" }))
+      await approve(opp, week)
+      const accepted = await runAs(founder, () => founderMutation({ action: "accept_contract", id: opp, clientId: cid, terms: { ...standardCommissionTerms(), planVersion: "concurrency-approved-refund-v1", unpaidRefundApprovalReference: refundClause }, agreementReference: `TEST ONLY 4B ${suffix}-${tag}` })) as { id: string }
+      const invoice = await createInvoice({ clientId: cid, items: [{ title: "TEST ONLY 4B deposit", quantity: 1, unitAmount: 100000 }] }, founder.id)
+      await transitionInvoice(invoice.id, "issue", founder.id)
+      await runAs(founder, () => allocateExpansionInvoice({ contractId: accepted.id, invoiceId: invoice.id, milestone: "deposit", netPence: "100000", evidenceReference: "TEST ONLY 4B allocation" }))
+      await runAs(founder, () => verifyExpansionPayment({ contractId: accepted.id, invoiceId: invoice.id, milestone: "deposit", reference: `${suffix}-4b-${tag}`, netPence: "100000", grossPence: "100000", evidenceReference: "TEST ONLY receipt", confirmed: true }))
+      return { contractId: accepted.id, clientId: cid }
+    }
+    const qualify = (contractId: string) => runAs(founder, () => decideQualification({ contractId, decision: "qualified", note: "TEST ONLY evidence" }))
+    const ledgerTotal = async (partnerId: string) => (await pool.query<{ t: string }>("select coalesce(sum(amount_pence),0)::text t from expansion_commission_ledger where partner_id=$1", [partnerId])).rows[0].t
+
+    it("the same canonical client can be counted once, even when two founders decide simultaneously", async () => {
+      const p = await fundedPartner("q-dup")
+      const a = await contractFor(p, "q-dup-a"); const b = await contractFor(p, "q-dup-b", a.clientId)
+      const results = await race<unknown>([() => qualify(a.contractId), () => qualify(b.contractId)])
+      expectSingleWinner(results, /already counted/)
+      expect((await pool.query("select count(*)::int c from expansion_client_qualifications where client_id=$1 and status='qualified'", [a.clientId])).rows[0].c).toBe(1)
+    })
+    it("concurrent qualifications create each conditional reward once, and commission is untouched (£300 stays £300)", async () => {
+      const p = await fundedPartner("q-rw")
+      const before = await ledgerTotal(p.partnerId)
+      const contracts = [await contractFor(p, "q-rw-1"), await contractFor(p, "q-rw-2"), await contractFor(p, "q-rw-3")]
+      const beforeQualify = await ledgerTotal(p.partnerId)
+      const results = await race<unknown>(contracts.map(c => () => qualify(c.contractId)))
+      expect(results.every(r => r.status === "fulfilled")).toBe(true)
+      expect((await pool.query("select milestone_clients,status from expansion_achievement_rewards where partner_id=$1 order by milestone_clients", [p.partnerId])).rows).toEqual([{ milestone_clients: 1, status: "conditional" }])
+      expect(await ledgerTotal(p.partnerId)).toBe(beforeQualify)    // qualification and rewards never write the commission ledger
+      expect(before).toBe("30000")
+      const ov = await runAs(p.actor, () => getProgrammeOverview())
+      expect(ov.qualifiedClients).toBe(3); expect(ov.approvedBonusPence).toBe(0)
+      expect((await pool.query("select count(*)::int c from expansion_payouts where partner_id=$1", [p.partnerId])).rows[0].c).toBe(0)
+    })
+    it("the database refuses a qualification for another partner's contract", async () => {
+      const a = await fundedPartner("q-own-a"), b = await fundedPartner("q-own-b")
+      await expect(pool.query("insert into expansion_client_qualifications(id,partner_id,client_id,contract_id,status,net_collected_pence,note,decided_by) values($1,$2,$3,$4,'qualified',100000,'x',$5)", [randomUUID(), a.partnerId, clientId, b.contractId, founder.id])).rejects.toThrow("must belong to this partner")
+    })
+    it("a revocation racing a reward decision leaves a consistent, gated outcome", async () => {
+      const p = await fundedPartner("q-revoke")
+      const c = await contractFor(p, "q-revoke-1"); const q = await qualify(c.contractId)
+      const reward = (await pool.query<{ id: string }>("select id from expansion_achievement_rewards where partner_id=$1", [p.partnerId])).rows[0].id
+      const results = await race<unknown>([() => runAs(founder, () => revokeQualification({ qualificationId: q.qualificationId, reason: "TEST ONLY" })), () => runAs(founder, () => reviewAchievementReward({ rewardId: reward, decision: "under_review" }))])
+      expect(results.some(r => r.status === "fulfilled")).toBe(true)
+      const status = (await pool.query("select status from expansion_achievement_rewards where id=$1", [reward])).rows[0].status
+      expect(["rejected", "under_review"]).toContain(status)
+      expect((await pool.query("select status from expansion_client_qualifications where id=$1", [q.qualificationId])).rows[0].status).toBe("revoked")
+      // whichever order ran, an unapproved programme can never have approved it
+      await expect(runAs(founder, () => reviewAchievementReward({ rewardId: reward, decision: "approved" }))).rejects.toMatchObject({ status: 409 })
+    })
+    it("two simultaneous attributions of one applicant admit exactly one referrer, and approvals race to one winner", async () => {
+      const a = await fundedPartner("rf-a"), b = await fundedPartner("rf-b")
+      const codeA = await runAs(a.actor, () => createReferralCode()), codeB = await runAs(b.actor, () => createReferralCode())
+      expect(codeA.code).not.toBe(codeB.code)
+      const app = { rows: [{ id: await application(`TEST ONLY referred ${suffix}`, `referred-${suffix}@example.invalid`, "under_review") }] }
+      const results = await race<unknown>([() => runAs(founder, () => attributeReferral({ applicationId: app.rows[0].id, code: codeA.code })), () => runAs(founder, () => attributeReferral({ applicationId: app.rows[0].id, code: codeB.code }))])
+      expectSingleWinner(results, /cannot be reassigned/)
+      expect((await pool.query("select count(*)::int c from expansion_referrals where application_id=$1", [app.rows[0].id])).rows[0].c).toBe(1)
+      const prog = await runAs(founder, () => createProgramme({ label: `TEST ONLY ${suffix}` }))
+      expect(prog.version).toBeGreaterThan(0)   // left unapproved: draft versions never gate or enable anything
     })
   })
 })

@@ -35,10 +35,14 @@ describe("exclusivity matching is conservative", () => {
     expect(matchExclusivity({ sector: "Plumber", area: "Leeds" }, ex)).toBe("review")                          // prospect unclassified against a classified restriction: only a founder can clear it
     expect(matchExclusivity({ sector: "Dentist", area: "" , sectorId: a }, ex)).toBe("review")
   })
-  it("clears what is positively different, and never restricts a customer by its own exclusivity", () => {
-    expect(matchExclusivity({ sector: "Dentistry", area: "Nottingham" }, ex)).toBe("none")
-    expect(matchExclusivity({ sector: "Plumbing & Heating", area: "Leeds" }, ex)).toBe("none")
-    expect(matchExclusivity({ clientId: 7, sector: "Plumbing & Heating", area: "Nottingham" }, ex)).toBe("none")
+  it("clears only on positive evidence, never on the absence of a shared word", () => {
+    expect(matchExclusivity({ sector: "Dentistry", area: "Nottingham" }, ex)).toBe("review")                    // wording cannot clear
+    expect(matchExclusivity({ sector: "Plumbing & Heating", area: "Leeds" }, ex)).toBe("none")                // same sector, positively different area
+    expect(matchExclusivity({ clientId: 7, sector: "Plumbing & Heating", area: "Nottingham" }, ex)).toBe("none")  // own customer
+    expect(matchExclusivity({ sector: "Kitchen retailer", area: "Leeds" }, { clientId: 8, sector: "Kitchen installation", area: "Leeds" })).toBe("review")
+    expect(matchExclusivity({ sector: "Pest management", area: "Leeds" }, { clientId: 8, sector: "Exterminator", area: "Leeds" })).toBe("review")
+    expect(matchExclusivity({ sector: "Dental", area: "Leeds", sectorId: "a" }, { clientId: 8, sector: "Dentist", area: "Leeds" })).toBe("review")   // classified prospect, unclassified exclusivity
+    expect(matchExclusivity({ sector: "Dental", area: "Leeds", sectorId: "a" }, { clientId: 8, sector: "Dental", area: "Leeds" })).toBe("restricted")  // identical wording confirms
   })
 })
 describe("market gate fails closed", () => {

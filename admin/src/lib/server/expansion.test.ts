@@ -389,7 +389,12 @@ describe("production Expansion prospect/scope/capacity service against PostgreSQ
       const exclusivityId = (await state.database!.query<{ id: string }>("select id from expansion_exclusivities")).rows[0].id
       await founderMutation({ action: "decide_exclusivity", id: unknownArea, exclusivityId, decision: "cleared", reference: "SYNTHETIC reviewed: different location confirmed with partner" })
       await accept(unknownArea)
-      const unrelated = await ready("dentist", { industry: "Dentistry" }); await accept(unrelated)
+      // different wording is never proof of difference: it needs a founder
+      const unrelated = await ready("dentist", { industry: "Dentistry" }); await expect(accept(unrelated)).rejects.toThrow("exclusivity review")
+      asFounder(); const dentSector = (await founderMutation({ action: "create_sector", key: "dentistry", label: "Dentistry" }) as { sectorId: string }).sectorId
+      await founderMutation({ action: "classify_opportunity", id: unrelated, sectorId: dentSector })
+      await expect(accept(unrelated)).rejects.toThrow("exclusivity review")                 // still review: the exclusivity itself is unclassified
+      await founderMutation({ action: "decide_exclusivity", id: unrelated, exclusivityId, decision: "cleared", reference: "SYNTHETIC reviewed: different sector confirmed" }); await accept(unrelated)
       const ended = await ready("ended"); await founderMutation({ action: "end_exclusivity", exclusivityId, reason: "Agreement expired" })
       await expect(founderMutation({ action: "decide_exclusivity", id: ended, exclusivityId, decision: "cleared", reference: "x" })).rejects.toThrow("active exclusivity")
       await accept(ended)
@@ -486,6 +491,26 @@ describe("production Expansion prospect/scope/capacity service against PostgreSQ
       const oldId = (await state.database!.query<{ id: string }>("select id from expansion_exclusivities")).rows[0].id
       await founderMutation({ action: "correct_exclusivity", exclusivityId: oldId, sectorId: b, sector: "Bathrooms", area: "Nottingham", contractualReference: "SYNTHETIC corrected", effectiveFrom: "2020-01-01", reason: "Wrong sector recorded" })
       expect((await state.database!.query("select sector_id,status from expansion_exclusivities order by created_at")).rows).toEqual([{ sector_id: a, status: "ended" }, { sector_id: b, status: "active" }])
+    })
+    it("C: a founder-approved alias classifies the prospect, so a synonym is restricted instead of silently cleared", async () => {
+      await state.database!.exec("insert into clients(id,name) values(2,'Protected Customer')")
+      asFounder(); const dental = (await founderMutation({ action: "create_sector", key: "dental", label: "Dental" }) as { sectorId: string }).sectorId
+      await exclusivity({ sectorId: dental, sector: "Dental", area: "Nottingham" })
+      const noAlias = await ready("alias-no", { industry: "Tooth doctor", region: "Nottingham" })
+      expect((await founderSnapshot()).exclusivityStatus[noAlias]).toBe("review_required")                // unknown wording: review, never clear
+      await founderMutation({ action: "add_sector_alias", sectorId: dental, alias: "Tooth doctor" })
+      expect((await founderSnapshot()).exclusivityStatus[noAlias]).toBe("restricted")                     // the approved alias resolves it
+      await expect(accept(noAlias)).rejects.toThrow("exclusivity review")
+    })
+    it("F: an invalid sector selection is a clear 400, never a database error or an outage", async () => {
+      await state.database!.exec("insert into clients(id,name) values(2,'Other')")
+      asFounder(); const ghost = "11111111-1111-4111-8111-111111111111"
+      await expect(exclusivity({ sectorId: ghost })).rejects.toThrow("Choose a sector that has been defined")
+      await expect(founderMutation({ action: "add_sector_alias", sectorId: ghost, alias: "whatever" })).rejects.toThrow("Choose a sector that has been defined")
+      await expect(exclusivity({ sectorId: "not-a-uuid" })).rejects.toThrow("Invalid record")
+      await exclusivity(); const oldId = (await state.database!.query<{ id: string }>("select id from expansion_exclusivities")).rows[0].id
+      await expect(founderMutation({ action: "correct_exclusivity", exclusivityId: oldId, sectorId: ghost, sector: "x", area: "y", contractualReference: "z", effectiveFrom: "2020-01-01", reason: "r" })).rejects.toThrow("Choose a sector that has been defined")
+      expect((await state.database!.query("select count(*)::int c from expansion_exclusivities")).rows).toEqual([{ c: 1 }])
     })
   })
 })

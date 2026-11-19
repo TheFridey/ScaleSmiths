@@ -5,6 +5,7 @@ import { db, type AdminDatabaseTransaction } from "@/lib/db"
 import { type AdminRole } from "@/lib/admin-users"
 import { hasCapability } from "@/lib/rbac"
 import { ExpansionError } from "@/lib/expansion"
+import { safeDbMessage } from "@/lib/db-errors"
 import { requireCapability } from "./rbac"
 import { cumulativeBonusPence, isReferralCode, progressTowardsNext, PROPOSED_MILESTONES, referralCodeFromBytes, REFERRAL_THRESHOLD, type MilestoneDefinition } from "@/lib/expansion-programme"
 
@@ -35,7 +36,7 @@ async function partnerGuard(tx: Executor, actor: Actor) {
 const audit = (tx: Executor, actorId: string, entity: string, action: string, details: unknown) =>
   tx.execute(sql`insert into expansion_audit(actor_id,entity_id,action,details) values(${actorId},${entity},${action},${JSON.stringify(details)}::jsonb)`)
 /** The database's own refusal text, from node-postgres (error.cause) or any driver exposing it on the error. */
-const dbMessage = (error: unknown, fallback: string) => { const e = error as { cause?: { message?: string }; message?: string }; const m = e.cause?.message ?? e.message ?? fallback; return /^Failed query/.test(m) ? fallback : m }
+const dbMessage = (error: unknown, fallback: string) => safeDbMessage(error, fallback)
 const lockPartner = (tx: Executor, id: string) => tx.execute(sql`select id from expansion_partners where id=${id} for update`)
 
 async function activeProgramme(tx: Executor) {
@@ -77,6 +78,7 @@ export async function getProgrammeOverview() {
     const { version, milestones, programme } = await activeProgramme(tx)
     const rewards = await rows(tx, sql`select id,milestone_clients,kind,reward_pence,label,status,review_note,fulfilled_at from expansion_achievement_rewards where partner_id=${partnerId} order by milestone_clients`)
     const approved = rewards.filter(r => r.kind === "bonus" && ["approved", "fulfilment_pending", "fulfilled"].includes(String(r.status)))
+    const [review] = await rows(tx, sql`select count(*)::int c from expansion_qualification_flags f join expansion_client_qualifications q on q.id=f.qualification_id where q.partner_id=${partnerId} and f.status='open'`)
     const [code] = await rows(tx, sql`select code from expansion_referral_codes where partner_id=${partnerId}`)
     // Referral visibility is deliberately coarse: a coarse stage and a count. No names, finances, customers or notes of referred partners.
     const referred = await rows(tx, sql`select case when p.activated_at is not null then 'activated' else 'in_review' end stage,
@@ -86,6 +88,7 @@ export async function getProgrammeOverview() {
       left join expansion_referral_rewards rw on rw.referral_id=r.id where r.referrer_partner_id=${partnerId} order by r.created_at`)
     return {
       qualifiedClients: count,
+      qualificationUnderReview: Number(review.c) > 0,
       programme: { version, approved: Boolean(programme), financialRewardsEnabled: Boolean(programme?.financial_rewards_enabled), referralRewardsEnabled: Boolean(programme?.referral_rewards_enabled), planned: !programme },
       milestones: milestones.map(m => ({ ...m, reached: m.clients <= count, reward: rewards.find(r => Number(r.milestone_clients) === m.clients && r.status !== "rejected") ?? null })),
       next: progressTowardsNext(count, milestones),
@@ -191,16 +194,43 @@ export async function revokeQualification(input: { qualificationId: string; reas
     await lockPartner(tx, String(source.partner_id))
     const updated = await rows(tx, sql`update expansion_client_qualifications set status='revoked',revoked_by=${actor.id},revoked_at=now(),revoke_reason=${reason} where id=${id} and status='qualified' returning id`)
     if (!updated[0]) conflict("Only a qualified client can be revoked.")
+    await tx.execute(sql`update expansion_qualification_flags set status='resolved',resolution='revoked',resolution_note=${reason},resolved_by=${actor.id},resolved_at=now() where qualification_id=${id} and status='open'`)
     await syncRewards(tx, String(source.partner_id)); await syncReferralRewards(tx, String(source.partner_id))
     await audit(tx, actor.id, id, "qualification_revoked", { reason })
     return { qualificationId: id, status: "revoked" }
   })
 }
 
-export async function reviewAchievementReward(input: { rewardId: string; decision: "under_review" | "approved" | "rejected" | "fulfilment_pending" | "fulfilled"; note?: string }) {
+/** A refund or cancellation opens a review flag by trigger. A founder either maintains the qualification or revokes it, with a recorded note. */
+export async function resolveQualificationFlag(input: { flagId: string; resolution: "maintained" | "revoked"; note: string }) {
+  const actor = await requireCapability("expansion.manage"), id = uuid(input.flagId)
+  if (!["maintained", "revoked"].includes(input.resolution)) throw new ProgrammeError("Choose maintain or revoke.")
+  const note = text(input.note, "Resolution evidence and reason", 2000)
+  return db.transaction(async (tx) => {
+    await founderGuard(tx, actor)
+    const [source] = await rows(tx, sql`select q.partner_id,q.id qualification_id from expansion_qualification_flags f join expansion_client_qualifications q on q.id=f.qualification_id where f.id=${id}`)
+    if (!source) throw new ProgrammeError("Review flag not found.", 404)
+    await lockPartner(tx, String(source.partner_id))
+    const [flag] = await rows(tx, sql`select status from expansion_qualification_flags where id=${id} for update`)
+    if (flag.status !== "open") conflict("This review has already been resolved.")
+    if (input.resolution === "revoked") {
+      const revoked = await rows(tx, sql`update expansion_client_qualifications set status='revoked',revoked_by=${actor.id},revoked_at=now(),revoke_reason=${note} where id=${String(source.qualification_id)} and status='qualified' returning id`)
+      if (!revoked[0]) conflict("The qualification is no longer in force.")
+      await tx.execute(sql`update expansion_qualification_flags set status='resolved',resolution='revoked',resolution_note=${note},resolved_by=${actor.id},resolved_at=now() where qualification_id=${String(source.qualification_id)} and status='open'`)
+      await syncRewards(tx, String(source.partner_id)); await syncReferralRewards(tx, String(source.partner_id))
+    } else {
+      await tx.execute(sql`update expansion_qualification_flags set status='resolved',resolution='maintained',resolution_note=${note},resolved_by=${actor.id},resolved_at=now() where id=${id}`)
+    }
+    await audit(tx, actor.id, id, `qualification_flag_${input.resolution}`, { note })
+    return { flagId: id, resolution: input.resolution }
+  })
+}
+
+export async function reviewAchievementReward(input: { rewardId: string; decision: "under_review" | "approved" | "rejected" | "fulfilment_pending" | "fulfilled" | "withdrawn"; note?: string }) {
   const actor = await requireCapability("expansion.manage"), id = uuid(input.rewardId)
-  if (!["under_review", "approved", "rejected", "fulfilment_pending", "fulfilled"].includes(input.decision)) throw new ProgrammeError("Choose a valid reward decision.")
+  if (!["under_review", "approved", "rejected", "fulfilment_pending", "fulfilled", "withdrawn"].includes(input.decision)) throw new ProgrammeError("Choose a valid reward decision.")
   const note = input.note === undefined || input.note === "" ? null : text(input.note, "Note", 2000)
+  if (input.decision === "withdrawn" && !note) throw new ProgrammeError("Record the reason for withdrawing an approved reward.")
   return db.transaction(async (tx) => {
     await founderGuard(tx, actor)
     const [source] = await rows(tx, sql`select partner_id from expansion_achievement_rewards where id=${id}`)
@@ -275,6 +305,7 @@ export async function getProgrammeAdmin() {
         rw.id reward_id,rw.status reward_status from expansion_referrals r join expansion_partners rp on rp.id=r.referrer_partner_id join admin_users ru on ru.id=rp.user_id
         join partner_applications a on a.id=r.application_id left join expansion_partners pp on pp.application_id=r.application_id left join expansion_referral_rewards rw on rw.referral_id=r.id order by r.created_at desc limit 200`)
     const openApplications = await rows(tx, sql`select a.id,a.name,a.status from partner_applications a where a.status not in ('activated','declined','withdrawn','archived') and not exists(select 1 from expansion_referrals r where r.application_id=a.id) order by a.submitted_at desc limit 100`)
-    return { programmes, candidates, rewards, referrals, openApplications }
+    const flags = await rows(tx, sql`select f.id,f.reason,f.created_at,u.display_name partner_name,cl.name client_name from expansion_qualification_flags f join expansion_client_qualifications q on q.id=f.qualification_id join expansion_partners p on p.id=q.partner_id join admin_users u on u.id=p.user_id join clients cl on cl.id=q.client_id where f.status='open' order by f.created_at`)
+    return { programmes, candidates, rewards, referrals, openApplications, flags }
   })
 }

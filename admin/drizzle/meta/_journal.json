@@ -468,6 +468,7 @@
     {"idx":79,"version":"7","when":1794951000012,"tag":"0079_expansion_achievements_referrals","breakpoints":true},
     {"idx":80,"version":"7","when":1794951000013,"tag":"0080_expansion_sector_taxonomy","breakpoints":true},
     {"idx":81,"version":"7","when":1794951000014,"tag":"0081_expansion_toolkit_meetings","breakpoints":true},
-    {"idx":82,"version":"7","when":1794951000015,"tag":"0082_expansion_review_fixes","breakpoints":true}
+    {"idx":82,"version":"7","when":1794951000015,"tag":"0082_expansion_review_fixes","breakpoints":true},
+    {"idx":83,"version":"7","when":1794951000016,"tag":"0083_expansion_review_flags_and_meeting_history","breakpoints":true}
   ]
 }

@@ -18,24 +18,23 @@ export function matchExclusivity(opportunity: OpportunityFacts, exclusivity: Exc
   if (opportunity.clientId != null && opportunity.clientId === exclusivity.clientId) return "none"
   const area = norm(opportunity.area), exArea = norm(exclusivity.area)
   if (!exArea) return "review"
-  // Founder classification is authoritative when BOTH sides are classified: the canonical sector id decides, not wording.
-  // A classified restriction cannot be cleared by wording against an unclassified prospect: only a founder classification can.
-  if (exclusivity.sectorId && !opportunity.sectorId) return "review"
+  // "none" needs POSITIVE evidence. The absence of a shared word is never evidence: wording can only confirm, never clear.
   const classified = Boolean(opportunity.sectorId && exclusivity.sectorId)
-  if (classified && opportunity.sectorId !== exclusivity.sectorId) return "none"
-  let sameSector = classified   // equal canonical ids
-  if (!classified) {
-    // Unclassified on either side: fall back to conservative wording comparison; uncomparable text needs a founder.
+  let sameSector: boolean
+  if (classified) {
+    if (opportunity.sectorId !== exclusivity.sectorId) return "none"   // founder-authoritative: different canonical sectors
+    sameSector = true
+  } else {
+    // At least one side is unclassified (including a classified prospect against a legacy unclassified exclusivity).
     const sector = norm(opportunity.sector), exSector = norm(exclusivity.sector)
     if (!sector || !exSector) return "review"
-    sameSector = sector === exSector
-    if (!sameSector && !overlaps(stems(sector), stems(exSector))) return "none"
+    if (sector !== exSector) return "review"                          // cannot prove they differ: a founder must classify or decide
+    sameSector = true                                                  // identical wording is a reliable positive match
   }
   if (!area) return "review"
   const nested = area === exArea || area.includes(exArea) || exArea.includes(area)
-  // An exact sector in an equal or nested area is a confirmed restriction; any looser overlap is a founder review.
   if (nested) return sameSector ? "restricted" : "review"
-  return overlaps(stems(area), stems(exArea)) ? "review" : "none"
+  return overlaps(stems(area), stems(exArea)) ? "review" : "none"      // same sector, geographically positively different
 }
 
 export function normaliseCountry(value: unknown): string | null {

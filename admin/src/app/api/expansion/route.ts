@@ -22,7 +22,7 @@ export async function POST(request: Request) {
       cancel_payout:finance.cancelExpansionPayout,
       retain_refund_entitlement:finance.retainRefundEntitlement,
       create_programme:programme.createProgramme, approve_programme:programme.approveProgramme, decide_qualification:programme.decideQualification, revoke_qualification:programme.revokeQualification,
-      review_achievement_reward:programme.reviewAchievementReward, attribute_referral:programme.attributeReferral, review_referral_reward:programme.reviewReferralReward,
+      review_achievement_reward:programme.reviewAchievementReward, resolve_qualification_flag:programme.resolveQualificationFlag, correct_meeting:operations.correctMeeting, attribute_referral:programme.attributeReferral, review_referral_reward:programme.reviewReferralReward,
       set_toolkit_item:operations.setToolkitItem, decide_meeting:operations.decideMeeting,
       set_withdrawal_policy:finance.setWithdrawalPolicy, review_withdrawal:finance.reviewWithdrawal, prepare_withdrawal_payout:finance.prepareWithdrawalPayout,
     }

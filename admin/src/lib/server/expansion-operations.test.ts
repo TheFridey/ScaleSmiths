@@ -13,7 +13,7 @@ vi.mock("./rbac", () => ({ requireCapability: async (c: string) => {
   if ((c === "expansion.manage" && state.actor.role !== "owner") || (c === "expansion.partner" && state.actor.role !== "independent_partner")) throw new Error("Forbidden capability")
   return { ...state.actor }
 } }))
-import { decideMeeting, getMeetings, getToolkit, getToolkitAdmin, requestMeeting, respondToMeeting, setToolkitItem } from "./expansion-operations"
+import { correctMeeting, decideMeeting, getMeetings, getToolkit, getToolkitAdmin, requestMeeting, respondToMeeting, setToolkitItem } from "./expansion-operations"
 
 const asFounder = () => { state.actor = { id: FOUNDER, role: "owner", sessionVersion: 1, active: true } }
 const asPartner = (id = USER_A) => { state.actor = { id, role: "independent_partner", sessionVersion: 1, active: true } }
@@ -26,16 +26,25 @@ describe("onboarding toolkit and founder meeting requests", () => {
     state.database = new PGlite()
     await state.database.exec(`
       create table admin_users(id uuid primary key,role text,active boolean,session_version integer,display_name text,email text);
-      create table expansion_partners(id uuid primary key,user_id uuid references admin_users(id),activated_at timestamptz);
+      create table clients(id integer primary key,name text);
+      create table partner_applications(id serial primary key,name text,email text,status text default 'submitted',submitted_at timestamptz default now());
+      create table expansion_partners(id uuid primary key,user_id uuid references admin_users(id),application_id integer references partner_applications(id),activated_at timestamptz);
       create table expansion_opportunities(id uuid primary key,partner_id uuid references expansion_partners(id),prospect_id integer);
+      create table expansion_contracts(id uuid primary key,opportunity_id uuid references expansion_opportunities(id),client_id integer references clients(id),accepted_at timestamptz default now());
+      create table expansion_contract_cancellations(contract_id uuid primary key references expansion_contracts(id));
+      create table expansion_payment_events(id uuid primary key,contract_id uuid references expansion_contracts(id),net_pence bigint,refund_treatment text);
+      create table commercial_audit(id serial primary key,entity text,record_id text,action text);
       create table prospects(id integer primary key,business_name text);
       create table expansion_resources(id uuid primary key,title text,status text,audience text);
       create table expansion_audit(id serial primary key,actor_id uuid,entity_id text,action text,details jsonb);
     `)
+    await state.database.exec(readFileSync(new URL("../../../drizzle/0079_expansion_achievements_referrals.sql", import.meta.url), "utf8"))
     await state.database.exec(readFileSync(new URL("../../../drizzle/0081_expansion_toolkit_meetings.sql", import.meta.url), "utf8"))
+    await state.database.exec(readFileSync(new URL("../../../drizzle/0082_expansion_review_fixes.sql", import.meta.url), "utf8"))
+    await state.database.exec(readFileSync(new URL("../../../drizzle/0083_expansion_review_flags_and_meeting_history.sql", import.meta.url), "utf8"))
   }, 30000)
   beforeEach(async () => {
-    await q("truncate expansion_meeting_requests,expansion_toolkit_items,expansion_resources,expansion_opportunities,prospects,expansion_partners,admin_users,expansion_audit restart identity cascade")
+    await q("truncate expansion_meeting_corrections,expansion_meeting_requests,expansion_toolkit_items,expansion_resources,expansion_opportunities,prospects,expansion_partners,admin_users,expansion_audit restart identity cascade")
     await q("insert into admin_users values($1,'owner',true,1,'Founder','f@example.invalid'),($2,'independent_partner',true,1,'Partner A','a@example.invalid'),($3,'independent_partner',true,1,'Partner B','b@example.invalid')", [FOUNDER, USER_A, USER_B])
     await q("insert into expansion_partners(id,user_id,activated_at) values($1,$2,now()),($3,$4,now())", [PARTNER_A, USER_A, PARTNER_B, USER_B])
     await q("insert into prospects values(1,'Business One'),(2,'Business Two')")
@@ -121,5 +130,23 @@ describe("onboarding toolkit and founder meeting requests", () => {
     await q("update expansion_meeting_requests set status='declined' where id=$1", [meetingId])
     await expect(q("update expansion_meeting_requests set status='requested' where id=$1", [meetingId])).rejects.toThrow("closed")
     await expect(q("delete from expansion_meeting_requests")).rejects.toThrow("append-only")
+  })
+  it("D: submitted meeting content never changes; a closed request is frozen; only an explicit founder correction records a change", async () => {
+    asPartner(); const { meetingId } = await request({ purpose: "Original purpose", context: "Original context" })
+    for (const sql of ["update expansion_meeting_requests set purpose='Tampered'", "update expansion_meeting_requests set time_zone='UTC'", "update expansion_meeting_requests set preferred_slots='[\"2099-01-01T10:00\"]'::jsonb"]) await expect(q(sql)).rejects.toThrow("cannot be edited")
+    asFounder(); await decideMeeting({ meetingId, decision: "decline", note: "Not needed" })
+    await expect(q("update expansion_meeting_requests set context='Rewritten after closure'")).rejects.toThrow("closed meeting request cannot change")
+    await expect(q("update expansion_meeting_requests set founder_note='x'")).rejects.toThrow("closed")
+    asPartner(); await expect(correctMeeting({ meetingId, purpose: "x", reason: "self" })).rejects.toThrow("Forbidden capability")
+    asFounder()
+    await expect(correctMeeting({ meetingId, reason: "no content" })).rejects.toThrow("corrected purpose")
+    await expect(correctMeeting({ meetingId, purpose: "Corrected purpose", reason: "" })).rejects.toThrow()
+    await correctMeeting({ meetingId, purpose: "Corrected purpose", reason: "Partner typo confirmed by email" })
+    expect((await q("select purpose,status from expansion_meeting_requests")).rows).toEqual([{ purpose: "Corrected purpose", status: "declined" }])
+    const record = (await q<{ before_value: { purpose: string }; after_value: { purpose: string }; reason: string }>("select before_value,after_value,reason from expansion_meeting_corrections")).rows
+    expect(record).toEqual([{ before_value: expect.objectContaining({ purpose: "Original purpose" }), after_value: expect.objectContaining({ purpose: "Corrected purpose" }), reason: "Partner typo confirmed by email" }])
+    await expect(q("update expansion_meeting_corrections set reason='x'")).rejects.toThrow("append-only")
+    await expect(q("delete from expansion_meeting_corrections")).rejects.toThrow("append-only")
+    await expect(q("update expansion_meeting_requests set purpose='Bypass after correction'")).rejects.toThrow()      // the correction switch is per-transaction, never left on
   })
 })

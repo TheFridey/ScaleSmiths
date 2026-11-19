@@ -12,7 +12,7 @@ vi.mock("./rbac", () => ({ requireCapability: async (c: string) => {
   if ((c === "expansion.manage" && state.actor.role !== "owner") || (c === "expansion.partner" && state.actor.role !== "independent_partner")) throw new Error("Forbidden capability")
   return { ...state.actor }
 } }))
-import { approveProgramme, attributeReferral, createProgramme, createReferralCode, decideQualification, getProgrammeAdmin, getProgrammeOverview, revokeQualification, reviewAchievementReward, reviewReferralReward } from "./expansion-programme"
+import { resolveQualificationFlag, approveProgramme, attributeReferral, createProgramme, createReferralCode, decideQualification, getProgrammeAdmin, getProgrammeOverview, revokeQualification, reviewAchievementReward, reviewReferralReward } from "./expansion-programme"
 
 const asFounder = () => { state.actor = { id: FOUNDER, role: "owner", sessionVersion: 1, active: true } }
 const asPartner = (id = USER_A) => { state.actor = { id, role: "independent_partner", sessionVersion: 1, active: true } }
@@ -42,13 +42,17 @@ describe("achievements and referrals: derived qualification and gated rewards", 
       create table expansion_contract_cancellations(contract_id uuid primary key references expansion_contracts(id));
       create table expansion_payment_events(id uuid primary key,contract_id uuid references expansion_contracts(id),net_pence bigint,refund_treatment text);
       create table commercial_audit(id serial primary key,entity text,record_id text,action text);
+      create table prospects(id integer primary key,business_name text);
+      create table expansion_resources(id uuid primary key,title text,status text,audience text);
       create table expansion_audit(id serial primary key,actor_id uuid,entity_id text,action text,details jsonb);
     `)
     await state.database.exec(readFileSync(new URL("../../../drizzle/0079_expansion_achievements_referrals.sql", import.meta.url), "utf8"))
+    await state.database.exec(readFileSync(new URL("../../../drizzle/0081_expansion_toolkit_meetings.sql", import.meta.url), "utf8"))
     await state.database.exec(readFileSync(new URL("../../../drizzle/0082_expansion_review_fixes.sql", import.meta.url), "utf8"))
+    await state.database.exec(readFileSync(new URL("../../../drizzle/0083_expansion_review_flags_and_meeting_history.sql", import.meta.url), "utf8"))
   }, 30000)
   beforeEach(async () => {
-    await q("truncate expansion_referral_rewards,expansion_referrals,expansion_referral_codes,expansion_achievement_rewards,expansion_client_qualifications,expansion_achievement_milestones,expansion_achievement_programmes,expansion_payment_events,expansion_contract_cancellations,expansion_contracts,expansion_opportunities,expansion_partners,partner_applications,clients,admin_users,commercial_audit,expansion_audit restart identity cascade")
+    await q("truncate expansion_meeting_corrections,expansion_meeting_requests,expansion_toolkit_items,expansion_resources,prospects,expansion_qualification_flags,expansion_referral_rewards,expansion_referrals,expansion_referral_codes,expansion_achievement_rewards,expansion_client_qualifications,expansion_achievement_milestones,expansion_achievement_programmes,expansion_payment_events,expansion_contract_cancellations,expansion_contracts,expansion_opportunities,expansion_partners,partner_applications,clients,admin_users,commercial_audit,expansion_audit restart identity cascade")
     await q("insert into admin_users values($1,'owner',true,1,'Founder','founder@example.invalid'),($2,'independent_partner',true,1,'Partner A','a@example.invalid'),($3,'independent_partner',true,1,'Partner B','b@example.invalid')", [FOUNDER, USER_A, USER_B])
     await q("insert into partner_applications(id,name,email,status) values(1,'Partner A','a@example.invalid','activated'),(2,'Partner B','b@example.invalid','activated')")
     await q("insert into expansion_partners(id,user_id,application_id,activated_at) values($1,$2,1,now()),($3,$4,2,now())", [PARTNER_A, USER_A, PARTNER_B, USER_B])
@@ -239,5 +243,77 @@ describe("achievements and referrals: derived qualification and gated rewards", 
     await approveProgramme({ version: approved.version, approvalReference: "SYNTHETIC" })
     await q("delete from expansion_achievement_milestones where programme_version=$1 and clients=10", [draft.version])
     await expect(q("update expansion_achievement_milestones set programme_version=$1 where programme_version=$2 and clients=10", [draft.version, approved.version])).rejects.toThrow("immutable")
+  })
+  describe("checkpoint 5: refund and cancellation reviews, and the reward lifecycle", () => {
+    const flags = async () => (await q<{ id: string; reason: string; status: string }>("select id,reason,status from expansion_qualification_flags order by created_at")).rows
+    async function tenQualified() {
+      await seedContracts(PARTNER_A, 1, 10); for (let i = 1; i <= 10; i++) await qualify(i)
+      const polo = (await q<{ id: string }>("select id from expansion_achievement_rewards where milestone_clients=1")).rows[0].id
+      const bonus = (await q<{ id: string }>("select id from expansion_achievement_rewards where milestone_clients=10")).rows[0].id
+      return { polo, bonus }
+    }
+    it("A: a later refund or cancellation raises a review by trigger, blocks progress, and needs an explicit resolution", async () => {
+      const { polo } = await tenQualified()
+      const prog = await createProgramme({ label: "v1" }); await approveProgramme({ version: prog.version, approvalReference: "SYNTHETIC" })
+      await reviewAchievementReward({ rewardId: polo, decision: "under_review" })
+      await q("insert into expansion_payment_events(id,contract_id,net_pence,refund_treatment) values('50000000-0000-4000-8000-000000000201',$1,-20000,'manual_review')", [contractId(1)])
+      let f = await flags(); expect(f).toEqual([expect.objectContaining({ reason: "refund", status: "open" })])
+      await q("insert into expansion_payment_events(id,contract_id,net_pence,refund_treatment) values('50000000-0000-4000-8000-000000000202',$1,-5000,'manual_review')", [contractId(1)])
+      expect(await flags()).toHaveLength(1)                                                       // one open flag per qualification and reason
+      await expect(reviewAchievementReward({ rewardId: polo, decision: "approved" })).rejects.toThrow("disputed, revoked or awaiting review")
+      await expect(q("update expansion_achievement_rewards set status='approved' where id=$1", [polo])).rejects.toThrow()
+      asPartner(); expect((await getProgrammeOverview()).qualificationUnderReview).toBe(true)
+      asFounder(); await expect(resolveQualificationFlag({ flagId: f[0].id, resolution: "maintained", note: "" })).rejects.toThrow()
+      await resolveQualificationFlag({ flagId: f[0].id, resolution: "maintained", note: "Accepted agreement: earned entitlement retained" })
+      await expect(resolveQualificationFlag({ flagId: f[0].id, resolution: "maintained", note: "again" })).rejects.toThrow("already been resolved")
+      await expect(q("update expansion_qualification_flags set status='open'")).rejects.toThrow()
+      await reviewAchievementReward({ rewardId: polo, decision: "approved", note: "Review cleared" })
+      await q("insert into expansion_contract_cancellations(contract_id) values($1)", [contractId(2)])
+      f = await flags(); expect(f.filter(x => x.status === "open")).toEqual([expect.objectContaining({ reason: "cancellation" })])
+      asPartner(); expect((await getProgrammeOverview()).qualificationUnderReview).toBe(true)
+    })
+    it("A: resolving a flag as revoked revokes the qualification, withdraws unapproved thresholds and preserves history", async () => {
+      await tenQualified()
+      await q("insert into expansion_contract_cancellations(contract_id) values($1)", [contractId(10)])
+      const flag = (await flags())[0]
+      await resolveQualificationFlag({ flagId: flag.id, resolution: "revoked", note: "Contract cancelled by the client" })
+      expect((await q("select status from expansion_client_qualifications where contract_id=$1", [contractId(10)])).rows).toEqual([{ status: "revoked" }])
+      expect((await q("select status from expansion_achievement_rewards where milestone_clients=10")).rows).toEqual([{ status: "rejected" }])
+      expect((await flags())[0]).toMatchObject({ status: "resolved" })
+      expect((await q("select count(*)::int c from expansion_client_qualifications")).rows[0]).toEqual({ c: 10 })   // nothing deleted
+    })
+    it("B: an approved reward cannot progress after its qualification is revoked, and is withdrawn only explicitly and with evidence", async () => {
+      const { polo, bonus } = await tenQualified()
+      const prog = await createProgramme({ label: "v1" }); await approveProgramme({ version: prog.version, approvalReference: "SYNTHETIC", financialRewardsEnabled: true })
+      for (const id of [polo, bonus]) { await reviewAchievementReward({ rewardId: id, decision: "under_review" }); await reviewAchievementReward({ rewardId: id, decision: "approved", note: "Approved on the evidence" }) }
+      const qid = (await q<{ id: string }>("select id from expansion_client_qualifications where contract_id=$1", [contractId(10)])).rows[0].id
+      await revokeQualification({ qualificationId: qid, reason: "Entered in error" })
+      expect((await q("select status,reviewed_by is not null reviewed from expansion_achievement_rewards where id=$1", [bonus])).rows).toEqual([{ status: "approved", reviewed: true }])   // history preserved
+      await expect(reviewAchievementReward({ rewardId: bonus, decision: "fulfilment_pending" })).rejects.toThrow("disputed, revoked or awaiting review")
+      await expect(reviewAchievementReward({ rewardId: bonus, decision: "fulfilled" })).rejects.toThrow("disputed, revoked or awaiting review")
+      await expect(q("update expansion_achievement_rewards set status='fulfilled' where id=$1", [bonus])).rejects.toThrow()
+      await expect(reviewAchievementReward({ rewardId: bonus, decision: "withdrawn" })).rejects.toThrow("Record the reason")
+      await expect(q("update expansion_achievement_rewards set status='withdrawn' where id=$1", [bonus])).rejects.toThrow("recorded reason")
+      await reviewAchievementReward({ rewardId: bonus, decision: "withdrawn", note: "Qualification revoked; no entitlement" })
+      expect((await q("select status,review_note from expansion_achievement_rewards where id=$1", [bonus])).rows[0]).toMatchObject({ status: "withdrawn" })
+      await expect(reviewAchievementReward({ rewardId: bonus, decision: "approved" })).rejects.toThrow()
+      await reviewAchievementReward({ rewardId: polo, decision: "fulfilled" })                    // unaffected threshold still progresses
+      await expect(reviewAchievementReward({ rewardId: polo, decision: "withdrawn", note: "too late" })).rejects.toThrow()   // settled history
+    })
+    it("B: a referral reward cannot progress while the referred partner has an open review or falls below five", async () => {
+      asPartner(); const code = await createReferralCode()
+      await q("insert into partner_applications(id,name,email,status) values(3,'R','r@example.invalid','under_review')"); asFounder(); await attributeReferral({ applicationId: 3, code: code.code })
+      await q("insert into admin_users values('10000000-0000-4000-8000-000000000004','independent_partner',true,1,'R','r@example.invalid')")
+      await q("update partner_applications set status='activated' where id=3")
+      await q("insert into expansion_partners(id,user_id,application_id,activated_at) values('20000000-0000-4000-8000-000000000003','10000000-0000-4000-8000-000000000004',3,now())")
+      await seedContracts("20000000-0000-4000-8000-000000000003", 20, 5); for (let i = 20; i < 25; i++) await qualify(i)
+      const reward = (await q<{ id: string }>("select id from expansion_referral_rewards")).rows[0].id
+      const prog = await createProgramme({ label: "v1" }); await approveProgramme({ version: prog.version, approvalReference: "SYNTHETIC", referralRewardsEnabled: true })
+      await reviewReferralReward({ rewardId: reward, decision: "under_review" })
+      await q("insert into expansion_payment_events(id,contract_id,net_pence,refund_treatment) values('50000000-0000-4000-8000-000000000301',$1,-1000,'manual_review')", [contractId(20)])
+      await expect(reviewReferralReward({ rewardId: reward, decision: "approved" })).rejects.toThrow("five undisputed qualifying clients")
+      await resolveQualificationFlag({ flagId: (await flags())[0].id, resolution: "maintained", note: "Retained under the agreement" })
+      await reviewReferralReward({ rewardId: reward, decision: "approved", note: "Evidence reviewed" })
+    })
   })
 })

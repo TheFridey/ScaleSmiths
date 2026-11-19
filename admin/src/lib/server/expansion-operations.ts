@@ -5,6 +5,7 @@ import { db, type AdminDatabaseTransaction } from "@/lib/db"
 import { type AdminRole } from "@/lib/admin-users"
 import { hasCapability } from "@/lib/rbac"
 import { ExpansionError } from "@/lib/expansion"
+import { safeDbMessage } from "@/lib/db-errors"
 import { requireCapability } from "./rbac"
 import { isTimeZone, isToolkitKey, MEETING_TRANSITIONS, MEETING_TYPES, TOOLKIT_CATALOGUE, TOOLKIT_STATUSES } from "@/lib/expansion-operations"
 
@@ -22,7 +23,7 @@ const conflict = (message: string): never => { throw new OperationsError(message
 const uuid = (value: unknown) => { if (typeof value !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)) throw new OperationsError("A valid record identifier is required."); return value.toLowerCase() }
 const text = (value: unknown, label: string, max = 2000) => { if (typeof value !== "string" || !value.trim() || value.trim().length > max) throw new OperationsError(`${label} is required (maximum ${max} characters).`); return value.trim() }
 const optional = (value: unknown, label: string, max = 2000) => (value === undefined || value === null || value === "" ? null : text(value, label, max))
-const dbMessage = (error: unknown, fallback: string) => { const e = error as { cause?: { message?: string }; message?: string }; const m = e.cause?.message ?? e.message ?? fallback; return /^Failed query/.test(m) ? fallback : m }
+const dbMessage = (error: unknown, fallback: string) => safeDbMessage(error, fallback)
 async function founderGuard(tx: Executor, actor: Actor) {
   const [user] = await rows(tx, sql`select role::text,active,session_version from admin_users where id=${actor.id} for share`)
   if (!user?.active || user.session_version !== actor.sessionVersion || !hasCapability(user.role as AdminRole, "expansion.manage")) throw new OperationsError("Founder authority was revoked.", 403)
@@ -164,5 +165,26 @@ export async function getMeetings(scope: "partner" | "founder") {
     const partnerId = await partnerGuard(tx, actor)
     return rows(tx, sql`select m.id,m.meeting_type,m.preferred_slots,m.time_zone,m.purpose,m.status,m.founder_note,m.proposed_start,m.confirmed_start,m.created_at,p.business_name
       from expansion_meeting_requests m left join expansion_opportunities o on o.id=m.opportunity_id left join prospects p on p.id=o.prospect_id where m.partner_id=${partnerId} order by m.created_at desc limit 100`)
+  })
+}
+
+/** The only way to change submitted meeting content: a founder correction with a recorded reason and the before/after values. */
+export async function correctMeeting(input: { meetingId: string; purpose?: string; context?: string; reason: string }) {
+  const actor = await requireCapability("expansion.manage"), id = uuid(input.meetingId)
+  const reason = text(input.reason, "Reason for the correction", 1000)
+  const purpose = optional(input.purpose, "Purpose"), context = optional(input.context, "Supporting information", 4000)
+  if (!purpose && !context) throw new OperationsError("Give a corrected purpose or supporting information.")
+  return db.transaction(async (tx) => {
+    await founderGuard(tx, actor)
+    const [source] = await rows(tx, sql`select partner_id from expansion_meeting_requests where id=${id}`)
+    if (!source) throw new OperationsError("Meeting request not found.", 404)
+    await lockPartner(tx, String(source.partner_id))
+    const [meeting] = await rows(tx, sql`select purpose,context from expansion_meeting_requests where id=${id} for update`)
+    await tx.execute(sql`insert into expansion_meeting_corrections(id,meeting_id,before_value,after_value,reason,corrected_by) values(${randomUUID()},${id},${JSON.stringify({ purpose: meeting.purpose, context: meeting.context })}::jsonb,${JSON.stringify({ purpose: purpose ?? meeting.purpose, context: context ?? meeting.context })}::jsonb,${reason},${actor.id})`)
+    await tx.execute(sql`select set_config('app.meeting_correction','verified',true)`)
+    try { await tx.execute(sql`update expansion_meeting_requests set purpose=coalesce(${purpose},purpose),context=coalesce(${context},context),updated_at=now() where id=${id}`) }
+    catch (error) { throw new OperationsError(dbMessage(error, "This correction is not permitted."), 409) }
+    await audit(tx, actor.id, id, "meeting_corrected", { reason })
+    return { meetingId: id, corrected: true }
   })
 }

@@ -33,6 +33,21 @@ async function opportunity(tx: AdminDatabaseTransaction, id: string, partnerId?:
   if (!result.rows[0]) throw new ExpansionError('Opportunity not found.',404)
   return result.rows[0] as Row
 }
+const aliasKey = (value: unknown) => String(value ?? '').toLowerCase().replace(/&/g,' and ').replace(/[^a-z0-9]+/g,' ').trim()
+/** The prospect's canonical sector: the founder's classification, else a founder-approved alias of the industry the partner wrote. */
+async function effectiveSectorId(tx: AdminDatabaseTransaction, row: Row, industry: unknown): Promise<string | null> {
+  if (row.sector_id) return String(row.sector_id)
+  const key = aliasKey(industry)
+  if (!key) return null
+  const hit = (await tx.execute(sql`select sector_id from expansion_sector_aliases where alias=${key}`)).rows[0] as Row | undefined
+  return hit ? String(hit.sector_id) : null
+}
+async function assertSectorExists(tx: AdminDatabaseTransaction, sectorId: unknown) {
+  if (sectorId === undefined || sectorId === null || sectorId === '') return null
+  const id = expansionId(sectorId)
+  if (!(await tx.execute(sql`select id from expansion_sectors where id=${id}`)).rows[0]) throw new ExpansionError('Choose a sector that has been defined.')
+  return id
+}
 async function activeExclusivities(tx: AdminDatabaseTransaction) {
   return (await tx.execute(sql`select id,client_id,sector,area,sector_id from expansion_exclusivities where status='active' and effective_from<=(now() at time zone 'Europe/London')::date and (effective_to is null or effective_to>(now() at time zone 'Europe/London')::date)`)).rows as Row[]
 }
@@ -42,7 +57,7 @@ async function exclusivityOutcome(tx: AdminDatabaseTransaction, row: Row, client
   const unresolved: string[] = []
   let status: 'clear'|'review_required'|'restricted'|'exception_approved' = 'clear', sawException = false
   for (const ex of await activeExclusivities(tx)) {
-    const match = matchExclusivity({clientId: clientId ?? (row.client_id as number|null), sector: facts?.industry as string|null, area: facts?.location as string|null, sectorId: (row.sector_id as string|null) ?? null}, {clientId:Number(ex.client_id),sector:String(ex.sector),area:String(ex.area),sectorId:(ex.sector_id as string|null) ?? null})
+    const match = matchExclusivity({clientId: clientId ?? (row.client_id as number|null), sector: facts?.industry as string|null, area: facts?.location as string|null, sectorId: await effectiveSectorId(tx,row,facts?.industry)}, {clientId:Number(ex.client_id),sector:String(ex.sector),area:String(ex.area),sectorId:(ex.sector_id as string|null) ?? null})
     if (match === 'none') continue
     const decision = (await tx.execute(sql`select decision from expansion_exclusivity_decisions where opportunity_id=${String(row.id)} and exclusivity_id=${String(ex.id)}`)).rows[0] as Row | undefined
     if (decision && (decision.decision === 'exception_approved' || (match === 'review' && decision.decision === 'cleared'))) { sawException = sawException || decision.decision === 'exception_approved'; continue }
@@ -303,9 +318,10 @@ export async function founderMutation(input: Input) {
       const from = expansionText(input.effectiveFrom,'Effective date',10), to = input.effectiveTo ? expansionText(input.effectiveTo,'Expiry date',10) : null
       const realDate = (v: string) => /^\d{4}-\d\d-\d\d$/.test(v) && new Date(`${v}T00:00:00Z`).toISOString().slice(0,10) === v
       if (!realDate(from) || (to && (!realDate(to) || to <= from))) throw new ExpansionError('Choose valid effective dates. The expiry date is the first unprotected day.')
+      const validSector = await assertSectorExists(tx,input.sectorId)
       await tx.execute(sql`select pg_advisory_xact_lock(7102)`)
       const exclusivityId = randomUUID()
-      await tx.execute(sql`insert into expansion_exclusivities(id,client_id,sector_id,sector,area,contractual_reference,effective_from,effective_to,created_by) values(${exclusivityId},${clientId},${input.sectorId ? expansionId(input.sectorId) : null},${expansionText(input.sector,'Sector',120)},${expansionText(input.area,'Geographic area',120)},${expansionText(input.contractualReference,'Accepted contractual reference',500)},${from}::date,${to}::date,${actor.id})`)
+      await tx.execute(sql`insert into expansion_exclusivities(id,client_id,sector_id,sector,area,contractual_reference,effective_from,effective_to,created_by) values(${exclusivityId},${clientId},${validSector},${expansionText(input.sector,'Sector',120)},${expansionText(input.area,'Geographic area',120)},${expansionText(input.contractualReference,'Accepted contractual reference',500)},${from}::date,${to}::date,${actor.id})`)
       await audit(tx,actor.id,exclusivityId,'exclusivity_created',{clientId,sector:input.sector,area:input.area})
       return {exclusivityId}
     }
@@ -319,9 +335,10 @@ export async function founderMutation(input: Input) {
       return {sectorId}
     }
     if (input.action === 'add_sector_alias') {
-      const alias = expansionText(input.alias,'Alias',80).toLowerCase().replace(/[^a-z0-9]+/g,' ').trim()
+      const alias = aliasKey(expansionText(input.alias,'Alias',80))
       if (alias.length < 2) throw new ExpansionError('Enter a meaningful alias.')
-      const sectorId = expansionId(input.sectorId)
+      const sectorId = (await assertSectorExists(tx,input.sectorId)) as string
+      if (!sectorId) throw new ExpansionError('Choose a sector for the alias.')
       const added = await tx.execute(sql`insert into expansion_sector_aliases(alias,sector_id,created_by) values(${alias},${sectorId},${actor.id}) on conflict(alias) do nothing returning alias`)
       if (!added.rows[0]) throw new ExpansionError('That alias is already assigned.',409)
       await audit(tx,actor.id,sectorId,'sector_alias_added',{alias})
@@ -339,8 +356,9 @@ export async function founderMutation(input: Input) {
       const reason = expansionText(input.reason,'Reason for the correction',1000)
       // A correction takes effect at once: a later start would open an unprotected gap.
       if ((await tx.execute(sql`select ${from}::date > (now() at time zone 'Europe/London')::date late`)).rows[0]?.late) throw new ExpansionError('A correction must take effect from today or earlier so protection has no gap.')
+      const validSector = await assertSectorExists(tx,input.sectorId)
       const newId = randomUUID()
-      await tx.execute(sql`insert into expansion_exclusivities(id,client_id,sector_id,sector,area,contractual_reference,effective_from,effective_to,created_by) values(${newId},${Number(old.client_id)},${input.sectorId ? expansionId(input.sectorId) : null},${expansionText(input.sector,'Sector',120)},${expansionText(input.area,'Geographic area',120)},${expansionText(input.contractualReference,'Accepted contractual reference',500)},${from}::date,${to}::date,${actor.id})`)
+      await tx.execute(sql`insert into expansion_exclusivities(id,client_id,sector_id,sector,area,contractual_reference,effective_from,effective_to,created_by) values(${newId},${Number(old.client_id)},${validSector},${expansionText(input.sector,'Sector',120)},${expansionText(input.area,'Geographic area',120)},${expansionText(input.contractualReference,'Accepted contractual reference',500)},${from}::date,${to}::date,${actor.id})`)
       await tx.execute(sql`update expansion_exclusivities set status='ended',ended_at=now(),superseded_by=${newId} where id=${oldId}`)
       await audit(tx,actor.id,newId,'exclusivity_corrected',{supersedes:oldId,reason})
       return {exclusivityId:newId,supersedes:oldId}
@@ -380,7 +398,7 @@ export async function founderMutation(input: Input) {
       const ex = (await tx.execute(sql`select id,client_id,sector,area,sector_id from expansion_exclusivities where id=${exclusivityId} and status='active'`)).rows[0] as Row | undefined
       if (!ex) throw new ExpansionError('Choose an active exclusivity.',409)
       const facts = (await tx.execute(sql`select industry,location from prospects where id=${row.prospect_id}`)).rows[0] as Row
-      const match = matchExclusivity({clientId:row.client_id as number|null,sector:facts?.industry as string|null,area:facts?.location as string|null,sectorId:(row.sector_id as string|null) ?? null},{clientId:Number(ex.client_id),sector:String(ex.sector),area:String(ex.area),sectorId:(ex.sector_id as string|null) ?? null})
+      const match = matchExclusivity({clientId:row.client_id as number|null,sector:facts?.industry as string|null,area:facts?.location as string|null,sectorId:await effectiveSectorId(tx,row,facts?.industry)},{clientId:Number(ex.client_id),sector:String(ex.sector),area:String(ex.area),sectorId:(ex.sector_id as string|null) ?? null})
       if (match === 'none') throw new ExpansionError('There is no exclusivity conflict to decide.',409)
       if (decision === 'cleared' && match === 'restricted') throw new ExpansionError('A confirmed restriction can only be released by an approved exception.',409)
       const decided = await tx.execute(sql`insert into expansion_exclusivity_decisions(id,opportunity_id,exclusivity_id,decision,reference,decided_by) values(${randomUUID()},${id},${exclusivityId},${decision},${expansionText(input.reference,'Decision evidence and reference',1000)},${actor.id}) on conflict(opportunity_id,exclusivity_id) do nothing returning id`)

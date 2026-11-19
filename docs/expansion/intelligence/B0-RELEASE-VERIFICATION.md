@@ -31,7 +31,7 @@ Cannot bind `::1` in this container (`EAFNOSUPPORT`), so it still fails locally;
 ## 3. GitHub CI
 Remote CI normally triggers only for pushes to `master` or for pull requests, so there was nothing to inspect for this branch. With no pull request authorised, all three workflows were started with their existing `workflow_dispatch` trigger on the branch (no deploy, no merge, no secrets added).
 
-| Workflow | First head `0f71e96` | Final head `FINALHEAD` |
+| Workflow | First head `0f71e96` | Application head `30a38cb` |
 |---|---|---|
 | CI (run 44617306801 / 44623575658) | success: Web, Admin, Admin Forge E2E, Forge Workflow E2E, Database and Migrations, Backup and Restore, Cross-browser Smoke, Nginx Topology, Root Hygiene; **PR Metadata skipped** (needs a pull request) | **success** (`44623575658`, `30a38cb`): Web, Admin, Admin Forge E2E, Forge Workflow E2E, Database and Migrations, Backup and Restore, Cross-browser Smoke, Nginx Topology, Root Hygiene all succeeded; PR Metadata skipped (not a pull-request event) |
 | Security (44617312102 / 44623581997) | success | **success** (`44623581997`) |

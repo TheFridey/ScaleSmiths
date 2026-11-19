@@ -28,6 +28,7 @@ async function founderGuard(tx: Executor, actor: Actor) {
   if (!user?.active || user.session_version !== actor.sessionVersion || !hasCapability(user.role as AdminRole, "expansion.manage")) throw new OperationsError("Founder authority was revoked.", 403)
 }
 async function partnerGuard(tx: Executor, actor: Actor) {
+  await tx.execute(sql`select id from admin_users where id=${actor.id} for share`)
   const [partner] = await rows(tx, sql`select p.id from expansion_partners p join admin_users u on u.id=p.user_id where p.user_id=${actor.id} and p.activated_at is not null and u.active=true and u.session_version=${actor.sessionVersion} and u.role::text='independent_partner'`)
   if (!partner) throw new OperationsError("Active partner profile required.", 403)
   return String(partner.id)
@@ -58,11 +59,11 @@ export async function setToolkitItem(input: { partnerId: string; itemKey: string
   return db.transaction(async (tx) => {
     await founderGuard(tx, actor)
     await lockPartner(tx, partnerId)
-    if (!(await rows(tx, sql`select id from expansion_partners where id=${partnerId}`))[0]) throw new OperationsError("Partner not found.", 404)
+    if (!(await rows(tx, sql`select id from expansion_partners where id=${partnerId} and activated_at is not null`))[0]) throw new OperationsError("Choose an activated partner.", 404)
     if (resourceId && !(await rows(tx, sql`select id from expansion_resources where id=${resourceId} and status='published' and audience='partner'`))[0]) throw new OperationsError("Associate a published partner resource.")
     await tx.execute(sql`insert into expansion_toolkit_items(id,partner_id,item_key,status,detail,resource_id,completed_at,updated_by)
       values(${randomUUID()},${partnerId},${input.itemKey},${input.status},${detail},${resourceId},${input.status === "completed" ? sql`now()` : null},${actor.id})
-      on conflict(partner_id,item_key) do update set status=excluded.status,detail=excluded.detail,resource_id=excluded.resource_id,completed_at=excluded.completed_at,updated_by=excluded.updated_by,updated_at=now()`)
+      on conflict(partner_id,item_key) do update set status=excluded.status,detail=coalesce(excluded.detail,expansion_toolkit_items.detail),resource_id=coalesce(excluded.resource_id,expansion_toolkit_items.resource_id),completed_at=excluded.completed_at,updated_by=excluded.updated_by,updated_at=now()`)
     await audit(tx, actor.id, partnerId, "toolkit_item_set", { itemKey: input.itemKey, status: input.status, detail })
     return { partnerId, itemKey: input.itemKey, status: input.status }
   })
@@ -116,7 +117,7 @@ export async function respondToMeeting(input: { meetingId: string; response: Par
     try {
       if (input.response === "cancel") { if (!["requested", "under_review", "info_required", "alternative_proposed", "confirmed"].includes(status)) conflict("This request can no longer be cancelled."); await update(sql`status='cancelled'`) }
       else if (input.response === "add_information") { if (status !== "info_required") conflict("The founder has not asked for more information."); if (!message) throw new OperationsError("Add the requested information."); await update(sql`status='requested',context=${[meeting.context, message].filter(Boolean).join("\n\n")}`) }
-      else { if (status !== "alternative_proposed") conflict("There is no proposed alternative to answer."); await update(input.response === "accept_alternative" ? sql`status='confirmed',confirmed_start=proposed_start` : sql`status='requested'`) }
+      else { if (status !== "alternative_proposed") conflict("There is no proposed alternative to answer."); if (input.response === "accept_alternative" && new Date(String(meeting.proposed_start)).getTime() < Date.now()) conflict("That proposed time has passed. Ask the founders for a new time."); await update(input.response === "accept_alternative" ? sql`status='confirmed',confirmed_start=proposed_start` : sql`status='requested'`) }
     } catch (error) { if (error instanceof OperationsError) throw error; throw new OperationsError(dbMessage(error, "This response is not permitted."), 409) }
     await audit(tx, actor.id, id, `meeting_${input.response}`, { message })
     return { meetingId: id, action: input.response }

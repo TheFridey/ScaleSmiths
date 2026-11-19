@@ -44,17 +44,19 @@ describe("onboarding toolkit and founder meeting requests", () => {
   })
   afterAll(async () => { await state.database?.close() })
 
-  it("shows honest defaults: built-in features available, everything external planned, nothing claimed as provisioned", async () => {
+  it("shows honest defaults: nothing is available until a founder records evidence", async () => {
     asPartner(); const items = await getToolkit()
     const by = Object.fromEntries(items.map(i => [i.key, i]))
     expect(by.email).toMatchObject({ status: "planned", recorded: false }); expect(by.circlecard).toMatchObject({ status: "planned" })
-    expect(by.referral_identifier.status).toBe("available"); expect(by.joint_meetings.status).toBe("available")
-    expect(items.filter(i => ["available", "completed"].includes(i.status)).map(i => i.key).sort()).toEqual(["joint_meetings", "referral_identifier"])
+    expect(by.referral_identifier.status).toBe("planned"); expect(by.joint_meetings.status).toBe("planned")
+    expect(items.filter(i => ["available", "completed"].includes(i.status))).toEqual([])   // nothing is available until a founder records evidence
   })
   it("a founder records real fulfilment; evidence is mandatory before available or completed", async () => {
     await expect(setToolkitItem({ partnerId: PARTNER_A, itemKey: "email", status: "available" })).rejects.toThrow("fulfilment evidence")
     await expect(setToolkitItem({ partnerId: PARTNER_A, itemKey: "email", status: "available", detail: "   " })).rejects.toThrow()
     await expect(setToolkitItem({ partnerId: PARTNER_A, itemKey: "sms", status: "planned" })).rejects.toThrow("valid status")
+    await state.database!.exec("insert into admin_users values('10000000-0000-4000-8000-000000000009','independent_partner',true,1,'Inactive','z@example.invalid'); insert into expansion_partners(id,user_id,activated_at) values('20000000-0000-4000-8000-000000000009','10000000-0000-4000-8000-000000000009',null)")
+    await expect(setToolkitItem({ partnerId: "20000000-0000-4000-8000-000000000009", itemKey: "email", status: "planned" })).rejects.toThrow("activated partner")
     await setToolkitItem({ partnerId: PARTNER_A, itemKey: "email", status: "in_preparation", detail: "Mailbox requested from the mail administrator" })
     asPartner(); expect((await getToolkit()).find(i => i.key === "email")).toMatchObject({ status: "in_preparation", recorded: true })
     asFounder(); await setToolkitItem({ partnerId: PARTNER_A, itemKey: "email", status: "completed", detail: "Mailbox created and credentials handed over in person on a synthetic date" })

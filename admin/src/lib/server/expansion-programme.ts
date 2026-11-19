@@ -27,6 +27,7 @@ async function founderGuard(tx: Executor, actor: Actor) {
   if (!user?.active || user.session_version !== actor.sessionVersion || !hasCapability(user.role as AdminRole, "expansion.manage")) throw new ProgrammeError("Founder authority was revoked.", 403)
 }
 async function partnerGuard(tx: Executor, actor: Actor) {
+  await tx.execute(sql`select id from admin_users where id=${actor.id} for share`)
   const [partner] = await rows(tx, sql`select p.id from expansion_partners p join admin_users u on u.id=p.user_id where p.user_id=${actor.id} and p.activated_at is not null and u.active=true and u.session_version=${actor.sessionVersion} and u.role::text='independent_partner'`)
   if (!partner) throw new ProgrammeError("Active partner profile required.", 403)
   return String(partner.id)
@@ -63,7 +64,7 @@ async function syncReferralRewards(tx: Executor, referredPartnerId: string) {
   const count = await qualifiedCount(tx, referredPartnerId)
   const [referral] = await rows(tx, sql`select r.id from expansion_referrals r join expansion_partners p on p.application_id=r.application_id where p.id=${referredPartnerId}`)
   if (!referral) return
-  if (count >= REFERRAL_THRESHOLD) await tx.execute(sql`insert into expansion_referral_rewards(id,referral_id) values(${randomUUID()},${String(referral.id)}) on conflict(referral_id) do nothing`)
+  if (count >= REFERRAL_THRESHOLD) await tx.execute(sql`insert into expansion_referral_rewards(id,referral_id) values(${randomUUID()},${String(referral.id)}) on conflict do nothing`)
   else await tx.execute(sql`update expansion_referral_rewards set status='rejected',review_note='Withdrawn automatically: the referred partner is below the qualifying-client threshold.',updated_at=now() where referral_id=${String(referral.id)} and status in ('conditional','under_review')`)
 }
 
@@ -78,10 +79,10 @@ export async function getProgrammeOverview() {
     const approved = rewards.filter(r => r.kind === "bonus" && ["approved", "fulfilment_pending", "fulfilled"].includes(String(r.status)))
     const [code] = await rows(tx, sql`select code from expansion_referral_codes where partner_id=${partnerId}`)
     // Referral visibility is deliberately coarse: a coarse stage and a count. No names, finances, customers or notes of referred partners.
-    const referred = await rows(tx, sql`select case when p.id is not null then 'activated' when a.status in ('declined','withdrawn','archived') then 'closed' else 'in_review' end stage,
+    const referred = await rows(tx, sql`select case when p.activated_at is not null then 'activated' else 'in_review' end stage,
       coalesce((select count(*) from expansion_client_qualifications q where q.partner_id=p.id and q.status='qualified'),0)::int qualified,
       rw.status reward_status
-      from expansion_referrals r join partner_applications a on a.id=r.application_id left join expansion_partners p on p.application_id=r.application_id
+      from expansion_referrals r join partner_applications a on a.id=r.application_id left join expansion_partners p on p.application_id=r.application_id and p.activated_at is not null
       left join expansion_referral_rewards rw on rw.referral_id=r.id where r.referrer_partner_id=${partnerId} order by r.created_at`)
     return {
       qualifiedClients: count,
@@ -160,6 +161,7 @@ export async function decideQualification(input: { contractId: string; decision:
     if (!first) throw new ProgrammeError("Contract not found.", 404)
     const partnerId = String(first.partner_id)
     await lockPartner(tx, partnerId)
+    await tx.execute(sql`select id from expansion_contracts where id=${contractId} for update`)   // serialises with cancel_contract, which locks the same row
     const c = await contractFacts(tx, contractId)
     const { version, programme } = await activeProgramme(tx)
     if (input.decision === "qualified") {
@@ -224,6 +226,8 @@ export async function attributeReferral(input: { applicationId: number; code: st
     const [owner] = await rows(tx, sql`select partner_id from expansion_referral_codes where code=${input.code}`)
     if (!owner) throw new ProgrammeError("Referral code not found.", 404)
     await lockPartner(tx, String(owner.partner_id))
+    // Same row lock the invitation flow takes, so attribution and invitation cannot both pass the not-yet-activated check.
+    if (!(await rows(tx, sql`select id from partner_applications where id=${input.applicationId} for update`))[0]) throw new ProgrammeError("Application not found.", 404)
     const [existing] = await rows(tx, sql`select id,referrer_partner_id from expansion_referrals where application_id=${input.applicationId}`)
     if (existing) { if (String(existing.referrer_partner_id) === String(owner.partner_id)) return { referralId: String(existing.id), replayed: true }; conflict("This applicant is already attributed to a different partner. Attribution cannot be reassigned.") }
     const id = randomUUID()

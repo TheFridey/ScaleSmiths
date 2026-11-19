@@ -597,7 +597,8 @@
     {"path":"admin/drizzle/0078_expansion_state_integrity.sql","sha256":"e0b39654d4c89e255c9c332c0689f0833a7937e6a6a009a81d298495dae06baf","lifecycle":"forward","reason":"Database-enforced withdrawal state transitions and immutable exclusivity history with explicit supersession."},
     {"path":"admin/drizzle/0079_expansion_achievements_referrals.sql","sha256":"b50b5c61c890b57f700b9a84984a980497d5b530094557c0fd8161b6f6e93c61","lifecycle":"forward","reason":"Operation Intelligence achievements and referrals: derived qualification, versioned programmes, database-gated rewards with no payable liability."},
     {"path":"admin/drizzle/0080_expansion_sector_taxonomy.sql","sha256":"b8e04dc456a7c0fa495e08e5087a22d463f48110b3a2c738fab868f1a9965859","lifecycle":"forward","reason":"Founder-defined canonical sector taxonomy and aliases for exclusivity classification."},
-    {"path":"admin/drizzle/0081_expansion_toolkit_meetings.sql","sha256":"0a9e3c2137b038a45185c49528b828cb8eaf92129a96f4127b1b03014a93a66a","lifecycle":"forward","reason":"Manual onboarding fulfilment tracking and founder meeting request workflow."}
+    {"path":"admin/drizzle/0081_expansion_toolkit_meetings.sql","sha256":"0a9e3c2137b038a45185c49528b828cb8eaf92129a96f4127b1b03014a93a66a","lifecycle":"forward","reason":"Manual onboarding fulfilment tracking and founder meeting request workflow."},
+    {"path":"admin/drizzle/0082_expansion_review_fixes.sql","sha256":"330a61eb627a71561681d051abdde05734bb75137fc71f60e821a749010f6c7e","lifecycle":"forward","reason":"Independent review fixes: live-only reward uniqueness and complete milestone immutability."}
   ],
   "journals": {
     "web": {
@@ -875,7 +876,8 @@
         {"idx":78,"version":"7","when":1794951000011,"tag":"0078_expansion_state_integrity","breakpoints":true},
         {"idx":79,"version":"7","when":1794951000012,"tag":"0079_expansion_achievements_referrals","breakpoints":true},
         {"idx":80,"version":"7","when":1794951000013,"tag":"0080_expansion_sector_taxonomy","breakpoints":true},
-        {"idx":81,"version":"7","when":1794951000014,"tag":"0081_expansion_toolkit_meetings","breakpoints":true}
+        {"idx":81,"version":"7","when":1794951000014,"tag":"0081_expansion_toolkit_meetings","breakpoints":true},
+        {"idx":82,"version":"7","when":1794951000015,"tag":"0082_expansion_review_fixes","breakpoints":true}
       ]
     }
   },

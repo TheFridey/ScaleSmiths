@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest"
 import { isTimeZone, isToolkitKey, MEETING_TRANSITIONS, TOOLKIT_CATALOGUE } from "./expansion-operations"
 describe("operations catalogue", () => {
-  it("lists every toolkit item once and marks only built-in features as built in", () => {
+  it("lists every toolkit item once and assumes none is available", () => {
     expect(new Set(TOOLKIT_CATALOGUE.map(i => i.key)).size).toBe(TOOLKIT_CATALOGUE.length)
-    expect(TOOLKIT_CATALOGUE.filter(i => !i.builtIn).map(i => i.key)).toEqual(expect.arrayContaining(["email", "circlecard"]))
+    expect(TOOLKIT_CATALOGUE.every(i => !i.builtIn)).toBe(true)   // nothing is assumed available
     expect(isToolkitKey("email")).toBe(true); expect(isToolkitKey("sms")).toBe(false)
   })
   it("validates time zones and has no transition out of closed states", () => {

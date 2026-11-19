@@ -337,6 +337,8 @@ export async function founderMutation(input: Input) {
       const realDate = (v: string) => /^\d{4}-\d\d-\d\d$/.test(v) && new Date(`${v}T00:00:00Z`).toISOString().slice(0,10) === v
       if (!realDate(from) || (to && (!realDate(to) || to <= from))) throw new ExpansionError('Choose valid effective dates.')
       const reason = expansionText(input.reason,'Reason for the correction',1000)
+      // A correction takes effect at once: a later start would open an unprotected gap.
+      if ((await tx.execute(sql`select ${from}::date > (now() at time zone 'Europe/London')::date late`)).rows[0]?.late) throw new ExpansionError('A correction must take effect from today or earlier so protection has no gap.')
       const newId = randomUUID()
       await tx.execute(sql`insert into expansion_exclusivities(id,client_id,sector_id,sector,area,contractual_reference,effective_from,effective_to,created_by) values(${newId},${Number(old.client_id)},${input.sectorId ? expansionId(input.sectorId) : null},${expansionText(input.sector,'Sector',120)},${expansionText(input.area,'Geographic area',120)},${expansionText(input.contractualReference,'Accepted contractual reference',500)},${from}::date,${to}::date,${actor.id})`)
       await tx.execute(sql`update expansion_exclusivities set status='ended',ended_at=now(),superseded_by=${newId} where id=${oldId}`)

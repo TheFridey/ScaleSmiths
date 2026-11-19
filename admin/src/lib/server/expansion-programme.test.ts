@@ -45,6 +45,7 @@ describe("achievements and referrals: derived qualification and gated rewards", 
       create table expansion_audit(id serial primary key,actor_id uuid,entity_id text,action text,details jsonb);
     `)
     await state.database.exec(readFileSync(new URL("../../../drizzle/0079_expansion_achievements_referrals.sql", import.meta.url), "utf8"))
+    await state.database.exec(readFileSync(new URL("../../../drizzle/0082_expansion_review_fixes.sql", import.meta.url), "utf8"))
   }, 30000)
   beforeEach(async () => {
     await q("truncate expansion_referral_rewards,expansion_referrals,expansion_referral_codes,expansion_achievement_rewards,expansion_client_qualifications,expansion_achievement_milestones,expansion_achievement_programmes,expansion_payment_events,expansion_contract_cancellations,expansion_contracts,expansion_opportunities,expansion_partners,partner_applications,clients,admin_users,commercial_audit,expansion_audit restart identity cascade")
@@ -210,5 +211,33 @@ describe("achievements and referrals: derived qualification and gated rewards", 
     asFounder(); const admin = await getProgrammeAdmin(); expect(admin.candidates).toHaveLength(2)
     await q("update expansion_partners set activated_at=null where id=$1", [PARTNER_B]); asPartner(USER_B)
     await expect(getProgrammeOverview()).rejects.toThrow("Active partner profile")
+  })
+  it("a revoked-then-requalified client revives the reward instead of leaving it permanently missing", async () => {
+    await seedContracts(PARTNER_A, 1, 1)
+    await qualify(1)
+    const qid = (await q<{ id: string }>("select id from expansion_client_qualifications where contract_id=$1", [contractId(1)])).rows[0].id
+    await revokeQualification({ qualificationId: qid, reason: "Entered in error" })
+    expect((await q("select status from expansion_achievement_rewards")).rows).toEqual([{ status: "rejected" }])
+    await qualify(1)
+    expect((await q("select status from expansion_achievement_rewards order by created_at")).rows).toEqual([{ status: "rejected" }, { status: "conditional" }])
+    asPartner(); expect((await getProgrammeOverview()).milestones[0].reward).toMatchObject({ status: "conditional" })
+  })
+  it("a referrer sees 'in review' until the applicant is genuinely activated, never an invited-only state or closure outcome", async () => {
+    asPartner(); const code = await createReferralCode()
+    await q("insert into partner_applications(id,name,email,status) values(3,'Invited','i@example.invalid','under_review')"); asFounder(); await attributeReferral({ applicationId: 3, code: code.code })
+    await q("insert into admin_users values('10000000-0000-4000-8000-000000000004','independent_partner',true,1,'I','i@example.invalid')")
+    await q("insert into expansion_partners(id,user_id,application_id,activated_at) values('20000000-0000-4000-8000-000000000003','10000000-0000-4000-8000-000000000004',3,null)")   // invited: row exists, not activated
+    asPartner(); expect((await getProgrammeOverview()).referral.referred[0].stage).toBe("in_review")
+    await q("update expansion_partners set activated_at=now() where id='20000000-0000-4000-8000-000000000003'")
+    expect((await getProgrammeOverview()).referral.referred[0].stage).toBe("activated")
+    await q("update partner_applications set status='declined' where id=3")
+    expect((await getProgrammeOverview()).referral.referred[0].stage).toBe("activated")
+    asFounder(); await expect(attributeReferral({ applicationId: 999, code: code.code })).rejects.toThrow("Application not found")
+  })
+  it("milestones of an approved programme cannot be moved into a draft version", async () => {
+    const approved = await createProgramme({ label: "a" }); const draft = await createProgramme({ label: "b" })
+    await approveProgramme({ version: approved.version, approvalReference: "SYNTHETIC" })
+    await q("delete from expansion_achievement_milestones where programme_version=$1 and clients=10", [draft.version])
+    await expect(q("update expansion_achievement_milestones set programme_version=$1 where programme_version=$2 and clients=10", [draft.version, approved.version])).rejects.toThrow("immutable")
   })
 })

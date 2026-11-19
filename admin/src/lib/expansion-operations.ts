@@ -8,7 +8,7 @@ export const TOOLKIT_CATALOGUE = [
   { key: "email", label: "Dedicated ScaleSmiths email address", builtIn: false },
   { key: "circlecard", label: "Personalised CircleCard", builtIn: false },
   { key: "business_card", label: "Digital business card", builtIn: false },
-  { key: "referral_identifier", label: "Unique referral identifier", builtIn: true },
+  { key: "referral_identifier", label: "Unique referral identifier", builtIn: false },
   { key: "brochures", label: "Professional branded brochures", builtIn: false },
   { key: "pricing_documents", label: "Pricing documentation", builtIn: false },
   { key: "commission_documents", label: "Commission documentation", builtIn: false },
@@ -17,7 +17,7 @@ export const TOOLKIT_CATALOGUE = [
   { key: "academy", label: "Partner Academy access", builtIn: false },
   { key: "founder_training", label: "Optional founder-led training", builtIn: false },
   { key: "technical_assistance", label: "Technical assistance", builtIn: false },
-  { key: "joint_meetings", label: "Joint sales meetings", builtIn: true },
+  { key: "joint_meetings", label: "Joint sales meetings", builtIn: false },
   { key: "personal_webpage", label: "Personal webpage", builtIn: false },
 ] as const
 export type ToolkitKey = (typeof TOOLKIT_CATALOGUE)[number]["key"]

@@ -20,3 +20,8 @@ Columns: blocks recruitment (R), activation (A), financial operations (F). Owner
 | AI provider, budget, data-processing agreement | Cost and data risk | Keep disabled | Founders, privacy | N | N | N |
 | Audit execution infrastructure | SSRF risk | Isolated egress-restricted runner | Founders, engineering | N | N | N |
 | Legal, accounting, privacy approval; recruitment launch; activation; production deployment | Release gates | See hardening release runbook | Founders | Y | Y | Y |
+| Enabling each commercial plan (`standard-v2`, `growth-only-v1`, `bespoke-v1`) | Plans start disabled and cannot accept contracts | Enable per plan after agreement and accounting review | Founders, accounting | N | Y | Y |
+| Custom payment schedules (e.g. four £500 instalments) | Synthetic example only; custom schedules need a recorded approval reference | Allow per deal, or catalogue approved schedules | Founders | N | Y | Y |
+| Pooled-build rounding for new plans | Differs deliberately from historical per-milestone rounding | Confirm before activation | Accounting | N | N | Y |
+| Additional-business attribution evidence standard | What counts as documented partner contribution | Introduction record, meeting notes, joint sign-off | Founders | N | Y | Y |
+

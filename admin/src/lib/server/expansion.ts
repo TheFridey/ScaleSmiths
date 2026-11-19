@@ -33,22 +33,22 @@ async function opportunity(tx: AdminDatabaseTransaction, id: string, partnerId?:
   if (!result.rows[0]) throw new ExpansionError('Opportunity not found.',404)
   return result.rows[0] as Row
 }
-const aliasKey = (value: unknown) => String(value ?? '').toLowerCase().replace(/&/g,' and ').replace(/[^a-z0-9]+/g,' ').trim()
+export const aliasKey = (value: unknown) => String(value ?? '').toLowerCase().replace(/&/g,' and ').replace(/[^a-z0-9]+/g,' ').trim()
 /** The prospect's canonical sector: the founder's classification, else a founder-approved alias of the industry the partner wrote. */
-async function effectiveSectorId(tx: AdminDatabaseTransaction, row: Row, industry: unknown): Promise<string | null> {
+export async function effectiveSectorId(tx: AdminDatabaseTransaction, row: Row, industry: unknown): Promise<string | null> {
   if (row.sector_id) return String(row.sector_id)
   const key = aliasKey(industry)
   if (!key) return null
   const hit = (await tx.execute(sql`select sector_id from expansion_sector_aliases where alias=${key}`)).rows[0] as Row | undefined
   return hit ? String(hit.sector_id) : null
 }
-async function assertSectorExists(tx: AdminDatabaseTransaction, sectorId: unknown) {
+export async function assertSectorExists(tx: AdminDatabaseTransaction, sectorId: unknown) {
   if (sectorId === undefined || sectorId === null || sectorId === '') return null
   const id = expansionId(sectorId)
   if (!(await tx.execute(sql`select id from expansion_sectors where id=${id}`)).rows[0]) throw new ExpansionError('Choose a sector that has been defined.')
   return id
 }
-async function activeExclusivities(tx: AdminDatabaseTransaction) {
+export async function activeExclusivities(tx: AdminDatabaseTransaction) {
   return (await tx.execute(sql`select id,client_id,sector,area,sector_id from expansion_exclusivities where status='active' and effective_from<=(now() at time zone 'Europe/London')::date and (effective_to is null or effective_to>(now() at time zone 'Europe/London')::date)`)).rows as Row[]
 }
 /** Conservative exclusivity outcome for one opportunity. Never discloses which customer or agreement is involved. */
@@ -79,7 +79,11 @@ export async function partnerSnapshot() {
   const actor = await requireCapability('expansion.partner')
   return db.transaction(async tx => {
     const id = await partner(tx,actor)
-    const opportunities = await tx.execute(sql`select o.id,o.status,o.discovery,o.scope,o.scope_version,o.created_at,p.business_name,p.website_url,p.contact_name,p.contact_email,p.next_follow_up_at,c.id contract_id from expansion_opportunities o join prospects p on p.id=o.prospect_id left join expansion_contracts c on c.opportunity_id=o.id where o.partner_id=${id} order by o.created_at desc`)
+    const opportunities = await tx.execute(sql`select o.id,o.status,o.discovery,o.scope,o.scope_version,o.created_at,p.business_name,p.website_url,p.contact_name,p.contact_email,p.next_follow_up_at,c.id contract_id,
+        (rc.id is not null) allocated,rc.public_source research_source,rc.researched_on research_date,rc.partner_notes research_notes,rc.industry research_industry,rc.country research_country,rc.region research_region,rc.area research_area,rs.label research_sector
+      from expansion_opportunities o join prospects p on p.id=o.prospect_id left join expansion_contracts c on c.opportunity_id=o.id
+      left join expansion_research_candidates rc on rc.id=o.research_candidate_id left join expansion_sectors rs on rs.id=rc.sector_id
+      where o.partner_id=${id} and (o.research_candidate_id is null or (rc.status='allocated' and rc.allocated_partner_id=o.partner_id)) order by o.created_at desc`)
     const resources = await tx.execute(sql`select id,title,category,version,audience,content,status,created_at from expansion_resources where status='published' and audience='partner' order by created_at desc`)
     const capacity = await tx.execute(sql`select c.period,greatest(0,c.available_hours-coalesce(sum(r.hours) filter(where r.status<>'released'),0))::integer remaining_hours from expansion_capacity c left join expansion_reservations r on r.period=c.period where c.period>=current_date-7 group by c.period order by c.period`)
     // Partners see only their own allowance and claim status; never customer identity or reviewer notes.

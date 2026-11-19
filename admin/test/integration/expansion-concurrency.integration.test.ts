@@ -35,6 +35,7 @@ vi.mock("../../src/lib/server/rbac", () => ({ requireCapability: async (capabili
 import { founderMutation, partnerMutation, partnerSnapshot } from "../../src/lib/server/expansion"
 import { resolveQualificationFlag } from "../../src/lib/server/expansion-programme"
 import { requestMeeting, decideMeeting, correctMeeting } from "../../src/lib/server/expansion-operations"
+import { allocateCandidate, checkCandidate, clearCandidateExclusivity, createCandidate, excludeCandidate, getResearchAdmin, markCandidateEligible, recordScreening, reassignCandidate, releaseCandidate } from "../../src/lib/server/expansion-research"
 import { translateDbError } from "../../src/lib/db-errors"
 import { approveProgramme, attributeReferral, createProgramme, createReferralCode, decideQualification, getProgrammeOverview, revokeQualification, reviewAchievementReward } from "../../src/lib/server/expansion-programme"
 import { allocateExpansionInvoice, approveExpansionPayout, cancelExpansionPayout, cancelWithdrawal, getWithdrawalOverview, prepareWithdrawalPayout, requestWithdrawal, reviewWithdrawal, setWithdrawalPolicy, getPartnerFinance, prepareExpansionPayout, refundExpansionPayment, settleExpansionPayout, verifyExpansionPayment } from "../../src/lib/server/expansion-finance"
@@ -909,6 +910,187 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("Expansion real separa
       const dup = await pool.query("insert into expansion_qualification_flags(id,qualification_id,reason) values($1,$1,'refund')", [randomUUID()]).catch(e => e)
       const t = translateDbError(dup)
       expect(t).toMatchObject({ status: 409 }); expect(t!.message).not.toMatch(/expansion_|constraint|violates|key/i)
+    })
+  })
+
+  describe("checkpoint 5B: researched prospect allocation on separate connections", () => {
+    const today = new Date().toISOString().slice(0, 10)
+    const founder2: Actor = { id: randomUUID(), role: "owner", active: true, sessionVersion: 1, displayName: `Concurrency founder two ${suffix}` }
+    const setMarket = (code: string, status: "approved" | "suspended") => runAs(founder, () => founderMutation({ action: "set_market", countryCode: code, countryName: `Testland ${code}`, status, planKeys: ["standard-v2"], legalReviewed: true, accountingReviewed: true, privacyReviewed: true, operationsReviewed: true, approvalReference: `TEST ONLY ${suffix} ${status}` }))
+    async function activePartner(tag: string) {
+      const actor: Actor = { id: randomUUID(), role: "independent_partner", active: true, sessionVersion: 1, displayName: `TEST ONLY 5B ${tag} ${suffix}` }
+      const email = `alloc-${actor.id}@example.invalid`
+      const applicantId = await application(actor.displayName, email)
+      const partnerId = randomUUID()
+      await pool.query("insert into admin_users(id,email,display_name,password_hash,role,active,session_version) values($1,$2,$3,'test-fixture-not-for-login',$4,true,1)", [actor.id, email, actor.displayName, actor.role])
+      await pool.query("insert into expansion_partners(id,user_id,application_id,agreement_version,confirmed_at,activated_at) values($1,$2,$3,'test-reviewed-v1',now(),now())", [partnerId, actor.id, applicantId])
+      return { actor, partnerId }
+    }
+    let n = 0
+    const fresh = (tag: string, extra: Record<string, unknown> = {}) => ({ businessName: `TEST ONLY research ${suffix} ${tag}`, website: `research-${suffix}-${tag}.example`, industry: `Sector ${suffix} ${tag}`, country: "QA", region: "Testshire", area: `Area ${suffix} ${tag}`, publicSource: "TEST ONLY public directory listing", researchedOn: today, partnerNotes: `Public notes ${tag}`, internalNotes: `INTERNAL ${tag}`, ...extra })
+    const mk = async (tag: string, extra: Record<string, unknown> = {}) => (await runAs(founder, () => createCandidate(fresh(`${tag}${++n}`, extra)))).id
+    const screen = (id: string) => runAs(founder, () => recordScreening({ candidateId: id, outcome: "evidenced", evidence: "TEST ONLY screening evidence reviewed by a founder" }))
+    const eligible = async (tag: string, extra: Record<string, unknown> = {}) => { const id = await mk(tag, extra); await screen(id); await runAs(founder, () => markCandidateEligible({ candidateId: id })); return id }
+    const allocate = (id: string, partnerId: string, as: Actor = founder) => runAs(as, () => allocateCandidate({ candidateId: id, partnerId }))
+    const state = async (id: string) => (await pool.query("select status,allocated_partner_id from expansion_research_candidates where id=$1", [id])).rows[0]
+    const events = async (id: string) => (await pool.query<{ event: string }>("select event from expansion_candidate_events where candidate_id=$1 order by created_at,id", [id])).rows.map(r => r.event)
+    const opportunityOf = async (id: string) => (await pool.query("select id,partner_id,status from expansion_opportunities where research_candidate_id=$1", [id])).rows
+    /** After a race the candidate is either still eligible (the other change committed after) or was demoted by the refused allocation: both must block. */
+    const assertBlocked = async (id: string, partnerId: string, pattern: RegExp) => {
+      const st = (await state(id)).status
+      if (st === "eligible") await expect(allocate(id, partnerId)).rejects.toMatchObject({ status: 409, message: expect.stringMatching(pattern) })
+      else { expect(st).toBe("draft"); await expect(runAs(founder, () => markCandidateEligible({ candidateId: id }))).rejects.toMatchObject({ status: 409, message: expect.stringMatching(pattern) }) }
+    }
+    beforeAll(async () => {
+      await pool.query("insert into admin_users(id,email,display_name,password_hash,role,active,session_version) values($1,$2,$3,'test-fixture-not-for-login','owner',true,1)", [founder2.id, `concurrency-${founder2.id}@example.invalid`, founder2.displayName])
+      await setMarket("QA", "approved")
+    }, 30000)
+
+    it("runs the whole workflow: screening is mandatory, allocation reuses the canonical CRM, and only the allocated partner sees the research", async () => {
+      const a = await activePartner("flow-a"), b = await activePartner("flow-b")
+      const id = await mk("flow")
+      await expect(runAs(founder, () => markCandidateEligible({ candidateId: id }))).rejects.toMatchObject({ status: 409, message: expect.stringContaining("screening") })
+      await expect(allocate(id, a.partnerId)).rejects.toMatchObject({ status: 409 })        // not eligible yet
+      await screen(id)
+      await runAs(founder, () => markCandidateEligible({ candidateId: id }))
+      const result = await allocate(id, a.partnerId) as { opportunityId: string }
+      const prospect = (await pool.query("select p.owner_user_id,p.source::text src,o.customer_country,o.customer_country_confirmed_by from expansion_opportunities o join prospects p on p.id=o.prospect_id where o.id=$1", [result.opportunityId])).rows[0]
+      expect(prospect).toMatchObject({ owner_user_id: a.actor.id, src: "other", customer_country: "QA", customer_country_confirmed_by: founder.id })
+      const mine = await runAs(a.actor, () => partnerSnapshot())
+      const row = (mine.opportunities as Array<Record<string, unknown>>).find(o => o.id === result.opportunityId)!
+      expect(row).toMatchObject({ allocated: true, research_notes: expect.stringContaining("Public notes"), research_source: "TEST ONLY public directory listing" })
+      expect(JSON.stringify(mine)).not.toContain("INTERNAL")
+      expect(((await runAs(b.actor, () => partnerSnapshot())).opportunities as unknown[]).some(o => (o as { id: string }).id === result.opportunityId)).toBe(false)
+      // the partner continues in the existing workflow
+      await runAs(a.actor, () => partnerMutation({ action: "stage", id: result.opportunityId, status: "contacted" }))
+      expect(await events(id)).toEqual(["created", "screening_recorded", "marked_eligible", "allocated"])
+    })
+    it("two founders allocating the same candidate to different partners: exactly one winner, one opportunity", async () => {
+      const a = await activePartner("two-a"), b = await activePartner("two-b"); const id = await eligible("two")
+      const results = await race<unknown>([() => allocate(id, a.partnerId, founder), () => allocate(id, b.partnerId, founder2)])
+      expectSingleWinner(results, /already been allocated/)
+      expect(await opportunityOf(id)).toHaveLength(1)
+      expect((await state(id)).status).toBe("allocated")
+    })
+    it("duplicate allocation requests for the same partner: one winner", async () => {
+      const a = await activePartner("dup"); const id = await eligible("dup")
+      const results = await race<unknown>([() => allocate(id, a.partnerId), () => allocate(id, a.partnerId)])
+      expectSingleWinner(results, /already been allocated/)
+      expect(await opportunityOf(id)).toHaveLength(1)
+    })
+    it("allocation racing an independent partner registration of the same business: the domain is held exactly once", async () => {
+      const a = await activePartner("reg-a"), b = await activePartner("reg-b"); const id = await eligible("reg")
+      const domain = `research-${suffix}-reg${n}.example`
+      const results = await race<unknown>([() => allocate(id, a.partnerId), () => runAs(b.actor, () => partnerMutation({ action: "register", country: "QA", businessName: `Independent ${suffix} reg`, website: domain }))])
+      expect(results.filter(r => r.status === "fulfilled")).toHaveLength(1)
+      expect((await pool.query("select count(*)::int c from expansion_opportunities where normalized_domain=$1", [domain])).rows[0].c).toBe(1)
+      expect((await pool.query("select count(*)::int c from prospects where website_url=$1", [`https://${domain}`])).rows[0].c).toBe(1)
+    })
+    it("an existing client or an already registered prospect blocks eligibility and allocation, and a lapsed eligibility is withdrawn", async () => {
+      const a = await activePartner("conf-a")
+      const named = await mk("client-name")
+      await pool.query("insert into clients(name,invoice_client_code,billing_address_line_1,billing_city,billing_postcode,billing_country) values($1,$2,'1 Test Street','Nottingham','NG1 1AA','United Kingdom')", [`TEST ONLY research ${suffix} client-name${n}`, `C${randomUUID().replace(/-/g, "").slice(0, 8).toUpperCase()}`])
+      await screen(named)
+      await expect(runAs(founder, () => markCandidateEligible({ candidateId: named }))).rejects.toMatchObject({ status: 409, message: expect.stringContaining("existing ScaleSmiths client") })
+      // eligible first, then a partner independently registers the same business: allocation must refuse and demote
+      const id = await eligible("prospect"); const domain = `research-${suffix}-prospect${n}.example`
+      await runAs(a.actor, () => partnerMutation({ action: "register", country: "QA", businessName: `Independent ${suffix} prospect`, website: domain }))
+      await expect(allocate(id, a.partnerId)).rejects.toMatchObject({ status: 409, message: expect.stringContaining("existing prospect") })
+      expect((await state(id)).status).toBe("draft")
+      expect(await opportunityOf(id)).toHaveLength(0)
+    })
+    it("suppression applied during allocation: either seen, or committed after; never allocated once suppressed", async () => {
+      const a = await activePartner("sup"); const id = await eligible("sup"); const domain = `research-${suffix}-sup${n}.example`
+      const results = await race<unknown>([() => allocate(id, a.partnerId), () => runAs(founder, () => founderMutation({ action: "suppress", domain, reason: "TEST ONLY suppression" }))])
+      expect(results[1].status).toBe("fulfilled")
+      if ((await state(id)).status === "allocated") await runAs(founder, () => releaseCandidate({ candidateId: id, note: "TEST ONLY suppressed meanwhile" }))
+      else expect(results[0]).toMatchObject({ status: "rejected" })
+      await assertBlocked(id, a.partnerId, /suppression/)
+    })
+    it("market revocation during allocation: consistent, and unapproved or unknown markets fail closed", async () => {
+      const a = await activePartner("mkt"); await setMarket("QB", "approved")
+      const id = await eligible("mkt", { country: "QB" })
+      const results = await race<unknown>([() => allocate(id, a.partnerId), () => setMarket("QB", "suspended")])
+      expect(results[1].status).toBe("fulfilled")
+      if ((await state(id)).status === "allocated") await runAs(founder, () => releaseCandidate({ candidateId: id, note: "TEST ONLY market suspended meanwhile" }))
+      await assertBlocked(id, a.partnerId, /market is not approved/)
+      const unknown = await mk("mkt-unknown", { country: "QC" })   // never configured: research may be recorded, sales are not authorised
+      await screen(unknown)
+      await expect(runAs(founder, () => markCandidateEligible({ candidateId: unknown }))).rejects.toMatchObject({ status: 409, message: expect.stringContaining("market is not approved") })
+    })
+    it("an exclusivity introduced during allocation is seen or committed after, never lost; restricted candidates are never clearable", async () => {
+      const a = await activePartner("ex"); const sector = `Sector ${suffix} exr`, area = `Area ${suffix} exr`
+      const id = await eligible("exr", { industry: sector, area })
+      const create = () => runAs(founder, () => founderMutation({ action: "create_exclusivity", clientId, sector, area, contractualReference: "TEST ONLY clause", effectiveFrom: "2020-01-01" }))
+      try {
+        const results = await race<unknown>([() => allocate(id, a.partnerId), create])
+        expect(results[1].status).toBe("fulfilled")
+        if ((await state(id)).status === "allocated") await runAs(founder, () => releaseCandidate({ candidateId: id, note: "TEST ONLY restriction introduced meanwhile" }))
+        await assertBlocked(id, a.partnerId, /exclusivity/)
+        const ex = (await pool.query<{ id: string }>("select id from expansion_exclusivities where sector=$1 and status='active'", [sector])).rows[0].id
+        await expect(runAs(founder, () => clearCandidateExclusivity({ candidateId: id, exclusivityId: ex, reference: "TEST ONLY attempt" }))).rejects.toMatchObject({ status: 409, message: expect.stringContaining("restriction") })
+      } finally { await pool.query("update expansion_exclusivities set status='ended',ended_at=now() where status='active' and sector like $1", [`Sector ${suffix}%`]) }
+    })
+    it("an unclassified, uncertain match needs founder review and carries the decision onto the opportunity", async () => {
+      const a = await activePartner("rev"); const area = `Area ${suffix} rev`
+      // unclassified candidate, wording differs from the exclusivity: absence of a shared word is not proof of no conflict
+      await runAs(founder, () => founderMutation({ action: "create_exclusivity", clientId, sector: `Protected ${suffix} sector`, area, contractualReference: "TEST ONLY clause", effectiveFrom: "2020-01-01" }))
+      try {
+        const id = await mk("rev", { industry: "Something described differently", area }); await screen(id)
+        await expect(runAs(founder, () => markCandidateEligible({ candidateId: id }))).rejects.toMatchObject({ status: 409, message: expect.stringContaining("exclusivity review") })
+        const ex = (await pool.query<{ id: string }>("select id from expansion_exclusivities where sector=$1 and status='active'", [`Protected ${suffix} sector`])).rows[0].id
+        await runAs(founder, () => clearCandidateExclusivity({ candidateId: id, exclusivityId: ex, reference: "TEST ONLY founder review: different business activity" }))
+        await runAs(founder, () => markCandidateEligible({ candidateId: id }))
+        const out = await allocate(id, a.partnerId) as { opportunityId: string }
+        expect((await pool.query("select decision from expansion_exclusivity_decisions where opportunity_id=$1", [out.opportunityId])).rows).toEqual([{ decision: "cleared" }])
+        // the partner never learns why: no exclusivity detail is in their snapshot
+        expect(JSON.stringify(await runAs(a.actor, () => partnerSnapshot()))).not.toMatch(/Protected|exclusiv/i)
+      } finally { await pool.query("update expansion_exclusivities set status='ended',ended_at=now() where status='active' and sector like $1", [`Protected ${suffix}%`]) }
+    })
+    it("release versus reassignment: exactly one wins and ownership stays consistent", async () => {
+      const a = await activePartner("rel-a"), b = await activePartner("rel-b"); const id = await eligible("rel")
+      await allocate(id, a.partnerId)
+      const results = await race<unknown>([() => runAs(founder, () => releaseCandidate({ candidateId: id, note: "TEST ONLY release" })), () => runAs(founder2, () => reassignCandidate({ candidateId: id, partnerId: b.partnerId, note: "TEST ONLY reassign" }))])
+      expectSingleWinner(results, /changed hands|released/)
+      const st = await state(id), opp = (await opportunityOf(id))[0]
+      if (st.status === "allocated") expect(opp.partner_id).toBe(b.partnerId); else { expect(st.status).toBe("eligible"); expect(opp.status).toBe("withdrawn") }
+      // a released candidate can be allocated again and revives the SAME canonical opportunity
+      if (st.status === "eligible") { await allocate(id, b.partnerId); expect((await opportunityOf(id))).toHaveLength(1); expect((await opportunityOf(id))[0]).toMatchObject({ partner_id: b.partnerId, status: "registered" }) }
+      expect((await events(id)).filter(e => ["released", "reassigned"].includes(e))).toHaveLength(1)
+    })
+    it("a prospect the partner has worked on cannot be released or moved, and the database refuses a direct ownership change", async () => {
+      const a = await activePartner("work-a"), b = await activePartner("work-b"); const id = await eligible("work")
+      const out = await allocate(id, a.partnerId) as { opportunityId: string }
+      await expect(pool.query("update expansion_opportunities set partner_id=$1 where id=$2", [b.partnerId, out.opportunityId])).rejects.toThrow(/cannot change partner/)
+      await runAs(a.actor, () => partnerMutation({ action: "discovery", id: out.opportunityId, discovery: { objectives: "Test", pages: "Five", functionality: "Form", budget: "Subject", timescale: "Assessed", decisionProcess: "Owner" } }))
+      await expect(runAs(founder, () => releaseCandidate({ candidateId: id, note: "TEST ONLY too late" }))).rejects.toMatchObject({ status: 409, message: expect.stringContaining("already worked") })
+      await expect(runAs(founder, () => reassignCandidate({ candidateId: id, partnerId: b.partnerId, note: "TEST ONLY too late" }))).rejects.toMatchObject({ status: 409 })
+      expect((await state(id)).allocated_partner_id).toBe(a.partnerId)
+    })
+    it("authorisation: partners and the unauthenticated cannot administer, a revoked partner receives nothing, and partner A cannot reach partner B's allocation", async () => {
+      const a = await activePartner("auth-a"), b = await activePartner("auth-b"), revoked = await activePartner("auth-r")
+      const id = await eligible("auth"); const out = await allocate(id, b.partnerId) as { opportunityId: string }
+      await expect(runAs(a.actor, () => allocateCandidate({ candidateId: id, partnerId: a.partnerId }))).rejects.toThrow("Forbidden")
+      await expect(runAs(a.actor, () => getResearchAdmin())).rejects.toThrow("Forbidden")
+      await expect(runAs(a.actor, () => createCandidate(fresh("x")))).rejects.toThrow("Forbidden")
+      await expect(allocateCandidate({ candidateId: id, partnerId: a.partnerId })).rejects.toThrow()          // no actor at all
+      await expect(runAs(a.actor, () => partnerMutation({ action: "stage", id: out.opportunityId, status: "contacted" }))).rejects.toMatchObject({ status: 404 })
+      await expect(runAs(a.actor, () => partnerMutation({ action: "discovery", id: out.opportunityId, discovery: { objectives: "x" } }))).rejects.toMatchObject({ status: 404 })
+      expect(((await runAs(a.actor, () => partnerSnapshot())).opportunities as unknown[]).length).toBe(0)
+      const other = await eligible("auth2")
+      await pool.query("update admin_users set active=false where id=$1", [revoked.actor.id])
+      await expect(allocate(other, revoked.partnerId)).rejects.toMatchObject({ status: 409, message: expect.stringContaining("not active") })
+      expect((await state(other)).status).toBe("eligible")
+      await expect(runAs(revoked.actor, () => partnerSnapshot())).rejects.toBeTruthy()
+    })
+    it("an excluded candidate is closed, and screening failure withdraws eligibility", async () => {
+      const id = await eligible("excl")
+      await runAs(founder, () => recordScreening({ candidateId: id, outcome: "failed", evidence: "TEST ONLY screening reason recorded" }))
+      expect((await state(id)).status).toBe("draft")
+      await runAs(founder, () => excludeCandidate({ candidateId: id, reason: "TEST ONLY not suitable" }))
+      await expect(runAs(founder, () => markCandidateEligible({ candidateId: id }))).rejects.toMatchObject({ status: 409 })
+      await expect(pool.query("update expansion_research_candidates set status='draft' where id=$1", [id])).rejects.toThrow(/closed/)
+      await expect(pool.query("delete from expansion_candidate_events where candidate_id=$1", [id])).rejects.toThrow()
     })
   })
 })

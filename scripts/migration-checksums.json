@@ -599,7 +599,8 @@
     {"path":"admin/drizzle/0080_expansion_sector_taxonomy.sql","sha256":"b8e04dc456a7c0fa495e08e5087a22d463f48110b3a2c738fab868f1a9965859","lifecycle":"forward","reason":"Founder-defined canonical sector taxonomy and aliases for exclusivity classification."},
     {"path":"admin/drizzle/0081_expansion_toolkit_meetings.sql","sha256":"0a9e3c2137b038a45185c49528b828cb8eaf92129a96f4127b1b03014a93a66a","lifecycle":"forward","reason":"Manual onboarding fulfilment tracking and founder meeting request workflow."},
     {"path":"admin/drizzle/0082_expansion_review_fixes.sql","sha256":"330a61eb627a71561681d051abdde05734bb75137fc71f60e821a749010f6c7e","lifecycle":"forward","reason":"Independent review fixes: live-only reward uniqueness and complete milestone immutability."},
-    {"path":"admin/drizzle/0083_expansion_review_flags_and_meeting_history.sql","sha256":"8620c0bf1916ea28feaab5887a5de6d0f9c27da25139a7f89f895dc20b6e0f29","lifecycle":"forward","reason":"Trigger-raised qualification review flags, gated reward lifecycle with explicit withdrawal, and protected meeting history with auditable corrections."}
+    {"path":"admin/drizzle/0083_expansion_review_flags_and_meeting_history.sql","sha256":"8620c0bf1916ea28feaab5887a5de6d0f9c27da25139a7f89f895dc20b6e0f29","lifecycle":"forward","reason":"Trigger-raised qualification review flags, gated reward lifecycle with explicit withdrawal, and protected meeting history with auditable corrections."},
+    {"path":"admin/drizzle/0084_expansion_research_allocation.sql","sha256":"20d85f8352126235116135e7b5346cb0fb1b2ae4379babc3bbbe32183085ba7c","lifecycle":"forward","reason":"Researched prospect allocation: founder-held research candidates, append-only allocation history, candidate exclusivity decisions and a guarded opportunity owner."}
   ],
   "journals": {
     "web": {
@@ -879,7 +880,8 @@
         {"idx":80,"version":"7","when":1794951000013,"tag":"0080_expansion_sector_taxonomy","breakpoints":true},
         {"idx":81,"version":"7","when":1794951000014,"tag":"0081_expansion_toolkit_meetings","breakpoints":true},
         {"idx":82,"version":"7","when":1794951000015,"tag":"0082_expansion_review_fixes","breakpoints":true},
-        {"idx":83,"version":"7","when":1794951000016,"tag":"0083_expansion_review_flags_and_meeting_history","breakpoints":true}
+        {"idx":83,"version":"7","when":1794951000016,"tag":"0083_expansion_review_flags_and_meeting_history","breakpoints":true},
+        {"idx":84,"version":"7","when":1794951001016,"tag":"0084_expansion_research_allocation","breakpoints":true}
       ]
     }
   },

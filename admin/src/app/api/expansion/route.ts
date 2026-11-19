@@ -4,12 +4,13 @@ import * as finance from '@/lib/server/expansion-finance'
 import * as programme from '@/lib/server/expansion-programme'
 import * as operations from '@/lib/server/expansion-operations'
 import * as research from '@/lib/server/expansion-research'
+import * as recognition from '@/lib/server/expansion-recognition'
 import { expansionBody, expansionFailure, expansionHeaders } from '@/lib/server/expansion-http'
 import { requireCapability } from '@/lib/server/rbac'
 import { checkDurableRateLimit } from '@/lib/server/rate-limit-store'
 export const dynamic = 'force-dynamic'
 export async function GET() {
-  try { const [workspace,financial,withdrawals,programmeAdmin,toolkitAdmin,meetings,researchAdmin] = await Promise.all([founderSnapshot(),finance.getExpansionFinance(),finance.getWithdrawalAdmin(),programme.getProgrammeAdmin(),operations.getToolkitAdmin(),operations.getMeetings('founder'),research.getResearchAdmin()]); return NextResponse.json({workspace,finance:financial,withdrawals,programmeAdmin,toolkitAdmin,meetings,researchAdmin},{headers:expansionHeaders}) } catch(error) { return expansionFailure(error) }
+  try { const [workspace,financial,withdrawals,programmeAdmin,toolkitAdmin,meetings,researchAdmin,recognitionAdmin] = await Promise.all([founderSnapshot(),finance.getExpansionFinance(),finance.getWithdrawalAdmin(),programme.getProgrammeAdmin(),operations.getToolkitAdmin(),operations.getMeetings('founder'),research.getResearchAdmin(),recognition.getRecognitionAdmin()]); return NextResponse.json({workspace,finance:financial,withdrawals,programmeAdmin,toolkitAdmin,meetings,researchAdmin,recognitionAdmin},{headers:expansionHeaders}) } catch(error) { return expansionFailure(error) }
 }
 export async function POST(request: Request) {
   try {
@@ -27,6 +28,8 @@ export async function POST(request: Request) {
       create_candidate:research.createCandidate, edit_candidate:research.editCandidate, check_candidate:research.checkCandidate, record_screening:research.recordScreening,
       clear_candidate_exclusivity:research.clearCandidateExclusivity, mark_candidate_eligible:research.markCandidateEligible, exclude_candidate:research.excludeCandidate,
       allocate_candidate:research.allocateCandidate, reassign_candidate:research.reassignCandidate, release_candidate:research.releaseCandidate,
+      nominate_founding_partner:recognition.nominateFoundingPartner, add_recognition_evidence:recognition.addRecognitionEvidence, start_recognition_review:recognition.startRecognitionReview, decide_recognition:recognition.decideRecognition,
+      approve_recognition_benefit:recognition.approveRecognitionBenefit, record_benefit_fulfilment:recognition.recordBenefitFulfilment, correct_recognition:recognition.correctRecognition, revoke_recognition:recognition.revokeRecognition,
       set_toolkit_item:operations.setToolkitItem, decide_meeting:operations.decideMeeting,
       set_withdrawal_policy:finance.setWithdrawalPolicy, review_withdrawal:finance.reviewWithdrawal, prepare_withdrawal_payout:finance.prepareWithdrawalPayout,
     }

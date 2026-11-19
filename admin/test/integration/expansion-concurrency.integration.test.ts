@@ -36,6 +36,7 @@ import { founderMutation, partnerMutation, partnerSnapshot } from "../../src/lib
 import { resolveQualificationFlag } from "../../src/lib/server/expansion-programme"
 import { requestMeeting, decideMeeting, correctMeeting } from "../../src/lib/server/expansion-operations"
 import { allocateCandidate, checkCandidate, clearCandidateExclusivity, createCandidate, excludeCandidate, getResearchAdmin, markCandidateEligible, recordScreening, reassignCandidate, releaseCandidate } from "../../src/lib/server/expansion-research"
+import { addRecognitionEvidence, approveRecognitionBenefit, correctRecognition, decideRecognition, getPartnerRecognition, getRecognitionAdmin, nominateFoundingPartner, recordBenefitFulfilment, revokeRecognition, startRecognitionReview } from "../../src/lib/server/expansion-recognition"
 import { translateDbError } from "../../src/lib/db-errors"
 import { approveProgramme, attributeReferral, createProgramme, createReferralCode, decideQualification, getProgrammeOverview, revokeQualification, reviewAchievementReward } from "../../src/lib/server/expansion-programme"
 import { allocateExpansionInvoice, approveExpansionPayout, cancelExpansionPayout, cancelWithdrawal, getWithdrawalOverview, prepareWithdrawalPayout, requestWithdrawal, reviewWithdrawal, setWithdrawalPolicy, getPartnerFinance, prepareExpansionPayout, refundExpansionPayment, settleExpansionPayout, verifyExpansionPayment } from "../../src/lib/server/expansion-finance"
@@ -55,6 +56,7 @@ export function safeExpansionConcurrencyUrl(value: string | undefined): string {
 
 const suffix = randomUUID().slice(0, 8)
 const founder: Actor = { id: randomUUID(), role: "owner", active: true, sessionVersion: 1, displayName: `Concurrency founder ${suffix}` }
+const founder2: Actor = { id: randomUUID(), role: "owner", active: true, sessionVersion: 1, displayName: `Concurrency founder two ${suffix}` }
 const first: Actor = { id: randomUUID(), role: "independent_partner", active: true, sessionVersion: 1, displayName: `Concurrency partner A ${suffix}` }
 const second: Actor = { id: randomUUID(), role: "independent_partner", active: true, sessionVersion: 1, displayName: `Concurrency partner B ${suffix}` }
 let pool: Pool
@@ -138,7 +140,7 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("Expansion real separa
     if (identity.rows[0]?.name !== new URL(url).pathname.slice(1)) throw new Error("Unexpected database; refusing test mutations.")
     state.database = drizzle(pool, { schema })
     state.actors = new AsyncLocalStorage<Actor>()
-    for (const actor of [founder, first, second]) await pool.query("insert into admin_users(id,email,display_name,password_hash,role,active,session_version) values($1,$2,$3,'test-fixture-not-for-login',$4,true,1)", [actor.id, `concurrency-${actor.id}@example.invalid`, actor.displayName, actor.role])
+    for (const actor of [founder, founder2, first, second]) await pool.query("insert into admin_users(id,email,display_name,password_hash,role,active,session_version) values($1,$2,$3,'test-fixture-not-for-login',$4,true,1)", [actor.id, `concurrency-${actor.id}@example.invalid`, actor.displayName, actor.role])
     for (const actor of [first, second]) {
       const applicantId = await application(actor.displayName, `concurrency-${actor.id}@example.invalid`)
       const id = randomUUID()
@@ -916,7 +918,6 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("Expansion real separa
 
   describe("checkpoint 5B: researched prospect allocation on separate connections", () => {
     const today = new Date().toISOString().slice(0, 10)
-    const founder2: Actor = { id: randomUUID(), role: "owner", active: true, sessionVersion: 1, displayName: `Concurrency founder two ${suffix}` }
     const setMarket = (code: string, status: "approved" | "suspended") => runAs(founder, () => founderMutation({ action: "set_market", countryCode: code, countryName: `Testland ${code}`, status, planKeys: ["standard-v2"], legalReviewed: true, accountingReviewed: true, privacyReviewed: true, operationsReviewed: true, approvalReference: `TEST ONLY ${suffix} ${status}` }))
     async function activePartner(tag: string) {
       const actor: Actor = { id: randomUUID(), role: "independent_partner", active: true, sessionVersion: 1, displayName: `TEST ONLY 5B ${tag} ${suffix}` }
@@ -943,7 +944,6 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("Expansion real separa
       else { expect(st).toBe("draft"); await expect(runAs(founder, () => markCandidateEligible({ candidateId: id }))).rejects.toMatchObject({ status: 409, message: expect.stringMatching(pattern) }) }
     }
     beforeAll(async () => {
-      await pool.query("insert into admin_users(id,email,display_name,password_hash,role,active,session_version) values($1,$2,$3,'test-fixture-not-for-login','owner',true,1)", [founder2.id, `concurrency-${founder2.id}@example.invalid`, founder2.displayName])
       await setMarket("QA", "approved")
     }, 30000)
 
@@ -1126,7 +1126,8 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("Expansion real separa
       const results = await race<unknown>([() => discover(id), () => setMkt("QX", "suspended")])
       expect(results[1].status).toBe("fulfilled")
       if (results[0].status === "rejected") expect(results[0].reason).toMatchObject({ status: 409, message: expect.stringContaining(GENERIC) })
-      await expect(scope(id)).rejects.toMatchObject({ status: 409, message: expect.stringContaining(GENERIC) })
+      await expect(scope(id)).rejects.toMatchObject({ status: 409 })                      // refused whichever order the race took
+      expect((await pool.query("select status from expansion_opportunities where id=$1", [id])).rows[0].status).not.toBe("scope_submitted")
     })
     it("scope approval racing a market suspension or a new restriction: seen, or committed after, never lost", async () => {
       await setMkt("QW", "approved")
@@ -1172,6 +1173,91 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("Expansion real separa
       await runAs(founder, () => founderMutation({ action: "set_partner_operating_market", id: p.partnerId, countryCode: "GB" }))
       await scope(id, p.actor)
       await expect(runAs(p.actor, () => founderMutation({ action: "set_partner_operating_market", id: p.partnerId, countryCode: "GB" }))).rejects.toBeTruthy()
+    })
+  })
+
+  describe("checkpoint 5D: Founding Partner recognition", () => {
+    const today = new Date().toISOString().slice(0, 10)
+    async function partnerFor(tag: string) {
+      const actor: Actor = { id: randomUUID(), role: "independent_partner", active: true, sessionVersion: 1, displayName: `TEST ONLY 5D ${tag} ${suffix}` }
+      const email = `recog-${actor.id}@example.invalid`; const applicantId = await application(actor.displayName, email); const partnerId = randomUUID()
+      await pool.query("insert into admin_users(id,email,display_name,password_hash,role,active,session_version) values($1,$2,$3,'test-fixture-not-for-login',$4,true,1)", [actor.id, email, actor.displayName, actor.role])
+      await pool.query("insert into expansion_partners(id,user_id,application_id,agreement_version,confirmed_at,activated_at) values($1,$2,$3,'test-reviewed-v1',now(),now())", [partnerId, actor.id, applicantId])
+      return { actor, partnerId }
+    }
+    const nominate = (partnerId: string) => runAs(founder, () => nominateFoundingPartner({ partnerId, rationale: "TEST ONLY nominated for sustained contribution to the programme" }))
+    const evidence = (id: string) => runAs(founder, () => addRecognitionEvidence({ recognitionId: id, description: "TEST ONLY reviewed introductions and documented support given to other partners", reference: "TEST-REF" }))
+    const approvedFor = async (tag: string) => { const p = await partnerFor(tag); const n = await nominate(p.partnerId); await evidence(n.id); await runAs(founder, () => startRecognitionReview({ recognitionId: n.id })); await runAs(founder, () => decideRecognition({ recognitionId: n.id, decision: "approved", note: "TEST ONLY approved on reviewed evidence" })); return { ...p, id: n.id } }
+    const status = async (id: string) => (await pool.query("select status from expansion_recognitions where id=$1", [id])).rows[0].status
+
+    it("is never automatic: activation and application order grant nothing, and only a founder can nominate", async () => {
+      const p = await partnerFor("auto")
+      expect((await pool.query("select count(*)::int c from expansion_recognitions where partner_id=$1", [p.partnerId])).rows[0].c).toBe(0)
+      expect(await runAs(p.actor, () => getPartnerRecognition())).toEqual({ recognition: null, benefits: [] })
+      await expect(runAs(p.actor, () => nominateFoundingPartner({ partnerId: p.partnerId, rationale: "TEST ONLY self nomination" }))).rejects.toThrow("Forbidden")
+      await expect(runAs(p.actor, () => getRecognitionAdmin())).rejects.toThrow("Forbidden")
+      await expect(nominateFoundingPartner({ partnerId: p.partnerId, rationale: "TEST ONLY unauthenticated" })).rejects.toThrow()
+    })
+    it("runs nomination, evidence, review, approval, benefits, fulfilment, correction and revocation with the database enforcing each step", async () => {
+      const p = await partnerFor("flow"); const n = await nominate(p.partnerId)
+      await expect(runAs(founder, () => decideRecognition({ recognitionId: n.id, decision: "approved", note: "TEST ONLY too early" }))).rejects.toMatchObject({ status: 409 })    // review first
+      await runAs(founder, () => startRecognitionReview({ recognitionId: n.id }))
+      await expect(runAs(founder, () => decideRecognition({ recognitionId: n.id, decision: "approved", note: "TEST ONLY no evidence yet" }))).rejects.toMatchObject({ status: 409, message: expect.stringContaining("supporting evidence") })
+      await evidence(n.id)
+      await expect(runAs(founder, () => decideRecognition({ recognitionId: n.id, decision: "approved", note: "TEST ONLY future", recognitionDate: "2999-01-01" }))).rejects.toMatchObject({ status: 409 })
+      await runAs(founder, () => decideRecognition({ recognitionId: n.id, decision: "approved", note: "TEST ONLY approved on reviewed evidence", recognitionDate: today }))
+      expect(await status(n.id)).toBe("approved")
+      // partner sees the recognition and nothing of the nomination internals
+      const seen = await runAs(p.actor, () => getPartnerRecognition())
+      expect(seen).toMatchObject({ recognition: { kind: "founding_partner", recognitionDate: today, badgeVersion: "founding-partner-v1" } })
+      expect(JSON.stringify(seen)).not.toMatch(/nominated for sustained|reviewed introductions|approved on reviewed/)
+      // benefits: wording may not imply equity, ownership, directorship, employment or guaranteed income
+      for (const bad of ["Equity in the company", "Shareholder status", "A directorship", "Guaranteed employment", "Ownership of the network"]) await expect(runAs(founder, () => approveRecognitionBenefit({ recognitionId: n.id, benefit: bad }))).rejects.toMatchObject({ status: 400 })
+      const b = await runAs(founder, () => approveRecognitionBenefit({ recognitionId: n.id, benefit: "TEST ONLY invitation to a partner roundtable" }))
+      expect((await runAs(p.actor, () => getPartnerRecognition())).benefits).toEqual([{ benefit: "TEST ONLY invitation to a partner roundtable", status: "approved" }])
+      await runAs(founder, () => recordBenefitFulfilment({ benefitId: b.benefitId, outcome: "fulfilled", note: "TEST ONLY invitation sent by a founder" }))
+      await expect(runAs(founder, () => recordBenefitFulfilment({ benefitId: b.benefitId, outcome: "withdrawn", note: "TEST ONLY again" }))).rejects.toMatchObject({ status: 409 })
+      expect((await runAs(p.actor, () => getPartnerRecognition())).benefits).toEqual([{ benefit: "TEST ONLY invitation to a partner roundtable", status: "fulfilled" }])
+      // history is append-only; an approved recognition changes only through a recorded correction
+      await expect(pool.query("update expansion_recognition_evidence set description='tampered' where recognition_id=$1", [n.id])).rejects.toThrow()
+      await expect(pool.query("update expansion_recognitions set recognition_date='2001-01-01' where id=$1", [n.id])).rejects.toThrow(/recorded correction/)
+      await expect(runAs(founder, () => correctRecognition({ recognitionId: n.id, recognitionDate: today, reason: "" }))).rejects.toMatchObject({ status: 400 })
+      await runAs(founder, () => correctRecognition({ recognitionId: n.id, recognitionDate: "2026-01-05", reason: "TEST ONLY date recorded one day late" }))
+      expect((await pool.query("select before_value->>'recognitionDate' b,after_value->>'recognitionDate' a from expansion_recognition_corrections where recognition_id=$1", [n.id])).rows).toEqual([{ b: today, a: "2026-01-05" }])
+      // revocation: terminal, visible nowhere to the partner, and a new nomination needs new evidence
+      await runAs(founder, () => revokeRecognition({ recognitionId: n.id, reason: "TEST ONLY recognition withdrawn after review" }))
+      expect(await runAs(p.actor, () => getPartnerRecognition())).toEqual({ recognition: null, benefits: [] })
+      await expect(pool.query("update expansion_recognitions set status='approved' where id=$1", [n.id])).rejects.toThrow(/closed recognition/)
+      await expect(runAs(founder, () => approveRecognitionBenefit({ recognitionId: n.id, benefit: "TEST ONLY after revocation" }))).rejects.toMatchObject({ status: 409 })
+      const again = await nominate(p.partnerId); expect(again.id).not.toBe(n.id)
+    })
+    it("two founders deciding the same recognition on separate connections: one winner", async () => {
+      const p = await partnerFor("race"); const n = await nominate(p.partnerId); await evidence(n.id); await runAs(founder, () => startRecognitionReview({ recognitionId: n.id }))
+      const results = await race<unknown>([() => runAs(founder, () => decideRecognition({ recognitionId: n.id, decision: "approved", note: "TEST ONLY approve" })), () => runAs(founder2, () => decideRecognition({ recognitionId: n.id, decision: "rejected", note: "TEST ONLY reject" }))])
+      expectSingleWinner(results, /Start the review before deciding/)
+      expect(["approved", "rejected"]).toContain(await status(n.id))
+    })
+    it("duplicate nominations racing: exactly one live nomination per partner", async () => {
+      const p = await partnerFor("dup")
+      const results = await race<unknown>([() => nominate(p.partnerId), () => nominate(p.partnerId)])
+      expect(results.filter(r => r.status === "fulfilled")).toHaveLength(1)
+      expect((await pool.query("select count(*)::int c from expansion_recognitions where partner_id=$1", [p.partnerId])).rows[0].c).toBe(1)
+    })
+    it("revocation racing a benefit approval: consistent, and nothing can be added afterwards", async () => {
+      const a = await approvedFor("rv")
+      const results = await race<unknown>([() => runAs(founder, () => revokeRecognition({ recognitionId: a.id, reason: "TEST ONLY race revoke" })), () => runAs(founder2, () => approveRecognitionBenefit({ recognitionId: a.id, benefit: "TEST ONLY racing benefit" }))])
+      expect(results[0].status).toBe("fulfilled")
+      expect(await status(a.id)).toBe("revoked")
+      await expect(runAs(founder, () => approveRecognitionBenefit({ recognitionId: a.id, benefit: "TEST ONLY too late" }))).rejects.toMatchObject({ status: 409 })
+    })
+    it("recognition cannot be granted to a partner who is no longer active, and partner B never sees partner A's recognition", async () => {
+      const a = await approvedFor("vis-a"), b = await partnerFor("vis-b")
+      expect((await runAs(b.actor, () => getPartnerRecognition())).recognition).toBeNull()
+      expect((await runAs(a.actor, () => getPartnerRecognition())).recognition).not.toBeNull()
+      const gone = await partnerFor("gone"); const n = await nominate(gone.partnerId); await evidence(n.id); await runAs(founder, () => startRecognitionReview({ recognitionId: n.id }))
+      await pool.query("update admin_users set active=false where id=$1", [gone.actor.id])
+      await expect(runAs(founder, () => decideRecognition({ recognitionId: n.id, decision: "approved", note: "TEST ONLY should be refused" }))).rejects.toMatchObject({ status: 409, message: expect.stringContaining("no longer active") })
+      await expect(runAs(gone.actor, () => getPartnerRecognition())).rejects.toBeTruthy()
     })
   })
 })

@@ -2,13 +2,14 @@ import { NextResponse } from 'next/server'
 import { partnerSnapshot, partnerMutation } from '@/lib/server/expansion'
 import { getMeetings, getToolkit, requestMeeting, respondToMeeting } from '@/lib/server/expansion-operations'
 import { createReferralCode, getProgrammeOverview } from '@/lib/server/expansion-programme'
+import { getPartnerRecognition } from '@/lib/server/expansion-recognition'
 import { cancelWithdrawal, getPartnerFinance, getWithdrawalOverview, requestWithdrawal } from '@/lib/server/expansion-finance'
 import { expansionBody, expansionFailure, expansionHeaders } from '@/lib/server/expansion-http'
 import { requireCapability } from '@/lib/server/rbac'
 import { checkDurableRateLimit } from '@/lib/server/rate-limit-store'
 export const dynamic = 'force-dynamic'
 export async function GET() {
-  try { const [workspace,finance,withdrawals,programme,toolkit,meetings] = await Promise.all([partnerSnapshot(),getPartnerFinance(),getWithdrawalOverview(),getProgrammeOverview(),getToolkit(),getMeetings('partner')]); return NextResponse.json({workspace,finance,withdrawals,programme,toolkit,meetings},{headers:expansionHeaders}) } catch(error) { return expansionFailure(error) }
+  try { const [workspace,finance,withdrawals,programme,toolkit,meetings,recognition] = await Promise.all([partnerSnapshot(),getPartnerFinance(),getWithdrawalOverview(),getProgrammeOverview(),getToolkit(),getMeetings('partner'),getPartnerRecognition()]); return NextResponse.json({workspace,finance,withdrawals,programme,toolkit,meetings,recognition},{headers:expansionHeaders}) } catch(error) { return expansionFailure(error) }
 }
 export async function POST(request: Request) {
   try {

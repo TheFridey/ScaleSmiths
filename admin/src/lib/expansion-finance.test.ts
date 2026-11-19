@@ -69,6 +69,7 @@ describe("versioned exact partner commission", () => {
     expect(() => buildAcceptedTerms({ plan: "standard-v2", scheduleId: "custom", buildInstalmentsPence: [50000, 50000], scheduleApprovalReference: "x" })).toThrow(/add up/)
     expect(() => buildAcceptedTerms({ plan: "standard-v2", scheduleId: "nonsense" })).toThrow(/approved payment schedule/)
     expect(() => buildAcceptedTerms({ plan: "standard-v2", buildFeePence: 150000 })).toThrow(/discount allowance/)
+    expect(() => buildAcceptedTerms({ plan: "standard-v2", buildFeePence: 150000, approvedDiscountFeePence: 100000 })).toThrow(/discount allowance/)
     expect(() => buildAcceptedTerms({ plan: "standard-v2", recurringPence: 1 })).toThrow()
   })
   it("Cases D/F: Growth Partnership-only earns £105 once on a £4,200 commitment with no build", () => {
@@ -87,7 +88,7 @@ describe("versioned exact partner commission", () => {
   })
   it("pooled rounding: fragmenting odd-penny payments across milestones never beats one cumulative rounding", () => {
     const terms = buildAcceptedTerms({ plan: "bespoke-v1", buildInstalmentsPence: [5, 5, 5, 5] })
-    // £0.05 x 4 = 20p: exactly 6p cumulatively, while naive per-milestone rounding would pay 2p+2p+4p... = 8p
+    // £0.05 x 4 = 20p: exactly 6p cumulatively; naive per-milestone rounding (5p, 10p, 5p) would pay 2p+3p+2p = 7p
     const total = run(terms, [["deposit", 5], ["interim", 5], ["interim", 5], ["final", 5]]).reduce((a, b) => a + b, 0)
     expect(total).toBe(Number(commissionAt(BigInt(20), 3000)))
     expect(total).toBe(6)
@@ -99,10 +100,26 @@ describe("versioned exact partner commission", () => {
   })
   it("tampered or inconsistent snapshots are rejected", () => {
     const good = buildAcceptedTerms({ plan: "standard-v2" })
-    const bad = (mutate: (t: any) => void) => { const t = JSON.parse(JSON.stringify(good)); mutate(t); return () => parseCommissionTerms(t) }
+    type Mutable = { milestones: Record<string, string>; commitment: Record<string, unknown> }
+    const bad = (mutate: (t: Mutable) => void) => { const t = JSON.parse(JSON.stringify(good)) as Mutable; mutate(t); return () => parseCommissionTerms(t) }
     expect(bad(t => { t.commitment.minTermMonths = 6; t.commitment.minimumContractValuePence = "410000" })).toThrow(/twelve-month/)
     expect(bad(t => { t.milestones.final = "100001" })).toThrow(/add up/)
     expect(bad(t => { t.commitment.minimumContractValuePence = "1" })).toThrow(/contract value/)
-    expect(bad(t => { delete t.commitment })).toThrow(/commitment/)
+    expect(bad(t => { delete (t as { commitment?: unknown }).commitment })).toThrow(/commitment/)
+  })
+  it("Cases E/F + table: approved discounted builds earn £555 / £405 / £255 / £105 with an unchanged twelve-month commitment", () => {
+    const totals = [[200000, 70500], [150000, 55500], [100000, 40500], [50000, 25500], [0, 10500]].map(([fee, expected]) => {
+      const terms = buildAcceptedTerms({ plan: "standard-v2", buildFeePence: fee, approvedDiscountFeePence: fee })
+      expect(terms.commitment).toMatchObject({ recurringPence: "35000", minTermMonths: 12, buildPence: String(fee) })
+      const payments: Array<["deposit" | "final" | "first_retainer", number]> = fee === 0 ? [["first_retainer", 35000]] : [["deposit", fee / 2], ["final", fee / 2], ["first_retainer", 35000]]
+      return [run(terms, payments).reduce((a, b) => a + b, 0), expected]
+    })
+    for (const [actual, expected] of totals) expect(actual).toBe(expected)
+  })
+  it("free build keeps a distinct immutable plan version and cannot be paid as a build", () => {
+    const terms = buildAcceptedTerms({ plan: "standard-v2", buildFeePence: 0, approvedDiscountFeePence: 0 })
+    expect(terms.planVersion).toBe("standard-v2.d0")
+    expect(() => commissionDelta(terms, "deposit", BigInt(0), BigInt(1), BigInt(0))).toThrow()
+    expect(() => buildAcceptedTerms({ plan: "standard-v2", buildFeePence: 150000, approvedDiscountFeePence: 150000, scheduleId: "deposit-completion" })).toThrow(/equal instalments/)
   })
 })

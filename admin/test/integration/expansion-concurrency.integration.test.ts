@@ -350,4 +350,61 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("Expansion real separa
       expect((await pool.query("select enabled from expansion_plan_settings where plan_key='growth-only-v1'")).rows[0].enabled).toBe(false)
     })
   })
+
+  describe("checkpoint 2B: allowances and additional claims on separate connections", () => {
+    async function approvedFor(actor: Actor, tag: string) {
+      const id = await submitted(tag, actor)
+      const week = (await pool.query<{ next: string }>("select (max(period)+7)::text as next from expansion_capacity")).rows[0].next
+      await runAs(founder, () => founderMutation({ action: "capacity", period: week, hours: 10, commitmentsReviewed: true, rationale: "TEST ONLY allowance race allocation" }))
+      await approve(id, week)
+      return id
+    }
+    const setPolicy = (partnerId: string, count: number) => runAs(founder, () => founderMutation({ action: "set_discount_policy", partnerId, periodStart: "2020-01-01", periodEnd: "2099-01-01", allowanceCount: count, permittedFeesPence: [150000, 0], approvalReference: "TEST ONLY allowance approval" }))
+    const reserve = (id: string) => runAs(founder, () => founderMutation({ action: "reserve_discount", id, feePence: 150000, reason: "TEST ONLY commercial reason" }))
+
+    it("Case N: two simultaneous reservations against one remaining allowance admit exactly one", async () => {
+      const partner = await fundedPartner("allowance-n")
+      await pool.query("delete from expansion_discount_policies where partner_id=$1", [partner.partnerId])
+      await setPolicy(partner.partnerId, 1)
+      const a = await approvedFor(partner.actor, "n-a"), b = await approvedFor(partner.actor, "n-b")
+      const results = await race([() => reserve(a), () => reserve(b)])
+      expectSingleWinner(results, /exhausted/)
+      const used = await pool.query("select count(*)::int c from expansion_discount_reservations r join expansion_discount_policies p on p.id=r.policy_id where p.partner_id=$1 and r.status in ('reserved','consumed')", [partner.partnerId])
+      expect(used.rows[0].c).toBe(1)
+    })
+    it("never overspends under six-way contention for a three-slot allowance", async () => {
+      const partner = await fundedPartner("allowance-six")
+      await pool.query("delete from expansion_discount_reservations where policy_id in (select id from expansion_discount_policies where partner_id=$1)", [partner.partnerId]).catch(() => undefined)
+      await setPolicy(partner.partnerId, 3)
+      const ids: string[] = []
+      for (let i = 0; i < 6; i++) ids.push(await approvedFor(partner.actor, `six-${i}`))
+      const results = await race(ids.map(id => () => reserve(id)))
+      expect(results.filter(r => r.status === "fulfilled")).toHaveLength(3)
+      expect(results.filter(r => r.status === "rejected").every(r => (r as PromiseRejectedResult).reason?.status === 409)).toBe(true)
+    })
+    it("serialises a policy reduction against concurrent reservations so use never exceeds the allowance", async () => {
+      const partner = await fundedPartner("allowance-lower")
+      await setPolicy(partner.partnerId, 2)
+      const [x, y] = [await approvedFor(partner.actor, "l-a"), await approvedFor(partner.actor, "l-b")]
+      await reserve(x)
+      const results = await race([() => reserve(y), () => setPolicy(partner.partnerId, 1)])
+      const used = (await pool.query("select count(*)::int c from expansion_discount_reservations r join expansion_discount_policies p on p.id=r.policy_id where p.partner_id=$1 and r.status in ('reserved','consumed')", [partner.partnerId])).rows[0].c
+      const allowance = (await pool.query("select allowance_count c from expansion_discount_policies where partner_id=$1", [partner.partnerId])).rows[0].c
+      expect(used).toBeLessThanOrEqual(allowance)
+      expect(results.some(r => r.status === "rejected")).toBe(true)
+    })
+    it("admits one additional claim when two partners claim the same project, and one approval when founders review concurrently", async () => {
+      const label = `Booking ${suffix}`, domain = `existing-${suffix}.example`
+      const claim = (actor: Actor) => runAs(actor, () => partnerMutation({ action: "request_additional", businessName: "TEST ONLY Existing Ltd", website: domain, projectLabel: label, contribution: "TEST ONLY documented introduction." }))
+      const results = await race([() => claim(first), () => claim(second)])
+      expect(results.every(r => r.status === "fulfilled")).toBe(true)
+      const claims = await pool.query<{ id: string }>("select id from expansion_additional_claims where normalized_domain=$1", [domain])
+      expect(claims.rows).toHaveLength(1)
+      const approve2 = () => runAs(founder, () => founderMutation({ action: "review_additional", claimId: claims.rows[0].id, decision: "approved", clientId, attributionConfirmed: true, notes: "TEST ONLY attribution evidence" }))
+      const reviews = await race([approve2, approve2])
+      expectSingleWinner(reviews, /pending/)
+      expect((await pool.query("select count(*)::int c from expansion_opportunities where additional_claim_id=$1", [claims.rows[0].id])).rows[0].c).toBe(1)
+      expect((await pool.query("select count(*)::int c from clients where id=$1", [clientId])).rows[0].c).toBe(1)
+    })
+  })
 })

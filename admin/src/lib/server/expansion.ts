@@ -39,14 +39,19 @@ export async function partnerSnapshot() {
     const opportunities = await tx.execute(sql`select o.id,o.status,o.discovery,o.scope,o.scope_version,o.created_at,p.business_name,p.website_url,p.contact_name,p.contact_email,p.next_follow_up_at,c.id contract_id from expansion_opportunities o join prospects p on p.id=o.prospect_id left join expansion_contracts c on c.opportunity_id=o.id where o.partner_id=${id} order by o.created_at desc`)
     const resources = await tx.execute(sql`select id,title,category,version,audience,content,status,created_at from expansion_resources where status='published' and audience='partner' order by created_at desc`)
     const capacity = await tx.execute(sql`select c.period,greatest(0,c.available_hours-coalesce(sum(r.hours) filter(where r.status<>'released'),0))::integer remaining_hours from expansion_capacity c left join expansion_reservations r on r.period=c.period where c.period>=current_date-7 group by c.period order by c.period`)
-    return { partnerId:id, displayName:actor.displayName, opportunities:opportunities.rows, resources:resources.rows, capacity:capacity.rows }
+    // Partners see only their own allowance and claim status; never customer identity or reviewer notes.
+    const allowances = await tx.execute(sql`select p.period_start,p.period_end,p.allowance_count,p.permitted_fees_pence,
+      (select count(*) from expansion_discount_reservations r where r.policy_id=p.id and r.status in ('reserved','consumed'))::integer used
+      from expansion_discount_policies p where p.partner_id=${id} and p.period_end>current_date order by p.period_start`)
+    const claims = await tx.execute(sql`select id,business_name,project_label,status,created_at from expansion_additional_claims where partner_id=${id} order by created_at desc`)
+    return { partnerId:id, displayName:actor.displayName, opportunities:opportunities.rows, resources:resources.rows, capacity:capacity.rows, discountAllowances:allowances.rows, additionalClaims:claims.rows }
   })
 }
 export async function founderSnapshot() {
   const actor = await requireCapability('expansion.manage')
   return db.transaction(async tx=>{
   await currentActor(tx,actor,'expansion.manage')
-  const [applications,partners,opportunities,capacity,resources,clients,planSettings] = await Promise.all([
+  const [applications,partners,opportunities,capacity,resources,clients,planSettings,discountPolicies,claims] = await Promise.all([
     tx.execute(sql`select * from partner_applications order by submitted_at desc limit 200`),
     tx.execute(sql`select p.id,p.user_id,p.agreement_version,p.activated_at,u.display_name,u.email,u.active from expansion_partners p join admin_users u on u.id=p.user_id order by p.created_at desc`),
     tx.execute(sql`select o.*,p.business_name,u.display_name partner_name,c.id contract_id from expansion_opportunities o join prospects p on p.id=o.prospect_id join expansion_partners ep on ep.id=o.partner_id join admin_users u on u.id=ep.user_id left join expansion_contracts c on c.opportunity_id=o.id order by o.created_at desc limit 500`),
@@ -54,8 +59,10 @@ export async function founderSnapshot() {
     tx.execute(sql`select * from expansion_resources order by created_at desc`),
     tx.execute(sql`select id,name from clients order by name`),
     tx.execute(sql`select plan_key,enabled,updated_at from expansion_plan_settings order by plan_key`),
+    tx.execute(sql`select p.id,p.partner_id,u.display_name partner_name,p.period_start,p.period_end,p.allowance_count,p.permitted_fees_pence,p.approval_reference,(select count(*) from expansion_discount_reservations r where r.policy_id=p.id and r.status in ('reserved','consumed'))::integer used from expansion_discount_policies p join expansion_partners ep on ep.id=p.partner_id join admin_users u on u.id=ep.user_id order by p.period_end desc limit 100`),
+    tx.execute(sql`select c.id,c.business_name,c.normalized_domain,c.project_label,c.contribution,c.status,c.created_at,u.display_name partner_name from expansion_additional_claims c join expansion_partners ep on ep.id=c.partner_id join admin_users u on u.id=ep.user_id order by (c.status='pending') desc,c.created_at desc limit 100`),
   ])
-  return { planSettings:planSettings.rows,applications:applications.rows,partners:partners.rows,opportunities:opportunities.rows,capacity:capacity.rows,resources:resources.rows,clients:clients.rows }
+  return { discountPolicies:discountPolicies.rows,additionalClaims:claims.rows,planSettings:planSettings.rows,applications:applications.rows,partners:partners.rows,opportunities:opportunities.rows,capacity:capacity.rows,resources:resources.rows,clients:clients.rows }
   })
 }
 export async function partnerMutation(input: Input) {
@@ -80,6 +87,17 @@ export async function partnerMutation(input: Input) {
       await tx.execute(sql`insert into expansion_opportunities(id,partner_id,prospect_id,normalized_domain,company_number) values(${id},${partnerId},${created.rows[0].id},${domain},${companyNumber})`)
       await audit(tx,actor.id,id,'prospect_registered',{domain})
       return {id}
+    }
+    if (input.action === 'request_additional') {
+      const name = expansionText(input.businessName,'Business name',200)
+      const domain = prospectDomain(input.website)
+      const label = expansionText(input.projectLabel,'Project description',120)
+      const contribution = expansionText(input.contribution,'Your documented contribution to this new opportunity',2000)
+      const receipt = randomUUID()
+      // The same acknowledgement is returned whether or not the business is an existing customer or already claimed.
+      await tx.execute(sql`insert into expansion_additional_claims(id,partner_id,business_name,normalized_domain,project_label,contribution) values(${receipt},${partnerId},${name},${domain},${label},${contribution}) on conflict do nothing`)
+      await audit(tx,actor.id,domain,'additional_business_requested',{label})
+      return {id:receipt,received:true}
     }
     const id = expansionId(input.id)
     const row = await opportunity(tx,id,partnerId)
@@ -182,8 +200,74 @@ export async function founderMutation(input: Input) {
       await audit(tx,actor.id,planKey,'plan_availability_changed',{enabled:input.enabled,reason})
       return {planKey,enabled:input.enabled}
     }
+    if (input.action === 'set_discount_policy') {
+      const partnerId = expansionId(input.partnerId)
+      const start = expansionText(input.periodStart,'Period start',10), end = expansionText(input.periodEnd,'Period end',10)
+      if (!/^\d{4}-\d\d-\d\d$/.test(start) || !/^\d{4}-\d\d-\d\d$/.test(end) || end <= start) throw new ExpansionError('Choose a valid allowance period.')
+      const count = expansionInteger(input.allowanceCount,'allowance count',0,50)
+      const fees = Array.isArray(input.permittedFeesPence) ? input.permittedFeesPence : []
+      if (!fees.length || fees.length > 12 || fees.some(f => !Number.isSafeInteger(f) || (f as number) < 0 || (f as number) >= 200000)) throw new ExpansionError('Permitted build fees must be integer pence below the standard £2,000.')
+      const approval = expansionText(input.approvalReference,'Allowance approval reference',500)
+      await tx.execute(sql`select id from expansion_partners where id=${partnerId} for update`)
+      const overlap = await tx.execute(sql`select id from expansion_discount_policies where partner_id=${partnerId} and period_start<>${start}::date and period_start<${end}::date and period_end>${start}::date`)
+      if (overlap.rows[0]) throw new ExpansionError('Allowance periods for one partner cannot overlap.',409)
+      const existing = await tx.execute(sql`select id from expansion_discount_policies where partner_id=${partnerId} and period_start=${start}::date for update`)
+      const arrayValue = sql`array[${sql.join((fees as number[]).map(f => sql`${f}::integer`), sql`, `)}]::integer[]`
+      if (existing.rows[0]) {
+        const used = await tx.execute(sql`select count(*)::integer c from expansion_discount_reservations where policy_id=${String(existing.rows[0].id)} and status in ('reserved','consumed')`)
+        if (count < Number(used.rows[0].c)) throw new ExpansionError('The allowance cannot be lowered below discounts already reserved or consumed.',409)
+        await tx.execute(sql`update expansion_discount_policies set period_end=${end}::date,allowance_count=${count},permitted_fees_pence=${arrayValue},approval_reference=${approval},approved_by=${actor.id},updated_at=now() where id=${String(existing.rows[0].id)}`)
+      } else await tx.execute(sql`insert into expansion_discount_policies(id,partner_id,period_start,period_end,allowance_count,permitted_fees_pence,approval_reference,approved_by) values(${randomUUID()},${partnerId},${start}::date,${end}::date,${count},${arrayValue},${approval},${actor.id})`)
+      await audit(tx,actor.id,partnerId,'discount_policy_set',{start,end,count,fees,approval})
+      return {partnerId}
+    }
+    if (input.action === 'review_additional') {
+      const claimId = expansionId(input.claimId)
+      const decision = String(input.decision)
+      if (!['approved','rejected'].includes(decision)) throw new ExpansionError('Choose approve or reject.')
+      const notes = expansionText(input.notes,'Attribution review decision and evidence',3000)
+      const claim = (await tx.execute(sql`select * from expansion_additional_claims where id=${claimId} for update`)).rows[0] as Row | undefined
+      if (!claim || claim.status !== 'pending') throw new ExpansionError('Choose a pending additional-business claim.',409)
+      if (decision === 'rejected') {
+        await tx.execute(sql`update expansion_additional_claims set status='rejected',reviewed_by=${actor.id},review_notes=${notes},reviewed_at=now() where id=${claimId}`)
+        await audit(tx,actor.id,claimId,'additional_claim_rejected',{notes})
+        return {claimId,status:'rejected'}
+      }
+      if (input.attributionConfirmed !== true) throw new ExpansionError('Confirm documented partner attribution for this new, separately scoped business.')
+      const clientId = expansionInteger(input.clientId,'client',1,2147483647)
+      if (!(await tx.execute(sql`select id from clients where id=${clientId}`)).rows[0]) throw new ExpansionError('Select an existing canonical client; customers are never duplicated.')
+      const owner = (await tx.execute(sql`select user_id from expansion_partners where id=${String(claim.partner_id)}`)).rows[0]
+      const prospect = await tx.execute(sql`insert into prospects(business_name,website_url,owner_user_id,source) values(${String(claim.business_name)+' - '+String(claim.project_label)},${`https://${String(claim.normalized_domain)}`},${String(owner.user_id)},'referral') returning id`)
+      const opportunityId = randomUUID()
+      await tx.execute(sql`insert into expansion_opportunities(id,partner_id,prospect_id,client_id,normalized_domain,additional_claim_id) values(${opportunityId},${String(claim.partner_id)},${prospect.rows[0].id},${clientId},${String(claim.normalized_domain)},${claimId})`)
+      await tx.execute(sql`update expansion_additional_claims set status='approved',client_id=${clientId},opportunity_id=${opportunityId},reviewed_by=${actor.id},review_notes=${notes},reviewed_at=now() where id=${claimId}`)
+      await audit(tx,actor.id,claimId,'additional_claim_approved',{clientId,opportunityId,notes})
+      return {claimId,status:'approved',opportunityId}
+    }
     const id = expansionId(input.id)
     const row = await opportunity(tx,id)
+    if (input.action === 'reserve_discount') {
+      if (row.status !== 'approved') throw new ExpansionError('Approve scope and reserve delivery capacity before reserving a discount.',409)
+      const fee = expansionInteger(input.feePence,'approved build fee',0,199999)
+      const reason = expansionText(input.reason,'Commercial reason for the discount',1000)
+      // The policy row lock serialises every concurrent reservation against one allowance.
+      const policy = (await tx.execute(sql`select id,allowance_count,permitted_fees_pence from expansion_discount_policies where partner_id=${String(row.partner_id)} and period_start<=current_date and period_end>current_date for update`)).rows[0] as Row | undefined
+      if (!policy) throw new ExpansionError('No approved discount allowance is available for this partner.',409)
+      if (!(policy.permitted_fees_pence as number[]).includes(fee)) throw new ExpansionError('That build fee is not a permitted discount for this partner.',403)
+      if ((await tx.execute(sql`select id from expansion_discount_reservations where opportunity_id=${id} and status in ('reserved','consumed')`)).rows[0]) throw new ExpansionError('This opportunity already has an active discount reservation.',409)
+      const used = await tx.execute(sql`select count(*)::integer c from expansion_discount_reservations where policy_id=${String(policy.id)} and status in ('reserved','consumed')`)
+      if (Number(used.rows[0].c) >= Number(policy.allowance_count)) throw new ExpansionError('The discount allowance for this period is exhausted.',409)
+      const reservationId = randomUUID()
+      await tx.execute(sql`insert into expansion_discount_reservations(id,policy_id,opportunity_id,build_fee_pence,reserved_by,reason) values(${reservationId},${String(policy.id)},${id},${fee},${actor.id},${reason})`)
+      await audit(tx,actor.id,id,'discount_reserved',{reservationId,fee,reason})
+      return {id,reservationId}
+    }
+    if (input.action === 'release_discount') {
+      const released = await tx.execute(sql`update expansion_discount_reservations set status='released',resolved_at=now() where opportunity_id=${id} and status='reserved' returning id`)
+      if (!released.rows[0]) throw new ExpansionError('There is no unconsumed discount reservation to release.',409)
+      await audit(tx,actor.id,id,'discount_released',{reason:expansionText(input.reason,'Release reason',1000)})
+      return {id}
+    }
     if (input.action === 'cancel_contract') {
       if (row.status !== 'contract_accepted') throw new ExpansionError('Choose an accepted contract for cancellation.',409)
       const reason = expansionText(input.reason,'Approved cancellation evidence and reason',3000)
@@ -228,15 +312,26 @@ export async function founderMutation(input: Input) {
       const canonicalProspect = await tx.execute(sql`select converted_client_id from prospects where id=${row.prospect_id} for update`)
       const existingConversion = await tx.execute(sql`select client_id from prospect_conversions where prospect_id=${row.prospect_id}`)
       if ((canonicalProspect.rows[0]?.converted_client_id && canonicalProspect.rows[0].converted_client_id!==clientId) || (existingConversion.rows[0] && existingConversion.rows[0].client_id!==clientId)) throw new ExpansionError('This prospect is already linked to a different client. Resolve the canonical CRM relationship before acceptance.',409)
+      let discountReservationId: string | null = null
       let planPricing: { websitePence: number; monthlyPence: number } | null = null
       let planTerms = null as ReturnType<typeof parseCommissionTerms> | null
       if (input.plan !== undefined) {
         if (input.terms !== undefined) throw new ExpansionError('Choose either an approved plan or legacy terms, not both.')
-        const request = input.plan as PlanRequest
+        const request = { ...(input.plan as PlanRequest) }
+        delete request.approvedDiscountFeePence // server-only field; never trust the client
         if (!request || typeof request !== 'object' || !(COMMERCIAL_PLAN_KEYS as readonly string[]).includes(request.plan)) throw new ExpansionError('Choose an approved commercial plan.')
         // Share-lock serialises acceptance against a founder disabling the plan.
         const setting = await tx.execute(sql`select enabled from expansion_plan_settings where plan_key=${request.plan as CommercialPlanKey} for share`)
         if (!setting.rows[0]?.enabled) throw new ExpansionError('This commercial plan is not enabled.',409)
+        if (row.additional_claim_id && Number(row.client_id) !== clientId) throw new ExpansionError('An approved additional opportunity must be contracted with its attributed existing client.',409)
+        if (request.plan === 'standard-v2' && request.buildFeePence !== undefined && request.buildFeePence !== 200000) {
+          const held = (await tx.execute(sql`select r.id,r.build_fee_pence,p.period_end<=current_date expired from expansion_discount_reservations r join expansion_discount_policies p on p.id=r.policy_id where r.opportunity_id=${id} and r.status='reserved' for update of r`)).rows[0] as Row | undefined
+          if (!held) throw new ExpansionError('A build fee below the standard £2,000 needs an approved discount allowance.',403)
+          if (held.expired) throw new ExpansionError('The discount allowance period has expired; release and re-approve.',409)
+          if (Number(held.build_fee_pence) !== request.buildFeePence) throw new ExpansionError('The requested build fee does not match the approved discount reservation.',409)
+          request.approvedDiscountFeePence = request.buildFeePence
+          discountReservationId = String(held.id)
+        }
         try { planTerms = buildAcceptedTerms(request) } catch (error) { throw new ExpansionError(error instanceof Error ? error.message : 'Invalid commercial plan.', (error as { status?: number }).status ?? 400) }
         planPricing = { websitePence: Number(planTerms.commitment!.buildPence), monthlyPence: Number(planTerms.commitment!.recurringPence) }
       }
@@ -258,6 +353,7 @@ export async function founderMutation(input: Input) {
       const category = monthly > 0 ? 'premium_partnership' : 'website_build'
       const commercial = await tx.execute(sql`insert into commercial_contracts(client_id,prospect_id,category,status,monthly_amount,one_off_amount,evidence,starts_at,actor_user_id) values(${clientId},${row.prospect_id},${category},'confirmed',${monthly},${website},${reference},now(),${actor.id}) returning id`)
       await tx.execute(sql`insert into expansion_contracts(id,opportunity_id,client_id,commercial_contract_id,terms,scope_snapshot,scope_version,agreement_reference,accepted_at,created_by) values(${contractId},${id},${clientId},${commercial.rows[0].id},${JSON.stringify(terms)}::jsonb,${JSON.stringify(row.scope)}::jsonb,${row.scope_version},${reference},now(),${actor.id})`)
+      if (discountReservationId) await tx.execute(sql`update expansion_discount_reservations set status='consumed',contract_id=${contractId},resolved_at=now() where id=${discountReservationId} and status='reserved'`)
       await tx.execute(sql`update expansion_opportunities set status='contract_accepted',client_id=${clientId},updated_at=now() where id=${id}`)
       await tx.execute(sql`update prospects set stage='won',converted_client_id=${clientId},won_at=now(),updated_at=now() where id=${row.prospect_id}`)
       if (!existingConversion.rows[0]) await tx.execute(sql`insert into prospect_conversions(prospect_id,client_id,actor_user_id,client_action,metadata_json) values(${row.prospect_id},${clientId},${actor.id},'linked',${JSON.stringify({source:'operation-expansion',contractId,scopeVersion:row.scope_version,scopeSnapshot:row.scope,agreementReference:reference})}::jsonb)`)

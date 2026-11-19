@@ -59,10 +59,11 @@ describe("production Expansion prospect/scope/capacity service against PostgreSQ
     // 0073 also widens a finance-table constraint (covered in expansion-finance.test.ts); this suite needs only its plan-settings table.
     const plans = readFileSync(new URL("../../../drizzle/0073_expansion_commercial_plans.sql", import.meta.url), "utf8")
     await state.database.exec(plans.slice(plans.indexOf("CREATE TABLE expansion_plan_settings")))
+    await state.database.exec(readFileSync(new URL("../../../drizzle/0074_expansion_allowances_and_additional_claims.sql", import.meta.url), "utf8"))
   }, 30000)
   beforeEach(async () => {
     asFounder()
-    await state.database!.exec("truncate expansion_audit,expansion_suppressions,expansion_resources,expansion_contracts,expansion_reservations,expansion_capacity,expansion_opportunities,expansion_partners,commercial_contracts,commercial_contacts,prospects,clients,partner_applications,admin_users restart identity cascade")
+    await state.database!.exec("truncate expansion_discount_reservations,expansion_discount_policies,expansion_additional_claims,expansion_audit,expansion_suppressions,expansion_resources,expansion_contracts,expansion_reservations,expansion_capacity,expansion_opportunities,expansion_partners,commercial_contracts,commercial_contacts,prospects,clients,partner_applications,admin_users restart identity cascade")
     await state.database!.query("insert into admin_users values($1,'owner',true,1,'Founder','founder@example.invalid'),($2,'independent_partner',true,1,'Partner A','a@example.invalid'),($3,'independent_partner',true,1,'Partner B','b@example.invalid')", [FOUNDER, USER, OTHER_USER])
     await state.database!.exec("insert into partner_applications(name,email,status) values('Partner A','a@example.invalid','activated'),('Partner B','b@example.invalid','activated'); insert into clients(id,name) values(1,'Canonical client');")
     await state.database!.query("insert into expansion_partners(id,user_id,application_id,agreement_version,confirmed_at,activated_at) values($1,$2,1,'test-approved-v1',now(),now()),($3,$4,2,'test-approved-v1',now(),now())", [PARTNER, USER, OTHER_PARTNER, OTHER_USER])
@@ -226,6 +227,110 @@ describe("production Expansion prospect/scope/capacity service against PostgreSQ
       await expect(founderMutation({ action: "accept_contract", id, clientId: 1, plan: { plan: "standard-v2" }, agreementReference: "x" })).rejects.toThrow()
       asFounder()
       await expect(founderMutation({ action: "set_plan_enabled", planKey: "nonsense", enabled: true, reason: "x" })).rejects.toThrow("known commercial plan")
+    })
+  })
+
+  describe("checkpoint 2B: discount allowances", () => {
+    const enable = () => founderMutation({ action: "set_plan_enabled", planKey: "standard-v2", enabled: true, reason: "Synthetic approval for test" })
+    const policy = (over: Record<string, unknown> = {}) => founderMutation({ action: "set_discount_policy", partnerId: PARTNER, periodStart: "2020-01-01", periodEnd: "2099-01-01", allowanceCount: 1, permittedFeesPence: [150000, 0], approvalReference: "SYNTHETIC allowance approval", ...over })
+    const ready = async (tag: string) => { const id = await submitted(tag); asFounder(); await capacity(30); await approval(id); return id }
+    const reserve = (id: string, feePence: number) => founderMutation({ action: "reserve_discount", id, feePence, reason: "Synthetic commercial reason" })
+    const accept = (id: string, plan: Record<string, unknown>) => founderMutation({ action: "accept_contract", id, clientId: 1, plan, agreementReference: "Signed" })
+
+    it("defaults to no allowance: nothing can be reserved until a founder approves a policy", async () => {
+      const id = await ready("a"); await enable()
+      await expect(reserve(id, 150000)).rejects.toThrow("No approved discount allowance")
+      await expect(accept(id, { plan: "standard-v2", buildFeePence: 150000 })).rejects.toThrow("discount allowance")
+    })
+    it("enforces permitted fees, the allowance count and release/reuse", async () => {
+      const a = await ready("a"), b = await ready("b"); await enable(); await policy()
+      await expect(reserve(a, 100000)).rejects.toThrow("not a permitted discount")
+      await reserve(a, 150000)
+      await expect(reserve(a, 150000)).rejects.toThrow("already has an active")
+      await expect(reserve(b, 150000)).rejects.toThrow("exhausted")
+      await founderMutation({ action: "release_discount", id: a, reason: "Customer declined" })
+      await reserve(b, 150000)
+    })
+    it("consumes the reservation on acceptance, stores the discounted commitment and makes the reservation immutable", async () => {
+      const id = await ready("a"); await enable(); await policy(); await reserve(id, 150000)
+      // A client-supplied approval field is ignored; the mismatching fee is refused.
+      await expect(accept(id, { plan: "standard-v2", buildFeePence: 100000, approvedDiscountFeePence: 100000 })).rejects.toThrow("does not match")
+      const accepted = await accept(id, { plan: "standard-v2", buildFeePence: 150000, approvedDiscountFeePence: 999 })
+      const [c] = (await state.database!.query("select terms from expansion_contracts where id=$1", [String((accepted as { id: string }).id)])).rows as Array<{ terms: { planVersion: string; commitment: Record<string, unknown> } }>
+      expect(c.terms.planVersion).toBe("standard-v2.d150000")
+      expect(c.terms.commitment).toMatchObject({ buildPence: "150000", minTermMonths: 12, minimumContractValuePence: "570000" })
+      const [r] = (await state.database!.query("select status,contract_id from expansion_discount_reservations")).rows as Array<{ status: string; contract_id: string }>
+      expect(r.status).toBe("consumed"); expect(r.contract_id).toBe((accepted as { id: string }).id)
+      await expect(state.database!.query("update expansion_discount_reservations set status='released'")).rejects.toThrow("immutable")
+      await expect(state.database!.query("delete from expansion_discount_reservations")).rejects.toThrow("append-only")
+      await expect(founderMutation({ action: "release_discount", id, reason: "x" })).rejects.toThrow("no unconsumed")
+    })
+    it("Case F: an approved free build still requires approved scope, capacity, an enabled plan and records a £4,200-plus commitment", async () => {
+      const id = await ready("a"); await policy(); await reserve(id, 0)
+      await expect(accept(id, { plan: "standard-v2", buildFeePence: 0 })).rejects.toThrow("not enabled")
+      await enable()
+      await accept(id, { plan: "standard-v2", buildFeePence: 0 })
+      expect((await state.database!.query("select one_off_amount,monthly_amount from commercial_contracts")).rows).toEqual([{ one_off_amount: 0, monthly_amount: 35000 }])
+      expect((await state.database!.query("select terms->'commitment'->>'minimumContractValuePence' v from expansion_contracts")).rows).toEqual([{ v: "420000" }])
+    })
+    it("protects policies: no overlap, no lowering below use, no expired reservations, partners denied", async () => {
+      const id = await ready("a"); await enable(); await policy(); await reserve(id, 150000)
+      await expect(policy({ periodStart: "2021-01-01" })).rejects.toThrow("overlap")
+      await expect(policy({ allowanceCount: 0 })).rejects.toThrow("lowered")
+      await expect(policy({ permittedFeesPence: [200000] })).rejects.toThrow("below the standard")
+      asPartner()
+      await expect(policy()).rejects.toThrow()
+      await expect(reserve(id, 150000)).rejects.toThrow()
+      expect((await partnerSnapshot()).discountAllowances).toEqual([expect.objectContaining({ allowance_count: 1, used: 1 })])
+      asFounder(); await state.database!.exec("update expansion_discount_policies set period_end='2020-06-01'")
+      await expect(accept(id, { plan: "standard-v2", buildFeePence: 150000 })).rejects.toThrow("expired")
+    })
+  })
+  describe("checkpoint 2B: existing-customer additional opportunities", () => {
+    const claim = (over: Record<string, unknown> = {}) => partnerMutation({ action: "request_additional", businessName: "Canonical Client Ltd", website: "https://existing-customer.example", projectLabel: "Booking platform", contribution: "Introduced the director and led the booking requirements meeting.", ...over })
+    const review = (claimId: string, over: Record<string, unknown> = {}) => founderMutation({ action: "review_additional", claimId, decision: "approved", clientId: 1, attributionConfirmed: true, notes: "Attribution evidence reviewed: introduction email chain.", ...over })
+    it("returns an identical acknowledgement for a fresh and an already-claimed project, storing one claim", async () => {
+      asPartner(); const first = await claim(); const second = await claim()
+      expect(Object.keys(first).sort()).toEqual(Object.keys(second).sort()); expect(second.received).toBe(true)
+      expect((await state.database!.query("select count(*)::int c from expansion_additional_claims")).rows).toEqual([{ c: 1 }])
+      asPartner(OTHER_USER); await claim()
+      expect((await state.database!.query("select count(*)::int c from expansion_additional_claims")).rows).toEqual([{ c: 1 }])
+      expect((await partnerSnapshot()).additionalClaims).toEqual([])
+    })
+    it("approval reuses the canonical client, creates a separately attributed opportunity and an ordinary duplicate stays blocked", async () => {
+      asPartner(); const { id: claimId } = await claim(); asFounder()
+      await expect(review(String(claimId), { attributionConfirmed: false })).rejects.toThrow("Confirm documented")
+      await expect(review(String(claimId), { clientId: 999 })).rejects.toThrow("existing canonical client")
+      const approved = await review(String(claimId)) as { opportunityId: string }
+      const [opp] = (await state.database!.query("select partner_id,client_id,additional_claim_id,status from expansion_opportunities where id=$1", [approved.opportunityId])).rows as Array<Record<string, unknown>>
+      expect(opp).toMatchObject({ partner_id: PARTNER, client_id: 1, additional_claim_id: claimId, status: "registered" })
+      expect((await state.database!.query("select count(*)::int c from clients")).rows).toEqual([{ c: 1 }])
+      asPartner(OTHER_USER)
+      await expect(partnerMutation({ action: "register", businessName: "Another", website: "existing-customer.example" })).rejects.toThrow("existing ScaleSmiths relationship")
+      asFounder()
+      await expect(review(String(claimId))).rejects.toThrow("pending")
+      await expect(state.database!.query("update expansion_additional_claims set review_notes='rewritten'")).rejects.toThrow("immutable")
+    })
+    it("rejection creates no opportunity or commission path, and a later claim for the same project is allowed", async () => {
+      asPartner(); const { id: claimId } = await claim(); asFounder()
+      await review(String(claimId), { decision: "rejected", notes: "Existing relationship; no new work." })
+      expect((await state.database!.query("select count(*)::int c from expansion_opportunities")).rows).toEqual([{ c: 0 }])
+      asPartner(); await claim()
+      expect((await state.database!.query("select count(*)::int c from expansion_additional_claims")).rows).toEqual([{ c: 2 }])
+    })
+    it("requires the attributed client at contract acceptance and denies partner review", async () => {
+      await state.database!.exec("insert into clients(id,name) values(2,'Other client')")
+      asPartner(); const { id: claimId } = await claim()
+      await expect(review(String(claimId))).rejects.toThrow()
+      asFounder(); const { opportunityId } = await review(String(claimId)) as { opportunityId: string }
+      await founderMutation({ action: "set_plan_enabled", planKey: "bespoke-v1", enabled: true, reason: "Synthetic" })
+      await founderMutation({ action: "capacity", period: "2026-11-23", hours: 30, commitmentsReviewed: true, rationale: "Synthetic allocation" })
+      asPartner(); await partnerMutation({ action: "discovery", id: opportunityId, discovery }); await partnerMutation({ action: "submit_scope", id: opportunityId, summary: "Booking platform, approved separately." })
+      asFounder(); await approval(opportunityId)
+      const plan = { plan: "bespoke-v1", buildInstalmentsPence: [500000, 500000] }
+      await expect(founderMutation({ action: "accept_contract", id: opportunityId, clientId: 2, plan, agreementReference: "Signed" })).rejects.toThrow("attributed existing client")
+      await founderMutation({ action: "accept_contract", id: opportunityId, clientId: 1, plan, agreementReference: "Signed" })
+      expect((await state.database!.query("select count(*)::int c from expansion_contracts")).rows).toEqual([{ c: 1 }])
     })
   })
 })

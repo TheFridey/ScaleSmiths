@@ -97,7 +97,10 @@ export interface PlanRequest {
   rateApprovalReference?: string
   refundPolicyReference?: string
   unpaidRefundApprovalReference?: string
+  /** Requested discounted build fee. Honoured only with a server-verified `approvedDiscountFeePence` for the same value. */
   buildFeePence?: number
+  /** SERVER-ONLY: set from a founder-approved, reserved allowance. Any client-supplied value must be overwritten. */
+  approvedDiscountFeePence?: number
 }
 const STANDARD_BUILD = 200000, STANDARD_RECURRING = 35000
 
@@ -109,19 +112,28 @@ export function buildAcceptedTerms(req: PlanRequest): CommissionTerms {
   let instalments: number[] = [], recurring = STANDARD_RECURRING, scheduleId = "none", planVersion: string, rateBps = 3000
   const firstRetainer = (fee: number) => req.firstRetainerEligiblePence ?? fee
   if (req.plan === "standard-v2") {
-    if ((req.buildFeePence ?? STANDARD_BUILD) !== STANDARD_BUILD) throw new ExpansionFinanceError("A build fee below the standard £2,000 needs an approved discount allowance.", 403)
+    const fee = req.buildFeePence ?? STANDARD_BUILD
+    const discounted = fee !== STANDARD_BUILD
+    if (discounted) {
+      if (req.approvedDiscountFeePence !== fee) throw new ExpansionFinanceError("A build fee below the standard £2,000 needs an approved discount allowance.", 403)
+      if (!Number.isSafeInteger(fee) || fee < 0 || fee >= STANDARD_BUILD) throw new ExpansionFinanceError("A discounted build fee must be between £0 and £1,999.99.")
+    }
     if (req.recurringPence !== undefined && req.recurringPence !== STANDARD_RECURRING) throw new ExpansionFinanceError("The standard plan's recurring fee is £350 a month; other pricing needs the bespoke plan.", 403)
     scheduleId = req.scheduleId ?? "equal"
     if (scheduleId === "custom") {
-      instalments = ints(req.buildInstalmentsPence, "Custom schedule")
+      instalments = fee === 0 ? [] : ints(req.buildInstalmentsPence, "Custom schedule")
       if (!req.scheduleApprovalReference?.trim()) throw new ExpansionFinanceError("A custom payment schedule needs a founder approval reference.")
+    } else if (discounted) {
+      if (scheduleId !== "equal") throw new ExpansionFinanceError("Discounted builds use equal instalments unless a custom schedule is approved.")
+      instalments = fee === 0 ? [] : [Math.floor(fee / 2), fee - Math.floor(fee / 2)]
     } else {
       const approved = APPROVED_STANDARD_SCHEDULES[scheduleId]
       if (!approved) throw new ExpansionFinanceError("Choose an approved payment schedule.")
       instalments = [...approved]
     }
-    if (instalments.reduce((a, b) => a + b, 0) !== STANDARD_BUILD) throw new ExpansionFinanceError("Payment schedule must add up exactly to the approved build value.")
-    planVersion = scheduleId === "equal" ? "standard-v2" : `standard-v2.${scheduleId === "custom" ? "c" + instalments.join("-") : scheduleId}`
+    if (instalments.reduce((a, b) => a + b, 0) !== fee) throw new ExpansionFinanceError("Payment schedule must add up exactly to the approved build value.")
+    const base = discounted ? `standard-v2.d${fee}` : "standard-v2"
+    planVersion = scheduleId === "equal" ? base : `${base}.${scheduleId === "custom" ? "c" + instalments.join("-") : scheduleId}`
   } else if (req.plan === "growth-only-v1") {
     if (req.buildFeePence || req.buildInstalmentsPence?.length) throw new ExpansionFinanceError("Growth Partnership-only plans have no website build.")
     if (req.recurringPence !== undefined && req.recurringPence !== STANDARD_RECURRING) throw new ExpansionFinanceError("The Growth Partnership-only fee is £350 a month; other pricing needs the bespoke plan.", 403)

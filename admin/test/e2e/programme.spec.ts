@@ -304,7 +304,7 @@ test('founder and partner complete the discounted, withdrawal and isolation jour
     const polo = founderPage.locator('details.ex-resource').filter({ hasText: `DEMO Programme A ${suffix}` }).filter({ hasText: 'Optional ScaleSmiths branded polo' })
     await polo.locator('summary').click(); await polo.locator('select[name=decision]').selectOption('approved')
     await polo.getByRole('button', { name: 'Record reward decision' }).click()
-    await expect(founderPage.getByRole('alert').first()).toBeVisible()   // refused: conditional rewards cannot skip review, and no programme is approved
+    await expect(founderPage.locator('.ex-form-error').first()).toContainText('Invalid reward transition')   // refused by the database: conditional rewards cannot skip review
     expect((await pool.query("select status from expansion_achievement_rewards r join expansion_partners p on p.id=r.partner_id where p.id=$1 and r.milestone_clients=1", [partnerA.id])).rows[0].status).toBe('conditional')
     await founderPage.screenshot({ path: `${evidence}/founder-programme-reward-refused.png`, fullPage: true })
     await tab(partnerPage, 'Referrals'); await partnerPage.getByRole('button', { name: 'Create my referral code' }).click()
@@ -333,12 +333,12 @@ test('founder and partner complete the discounted, withdrawal and isolation jour
     await expect(partnerPage.locator('.ex-list-row').filter({ hasText: 'Dedicated ScaleSmiths email address' })).toContainText('Planned')
     await expect(partnerPage.locator('.ex-list-row').filter({ hasText: 'Personalised CircleCard' })).toContainText('Planned')
     await partnerPage.screenshot({ path: `${evidence}/partner-onboarding-toolkit-planned.png`, fullPage: true })
-    await founderPage.reload(); await tab(founderPage, 'Operations')
-    const toolkitRow = founderPage.locator('details.ex-resource').filter({ hasText: `DEMO Programme A ${suffix}` }).filter({ has: founderPage.getByRole('button', { name: 'Record fulfilment' }) })
+    await founderPage.reload(); await tab(founderPage, 'Partner operations')
+    const toolkitRow = founderPage.locator('details.ex-resource').filter({ hasText: `DEMO Programme A ${suffix}` }).filter({ hasText: 'Dedicated ScaleSmiths email address' })
     await toolkitRow.locator('summary').click()
     await toolkitRow.locator('select[name=itemKey]').selectOption('email'); await toolkitRow.locator('select[name=status]').selectOption('available')
     await toolkitRow.getByRole('button', { name: 'Record fulfilment' }).click()
-    await expect(founderPage.getByRole('alert').first()).toContainText('fulfilment evidence')      // evidence is mandatory before anything is called available
+    await expect(founderPage.locator('.ex-form-error').first()).toContainText('fulfilment evidence')      // evidence is mandatory before anything is called available
     await toolkitRow.locator('textarea[name=detail]').fill('DEMO synthetic mailbox created by the mail administrator; handover recorded.')
     await toolkitRow.getByRole('button', { name: 'Record fulfilment' }).click()
     await expect.poll(async () => (await snapshot(a)).toolkit.find((i: { key: string }) => i.key === 'email').status).toBe('available')
@@ -353,7 +353,7 @@ test('founder and partner complete the discounted, withdrawal and isolation jour
     await meetingForm.locator('input[name=slot1]').fill('2099-03-01T10:00'); await meetingForm.locator('textarea[name=purpose]').fill('DEMO joint meeting to present the website proposal.')
     await meetingForm.getByRole('button', { name: 'Send meeting request' }).click()
     await expect(partnerPage.locator('details.ex-resource').filter({ hasText: 'Joint customer sales meeting' })).toContainText('Requested')
-    await founderPage.reload(); await tab(founderPage, 'Operations')
+    await founderPage.reload(); await tab(founderPage, 'Partner operations')
     const meeting = founderPage.locator('details.ex-resource').filter({ hasText: `DEMO Programme A ${suffix}` }).filter({ hasText: 'Joint customer sales meeting' })
     await meeting.locator('summary').click(); await meeting.locator('select[name=decision]').selectOption('propose_alternative')
     await meeting.locator('input[name=start]').fill('2099-03-02T11:00'); await meeting.locator('textarea[name=note]').fill('DEMO: I can attend at this time.')

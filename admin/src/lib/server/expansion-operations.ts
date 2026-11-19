@@ -4,6 +4,7 @@ import { sql, type SQL } from "drizzle-orm"
 import { db, type AdminDatabaseTransaction } from "@/lib/db"
 import { type AdminRole } from "@/lib/admin-users"
 import { hasCapability } from "@/lib/rbac"
+import { ExpansionError } from "@/lib/expansion"
 import { requireCapability } from "./rbac"
 import { isTimeZone, isToolkitKey, MEETING_TRANSITIONS, MEETING_TYPES, TOOLKIT_CATALOGUE, TOOLKIT_STATUSES } from "@/lib/expansion-operations"
 
@@ -15,7 +16,7 @@ import { isTimeZone, isToolkitKey, MEETING_TRANSITIONS, MEETING_TYPES, TOOLKIT_C
 type Row = Record<string, unknown>
 type Executor = Pick<AdminDatabaseTransaction, "execute">
 type Actor = Awaited<ReturnType<typeof requireCapability>>
-export class OperationsError extends Error { constructor(message: string, public status = 400) { super(message); this.name = "OperationsError" } }
+export class OperationsError extends ExpansionError { constructor(message: string, status = 400) { super(message, status); this.name = "OperationsError" } }
 const rows = async (tx: Executor, query: SQL): Promise<Row[]> => (await tx.execute(query)).rows as Row[]
 const conflict = (message: string): never => { throw new OperationsError(message, 409) }
 const uuid = (value: unknown) => { if (typeof value !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)) throw new OperationsError("A valid record identifier is required."); return value.toLowerCase() }

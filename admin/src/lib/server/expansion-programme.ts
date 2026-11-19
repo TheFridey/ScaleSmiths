@@ -4,6 +4,7 @@ import { sql, type SQL } from "drizzle-orm"
 import { db, type AdminDatabaseTransaction } from "@/lib/db"
 import { type AdminRole } from "@/lib/admin-users"
 import { hasCapability } from "@/lib/rbac"
+import { ExpansionError } from "@/lib/expansion"
 import { requireCapability } from "./rbac"
 import { cumulativeBonusPence, isReferralCode, progressTowardsNext, PROPOSED_MILESTONES, referralCodeFromBytes, REFERRAL_THRESHOLD, type MilestoneDefinition } from "@/lib/expansion-programme"
 
@@ -16,7 +17,7 @@ import { cumulativeBonusPence, isReferralCode, progressTowardsNext, PROPOSED_MIL
 type Row = Record<string, unknown>
 type Executor = Pick<AdminDatabaseTransaction, "execute">
 type Actor = Awaited<ReturnType<typeof requireCapability>>
-export class ProgrammeError extends Error { constructor(message: string, public status = 400) { super(message); this.name = "ProgrammeError" } }
+export class ProgrammeError extends ExpansionError { constructor(message: string, status = 400) { super(message, status); this.name = "ProgrammeError" } }
 const rows = async (tx: Executor, query: SQL): Promise<Row[]> => (await tx.execute(query)).rows as Row[]
 const conflict = (message: string): never => { throw new ProgrammeError(message, 409) }
 const uuid = (value: unknown) => { if (typeof value !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)) throw new ProgrammeError("A valid record identifier is required."); return value.toLowerCase() }

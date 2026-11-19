@@ -113,7 +113,7 @@ async function fundedPartner(tag: string) {
     contractId, invoiceId: invoice.id, milestone: "deposit", reference: `${suffix}-${tag}-collection`,
     netPence: "100000", grossPence: "120000", evidenceReference: "TEST ONLY verified net and gross receipt", confirmed: true,
   }))
-  return { actor, partnerId, contractId, paymentId: collection.paymentId }
+  return { actor, partnerId, contractId, opportunityId, invoiceId: invoice.id, paymentId: collection.paymentId }
 }
 
 const prepare = (partnerId: string, reference: string) => runAs(founder, () => prepareExpansionPayout({ partnerId, invoiceReference: `${suffix}-${reference}`, invoiceNetPence: "30000" }))
@@ -243,6 +243,24 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("Expansion real separa
     expectSingleWinner(results, /No positive unallocated commission/)
     const claims = await pool.query("select count(*)::int count,sum(l.amount_pence)::text amount from expansion_payout_claims c join expansion_commission_ledger l on l.id=c.ledger_id where l.partner_id=$1", [partner.partnerId])
     expect(claims.rows).toEqual([{ count: 1, amount: "30000" }])
+  })
+
+  it("preserves a voided allocation and ends the linked contract without erasing the cash history", async () => {
+    const fixture = await fundedPartner("canonical-cancellation")
+    const prepared = await prepare(fixture.partnerId,"canonical-void")
+    await runAs(founder, () => cancelExpansionPayout({
+      payoutId:prepared.payoutId,reason:"TEST ONLY no payment sent",noExternalSettlement:true,
+    }))
+    await runAs(founder, () => founderMutation({
+      action:"cancel_contract",id:fixture.opportunityId,reason:"TEST ONLY accepted cancellation",deliveryReviewed:true,
+    }))
+    const [record] = (await pool.query(`select c.status,
+      (select count(*)::int from expansion_payout_entries where payout_id=$2) as history,
+      (select count(*)::int from expansion_payout_claims where payout_id=$2) as claims,
+      (select count(*)::int from expansion_payment_events where contract_id=$1) as receipts
+      from expansion_contracts e join commercial_contracts c on c.id=e.commercial_contract_id where e.id=$1`,
+      [fixture.contractId,prepared.payoutId])).rows
+    expect(record).toEqual({status:"ended",history:1,claims:0,receipts:1})
   })
   it("records approved settlement while concurrent cancellation is denied", async () => {
     const partner = await fundedPartner("settle-cancel")

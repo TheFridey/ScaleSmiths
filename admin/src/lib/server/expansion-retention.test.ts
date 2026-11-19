@@ -64,7 +64,9 @@ describe('applicant retention against PostgreSQL via PGlite', () => {
     await expect(command(hold)).resolves.toEqual({ changed: true })
     await expect(command(hold)).resolves.toEqual({ changed: false })
     await expect(command({ action: 'purge_applicants', confirmed: true, fingerprint: 'fingerprint' in oldBatch && oldBatch.fingerprint })).rejects.toThrow('batch changed')
-    await expect(database.exec('delete from partner_applications where id = 2')).rejects.toMatchObject({code:'23503'})
+    await expect(database.exec('delete from partner_applications where id = 2')).rejects.toMatchObject({
+      constraint: 'expansion_applicant_retention_holds_application_id_fkey',
+    })
     const batch = await command(preview)
     expect(batch).toMatchObject({
       applicationIds: [1],

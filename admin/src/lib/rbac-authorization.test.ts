@@ -123,6 +123,17 @@ describe("RBAC — security settings", () => {
     }
     expect(authorizeRequest("independent_partner", { pathname: "/api/security/mfa", method: "POST" }).allowed).toBe(false)
   })
+
+  it("lets partners open only the Partner Academy pages beyond /partner (Operation Empower B1.2)", () => {
+    for (const pathname of ["/partner/academy", "/partner/academy/academy-c01", "/partner/academy/seo-and-growth"]) {
+      expect(authorizeRequest("independent_partner", { pathname, method: "GET" }).allowed, pathname).toBe(true)
+    }
+    expect(authorizeRequest("independent_partner", { pathname: "/api/partner/academy", method: "POST" }).allowed).toBe(true)
+    for (const [pathname, method] of [["/partner/academy", "POST"], ["/partner/academy/x/y", "GET"], ["/partner/academy/UPPER", "GET"], ["/partner/academy/../expansion", "GET"], ["/partner/academy-c01", "GET"], ["/partner/other", "GET"], ["/expansion", "GET"]] as const) {
+      expect(authorizeRequest("independent_partner", { pathname, method }).allowed, `${method} ${pathname}`).toBe(false)
+    }
+    for (const role of generalAdminRoles) expect(authorizeRequest(role, { pathname: "/partner/academy", method: "GET" }).allowed, role).toBe(false)
+  })
 })
 
 describe("RBAC — prospects (leads)", () => {

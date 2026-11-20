@@ -83,9 +83,9 @@ async function assertCourseLessonsServable(tx: Executor, fields: unknown) {
   if (!ids.length) throw new ContentError("A course needs at least one lesson.", 409)
   const list = sql.join(ids.map((lessonId) => sql`${lessonId}::uuid`), sql`,`)
   await tx.execute(sql`select id from empower_content_items where id in (${list}) order by id for share`)
-  const ready = await rows(tx, sql`select i.id from empower_content_items i join empower_content_versions v on v.item_id=i.id and v.status='published' and v.review_by >= (now() at time zone 'UTC')::date where i.kind='lesson' and i.id in (${list})`)
+  const ready = await rows(tx, sql`select i.id from empower_content_items i join empower_content_versions v on v.item_id=i.id and v.status='published' and v.review_by >= (now() at time zone 'UTC')::date where i.kind='lesson' and i.audience='partner_only' and i.id in (${list})`)
   const missing = ids.filter((lessonId) => !ready.some((r) => String(r.id) === lessonId))
-  if (missing.length) throw new ContentError(`Every lesson in a course must be published and in date first (${missing.length} of ${ids.length} not ready).`, 409)
+  if (missing.length) throw new ContentError(`Every lesson in a course must be a published, in-date, partner-only lesson first (${missing.length} of ${ids.length} not ready).`, 409)
 }
 
 export interface DraftInput { title?: unknown; body?: unknown; fields?: unknown; sourceRefs?: unknown; changeSummary?: unknown }

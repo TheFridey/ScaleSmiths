@@ -44,6 +44,10 @@ Blocking columns: **P1** blocks Phase 1 (founder content workspace), **P2** bloc
 | `AP-PRIV-03` | Resource view and download logging | Founders, privacy adviser | Do not log individual views or downloads in B1; aggregate counts only if needed | N | Y | N | `FOUNDER DECISION` | |
 | `AP-PRIV-04` | Retention of learning progress, including after a partner leaves | Founders, privacy adviser | Delete progress a fixed period after the partnership ends; partner can clear it at any time | N | N | Y | `FOUNDER DECISION` | |
 | `AP-PUB-01` | Withdrawal and correction procedure for published content | Founders | Withdraw (archive with reason) at once when wrong; publish a corrected new version through review; tell partners via "updated since you read it" | Y | Y | Y | `FOUNDER DECISION` | |
+| `AP-ACA-01` | Switch on `PARTNER_ACADEMY_ENABLED` in a real environment | Founders | Only after at least one course and its lessons are approved and published, and `AP-GOV-02`, `AP-GOV-03`, `AP-PRIV-01` and `AP-PRIV-04` are decided | N | N | Y | `FOUNDER DECISION` | |
+| `AP-ACA-02` | Run the curriculum importer against a real environment (`--allow-database`) | Founders | Import as drafts into staging first; never into production without a recorded instruction | N | N | Y | `FOUNDER DECISION` | |
+| `AP-ACA-03` | The 65 draft knowledge-check questions (`KNOWLEDGE-CHECKS.md`) | Lesson approvers | Approve with each lesson version; each answer is taken from its lesson text | N | N | Y | `DRAFT` | |
+| `AP-ACA-04` | Knowledge-check attempt history (answers given) and partner "clear my history" control | Founders, privacy adviser | Keep attempts for the AP-PRIV-04 period; build the clear control before enabling | N | N | Y | `FOUNDER DECISION` | |
 | `AP-PUB-02` | Publication priority order for the Resource Centre | Founders | As recommended in [CONTENT-REVIEW-REGISTER.md](CONTENT-REVIEW-REGISTER.md) section 5 | N | Y | N | `DRAFT` | |
 
 ## B. Package documents

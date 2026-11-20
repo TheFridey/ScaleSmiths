@@ -68,8 +68,8 @@ function block(t: Token, key: string): ReactNode {
   switch (t.type) {
     case "space": case "def": return null
     case "heading": {
-      // Lesson pages already use h1 and h2; author headings start at h3 so the outline stays logical.
-      const x = t as Tokens.Heading, level = Math.min(6, Math.max(3, x.depth + 2))
+      // Lesson pages use h1 (course) and h2 (lesson); author # and ## become h3, ### h4, so no heading level is skipped.
+      const x = t as Tokens.Heading, level = Math.min(6, Math.max(3, x.depth + 1))
       const H = `h${level}` as "h3" | "h4" | "h5" | "h6"
       return <H>{inline(x.tokens, key)}</H>
     }

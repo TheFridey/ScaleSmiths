@@ -4,6 +4,8 @@
   min-height:100dvh;background:var(--ac-bg);color:var(--ac-t1);font-family:var(--font-dm);font-size:16px;line-height:1.6}
 .academy *{box-sizing:border-box}
 .academy a{color:var(--ac-gold)}
+/* Links in running text are underlined, not distinguished by colour alone (WCAG 1.4.1). */
+.academy p a,.academy li a,.ac-prose a{text-decoration:underline;text-underline-offset:2px}
 .academy :focus-visible{outline:3px solid rgba(209,178,102,.75);outline-offset:2px;border-radius:4px}
 .ac-skip{position:absolute;left:-9999px;top:8px;background:var(--ac-gold);color:#131416;padding:8px 12px;border-radius:6px;font-weight:700}
 .ac-skip:focus{left:16px;z-index:10}
@@ -77,3 +79,9 @@
 @media (max-width:960px){.ac-course{grid-template-columns:1fr}.ac-outline{position:static;max-height:none}}
 @media (max-width:640px){.ac-header{flex-direction:column;align-items:flex-start}.ac-hero{padding:18px}.ac-prose{font-size:16px}}
 @media (prefers-reduced-motion:no-preference){.ac-card,.ac-outline button{transition:background-color .16s ease}}
+/* The admin CSS reset removes heading sizes and list markers; restore them for reading content. */
+.ac-prose h3{font-size:21px;font-weight:700}.ac-prose h4{font-size:18px;font-weight:700}.ac-prose h5,.ac-prose h6{font-size:16px;font-weight:700}
+.ac-prose p{margin:0 0 1em}
+.ac-prose ul,.ac-course-head ul,.ac-section ul{list-style:disc;padding-left:1.4em;margin:0 0 1em}
+.ac-prose ol{list-style:decimal;padding-left:1.6em;margin:0 0 1em}
+.ac-prose li,.ac-course-head li,.ac-section li{margin:.25em 0}

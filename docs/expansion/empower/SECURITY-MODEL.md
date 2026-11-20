@@ -55,11 +55,20 @@ No new role or capability is required.
 - Every partner read and write reuses `partnerGuard` (`admin/src/lib/server/expansion-operations.ts`), which requires an activated partner profile, an active user, the `independent_partner` role and the current `session_version`. Deactivating a user or bumping the session version therefore denies Empower content and progress writes on the next request, with no Empower-specific code.
 - A revoked partner's progress rows are retained under the approved retention period (`AP-PRIV-04`) and are not shown to anyone else.
 
+### 3.4b Academy (B1.2, as built)
+
+- Partner pages and API are reachable only by `independent_partner` users through `partnerGuard` (activated profile, active user, current session) and only while `PARTNER_ACADEMY_ENABLED=true`. The external-identity boundary admits `/partner/academy` and `/partner/academy/<slug>` (GET/HEAD) and nothing else new; founders and administrators cannot open partner pages.
+- Every read applies the published, in-date rule in SQL; drafts, approved-unpublished, superseded, withdrawn and expired content is never returned. The database refuses learning records for content that is not currently servable.
+- Knowledge-check answers and explanations are never sent before an attempt; grading is server-side.
+- Lesson Markdown is rendered without HTML strings; see SafeMarkdown tests for the adversarial vectors.
+- Learning tables have no relation to commercial tables, and a static test proves only the Academy service references them. The public web role has no access to any Empower table (verified).
+- Course approval: every linked lesson must already be independently published; the course itself needs a second founder.
+
 ### 3.5 Independence and privacy
 
 - Progress is private to the partner by default. Founders see aggregates only, unless the partner chooses to share (decision `AP-GOV-03`).
 - No progress, completion or knowledge-check data is joined to commission, allocation, recognition or achievements. A test should assert that no such query exists.
-- Knowledge-check answers are not stored.
+- Knowledge-check attempts store the answer given and whether it was right (B1.2 requirement for feedback history), privately per partner; retention is `AP-PRIV-04`. A partner "clear my history" control is not built yet and depends on that decision.
 - Search logs: query text and a hashed partner id, retained for a founder-approved period (decision `AP-PRIV-02`). The privacy notice must mention them (decision `AP-PRIV-01`).
 
 ## 4. Threats and mitigations

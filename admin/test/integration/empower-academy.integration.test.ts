@@ -91,8 +91,12 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("Empower B1.2 Partner 
       body: "Talk about search visibility, including AI search, accurately and without promises.", fields, sourceRefs: ["docs/expansion/empower/CURRICULUM.md#c03"] }))
     // A draft course may hold a draft lesson, but cannot be submitted until that lesson is itself published.
     expect(await refused(runAs(founderA, () => submitContentVersion({ versionId: course.versionId })))).toMatch(/1 of 2 not ready/)
+    // A client-facing lesson (reviewed under client-facing rules) can never be part of the partner-only Academy.
+    const clientLesson = await runAs(founderA, () => createContentItem({ kind: "lesson", slug: `lesson-client-${suffix}`, audience: "client_facing", cadence: "service", title: "Client-facing lesson",
+      body: "Search foundations are part of every build and ongoing SEO is separate.", fields: { course_code: "C03", lesson_code: "C03-L7" }, sourceRefs: ["faq:seo-in-build"] }))
+    expect(await refused(pool.query(`update empower_content_versions set fields=jsonb_set(fields,'{modules,0,lessons}',$2::jsonb) where id=$1`, [course.versionId, JSON.stringify([lessonOne.itemId, clientLesson.itemId])]))).toMatch(/partner-only lesson items/)
     // The structure must reference real lesson items, enforced in the database for any writer.
-    expect(await refused(pool.query(`update empower_content_versions set fields=jsonb_set(fields,'{modules,0,lessons}',$2::jsonb) where id=$1`, [course.versionId, JSON.stringify([course.itemId])]))).toMatch(/only existing lesson items/)
+    expect(await refused(pool.query(`update empower_content_versions set fields=jsonb_set(fields,'{modules,0,lessons}',$2::jsonb) where id=$1`, [course.versionId, JSON.stringify([course.itemId])]))).toMatch(/only existing partner-only lesson items/)
     await runAs(founderA, () => submitContentVersion({ versionId: lessonTwo.versionId }))
     await runAs(founderB, () => decideContentVersion({ versionId: lessonTwo.versionId, decision: "approved", reference: "TEST ONLY FD-L2", notes: "TEST ONLY checked", reviewBy: reviewBy() }))
     await runAs(founderB, () => publishContentVersion({ versionId: lessonTwo.versionId }))

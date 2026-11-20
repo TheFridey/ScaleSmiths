@@ -100,6 +100,24 @@ Unit: `admin/src/lib/empower-content.test.ts`. Real PostgreSQL as the restricted
 7. With `PARTNER_ACADEMY_ENABLED` off, Academy routes return 404.
 8. Lesson pages meet the same width, keyboard and contrast criteria as Phase 2.
 
+### B1.2 evidence (2026-11-20)
+
+Real PostgreSQL: `admin/test/integration/empower-academy.integration.test.ts`, `empower-solo-founder.integration.test.ts`. Unit: `empower-content.test.ts`, `empower-curriculum.test.ts`, `SafeMarkdown.test.tsx`, `academy-contrast.test.ts`, `empower-academy-isolation.test.ts`, `rbac-authorization.test.ts`. Browser: `admin/test/e2e/empower-academy.spec.ts` (production build, disposable database). Migrations 0092, 0093.
+
+| Criterion | Status | Evidence |
+|---|---|---|
+| 1 Only published, in-date courses and lessons appear | MET | Integration (withdrawn, superseded, revised, expired via the serving rule); browser (withdrawn lesson "under review", expired course gone) |
+| 2 Progress private to the partner; founders see none | MET | Integration (partner two sees none of partner one's records); browser; no founder progress view exists yet (`AP-GOV-03` undecided) |
+| 3 No commercial code reads progress | MET | Static isolation test |
+| 4 Knowledge-check answers | CHANGED | Attempts now store the answer given and the result, privately (directive requirement); answers are never sent before an attempt (integration) |
+| 5 Nothing required; no "must complete", "deadline" or "score" copy | MET by inspection | Copy says optional and voluntary throughout; no automated copy test yet |
+| 6 "Updated since you read it" | MET | Integration and browser |
+| 7 Switch off returns 404 | MET | Integration (service); pages call `notFound()` |
+| 8 Width, keyboard, contrast | MET for tested screens | Browser at 320/390/768/1024/1440 with no horizontal overflow and axe (WCAG 2.2 AA tags) clean of serious/critical issues on dashboard and lesson; contrast unit test |
+| Revoked / never-activated / signed-out partners denied | MET | Integration and browser |
+| Duplicate completion, concurrent publication vs withdrawal | MET | Integration races |
+| Course needs independently approved partner-only lessons | MET | Integration; 0093 |
+
 ## Content release criteria (every content version)
 
 - Status is approved by a founder with a reference and review-by date.

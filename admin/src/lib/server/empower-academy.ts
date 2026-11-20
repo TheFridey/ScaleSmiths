@@ -51,14 +51,14 @@ async function load(tx: Executor, partnerId: string, slug?: string) {
     where i.kind='course' and v.status='published' and v.review_by >= ${UTC_TODAY} ${slug ? sql`and i.slug=${slug}` : sql``} order by v.title`)
   const lessonIds = [...new Set(courses.flatMap((c) => courseLessonIds(c.fields)))]
   const lessons = lessonIds.length ? await rows(tx, sql`select i.id item_id,i.slug,v.id version_id,v.version,v.title,v.body,v.fields,v.source_refs,v.published_at from empower_content_versions v join empower_content_items i on i.id=v.item_id
-    where i.kind='lesson' and v.status='published' and v.review_by >= ${UTC_TODAY} and i.id in (${uuidList(lessonIds)})`) : []
+    where i.kind='lesson' and i.audience='partner_only' and v.status='published' and v.review_by >= ${UTC_TODAY} and i.id in (${uuidList(lessonIds)})`) : []
   const completions = await rows(tx, sql`select c.lesson_version_id,c.completed_at,v.item_id lesson_item_id from empower_academy_completions c join empower_content_versions v on v.id=c.lesson_version_id where c.partner_id=${partnerId}`)
   const states = await rows(tx, sql`select course_item_id,last_lesson_item_id,last_viewed_at from empower_academy_course_state where partner_id=${partnerId}`)
   const byLesson = new Map(lessons.map((l) => [String(l.item_id), l]))
   const views: CourseView[] = []
   for (const c of courses) {
     const fields = (c.fields ?? {}) as { category?: string; objectives?: string[]; modules?: CourseModule[]; estimated_minutes?: string }
-    let completed = 0, available = 0, unavailable = 0, latest = String(c.published_at), minutes = 0, minutesKnown = true
+    let completed = 0, available = 0, unavailable = 0, latest = new Date(String(c.published_at)).getTime(), minutes = 0, minutesKnown = true
     const modules = (fields.modules ?? []).map((m) => ({ title: m.title, ...(m.summary ? { summary: m.summary } : {}), lessons: m.lessons.map((id): LessonView => {
       const l = byLesson.get(id)
       if (!l) { unavailable++; return { itemId: id, available: false, state: "unavailable" } }
@@ -69,14 +69,14 @@ async function load(tx: Executor, partnerId: string, slug?: string) {
       if (done) completed++
       const reading = lf.reading_minutes ? Number(lf.reading_minutes) : null
       if (reading) minutes += reading; else minutesKnown = false
-      if (String(l.published_at) > latest) latest = String(l.published_at)
+      latest = Math.max(latest, new Date(String(l.published_at)).getTime())
       return { itemId: id, available: true, versionId: String(l.version_id), version: Number(l.version), slug: String(l.slug), title: String(l.title), readingMinutes: reading, publishedAt: String(l.published_at),
         state: done ? "completed" : earlier ? "updated" : "not_started", completedAt: done ? String(done.completed_at) : null, checks: Array.isArray(lf.checks) ? lf.checks.length : 0 }
     }) }))
     if (!available) continue // fail closed: a course with no currently servable lesson is not offered at all
     const state = states.find((s) => String(s.course_item_id) === String(c.item_id))
     views.push({ itemId: String(c.item_id), slug: String(c.slug), versionId: String(c.version_id), version: Number(c.version), title: String(c.title), description: String(c.body), category: fields.category ?? null,
-      objectives: fields.objectives ?? [], estimatedMinutes: fields.estimated_minutes ? Number(fields.estimated_minutes) : minutesKnown && minutes ? minutes : null, publishedAt: String(c.published_at), updatedAt: latest,
+      objectives: fields.objectives ?? [], estimatedMinutes: fields.estimated_minutes ? Number(fields.estimated_minutes) : minutesKnown && minutes ? minutes : null, publishedAt: String(c.published_at), updatedAt: new Date(latest).toISOString(),
       modules, progress: { completed, available, unavailable }, lastLessonItemId: state ? String(state.last_lesson_item_id) : null, lastViewedAt: state ? String(state.last_viewed_at) : null })
   }
   return { views, byLesson }

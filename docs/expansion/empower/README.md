@@ -27,7 +27,9 @@ This is B1 research, architecture and content design only. It changes no applica
 | [IMPLEMENTATION-PHASES.md](IMPLEMENTATION-PHASES.md) | Proposed delivery phases and their entry and exit gates |
 | [ACCEPTANCE-CRITERIA.md](ACCEPTANCE-CRITERIA.md) | Testable acceptance criteria for each phase |
 | [CONTENT-REVIEW-REGISTER.md](CONTENT-REVIEW-REGISTER.md) | Full read-back audit: findings, lesson inventory, commercial and technical claims, resources, knowledge base, objections, accessibility |
-| [B1-STATUS.md](B1-STATUS.md) | B0 merge blocker, B1 implementation gate and deliverable status |
+| [B1-STATUS.md](B1-STATUS.md) | B0 merge record, B1 implementation gate and deliverable status |
+| [B1-2-ACADEMY-REPORT.md](B1-2-ACADEMY-REPORT.md) | B1.2 Partner Academy: design, verification, browser evidence and outstanding approvals |
+| [KNOWLEDGE-CHECKS.md](KNOWLEDGE-CHECKS.md) | The 65 draft Academy knowledge-check questions |
 
 ## Status vocabulary
 

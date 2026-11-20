@@ -1,0 +1,889 @@
+<pasted_content id="831a">
+OPERATION EMPOWER — MASTER EXECUTION DIRECTIVE
+ScaleSmiths Partner Academy, Sales Enablement & Knowledge Infrastructure
+Organisation: ScaleSmiths Limited
+Repository: https://github.com/TheFridey/ScaleSmiths
+B0 Pull Request: https://github.com/TheFridey/ScaleSmiths/pull/155
+B1 Planning Pull Request: https://github.com/TheFridey/ScaleSmiths/pull/156
+B0 Branch: `claude/modest-newton-jo2d95`
+B1 Planning Branch: `claude/empower-b1-planning`
+B1 Planning Commit: `0786e6d`
+B1 Implementation Branch: `feature/operation-empower`
+Priority: P0
+Objective: Finalise the B0 integration, quality-assure all B1 planning and educational material, obtain the necessary approvals, and implement the ScaleSmiths Partner Academy and Sales Enablement System.
+1. EXECUTIVE MISSION
+Operation Intelligence B0 has completed substantial engineering and is awaiting final merge governance.
+Operation Empower B1 now has a dedicated planning package comprising 27 Markdown documents under:
+`docs/expansion/empower/`
+The package includes:
+
+* Architecture and implementation design.
+* Security model.
+* Approval requirements.
+* Thirteen proposed Academy courses.
+* Ninety-four draft lessons.
+* Optional knowledge checks.
+* Thirteen professional resource drafts.
+* Twelve objection-handling responses.
+* Six follow-up templates.
+* Thirty-three knowledge entries.
+* UI and experience specifications.
+* Acceptance criteria.
+* Content governance requirements.
+
+These are drafts, not commercially approved publications.
+This operation has four objectives:
+
+1. Finish the engineering and governance handoff for B0.
+2. Perform a comprehensive factual, technical, editorial and legal-risk review of the B1 planning package.
+3. Establish a founder-reviewed, versioned publication framework for all training and sales content.
+4. Once B0 is legitimately merged, implement B1 as a complete set of functioning vertical slices.
+
+Do not repeat completed work.
+Do not create a second partner platform.
+Do not reimplement B0 financial infrastructure.
+Do not treat model review as human approval.
+Do not invent company policies, commitments, pricing or performance claims.
+2. REPOSITORY PREFLIGHT
+Before modifying anything, inspect:
+
+* Current `master` SHA.
+* PR #155 state.
+* PR #156 state.
+* Branch heads.
+* Merge bases.
+* Working tree status.
+* Existing worktrees.
+* Relevant instructions.
+* Latest workflow conclusions.
+* Branch protection.
+* CODEOWNERS.
+* Required reviews.
+* Deployment workflows.
+* Current approved programme configuration.
+
+Read applicable instructions:
+
+* `AGENTS.md`
+* `CLAUDE.md`
+* `.entire/agent-guide.md`
+
+Read the B0 documentation:
+
+* `docs/expansion/intelligence/B0-MERGE-READINESS.md`
+* `docs/expansion/intelligence/B0-RELEASE-VERIFICATION.md`
+* `docs/expansion/intelligence/FOUNDER-DECISIONS.md`
+* `docs/expansion/intelligence/PROGRAMME-ALIGNMENT.md`
+
+Read every document in:
+`docs/expansion/empower/`
+Do not assume filenames from summaries.
+Enumerate and inspect the actual 27 files.
+The planning worktree was previously:
+`D:\tmp\ss-empower`
+Preserve the three previously reported uncommitted files in the main checkout if they still exist.
+Do not reset, clean, overwrite or amend unrelated work.
+Record exact preflight evidence.
+3. B0 MERGE GOVERNANCE
+PR #155 is the prerequisite for B1 implementation.
+The last known B0 implementation had all reported engineering checks passing and included:
+
+* Commercial plan integration.
+* Commission accounting.
+* Discount allowances.
+* Bespoke projects.
+* Partner withdrawals.
+* Achievement Centre.
+* Referral management.
+* Prospect allocation.
+* Market eligibility.
+* Sector exclusivity.
+* Partner onboarding.
+* Meetings.
+* Founding Partner recognition.
+* Partner webpages.
+* Database integrity improvements.
+* Real PostgreSQL concurrency CI.
+* Profile entitlement suspension.
+* Audited domain release.
+* Geographic area classification.
+
+Do not reimplement these components.
+Verify current readiness
+Confirm:
+
+* Current PR head.
+* Required checks.
+* Human code-owner review.
+* Last-push approval.
+* Review conversations.
+* Protected-area approval.
+* Master freshness.
+* Deployment consequences.
+
+If the human approval is absent, the merge is blocked.
+Do not:
+
+* Self-approve.
+* Submit model approval as human approval.
+* Dismiss valid required reviews.
+* Disable branch protection.
+* Modify CODEOWNERS to bypass the requirement.
+* Use administrator override.
+* Force-push an alternative merge route.
+* Merge with unresolved mandatory checks.
+
+Human reviewer handoff
+Prepare a focused reviewer package covering:
+
+* Financial invariants.
+* Migrations 0073–0090, subject to actual current state.
+* PostgreSQL privileges.
+* Expansion concurrency.
+* Geographic exclusivity.
+* Prospect allocation.
+* Public profile projection.
+* Profile revocation.
+* Domain release.
+* CI workflow changes.
+* Backup and rollback.
+* Production deployment triggers.
+
+Request an appropriately authorised independent human review where available.
+Clearly identify any governance issue that makes a qualifying review impossible.
+If the code owner is also the PR author and GitHub requires another approver, report the exact issue and recommend a legitimate owner-administered governance solution.
+Do not implement a workaround autonomously.
+B0 merge
+The founders authorise merging B0 only after all mandatory reviews, checks and deployment safeguards are satisfied.
+If the legitimate conditions become satisfied:
+
+1. Verify the exact head again.
+2. Verify the latest relevant CI.
+3. Verify code-owner approval after the last push.
+4. Verify branch protection.
+5. Verify production deployment implications.
+6. Merge using the approved repository strategy.
+7. Verify the new master commit.
+8. Verify post-merge workflows.
+9. Verify protected feature flags remain disabled.
+10. Record the complete evidence.
+
+If merging master triggers production deployment, do not proceed without separate approval for that consequence.
+If the merge cannot proceed, do not begin B1 application engineering.
+Continue only the independent B1 documentation audit and preparation work.
+4. B1 PLANNING PR MANAGEMENT
+PR #156 is currently stacked on the B0 branch.
+It must not be merged into the B0 feature branch as a workaround for the missing B0 approval.
+While B0 remains unmerged:
+
+* Keep PR #156 open.
+* Preserve its documented work.
+* Continue safe documentation-only improvements.
+* Do not change B1's target to master if doing so would create an inappropriate combined diff.
+* Do not merge it prematurely.
+
+Once B0 merges:
+
+1. Fetch the new master.
+2. Re-evaluate PR #156's diff and merge base.
+3. Retarget PR #156 to master where appropriate.
+4. Rebase or update the planning branch only when needed and safe.
+5. Verify the 27-document planning package remains intact.
+6. Run documentation checks.
+7. Run relevant PR checks.
+8. Obtain applicable human approval.
+9. Merge PR #156 only after its own required gates are satisfied.
+10. Verify the resulting master commit.
+
+Do not silently override unresolved content or governance concerns.
+If the planning package has factual or technical defects, correct them on the planning branch and preserve an auditable review history.
+5. COMPLETE B1 FACTUAL AUDIT
+The original planning author explicitly stated that the 27 documents were not independently read back for full factual accuracy.
+This is a material outstanding quality requirement.
+Perform a complete read-back of every document.
+Do not rely on headings, summaries or sampled sections.
+Audit every:
+
+* Course.
+* Module.
+* Lesson.
+* Quiz answer.
+* Resource.
+* Knowledge entry.
+* Objection response.
+* Follow-up template.
+* Technical claim.
+* Commercial claim.
+* Programme description.
+* Approval label.
+* Founder decision.
+* Security assumption.
+
+Create an evidence-backed content review register.
+Each finding must include:
+
+* Source document.
+* Heading or content identifier.
+* Statement or claim under review.
+* Source of authority.
+* Finding classification.
+* Risk.
+* Recommended correction.
+* Whether correction was implemented.
+* Remaining required approval.
+
+Use these classifications:
+
+* VERIFIED.
+* CORRECTED.
+* UNSUPPORTED.
+* REQUIRES FOUNDER DECISION.
+* REQUIRES LEGAL REVIEW.
+* REQUIRES ACCOUNTING REVIEW.
+* REQUIRES PRIVACY REVIEW.
+* DEFERRED.
+
+Do not silently replace genuine company policy with generic best practices.
+6. COMMERCIAL CLAIMS AUDIT
+Commercial accuracy is a priority.
+Verify every relevant reference to:
+
+* Standard website build pricing.
+* Monthly Growth Partnership pricing.
+* Twelve-month minimum term.
+* Historical six-month terms.
+* Total contractual commitment.
+* £705 standard acquisition commission.
+* Growth Partnership-only acquisition.
+* Bespoke project commissions.
+* Flexible deposits.
+* Discount allowances.
+* Existing-customer additional work.
+* Commission eligibility.
+* Refunds.
+* Withdrawals.
+* Achievement rewards.
+* Referral rewards.
+* Partner exclusivity.
+* Market eligibility.
+* Founding Partner recognition.
+
+Use the current authoritative commercial configuration and the B0 accepted-term architecture.
+Distinguish:
+
+* Current proposed standard offer.
+* Historical accepted agreements.
+* Founder-approved exceptions.
+* Illustrative earnings.
+* Conditional rewards.
+* Disabled features.
+* Pending policies.
+
+Do not describe proposed achievement or referral payments as immediately payable.
+Do not suggest ongoing monthly commission exists where only the initial eligible retainer payment earns acquisition commission.
+Do not invent minimum withdrawal amounts or frequency.
+Do not guarantee earnings.
+Do not claim all countries are commercially activated.
+Treat contract, employment-status, VAT and tax matters as requiring proper professional approval.
+7. TECHNICAL ACCURACY AUDIT
+Review every technical claim.
+Prioritise:
+
+* Next.js.
+* React.
+* Responsive design.
+* Website performance.
+* SEO.
+* AI search optimisation.
+* Accessibility.
+* Hosting.
+* DNS.
+* Email.
+* Security.
+* Backups.
+* Analytics.
+* WordPress migration.
+* Redirects.
+* E-commerce.
+* CRM systems.
+* Booking platforms.
+* Business automation.
+* Mobile applications.
+* Bespoke enterprise software.
+
+Distinguish general technical possibilities from services that ScaleSmiths actually offers under an approved scope.
+Do not claim:
+
+* Guaranteed search rankings.
+* Guaranteed website traffic.
+* Guaranteed enquiries.
+* Guaranteed conversion growth.
+* Guaranteed zero downtime.
+* Guaranteed compatibility with all external systems.
+* Universal accessibility certification.
+* Unlimited maintenance.
+* Unlimited technical support.
+* Unlimited hosting resources.
+* Automatic security immunity.
+
+Where technical feasibility depends on discovery, make that explicit.
+Ensure partners understand when to involve the technical founder.
+Any unconfirmed service specification must remain draft.
+8. EDITORIAL QUALITY AUDIT
+Review the content as a professional learning and sales programme.
+Correct:
+
+* Repetition.
+* Inconsistent terminology.
+* Ambiguous explanations.
+* Excessive jargon.
+* Poor lesson sequencing.
+* Unsupported claims.
+* Contradictory examples.
+* Incorrect quiz answers.
+* Unrealistic client conversations.
+* Weak objection handling.
+* Missing escalation guidance.
+* Inappropriate sales language.
+
+Use British English consistently.
+Maintain a confident, professional ScaleSmiths voice.
+Avoid manipulation.
+Avoid fabricated urgency.
+Avoid disparaging competitors.
+Avoid promising outcomes that depend on external platforms.
+Keep lessons clear enough for inexperienced independent partners while providing useful detail for experienced professionals.
+Use real examples only where appropriately sourced and authorised.
+Clearly label synthetic examples.
+9. COURSE-BY-COURSE VALIDATION
+Validate all thirteen planned Academy courses.
+For every course:
+
+* Confirm objectives match actual lessons.
+* Confirm lessons follow a logical progression.
+* Confirm technical explanations are accurate.
+* Confirm knowledge checks test the intended concepts.
+* Confirm answers are supported by the lesson.
+* Confirm resources are relevant.
+* Confirm escalation guidance is appropriate.
+* Confirm commercial claims match approved or proposed policy.
+* Confirm the training remains voluntary.
+* Confirm publication approval is pending where applicable.
+
+Preserve the original curriculum structure unless a material issue justifies changing it.
+Do not remove useful content merely to shorten the package.
+Track all 94 lessons in a content inventory.
+Report missing or duplicated lesson identifiers.
+10. RESOURCE CENTRE AUDIT
+Review all thirteen professional resource drafts.
+Verify:
+
+* Audience suitability.
+* Commercial accuracy.
+* Technical accuracy.
+* Privacy requirements.
+* Founder approval status.
+* Client-facing versus partner-only classification.
+* Historical versus current commercial terms.
+* Version.
+* Review date.
+* Related Academy modules.
+
+Check that the material will be useful in real client conversations.
+Create a clear publication priority order.
+Suggested priority:
+
+1. Company brochure.
+2. Website development guide.
+3. Growth Partnership guide.
+4. Discovery questionnaire.
+5. Meeting preparation checklist.
+6. Objection handling.
+7. Bespoke software overview.
+8. Technical escalation guide.
+9. Commercial and commission references.
+10. Remaining specialist resources.
+
+These priorities may be adjusted based on actual content readiness.
+Do not publish the drafts.
+11. KNOWLEDGE BASE AUDIT
+Audit all thirty-three knowledge entries.
+Verify:
+
+* Question.
+* Approved or draft answer.
+* Client-friendly explanation.
+* Technical limitations.
+* Source.
+* Related resources.
+* Escalation instructions.
+* Publication status.
+
+Check category coverage and terminology.
+Identify gaps in common partner questions.
+Recommend additional entries only where they materially improve the initial release.
+Do not inflate the library with generic filler.
+Use current approved knowledge as the authority.
+Where no approved answer exists, display an accurate unresolved state.
+12. OBJECTION HANDLING AND COMMUNICATION
+Review twelve objection responses and six follow-up templates.
+Ensure responses are:
+
+* Truthful.
+* Respectful.
+* Technically accurate.
+* Commercially accurate.
+* Useful in realistic conversations.
+* Consistent with independent partner status.
+
+Each objection response should distinguish:
+
+* Customer concern.
+* Recommended response.
+* Supporting explanation.
+* Relevant questions.
+* Limitations.
+* Escalation.
+* Applicable approved resource.
+
+Do not use invented case studies or testimonials.
+Do not encourage misleading comparisons.
+Do not promise discounts without founder approval.
+Do not pressure customers into twelve-month agreements through concealed terms.
+Keep communications professional and adaptable.
+13. FOUNDER APPROVAL REGISTER
+Consolidate the existing approval requirements.
+Create a clear founder decision register for B1.
+Required decisions include:
+Commercial
+
+* Service descriptions.
+* Standard prices.
+* VAT wording.
+* Hosting pricing.
+* SEO and AEO scope.
+* Analytics scope.
+* Maintenance boundaries.
+* Discount authority.
+* Bespoke scoping authority.
+
+Legal and partner governance
+
+* Independent contractor status.
+* Voluntary Academy participation.
+* Training progress and privacy.
+* Partner communications.
+* Approved earnings examples.
+* Territory claims.
+* Referral and achievement descriptions.
+
+Privacy
+
+* Learning progress data.
+* Retention.
+* Resource download logging.
+* Partner access.
+* Consent where appropriate.
+* Public-facing resources.
+
+Publication
+
+* Approved Academy lessons.
+* Approved brochures.
+* Approved technical articles.
+* Approved objection responses.
+* Review intervals.
+* Withdrawal and correction procedure.
+
+Do not mark any decision approved without genuine authorised evidence.
+Design the system so content can be implemented and tested before the material itself is authorised for publication.
+14. ACCESSIBILITY AUDIT
+The planning audit identified the admin application's muted text colour:
+`#667085`
+Its reported contrast against the relevant background is approximately 3.71:1.
+Verify the actual rendered background and colour combination.
+For normal-size text, WCAG AA generally requires 4.5:1 contrast.
+Identify every affected component.
+Recommend a suitable accessible palette adjustment consistent with ScaleSmiths branding.
+Ensure:
+
+* Keyboard navigation.
+* Visible focus.
+* Proper headings.
+* Accessible form labels.
+* Meaningful errors.
+* Reduced-motion support.
+* Mobile readability.
+* Appropriate text contrast.
+* Responsive layouts.
+* Screen reader semantics.
+
+Do not make an unreviewed global colour change that damages unrelated application components.
+During planning, record the proposed change.
+During implementation, apply it with visual and accessibility regression tests.
+15. CONTENT ARCHITECTURE
+Reuse the existing resource infrastructure where appropriate.
+The current platform reportedly supports immutable published resource versions but lacks complete approval metadata and review scheduling.
+Design and implement the smallest coherent extension.
+Content must support:
+
+* Draft.
+* Submitted for review.
+* Changes requested.
+* Approved.
+* Published.
+* Superseded.
+* Archived.
+* Withdrawn.
+
+Not every content type needs every state if an existing model supports a simpler secure lifecycle.
+Record:
+
+* Author.
+* Approver.
+* Approval date.
+* Publication version.
+* Effective date.
+* Review due date.
+* Audience.
+* Source.
+* Approval notes.
+* Correction history.
+* Audit events.
+
+Published versions should remain immutable.
+Corrections create new approved versions.
+Do not allow ordinary partners to publish official ScaleSmiths guidance.
+Do not grant content editors access to financial or commission administration.
+16. SEARCH ARCHITECTURE
+Use PostgreSQL full-text search for the initial B1 implementation.
+Support:
+
+* Search ranking.
+* Category filters.
+* Approved content only.
+* Version-aware results.
+* Related resources.
+* Founder-managed synonyms.
+* Search by service.
+* Search by common customer questions.
+
+Do not introduce:
+
+* Paid AI APIs.
+* Autonomous agents.
+* A vector database.
+* External search services.
+
+Unless a measured requirement justifies them.
+Implement a secure bounded query model.
+Prevent cross-audience content leakage.
+Ensure draft content cannot be retrieved through partner search.
+Record search-related acceptance criteria.
+17. B1 INTERFACE DESIGN
+Use the existing admin design system.
+Required views:
+
+1. Academy dashboard.
+2. Course catalogue.
+3. Course and lesson viewer.
+4. Resource Centre.
+5. Technical Knowledge Base.
+6. Objection Handling.
+7. Founder Content Studio.
+
+Use official ScaleSmiths branding:
+
+* Black.
+* Charcoal.
+* Metallic gold.
+* Silver.
+* Clear typography.
+* Restrained animation.
+
+The interface should look like a premium ScaleSmiths application, not a generic third-party learning management system.
+Group navigation logically.
+Ensure mobile usability at 320px and 390px.
+Do not introduce excessive navigation clutter.
+Do not display fictional course completion percentages.
+18. IMPLEMENTATION GATE
+B1 application code may only be developed after:
+
+1. B0 has been legitimately merged into master.
+2. The merge commit has been verified.
+3. Master CI has been verified.
+4. No unauthorised production deployment occurred.
+5. PR #156 has been reconciled with the merged foundation.
+6. The approved planning baseline is available on the implementation branch.
+7. Repository governance requirements are satisfied.
+
+If these conditions are not met, continue the permitted documentation and approval work.
+Do not build B1 on the old B0 feature branch.
+Do not build B1 on an unapproved substitute branch.
+19. B1 IMPLEMENTATION
+When the implementation gate is satisfied, create:
+`feature/operation-empower`
+from the verified master branch.
+Develop complete vertical slices.
+B1.1 — Content governance
+
+* Versioned publishing.
+* Founder review.
+* Approval records.
+* Review dates.
+* Audience restrictions.
+* Audit history.
+
+B1.2 — Academy
+
+* Courses.
+* Modules.
+* Lessons.
+* Optional knowledge checks.
+* Progress.
+* Partner learning interface.
+
+B1.3 — Resource Centre
+
+* Approved resources.
+* Categories.
+* Search.
+* Downloads.
+* Founder management.
+
+B1.4 — Knowledge Base
+
+* Approved articles.
+* Deterministic full-text search.
+* Synonyms.
+* Related content.
+* Source attribution.
+
+B1.5 — Objection Handling
+
+* Searchable responses.
+* Customer-friendly language.
+* Discovery questions.
+* Escalation guidance.
+
+B1.6 — Integration
+
+* Onboarding toolkit.
+* Prospect discovery.
+* Meeting preparation.
+* Commission documentation.
+* Partner dashboard.
+
+B1.7 — Verification
+
+* Unit tests.
+* PostgreSQL integration.
+* Browser acceptance.
+* Accessibility.
+* Restricted-role security.
+* Financial regression.
+* Independent review.
+* Draft PR.
+
+Complete one usable feature slice before starting the next.
+Do not stop at empty tables or placeholder screens.
+20. SECURITY AND PRIVACY
+Preserve B0's existing security architecture.
+Required protections:
+
+* Founder-controlled publication.
+* Partner audience isolation.
+* Draft isolation.
+* Version integrity.
+* Revoked partner denial.
+* Resource permission enforcement.
+* Bounded file rendering.
+* Safe downloads.
+* Secure source links.
+* Audit history.
+* Learning progress privacy.
+* Appropriate retention.
+
+Treat Academy progress as personal information.
+Training is voluntary and must remain separate from acquisition commission eligibility.
+Do not expose individual training completion to other partners.
+Avoid arbitrary file uploads unless a secure upload, scanning and serving pipeline exists.
+Do not introduce new paid infrastructure unnecessarily.
+21. TESTING AND ACCEPTANCE
+Run full appropriate verification.
+Required:
+
+* Admin unit tests.
+* Web unit tests.
+* Real PostgreSQL integration.
+* Expansion concurrency.
+* Restricted database role tests.
+* Original Expansion journey.
+* B0 partner journey.
+* £705 standard commission reconciliation.
+* Content publication tests.
+* Draft isolation tests.
+* Course progress tests.
+* Knowledge search tests.
+* Resource access tests.
+* Objection response tests.
+* Founder permission tests.
+* Revoked partner tests.
+* Accessibility tests.
+* Typecheck.
+* Lint.
+* Production builds.
+* Migration checks.
+* Repository gates.
+
+Browser acceptance must demonstrate:
+
+1. Founder creates draft course.
+2. Founder adds module and lesson.
+3. Founder submits content for approval.
+4. Authorised founder approves.
+5. Course is published.
+6. Partner logs in.
+7. Partner opens Academy.
+8. Partner completes an optional lesson.
+9. Progress is persisted.
+10. Partner searches knowledge.
+11. Partner opens a related resource.
+12. Partner searches an objection.
+13. Draft-only content remains inaccessible.
+14. Founder publishes an updated version.
+15. Partner receives the approved version.
+16. Revoked partner access is denied.
+
+Use actual production builds and disposable synthetic data.
+Distinguish API setup from browser interaction.
+22. INDEPENDENT REVIEW
+Perform a fresh independent model review where available.
+Review:
+
+* Content correctness.
+* Commercial claims.
+* Publication permissions.
+* Versioning.
+* Search leakage.
+* Resource access.
+* Learning progress privacy.
+* Database privileges.
+* Accessibility.
+* Financial regression.
+
+Resolve confirmed critical and high issues.
+Document medium and low findings.
+Do not claim human review if none occurred.
+Do not mark legally sensitive training material approved merely because technical review passed.
+23. GITHUB WORKFLOW
+For the planning package:
+
+* Push approved documentation-only corrections to the existing planning branch.
+* Update PR #156.
+* Preserve an accurate diff.
+* Keep the required review process.
+* Retarget to master after B0 merges.
+* Do not auto-merge.
+
+For B1 implementation:
+
+* Work on `feature/operation-empower`.
+* Commit completed vertical slices.
+* Push using repository-approved workflow.
+* Open a draft PR when implementation is reviewable.
+* Inspect remote CI.
+* Do not merge or deploy B1 automatically.
+
+No changes to branch protection without authorised governance approval.
+24. DELIVERABLES
+Before B0 merges
+Produce:
+
+* Full content accuracy audit.
+* Lesson-by-lesson inventory.
+* Technical claims review.
+* Commercial claims review.
+* Editorial corrections.
+* Updated resource drafts.
+* Knowledge Base review.
+* Objection-response review.
+* Founder approval register.
+* Accessibility review.
+* Updated B1 implementation specification.
+* PR #156 documentation update.
+* Clear B0 merge blocker status.
+
+After B0 merges
+Produce:
+
+* Operational Academy.
+* Resource Centre.
+* Knowledge Base.
+* Objection Handling workspace.
+* Founder Content Studio.
+* Versioned publishing.
+* Optional learning progress.
+* Restricted-role verification.
+* Authenticated browser acceptance.
+* Security review.
+* B1 draft PR.
+* Final implementation report.
+
+Use accurate status labels:
+
+* COMPLETE.
+* PARTIAL.
+* BLOCKED.
+* NOT STARTED.
+* DEFERRED.
+
+Do not report B1 implementation complete based solely on documentation.
+25. FINAL EXECUTION RULES
+Work independently within authorised boundaries.
+Do not repeatedly ask for decisions already documented.
+Do not fabricate missing founder approvals.
+Do not bypass required code-owner review.
+Do not merge when required checks or approvals are missing.
+Do not enable real partner activation.
+Do not activate financial rewards.
+Do not execute payouts.
+Do not deploy without specific approval.
+Do not automatically publish draft educational material.
+Do not consume paid AI APIs.
+Do not begin B2, B3, B4, B5 or B6.
+Prioritise:
+
+1. Factual accuracy.
+2. Commercial integrity.
+3. Security.
+4. Founder control.
+5. Partner usability.
+6. Implementation quality.
+7. Evidence-backed verification.
+
+Complete as much independent work as possible without violating the B0 merge gate.
+When an external dependency prevents progress, stop only the dependent work and continue independent authorised tasks.
+Do not falsely claim completion.
+FINAL DIRECTIVE
+Operation Intelligence has built the commercial foundation.
+Operation Empower must make it genuinely useful.
+First, complete the legitimate B0 merge.
+Preserve independent human oversight.
+Quality-assure the entire B1 planning package.
+Correct unsupported commercial and technical claims.
+Establish founder-controlled publication.
+Build the Partner Academy.
+Build the Resource Centre.
+Build the Technical Knowledge Base.
+Build the Objection Handling system.
+Give ScaleSmiths partners the tools and understanding they need to represent the business professionally.
+Do not turn draft content into public commitments.
+Do not weaken the financial foundation.
+Do not compromise partner independence.
+Do not circumvent GitHub protections.
+Do not deploy or activate real commercial operations.
+OPERATION EMPOWER — MASTER DIRECTIVE
+BUILD THE KNOWLEDGE. EQUIP THE PARTNERS. SCALE THE FUTURE.
+Commence.
+</pasted_content id="831a">

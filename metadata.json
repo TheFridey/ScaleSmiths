@@ -1,0 +1,55 @@
+{
+  "cli_version": "0.12.2",
+  "checkpoint_id": "01M7WKJ66DEJC2HD8J9NSPACDW",
+  "strategy": "manual-commit",
+  "branch": "claude/empower-b1-planning",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "docs/expansion/empower/ACCEPTANCE-CRITERIA.md",
+    "docs/expansion/empower/ARCHITECTURE.md",
+    "docs/expansion/empower/B1-STATUS.md",
+    "docs/expansion/empower/CONTENT-REVIEW-REGISTER.md",
+    "docs/expansion/empower/CURRICULUM.md",
+    "docs/expansion/empower/DESIGN-SPECIFICATION.md",
+    "docs/expansion/empower/FOUNDER-APPROVAL-REGISTER.md",
+    "docs/expansion/empower/KNOWLEDGE-BASE.md",
+    "docs/expansion/empower/LESSONS-FOUNDATIONS.md",
+    "docs/expansion/empower/LESSONS-PRACTICE.md",
+    "docs/expansion/empower/PLATFORM-AUDIT.md",
+    "docs/expansion/empower/README.md",
+    "docs/expansion/empower/SECURITY-MODEL.md",
+    "docs/expansion/empower/resources/R08-objection-handling-playbook.md",
+    "docs/expansion/empower/resources/R12-commission-and-payment-reference.md",
+    "docs/expansion/empower/resources/R13-follow-up-templates.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 102,
+    "cache_creation_tokens": 208970,
+    "cache_read_tokens": 9296217,
+    "output_tokens": 51595,
+    "api_call_count": 51
+  },
+  "redaction": {
+    "replacements": 13,
+    "layers": {
+      "betterleaks": 0,
+      "connection_string": 0,
+      "credential_key": 0,
+      "credential_value": 0,
+      "credentialed_uri": 0,
+      "entropy": 12,
+      "key_context": 1,
+      "provider_token": 0,
+      "shell_stdin": 0
+    }
+  }
+}

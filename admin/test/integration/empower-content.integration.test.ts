@@ -97,6 +97,9 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("Empower B1.1 content 
     const slug = `kb-host-${suffix}`
     const created = await runAs(founderA, () => createContentItem({ kind: "knowledge", slug, audience: "client_facing", cadence: "service", title: "Do you provide hosting?", fields: { question: "Hosting?" } }))
     await expect(runAs(founderA, () => submitContentVersion({ versionId: created.versionId }))).rejects.toThrow(/Answer/)
+    // Separation of duties: another founder may not rewrite or submit this draft and then approve it as a non-author.
+    await expect(runAs(founderB, () => saveContentDraft({ versionId: created.versionId, title: "Rewritten by founder B", fields: knowledge(), sourceRefs: ["faq:hosting-provided"] }))).rejects.toMatchObject({ status: 403 })
+    await expect(runAs(founderB, () => submitContentVersion({ versionId: created.versionId }))).rejects.toMatchObject({ status: 403 })
     await runAs(founderA, () => saveContentDraft({ versionId: created.versionId, title: "Do you provide hosting?", fields: knowledge(), sourceRefs: "faq:hosting-provided\nfaq:hosting-location" }))
     await runAs(founderA, () => submitContentVersion({ versionId: created.versionId }))
     await expect(runAs(founderA, () => saveContentDraft({ versionId: created.versionId, title: "Changed after submission" }))).rejects.toMatchObject({ status: 409 })
@@ -167,6 +170,10 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("Empower B1.1 content 
     // Self-approval is only possible with a recorded reason; a review date outside the cadence is refused.
     expect(await refused(pool.query("insert into empower_content_approvals(id,version_id,decision,decided_by,reference,notes,review_by) values($1,$2,'approved',$3,'TEST','TEST ONLY self',current_date+30)", [randomUUID(), c.versionId, founderA.id]))).toMatch(/must record a reason/)
     expect(await refused(pool.query("insert into empower_content_approvals(id,version_id,decision,decided_by,reference,notes,review_by) values($1,$2,'approved',$3,'TEST','TEST ONLY late',current_date+400)", [randomUUID(), c.versionId, founderB.id]))).toMatch(/within the review cadence/)
+    // The submitter is an author too, even when a raw writer records someone else as submitter.
+    const v2 = await runAs(founderA, () => createContentItem({ kind: "knowledge", slug: `kb-submitter-${suffix}`, audience: "partner_only", cadence: "service", title: "Submitter test", fields: knowledge(), sourceRefs: ["faq:hosting-provided"] }))
+    await pool.query("update empower_content_versions set status='in_review',submitted_by=$2 where id=$1", [v2.versionId, founderB.id])
+    expect(await refused(pool.query("insert into empower_content_approvals(id,version_id,decision,decided_by,reference,notes,review_by) values($1,$2,'approved',$3,'TEST','TEST ONLY submitter',current_date+30)", [randomUUID(), v2.versionId, founderB.id]))).toMatch(/must record a reason/)
     await approve(c.versionId, founderB, inTwoMonths())
     const [approval] = (await pool.query("select id from empower_content_approvals where version_id=$1", [c.versionId])).rows
     expect(await refused(pool.query("update empower_content_approvals set notes='rewritten' where id=$1", [approval.id]))).toBeTruthy()

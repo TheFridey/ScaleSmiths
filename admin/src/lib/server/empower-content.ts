@@ -64,6 +64,15 @@ async function lockVersion(tx: Executor, id: string) {
   return { item, version }
 }
 
+/**
+ * AP-GOV-04 separation of duties: a version has exactly one author, who alone may edit and submit it. Otherwise a second founder
+ * could rewrite someone else's draft and then approve it as "not the author". Another founder can archive an abandoned draft
+ * and start their own revision instead.
+ */
+function requireAuthor(version: Row, actor: Actor) {
+  if (String(version.created_by) !== actor.id) throw new ContentError("Only the author of this draft can edit or submit it. Archive it and start your own revision instead.", 403)
+}
+
 export interface DraftInput { title?: unknown; body?: unknown; fields?: unknown; sourceRefs?: unknown; changeSummary?: unknown }
 function draftValues(kind: ContentKind, input: DraftInput) {
   return {
@@ -93,6 +102,7 @@ export async function saveContentDraft(input: DraftInput & { versionId?: unknown
     await founderGuard(tx, actor)
     const { item, version } = await lockVersion(tx, id)
     if (version.status !== "draft") conflict("Only a draft can be edited. Start a new revision instead.")
+    requireAuthor(version, actor)
     const values = draftValues(item.kind as ContentKind, input)
     await tx.execute(sql`update empower_content_versions set title=${values.title},body=${values.body},fields=${JSON.stringify(values.fields)}::jsonb,
       source_refs=${JSON.stringify(values.sources)}::jsonb,change_summary=${values.summary} where id=${id}`)
@@ -125,6 +135,7 @@ export async function submitContentVersion(input: { versionId?: unknown; lintOve
     await founderGuard(tx, actor)
     const { item, version } = await lockVersion(tx, id)
     if (version.status !== "draft") conflict("Only a draft can be submitted for review.")
+    requireAuthor(version, actor)
     const check = checkSubmission({
       kind: item.kind as ContentKind, audience: item.audience as ContentAudience, cadenceMonths: Number(item.review_cadence_months),
       title: String(version.title), body: String(version.body), fields: version.fields, sources: version.source_refs, lintOverrideReason: input.lintOverrideReason,

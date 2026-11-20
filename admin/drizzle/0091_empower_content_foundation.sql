@@ -73,12 +73,13 @@ DECLARE v record;
 BEGIN
   -- The decision time is the database clock, never the caller: it bounds the review window and orders decisions.
   NEW.decided_at := now();
-  SELECT cv.status, cv.created_by, ci.review_cadence_months INTO v
+  SELECT cv.status, cv.created_by, cv.submitted_by, ci.review_cadence_months INTO v
     FROM empower_content_versions cv JOIN empower_content_items ci ON ci.id = cv.item_id WHERE cv.id = NEW.version_id FOR UPDATE OF cv;
   IF NOT FOUND OR v.status <> 'in_review' THEN RAISE EXCEPTION 'Only a version in review can receive a decision'; END IF;
   IF NEW.decision = 'approved' THEN
-    IF NEW.decided_by = v.created_by AND NEW.self_approval_reason IS NULL THEN RAISE EXCEPTION 'An author approving their own version must record a reason'; END IF;
-    IF NEW.decided_by <> v.created_by AND NEW.self_approval_reason IS NOT NULL THEN RAISE EXCEPTION 'A self-approval reason applies only to the author'; END IF;
+    -- Both the creator and the submitter count as authors of the version.
+    IF NEW.decided_by IN (v.created_by, v.submitted_by) AND NEW.self_approval_reason IS NULL THEN RAISE EXCEPTION 'An author approving their own version must record a reason'; END IF;
+    IF NEW.decided_by NOT IN (v.created_by, v.submitted_by) AND NEW.self_approval_reason IS NOT NULL THEN RAISE EXCEPTION 'A self-approval reason applies only to the author'; END IF;
     IF NEW.review_by <= (NEW.decided_at AT TIME ZONE 'UTC')::date
        OR NEW.review_by > ((NEW.decided_at AT TIME ZONE 'UTC') + make_interval(months => v.review_cadence_months))::date THEN
       RAISE EXCEPTION 'The review date must be in the future and within the review cadence for this content';

@@ -607,7 +607,7 @@
     {"path":"admin/drizzle/0088_expansion_review_medium_findings.sql","sha256":"2421aa7417018b4d307123276175a4c10d5cbb96b343cdd1fdbd6ba9bcacd831","lifecycle":"forward","reason":"Merge-remediation: founder-approved area taxonomy and audited release of a held research domain."},
     {"path":"admin/drizzle/0089_expansion_profile_entitlement_view.sql","sha256":"09106a29ccfdbeb3ee829d1e35bae8372c7d13d559b693461f3f2ff21e74b9e5","lifecycle":"forward","reason":"Public profile view requires current entitlement: a revoked qualification or an open refund review suspends the page."},
     {"path":"admin/drizzle/0090_expansion_domain_release_guard_hardening.sql","sha256":"b9a0dbb7ff51339cd69b4cbb6e8f15c2c77b07def92248135f8d5336be62a1c9","lifecycle":"forward","reason":"Domain-release guard hardened: full unworked checks, reason required, INSERT covered."},
-    {"path":"admin/drizzle/0091_empower_content_foundation.sql","sha256":"58342f54840fe46d7d9c992d001e8e8eacbeaf65fb34d2b4d34871a255597664","lifecycle":"forward","reason":"Operation Empower B1.1: founder-controlled versioned content with database-enforced lifecycle, draft-only editing, append-only approval evidence, review cadence and one published version per item."}
+    {"path":"admin/drizzle/0091_empower_content_foundation.sql","sha256":"26a1b7e9352aa7d33f720533bf8447bd521040e1beb4df726af42884780cc921","lifecycle":"forward","reason":"Operation Empower B1.1: founder-controlled versioned content with database-enforced lifecycle, draft-only editing, append-only approval evidence, review cadence and one published version per item."}
   ],
   "journals": {
     "web": {

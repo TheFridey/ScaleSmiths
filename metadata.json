@@ -1,0 +1,53 @@
+{
+  "cli_version": "0.12.2",
+  "checkpoint_id": "01M7WXTBEXBZVGTSK4HH20RSAN",
+  "strategy": "manual-commit",
+  "branch": "feature/operation-empower",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "admin/Explanation",
+    "admin/scripts/import-empower-curriculum.mjs",
+    "admin/src/app/partner/academy/[course]/page.tsx",
+    "admin/src/app/partner/academy/page.tsx",
+    "admin/src/app/partner/page.tsx",
+    "admin/src/components/empower/AcademyCourse.tsx",
+    "admin/src/components/empower/AcademyHome.tsx",
+    "admin/src/components/empower/AcademyShell.tsx",
+    "admin/src/components/empower/academy.css",
+    "admin/src/components/expansion/ExpansionWorkspace.tsx",
+    "admin/src/components/expansion/expansion.css",
+    "admin/src/lib/empower-curriculum.test.ts",
+    "admin/src/lib/empower-curriculum.ts",
+    "docs/expansion/empower/KNOWLEDGE-CHECKS.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 40,
+    "cache_creation_tokens": 74294,
+    "cache_read_tokens": 12345253,
+    "output_tokens": 62646,
+    "api_call_count": 20
+  },
+  "redaction": {
+    "replacements": 265,
+    "layers": {
+      "betterleaks": 115,
+      "connection_string": 0,
+      "credential_key": 0,
+      "credential_value": 0,
+      "credentialed_uri": 241,
+      "entropy": 38,
+      "key_context": 4,
+      "provider_token": 0,
+      "shell_stdin": 0
+    }
+  }
+}

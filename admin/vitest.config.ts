@@ -18,6 +18,8 @@ export default defineConfig({
       "server-only": path.resolve(__dirname, "./test/stubs/server-only.ts"),
     },
   },
+  // tsconfig preserves JSX for Next.js; tests that render components (Operation Empower SafeMarkdown) need it compiled.
+  oxc: { jsx: { runtime: "automatic" } },
   test: {
     exclude: ["test/e2e/**", "test/integration/**", "test/visual/**", "node_modules/**", ".next/**"],
   },

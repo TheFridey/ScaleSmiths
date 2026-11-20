@@ -7,7 +7,7 @@ import { hasCapability } from "@/lib/rbac"
 import { translateDbError } from "@/lib/db-errors"
 import {
   ContentError, approvalAuthority, changeSummary, checkSubmission, contentAudience, contentBody, contentDecision, contentFields, contentKind,
-  contentSlug, contentTitle, reviewByDate, reviewCadence, sourceRefs, type ContentAudience, type ContentKind,
+  contentSlug, contentTitle, courseLessonIds, reviewByDate, reviewCadence, sourceRefs, type ContentAudience, type ContentKind,
 } from "@/lib/empower-content"
 import { requireCapability } from "./rbac"
 
@@ -73,6 +73,21 @@ function requireAuthor(version: Row, actor: Actor) {
   if (String(version.created_by) !== actor.id) throw new ContentError("Only the author of this draft can edit or submit it. Archive it and start your own revision instead.", 403)
 }
 
+/**
+ * B1.2: a course may be submitted or published only when every linked lesson has a published, in-date version. Lessons are
+ * approved independently (with their own author/approver separation), so a founder cannot slip their own unreviewed lesson
+ * into a course. Lesson item rows are share-locked in id order so a concurrent withdrawal waits for this check.
+ */
+async function assertCourseLessonsServable(tx: Executor, fields: unknown) {
+  const ids = courseLessonIds(fields)
+  if (!ids.length) throw new ContentError("A course needs at least one lesson.", 409)
+  const list = sql.join(ids.map((lessonId) => sql`${lessonId}::uuid`), sql`,`)
+  await tx.execute(sql`select id from empower_content_items where id in (${list}) order by id for share`)
+  const ready = await rows(tx, sql`select i.id from empower_content_items i join empower_content_versions v on v.item_id=i.id and v.status='published' and v.review_by >= (now() at time zone 'UTC')::date where i.kind='lesson' and i.id in (${list})`)
+  const missing = ids.filter((lessonId) => !ready.some((r) => String(r.id) === lessonId))
+  if (missing.length) throw new ContentError(`Every lesson in a course must be published and in date first (${missing.length} of ${ids.length} not ready).`, 409)
+}
+
 export interface DraftInput { title?: unknown; body?: unknown; fields?: unknown; sourceRefs?: unknown; changeSummary?: unknown }
 function draftValues(kind: ContentKind, input: DraftInput) {
   return {
@@ -84,6 +99,7 @@ function draftValues(kind: ContentKind, input: DraftInput) {
 export async function createContentItem(input: DraftInput & { kind?: unknown; slug?: unknown; audience?: unknown; cadence?: unknown }) {
   const actor = await founder()
   const kind = contentKind(input.kind), slug = contentSlug(input.slug), audience = contentAudience(input.audience), cadence = reviewCadence(input.cadence)
+  if (kind === "course" && audience !== "partner_only") throw new ContentError("Academy courses are for partners only.")
   const values = draftValues(kind, input)
   const itemId = randomUUID(), versionId = randomUUID()
   return db.transaction(async (tx) => guarded(async () => {
@@ -141,6 +157,7 @@ export async function submitContentVersion(input: { versionId?: unknown; lintOve
       title: String(version.title), body: String(version.body), fields: version.fields, sources: version.source_refs, lintOverrideReason: input.lintOverrideReason,
     })
     await tx.execute(sql`update empower_content_versions set lint_override_reason=${check.lintOverrideReason} where id=${id}`)
+    if (item.kind === "course") await assertCourseLessonsServable(tx, check.fields)
     await tx.execute(sql`update empower_content_versions set status='in_review',submitted_by=${actor.id},submitted_at=now() where id=${id}`)
     await audit(tx, actor.id, id, "empower_submitted", { itemId: item.id, version: version.version, lintHits: check.lintHits, lintOverridden: Boolean(check.lintOverrideReason) })
     return { versionId: id, status: "in_review" }
@@ -180,6 +197,8 @@ export async function publishContentVersion(input: { versionId?: unknown }) {
     await founderGuard(tx, actor)
     const { item, version } = await lockVersion(tx, id)
     if (version.status !== "approved") conflict("Only an approved version can be published.")
+    // A course is published only if every lesson it links is itself published and in date at this moment (lesson rows share-locked).
+    if (item.kind === "course") await assertCourseLessonsServable(tx, version.fields)
     const superseded = await rows(tx, sql`update empower_content_versions set status='superseded',superseded_at=now() where item_id=${String(item.id)} and status='published' returning id,version`)
     await tx.execute(sql`update empower_content_versions set status='published',published_at=now() where id=${id}`)
     await audit(tx, actor.id, id, "empower_published", { itemId: item.id, version: version.version, supersededVersionIds: superseded.map((r) => r.id) })

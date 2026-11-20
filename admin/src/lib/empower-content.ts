@@ -6,7 +6,7 @@
 import { ExpansionError } from "./expansion"
 import { MEETING_TYPES } from "./expansion-operations"
 
-export const CONTENT_KINDS = ["resource", "lesson", "knowledge", "objection", "template"] as const
+export const CONTENT_KINDS = ["resource", "lesson", "knowledge", "objection", "template", "course"] as const
 export type ContentKind = (typeof CONTENT_KINDS)[number]
 export const CONTENT_AUDIENCES = ["partner_only", "client_facing"] as const
 export type ContentAudience = (typeof CONTENT_AUDIENCES)[number]
@@ -72,16 +72,26 @@ export function contentFields(kind: ContentKind, value: unknown, complete: boole
   if (value == null) value = {}
   if (typeof value !== "object" || Array.isArray(value)) fail("Content fields must be an object.")
   const fields = value as Fields
-  const keep = (keys: readonly string[]) => {
+  const keep = (keys: readonly string[], structured: readonly string[] = []) => {
     const out: Fields = {}
-    for (const key of keys) {
+    for (const key of [...keys, ...structured]) {
       const v = fields[key]
       if (v === undefined || v === null || v === "") continue
+      if (structured.includes(key)) { out[key] = v; continue }
       if (key === "aliases") { out.aliases = (Array.isArray(v) ? v : String(v).split("\n")).map((a) => String(a).trim()).filter(Boolean).slice(0, 30); continue }
       if (typeof v !== "string" || v.length > FIELD_MAX) fail(`Field ${key} must be text of at most ${FIELD_MAX} characters.`)
       out[key] = (v as string).trim()
     }
-    for (const key of Object.keys(fields)) if (!keys.includes(key)) fail(`Field ${key} is not used by ${kind} content.`)
+    for (const key of Object.keys(fields)) if (!keys.includes(key) && !structured.includes(key)) fail(`Field ${key} is not used by ${kind} content.`)
+    return out
+  }
+  if (kind === "course") {
+    const out = keep(["category", "estimated_minutes"], ["objectives", "modules"])
+    if (out.category !== undefined) oneOf(out.category, COURSE_CATEGORIES, "course category")
+    if (out.estimated_minutes !== undefined && !/^([1-9]\d{0,2})$/.test(String(out.estimated_minutes))) fail("Estimated learning time must be 1 to 999 minutes.")
+    out.objectives = courseObjectives(out.objectives, complete)
+    out.modules = courseModules(out.modules, complete)
+    if (complete) oneOf(out.category, COURSE_CATEGORIES, "course category")
     return out
   }
   if (kind === "knowledge") {
@@ -104,7 +114,9 @@ export function contentFields(kind: ContentKind, value: unknown, complete: boole
     return out
   }
   if (kind === "lesson") {
-    const out = keep(["lesson_code", "course_code", "reading_minutes"])
+    const out = keep(["lesson_code", "course_code", "reading_minutes"], ["checks"])
+    const checks = knowledgeChecks(out.checks, complete)
+    if (checks.length) out.checks = checks; else delete out.checks
     if (out.lesson_code !== undefined && !/^C\d{2}-L\d{1,2}$/.test(String(out.lesson_code))) fail("Lesson codes look like C04-L3.")
     if (out.course_code !== undefined && !/^C\d{2}$/.test(String(out.course_code))) fail("Course codes look like C04.")
     if (out.reading_minutes !== undefined && !/^([1-9]|[1-5]\d|60)$/.test(String(out.reading_minutes))) fail("Reading time must be 1 to 60 minutes.")
@@ -149,10 +161,10 @@ export function checkSubmission(input: { kind: ContentKind; audience: ContentAud
   const sources = sourceRefs(input.sources)
   if (!sources.length) fail("Add at least one source: no source, no content.")
   if (input.kind !== "knowledge" && input.kind !== "objection" && input.body.trim().length < 20) fail("The body must contain the content (at least 20 characters).")
-  const problems = linkProblems([input.body, ...Object.values(fields).map(String)].join("\n"))
+  const problems = linkProblems([input.body, ...flatText(fields)].join("\n"))
   if (problems.length) fail(problems.join(" "))
   if (input.kind === "knowledge" && COMMERCIAL_TOPICS.includes(String(fields.topic)) && input.cadenceMonths !== REVIEW_CADENCES.commercial) fail("Commercial knowledge must use the 3-month review cadence.")
-  const lintHits = audienceLintHits(input.audience, [input.title, input.body, ...Object.values(fields).map(String)])
+  const lintHits = audienceLintHits(input.audience, [input.title, input.body, ...flatText(fields)])
   const lintOverrideReason = optionalText(input.lintOverrideReason, "Override reason", 2000)
   if (lintHits.length && (!lintOverrideReason || lintOverrideReason.length < 10)) fail(`Client-facing content mentions ${lintHits.join(", ")}. Remove it, or record why it is safe (at least 10 characters).`)
   return { fields, sources, lintHits, lintOverrideReason: lintHits.length ? lintOverrideReason : null }
@@ -189,4 +201,112 @@ export function approvalAuthority(input: { approverId: string; authorId: string;
 export function isServable(version: { status: string; review_by: string | null }, today = new Date()) {
   if (version.status !== "published" || !version.review_by) return false
   return version.review_by >= today.toISOString().slice(0, 10)
+}
+
+// ---------------------------------------------------------------- Operation Empower B1.2: Academy rules
+export const COURSE_CATEGORIES = ["getting-started", "services", "technical-knowledge", "digital-growth", "sales-fundamentals", "discovery", "commercial-policies", "professional-conduct", "advanced-opportunities"] as const
+export type CourseCategory = (typeof COURSE_CATEGORIES)[number]
+export const CHECK_TYPES = ["single", "multiple", "true_false"] as const
+export type CheckType = (typeof CHECK_TYPES)[number]
+export interface KnowledgeCheck { id: string; type: CheckType; prompt: string; options: { id: string; text: string }[]; answer: string[]; explanation: string }
+export interface CourseModule { title: string; summary?: string; lessons: string[] }
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+
+/** Every string inside a fields object, for link and audience scanning of structured content. */
+export function flatText(value: unknown): string[] {
+  if (typeof value === "string") return [value]
+  if (Array.isArray(value)) return value.flatMap(flatText)
+  if (value && typeof value === "object") return Object.values(value).flatMap(flatText)
+  return []
+}
+
+function courseObjectives(value: unknown, complete: boolean): string[] {
+  const list = value == null ? [] : Array.isArray(value) ? value : typeof value === "string" ? value.split("\n") : fail("Learning objectives must be a list.")
+  const out = list.map((o) => typeof o === "string" ? o.trim() : fail("Each objective must be text.")).filter(Boolean)
+  if (out.length > 10) fail("List at most 10 learning objectives.")
+  for (const o of out) if (o.length < 5 || o.length > 300) fail("Each learning objective must be 5 to 300 characters.")
+  if (complete && !out.length) fail("Add at least one learning objective.")
+  return out
+}
+
+function courseModules(value: unknown, complete: boolean): CourseModule[] {
+  if (value == null) return complete ? fail("Add at least one module.") : []
+  if (!Array.isArray(value)) fail("Modules must be a list.")
+  const modules = value as unknown[]
+  if (modules.length > 20) fail("A course can have at most 20 modules.")
+  const seen = new Set<string>()
+  const out = modules.map((raw, index) => {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) fail(`Module ${index + 1} is not valid.`)
+    const m = raw as Record<string, unknown>
+    for (const key of Object.keys(m)) if (!["title", "summary", "lessons"].includes(key)) fail(`Module field ${key} is not used.`)
+    const title = text(m.title, `Module ${index + 1} title`, 3, 200)
+    const summary = optionalText(m.summary, `Module ${index + 1} summary`, 1000)
+    const lessons = m.lessons == null ? [] : Array.isArray(m.lessons) ? m.lessons : fail(`Module ${index + 1} lessons must be a list.`)
+    if (lessons.length > 30) fail(`Module ${index + 1} can have at most 30 lessons.`)
+    const ids = lessons.map((id) => typeof id === "string" && UUID.test(id.toLowerCase()) ? id.toLowerCase() : fail(`Module ${index + 1} contains an invalid lesson reference.`))
+    for (const id of ids) { if (seen.has(id)) fail("A lesson can appear only once in a course."); seen.add(id) }
+    if (complete && !ids.length) fail(`Module ${index + 1} needs at least one lesson.`)
+    return summary ? { title, summary, lessons: ids } : { title, lessons: ids }
+  })
+  if (complete && !out.length) fail("Add at least one module.")
+  return out
+}
+
+export const courseLessonIds = (fields: unknown): string[] => {
+  const modules = (fields as { modules?: CourseModule[] } | null)?.modules
+  return Array.isArray(modules) ? modules.flatMap((m) => Array.isArray(m.lessons) ? m.lessons : []) : []
+}
+
+/** Optional knowledge checks belong to a lesson version and are approved with it. No check is publishable without an answer and explanation. */
+export function knowledgeChecks(value: unknown, complete: boolean): KnowledgeCheck[] {
+  if (value == null || value === "") return []
+  if (!Array.isArray(value)) fail("Knowledge checks must be a list.")
+  const list = value as unknown[]
+  if (list.length > 10) fail("A lesson can have at most 10 knowledge-check questions.")
+  const ids = new Set<string>()
+  return list.map((raw, index) => {
+    const label = `Question ${index + 1}`
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) fail(`${label} is not valid.`)
+    const q = raw as Record<string, unknown>
+    for (const key of Object.keys(q)) if (!["id", "type", "prompt", "options", "answer", "explanation"].includes(key)) fail(`${label}: field ${key} is not used.`)
+    const id = typeof q.id === "string" && /^q\d{1,2}$/.test(q.id) ? q.id : fail(`${label} needs an id like q1.`)
+    if (ids.has(id)) fail(`Question id ${id} is used twice.`)
+    ids.add(id)
+    const type = oneOf(q.type, CHECK_TYPES, `${label} type`)
+    const prompt = text(q.prompt, `${label} prompt`, 5, 500)
+    const rawOptions = type === "true_false" ? [{ id: "true", text: "True" }, { id: "false", text: "False" }] : Array.isArray(q.options) ? q.options : fail(`${label} needs options.`)
+    if (rawOptions.length < 2 || rawOptions.length > 6) fail(`${label} needs 2 to 6 options.`)
+    const optionIds = new Set<string>()
+    const options = rawOptions.map((o, i) => {
+      const opt = (o ?? {}) as Record<string, unknown>
+      const oid = typeof opt.id === "string" && /^[a-z0-9_]{1,12}$/.test(opt.id) ? opt.id : fail(`${label} option ${i + 1} needs a short id.`)
+      if (optionIds.has(oid)) fail(`${label} has a repeated option id.`)
+      optionIds.add(oid)
+      return { id: oid, text: text(opt.text, `${label} option ${i + 1}`, 1, 300) }
+    })
+    const answer = Array.isArray(q.answer) ? [...new Set(q.answer.map(String))] : q.answer == null || q.answer === "" ? [] : [String(q.answer)]
+    for (const a of answer) if (!optionIds.has(a)) fail(`${label} answer must be one of its options.`)
+    if (complete || answer.length) {
+      if (!answer.length) fail(`${label} needs an approved answer before review.`)
+      if (type !== "multiple" && answer.length !== 1) fail(`${label} must have exactly one correct answer.`)
+      if (type === "multiple" && answer.length === options.length) fail(`${label}: not every option can be correct.`)
+    }
+    const explanation = complete ? text(q.explanation, `${label} explanation`, 5, 1000) : (optionalText(q.explanation, `${label} explanation`, 1000) ?? "")
+    return { id, type, prompt, options, answer: answer.sort(), explanation }
+  })
+}
+
+const looseChecks = (checks: unknown): KnowledgeCheck[] => Array.isArray(checks) ? checks as KnowledgeCheck[] : []
+/** What a partner may see before answering: never the answer or the explanation. */
+export const publicChecks = (checks: unknown) => looseChecks(checks).map(({ id, type, prompt, options }) => ({ id, type, prompt, options }))
+
+/** Grades one answer. A multiple-choice question needs every correct option and no others. */
+export function gradeCheck(checks: unknown, questionId: unknown, answer: unknown) {
+  const question = looseChecks(checks).find((q) => q.id === questionId)
+  if (!question) throw new ContentError("That question is not part of this lesson.", 404)
+  const given = Array.isArray(answer) ? [...new Set(answer.map(String))].sort() : typeof answer === "string" && answer ? [answer] : []
+  if (!given.length || given.length > 6 || given.some((g) => !question.options.some((o) => o.id === g))) throw new ContentError("Choose one of the listed answers.")
+  if (question.type !== "multiple" && given.length !== 1) throw new ContentError("Choose one answer.")
+  const correct = given.length === question.answer.length && given.every((g, i) => g === question.answer[i])
+  return { questionId: question.id, given, correct, answer: question.answer, explanation: question.explanation }
 }

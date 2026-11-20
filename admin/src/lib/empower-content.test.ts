@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import {
-  approvalAuthority, audienceLintHits, checkSubmission, contentFields, contentSlug, isServable, linkProblems, reviewByDate, reviewCadence, sourceRefs,
+  approvalAuthority, audienceLintHits, checkSubmission, contentFields, contentSlug, courseLessonIds, gradeCheck, isServable, linkProblems, publicChecks, reviewByDate, reviewCadence, sourceRefs,
 } from "./empower-content"
 
 const knowledge = {
@@ -112,5 +112,39 @@ describe("review dates and approval authority", () => {
     expect(isServable({ status: "published", review_by: "2026-11-20" }, today2)).toBe(true)
     expect(isServable({ status: "published", review_by: "2026-11-19" }, today2)).toBe(false)
     for (const status of ["draft", "in_review", "approved", "superseded", "archived", "changes_requested"]) expect(isServable({ status, review_by: "2027-01-01" }, today2)).toBe(false)
+  })
+})
+
+describe("Academy course structure and knowledge checks (B1.2)", () => {
+  const lessonA = "11111111-1111-4111-8111-111111111111", lessonB = "22222222-2222-4222-8222-222222222222"
+  it("validates course structure and refuses duplicate lessons", () => {
+    const fields = contentFields("course", { category: "getting-started", objectives: "Describe ScaleSmiths\nFind approved answers", modules: [{ title: "Who we are", lessons: [lessonA] }, { title: "Your role", lessons: [lessonB.toUpperCase()] }] }, true)
+    expect(fields.objectives).toEqual(["Describe ScaleSmiths", "Find approved answers"])
+    expect(courseLessonIds(fields)).toEqual([lessonA, lessonB])
+    expect(() => contentFields("course", { category: "getting-started", objectives: ["Describe it"], modules: [{ title: "One", lessons: [lessonA] }, { title: "Two", lessons: [lessonA] }] }, false)).toThrow(/only once/)
+    expect(() => contentFields("course", { category: "getting-started", objectives: ["Describe it"], modules: [{ title: "Empty", lessons: [] }] }, true)).toThrow(/at least one lesson/)
+    expect(() => contentFields("course", { category: "mandatory", modules: [] }, false)).toThrow(/category/)
+    expect(() => contentFields("course", { modules: [{ title: "Bad", lessons: ["not-a-uuid"] }] }, false)).toThrow(/invalid lesson reference/)
+  })
+  const q = (over: Record<string, unknown> = {}) => ({ id: "q1", type: "single", prompt: "Can anyone guarantee first place on Google?", options: [{ id: "a", text: "Yes" }, { id: "b", text: "No" }], answer: ["b"], explanation: "Rankings depend on Google, competitors and the searcher.", ...over })
+  it("requires an approved answer and explanation before review", () => {
+    expect(contentFields("lesson", { checks: [q({ answer: [], explanation: "" })] }, false).checks).toHaveLength(1)
+    expect(() => contentFields("lesson", { lesson_code: "C03-L4", course_code: "C03", checks: [q({ answer: [] })] }, true)).toThrow(/approved answer/)
+    expect(() => contentFields("lesson", { lesson_code: "C03-L4", course_code: "C03", checks: [q({ explanation: "" })] }, true)).toThrow(/explanation/)
+    expect(() => contentFields("lesson", { checks: [q({ answer: ["a", "b"] })] }, false)).toThrow(/exactly one/)
+    expect(() => contentFields("lesson", { checks: [q({ answer: ["z"] })] }, false)).toThrow(/one of its options/)
+    expect(() => contentFields("lesson", { checks: [q(), q()] }, false)).toThrow(/used twice/)
+    expect(contentFields("lesson", { lesson_code: "C03-L4", course_code: "C03", checks: [q({ type: "true_false", options: undefined, answer: ["false"] })] }, true).checks).toEqual([expect.objectContaining({ options: [{ id: "true", text: "True" }, { id: "false", text: "False" }] })])
+  })
+  it("never exposes answers before grading, and grades single, multiple and true/false", () => {
+    const checks = [q(), q({ id: "q2", type: "multiple", options: [{ id: "a", text: "Hosting" }, { id: "b", text: "Email" }, { id: "c", text: "Unlimited support" }], answer: ["a", "b"] })]
+    expect(JSON.stringify(publicChecks(checks))).not.toMatch(/answer|explanation|Rankings depend/)
+    expect(gradeCheck(checks, "q1", ["b"])).toMatchObject({ correct: true })
+    expect(gradeCheck(checks, "q1", "a")).toMatchObject({ correct: false, answer: ["b"] })
+    expect(gradeCheck(checks, "q2", ["b", "a"])).toMatchObject({ correct: true })
+    expect(gradeCheck(checks, "q2", ["a"])).toMatchObject({ correct: false })
+    expect(() => gradeCheck(checks, "q1", ["a", "b"])).toThrow(/one answer/)
+    expect(() => gradeCheck(checks, "q1", ["x"])).toThrow(/listed answers/)
+    expect(() => gradeCheck(checks, "q9", ["a"])).toThrow(/not part/)
   })
 })

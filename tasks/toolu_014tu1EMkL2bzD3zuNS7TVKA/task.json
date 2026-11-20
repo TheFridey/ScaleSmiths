@@ -1,0 +1,15 @@
+{
+  "tool_use_id": "toolu_014tu1EMkL2bzD3zuNS7TVKA",
+  "agent_id": "a7733bdf5e7468f80",
+  "subagent_type": "regression-reviewer",
+  "task_description": "Independent review of B1.2 Academy",
+  "token_usage": {
+    "input_tokens": 14,
+    "cache_creation_tokens": 58116,
+    "cache_read_tokens": 220893,
+    "output_tokens": 9428,
+    "api_call_count": 7
+  },
+  "started_at": "2026-11-20T19:24:13.2966879Z",
+  "completed_at": "2026-11-20T19:28:32.5266083Z"
+}

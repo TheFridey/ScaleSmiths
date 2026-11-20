@@ -1,0 +1,81 @@
+{
+  "cli_version": "0.12.2",
+  "checkpoint_id": "01M7XC0FGQE1Z8783KJJS64TF1",
+  "strategy": "manual-commit",
+  "branch": "feature/operation-empower",
+  "checkpoints_count": 13,
+  "files_touched": [
+    "admin/Explanation",
+    "admin/drizzle/0093_empower_academy_partner_lessons.sql",
+    "admin/drizzle/meta/_journal.json",
+    "admin/package-lock.json",
+    "admin/package.json",
+    "admin/playwright.empower.config.ts",
+    "admin/src/components/empower/SafeMarkdown.tsx",
+    "admin/src/components/empower/academy-contrast.test.ts",
+    "admin/src/components/empower/academy.css",
+    "admin/src/lib/rbac-authorization.test.ts",
+    "admin/src/lib/rbac.ts",
+    "admin/src/lib/server/empower-academy.ts",
+    "admin/src/lib/server/empower-content.ts",
+    "admin/test/e2e/empower-academy.spec.ts",
+    "admin/test/integration/empower-academy.integration.test.ts",
+    "docs/expansion/empower/ACCEPTANCE-CRITERIA.md",
+    "docs/expansion/empower/ARCHITECTURE.md",
+    "docs/expansion/empower/B1-2-ACADEMY-REPORT.md",
+    "docs/expansion/empower/B1-STATUS.md",
+    "docs/expansion/empower/FOUNDER-APPROVAL-REGISTER.md",
+    "docs/expansion/empower/IMPLEMENTATION-PHASES.md",
+    "docs/expansion/empower/README.md",
+    "docs/expansion/empower/SECURITY-MODEL.md",
+    "docs/expansion/empower/evidence/b1-2/academy-dashboard-1024.png",
+    "docs/expansion/empower/evidence/b1-2/academy-dashboard-1440.png",
+    "docs/expansion/empower/evidence/b1-2/academy-dashboard-320.png",
+    "docs/expansion/empower/evidence/b1-2/academy-dashboard-390.png",
+    "docs/expansion/empower/evidence/b1-2/academy-dashboard-768.png",
+    "docs/expansion/empower/evidence/b1-2/academy-lesson-1024.png",
+    "docs/expansion/empower/evidence/b1-2/academy-lesson-1440.png",
+    "docs/expansion/empower/evidence/b1-2/academy-lesson-320.png",
+    "docs/expansion/empower/evidence/b1-2/academy-lesson-390.png",
+    "docs/expansion/empower/evidence/b1-2/academy-lesson-768.png",
+    "scripts/migration-checksums.json",
+    "scripts/shared-migration-plan.json"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 182,
+    "cache_creation_tokens": 710799,
+    "cache_read_tokens": 55866857,
+    "output_tokens": 55581,
+    "api_call_count": 80,
+    "subagent_tokens": {
+      "input_tokens": 14,
+      "cache_creation_tokens": 58116,
+      "cache_read_tokens": 220893,
+      "output_tokens": 9428,
+      "api_call_count": 7
+    }
+  },
+  "redaction": {
+    "replacements": 379,
+    "layers": {
+      "betterleaks": 165,
+      "connection_string": 0,
+      "credential_key": 0,
+      "credential_value": 5,
+      "credentialed_uri": 334,
+      "entropy": 44,
+      "key_context": 6,
+      "provider_token": 0,
+      "shell_stdin": 0
+    }
+  }
+}

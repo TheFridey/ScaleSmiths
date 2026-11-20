@@ -21,7 +21,7 @@ The B0 Partner Portal already has the essential primitives for a Resource Centre
 
 ## 2. Founder administration (`/expansion`)
 
-- Route `/expansion` requires `expansion.manage`; founder-only actions use `expansion.founder`. Owner and administrator roles exclude `expansion.partner`, so a founder account never doubles as a partner (`admin/src/lib/rbac.ts:26-27`).
+- Route `/expansion` requires `expansion.manage`; founder actions also run a server-side guard that re-checks the role, active flag and session version (the authorization policy names this rule `expansion.founder`; there is no separate capability). Owner and administrator roles exclude `expansion.partner`, so a founder account never doubles as a partner (`admin/src/lib/rbac.ts:26-27`).
 - The founder workspace already includes Recruitment, Programme, Partner operations, Research and allocation, Recognition, Web pages and Delivery capacity tabs.
 - Every write goes through one command endpoint (`admin/src/app/api/expansion/route.ts`) and writes an audit row (`audit(tx, actor.id, id, 'resource_created', …)` in `admin/src/lib/server/expansion.ts:279`).
 

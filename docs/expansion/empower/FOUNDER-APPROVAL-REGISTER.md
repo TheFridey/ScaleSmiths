@@ -11,9 +11,9 @@ Blocking columns: **P1** blocks Phase 1 (founder content workspace), **P2** bloc
 | `AP-GOV-01` | Partner role wording matches the final agreement | Founders, solicitor | Write agreement first, then align C01, C12 and R02 | N | Y | Y | `BLOCKED` (agreement) | |
 | `AP-GOV-02` | The Academy as optional and voluntary, with private progress, does not create employment indicators | Founders, employment solicitor | Keep optional, no targets, no scoring, no link to commission | N | N | Y | `FOUNDER DECISION` | |
 | `AP-GOV-03` | Founder visibility of partner progress | Founders, privacy adviser | Aggregates only; individual view only with partner opt-in | N | N | Y | `FOUNDER DECISION` | |
-| `AP-GOV-04` | Two-person rule for approval | Founders | Author cannot approve while two founders are active; recorded override otherwise | Y | Y | Y | `FOUNDER DECISION` | |
+| `AP-GOV-04` | Two-person rule for approval | Founders | Author cannot approve while two founders are active; recorded override otherwise | Y | Y | Y | `FOUNDER DECISION` | APPROVED as recommended by repository owner (TheFridey), 2026-11-20, in-session instruction 'Accept, start B1.1'; review by 2027-05-20 |
 | `AP-GOV-05` | Approved partner title and sign-off | Founders, solicitor | "Independent partner of ScaleSmiths" | N | Y | Y | `FOUNDER DECISION` | |
-| `AP-GOV-06` | Review cadence | Founders | Commercial 3 months; service 6 months; on source change | Y | Y | Y | `FOUNDER DECISION` | |
+| `AP-GOV-06` | Review cadence | Founders | Commercial 3 months; service 6 months; on source change | Y | Y | Y | `FOUNDER DECISION` | APPROVED as recommended by repository owner (TheFridey), 2026-11-20, in-session instruction 'Accept, start B1.1'; review by 2027-05-20 |
 | `AP-PRIV-01` | Privacy notice covers Academy progress, search logs and discovery notes | Founders, privacy adviser | Update partner privacy notice before P2 | N | Y | Y | `FOUNDER DECISION` | |
 | `AP-PRIV-02` | Search-log retention | Founders, privacy adviser | 90 days, hashed partner id | N | Y | N | `FOUNDER DECISION` | |
 | `AP-LEG-03` | Approved marketing process (channels, screening, opt-outs) | Founders, privacy adviser | Already open in [COMMERCIAL-ACTIVATION-GATES.md](../hardening/COMMERCIAL-ACTIVATION-GATES.md) | N | N | Y (C07) | `BLOCKED` | |
@@ -29,8 +29,8 @@ Blocking columns: **P1** blocks Phase 1 (founder content workspace), **P2** bloc
 | `AP-PROOF-01` | Partner use of each published project and any verified claim | Founders | Approve per project; descriptions only by default | N | Y | Y | `FOUNDER DECISION` | |
 | `AP-DES-01` | Visual direction | Founders | As in [DESIGN-SPECIFICATION.md](DESIGN-SPECIFICATION.md) | Y | Y | Y | `DRAFT` | |
 | `AP-DES-02` | Self-host Syne in admin | Founders, engineering | Yes, reuse the public WOFF2 files | N | N | N | `FOUNDER DECISION` | |
-| `AP-ENG-01` | Freeze or migrate `expansion_resources` | Engineering | Freeze, add read adapter | Y | N | N | `FOUNDER DECISION` | |
-| `AP-ENG-02` | Markdown renderer dependency | Engineering | Small maintained renderer, HTML disabled | Y | N | N | `FOUNDER DECISION` | |
+| `AP-ENG-01` | Freeze or migrate `expansion_resources` | Engineering | Freeze, add read adapter | Y | N | N | `FOUNDER DECISION` | APPROVED as recommended by repository owner (TheFridey), 2026-11-20, in-session instruction 'Accept, start B1.1'; review by 2027-05-20 |
+| `AP-ENG-02` | Markdown renderer dependency | Engineering | Small maintained renderer, HTML disabled | Y | N | N | `FOUNDER DECISION` | APPROVED as recommended by repository owner (TheFridey), 2026-11-20, in-session instruction 'Accept, start B1.1'; review by 2027-05-20 |
 | `AP-ENG-03` | Route structure | Engineering | Child routes under `/partner` | Y | N | N | `DRAFT` | |
 | `AP-ENG-04` | Content seeding as drafts only | Engineering | Reviewed seed script, draft status only | Y | N | N | `DRAFT` | |
 | `AP-ENG-05` | Replace hard-coded colours in `expansion.css` | Engineering | Separate small change | N | N | N | `DRAFT` | |

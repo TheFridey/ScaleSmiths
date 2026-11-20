@@ -19,7 +19,7 @@ No new role or capability is required.
 | Actor | Capability | Can | Cannot |
 |---|---|---|---|
 | Independent partner | `expansion.partner` | Read published, in-review-window content for their audience; search; record own progress; request a meeting from an entry | See drafts, approvals, other partners' progress, founder notes or search logs; write content |
-| Founder | `expansion.manage` + `expansion.founder` | Draft, review, approve, publish, supersede, archive; see aggregate progress; preview as partner | Approve their own draft when two founders are active (decision `AP-GOV-04`); delete versions |
+| Founder | `expansion.manage` (owner, administrator) | Draft, review, approve, publish, supersede, archive; see aggregate progress; preview as partner | Approve their own draft when two founders are active (decision `AP-GOV-04`); delete versions |
 | Owner, administrator | per `admin/src/lib/rbac.ts` | Whatever their existing capabilities allow | They never hold `expansion.partner`, so they cannot act as a partner |
 | Anonymous | none | Nothing | Reach any Empower route (the admin origin requires sign-in) |
 

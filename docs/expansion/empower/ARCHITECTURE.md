@@ -27,7 +27,7 @@
   │ Draft editor → Review → Approve → Publish        │      │ Academy   Resources   Knowledge search  │
   │ Supersede / Archive / Review-due queue           │      │ Objection workspace   My progress       │
   └───────────────┬──────────────────────────────────┘      └───────────────────┬─────────────────────┘
-                  │ expansion.founder (writes)                                  │ expansion.partner (reads)
+                  │ expansion.manage (writes)                                   │ expansion.partner (reads)
                   ▼                                                             ▼
         content service (server only)  ──────────── published, partner-audience, in-review-window rows only
                   │
@@ -62,7 +62,7 @@ draft ──► in_review ──► approved ──► published ──► super
 
 Mapping to the publication states named in the Operation Empower directive: *submitted for review* is `in_review`; *changes requested* is an `empower_content_approvals` row with `decision='changes_requested'` that returns the version to editing as a new draft version (the reviewed version is kept); *withdrawn* is `published → archived` with a mandatory reason and an audit event, used when published content is found to be wrong. A correction is always a new version that goes through review again; a published version is never edited.
 
-- `in_review → approved` requires an `empower_content_approvals` row with `decision='approved'` by a user holding `expansion.founder`, and it must be a **different** founder from the version's author when two founders are active (founder decision `AP-GOV-04`).
+- `in_review → approved` requires an `empower_content_approvals` row with `decision='approved'` by a user holding `expansion.manage`, and it must be a **different** founder from the version's author when two founders are active (founder decision `AP-GOV-04`).
 - `approved → published` is a separate action, so approval and release can be scheduled apart.
 - Publishing version N of an item moves the previously published version to `superseded` in the same transaction. There is at most one published version per item (partial unique index).
 - A published version whose `review_by` date has passed is **not served to partners** (fail closed) and appears in the founder "review due" queue. This mirrors `reviewExpiresAt` in `web/src/lib/public-claims.ts`.
@@ -140,7 +140,7 @@ What would justify revisiting: a corpus of thousands of items, evidence from zer
 | Onboarding toolkit | Link published handbook, brochure, pricing and commission references to `brochures`, `pricing_documents`, `commission_documents` and `academy` items. Requires the toolkit join to accept Empower items (small change) or the content to remain mirrored in `expansion_resources` |
 | Meetings | Every escalation rule names a meeting type. "Request help" in the knowledge viewer opens the existing meeting request form pre-filled with the type and a reference to the entry |
 | Audit | Every content write calls the existing `audit()` helper with an `empower_*` event name |
-| RBAC | No new role. Reads: `expansion.partner`. Writes and approvals: `expansion.founder`. Founder preview uses the partner renderer with a "preview" banner |
+| RBAC | No new role. Reads: `expansion.partner`. Writes and approvals: `expansion.manage`. Founder preview uses the partner renderer with a "preview" banner |
 | `partner-programme.ts` | Commercial lessons and the commission reference embed figures by **reference** to the programme constants, rendered with the plan version they come from, so they cannot drift from the engine |
 
 ## 7. Feature flags
@@ -154,6 +154,15 @@ Following the B0 pattern (everything defaults off):
 | `EMPOWER_FOUNDER_CONTENT_ENABLED` | `false` in production until Phase 1 is accepted | Founder content workspace |
 
 With a flag off, partner routes return 404 and the tab is hidden. The founder workspace can be enabled first so content can be loaded and approved before partners see anything.
+
+## 7a. As built in B1.1 (migration 0091)
+
+- Tables `empower_content_items`, `empower_content_versions`, `empower_content_approvals`. Statuses add `changes_requested` (terminal for that version) to the model above; a rejected version is archived with the decision as its reason.
+- Drafts are editable; from submission onwards a version is immutable (`empower_content_lifecycle` trigger). One published version and one in-progress version (draft, in review or approved) per item, by partial unique indexes.
+- Each item carries `review_cadence_months` (3 commercial, 6 service, `AP-GOV-06`); the approval trigger refuses a review date outside it. Commercial knowledge topics must use 3 months.
+- Founders are holders of `expansion.manage` (owner and administrator roles); there is no separate `expansion.founder` capability. The two-founder rule counts active users in those roles.
+- Audit uses the existing append-only `expansion_audit` table with `empower_*` actions.
+- Not yet built: `empower_content_links`, the Markdown renderer, diff view, preview as partner, legacy read adapter and seed script. Bodies render as plain text.
 
 ## 8. Open engineering decisions
 

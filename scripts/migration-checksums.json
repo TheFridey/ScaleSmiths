@@ -606,7 +606,8 @@
     {"path":"admin/drizzle/0087_expansion_partner_profiles.sql","sha256":"24c9a164375b01ba5e38452374b74fd57edda0385a2a9a70dabb9b666453c90c","lifecycle":"forward","reason":"Personal partner webpages: consent-bound drafts, founder review, immutable approved versions, slugs bound for life, publications and a narrow security-barrier public view."},
     {"path":"admin/drizzle/0088_expansion_review_medium_findings.sql","sha256":"2421aa7417018b4d307123276175a4c10d5cbb96b343cdd1fdbd6ba9bcacd831","lifecycle":"forward","reason":"Merge-remediation: founder-approved area taxonomy and audited release of a held research domain."},
     {"path":"admin/drizzle/0089_expansion_profile_entitlement_view.sql","sha256":"09106a29ccfdbeb3ee829d1e35bae8372c7d13d559b693461f3f2ff21e74b9e5","lifecycle":"forward","reason":"Public profile view requires current entitlement: a revoked qualification or an open refund review suspends the page."},
-    {"path":"admin/drizzle/0090_expansion_domain_release_guard_hardening.sql","sha256":"b9a0dbb7ff51339cd69b4cbb6e8f15c2c77b07def92248135f8d5336be62a1c9","lifecycle":"forward","reason":"Domain-release guard hardened: full unworked checks, reason required, INSERT covered."}
+    {"path":"admin/drizzle/0090_expansion_domain_release_guard_hardening.sql","sha256":"b9a0dbb7ff51339cd69b4cbb6e8f15c2c77b07def92248135f8d5336be62a1c9","lifecycle":"forward","reason":"Domain-release guard hardened: full unworked checks, reason required, INSERT covered."},
+    {"path":"admin/drizzle/0091_empower_content_foundation.sql","sha256":"58342f54840fe46d7d9c992d001e8e8eacbeaf65fb34d2b4d34871a255597664","lifecycle":"forward","reason":"Operation Empower B1.1: founder-controlled versioned content with database-enforced lifecycle, draft-only editing, append-only approval evidence, review cadence and one published version per item."}
   ],
   "journals": {
     "web": {
@@ -893,7 +894,8 @@
         {"idx":87,"version":"7","when":1794951004016,"tag":"0087_expansion_partner_profiles","breakpoints":true},
         {"idx":88,"version":"7","when":1794951005016,"tag":"0088_expansion_review_medium_findings","breakpoints":true},
         {"idx":89,"version":"7","when":1794951006016,"tag":"0089_expansion_profile_entitlement_view","breakpoints":true},
-        {"idx":90,"version":"7","when":1794951007016,"tag":"0090_expansion_domain_release_guard_hardening","breakpoints":true}
+        {"idx":90,"version":"7","when":1794951007016,"tag":"0090_expansion_domain_release_guard_hardening","breakpoints":true},
+        {"idx":91,"version":"7","when":1794951008016,"tag":"0091_empower_content_foundation","breakpoints":true}
       ]
     }
   },

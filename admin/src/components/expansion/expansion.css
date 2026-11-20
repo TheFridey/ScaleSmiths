@@ -11,3 +11,8 @@
 .ex-badge-art{filter:drop-shadow(0 6px 18px rgba(201,162,74,.28));max-width:100%;height:auto}
 .ex-note{font-size:.9rem;opacity:.8}
 @media (max-width:640px){.ex-recognition-body{grid-template-columns:1fr;justify-items:center;text-align:center}}
+
+/* Operation Empower B1.1 content studio */
+.ex-content-counts{display:flex;flex-wrap:wrap;gap:6px}
+.ex-content-version{align-items:flex-start}
+.ex-content-version>div{min-width:0;flex:1}

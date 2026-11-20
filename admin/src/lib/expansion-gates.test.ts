@@ -59,7 +59,10 @@ describe("geography is decided from the founder-approved area tree", () => {
     expect(matchExclusivity({ sector: "Dentist", area: "Westminster", sectorId: "dental", areaPath: ["westminster", "greater-london"] }, ex(["greater-london"], "Greater London"))).toBe("restricted")
   })
   it("two classified areas, neither containing the other, are positively different; an unclassified one is never proof", () => {
-    expect(matchExclusivity({ sector: "Dentist", area: "Leeds", sectorId: "dental", areaPath: leeds }, ex(northWest))).toBe("none")
+    expect(matchExclusivity({ sector: "Dentist", area: "Leeds", sectorId: "dental", areaPath: leeds, areaVerified: true }, ex(northWest))).toBe("none")
+    // a partner-typed area is an unverified assertion: it can match, but it can never clear
+    expect(matchExclusivity({ sector: "Dentist", area: "Leeds", sectorId: "dental", areaPath: leeds }, ex(northWest))).toBe("review")
+    expect(matchExclusivity({ sector: "Dentist", area: "Manchester", sectorId: "dental", areaPath: manchester }, ex(northWest))).toBe("restricted")
     expect(matchExclusivity({ sector: "Dentist", area: "Manchester", sectorId: "dental", areaPath: manchester }, ex(null))).toBe("review")   // exclusivity area not in the taxonomy
     expect(matchExclusivity({ sector: "Dentist", area: "Manchester", sectorId: "dental", areaPath: null }, ex(northWest))).toBe("review")     // prospect area not in the taxonomy
     expect(matchExclusivity({ sector: "Dentist", area: "Manchester", sectorId: "dental", areaPath: [] }, ex(northWest))).toBe("review")

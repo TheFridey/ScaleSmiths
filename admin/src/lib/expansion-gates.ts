@@ -4,7 +4,8 @@ const norm = (value: unknown) => String(value ?? "").toLowerCase().replace(/&/g,
 
 /** `areaPath` is the founder-approved area followed by every ancestor, most specific first (null when the wording is not in the taxonomy). */
 export interface ExclusivityRecord { clientId: number; sector: string; area: string; sectorId?: string | null; areaPath?: readonly string[] | null }
-export interface OpportunityFacts { clientId?: number | null; sector?: string | null; area?: string | null; sectorId?: string | null; areaPath?: readonly string[] | null }
+/** `areaVerified` is true only when a founder entered the area (a researched candidate). A partner-typed area is an unverified assertion, so it can match but can never CLEAR. */
+export interface OpportunityFacts { clientId?: number | null; sector?: string | null; area?: string | null; sectorId?: string | null; areaPath?: readonly string[] | null; areaVerified?: boolean }
 
 /**
  * Same sector and an equal or nested area (by wording or by the founder-approved area tree) -> restricted. Same sector with an unknown area, an
@@ -36,7 +37,7 @@ export function matchExclusivity(opportunity: OpportunityFacts, exclusivity: Exc
   const a = opportunity.areaPath, e = exclusivity.areaPath
   if (a?.length && e?.length) {
     if (a.includes(e[0]) || e.includes(a[0])) return sameSector ? "restricted" : "review"
-    return "none"
+    return opportunity.areaVerified ? "none" : "review"   // only a founder-entered area may prove a difference
   }
   return "review"
 }

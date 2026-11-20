@@ -32,7 +32,7 @@ vi.mock("../../src/lib/server/rbac", () => ({ requireCapability: async (capabili
   return { ...actor }
 } }))
 
-import { founderMutation, partnerMutation, partnerSnapshot } from "../../src/lib/server/expansion"
+import { founderMutation, founderSnapshot, partnerMutation, partnerSnapshot } from "../../src/lib/server/expansion"
 import { resolveQualificationFlag } from "../../src/lib/server/expansion-programme"
 import { requestMeeting, decideMeeting, correctMeeting } from "../../src/lib/server/expansion-operations"
 import { allocateCandidate, checkCandidate, editCandidate, releaseCandidateDomain, clearCandidateExclusivity, createCandidate, excludeCandidate, getResearchAdmin, markCandidateEligible, recordScreening, reassignCandidate, releaseCandidate } from "../../src/lib/server/expansion-research"
@@ -1123,6 +1123,12 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("Expansion real separa
         await alias(region, nw); await alias(city, mcr); await alias(l, leeds)
         expect(await outcome(inRegion)).toBe("restricted")                         // Manchester is inside the protected North West
         expect(await outcome(elsewhere)).toBe("clear")                             // Leeds is classified and outside it
+        // a PARTNER-typed location is unverified: it can match a protected area, but it can never clear one (founders decide)
+        const partnerMatch = await submitted("geo-partner-in", first), partnerOut = await submitted("geo-partner-out", first)
+        await pool.query("update prospects set industry=$1,location=$2 where id=(select prospect_id from expansion_opportunities where id=$3)", [sector, mcr, partnerMatch])
+        await pool.query("update prospects set industry=$1,location=$2 where id=(select prospect_id from expansion_opportunities where id=$3)", [sector, leeds, partnerOut])
+        const gates = (await runAs(founder, () => founderSnapshot())).exclusivityStatus as Record<string, string>
+        expect(gates[partnerMatch]).toBe("restricted"); expect(gates[partnerOut]).toBe("review_required")
         await expect(alias(city, nw)).rejects.toMatchObject({ status: 409 })       // an alias belongs to exactly one area
         await expect(runAs(founder, () => founderMutation({ action: "create_area", key: `bad-${suffix}`, label: "Orphan", parentId: randomUUID() }))).rejects.toMatchObject({ status: 400 })
         await expect(pool.query("update expansion_areas set label='x' where id=$1", [region])).rejects.toThrow()   // append-only
@@ -1149,7 +1155,7 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("Expansion real separa
       expect((await pool.query("select count(*)::int c from expansion_opportunities where normalized_domain=$1", [domain])).rows[0].c).toBe(2)   // old (released) and new
       // the database refuses the release for a candidate that is not excluded, and for any release outside the service
       const live = await eligible("dom-live"); const liveOut = await allocate(live, a.partnerId) as { opportunityId: string }
-      await expect(pool.query("update expansion_opportunities set domain_released_at=now(),domain_released_by=$1,domain_release_reason='x' where id=$2", [founder.id, liveOut.opportunityId])).rejects.toThrow(/withdrawn, unworked/)
+      await expect(pool.query("update expansion_opportunities set domain_released_at=now(),domain_released_by=$1,domain_release_reason='TEST ONLY direct release' where id=$2", [founder.id, liveOut.opportunityId])).rejects.toThrow(/withdrawn, unworked/)
       await expect(pool.query("update expansion_opportunities set domain_release_reason='changed' where id=$1", [out.opportunityId])).rejects.toThrow()
       await expect(runAs(founder, () => releaseCandidateDomain({ candidateId: live, reason: "TEST ONLY not excluded" }))).rejects.toMatchObject({ status: 409 })
       // suppression is untouched by a release

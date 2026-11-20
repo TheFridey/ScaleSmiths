@@ -1,0 +1,15 @@
+{
+  "tool_use_id": "toolu_01BzQevBchw8tHZN9KhZSfTe",
+  "agent_id": "a90b2e970ccd3289d",
+  "subagent_type": "db-migration-reviewer",
+  "task_description": "Review Empower migration and service",
+  "token_usage": {
+    "input_tokens": 6,
+    "cache_creation_tokens": 31847,
+    "cache_read_tokens": 38123,
+    "output_tokens": 6088,
+    "api_call_count": 3
+  },
+  "started_at": "2026-11-20T15:45:02.8046848Z",
+  "completed_at": "2026-11-20T15:46:14.1910292Z"
+}

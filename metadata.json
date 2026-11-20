@@ -1,0 +1,65 @@
+{
+  "cli_version": "0.12.2",
+  "checkpoint_id": "01M7WTJRHGPJTCKCHW4EXVJ7M1",
+  "strategy": "manual-commit",
+  "branch": "feature/operation-empower",
+  "checkpoints_count": 7,
+  "files_touched": [
+    ".env.example",
+    ".github/workflows/ci.yml",
+    "admin/drizzle/0091_empower_content_foundation.sql",
+    "admin/drizzle/meta/_journal.json",
+    "admin/src/app/api/expansion/route.ts",
+    "admin/src/components/expansion/ExpansionWorkspace.tsx",
+    "admin/src/components/expansion/expansion.css",
+    "admin/src/lib/empower-content.test.ts",
+    "admin/src/lib/empower-content.ts",
+    "admin/src/lib/server/empower-content.ts",
+    "admin/test/integration/empower-content.integration.test.ts",
+    "docs/expansion/empower/ACCEPTANCE-CRITERIA.md",
+    "docs/expansion/empower/ARCHITECTURE.md",
+    "docs/expansion/empower/B1-STATUS.md",
+    "docs/expansion/empower/FOUNDER-APPROVAL-REGISTER.md",
+    "docs/expansion/empower/PLATFORM-AUDIT.md",
+    "docs/expansion/empower/SECURITY-MODEL.md",
+    "scripts/migration-checksums.json",
+    "scripts/shared-migration-plan.json"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 248,
+    "cache_creation_tokens": 172871,
+    "cache_read_tokens": 42562778,
+    "output_tokens": 102802,
+    "api_call_count": 118,
+    "subagent_tokens": {
+      "input_tokens": 2,
+      "cache_creation_tokens": 11809,
+      "cache_read_tokens": 0,
+      "output_tokens": 162,
+      "api_call_count": 1
+    }
+  },
+  "redaction": {
+    "replacements": 88,
+    "layers": {
+      "betterleaks": 28,
+      "connection_string": 0,
+      "credential_key": 0,
+      "credential_value": 0,
+      "credentialed_uri": 71,
+      "entropy": 22,
+      "key_context": 3,
+      "provider_token": 0,
+      "shell_stdin": 0
+    }
+  }
+}

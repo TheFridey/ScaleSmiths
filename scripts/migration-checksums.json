@@ -588,7 +588,25 @@
     {"path":"admin/drizzle/0069_expansion_finance.sql","sha256":"3f70358eb54d2330d3300e5564ffe76b18b2b1cf932053009afe2b2da1219145","lifecycle":"forward","reason":"Operation Expansion forward-only foundation."},
     {"path":"admin/drizzle/0070_expansion_cancellations.sql","sha256":"7367bbb6152de1b9c40628d23bce26f17af9c8eb90cb5f332095c32693fe6483","lifecycle":"forward","reason":"Reviewed cancellation and immutable resource version lifecycle."},
     {"path":"admin/drizzle/0071_expansion_financial_hardening.sql","sha256":"84cf9e54ac35e67c9e345781fcd7a637007904505932b741d49a9fd1f1fba078","lifecycle":"forward","reason":"Bounded canonical refunds and reversible payout claims with immutable history."},
-    {"path":"admin/drizzle/0072_expansion_applicant_retention_holds.sql","sha256":"197a4c6d3c4fa11a9573e9f853693f2023051210a78e46cba4426b8d3d3fa9dd","lifecycle":"forward","reason":"Operator-controlled applicant retention holds."}
+    {"path":"admin/drizzle/0072_expansion_applicant_retention_holds.sql","sha256":"197a4c6d3c4fa11a9573e9f853693f2023051210a78e46cba4426b8d3d3fa9dd","lifecycle":"forward","reason":"Operator-controlled applicant retention holds."},
+    {"path":"admin/drizzle/0073_expansion_commercial_plans.sql","sha256":"98814cbb8926a0c1231d552be2907bc0d53a03fbc43504ab0d0b085d7960bafc","lifecycle":"forward","reason":"Operation Intelligence commercial plan integration: interim milestone and disabled-by-default plan settings."},
+    {"path":"admin/drizzle/0074_expansion_allowances_and_additional_claims.sql","sha256":"27a46682001c3ac25f301e2675ed12f73df400b0a3bea9a4ba1cc99eac174a86","lifecycle":"forward","reason":"Operation Intelligence discount allowances (default none) and founder-reviewed existing-customer additional claims."},
+    {"path":"admin/drizzle/0075_expansion_withdrawals.sql","sha256":"02cce7d3f44ecc1b3ef0d466ca02f0edc54421cd26e94a32ec8f16ecfc1e88a6","lifecycle":"forward","reason":"Operation Intelligence partner withdrawal requests reserving existing commission ledger entries; append-only, no runtime DELETE."},
+    {"path":"admin/drizzle/0076_expansion_market_and_exclusivity_gates.sql","sha256":"58cd1650ea99c8e31a7e8f7e795941f7d750f905d8512c7042314289d6a131c3","lifecycle":"forward","reason":"Operation Intelligence fail-closed market eligibility and customer sector exclusivity decisions."},
+    {"path":"admin/drizzle/0077_expansion_gate_hardening.sql","sha256":"e365388b49751c28281576f5ba967e6b7689d16d67971280ce61e31bf4f0c936","lifecycle":"forward","reason":"Independent-review hardening: founder-confirmed customer market and partner-matched withdrawal reservations."},
+    {"path":"admin/drizzle/0078_expansion_state_integrity.sql","sha256":"e0b39654d4c89e255c9c332c0689f0833a7937e6a6a009a81d298495dae06baf","lifecycle":"forward","reason":"Database-enforced withdrawal state transitions and immutable exclusivity history with explicit supersession."},
+    {"path":"admin/drizzle/0079_expansion_achievements_referrals.sql","sha256":"b50b5c61c890b57f700b9a84984a980497d5b530094557c0fd8161b6f6e93c61","lifecycle":"forward","reason":"Operation Intelligence achievements and referrals: derived qualification, versioned programmes, database-gated rewards with no payable liability."},
+    {"path":"admin/drizzle/0080_expansion_sector_taxonomy.sql","sha256":"b8e04dc456a7c0fa495e08e5087a22d463f48110b3a2c738fab868f1a9965859","lifecycle":"forward","reason":"Founder-defined canonical sector taxonomy and aliases for exclusivity classification."},
+    {"path":"admin/drizzle/0081_expansion_toolkit_meetings.sql","sha256":"0a9e3c2137b038a45185c49528b828cb8eaf92129a96f4127b1b03014a93a66a","lifecycle":"forward","reason":"Manual onboarding fulfilment tracking and founder meeting request workflow."},
+    {"path":"admin/drizzle/0082_expansion_review_fixes.sql","sha256":"330a61eb627a71561681d051abdde05734bb75137fc71f60e821a749010f6c7e","lifecycle":"forward","reason":"Independent review fixes: live-only reward uniqueness and complete milestone immutability."},
+    {"path":"admin/drizzle/0083_expansion_review_flags_and_meeting_history.sql","sha256":"8620c0bf1916ea28feaab5887a5de6d0f9c27da25139a7f89f895dc20b6e0f29","lifecycle":"forward","reason":"Trigger-raised qualification review flags, gated reward lifecycle with explicit withdrawal, and protected meeting history with auditable corrections."},
+    {"path":"admin/drizzle/0084_expansion_research_allocation.sql","sha256":"20d85f8352126235116135e7b5346cb0fb1b2ae4379babc3bbbe32183085ba7c","lifecycle":"forward","reason":"Researched prospect allocation: founder-held research candidates, append-only allocation history, candidate exclusivity decisions and a guarded opportunity owner."},
+    {"path":"admin/drizzle/0085_expansion_market_enforcement.sql","sha256":"16a7f5ae796aea7f2f3f3839e1bc755cf2aa18ede87258d20930dc4f3da0a4f0","lifecycle":"forward","reason":"Applicant residence, partner operating market and customer commercial market recorded separately for fail-closed enforcement."},
+    {"path":"admin/drizzle/0086_expansion_founding_recognition.sql","sha256":"f76bc943e241266e1c0bd094d3b585e34e773c2d339e662183535a92a844532a","lifecycle":"forward","reason":"Founder-controlled Founding Partner recognition: nomination, evidence, review, decision, approved benefits, fulfilment history, correction and revocation."},
+    {"path":"admin/drizzle/0087_expansion_partner_profiles.sql","sha256":"24c9a164375b01ba5e38452374b74fd57edda0385a2a9a70dabb9b666453c90c","lifecycle":"forward","reason":"Personal partner webpages: consent-bound drafts, founder review, immutable approved versions, slugs bound for life, publications and a narrow security-barrier public view."},
+    {"path":"admin/drizzle/0088_expansion_review_medium_findings.sql","sha256":"2421aa7417018b4d307123276175a4c10d5cbb96b343cdd1fdbd6ba9bcacd831","lifecycle":"forward","reason":"Merge-remediation: founder-approved area taxonomy and audited release of a held research domain."},
+    {"path":"admin/drizzle/0089_expansion_profile_entitlement_view.sql","sha256":"09106a29ccfdbeb3ee829d1e35bae8372c7d13d559b693461f3f2ff21e74b9e5","lifecycle":"forward","reason":"Public profile view requires current entitlement: a revoked qualification or an open refund review suspends the page."},
+    {"path":"admin/drizzle/0090_expansion_domain_release_guard_hardening.sql","sha256":"b9a0dbb7ff51339cd69b4cbb6e8f15c2c77b07def92248135f8d5336be62a1c9","lifecycle":"forward","reason":"Domain-release guard hardened: full unworked checks, reason required, INSERT covered."}
   ],
   "journals": {
     "web": {
@@ -857,7 +875,25 @@
         {"idx":69,"version":"7","when":1794951000002,"tag":"0069_expansion_finance","breakpoints":true},
         {"idx":70,"version":"7","when":1794951000003,"tag":"0070_expansion_cancellations","breakpoints":true},
         {"idx":71,"version":"7","when":1794951000004,"tag":"0071_expansion_financial_hardening","breakpoints":true},
-        {"idx":72,"version":"7","when":1794951000005,"tag":"0072_expansion_applicant_retention_holds","breakpoints":true}
+        {"idx":72,"version":"7","when":1794951000005,"tag":"0072_expansion_applicant_retention_holds","breakpoints":true},
+        {"idx":73,"version":"7","when":1794951000006,"tag":"0073_expansion_commercial_plans","breakpoints":true},
+        {"idx":74,"version":"7","when":1794951000007,"tag":"0074_expansion_allowances_and_additional_claims","breakpoints":true},
+        {"idx":75,"version":"7","when":1794951000008,"tag":"0075_expansion_withdrawals","breakpoints":true},
+        {"idx":76,"version":"7","when":1794951000009,"tag":"0076_expansion_market_and_exclusivity_gates","breakpoints":true},
+        {"idx":77,"version":"7","when":1794951000010,"tag":"0077_expansion_gate_hardening","breakpoints":true},
+        {"idx":78,"version":"7","when":1794951000011,"tag":"0078_expansion_state_integrity","breakpoints":true},
+        {"idx":79,"version":"7","when":1794951000012,"tag":"0079_expansion_achievements_referrals","breakpoints":true},
+        {"idx":80,"version":"7","when":1794951000013,"tag":"0080_expansion_sector_taxonomy","breakpoints":true},
+        {"idx":81,"version":"7","when":1794951000014,"tag":"0081_expansion_toolkit_meetings","breakpoints":true},
+        {"idx":82,"version":"7","when":1794951000015,"tag":"0082_expansion_review_fixes","breakpoints":true},
+        {"idx":83,"version":"7","when":1794951000016,"tag":"0083_expansion_review_flags_and_meeting_history","breakpoints":true},
+        {"idx":84,"version":"7","when":1794951001016,"tag":"0084_expansion_research_allocation","breakpoints":true},
+        {"idx":85,"version":"7","when":1794951002016,"tag":"0085_expansion_market_enforcement","breakpoints":true},
+        {"idx":86,"version":"7","when":1794951003016,"tag":"0086_expansion_founding_recognition","breakpoints":true},
+        {"idx":87,"version":"7","when":1794951004016,"tag":"0087_expansion_partner_profiles","breakpoints":true},
+        {"idx":88,"version":"7","when":1794951005016,"tag":"0088_expansion_review_medium_findings","breakpoints":true},
+        {"idx":89,"version":"7","when":1794951006016,"tag":"0089_expansion_profile_entitlement_view","breakpoints":true},
+        {"idx":90,"version":"7","when":1794951007016,"tag":"0090_expansion_domain_release_guard_hardening","breakpoints":true}
       ]
     }
   },

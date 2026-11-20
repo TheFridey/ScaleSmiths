@@ -6,7 +6,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { AnimatePresence, m } from "motion/react"
 import { usePrefersReducedMotion } from "@/lib/use-reduced-motion"
-import { ArrowUpRight, ChevronDown, LogIn, Menu, X } from "lucide-react"
+import { ArrowUpRight, ChevronDown, Handshake, LogIn, Menu, X } from "lucide-react"
 import { Logo } from "./Logo"
 import { cn } from "@/lib/utils"
 import { motionTransitions, staggerContainer, staggerItem } from "@/lib/motion"
@@ -29,6 +29,8 @@ const serviceLinks = [
   { href: "/services/managed-business-email", label: "Managed Business Email", description: "Custom-domain mailboxes, configured and supported." },
   { href: "/pricing", label: "Pricing", description: "Published starting points, and how larger work is scoped." },
 ]
+
+const PARTNER_CTA_CLASS = "bg-gradient-to-b from-[#ecd9a8] via-[#c8aa6e] to-[#a8884a] text-black shadow-[0_0_0_1px_rgba(219,193,142,.45),0_6px_18px_rgba(200,170,110,.18)] transition-[transform,box-shadow,filter] duration-200 hover:-translate-y-px hover:brightness-110 hover:shadow-[0_0_0_1px_rgba(236,217,168,.8),0_10px_26px_rgba(200,170,110,.32)] motion-reduce:transition-none motion-reduce:hover:translate-y-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ecd9a8]"
 
 const links = [
   { href: "/industries", label: "Industries" },
@@ -177,6 +179,11 @@ export function Nav() {
                 transition={reducedMotion ? { duration: 0 } : motionTransitions.gentle}
               >
                 <m.div variants={staggerContainer} initial={reducedMotion ? false : "hidden"} animate="visible" className="flex flex-col">
+                  <m.div variants={staggerItem} className="pb-4">
+                    <Link href="/partners" prefetch={false} onClick={closeMenu} className={cn("inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg font-dm text-sm font-bold", PARTNER_CTA_CLASS)}>
+                      <Handshake size={16} aria-hidden="true" /> Become a Partner
+                    </Link>
+                  </m.div>
                   {links.map((link) => (
                     <m.div key={link.href} variants={staggerItem}>
                       <Link href={link.href} prefetch={false} onClick={closeMenu} className="flex min-h-14 items-center border-b border-b1 font-syne text-xl font-bold text-t1">{link.label}</Link>
@@ -211,12 +218,12 @@ export function Nav() {
       scrolled ? "border-b1/80 bg-bg/94 shadow-[0_12px_40px_rgba(0,0,0,.22)] backdrop-blur-md" : "border-transparent bg-bg/45 backdrop-blur-sm",
     )}>
       <nav aria-label="Main navigation" className={cn(
-        "relative z-50 mx-auto flex max-w-[1320px] items-center gap-10 px-6 transition-[height] duration-300 md:px-12",
+        "relative z-50 mx-auto flex max-w-[1320px] items-center gap-6 px-6 lg:gap-10 transition-[height] duration-300 md:px-12",
         scrolled ? "h-[62px]" : "h-[78px]",
       )}>
         <Logo showName={false} size={scrolled ? 38 : 44} />
 
-        <div className="ml-auto hidden items-center gap-7 md:flex">
+        <div className="ml-auto hidden items-center gap-3 md:flex lg:gap-7">
           <div
             ref={servicesRef}
             className="relative"
@@ -283,17 +290,23 @@ export function Nav() {
               </Link>
             )
           })}
-          <Link href="/portal/login" prefetch={false} className="group inline-flex items-center gap-2 border-l border-b1 pl-5 font-dm text-[13px] font-medium text-t2 transition-colors hover:text-t1">
+          <Link href="/partners" prefetch={false} aria-current={isActive("/partners") ? "page" : undefined} className={cn("inline-flex min-h-9 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 font-dm text-[12px] font-bold lg:px-4 lg:text-[13px]", PARTNER_CTA_CLASS)}>
+            <Handshake size={14} aria-hidden="true" /> Become a Partner
+          </Link>
+          <Link href="/portal/login" prefetch={false} aria-label="Client Portal" className="group inline-flex min-h-9 items-center gap-2 border-l border-b1 pl-4 font-dm text-[13px] font-medium text-t2 transition-colors hover:text-t1 lg:pl-5">
             <LogIn size={14} className="text-acc" aria-hidden="true" />
-            Client Portal
-            <ArrowUpRight size={12} className="text-t3 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" aria-hidden="true" />
+            <span className="hidden lg:inline">Client Portal</span>
+            <ArrowUpRight size={12} className="hidden text-t3 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 lg:block" aria-hidden="true" />
           </Link>
           <Link href="/quote" prefetch={false} className="btn-sm group">
             Start a Project <ArrowUpRight size={13} className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" aria-hidden="true" />
           </Link>
         </div>
 
-        <button ref={toggleRef} type="button" className="ml-auto inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-control bg-s1/70 text-t1 md:hidden"
+        <Link href="/partners" prefetch={false} aria-label="Become a Partner" className={cn("ml-auto inline-flex min-h-11 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 font-dm text-[12px] font-bold md:hidden", PARTNER_CTA_CLASS)}>
+          <Handshake size={14} aria-hidden="true" /> Partner
+        </Link>
+        <button ref={toggleRef} type="button" className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-control bg-s1/70 text-t1 md:hidden"
           onClick={() => setOpen((value) => !value)} aria-label={open ? "Close menu" : "Open menu"} aria-expanded={open} aria-controls="mobile-navigation">
           {open ? <X size={20} aria-hidden="true" /> : <Menu size={20} aria-hidden="true" />}
         </button>

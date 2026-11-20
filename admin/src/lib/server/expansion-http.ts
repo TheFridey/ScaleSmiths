@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { ExpansionError } from '@/lib/expansion'
 import { ExpansionFinanceError } from '@/lib/expansion-finance'
 import { AdminIdentityError } from '@/lib/admin-users'
+import { translateDbError } from '@/lib/db-errors'
 export const expansionHeaders = {'Cache-Control':'private, no-store, max-age=0'}
 export async function expansionBody(request: Request) {
   const expected = new URL(process.env.AUTH_URL || request.url).origin
@@ -27,6 +28,9 @@ export function expansionFailure(error: unknown) {
   if (error instanceof ExpansionError || error instanceof ExpansionFinanceError || error instanceof AdminIdentityError) return NextResponse.json({error:error.message},{status:error.status,headers:expansionHeaders})
   const code = (error as {code?:string;cause?:{code?:string}})?.code || (error as {cause?:{code?:string}})?.cause?.code
   if (code==='23505') return NextResponse.json({error:'This business or reference already has an existing ScaleSmiths relationship. Contact commercial support for review.'},{status:409,headers:expansionHeaders})
+  // A refused commercial selection (invalid reference, impossible value) is a 4xx with a safe sentence, never a false outage.
+  const safe = code && /^(23|22|P0001)/.test(String(code)) ? translateDbError(error) : null
+  if (safe) return NextResponse.json({error:safe.message},{status:safe.status,headers:expansionHeaders})
   console.error('Expansion request unavailable',{code:code || 'unavailable'})
   return NextResponse.json({error:'The partner workspace is unavailable. Check database connectivity and shared migrations.'},{status:503,headers:expansionHeaders})
 }

@@ -13,7 +13,8 @@ test("public applicant intake has insert and sequence admission without founder 
 })
 
 test("public runtime never gains partner operating or financial table access", () => {
-  assert.deepEqual([...WEB_TABLE_GRANTS.keys()].filter((name) => name.startsWith("expansion_")), [])
+  // Checkpoint 5: exactly one narrow, security-barrier projection of founder-published profiles, read-only. Nothing else, and never a base table.
+  assert.deepEqual([...WEB_TABLE_GRANTS].filter(([name]) => name.startsWith("expansion_")), [["expansion_public_partner_profiles", ["SELECT"]]])
 })
 
 test("applicant retention does not grant delete over partner or financial history", () => {

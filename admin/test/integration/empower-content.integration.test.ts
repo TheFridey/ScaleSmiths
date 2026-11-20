@@ -161,6 +161,11 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("Empower B1.1 content 
   it("enforces lifecycle, immutability and approval evidence in the database itself", async () => {
     const c = await runAs(founderA, () => createContentItem({ kind: "knowledge", slug: `kb-guards-${suffix}`, audience: "partner_only", cadence: "service", title: "Guard test", fields: knowledge(), sourceRefs: ["faq:hosting-provided"] }))
     expect(await refused(pool.query("update empower_content_items set audience='client_facing' where id=$1", [c.itemId]))).toBeTruthy()
+    // Authorship cannot be forged after the fact: the creator is part of the version's permanent identity.
+    expect(await refused(pool.query("update empower_content_versions set created_by=$2 where id=$1", [c.versionId, founderB.id]))).toMatch(/identity is immutable/)
+    expect(await refused(pool.query("update empower_content_items set created_by=$2 where id=$1", [c.itemId, founderB.id]))).toBeTruthy()
+    // A draft cannot carry a submitter; submission evidence belongs to submission.
+    expect(await refused(pool.query("update empower_content_versions set submitted_by=$2 where id=$1", [c.versionId, founderB.id]))).toMatch(/Lifecycle evidence/)
     // The runtime role holds no DELETE privilege at all; the trigger is the second line of defence for any other role.
     expect(await refused(pool.query("delete from empower_content_versions where id=$1", [c.versionId]))).toMatch(/permission denied|history is retained/)
     expect(await refused(pool.query("insert into empower_content_versions(id,item_id,version,title,body,status,created_by) values($1,$2,9,'Born published','x','published',$3)", [randomUUID(), c.itemId, founderA.id]))).toMatch(/starts as a draft/)

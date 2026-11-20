@@ -1,0 +1,380 @@
+@"C:\Users\rhysl\Downloads\database-migration-logs.zip"
+
+<pasted_content id="49f0">
+OPERATION INTELLIGENCE — B0 FINAL MERGE GATE
+Repository: TheFridey/ScaleSmiths
+Pull request: #155
+Branch: `claude/modest-newton-jo2d95`
+Latest known head: `173714e`
+Target: `master`
+Mission
+Finish the outstanding B0 release verification and human-review handoff. Merge PR #155 only after all required approvals and safeguards are satisfied.
+Do not begin B1 development until the B0 merge is complete and verified.
+1. Verify current state
+
+* Fetch current PR metadata, head, base, approval requirements and reviews.
+* Verify the actual latest head SHA.
+* Verify master has not advanced unexpectedly.
+* Inspect all CI, Security, CodeQL and image security checks on the current head.
+* Investigate the previously cancelled Cross-browser Smoke job.
+* Confirm whether the final-head CI run has since completed successfully.
+
+2. Verify migration 0090
+The supplied database migration archive includes successful concurrency tests but its integration logs end at `admin/0089`.
+Inspect the committed migration journal and SQL files.
+Confirm:
+
+* Migration `0090` exists at the expected sequence.
+* Migration ordering and checksums are correct.
+* The migration is applied on a fresh database.
+* An existing checkpoint-4 or checkpoint-5 database upgrades correctly.
+* Historical rows remain intact.
+* Founder-controlled released-domain correction behaves correctly.
+* Restricted database principals have exactly the intended privileges.
+* Relevant concurrency tests execute against the migrated schema.
+
+Use the actual CI artifacts or isolated PostgreSQL verification.
+Do not infer 0090 was executed from an older archive.
+3. Final risk review
+Confirm the four remediations:
+
+* Approved geographic area hierarchy.
+* Automatic public profile entitlement suspension.
+* Audited domain release.
+* Expansion concurrency suite integrated into GitHub CI.
+
+Inspect the latest changes and verify no critical or high findings remain.
+Do not claim a model review is human approval.
+4. Review handoff
+PR #155 requires a human code-owner approval after the latest push.
+Prepare a concise reviewer checklist covering:
+
+* Migrations 0073–0090.
+* Financial invariants.
+* PostgreSQL privileges.
+* Public profile view.
+* Exclusivity.
+* Domain allocation and release.
+* CI workflow modifications.
+* Production deployment triggers.
+* Rollback procedure.
+
+Ensure the PR description accurately reflects the latest implementation.
+Request an authorised independent human reviewer with the required GitHub permissions.
+Do not fabricate, self-submit or bypass required approvals.
+If the repository's CODEOWNERS configuration makes approval impossible because the PR author is the only eligible code owner, report that governance configuration problem and propose a legitimate repository-owner-administered resolution. Do not weaken protections autonomously.
+5. Merge conditions
+Merge only when:
+
+* Required CI checks are successful on the latest relevant head.
+* Required human code-owner approval has been submitted.
+* Last-push approval requirements are satisfied.
+* Required review conversations are resolved.
+* The branch is up to date with master.
+* The repository's branch protection requirements are satisfied.
+* The production deployment impact of merging has been confirmed and authorised.
+
+This instruction authorises merging only after those conditions are actually met.
+If blocked, stop and report the exact missing action.
+Do not create an alternative branch or merge route to bypass protection.
+6. After a permitted merge
+
+* Verify the merge commit on master.
+* Verify the exact merged source.
+* Inspect master CI.
+* Confirm all protected feature flags remain disabled.
+* Confirm no unexpected production deployment occurred.
+* Record the final merge evidence.
+
+Do not activate partner intake, public profiles, withdrawals or rewards.
+Deliverable
+Update `docs/expansion/intelligence/B0-MERGE-READINESS.md`.
+Return:
+
+* PR head SHA.
+* Master SHA.
+* Migration 0090 verification result.
+* CI results.
+* Human-review status.
+* Deployment impact.
+* Merge status.
+* Exact blockers, if any.
+
+Do not begin B1 until B0 is verified merged.
+</pasted_content id="49f0">
+
+---
+
+<task-notification>
+<task-id>b6xpcwm82</task-id>
+<tool-use-id>toolu_01PLiadqrZobmwAMqqx5gyqT</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\51f19cc3-0f59-4848-a0f1-0d021c85c168\tasks\b6xpcwm82.output</output-file>
+<status>completed</status>
+<summary>Background command "Migrate isolated DB to 0089 and verify privileges" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bdu4b2yni</task-id>
+<tool-use-id>toolu_01GfuHkDSPLZquLxhKFV5uk5</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\51f19cc3-0f59-4848-a0f1-0d021c85c168\tasks\bdu4b2yni.output</output-file>
+<status>completed</status>
+<summary>Background command "Install deps in worktree; read migrate script" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b1ucdvhs0</task-id>
+<tool-use-id>toolu_01BZ9PwKH6Nrt9Kf3RQFwV4f</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\51f19cc3-0f59-4848-a0f1-0d021c85c168\tasks\b1ucdvhs0.output</output-file>
+<status>completed</status>
+<summary>Background command "Seed 0089 DB by running concurrency suite" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bvopm0fe0</task-id>
+<tool-use-id>toolu_01HE1vk1XkLoMB8sotmtrHEE</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\51f19cc3-0f59-4848-a0f1-0d021c85c168\tasks\bvopm0fe0.output</output-file>
+<status>completed</status>
+<summary>Background command "Run full concurrency suite on 0089 DB to seed" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bi33cr05l</task-id>
+<tool-use-id>toolu_01LEKMBWvFWuwVgkA8EnZv7F</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\51f19cc3-0f59-4848-a0f1-0d021c85c168\tasks\bi33cr05l.output</output-file>
+<status>completed</status>
+<summary>Monitor "seed run of concurrency suite on 0089 DB finishing" stream ended</summary>
+<event>⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+AssertionError: expected [ '-6000', '30000' ] to deeply equal [ '30000', '-6000' ]
+Test Files  1 failed (1)
+Tests  1 failed | 88 passed (89)</event>
+If this event is something the user would act on now, send a PushNotification. Routine or benign output doesn't need one.
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b0skpqef1</task-id>
+<summary>Monitor event: "B0 upgrade-proof pipeline stages"</summary>
+<event>[12:05:57] stage 1: migrate to 0089
+if (!url || !/(?:test|e2e)/i.test(new URL(url).pathname)) throw new Error("Refusing to migrate a database whose name is not an explicit test/E2E fixture.")
+Error: Refusing to migrate a database whose name is not an explicit test/E2E fixture.
+PostgreSQL privilege verification passed for 127.0.0.1/ss_expansion_hardening_races.
+[12:05:59] stage 2: seed with suite on 0089</event>
+If this event is something the user would act on now, send a PushNotification. Routine or benign output doesn't need one.
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b0skpqef1</task-id>
+<summary>Monitor event: "B0 upgrade-proof pipeline stages"</summary>
+<event>Tests  89 skipped (89)</event>
+If this event is something the user would act on now, send a PushNotification. Routine or benign output doesn't need one.
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b0skpqef1</task-id>
+<summary>Monitor event: "B0 upgrade-proof pipeline stages"</summary>
+<event>[12:06:37] before snapshot: 0 tables
+[12:06:37] stage 3: apply 0090
+if (!url || !/(?:test|e2e)/i.test(new URL(url).pathname)) throw new Error("Refusing to migrate a database whose name is not an explicit test/E2E fixture.")
+Error: Refusing to migrate a database whose name is not an explicit test/E2E fixture.</event>
+If this event is something the user would act on now, send a PushNotification. Routine or benign output doesn't need one.
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b0skpqef1</task-id>
+<summary>Monitor event: "B0 upgrade-proof pipeline stages"</summary>
+<event>PostgreSQL privilege verification passed for 127.0.0.1/ss_expansion_hardening_races.</event>
+If this event is something the user would act on now, send a PushNotification. Routine or benign output doesn't need one.
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b0skpqef1</task-id>
+<summary>Monitor event: "B0 upgrade-proof pipeline stages"</summary>
+<event>[12:06:40] after snapshot: 0 tables; diff:</event>
+If this event is something the user would act on now, send a PushNotification. Routine or benign output doesn't need one.
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b0skpqef1</task-id>
+<summary>Monitor event: "B0 upgrade-proof pipeline stages"</summary>
+<event>psql:/checks.sql:4: ERROR:  relation "expansion_opportunities" does not exist
+psql:/checks.sql:11: ERROR:  relation "expansion_opportunities" does not exist
+psql:/checks.sql:15: ERROR:  relation "expansion_opportunities" does not exist
+psql:/checks.sql:18: ERROR:  relation "expansion_opportunities" does not exist
+psql:/checks.sql:23: ERROR:  relation "expansion_opportunities" does not exist
+psql:/checks.sql:28: ERROR:  relation "expansion_opportunities" does not exist
+[12:06:40] stage 4: suite on upgraded schema</event>
+If this event is something the user would act on now, send a PushNotification. Routine or benign output doesn't need one.
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bkrukqxn3</task-id>
+<tool-use-id>toolu_01Bo8y4ANFbaKB84fvHoiYYN</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\51f19cc3-0f59-4848-a0f1-0d021c85c168\tasks\bkrukqxn3.output</output-file>
+<status>completed</status>
+<summary>Background command "Run disposable 0089→0090 upgrade proof" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b0skpqef1</task-id>
+<summary>Monitor event: "B0 upgrade-proof pipeline stages"</summary>
+<event>Tests  89 skipped (89)
+[12:06:58] done</event>
+If this event is something the user would act on now, send a PushNotification. Routine or benign output doesn't need one.
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b0skpqef1</task-id>
+<tool-use-id>toolu_01NwHBLuVtLJykUF1nfYeRkG</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\51f19cc3-0f59-4848-a0f1-0d021c85c168\tasks\b0skpqef1.output</output-file>
+<status>completed</status>
+<summary>Monitor "B0 upgrade-proof pipeline stages" stream ended</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b263v9mmr</task-id>
+<summary>Monitor event: "B0 upgrade-proof pipeline (rerun) stages"</summary>
+<event>[12:07:56] stage 1: migrate to 0089
+PostgreSQL privilege verification passed for 127.0.0.1/ss_expansion_test.
+[12:09:50] stage 2: seed with suite on 0089</event>
+If this event is something the user would act on now, send a PushNotification. Routine or benign output doesn't need one.
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b263v9mmr</task-id>
+<summary>Monitor event: "B0 upgrade-proof pipeline (rerun) stages"</summary>
+<event>Tests  1 failed | 88 passed (89)</event>
+If this event is something the user would act on now, send a PushNotification. Routine or benign output doesn't need one.
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b263v9mmr</task-id>
+<summary>Monitor event: "B0 upgrade-proof pipeline (rerun) stages"</summary>
+<event>[12:16:40] before snapshot: 55 tables</event>
+If this event is something the user would act on now, send a PushNotification. Routine or benign output doesn't need one.
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b263v9mmr</task-id>
+<summary>Monitor event: "B0 upgrade-proof pipeline (rerun) stages"</summary>
+<event>[12:16:41] stage 3: apply 0090</event>
+If this event is something the user would act on now, send a PushNotification. Routine or benign output doesn't need one.
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b263v9mmr</task-id>
+<summary>Monitor event: "B0 upgrade-proof pipeline (rerun) stages"</summary>
+<event>PostgreSQL privilege verification passed for 127.0.0.1/ss_expansion_test.</event>
+If this event is something the user would act on now, send a PushNotification. Routine or benign output doesn't need one.
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b263v9mmr</task-id>
+<summary>Monitor event: "B0 upgrade-proof pipeline (rerun) stages"</summary>
+<event>[12:16:49] after snapshot: 55 tables; diff:
+&lt; drizzle.__drizzle_migrations|90|807185b5b67d501c09748089ab429931
+&gt; drizzle.__drizzle_migrations|91|9b66e8b29ff7743f68c35cb7f382bc09</event>
+If this event is something the user would act on now, send a PushNotification. Routine or benign output doesn't need one.
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b263v9mmr</task-id>
+<summary>Monitor event: "B0 upgrade-proof pipeline (rerun) stages"</summary>
+<event>psql:/checks.sql:11: ERROR:  A domain can be released only for an existing, withdrawn, unworked prospect
+psql:/checks.sql:15: ERROR:  A domain release is permanent history
+psql:/checks.sql:18: ERROR:  A domain release is permanent history
+psql:/checks.sql:23: ERROR:  Only the domain of a withdrawn, unworked prospect from an excluded research candidate can be released
+psql:/checks.sql:28: ERROR:  A domain release needs a recorded reason
+[12:16:50] stage 4: suite on upgraded schema</event>
+If this event is something the user would act on now, send a PushNotification. Routine or benign output doesn't need one.
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>blz6sdkpb</task-id>
+<tool-use-id>toolu_01KWuPVtN4RT3Su6yRNxHjQh</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\51f19cc3-0f59-4848-a0f1-0d021c85c168\tasks\blz6sdkpb.output</output-file>
+<status>completed</status>
+<summary>Background command "Rerun upgrade proof on disposable container DB" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b263v9mmr</task-id>
+<summary>Monitor event: "B0 upgrade-proof pipeline (rerun) stages"</summary>
+<event>Tests  1 failed | 88 passed (89)
+[12:23:48] done</event>
+If this event is something the user would act on now, send a PushNotification. Routine or benign output doesn't need one.
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>ba9dufof7</task-id>
+<summary>Monitor event: "post-upgrade concurrency suite result"</summary>
+<event>[12:16:50] stage 4: suite on upgraded schema
+× negative refund adjustments always travel with a withdrawal request 1273ms
+Tests  1 failed | 88 passed (89)
+[12:23:48] done</event>
+If this event is something the user would act on now, send a PushNotification. Routine or benign output doesn't need one.
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b263v9mmr</task-id>
+<tool-use-id>toolu_013UYSKLftpqNkHNsMtQwSkC</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\51f19cc3-0f59-4848-a0f1-0d021c85c168\tasks\b263v9mmr.output</output-file>
+<status>completed</status>
+<summary>Monitor "B0 upgrade-proof pipeline (rerun) stages" stream ended</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>ba9dufof7</task-id>
+<tool-use-id>toolu_01NmhZz2ePo6W728bhuM2FQx</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\51f19cc3-0f59-4848-a0f1-0d021c85c168\tasks\ba9dufof7.output</output-file>
+<status>completed</status>
+<summary>Monitor "post-upgrade concurrency suite result" stream ended</summary>
+</task-notification>

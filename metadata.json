@@ -1,0 +1,66 @@
+{
+  "cli_version": "0.12.2",
+  "checkpoint_id": "01M7WHBM2GJMR5A532FXQK16KD",
+  "strategy": "manual-commit",
+  "branch": "claude/empower-b1-planning",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "docs/expansion/empower/ACCEPTANCE-CRITERIA.md",
+    "docs/expansion/empower/ARCHITECTURE.md",
+    "docs/expansion/empower/CURRICULUM.md",
+    "docs/expansion/empower/DESIGN-SPECIFICATION.md",
+    "docs/expansion/empower/FOUNDER-APPROVAL-REGISTER.md",
+    "docs/expansion/empower/IMPLEMENTATION-PHASES.md",
+    "docs/expansion/empower/KNOWLEDGE-BASE.md",
+    "docs/expansion/empower/LESSONS-FOUNDATIONS.md",
+    "docs/expansion/empower/LESSONS-PRACTICE.md",
+    "docs/expansion/empower/PLATFORM-AUDIT.md",
+    "docs/expansion/empower/README.md",
+    "docs/expansion/empower/SECURITY-MODEL.md",
+    "docs/expansion/empower/WIREFRAMES.md",
+    "docs/expansion/empower/resources/R01-company-brochure.md",
+    "docs/expansion/empower/resources/R02-partner-handbook.md",
+    "docs/expansion/empower/resources/R03-website-development-guide.md",
+    "docs/expansion/empower/resources/R04-growth-partnership-guide.md",
+    "docs/expansion/empower/resources/R05-bespoke-software-guide.md",
+    "docs/expansion/empower/resources/R06-seo-and-aeo-guide.md",
+    "docs/expansion/empower/resources/R07-discovery-questionnaire.md",
+    "docs/expansion/empower/resources/R08-objection-handling-playbook.md",
+    "docs/expansion/empower/resources/R09-meeting-preparation-checklist.md",
+    "docs/expansion/empower/resources/R10-technical-escalation-guide.md",
+    "docs/expansion/empower/resources/R11-commercial-pricing-reference.md",
+    "docs/expansion/empower/resources/R12-commission-and-payment-reference.md",
+    "docs/expansion/empower/resources/R13-follow-up-templates.md",
+    "docs/expansion/empower/resources/README.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 86,
+    "cache_creation_tokens": 193956,
+    "cache_read_tokens": 6704173,
+    "output_tokens": 90771,
+    "api_call_count": 43
+  },
+  "redaction": {
+    "replacements": 13,
+    "layers": {
+      "betterleaks": 0,
+      "connection_string": 0,
+      "credential_key": 0,
+      "credential_value": 0,
+      "credentialed_uri": 0,
+      "entropy": 12,
+      "key_context": 1,
+      "provider_token": 0,
+      "shell_stdin": 0
+    }
+  }
+}

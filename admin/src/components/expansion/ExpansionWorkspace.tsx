@@ -10,6 +10,7 @@ import { DISCOVERY_FIELDS, PARTNER_TRANSITIONS } from '@/lib/expansion'
 import { formatPence, standardCommissionTerms } from '@/lib/expansion-finance'
 import { csvCell } from '@/lib/command-centre'
 import { ApplicantRetention } from './ApplicantRetention'
+import { SafeMarkdown } from '@/components/empower/SafeMarkdown'
 import './expansion.css'
 
 type Row = Record<string, unknown>
@@ -20,7 +21,7 @@ const rows = (value:unknown): Row[] => Array.isArray(value) ? value : []
 const label = (value:unknown) => str(value).replaceAll('_',' ').replace(/([a-z0-9])([A-Z])/g,'$1 $2').replace(/^./,first=>first.toUpperCase()).replace(/\bseo\b/gi,'SEO')
 const money = (value:unknown) => formatPence(str(value || '0'))
 
-export function ExpansionWorkspace({founder=false}:{founder?:boolean}) {
+export function ExpansionWorkspace({founder=false,academy=false}:{founder?:boolean;academy?:boolean}) {
   const [data,setData] = useState<Snapshot|null>(null)
   const [error,setError] = useState('')
   const [tab,setTab] = useState('overview')
@@ -67,7 +68,7 @@ export function ExpansionWorkspace({founder=false}:{founder?:boolean}) {
   const items = [{id:'overview',name:'Overview',icon:LayoutDashboard},{id:'pipeline',name:'Prospects & scope',icon:BriefcaseBusiness},{id:'resources',name:'Resource library',icon:BookOpen},{id:'finance',name:'Commission centre',icon:PoundSterling},...(founder?[{id:'research',name:'Research & allocation',icon:BriefcaseBusiness},{id:'recognition',name:'Recognition',icon:ShieldCheck},{id:'profiles',name:'Web pages',icon:BookOpen},{id:'programme',name:'Programme',icon:Users},{id:'operations',name:'Partner operations',icon:ShieldCheck}]:[{id:'achievements',name:'Achievements',icon:ShieldCheck},{id:'profile',name:'My web page',icon:BookOpen},{id:'referrals',name:'Referrals',icon:Users},{id:'onboarding',name:'Onboarding',icon:BookOpen},{id:'meetings',name:'Meetings',icon:LayoutDashboard}]),...(founder?[{id:'recruitment',name:'Recruitment',icon:Users},{id:'capacity',name:'Delivery capacity',icon:ShieldCheck}]:[]),...(founder && data?.contentAdmin?.enabled===true?[{id:'content',name:'Content',icon:BookOpen}]:[])]
   return <div className={`expansion ${founder?'expansion-founder':''}`}>
     <header className="ex-header"><a href={founder?'/expansion':'/partner'} className="ex-brand"><Image src="/brand/favicon.png" alt="ScaleSmiths emblem" width={38} height={38} unoptimized /><span>SCALESMITHS<small>{founder?'COMMERCIAL OPERATIONS':'INDEPENDENT PARTNER NETWORK'}</small></span></a><div className="ex-header-right"><span className="ex-badge">{founder?'Founder workspace':'Partner workspace'}</span>{!founder && <button className="ex-link" onClick={()=>signOut({callbackUrl:'/login'})}>Sign out</button>}</div></header>
-    <div className="ex-body"><aside className="ex-sidebar"><p className="ex-overline">YOUR WORKSPACE</p><nav aria-label="Partner workspace">{items.map(({id,name,icon:Icon})=><button key={id} aria-current={tab===id?'page':undefined} onClick={()=>{setTab(id);setSelected('')}}><Icon size={18}/>{name}</button>)}</nav><div className="ex-sidebar-note"><ShieldCheck size={20}/><strong>You sell. We deliver.</strong><p>Scope, pricing and delivery commitments require ScaleSmiths approval.</p></div></aside>
+    <div className="ex-body"><aside className="ex-sidebar"><p className="ex-overline">YOUR WORKSPACE</p><nav aria-label="Partner workspace">{items.map(({id,name,icon:Icon})=><button key={id} aria-current={tab===id?'page':undefined} onClick={()=>{setTab(id);setSelected('')}}><Icon size={18}/>{name}</button>)}</nav>{!founder && academy && <Link className="ex-academy-link" href="/partner/academy"><BookOpen size={18}/>Partner Academy<small>Optional learning</small></Link>}<div className="ex-sidebar-note"><ShieldCheck size={20}/><strong>You sell. We deliver.</strong><p>Scope, pricing and delivery commitments require ScaleSmiths approval.</p></div></aside>
     <main className="ex-main" id="partner-main"><div className="ex-page-heading"><div><p className="ex-overline">OPERATION EXPANSION</p><h1>{items.find(item=>item.id===tab)?.name}</h1><p>{founder?'A clear view of people, pipeline and financial commitments.':`Welcome${workspace.displayName?`, ${workspace.displayName}`:''}. Build relationships. Create opportunities.`}</p></div><button className="ex-button" onClick={()=>{setTab('pipeline');setSelected('')}}><Plus size={17}/>{founder?'Review pipeline':'Register prospect'}</button></div>
     {error && <div className="ex-error" role="alert">{error}<button onClick={()=>refresh().catch(e=>setError(e.message))}>Retry</button></div>}
     {!data && !error && <div role="status" className="ex-empty">Loading your authorised workspace…</div>}
@@ -77,8 +78,8 @@ export function ExpansionWorkspace({founder=false}:{founder?:boolean}) {
       {tab==='resources' && <><section className="ex-panel"><p className="ex-overline">APPROVED KNOWLEDGE</p><h2>Present with confidence.</h2><p>Published resources are approved for the stated audience. Client-facing materials must not contain internal commission or founder information.</p><div className="ex-form-grid"><label className="ex-field">Search approved resources<input value={resourceSearch} onChange={e=>setResourceSearch(e.target.value)}/></label><label className="ex-field">Category<select value={resourceCategory} onChange={e=>setResourceCategory(e.target.value)}><option value="all">All categories</option>{Array.from(new Set(rows(workspace.resources).map(r=>str(r.category)))).map(c=><option key={c}>{c}</option>)}</select></label></div>{rows(workspace.resources).filter(row=>(founder || row.status==='published') && (resourceCategory==='all' || row.category===resourceCategory) && (str(row.title)+' '+str(row.content)).toLowerCase().includes(resourceSearch.toLowerCase())).map(row=><details key={str(row.id)} className="ex-resource"><summary>{str(row.title)} <span className="ex-badge">{str(row.audience)} · v{str(row.version)}{founder?` · ${str(row.status)}`:''}</span></summary><small>{str(row.category)}</small><p className="ex-prewrap">{str(row.content)}</p>{founder && row.status!=='archived' && <Action action="resource_status" title="Update publication" command={command} initial={{id:row.id}}><Select name="status" title="Publication state" options={row.status==='draft'?['published','archived']:['archived']}/></Action>}</details>)}{!rows(workspace.resources).length && <Empty text="Approved resources will appear here when published by ScaleSmiths."/>}</section>{founder && <section className="ex-panel"><h2>Publish an approved resource version</h2><Action action="resource" title="Save resource version" command={command}><Field name="title" title="Title"/><Field name="category" title="Category"/><Field name="version" title="Version" type="number" value="1"/><Select name="audience" title="Audience" options={['partner','client']}/><Select name="status" title="Publication" options={['draft','published']}/><Field name="content" title="Approved text content" area/></Action></section>}</>}
       {tab==='achievements' && !founder && <><RecognitionPanel o={recognition}/><AchievementCentre o={programme}/></>}
       {tab==='referrals' && !founder && <ReferralsPanel o={programme} command={command}/>}
-      {tab==='onboarding' && !founder && <ToolkitView items={rows(data?.toolkit)}/>}
-      {tab==='meetings' && !founder && <MeetingsView meetings={rows(data?.meetings)} opportunities={opportunities} command={command}/>}
+      {tab==='onboarding' && !founder && <ToolkitView items={rows(data?.toolkit)} academy={academy}/>}
+      {tab==='meetings' && !founder && <MeetingsView meetings={rows(data?.meetings)} opportunities={opportunities} command={command} academy={academy}/>}
       {tab==='operations' && founder && <OperationsAdmin toolkit={toolkitAdmin} meetings={rows(data?.meetings)} command={command}/>}
       {tab==='profiles' && founder && <ProfilesAdmin a={profilesAdmin} command={command}/>}
       {tab==='content' && founder && contentAdmin.enabled===true && <ContentStudio a={contentAdmin} command={command}/>}
@@ -109,14 +110,14 @@ function Empty({text}:{text:string}) {return <div className="ex-empty"><Briefcas
 function Field({name,title,type='text',required=true,area=false,value,placeholder}:{name:string;title:string;type?:string;required?:boolean;area?:boolean;value?:string;placeholder?:string}) {return <label className="ex-field">{title}{area?<textarea name={name} required={required} defaultValue={value} maxLength={30000} rows={3}/>:<input name={name} type={type} required={required} defaultValue={value} placeholder={placeholder} min={type==='number'?0:undefined} step={type==='number'?1:undefined} maxLength={2000}/>}</label>}
 const BADGE_NAMES: Record<number,string> = {1:'First client',5:'Five clients',10:'Ten clients',25:'Twenty-five clients',50:'Fifty clients',100:'One hundred clients',250:'Two hundred and fifty clients',500:'Five hundred clients'}
 const MEETING_LABELS: Record<string,string> = {joint_sales:'Joint customer sales meeting',technical_scoping:'Technical scoping',bespoke_discovery:'Bespoke software discovery',commercial_assistance:'Commercial assistance',proposal_review:'Proposal review',training:'Optional training',escalation:'Complex opportunity escalation'}
-function ToolkitView({items}:{items:Row[]}) {
+function ToolkitView({items,academy=false}:{items:Row[];academy?:boolean}) {
   return <section className="ex-panel"><p className="ex-overline">ONBOARDING</p><h2>Your toolkit, as it actually stands</h2><p>Each item shows its real status. Items that depend on an external service are tracked by hand by the ScaleSmiths team: nothing appears as available until it has genuinely been set up.</p>
-    {items.length?items.map(i=><div className="ex-list-row" key={str(i.key)}><span>{str(i.label)}{i.detail?` · ${str(i.detail)}`:''}{i.resourceTitle?` · ${str(i.resourceTitle)}`:''}</span><strong>{label(i.status)}</strong></div>):<Empty text="Your toolkit is not available."/>}</section>
+    {items.length?items.map(i=><div className="ex-list-row" key={str(i.key)}><span>{str(i.label)}{i.detail?` · ${str(i.detail)}`:''}{i.resourceTitle?` · ${str(i.resourceTitle)}`:''}{i.key==='academy' && academy?<> · <Link href="/partner/academy">Open the Partner Academy</Link></>:null}</span><strong>{label(i.status)}</strong></div>):<Empty text="Your toolkit is not available."/>}</section>
 }
-function MeetingsView({meetings,opportunities,command}:{meetings:Row[];opportunities:Row[];command:Command}) {
+function MeetingsView({meetings,opportunities,command,academy=false}:{meetings:Row[];opportunities:Row[];command:Command;academy?:boolean}) {
   return <section className="ex-panel"><p className="ex-overline">FOUNDER MEETINGS</p><h2>Ask for a founder to join you</h2><p>This is a request. A founder confirms a real time; nothing is booked, no calendar event is created and no invitation is sent from here. Founder involvement never reduces your agreed commission.</p>
     <Action action="request_meeting" title="Send meeting request" command={command}><Select name="meetingType" title="Meeting type" options={Object.keys(MEETING_LABELS)}/><label className="ex-field">Related prospect (optional)<select name="opportunityId"><option value="">None</option>{opportunities.map(o=><option key={str(o.id)} value={str(o.id)}>{str(o.business_name)}</option>)}</select></label><Field name="slot1" title="Preferred date and time" type="datetime-local"/><Field name="slot2" title="Second preference (optional)" type="datetime-local" required={false}/><Field name="timeZone" title="Your time zone" value="Europe/London"/><Field name="purpose" title="Purpose" area/><Field name="context" title="Supporting information (optional)" area required={false}/></Action>
-    <h3>Your requests</h3>{meetings.length?meetings.map(m=><details className="ex-resource" key={str(m.id)} open={['info_required','alternative_proposed','confirmed'].includes(str(m.status))}><summary>{MEETING_LABELS[str(m.meeting_type)]||str(m.meeting_type)}{m.business_name?` · ${str(m.business_name)}`:''} <span className="ex-badge">{label(m.status)}</span></summary>
+    {academy && <p className="ex-note">Preparing for a client meeting? The optional <Link href="/partner/academy">Partner Academy</Link> covers discovery questions, presenting ScaleSmiths and when to escalate.</p>}<h3>Your requests</h3>{meetings.length?meetings.map(m=><details className="ex-resource" key={str(m.id)} open={['info_required','alternative_proposed','confirmed'].includes(str(m.status))}><summary>{MEETING_LABELS[str(m.meeting_type)]||str(m.meeting_type)}{m.business_name?` · ${str(m.business_name)}`:''} <span className="ex-badge">{label(m.status)}</span></summary>
       {m.status==='confirmed' && <p>Confirmed for {new Date(str(m.confirmed_start)).toLocaleString('en-GB',{timeZone:str(m.time_zone)||'Europe/London',dateStyle:'full',timeStyle:'short'})} ({str(m.time_zone)}).</p>}
       {m.status==='alternative_proposed' && <><p>A founder proposed {new Date(str(m.proposed_start)).toLocaleString('en-GB',{timeZone:str(m.time_zone)||'Europe/London',dateStyle:'full',timeStyle:'short'})}.</p><Action action="respond_meeting" title="Accept proposed time" initial={{meetingId:m.id,response:'accept_alternative'}} command={command}><p>Accepting confirms the meeting.</p></Action><Action action="respond_meeting" title="Decline proposed time" initial={{meetingId:m.id,response:'decline_alternative'}} command={command}><p>Your request returns to the founders.</p></Action></>}
       {m.status==='info_required' && <Action action="respond_meeting" title="Send the information" initial={{meetingId:m.id,response:'add_information'}} command={command}><Field name="message" title="Requested information" area/></Action>}
@@ -325,7 +326,7 @@ function Action({action,title,command,initial={},children}:{action:string;title:
     event.preventDefault();const form=event.currentTarget; const input:Row={...initial,action};const data=new FormData(form)
     for(const [key,value] of data) input[key]=value
     for(const field of Array.from(form.elements)) if(field instanceof HTMLInputElement){if(field.type==='checkbox')input[field.name]=field.checked;if(field.type==='number')input[field.name]=Number(field.value)}
-    if(CONTENT_FIELD_ACTIONS.includes(action)) {const fields:Row={};for(const key of Object.keys(input)) if(key.startsWith('f_')){const v=input[key];delete input[key];if(typeof v==='string'&&v.trim())fields[key.slice(2)]=v};input.fields=fields;for(const key of ['lintOverrideReason','selfApprovalReason','changeSummary']) if(input[key]==='') delete input[key]}
+    if(CONTENT_FIELD_ACTIONS.includes(action)) {const fields:Row={};for(const key of Object.keys(input)) if(key.startsWith('f_')){const v=input[key];delete input[key];if(typeof v==='string'&&v.trim())fields[key.slice(2)]=v};for(const [k,target] of [['checks_json','checks'],['modules_json','modules']] as const) if(typeof fields[k]==='string'){try{const parsed=JSON.parse(String(fields[k]));if(Array.isArray(parsed)&&parsed.length) fields[target]=parsed}catch{/* the server validates */}delete fields[k]};input.fields=fields;for(const key of ['lintOverrideReason','selfApprovalReason','changeSummary']) if(input[key]==='') delete input[key]}
     if(CONTENT_OPTIONAL_ACTIONS.includes(action)) for(const key of ['lintOverrideReason','selfApprovalReason','changeSummary','reviewBy']) if(input[key]==='') delete input[key]
     if(action==='discovery') {input.discovery=Object.fromEntries(DISCOVERY_FIELDS.map(key=>[key,input[key] || '']));for(const key of DISCOVERY_FIELDS) delete input[key]}
     if(action==='refund_payment') { for(const field of ['netPence','grossPence','termsApprovalReference']) if(!input[field]) delete input[field] }
@@ -404,14 +405,69 @@ function Finance({founder,finance,workspace,command}:{founder:boolean;finance:Ro
     <section className="ex-panel"><h2>Payout history and reconciliation</h2>{payouts.map(p=><div key={str(p.id)} className="ex-resource"><div className="ex-list-row"><strong>{money(p.amount_pence)}</strong><span className="ex-badge">{label(p.status)}</span></div><p>Invoice {str(p.invoice_reference)}{p.settlement_reference?` · Settlement ${p.settlement_reference}`:''}</p>{founder && p.status==='cancelled' && <p>{str(p.cancellation_reason)}</p>}{founder && p.status==='prepared' && <Action action="cancel_payout" title="Cancel prepared payout" command={command} initial={{payoutId:p.id}}><Field name="reason" title="Cancellation reason" area/><Check name="noExternalSettlement" title="No external payment was sent or scheduled"/></Action>}{founder && p.status==='prepared' && <Action action="approve_payout" title="Manually approve exact prepared payout" command={command} initial={{payoutId:p.id}}/>}{founder && p.status==='approved' && <Action action="settle_payout" title="Record external settlement" command={command} initial={{payoutId:p.id}}><Field name="settlementReference" title="External settlement evidence reference"/></Action>}</div>)}{!payouts.length && <Empty text="No payout records. Earned commission remains visible in your ledger until manually approved and reconciled."/>}</section></>
 }
 
-// ---------------------------------------------------------------- Operation Empower B1.1: founder Content studio
+// ---------------------------------------------------------------- Operation Empower B1.1 + B1.2: founder Content studio
 const CONTENT_FIELD_ACTIONS = ['create_content_item','save_content_draft']
 const CONTENT_OPTIONAL_ACTIONS = ['submit_content','decide_content','start_content_revision']
 const KNOWLEDGE_TOPIC_OPTIONS = ['hosting','domains','dns','business-email','website-security','analytics','seo','ai-search','wordpress-migration','redirects','accessibility','e-commerce','booking-systems','crm','custom-software','automation','commercial-terms','payment-schedules','commission','client-onboarding']
+const COURSE_CATEGORY_OPTIONS = ['getting-started','services','technical-knowledge','digital-growth','sales-fundamentals','discovery','commercial-policies','professional-conduct','advanced-opportunities']
 const CONTENT_ROUTES = ['joint_sales','technical_scoping','bespoke_discovery','commercial_assistance','proposal_review','training','escalation']
 const CONTENT_STATUS_ORDER = ['draft','in_review','approved','published','changes_requested','superseded','archived']
+const CONTENT_KIND_OPTIONS = ['knowledge','objection','lesson','course','resource','template']
+type LessonChoice = {id:string;label:string;status:string}
+type CheckDraft = {id:string;type:'single'|'multiple'|'true_false';prompt:string;options:{id:string;text:string}[];answer:string[];explanation:string}
+type ModuleDraft = {title:string;summary?:string;lessons:string[]}
 function BlankSelect({name,title,options,value}:{name:string;title:string;options:string[];value?:string}) {return <label className="ex-field">{title}<select name={name} defaultValue={value||''}><option value="">Not set</option>{options.map(o=><option key={o} value={o}>{label(o)}</option>)}</select></label>}
-function ContentFields({kind,fields={}}:{kind:string;fields?:Row}) {
+const OPTION_IDS = ['a','b','c','d','e','f']
+/** Knowledge-check editor: builds the structured list in the form; founders never edit JSON. */
+function ChecksEditor({initial}:{initial:unknown}) {
+  const [checks,setChecks]=useState<CheckDraft[]>(()=>Array.isArray(initial)?(initial as CheckDraft[]).map(q=>({...q,options:[...q.options],answer:[...q.answer]})):[])
+  const update=(i:number,patch:Partial<CheckDraft>)=>setChecks(list=>list.map((q,j)=>j===i?{...q,...patch}:q))
+  const nextId=()=>{for(let n=1;n<=10;n++){const id=`q${n}`;if(!checks.some(q=>q.id===id)) return id}return 'q10'}
+  return <fieldset className="ex-checks"><legend>Optional knowledge checks ({checks.length} of 10)</legend>
+    <input type="hidden" name="f_checks_json" value={JSON.stringify(checks)}/>
+    {checks.map((q,i)=><div className="ex-check-edit" key={q.id}>
+      <label className="ex-field">Question {i+1}<input value={q.prompt} maxLength={500} onChange={e=>update(i,{prompt:e.target.value})}/></label>
+      <label className="ex-field">Type<select value={q.type} onChange={e=>{const type=e.target.value as CheckDraft['type'];update(i,type==='true_false'?{type,options:[{id:'true',text:'True'},{id:'false',text:'False'}],answer:[]}:{type,options:q.type==='true_false'?[{id:'a',text:''},{id:'b',text:''}]:q.options,answer:[]})}}>
+        <option value="single">Single choice</option><option value="multiple">Multiple choice</option><option value="true_false">True or false</option></select></label>
+      {q.options.map((o,k)=><div className="ex-check-option" key={o.id}>
+        <label className="ex-check"><input type={q.type==='multiple'?'checkbox':'radio'} name={`answer-${q.id}`} checked={q.answer.includes(o.id)} onChange={e=>update(i,{answer:q.type==='multiple'?(e.target.checked?[...q.answer,o.id]:q.answer.filter(x=>x!==o.id)):[o.id]})}/><span className="sr-only">Correct answer</span></label>
+        {q.type==='true_false'?<span>{o.text}</span>:<label className="ex-field">Option {o.id.toUpperCase()}<input value={o.text} maxLength={300} onChange={e=>update(i,{options:q.options.map((x,m)=>m===k?{...x,text:e.target.value}:x)})}/></label>}
+        {q.type!=='true_false' && q.options.length>2 && <button type="button" className="ex-link" onClick={()=>update(i,{options:q.options.filter((_,m)=>m!==k),answer:q.answer.filter(x=>x!==o.id)})}>Remove option</button>}
+      </div>)}
+      {q.type!=='true_false' && q.options.length<6 && <button type="button" className="ex-link" onClick={()=>update(i,{options:[...q.options,{id:OPTION_IDS.find(x=>!q.options.some(o=>o.id===x))||'f',text:''}]})}>Add option</button>}
+      <label className="ex-field">Explanation shown after an attempt<textarea value={q.explanation} maxLength={1000} rows={2} onChange={e=>update(i,{explanation:e.target.value})}/></label>
+      <button type="button" className="ex-link" onClick={()=>setChecks(list=>list.filter((_,j)=>j!==i))}>Remove question {i+1}</button>
+    </div>)}
+    {checks.length<10 && <button type="button" className="ex-link" onClick={()=>setChecks(list=>[...list,{id:nextId(),type:'single',prompt:'',options:[{id:'a',text:''},{id:'b',text:''}],answer:[],explanation:''}])}>Add a question</button>}
+    <p className="ex-note">Select the correct answer for each question. A question cannot be submitted for review without an answer and an explanation. Knowledge checks are optional for partners and never affect commission or standing.</p>
+  </fieldset>
+}
+/** Course structure editor: ordered modules containing ordered lesson references, chosen from existing lesson items. */
+function CourseEditor({fields,lessons}:{fields:Row;lessons:LessonChoice[]}) {
+  const [modules,setModules]=useState<ModuleDraft[]>(()=>Array.isArray(fields.modules)?(fields.modules as ModuleDraft[]).map(m=>({...m,lessons:[...m.lessons]})):[])
+  const used=new Set(modules.flatMap(m=>m.lessons))
+  const move=<T,>(list:T[],from:number,to:number)=>{const copy=[...list];const [x]=copy.splice(from,1);copy.splice(to,0,x);return copy}
+  const setModule=(i:number,patch:Partial<ModuleDraft>)=>setModules(list=>list.map((m,j)=>j===i?{...m,...patch}:m))
+  const lessonLabel=(id:string)=>lessons.find(l=>l.id===id)
+  return <>
+    <BlankSelect name="f_category" title="Category" options={COURSE_CATEGORY_OPTIONS} value={str(fields.category)}/>
+    <Field name="f_objectives" title="Learning objectives, one per line" area required={false} value={Array.isArray(fields.objectives)?(fields.objectives as string[]).join('\n'):''}/>
+    <Field name="f_estimated_minutes" title="Estimated learning time in minutes (leave blank to total the lessons)" required={false} value={str(fields.estimated_minutes)}/>
+    <input type="hidden" name="f_modules_json" value={JSON.stringify(modules)}/>
+    <fieldset className="ex-checks"><legend>Modules and lessons</legend>
+      {modules.map((m,i)=><div className="ex-check-edit" key={i}>
+        <label className="ex-field">Module {i+1} title<input value={m.title} maxLength={200} onChange={e=>setModule(i,{title:e.target.value})}/></label>
+        <div className="ex-inline-actions">{i>0 && <button type="button" className="ex-link" onClick={()=>setModules(list=>move(list,i,i-1))}>Move module up</button>}{i<modules.length-1 && <button type="button" className="ex-link" onClick={()=>setModules(list=>move(list,i,i+1))}>Move module down</button>}<button type="button" className="ex-link" onClick={()=>setModules(list=>list.filter((_,j)=>j!==i))}>Remove module</button></div>
+        <ol className="ex-lesson-order">{m.lessons.map((id,k)=>{const l=lessonLabel(id);return <li key={id}><span>{l?l.label:'Unknown lesson'} <span className="ex-badge">{l?label(l.status):'missing'}</span></span>
+          <span className="ex-inline-actions">{k>0 && <button type="button" className="ex-link" onClick={()=>setModule(i,{lessons:move(m.lessons,k,k-1)})}>Up</button>}{k<m.lessons.length-1 && <button type="button" className="ex-link" onClick={()=>setModule(i,{lessons:move(m.lessons,k,k+1)})}>Down</button>}<button type="button" className="ex-link" onClick={()=>setModule(i,{lessons:m.lessons.filter(x=>x!==id)})}>Remove</button></span></li>})}</ol>
+        <label className="ex-field">Add a lesson to module {i+1}<select value="" onChange={e=>{if(e.target.value) setModule(i,{lessons:[...m.lessons,e.target.value]})}}><option value="">Choose a lesson…</option>{lessons.filter(l=>!used.has(l.id)).map(l=><option key={l.id} value={l.id}>{l.label} ({label(l.status)})</option>)}</select></label>
+      </div>)}
+      {modules.length<20 && <button type="button" className="ex-link" onClick={()=>setModules(list=>[...list,{title:`Module ${list.length+1}`,lessons:[]}])}>Add a module</button>}
+      <p className="ex-note">A draft course may include draft lessons. It can be submitted, approved and published only when every lesson is itself published and in date.</p>
+    </fieldset>
+  </>
+}
+function ContentFields({kind,fields={},lessons=[]}:{kind:string;fields?:Row;lessons?:LessonChoice[]}) {
   const f=(k:string)=>str(fields[k])
   if(kind==='knowledge') return <><Field name="f_question" title="Question, as a client would ask it" required={false} value={f('question')}/><Field name="f_answer" title="Precise partner-facing answer" area required={false} value={f('answer')}/>
     <Field name="f_client_explanation" title="Client-friendly explanation (write none for partner-only entries)" area required={false} value={f('client_explanation')}/><Field name="f_limitations" title="Limitation: what this answer must not be stretched to mean" area required={false} value={f('limitations')}/>
@@ -420,20 +476,33 @@ function ContentFields({kind,fields={}}:{kind:string;fields?:Row}) {
     <Field name="f_aliases" title="Other ways people ask it, one per line" area required={false} value={Array.isArray(fields.aliases)?(fields.aliases as string[]).join('\n'):''}/></>
   if(kind==='objection') return <><Field name="f_concern" title="Customer concern" required={false} value={f('concern')}/><Field name="f_clarifying_question" title="Clarifying question" required={false} value={f('clarifying_question')}/><Field name="f_guidance" title="Partner guidance" area required={false} value={f('guidance')}/>
     <Field name="f_client_line" title="Client-facing line" area required={false} value={f('client_line')}/><Field name="f_limitation" title="Limitation" area required={false} value={f('limitation')}/><Field name="f_escalation" title="Escalate when" required={false} value={f('escalation')}/><Field name="f_resource" title="Supporting resource" required={false} value={f('resource')}/></>
-  if(kind==='lesson') return <><Field name="f_course_code" title="Course code (for example C04)" required={false} value={f('course_code')}/><Field name="f_lesson_code" title="Lesson code (for example C04-L3)" required={false} value={f('lesson_code')}/><Field name="f_reading_minutes" title="Reading time in minutes" required={false} value={f('reading_minutes')}/></>
+  if(kind==='lesson') return <><Field name="f_course_code" title="Course code (for example C04)" required={false} value={f('course_code')}/><Field name="f_lesson_code" title="Lesson code (for example C04-L3)" required={false} value={f('lesson_code')}/><Field name="f_reading_minutes" title="Reading time in minutes" required={false} value={f('reading_minutes')}/><ChecksEditor initial={fields.checks}/></>
+  if(kind==='course') return <CourseEditor fields={fields} lessons={lessons}/>
   if(kind==='resource') return <><Field name="f_summary" title="One-line summary" required={false} value={f('summary')}/><Field name="f_category" title="Category" required={false} value={f('category')}/></>
   return <><Field name="f_subject" title="Subject line" required={false} value={f('subject')}/><Field name="f_use_when" title="Use when" required={false} value={f('use_when')}/></>
 }
-function ContentVersion({item,v,live,decisions,actorId,founders,command}:{item:Row;v:Row;live?:Row;decisions:Row[];actorId:string;founders:number;command:Command}) {
+/** Read-only rendering of a version's fields: structured lists in plain language, never raw JSON. */
+function FieldsView({kind,fields,lessons}:{kind:string;fields:Row;lessons:LessonChoice[]}) {
+  if(kind==='course') { const mods=Array.isArray(fields.modules)?fields.modules as ModuleDraft[]:[]
+    return <div className="ex-course-preview"><p>{label(fields.category)}{fields.estimated_minutes?` · ${str(fields.estimated_minutes)} minutes`:''}</p>{Array.isArray(fields.objectives) && <ul>{(fields.objectives as string[]).map(o=><li key={o}>{o}</li>)}</ul>}
+      <ol>{mods.map((m,i)=><li key={i}><strong>{m.title}</strong><ol>{m.lessons.map(id=>{const l=lessons.find(x=>x.id===id);return <li key={id}>{l?l.label:'Unknown lesson'} <span className="ex-badge">{l?label(l.status):'missing'}</span></li>})}</ol></li>)}</ol></div> }
+  const entries=Object.entries(fields).filter(([k])=>k!=='checks')
+  const checks=Array.isArray(fields.checks)?fields.checks as CheckDraft[]:[]
+  return <>{entries.length>0 && <dl>{entries.map(([k,val])=><div key={k}><dt>{label(k)}</dt><dd className="ex-prewrap">{Array.isArray(val)?val.join(', '):str(val)}</dd></div>)}</dl>}
+    {checks.length>0 && <div className="ex-course-preview"><p><strong>Knowledge checks</strong></p><ol>{checks.map(q=><li key={q.id}>{q.prompt} <span className="ex-note">({label(q.type)}; correct: {q.answer.map(a=>q.options.find(o=>o.id===a)?.text||a).join(', ')||'not set'})</span><br/><span className="ex-note">{q.explanation}</span></li>)}</ol></div>}</>
+}
+function ContentVersion({item,v,live,decisions,actorId,founders,lessons,command}:{item:Row;v:Row;live?:Row;decisions:Row[];actorId:string;founders:number;lessons:LessonChoice[];command:Command}) {
   const authored=str(v.created_by)===actorId,fields=(v.fields||{}) as Row,sources=rows(v.source_refs).map(str)
+  const markdown=['lesson','course','resource'].includes(str(item.kind))
   return <div className="ex-list-row ex-content-version"><div>
     <strong>v{str(v.version)} · {str(v.title)}</strong> <span className="ex-badge">{label(v.status)}</span>{v.review_overdue===true && <span className="ex-badge">Past review date</span>}
     <p>By {str(v.author_name)}{v.review_by?` · review by ${str(v.review_by).slice(0,10)}`:''}{v.archive_reason?` · ${str(v.archive_reason)}`:''}{v.change_summary?` · ${str(v.change_summary)}`:''}</p>
-    {v.status!=='draft' && <>{str(v.body) && <p className="ex-prewrap">{str(v.body)}</p>}{Object.keys(fields).length>0 && <dl>{Object.entries(fields).map(([k,val])=><div key={k}><dt>{label(k)}</dt><dd className="ex-prewrap">{Array.isArray(val)?val.join(', '):str(val)}</dd></div>)}</dl>}<p>Sources: {sources.length?sources.join(' · '):'none'}</p></>}
+    {str(v.body) && <details className="ex-preview"><summary>{markdown?'Preview as partners will read it':'Body'}</summary>{markdown?<SafeMarkdown className="ac-prose" source={str(v.body)}/>:<p className="ex-prewrap">{str(v.body)}</p>}</details>}
+    {v.status!=='draft' && <><FieldsView kind={str(item.kind)} fields={fields} lessons={lessons}/><p>Sources: {sources.length?sources.join(' · '):'none'}</p></>}
     {decisions.map(d=><p key={str(d.id)}>{label(d.decision)} by {str(d.decided_by_name)} · {str(d.reference)} · {str(d.notes)}{d.self_approval_reason?` · self-approved: ${str(d.self_approval_reason)}`:''}</p>)}
     {v.status==='draft' && !authored && <p>Drafted by {str(v.author_name)}. Only the author can edit or submit it; archive it to start your own revision.</p>}
-    {v.status==='draft' && authored && <><Action action="save_content_draft" title="Save draft" initial={{versionId:v.id}} command={command}><Field name="title" title="Title" value={str(v.title)}/><Field name="body" title="Body (plain text)" area required={false} value={str(v.body)}/>
-      <Field name="sourceRefs" title="Sources, one per line" area required={false} value={sources.join('\n')}/><Field name="changeSummary" title="Change summary" required={false} value={str(v.change_summary)}/><ContentFields kind={str(item.kind)} fields={fields}/></Action>
+    {v.status==='draft' && authored && <><Action action="save_content_draft" title="Save draft" initial={{versionId:v.id}} command={command}><Field name="title" title="Title" value={str(v.title)}/><Field name="body" title={markdown?'Body (Markdown: headings, lists, bold, links; no HTML)':'Body (plain text)'} area required={false} value={str(v.body)}/>
+      <Field name="sourceRefs" title="Sources, one per line" area required={false} value={sources.join('\n')}/><Field name="changeSummary" title="Change summary" required={false} value={str(v.change_summary)}/><ContentFields kind={str(item.kind)} fields={fields} lessons={lessons}/></Action>
       <Action action="submit_content" title="Submit for review" initial={{versionId:v.id}} command={command}>{item.audience==='client_facing' && <Field name="lintOverrideReason" title="Only if the audience check flags a term: why it is safe for clients" required={false}/>}</Action></>}
     {v.status==='in_review' && (authored && founders>1?<p>You wrote this version, so another founder must record the decision.</p>:
       <Action action="decide_content" title="Record decision" initial={{versionId:v.id}} command={command}><Select name="decision" title="Decision" options={['approved','changes_requested','rejected']}/><Field name="reference" title="Decision reference (for example a founder decision ID)"/>
@@ -445,22 +514,26 @@ function ContentVersion({item,v,live,decisions,actorId,founders,command}:{item:R
 function ContentStudio({a,command}:{a:Row;command:Command}) {
   const items=rows(a.items),versions=rows(a.versions),approvals=rows(a.approvals),counts=(a.counts||{}) as Record<string,number>
   const [kind,setKind]=useState('knowledge')
+  const [filter,setFilter]=useState('all')
   const actorId=str(a.actorId),founders=Number(a.activeFounders||0)
+  const lessons:LessonChoice[]=items.filter(i=>i.kind==='lesson').map(i=>{const own=versions.filter(v=>v.item_id===i.id);const live=own.find(v=>v.status==='published');const latest=own[0];return {id:str(i.id),label:str((live||latest)?.title||i.slug),status:live?(live.review_overdue===true?'past_review_date':'published'):str(latest?.status||'draft')}})
+  const shown=items.filter(i=>filter==='all'||i.kind===filter)
   return <section className="ex-panel"><p className="ex-overline">FOUNDER CONTENT · OPERATION EMPOWER</p><h2>Content studio</h2>
-    <p>Draft, review, approve and publish partner content. Nothing here is shown to partners yet: the partner Resource Centre and Academy arrive in later phases behind their own switches. A version can be edited only while it is a draft; once submitted it is permanent. {founders>1?'More than one founder is active, so another founder must approve content you wrote.':'You are the only active founder: approving your own version needs a recorded reason.'}</p>
+    <p>Draft, review, approve and publish partner content and Academy courses. Partners see only published, in-date content, and only when the Partner Academy is switched on for this environment. A version can be edited only by its author and only while it is a draft; once submitted it is permanent. {founders>1?'More than one founder is active, so another founder must approve content you wrote.':'You are the only active founder: approving your own version needs a recorded reason.'}</p>
     <p className="ex-content-counts">{CONTENT_STATUS_ORDER.map(s=><span key={s} className="ex-badge">{label(s)} {counts[s]||0}</span>)}{Number(a.reviewDue)>0 && <span className="ex-badge">Review due {str(a.reviewDue)} (hidden from partners)</span>}</p>
+    <label className="ex-field">Show<select value={filter} onChange={e=>setFilter(e.target.value)}><option value="all">All content</option>{CONTENT_KIND_OPTIONS.map(k=><option key={k} value={k}>{label(k)}s</option>)}</select></label>
     <details><summary>New content item</summary>
-      <label className="ex-field">Content type<select value={kind} onChange={e=>setKind(e.target.value)}>{['knowledge','objection','lesson','resource','template'].map(k=><option key={k} value={k}>{label(k)}</option>)}</select></label>
-      <Action action="create_content_item" title="Create draft" initial={{kind}} command={command}><Field name="slug" title="Slug (lowercase letters, numbers and hyphens; permanent)"/>
-        <Select name="audience" title="Audience (permanent)" options={['partner_only','client_facing']}/><Select name="cadence" title="Review cadence" options={['service','commercial']}/>
-        <Field name="title" title="Title"/><Field name="body" title="Body (plain text)" area required={false}/><Field name="sourceRefs" title="Sources, one per line (for example faq:hosting-provided)" area required={false}/>
-        <ContentFields key={kind} kind={kind}/></Action></details>
-    {items.length?items.map(item=>{
+      <label className="ex-field">Content type<select value={kind} onChange={e=>setKind(e.target.value)}>{CONTENT_KIND_OPTIONS.map(k=><option key={k} value={k}>{label(k)}</option>)}</select></label>
+      <Action action="create_content_item" title="Create draft" initial={kind==='course'?{kind,audience:'partner_only'}:{kind}} command={command}><Field name="slug" title="Slug (lowercase letters, numbers and hyphens; permanent)"/>
+        {kind==='course'?<p className="ex-note">Academy courses are for partners only.</p>:<Select name="audience" title="Audience (permanent)" options={['partner_only','client_facing']}/>}<Select name="cadence" title="Review cadence" options={['service','commercial']}/>
+        <Field name="title" title="Title"/><Field name="body" title={['lesson','course','resource'].includes(kind)?(kind==='course'?'Course description (Markdown)':'Body (Markdown: headings, lists, bold, links; no HTML)'):'Body (plain text)'} area required={false}/><Field name="sourceRefs" title="Sources, one per line (for example faq:hosting-provided)" area required={false}/>
+        <ContentFields key={kind} kind={kind} lessons={lessons}/></Action></details>
+    {shown.length?shown.map(item=>{
       const own=versions.filter(v=>v.item_id===item.id),open=own.some(v=>['draft','in_review','approved'].includes(str(v.status))),live=own.find(v=>v.status==='published'),latest=own[0]
       return <details className="ex-resource" key={str(item.id)}><summary>{str(item.slug)} · {label(item.kind)} · {item.audience==='client_facing'?'Client-facing':'Partner only'} <span className="ex-badge">{live?`Published v${str(live.version)}`:'Not published'}</span>{latest && latest!==live && <span className="ex-badge">v{str(latest.version)} {label(latest.status)}</span>}</summary>
-        <p>Review at least every {str(item.review_cadence_months)} months · created by {str(item.created_by_name)}</p>
+        <p>Review at least every {str(item.review_cadence_months)} months · created by {str(item.created_by_name)} · {own.length} version{own.length===1?'':'s'} in history</p>
         {!open && own.length>0 && <Action action="start_content_revision" title="Start a new revision" initial={{itemId:item.id}} command={command}><Field name="changeSummary" title="What will change" required={false}/></Action>}
-        {own.map(v=><ContentVersion key={str(v.id)} item={item} v={v} live={live} decisions={approvals.filter(x=>x.version_id===v.id)} actorId={actorId} founders={founders} command={command}/>)}
-      </details>}):<Empty text="No content yet. Create the first draft above."/>}
+        {own.map(v=><ContentVersion key={str(v.id)} item={item} v={v} live={live} decisions={approvals.filter(x=>x.version_id===v.id)} actorId={actorId} founders={founders} lessons={lessons} command={command}/>)}
+      </details>}):<Empty text={items.length?'Nothing of this type yet.':'No content yet. Create the first draft above.'}/>}
   </section>
 }

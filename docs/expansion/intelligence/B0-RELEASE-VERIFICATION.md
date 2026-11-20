@@ -4,7 +4,10 @@ Branch `claude/modest-newton-jo2d95`. **Starting head** `0f71e96` (end of B0 fin
 
 **Pull request:** opened as a DRAFT on explicit authorisation (see the PR link and the PR-triggered results in the final section). The description is used in `PR-DESCRIPTION.md` in the repository template format and passes the real `check:pr-metadata` gate when run against a synthetic pull-request event. Nothing was merged or deployed.
 
-## Four medium findings (carried into the pull request)
+## Four medium findings: remediation (merge preparation)
+All four were remediated on this branch (migrations 0088 and 0089, a CI change, tests). See `B0-MERGE-READINESS.md` for the evidence and the merge gate. The original wording is kept below for history.
+
+## Four medium findings (as first reported)
 1. **Geographic exclusivity matching can fail open** for a region against a city inside it ("North West England" against "Manchester"). Only stop-word areas are forced to review.
 2. **A public profile can stay live after a qualification is revoked**, because an approved webpage reward is not withdrawn automatically; the page persists until a founder withdraws the reward.
 3. **Excluding a previously released candidate permanently locks its domain**, with no in-app remedy.

@@ -196,7 +196,9 @@ test('allocation, market and exclusivity enforcement, recognition and a syntheti
     for (const p of [partnerA, partnerB]) {
       const c = await pool.connect()
       try { await c.query('begin'); await c.query("set local session_replication_role = replica")
-        await c.query("insert into expansion_achievement_rewards(id,partner_id,programme_version,milestone_clients,kind,reward_pence,label,status,reviewed_by,review_note) values(gen_random_uuid(),$1,$2,5,'webpage',0,'Personal ScaleSmiths webpage','approved',$3,'DEMO synthetic entitlement set-up')", [p.id, prog.version, founderId]); await c.query('commit') }
+        await c.query("insert into expansion_achievement_rewards(id,partner_id,programme_version,milestone_clients,kind,reward_pence,label,status,reviewed_by,review_note) values(gen_random_uuid(),$1,$2,5,'webpage',0,'Personal ScaleSmiths webpage','approved',$3,'DEMO synthetic entitlement set-up')", [p.id, prog.version, founderId]); // current entitlement is part of the public projection: five founder-qualified clients per partner (synthetic rows; FK triggers are off in replica mode)
+        for (let i = 0; i < 5; i++) await c.query("insert into expansion_client_qualifications(id,partner_id,client_id,contract_id,status,net_collected_pence,note,decided_by) values(gen_random_uuid(),$1,$2,gen_random_uuid(),'qualified',100000,'DEMO synthetic set-up',$3)", [p.id, 900000 + Math.floor(Math.random() * 90000000) + i, founderId])
+        await c.query('commit') }
       finally { c.release() }
     }
     await pageA.reload(); await tab(pageA, 'My web page')
@@ -235,6 +237,11 @@ test('allocation, market and exclusivity enforcement, recognition and a syntheti
     expect(await pub1.locator('meta[name=robots]').getAttribute('content')).toMatch(/noindex/)
     const html = await pub1.content(); for (const forbidden of [emailA, 'commission', 'INTERNAL', partnerA.id, 'someone@example.com']) expect(html).not.toContain(forbidden)
     await pub1.screenshot({ path: `${evidence}/public-profile-desktop.png`, fullPage: true })
+    // [SQL] entitlement lapses: the page is suspended on the very next request (no stale cache), and returns when entitlement is restored; the records stay
+    const lapse = async (status: string) => { const c = await pool.connect(); try { await c.query('begin'); await c.query('set local session_replication_role = replica'); await c.query("update expansion_client_qualifications set status=$2, revoked_by=case when $2='revoked' then $3::uuid end, revoked_at=case when $2='revoked' then now() end, revoke_reason=case when $2='revoked' then 'DEMO synthetic lapse' end where id=(select id from expansion_client_qualifications where partner_id=$1 order by id limit 1)", [partnerA.id, status, founderId]); await c.query('commit') } finally { c.release() } }
+    await lapse('revoked'); expect((await visitor.request.get(`${web()}/partners/${slug}`)).status()).toBe(404)
+    expect((await pool.query("select status from expansion_profile_publications where slug=$1", [slug])).rows[0].status).toBe('live')
+    await lapse('qualified'); expect((await visitor.request.get(`${web()}/partners/${slug}`)).status()).toBe(200)
     await pub1.setViewportSize({ width: 390, height: 844 }); await pub1.reload(); await noOverflow(pub1); await pub1.screenshot({ path: `${evidence}/public-profile-mobile-390.png`, fullPage: true })
     // [UI] partner revocation removes the page at once, on the next request
     await tab(founderPage, 'Recruitment'); const row = founderPage.locator('.ex-resource').filter({ hasText: emailA })

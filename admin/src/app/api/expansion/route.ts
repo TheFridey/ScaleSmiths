@@ -28,7 +28,7 @@ export async function POST(request: Request) {
       review_achievement_reward:programme.reviewAchievementReward, resolve_qualification_flag:programme.resolveQualificationFlag, correct_meeting:operations.correctMeeting, attribute_referral:programme.attributeReferral, review_referral_reward:programme.reviewReferralReward,
       create_candidate:research.createCandidate, edit_candidate:research.editCandidate, check_candidate:research.checkCandidate, record_screening:research.recordScreening,
       clear_candidate_exclusivity:research.clearCandidateExclusivity, mark_candidate_eligible:research.markCandidateEligible, exclude_candidate:research.excludeCandidate,
-      allocate_candidate:research.allocateCandidate, reassign_candidate:research.reassignCandidate, release_candidate:research.releaseCandidate,
+      release_candidate_domain:research.releaseCandidateDomain, allocate_candidate:research.allocateCandidate, reassign_candidate:research.reassignCandidate, release_candidate:research.releaseCandidate,
       nominate_founding_partner:recognition.nominateFoundingPartner, add_recognition_evidence:recognition.addRecognitionEvidence, start_recognition_review:recognition.startRecognitionReview, decide_recognition:recognition.decideRecognition,
       approve_recognition_benefit:recognition.approveRecognitionBenefit, record_benefit_fulfilment:recognition.recordBenefitFulfilment, correct_recognition:recognition.correctRecognition, revoke_recognition:recognition.revokeRecognition,
       review_profile:profiles.reviewProfile, publish_profile:profiles.publishProfile, revoke_publication:profiles.revokePublication,

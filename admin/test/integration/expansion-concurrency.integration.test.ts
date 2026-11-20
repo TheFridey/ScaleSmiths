@@ -35,7 +35,7 @@ vi.mock("../../src/lib/server/rbac", () => ({ requireCapability: async (capabili
 import { founderMutation, partnerMutation, partnerSnapshot } from "../../src/lib/server/expansion"
 import { resolveQualificationFlag } from "../../src/lib/server/expansion-programme"
 import { requestMeeting, decideMeeting, correctMeeting } from "../../src/lib/server/expansion-operations"
-import { allocateCandidate, checkCandidate, editCandidate, clearCandidateExclusivity, createCandidate, excludeCandidate, getResearchAdmin, markCandidateEligible, recordScreening, reassignCandidate, releaseCandidate } from "../../src/lib/server/expansion-research"
+import { allocateCandidate, checkCandidate, editCandidate, releaseCandidateDomain, clearCandidateExclusivity, createCandidate, excludeCandidate, getResearchAdmin, markCandidateEligible, recordScreening, reassignCandidate, releaseCandidate } from "../../src/lib/server/expansion-research"
 import { addRecognitionEvidence, approveRecognitionBenefit, correctRecognition, decideRecognition, getPartnerRecognition, getRecognitionAdmin, nominateFoundingPartner, recordBenefitFulfilment, revokeRecognition, startRecognitionReview } from "../../src/lib/server/expansion-recognition"
 import { getPartnerProfile, publishProfile, withdrawProfileConsent, recordProfileConsent, reviewProfile, revokePublication, saveProfileDraft, submitProfile } from "../../src/lib/server/expansion-profiles"
 import { translateDbError } from "../../src/lib/db-errors"
@@ -1109,6 +1109,57 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("Expansion real separa
       await runAs(founder, () => releaseCandidate({ candidateId: id, note: "TEST ONLY released" }))
       await expect(runAs(founder, () => editCandidate({ candidateId: id, ...fresh(`fix${n}`, { country: "QB" }) }))).rejects.toMatchObject({ status: 409, message: expect.stringContaining("facts are fixed") })
     })
+    it("geography comes from the founder-approved area tree: a city inside a protected region is a match, unclassified wording goes to review, classified disjoint areas clear", async () => {
+      const sector = `Sector ${suffix} geo`, nw = `North West ${suffix}`, mcr = `Manchester ${suffix}`, leeds = `Leeds ${suffix}`
+      const area = async (key: string, label: string, parentId?: string) => (await runAs(founder, () => founderMutation({ action: "create_area", key: `${key}-${suffix}`, label, ...(parentId ? { parentId } : {}) })) as { areaId: string }).areaId
+      const alias = (areaId: string, text: string) => runAs(founder, () => founderMutation({ action: "add_area_alias", areaId, alias: text }))
+      await runAs(founder, () => founderMutation({ action: "create_exclusivity", clientId, sector, area: nw, contractualReference: "TEST ONLY region clause", effectiveFrom: "2020-01-01" }))
+      try {
+        const inRegion = await mk("geo-in", { industry: sector, area: mcr }); const elsewhere = await mk("geo-out", { industry: sector, area: leeds })
+        const outcome = async (id: string) => (await runAs(founder, () => checkCandidate({ candidateId: id }))).checks.exclusivity
+        expect(await outcome(inRegion)).toBe("review_required")                    // nothing in the taxonomy: wording can never clear it
+        expect(await outcome(elsewhere)).toBe("review_required")
+        const region = await area("nw", nw), city = await area("mcr", mcr, region), yorkshire = await area("yorks", `Yorkshire ${suffix}`), l = await area("leeds", leeds, yorkshire)
+        await alias(region, nw); await alias(city, mcr); await alias(l, leeds)
+        expect(await outcome(inRegion)).toBe("restricted")                         // Manchester is inside the protected North West
+        expect(await outcome(elsewhere)).toBe("clear")                             // Leeds is classified and outside it
+        await expect(alias(city, nw)).rejects.toMatchObject({ status: 409 })       // an alias belongs to exactly one area
+        await expect(runAs(founder, () => founderMutation({ action: "create_area", key: `bad-${suffix}`, label: "Orphan", parentId: randomUUID() }))).rejects.toMatchObject({ status: 400 })
+        await expect(pool.query("update expansion_areas set label='x' where id=$1", [region])).rejects.toThrow()   // append-only
+        await expect(runAs(first, () => founderMutation({ action: "create_area", key: `p-${suffix}`, label: "Partner area" }))).rejects.toThrow()
+      } finally { await pool.query("update expansion_exclusivities set status='ended',ended_at=now() where status='active' and sector=$1", [sector]) }
+    })
+    it("a founder can release the domain held by an excluded, released candidate: audited, permanent, never for worked prospects, and suppression still applies", async () => {
+      const a = await activePartner("dom-a"); const id = await eligible("dom"); const domain = `research-${suffix}-dom${n}.example`
+      const out = await allocate(id, a.partnerId) as { opportunityId: string }
+      await runAs(founder, () => releaseCandidate({ candidateId: id, note: "TEST ONLY released" }))
+      await runAs(founder, () => excludeCandidate({ candidateId: id, reason: "TEST ONLY excluded after release" }))
+      // before the founder acts, the domain stays held and a corrected candidate is blocked
+      const again = await mk("dom-again", { website: domain }); await screen(again)
+      await expect(runAs(founder, () => markCandidateEligible({ candidateId: again }))).rejects.toMatchObject({ status: 409, message: expect.stringContaining("existing prospect") })
+      await expect(runAs(a.actor, () => releaseCandidateDomain({ candidateId: id, reason: "TEST ONLY partner attempt" }))).rejects.toThrow("Forbidden")
+      await expect(runAs(founder, () => releaseCandidateDomain({ candidateId: id, reason: "" }))).rejects.toMatchObject({ status: 400 })
+      expect(await runAs(founder, () => releaseCandidateDomain({ candidateId: id, reason: "TEST ONLY wrong company recorded; corrected entry follows" }))).toMatchObject({ replayed: false })
+      expect(await runAs(founder, () => releaseCandidateDomain({ candidateId: id, reason: "TEST ONLY again" }))).toMatchObject({ replayed: true })
+      // history survives; the corrected candidate can now proceed and be allocated
+      expect((await pool.query("select partner_id,status,domain_released_by is not null released from expansion_opportunities where id=$1", [out.opportunityId])).rows).toEqual([{ partner_id: a.partnerId, status: "withdrawn", released: true }])
+      expect(await events(id)).toContain("domain_released")
+      await runAs(founder, () => markCandidateEligible({ candidateId: again }))
+      expect(await allocate(again, a.partnerId)).toMatchObject({ opportunityId: expect.any(String) })
+      expect((await pool.query("select count(*)::int c from expansion_opportunities where normalized_domain=$1", [domain])).rows[0].c).toBe(2)   // old (released) and new
+      // the database refuses the release for a candidate that is not excluded, and for any release outside the service
+      const live = await eligible("dom-live"); const liveOut = await allocate(live, a.partnerId) as { opportunityId: string }
+      await expect(pool.query("update expansion_opportunities set domain_released_at=now(),domain_released_by=$1,domain_release_reason='x' where id=$2", [founder.id, liveOut.opportunityId])).rejects.toThrow(/withdrawn, unworked/)
+      await expect(pool.query("update expansion_opportunities set domain_release_reason='changed' where id=$1", [out.opportunityId])).rejects.toThrow()
+      await expect(runAs(founder, () => releaseCandidateDomain({ candidateId: live, reason: "TEST ONLY not excluded" }))).rejects.toMatchObject({ status: 409 })
+      // suppression is untouched by a release
+      const supId = await eligible("dom-sup"); const supDomain = `research-${suffix}-dom-sup${n}.example`
+      await allocate(supId, a.partnerId); await runAs(founder, () => releaseCandidate({ candidateId: supId, note: "TEST ONLY" })); await runAs(founder, () => excludeCandidate({ candidateId: supId, reason: "TEST ONLY" }))
+      await runAs(founder, () => founderMutation({ action: "suppress", domain: supDomain, reason: "TEST ONLY suppression survives a release" }))
+      await runAs(founder, () => releaseCandidateDomain({ candidateId: supId, reason: "TEST ONLY release after suppression" }))
+      const blocked = await mk("dom-sup-again", { website: supDomain }); await screen(blocked)
+      await expect(runAs(founder, () => markCandidateEligible({ candidateId: blocked }))).rejects.toMatchObject({ status: 409, message: expect.stringContaining("suppression") })
+    })
     it("an excluded candidate is closed, and screening failure withdraws eligibility", async () => {
       const id = await eligible("excl")
       await runAs(founder, () => recordScreening({ candidateId: id, outcome: "failed", evidence: "TEST ONLY screening reason recorded" }))
@@ -1406,6 +1457,29 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("Expansion real separa
       expect(await runAs(b.actor, () => withdrawProfileConsent())).toEqual({ removed: false })
       expect((await pool.query("select status,end_reason from expansion_profile_publications where partner_id=$1", [b.partnerId])).rows).toEqual([{ status: "revoked", end_reason: "Consent withdrawn by the partner" }])
       await expect(withdrawProfileConsent()).rejects.toThrow()
+    })
+    it("suspends a live page when the underlying entitlement lapses, keeps every record, and restores it when a founder restores entitlement", async () => {
+      const a = await entitledPartner("lapse"); const v = await approvedVersion(a, "lapse"); const slug = slugFor("lapse")
+      await runAs(founder, () => publishProfile({ versionId: v, slug }))
+      expect(await view(slug)).toHaveLength(1)
+      const contracts = (await pool.query<{ id: string; contract_id: string }>("select id,contract_id from expansion_client_qualifications where partner_id=$1 and status='qualified' order by decided_at", [a.partnerId])).rows
+      expect(contracts).toHaveLength(5)
+      // a refund opens a review flag: the page is suspended at once (fail closed) while the founder decides
+      const paymentId = (await pool.query<{ id: string }>("select id from expansion_payment_events where contract_id=$1 and net_pence>0 limit 1", [contracts[0].contract_id])).rows[0].id
+      await runAs(founder, () => refundExpansionPayment({ paymentId, reference: `${suffix}-lapse-refund`, netPence: "20000", grossPence: "24000", reason: "TEST ONLY verified refund" }))
+      expect(await view(slug)).toHaveLength(0)
+      const flag = (await pool.query<{ id: string }>("select f.id from expansion_qualification_flags f where f.qualification_id=$1 and f.status='open'", [contracts[0].id])).rows[0].id
+      // maintaining the qualification is a founder decision and restores the page; nothing was deleted
+      await runAs(founder, () => resolveQualificationFlag({ flagId: flag, resolution: "maintained", note: "TEST ONLY partial refund does not remove the qualifying collection" }))
+      expect(await view(slug)).toHaveLength(1)
+      // revoking a qualification drops entitlement below the milestone: the page is suspended, the reward still reads approved, and every row survives
+      await runAs(founder, () => revokeQualification({ qualificationId: contracts[1].id, reason: "TEST ONLY entered in error" }))
+      expect(await view(slug)).toHaveLength(0)
+      expect((await pool.query("select status from expansion_achievement_rewards where id=$1", [a.reward])).rows[0].status).toBe("approved")
+      expect((await pool.query("select status from expansion_profile_publications where partner_id=$1", [a.partnerId])).rows).toEqual([{ status: "live" }])
+      expect((await pool.query("select count(*)::int c from expansion_profile_versions where partner_id=$1 and status='approved'", [a.partnerId])).rows[0].c).toBe(1)
+      // the restricted public role sees the same, on a separate connection, immediately
+      if (webPool) expect((await webPool.query("select 1 from expansion_public_partner_profiles where slug=$1", [slug])).rows).toHaveLength(0)
     })
     it("shows approved Founding Partner recognition only while it stands, and an opted-in referral identifier only", async () => {
       const a = await entitledPartner("fp"); const v = await approvedVersion(a, "fp", { enquiryMode: "referral_code" }); const slug = slugFor("fp")

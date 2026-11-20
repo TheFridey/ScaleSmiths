@@ -67,6 +67,7 @@ describe("production Expansion prospect/scope/capacity service against PostgreSQ
     await state.database.exec(readFileSync(new URL("../../../drizzle/0080_expansion_sector_taxonomy.sql", import.meta.url), "utf8"))
     await state.database.exec(readFileSync(new URL("../../../drizzle/0084_expansion_research_allocation.sql", import.meta.url), "utf8"))
     await state.database.exec(readFileSync(new URL("../../../drizzle/0085_expansion_market_enforcement.sql", import.meta.url), "utf8"))
+    await state.database.exec(readFileSync(new URL("../../../drizzle/0088_expansion_review_medium_findings.sql", import.meta.url), "utf8"))
   }, 30000)
   beforeEach(async () => {
     asFounder()

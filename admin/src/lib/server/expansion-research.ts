@@ -8,7 +8,7 @@ import { ExpansionError, prospectDomain } from "@/lib/expansion"
 import { marketGate, matchExclusivity, normaliseCountry } from "@/lib/expansion-gates"
 import { safeDbMessage } from "@/lib/db-errors"
 import { requireCapability } from "./rbac"
-import { activeExclusivities, aliasKey, assertSectorExists } from "./expansion"
+import { activeExclusivities, areaPathFor, aliasKey, assertSectorExists } from "./expansion"
 
 /*
  * Researched prospect allocation (checkpoint 5).
@@ -73,8 +73,8 @@ async function evaluate(tx: Executor, cand: Row): Promise<CandidateChecks> {
   const own = (await rows(tx, sql`select prospect_id from expansion_opportunities where research_candidate_id=${id}`))[0]
   const ownProspect = own ? Number(own.prospect_id) : -1
   const existingClient = (await rows(tx, sql`select id from clients where lower(regexp_replace(name,'[^a-zA-Z0-9]','','g'))=${norm(name)} limit 1`)).length > 0
-  const existingProspect = (await rows(tx, sql`select id from prospects where id<>${ownProspect} and (lower(regexp_replace(business_name,'[^a-zA-Z0-9]','','g'))=${norm(name)} or lower(regexp_replace(regexp_replace(coalesce(website_url,''),'^https?://(www\.)?','','i'),'/.*$',''))=${domain})
-    union all select o.prospect_id from expansion_opportunities o where o.normalized_domain=${domain} and o.research_candidate_id is distinct from ${id}
+  const existingProspect = (await rows(tx, sql`select id from prospects where id<>${ownProspect} and id not in (select prospect_id from expansion_opportunities where domain_released_at is not null) and (lower(regexp_replace(business_name,'[^a-zA-Z0-9]','','g'))=${norm(name)} or lower(regexp_replace(regexp_replace(coalesce(website_url,''),'^https?://(www\.)?','','i'),'/.*$',''))=${domain})
+    union all select o.prospect_id from expansion_opportunities o where o.normalized_domain=${domain} and o.domain_released_at is null and o.research_candidate_id is distinct from ${id}
     union all select 0 from expansion_research_candidates c where c.id<>${id} and c.status<>'excluded' and (c.normalized_domain=${domain} or lower(regexp_replace(c.business_name,'[^a-zA-Z0-9]','','g'))=${norm(name)}) limit 1`)).length > 0
   const suppressed = (await rows(tx, sql`select 1 from expansion_suppressions where normalized_domain=${domain}`)).length > 0
   const market = (await rows(tx, sql`select status,plan_keys from expansion_markets where country_code=${String(cand.country)} for share`))[0] as { status: string; plan_keys: string[] } | undefined
@@ -84,7 +84,7 @@ async function evaluate(tx: Executor, cand: Row): Promise<CandidateChecks> {
   if (!sectorId && cand.industry) { const hit = (await rows(tx, sql`select sector_id from expansion_sector_aliases where alias=${aliasKey(cand.industry)}`))[0]; sectorId = hit ? String(hit.sector_id) : null }
   const unresolved: string[] = []; let status: CandidateChecks["exclusivity"] = "clear", clearedAny = false
   for (const ex of await activeExclusivities(tx as AdminDatabaseTransaction)) {
-    const match = matchExclusivity({ clientId: null, sector: (cand.industry as string | null) ?? null, area: ((cand.area as string | null) || (cand.region as string | null)) ?? null, sectorId }, { clientId: Number(ex.client_id), sector: String(ex.sector), area: String(ex.area), sectorId: (ex.sector_id as string | null) ?? null })
+    const match = matchExclusivity({ clientId: null, sector: (cand.industry as string | null) ?? null, area: ((cand.area as string | null) || (cand.region as string | null)) ?? null, sectorId, areaPath: await areaPathFor(tx as AdminDatabaseTransaction, (cand.area as string | null) || (cand.region as string | null)) }, { clientId: Number(ex.client_id), sector: String(ex.sector), area: String(ex.area), sectorId: (ex.sector_id as string | null) ?? null, areaPath: await areaPathFor(tx as AdminDatabaseTransaction, ex.area) })
     if (match === "none") continue
     const cleared = (await rows(tx, sql`select 1 from expansion_candidate_exclusivity_decisions where candidate_id=${id} and exclusivity_id=${String(ex.id)}`)).length > 0
     if (cleared && match === "review") { clearedAny = true; continue }
@@ -333,6 +333,32 @@ export async function releaseCandidate(input: { candidateId: string; note: strin
     await event(tx, id, "released", actor.id, { fromPartnerId: from, opportunityId: String(opp.id), note })
     await audit(tx, actor.id, id, "candidate_released", { from })
     return { id }
+  })
+}
+
+/**
+ * Founder-only, audited release of a domain still held by the withdrawn prospect of an EXCLUDED candidate. Nothing is deleted: the opportunity,
+ * its prospect, the partner history and the candidate history stay. Suppression and existing-client checks are unaffected, and the database
+ * refuses the release for anything that was worked, contracted or is not a withdrawn research prospect.
+ */
+export async function releaseCandidateDomain(input: { candidateId: string; reason: string }) {
+  const actor = await requireCapability("expansion.manage"), id = uuid(input.candidateId)
+  const reason = text(input.reason, "Reason for releasing the domain", 1000, 5)
+  return db.transaction(async (tx) => {
+    await founderGuard(tx, actor)
+    await tx.execute(sql`select pg_advisory_xact_lock(621908148)`)
+    // Opportunity row before candidate row, as everywhere else.
+    const [opp] = await rows(tx, sql`select id,domain_released_at from expansion_opportunities where research_candidate_id=${id} for update`)
+    const [cand] = await rows(tx, sql`select status from expansion_research_candidates where id=${id} for update`)
+    if (!cand) throw new ResearchError("Candidate not found.", 404)
+    if (cand.status !== "excluded") conflict("Exclude the candidate first. Only an excluded candidate's held domain can be released.")
+    if (!opp) conflict("This candidate holds no domain.")
+    if (opp.domain_released_at) return { id, replayed: true }
+    try { await tx.execute(sql`update expansion_opportunities set domain_released_at=now(),domain_released_by=${actor.id},domain_release_reason=${reason} where id=${String(opp.id)}`) }
+    catch (error) { throw new ResearchError(dbMessage(error, "This domain cannot be released."), 409) }
+    await event(tx, id, "domain_released", actor.id, { opportunityId: String(opp.id), note: reason })
+    await audit(tx, actor.id, id, "candidate_domain_released", { opportunityId: String(opp.id) })
+    return { id, replayed: false }
   })
 }
 

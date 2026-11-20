@@ -37,8 +37,8 @@ describe("exclusivity matching is conservative", () => {
   })
   it("clears only on positive evidence, never on the absence of a shared word", () => {
     expect(matchExclusivity({ sector: "Dentistry", area: "Nottingham" }, ex)).toBe("review")                    // wording cannot clear
-    expect(matchExclusivity({ sector: "Plumbing & Heating", area: "Leeds" }, ex)).toBe("none")                // same sector, positively different area
-    // an area with no comparable stem (only stop words) can never prove a difference, whichever side it is on
+    // Different wording for areas is never proof of a difference: without the founder-approved area tree, it goes to a founder
+    expect(matchExclusivity({ sector: "Plumbing & Heating", area: "Leeds" }, ex)).toBe("review")
     expect(matchExclusivity({ sector: "Plumbing & Heating", area: "Leeds" }, { ...ex, area: "UK" })).toBe("review")
     expect(matchExclusivity({ sector: "Plumbing & Heating", area: "UK" }, ex)).toBe("review")
     expect(matchExclusivity({ clientId: 7, sector: "Plumbing & Heating", area: "Nottingham" }, ex)).toBe("none")  // own customer
@@ -46,6 +46,27 @@ describe("exclusivity matching is conservative", () => {
     expect(matchExclusivity({ sector: "Pest management", area: "Leeds" }, { clientId: 8, sector: "Exterminator", area: "Leeds" })).toBe("review")
     expect(matchExclusivity({ sector: "Dental", area: "Leeds", sectorId: "a" }, { clientId: 8, sector: "Dentist", area: "Leeds" })).toBe("review")   // classified prospect, unclassified exclusivity
     expect(matchExclusivity({ sector: "Dental", area: "Leeds", sectorId: "a" }, { clientId: 8, sector: "Dental", area: "Leeds" })).toBe("restricted")  // identical wording confirms
+  })
+})
+describe("geography is decided from the founder-approved area tree", () => {
+  // tree: north-west > greater-manchester > manchester ; yorkshire > leeds. Paths are most specific first.
+  const manchester = ["manchester", "greater-manchester", "north-west"], northWest = ["north-west"], leeds = ["leeds", "yorkshire"]
+  const ex = (areaPath: string[] | null, area = "North West England") => ({ clientId: 9, sector: "Dental", area, sectorId: "dental", areaPath })
+  it("a city inside a protected region is a match, whichever direction the nesting goes", () => {
+    expect(matchExclusivity({ sector: "Dentist", area: "Manchester", sectorId: "dental", areaPath: manchester }, ex(northWest))).toBe("restricted")
+    expect(matchExclusivity({ sector: "Dentist", area: "North West England", sectorId: "dental", areaPath: northWest }, ex(manchester, "Manchester"))).toBe("restricted")
+    expect(matchExclusivity({ sector: "Dentist", area: "Hucknall", sectorId: "dental", areaPath: ["hucknall", "nottinghamshire"] }, ex(["nottinghamshire"], "Nottinghamshire"))).toBe("restricted")
+    expect(matchExclusivity({ sector: "Dentist", area: "Westminster", sectorId: "dental", areaPath: ["westminster", "greater-london"] }, ex(["greater-london"], "Greater London"))).toBe("restricted")
+  })
+  it("two classified areas, neither containing the other, are positively different; an unclassified one is never proof", () => {
+    expect(matchExclusivity({ sector: "Dentist", area: "Leeds", sectorId: "dental", areaPath: leeds }, ex(northWest))).toBe("none")
+    expect(matchExclusivity({ sector: "Dentist", area: "Manchester", sectorId: "dental", areaPath: manchester }, ex(null))).toBe("review")   // exclusivity area not in the taxonomy
+    expect(matchExclusivity({ sector: "Dentist", area: "Manchester", sectorId: "dental", areaPath: null }, ex(northWest))).toBe("review")     // prospect area not in the taxonomy
+    expect(matchExclusivity({ sector: "Dentist", area: "Manchester", sectorId: "dental", areaPath: [] }, ex(northWest))).toBe("review")
+  })
+  it("a different sector is still decided by the sector, and an own customer is never restricted", () => {
+    expect(matchExclusivity({ sector: "Plumber", area: "Manchester", sectorId: "plumbing", areaPath: manchester }, ex(northWest))).toBe("none")
+    expect(matchExclusivity({ clientId: 9, sector: "Dentist", area: "Manchester", sectorId: "dental", areaPath: manchester }, ex(northWest))).toBe("none")
   })
 })
 describe("market gate fails closed", () => {

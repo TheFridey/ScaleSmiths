@@ -603,7 +603,9 @@
     {"path":"admin/drizzle/0084_expansion_research_allocation.sql","sha256":"20d85f8352126235116135e7b5346cb0fb1b2ae4379babc3bbbe32183085ba7c","lifecycle":"forward","reason":"Researched prospect allocation: founder-held research candidates, append-only allocation history, candidate exclusivity decisions and a guarded opportunity owner."},
     {"path":"admin/drizzle/0085_expansion_market_enforcement.sql","sha256":"16a7f5ae796aea7f2f3f3839e1bc755cf2aa18ede87258d20930dc4f3da0a4f0","lifecycle":"forward","reason":"Applicant residence, partner operating market and customer commercial market recorded separately for fail-closed enforcement."},
     {"path":"admin/drizzle/0086_expansion_founding_recognition.sql","sha256":"f76bc943e241266e1c0bd094d3b585e34e773c2d339e662183535a92a844532a","lifecycle":"forward","reason":"Founder-controlled Founding Partner recognition: nomination, evidence, review, decision, approved benefits, fulfilment history, correction and revocation."},
-    {"path":"admin/drizzle/0087_expansion_partner_profiles.sql","sha256":"24c9a164375b01ba5e38452374b74fd57edda0385a2a9a70dabb9b666453c90c","lifecycle":"forward","reason":"Personal partner webpages: consent-bound drafts, founder review, immutable approved versions, slugs bound for life, publications and a narrow security-barrier public view."}
+    {"path":"admin/drizzle/0087_expansion_partner_profiles.sql","sha256":"24c9a164375b01ba5e38452374b74fd57edda0385a2a9a70dabb9b666453c90c","lifecycle":"forward","reason":"Personal partner webpages: consent-bound drafts, founder review, immutable approved versions, slugs bound for life, publications and a narrow security-barrier public view."},
+    {"path":"admin/drizzle/0088_expansion_review_medium_findings.sql","sha256":"2421aa7417018b4d307123276175a4c10d5cbb96b343cdd1fdbd6ba9bcacd831","lifecycle":"forward","reason":"Merge-remediation: founder-approved area taxonomy and audited release of a held research domain."},
+    {"path":"admin/drizzle/0089_expansion_profile_entitlement_view.sql","sha256":"09106a29ccfdbeb3ee829d1e35bae8372c7d13d559b693461f3f2ff21e74b9e5","lifecycle":"forward","reason":"Public profile view requires current entitlement: a revoked qualification or an open refund review suspends the page."}
   ],
   "journals": {
     "web": {
@@ -887,7 +889,9 @@
         {"idx":84,"version":"7","when":1794951001016,"tag":"0084_expansion_research_allocation","breakpoints":true},
         {"idx":85,"version":"7","when":1794951002016,"tag":"0085_expansion_market_enforcement","breakpoints":true},
         {"idx":86,"version":"7","when":1794951003016,"tag":"0086_expansion_founding_recognition","breakpoints":true},
-        {"idx":87,"version":"7","when":1794951004016,"tag":"0087_expansion_partner_profiles","breakpoints":true}
+        {"idx":87,"version":"7","when":1794951004016,"tag":"0087_expansion_partner_profiles","breakpoints":true},
+        {"idx":88,"version":"7","when":1794951005016,"tag":"0088_expansion_review_medium_findings","breakpoints":true},
+        {"idx":89,"version":"7","when":1794951006016,"tag":"0089_expansion_profile_entitlement_view","breakpoints":true}
       ]
     }
   },

@@ -2,18 +2,14 @@
 export type ExclusivityMatch = "none" | "review" | "restricted"
 const norm = (value: unknown) => String(value ?? "").toLowerCase().replace(/&/g, " and ").replace(/[^a-z0-9]+/g, " ").trim()
 
-export interface ExclusivityRecord { clientId: number; sector: string; area: string; sectorId?: string | null }
-export interface OpportunityFacts { clientId?: number | null; sector?: string | null; area?: string | null; sectorId?: string | null }
+/** `areaPath` is the founder-approved area followed by every ancestor, most specific first (null when the wording is not in the taxonomy). */
+export interface ExclusivityRecord { clientId: number; sector: string; area: string; sectorId?: string | null; areaPath?: readonly string[] | null }
+export interface OpportunityFacts { clientId?: number | null; sector?: string | null; area?: string | null; sectorId?: string | null; areaPath?: readonly string[] | null }
 
 /**
- * Same sector and an equal or nested area -> restricted. Same sector with an unknown area, or an unknown sector, -> founder review.
- * Anything that can be positively distinguished -> none. A customer is never restricted by its own exclusivity.
+ * Same sector and an equal or nested area (by wording or by the founder-approved area tree) -> restricted. Same sector with an unknown area, an
+ * unclassified area, or an unknown sector -> founder review. Only a positive, classified difference clears. A customer is never restricted by its own exclusivity.
  */
-const STOP = new Set(["and", "the", "of", "for", "in", "ltd", "limited", "services", "service", "uk"])
-/** Word stems (first four letters) so "dental", "dentist" and "dentistry" overlap. Non-Latin text yields none. */
-const stems = (value: string) => new Set(value.split(" ").filter((w) => w.length >= 3 && !STOP.has(w)).map((w) => w.slice(0, 4)))
-const overlaps = (a: Set<string>, b: Set<string>) => [...a].some((t) => b.has(t))
-
 export function matchExclusivity(opportunity: OpportunityFacts, exclusivity: ExclusivityRecord): ExclusivityMatch {
   if (opportunity.clientId != null && opportunity.clientId === exclusivity.clientId) return "none"
   const area = norm(opportunity.area), exArea = norm(exclusivity.area)
@@ -34,9 +30,15 @@ export function matchExclusivity(opportunity: OpportunityFacts, exclusivity: Exc
   if (!area) return "review"
   const nested = area === exArea || area.includes(exArea) || exArea.includes(area)
   if (nested) return sameSector ? "restricted" : "review"
-  // An area made only of stop words ("UK", "England", "region") carries no stem to compare, so it can never prove a difference.
-  if (!stems(area).size || !stems(exArea).size) return "review"
-  return overlaps(stems(area), stems(exArea)) ? "review" : "none"      // same sector, geographically positively different
+  // Geography is decided from the founder-approved area tree, never from wording. Containment in either direction ("Manchester" inside
+  // "North West England", "Hucknall" inside "Nottinghamshire") is a match. Two areas that are both classified and neither contains the other
+  // are positively different. Anything not in the taxonomy cannot prove a difference, so it goes to a founder.
+  const a = opportunity.areaPath, e = exclusivity.areaPath
+  if (a?.length && e?.length) {
+    if (a.includes(e[0]) || e.includes(a[0])) return sameSector ? "restricted" : "review"
+    return "none"
+  }
+  return "review"
 }
 
 export function normaliseCountry(value: unknown): string | null {

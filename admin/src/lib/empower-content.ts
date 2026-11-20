@@ -123,7 +123,15 @@ export function contentFields(kind: ContentKind, value: unknown, complete: boole
     if (complete) { req(out, "lesson_code", "Lesson code"); req(out, "course_code", "Course code") }
     return out
   }
-  return keep(kind === "resource" ? ["summary", "category"] : ["subject", "use_when"])
+  if (kind === "resource") {
+    const out = keep(["summary", "category"], ["related"])
+    if (out.category !== undefined) oneOf(out.category, RESOURCE_CATEGORIES, "resource category")
+    const related = relatedItems(out.related)
+    if (related.length) out.related = related; else delete out.related
+    if (complete) { req(out, "summary", "One-line summary"); oneOf(out.category, RESOURCE_CATEGORIES, "resource category") }
+    return out
+  }
+  return keep(["subject", "use_when"])
 }
 
 /** Every http(s) link must be HTTPS to an allow-listed host; relative links must be site-internal paths. */
@@ -309,4 +317,55 @@ export function gradeCheck(checks: unknown, questionId: unknown, answer: unknown
   if (question.type !== "multiple" && given.length !== 1) throw new ContentError("Choose one answer.")
   const correct = given.length === question.answer.length && given.every((g, i) => g === question.answer[i])
   return { questionId: question.id, given, correct, answer: question.answer, explanation: question.explanation }
+}
+
+// ---------------------------------------------------------------- Operation Empower B1.3: Resource Centre rules
+export const RESOURCE_CATEGORIES = ["brochure", "guide", "checklist", "template", "reference"] as const
+export type ResourceCategory = (typeof RESOURCE_CATEGORIES)[number]
+export const SEARCH_QUERY_MAX = 200
+
+/** Related lessons or resources, by item id (at most 10). Whether each is servable is decided when the resource is read. */
+function relatedItems(value: unknown): string[] {
+  if (value == null || value === "") return []
+  const list = Array.isArray(value) ? value : typeof value === "string" ? value.split(/[\s,]+/) : fail("Related items must be a list.")
+  const ids = [...new Set(list.map((v) => String(v).trim().toLowerCase()).filter(Boolean))]
+  if (ids.length > 10) fail("Link at most 10 related items.")
+  for (const id of ids) if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(id)) fail("A related item reference is not valid.")
+  return ids
+}
+
+/** Normalises a partner's search text. Returns null when there is nothing to search for. */
+export function searchQuery(value: unknown): string | null {
+  if (value == null) return null
+  if (typeof value !== "string") fail("Search text must be text.")
+  const cleaned = (value as string).replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim()
+  if (cleaned.length > SEARCH_QUERY_MAX) fail(`Search text must be at most ${SEARCH_QUERY_MAX} characters.`)
+  return cleaned.length ? cleaned : null
+}
+
+export interface Synonym { term: string; expansion: string }
+export const synonymTerm = (value: unknown) => {
+  const term = typeof value === "string" ? value.trim().toLowerCase() : ""
+  if (term.length < 2 || term.length > 60 || !/^[a-z0-9][a-z0-9 .+-]*$/.test(term)) fail("A synonym term is 2 to 60 lowercase letters, numbers, spaces, dots, plus signs or hyphens.")
+  return term
+}
+export const synonymExpansion = (value: unknown) => {
+  const text = typeof value === "string" ? value.trim() : ""
+  if (text.length < 2 || text.length > 200 || /[<>"\\]/.test(text)) fail("A synonym expansion is 2 to 200 characters of plain text.")
+  return text
+}
+
+/**
+ * Deterministic synonym expansion for websearch_to_tsquery: every active synonym whose term appears as a whole word or phrase
+ * in the query adds "or <expansion>". The original query always stays first, so exact wording ranks highest.
+ */
+export function expandQuery(query: string, synonyms: readonly Synonym[]): string {
+  const lower = ` ${query.toLowerCase().replace(/[^a-z0-9 .+-]/g, " ").replace(/\s+/g, " ")} `
+  const additions: string[] = []
+  for (const s of [...synonyms].sort((a, b) => a.term.localeCompare(b.term))) {
+    // Expansions are founder text, but must still never change query meaning: no exclusions, no bare or/and operators.
+    const safe = s.expansion.split(/\s+/).filter((w) => !/^(or|and)$/i.test(w)).map((w) => w.replace(/^-+/, "")).filter(Boolean).join(" ")
+    if (safe && lower.includes(` ${s.term} `) && !additions.includes(safe)) additions.push(safe)
+  }
+  return [query, ...additions].join(" or ").slice(0, 600)
 }

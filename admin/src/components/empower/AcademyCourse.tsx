@@ -1,13 +1,13 @@
 "use client"
 import Link from "next/link"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { AcademyShell } from "./AcademyShell"
+import { AcademyShell, type PartnerNav } from "./AcademyShell"
 import { CATEGORY_LABELS, type AcademyCourseSummary } from "./AcademyHome"
 import { SafeMarkdown } from "./SafeMarkdown"
 
 type Option = { id: string; text: string }
 type Check = { id: string; type: "single" | "multiple" | "true_false"; prompt: string; options: Option[]; lastAttempt?: { correct: boolean; given: string[]; answer: string[]; explanation: string } }
-type LessonContent = { body: string; sources: string[]; checks: Check[] }
+type LessonContent = { body: string; sources: string[]; checks: Check[]; related?: { title: string; href: string }[] }
 type CourseData = { course: AcademyCourseSummary; lessons: Record<string, LessonContent> }
 type Feedback = { correct: boolean; answer: string[]; explanation: string; given: string[] }
 
@@ -43,7 +43,7 @@ function KnowledgeCheck({ q, courseVersionId, lessonVersionId }: { q: Check; cou
   </fieldset>
 }
 
-export function AcademyCourse({ slug }: { slug: string }) {
+export function AcademyCourse({ slug, nav }: { slug: string; nav?: PartnerNav }) {
   const [data, setData] = useState<CourseData | null>(null)
   const [error, setError] = useState("")
   const [current, setCurrent] = useState<string | null>(null)
@@ -82,7 +82,7 @@ export function AcademyCourse({ slug }: { slug: string }) {
     catch (e) { setNotice((e as Error).message) } finally { setBusy(false) }
   }
   const stateLabel = (s: string) => s === "completed" ? "Read" : s === "updated" ? "Updated since you read it" : s === "unavailable" ? "Under review" : "Not read"
-  return <AcademyShell current="course">
+  return <AcademyShell current="course" nav={nav}>
     <p><Link href="/partner/academy">← Back to the course catalogue</Link></p>
     {error && <p className="ac-error" role="alert">{error}</p>}
     {!data && !error && <p className="ac-muted" role="status">Loading the course…</p>}
@@ -110,6 +110,7 @@ export function AcademyCourse({ slug }: { slug: string }) {
             </div>
             <SafeMarkdown className="ac-prose" source={content.body} />
             {content.sources.length > 0 && <p className="ac-muted">Sources: {content.sources.join(" · ")}</p>}
+            {content.related && content.related.length > 0 && <section className="ac-help" aria-labelledby="related-resources"><h3 id="related-resources">Related resources</h3><ul>{content.related.map((x) => <li key={x.href}><Link href={x.href}>{x.title}</Link></li>)}</ul></section>}
             {content.checks.length > 0 && <section className="ac-check" aria-labelledby="check-title"><h3 id="check-title">Optional knowledge check</h3><p className="ac-muted">Answers are checked straight away. Retry as often as you like; nothing here affects anything else.</p>
               {content.checks.map((q) => <KnowledgeCheck key={`${lesson.versionId}-${q.id}`} q={q} courseVersionId={data.course.versionId} lessonVersionId={lesson.versionId!} />)}</section>}
             <div className="ac-lesson-actions">

@@ -1,6 +1,6 @@
 import { expect, test, type Browser, type BrowserContext, type Locator, type Page } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
-import { mkdir } from 'node:fs/promises'
+import { mkdir, readFile } from 'node:fs/promises'
 import pg from 'pg'
 import { generateTotp } from '../../src/lib/server/mfa'
 const { Pool } = pg
@@ -313,4 +313,95 @@ test('B1.1 governance and the B1.2 Partner Academy in a real browser', async ({ 
     })
     await Promise.all([a.context.close(), b.context.close(), p1.context.close()])
   } finally { await su.query('update admin_users set active=true where email=$1', [P3]).catch(() => undefined); await db.end(); await su.end() }
+})
+
+test('B1.3 Resource Centre in a real browser', async ({ browser }) => {
+  origin()
+  const su = new Pool({ connectionString: superUrl, max: 1 })
+  const shots = evidence.replace('b1-2', 'b1-3')
+  await mkdir(shots, { recursive: true })
+  const run = Date.now().toString(36), tag = run.replace(/[0-9]/g, '') || 'tag'
+  const GUIDE = `browser-guide-${run}`, REF = `browser-reference-${run}`, TITLE = `Hosting guide ${tag}`
+  try {
+    await su.query('delete from login_rate_limits'); await su.query('delete from web_rate_limits')
+    const a = await login(browser, FOUNDER_A.email, FOUNDER_A.secret), b = await login(browser, FOUNDER_B.email, FOUNDER_B.secret)
+    await test.step('[UI] Founder A drafts a client-facing guide and submits it', async () => {
+      await studio(a.page)
+      await a.page.locator('details').filter({ has: a.page.locator('summary', { hasText: 'New content item' }) }).locator('summary').click()
+      await a.page.getByLabel('Content type').selectOption('resource')
+      const f = form(a.page.locator('section.ex-panel'), 'Create draft')
+      await f.getByLabel('Slug (lowercase letters, numbers and hyphens; permanent)').fill(GUIDE)
+      await f.getByLabel('Audience (permanent)').selectOption('client_facing')
+      await f.getByLabel('Title', { exact: true }).fill(TITLE)
+      await f.getByLabel(/^Body \(Markdown/).fill(`## Hosting, explained\n\nHosting can be part of a build or a managed service. **HTTPS certificate ${tag}** provisioning and renewal are part of managed hosting.`)
+      await f.getByLabel(/^Sources, one per line/).fill('faq:hosting-provided\nfaq:ssl')
+      await f.getByLabel('One-line summary').fill('Hosting explained for clients')
+      await f.getByLabel('Resource category').selectOption('guide')
+      await submitForm(f, 'Create draft')
+      await submitForm(form(await openItem(a.page, GUIDE), 'Submit for review'), 'Submit for review')
+    })
+    await test.step('[UI] Founder B approves, publishes and adds a search synonym', async () => {
+      await studio(b.page)
+      await decide(b.page, GUIDE, 'approved', inMonths(2))
+      await publish(b.page, GUIDE)
+      const panel = b.page.locator('details.ex-resource').filter({ has: b.page.locator('summary', { hasText: 'Search synonyms' }) })
+      await panel.locator('summary').first().click()
+      const f = form(panel, 'Add synonym')
+      await f.getByLabel('Term partners might type (lowercase)').fill(`ssl${tag}`)
+      await f.getByLabel('Also search for').fill(`https certificate ${tag}`)
+      await submitForm(f, 'Add synonym')
+    })
+    await test.step('[API set-up] a partner-only reference is published', async () => {
+      const c = await api(a.context, '/api/expansion', { action: 'create_content_item', kind: 'resource', slug: REF, audience: 'partner_only', cadence: 'commercial', title: `Pricing reference ${tag}`, body: 'Published starting prices with the boundary. Partner preparation only.', fields: { summary: 'Published prices', category: 'reference' }, sourceRefs: ['web/src/lib/published-starting-prices.ts'] })
+      expect(c.status).toBe(200)
+      expect((await api(a.context, '/api/expansion', { action: 'submit_content', versionId: c.body.result.versionId })).status).toBe(200)
+      expect((await api(b.context, '/api/expansion', { action: 'decide_content', versionId: c.body.result.versionId, decision: 'approved', reference: 'TEST-API', notes: 'TEST ONLY set-up approval', reviewBy: inMonths(2) })).status).toBe(200)
+      expect((await api(b.context, '/api/expansion', { action: 'publish_content', versionId: c.body.result.versionId })).status).toBe(200)
+    })
+    const p1 = await login(browser, P1)
+    await test.step('[UI] Partner finds the guide through a synonym, reads it, and downloads it', async () => {
+      await p1.page.goto(`${origin()}/partner`)
+      await p1.page.getByRole('link', { name: /Resource Centre/ }).first().click()
+      await p1.page.waitForURL(/\/partner\/resources$/)
+      await p1.page.getByLabel('Search approved resources').fill(`ssl${tag}`)
+      await p1.page.getByRole('button', { name: 'Search', exact: true }).click()
+      const card = p1.page.locator(`[data-resource="${GUIDE}"]`)
+      await expect(card).toBeVisible()
+      await expect(card.getByText('Client-facing · approved for sharing')).toBeVisible()
+      await axe(p1.page, 'resource centre')
+      for (const width of [320, 390, 768, 1024, 1440]) { await p1.page.setViewportSize({ width, height: 900 }); await noOverflow(p1.page); await p1.page.screenshot({ path: `${shots}/resource-centre-${width}.png`, fullPage: true }) }
+      await p1.page.setViewportSize({ width: 1280, height: 900 })
+      await card.getByRole('link', { name: TITLE }).click()
+      await p1.page.waitForURL(new RegExp(`/partner/resources/${GUIDE}$`))
+      await expect(p1.page.getByRole('heading', { name: TITLE })).toBeVisible()
+      await expect(p1.page.locator('.ac-prose strong', { hasText: `HTTPS certificate ${tag}` })).toBeVisible()
+      await expect(p1.page.getByRole('button', { name: 'Copy for a client' })).toBeVisible()
+      const [download] = await Promise.all([p1.page.waitForEvent('download'), p1.page.getByRole('link', { name: 'Download (text)' }).click()])
+      expect(download.suggestedFilename()).toBe(`${GUIDE}.md`)
+      const text = await readFile(await download.path(), 'utf8')
+      expect(text).toContain('Client-facing: approved for sharing')
+      expect(text).toContain(`HTTPS certificate ${tag}`)
+      await axe(p1.page, 'resource view')
+      for (const width of [320, 390, 768, 1024, 1440]) { await p1.page.setViewportSize({ width, height: 900 }); await noOverflow(p1.page); await p1.page.screenshot({ path: `${shots}/resource-view-${width}.png`, fullPage: true }) }
+      await p1.page.setViewportSize({ width: 1280, height: 900 })
+    })
+    await test.step('[UI] A partner-only resource has no client copy control', async () => {
+      await p1.page.goto(`${origin()}/partner/resources/${REF}`)
+      await expect(p1.page.getByText('Partner only · do not share').first()).toBeVisible()
+      await expect(p1.page.getByRole('button', { name: 'Copy for a client' })).toHaveCount(0)
+    })
+    await test.step('[UI] Founder withdraws the guide; partners can no longer find or open it', async () => {
+      await studio(b.page)
+      const f = form(await openItem(b.page, GUIDE), 'Withdraw from publication')
+      await f.getByLabel('Reason (kept permanently)').fill('TEST ONLY: withdrawn in the browser journey')
+      await submitForm(f, 'Withdraw from publication')
+      await p1.page.goto(`${origin()}/partner/resources`)
+      await p1.page.getByLabel('Search approved resources').fill(`ssl${tag}`)
+      await p1.page.getByRole('button', { name: 'Search', exact: true }).click()
+      await expect(p1.page.getByText('No approved resource matches that search.')).toBeVisible()
+      await p1.page.goto(`${origin()}/partner/resources/${GUIDE}`)
+      await expect(p1.page.getByText('This resource is not available.')).toBeVisible()
+    })
+    await Promise.all([a.context.close(), b.context.close(), p1.context.close()])
+  } finally { await su.end() }
 })

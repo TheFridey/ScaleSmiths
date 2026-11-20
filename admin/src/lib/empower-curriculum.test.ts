@@ -1,7 +1,7 @@
-import { readFileSync } from "node:fs"
+import { readFileSync, readdirSync } from "node:fs"
 import path from "node:path"
 import { describe, expect, it } from "vitest"
-import { parsePackage } from "./empower-curriculum"
+import { parsePackage, parseResource } from "./empower-curriculum"
 import { checkSubmission, contentFields, knowledgeChecks, linkProblems } from "./empower-content"
 
 const dir = path.resolve(__dirname, "..", "..", "..", "docs", "expansion", "empower")
@@ -41,5 +41,25 @@ describe("planning-package curriculum parser", () => {
   it("reports malformed or missing content instead of importing it", () => {
     const broken = parsePackage({ curriculum: read("CURRICULUM.md"), foundations: read("LESSONS-FOUNDATIONS.md").replace("### C01-L3 How we work", "### C01-L3x How we work"), practice: "", checks: "### C99-L1 q1 single\nWhat?\n" })
     expect(broken.problems).toEqual(expect.arrayContaining(["C01-L3: in the curriculum but has no lesson text", "C07-L1: in the curriculum but has no lesson text", "C99-L1 q1: incomplete knowledge check", "C99-L1: knowledge check for an unknown lesson"]))
+  })
+})
+
+describe("Resource Centre drafts (B1.3)", () => {
+  const files = readdirSync(path.join(dir, "resources")).filter((f) => /^R\d{2}-.+\.md$/.test(f)).sort()
+  const problems: string[] = []
+  const parsed = files.map((f) => parseResource(read(`resources/${f}`), f, problems)!)
+  it("reads all 13 resources with their audience, category and sources, and no problems", () => {
+    expect(problems).toEqual([])
+    expect(parsed.map((r) => r.code)).toEqual(["R01", "R02", "R03", "R04", "R05", "R06", "R07", "R08", "R09", "R10", "R11", "R12", "R13"])
+    expect(parsed.filter((r) => r.audience === "client_facing").map((r) => r.code)).toEqual(["R01", "R03", "R04", "R05", "R06"])
+    expect(parsed.find((r) => r.code === "R12")!.cadence).toBe("commercial")
+    for (const r of parsed) { expect(r.body).not.toMatch(/^\| Field \| Value \|/m); expect(r.sources).toContain(`docs/expansion/empower/resources/${r.file}`) }
+  })
+  it("produces resources that pass submission, including the client-facing audience check, with no override", () => {
+    for (const r of parsed) {
+      const fields = contentFields("resource", { summary: r.summary, category: r.category }, true)
+      expect(() => checkSubmission({ kind: "resource", audience: r.audience, cadenceMonths: r.cadence === "commercial" ? 3 : 6, title: r.title, body: r.body, fields, sources: r.sources }), r.code).not.toThrow()
+      expect(linkProblems(r.body), r.code).toEqual([])
+    }
   })
 })

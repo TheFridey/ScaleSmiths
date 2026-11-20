@@ -5,6 +5,9 @@ import { db, type AdminDatabaseTransaction } from "@/lib/db"
 import { translateDbError } from "@/lib/db-errors"
 import { ContentError, courseLessonIds, gradeCheck, publicChecks, type CourseModule } from "@/lib/empower-content"
 import { requireCapability } from "./rbac"
+import { partnerAcademyEnabled, partnerGuard } from "./empower-partner"
+import { relatedResourcesForLessons } from "./empower-resources"
+export { partnerAcademyEnabled }
 
 /*
  * Operation Empower B1.2: the partner side of the Academy. OFF unless PARTNER_ACADEMY_ENABLED=true, independently of the founder
@@ -19,9 +22,7 @@ import { requireCapability } from "./rbac"
  */
 type Row = Record<string, unknown>
 type Executor = Pick<AdminDatabaseTransaction, "execute">
-type Actor = Awaited<ReturnType<typeof requireCapability>>
 
-export const partnerAcademyEnabled = () => process.env.PARTNER_ACADEMY_ENABLED === "true"
 const rows = async (tx: Executor, query: SQL): Promise<Row[]> => (await tx.execute(query)).rows as Row[]
 const uuidList = (ids: string[]) => sql.join(ids.map((id) => sql`${id}::uuid`), sql`,`)
 const UTC_TODAY = sql`(now() at time zone 'UTC')::date`
@@ -33,14 +34,6 @@ const uuid = (value: unknown) => {
 async function partner() {
   if (!partnerAcademyEnabled()) throw new ContentError("The Partner Academy is not available yet.", 404)
   return requireCapability("expansion.partner")
-}
-/** Same rule as the rest of the Partner Portal: an activated partner profile, an active user, the partner role and the current session. */
-async function partnerGuard(tx: Executor, actor: Actor) {
-  await tx.execute(sql`select id from admin_users where id=${actor.id} for share`)
-  const [row] = await rows(tx, sql`select p.id from expansion_partners p join admin_users u on u.id=p.user_id where p.user_id=${actor.id} and p.activated_at is not null
-    and u.active=true and u.session_version=${actor.sessionVersion} and u.role::text='independent_partner'`)
-  if (!row) throw new ContentError("Active partner profile required.", 403)
-  return String(row.id)
 }
 
 interface LessonView { itemId: string; available: boolean; versionId?: string; version?: number; slug?: string; title?: string; readingMinutes?: number | null; publishedAt?: string; state: "completed" | "updated" | "not_started" | "unavailable"; completedAt?: string | null; checks?: number }
@@ -120,6 +113,8 @@ export async function getAcademyCourse(input: { slug?: unknown }) {
         return last ? { ...q, lastAttempt: { correct: last.correct === true, given: last.answer, answer: key?.answer ?? [], explanation: key?.explanation ?? "" } } : q
       }) }
     }
+    const related = await relatedResourcesForLessons(tx, Object.keys(lessons))
+    for (const id of Object.keys(lessons)) (lessons[id] as typeof lessons[string] & { related?: unknown }).related = related[id] ?? []
     return { course, lessons }
   })
 }

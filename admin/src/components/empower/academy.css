@@ -85,3 +85,7 @@
 .ac-prose ul,.ac-course-head ul,.ac-section ul{list-style:disc;padding-left:1.4em;margin:0 0 1em}
 .ac-prose ol{list-style:decimal;padding-left:1.6em;margin:0 0 1em}
 .ac-prose li,.ac-course-head li,.ac-section li{margin:.25em 0}
+/* Operation Empower B1.3 Resource Centre */
+.ac-list-reset{list-style:none;padding:0;margin:0}
+.ac-resource h3 a{color:var(--ac-t1);text-decoration:none}.ac-resource h3 a:hover{text-decoration:underline}
+.ac-resource-title{margin:0 0 6px;font-family:var(--font-syne);font-size:clamp(24px,4vw,32px);line-height:1.2}

@@ -64,6 +64,14 @@ No new role or capability is required.
 - Learning tables have no relation to commercial tables, and a static test proves only the Academy service references them. The public web role has no access to any Empower table (verified).
 - Course approval: every linked lesson must already be independently published; the course itself needs a second founder.
 
+### 3.4c Resource Centre (B1.3, as built)
+
+- Read-only for partners (`GET` only); behind `PARTNER_RESOURCE_CENTRE_ENABLED` and `partnerGuard`. Only published, in-date resources are returned; withdrawal takes effect on the next request.
+- Search text is bounded, bound as a parameter and parsed by `websearch_to_tsquery`, so operator characters are treated as text. A hidden or absent resource gives the same empty result.
+- Downloads are generated from the approved version, never from stored files; the filename is derived from the slug and sanitised; `X-Content-Type-Options: nosniff`. Downloads are not logged.
+- Synonyms change search only, are founder-only, cannot be rewritten or deleted, and are audited. The web role has no access.
+- Legacy `expansion_resources` are exposed only for the partner audience and only when published.
+
 ### 3.5 Independence and privacy
 
 - Progress is private to the partner by default. Founders see aggregates only, unless the partner chooses to share (decision `AP-GOV-03`).

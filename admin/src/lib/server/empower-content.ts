@@ -7,7 +7,7 @@ import { hasCapability } from "@/lib/rbac"
 import { translateDbError } from "@/lib/db-errors"
 import {
   ContentError, approvalAuthority, changeSummary, checkSubmission, contentAudience, contentBody, contentDecision, contentFields, contentKind,
-  contentSlug, contentTitle, courseLessonIds, reviewByDate, reviewCadence, sourceRefs, type ContentAudience, type ContentKind,
+  contentSlug, contentTitle, courseLessonIds, synonymExpansion, synonymTerm, reviewByDate, reviewCadence, sourceRefs, type ContentAudience, type ContentKind,
 } from "@/lib/empower-content"
 import { requireCapability } from "./rbac"
 
@@ -250,8 +250,30 @@ export async function getContentAdmin() {
       from empower_content_versions v join admin_users u on u.id=v.created_by order by v.item_id,v.version desc`)
     const approvals = await rows(tx, sql`select a.id,a.version_id,a.decision,a.decided_at,a.reference,a.notes,a.review_by,a.self_approval_reason,u.display_name decided_by_name
       from empower_content_approvals a join admin_users u on u.id=a.decided_by order by a.decided_at desc`)
+    const synonyms = await rows(tx, sql`select s.id,s.term,s.expansion,s.active,s.created_at,u.display_name created_by_name from empower_search_synonyms s join admin_users u on u.id=s.created_by order by s.active desc, s.term`)
     const counts: Record<string, number> = {}
     for (const v of versions) counts[String(v.status)] = (counts[String(v.status)] ?? 0) + 1
-    return { enabled: true, items, versions, approvals, counts, reviewDue: versions.filter((v) => v.review_overdue).length, activeFounders: await activeFounderCount(tx), actorId: actor.id }
+    return { enabled: true, items, versions, approvals, synonyms, counts, reviewDue: versions.filter((v) => v.review_overdue).length, activeFounders: await activeFounderCount(tx), actorId: actor.id }
   })
+}
+
+/** B1.3: founder-managed search synonyms. A synonym is retired by switching it off; history is never rewritten or deleted. */
+export async function addSearchSynonym(input: { term?: unknown; expansion?: unknown }) {
+  const actor = await founder(), term = synonymTerm(input.term), expansion = synonymExpansion(input.expansion), id = randomUUID()
+  return db.transaction(async (tx) => guarded(async () => {
+    await founderGuard(tx, actor)
+    await tx.execute(sql`insert into empower_search_synonyms(id,term,expansion,created_by) values(${id},${term},${expansion},${actor.id})`)
+    await audit(tx, actor.id, id, "empower_synonym_added", { term, expansion })
+    return { id, term, expansion }
+  }, "An active synonym for that term already exists; switch it off first."))
+}
+export async function setSearchSynonymActive(input: { id?: unknown; active?: unknown }) {
+  const actor = await founder(), id = uuid(input.id), active = input.active === true || input.active === "true"
+  return db.transaction(async (tx) => guarded(async () => {
+    await founderGuard(tx, actor)
+    const updated = await rows(tx, sql`update empower_search_synonyms set active=${active},updated_by=${actor.id} where id=${id} returning term`)
+    if (!updated.length) throw new ContentError("Synonym not found.", 404)
+    await audit(tx, actor.id, id, active ? "empower_synonym_enabled" : "empower_synonym_disabled", { term: updated[0].term })
+    return { id, active }
+  }, "An active synonym for that term already exists."))
 }

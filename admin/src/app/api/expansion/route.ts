@@ -34,6 +34,7 @@ export async function POST(request: Request) {
       approve_recognition_benefit:recognition.approveRecognitionBenefit, record_benefit_fulfilment:recognition.recordBenefitFulfilment, correct_recognition:recognition.correctRecognition, revoke_recognition:recognition.revokeRecognition,
       create_content_item:content.createContentItem, save_content_draft:content.saveContentDraft, start_content_revision:content.startContentRevision,
       submit_content:content.submitContentVersion, decide_content:content.decideContentVersion, publish_content:content.publishContentVersion, archive_content:content.archiveContentVersion,
+      add_search_synonym:content.addSearchSynonym, set_search_synonym_active:content.setSearchSynonymActive,
       review_profile:profiles.reviewProfile, publish_profile:profiles.publishProfile, revoke_publication:profiles.revokePublication,
       set_toolkit_item:operations.setToolkitItem, decide_meeting:operations.decideMeeting,
       set_withdrawal_policy:finance.setWithdrawalPolicy, review_withdrawal:finance.reviewWithdrawal, prepare_withdrawal_payout:finance.prepareWithdrawalPayout,

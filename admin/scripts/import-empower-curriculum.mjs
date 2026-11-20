@@ -1,4 +1,4 @@
-// Operation Empower B1.2: imports the planning-package curriculum as UNPUBLISHED DRAFTS.
+// Operation Empower B1.2/B1.3: imports the planning-package curriculum and Resource Centre drafts as UNPUBLISHED DRAFTS.
 //
 //   EMPOWER_IMPORT_DATABASE_URL=postgresql://…/<db> node scripts/import-empower-curriculum.mjs --founder-email=<founder> --confirm-import [--dry-run] [--allow-database=<db>]
 //
@@ -11,12 +11,12 @@
 //  * Idempotent and version-aware: unchanged items are skipped; changed items get a new draft version only when no version is
 //    already in progress; items with a version in progress are reported, never overwritten. Every write is audited.
 //  * Malformed or missing source content aborts the run before anything is written.
-import { readFile } from "node:fs/promises"
+import { readFile, readdir } from "node:fs/promises"
 import { randomUUID } from "node:crypto"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { createRequire } from "node:module"
-import { parsePackage, lessonSlug, courseSlug, cadenceFor } from "../src/lib/empower-curriculum.ts"
+import { parsePackage, parseResource, lessonSlug, courseSlug, cadenceFor, resourceSlug } from "../src/lib/empower-curriculum.ts"
 const require = createRequire(import.meta.url)
 const { Pool } = require("pg")
 
@@ -33,6 +33,10 @@ if (!disposable && args["allow-database"] !== dbName) throw new Error(`Refusing 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "docs", "expansion", "empower")
 const read = (f) => readFile(path.join(root, f), "utf8")
 const pkg = parsePackage({ curriculum: await read("CURRICULUM.md"), foundations: await read("LESSONS-FOUNDATIONS.md"), practice: await read("LESSONS-PRACTICE.md"), checks: await read("KNOWLEDGE-CHECKS.md") })
+const resourceFiles = (await readdir(path.join(root, "resources"))).filter((f) => /^R\d{2}-.+\.md$/.test(f)).sort()
+if (resourceFiles.length !== 13) throw new Error(`Expected 13 resource drafts, found ${resourceFiles.length}.`)
+const resources = []
+for (const f of resourceFiles) { const parsed = parseResource(await read(`resources/${f}`), f, pkg.problems); if (parsed) resources.push(parsed) }
 if (pkg.problems.length) { console.error(JSON.stringify({ aborted: true, problems: pkg.problems }, null, 2)); process.exit(1) }
 
 const pool = new Pool({ connectionString: raw, max: 1 })
@@ -47,11 +51,11 @@ try {
     const founder = (await client.query("select id,role::text role from admin_users where lower(email)=lower($1) and active=true and role::text in ('owner','administrator') for share", [args["founder-email"]])).rows[0]
     if (!founder) throw new Error("--founder-email is not an active owner or administrator.")
     const audit = (entity, action, details) => client.query("insert into expansion_audit(actor_id,entity_id,action,details) values($1,$2,$3,$4::jsonb)", [founder.id, entity, action, JSON.stringify({ ...details, source: "docs/expansion/empower", importer: "import-empower-curriculum" })])
-    async function upsert({ slug, kind, cadence, title, body, fields, sources, summary }) {
+    async function upsert({ slug, kind, cadence, title, body, fields, sources, summary, audience = "partner_only" }) {
       const item = (await client.query("select id from empower_content_items where slug=$1 for update", [slug])).rows[0]
       if (!item) {
         const itemId = randomUUID(), versionId = randomUUID()
-        await client.query("insert into empower_content_items(id,kind,slug,audience,review_cadence_months,created_by) values($1,$2,$3,'partner_only',$4,$5)", [itemId, kind, slug, cadence === "commercial" ? 3 : 6, founder.id])
+        await client.query("insert into empower_content_items(id,kind,slug,audience,review_cadence_months,created_by) values($1,$2,$3,$4,$5,$6)", [itemId, kind, slug, audience, cadence === "commercial" ? 3 : 6, founder.id])
         await client.query("insert into empower_content_versions(id,item_id,version,title,body,fields,source_refs,change_summary,created_by) values($1,$2,1,$3,$4,$5::jsonb,$6::jsonb,$7,$8)", [versionId, itemId, title, body, JSON.stringify(fields), JSON.stringify(sources), summary, founder.id])
         await audit(itemId, "empower_imported", { slug, kind, version: 1 })
         report.created.push(slug); return itemId
@@ -75,6 +79,10 @@ try {
       const fields = { category: c.category, objectives: c.objectives, modules: c.modules.map((m) => ({ title: m.title, lessons: m.lessons.map((code) => lessonIds[code]) })) }
       await upsert({ slug: courseSlug(c.code), kind: "course", cadence: c.cadence, title: c.title, body: c.description, fields, sources: [`docs/expansion/empower/CURRICULUM.md#${c.code.toLowerCase()}`],
         summary: `Draft imported from CURRICULUM.md; not approved. Founder review requirements: ${c.reviewNotes}` })
+    }
+    for (const res of resources) {
+      await upsert({ slug: resourceSlug(res.code), kind: "resource", cadence: res.cadence, audience: res.audience, title: res.title, body: res.body, fields: { summary: res.summary, category: res.category }, sources: res.sources,
+        summary: `Draft imported from resources/${res.file}; not approved.` })
     }
     await client.query(dryRun ? "rollback" : "commit")
   } catch (error) { await client.query("rollback"); throw error } finally { client.release() }

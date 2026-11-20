@@ -178,6 +178,17 @@ This replaces the separate `empower_courses` / `empower_modules` / `empower_less
 - **Routes and switches.** `/partner/academy` and `/partner/academy/[course]` pages and `/api/partner/academy` behind `PARTNER_ACADEMY_ENABLED` (default off), independent of `EMPOWER_FOUNDER_CONTENT_ENABLED`. The external-identity boundary in `rbac.ts` admits exactly these page paths for partners.
 - **Importer.** `admin/scripts/import-empower-curriculum.mjs` loads the planning package (13 courses, 38 modules, 91 lessons, 65 draft questions from `KNOWLEDGE-CHECKS.md`) as drafts only.
 
+## 7c. As built in B1.3 (migration 0094): the Resource Centre
+
+- **Resources** are B1.1 content items of kind `resource`, with `fields.summary`, `fields.category` (brochure, guide, checklist, template, reference) and optional `fields.related` (up to 10 lesson or resource item ids). Both audiences are served to partners; the audience ribbon says whether an item may be shared, and only client-facing items offer a copy control.
+- **Search** (section 4, as designed, minus `pg_trgm` and zero-result logging): `empower_search_document(title, body, fields)` builds a weighted `tsvector` (A title, question and aliases; B body, summary and answers; C category and topic) from the immutable version, with a GIN expression index restricted to published rows. Queries use `websearch_to_tsquery('english', …)` after deterministic synonym expansion; ranking is `ts_rank_cd` plus a boost for an exact or contained title match, ties broken by slug. Filters (category, audience, published, in date) are in SQL. Query text is limited to 200 characters and passed as a bound parameter.
+- **Synonyms** (`empower_search_synonyms`) are founder-managed in the studio; a synonym is switched off, never deleted or rewritten (database trigger), and every change is audited.
+- **Legacy library (AP-ENG-01, freeze with read adapter):** published, partner-audience `expansion_resources` rows appear read-only, labelled "Earlier library", matched by plain substring when searching; client-audience legacy rows are never shown.
+- **Downloads** return the approved version as `text/markdown` with its audience and approval details in a header, `nosniff`, no storage and no logging (`AP-PRIV-03`).
+- **Related content:** a resource lists its related published resources and, when the Academy is on, related lessons with a link into the course that contains them; Academy lessons list the published resources that name them as related.
+- **Routes and switch:** `/partner/resources`, `/partner/resources/[slug]`, `GET /api/partner/resources` behind `PARTNER_RESOURCE_CENTRE_ENABLED` (default off). The partner identity boundary admits exactly these page paths.
+- **Importer:** the 13 resource drafts (`resources/R01`–`R13`) import as drafts with their stated audience; R13 is imported partner-only because the file mixes client templates with partner instructions.
+
 ## 8. Open engineering decisions
 
 | ID | Question | Recommendation |

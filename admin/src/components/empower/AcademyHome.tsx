@@ -1,7 +1,7 @@
 "use client"
 import Link from "next/link"
 import { useEffect, useMemo, useState } from "react"
-import { AcademyShell } from "./AcademyShell"
+import { AcademyShell, type PartnerNav } from "./AcademyShell"
 
 export type Lesson = { itemId: string; available: boolean; versionId?: string; version?: number; title?: string; readingMinutes?: number | null; state: string; completedAt?: string | null; publishedAt?: string }
 export type AcademyCourseSummary = {
@@ -34,7 +34,7 @@ function CourseCard({ c }: { c: AcademyCourseSummary }) {
   </Link>
 }
 
-export function AcademyHome() {
+export function AcademyHome({ nav }: { nav?: PartnerNav }) {
   const [data, setData] = useState<{ courses: AcademyCourseSummary[] } | null>(null)
   const [error, setError] = useState("")
   const [query, setQuery] = useState("")
@@ -54,7 +54,7 @@ export function AcademyHome() {
   const completed = courses.filter(done)
   const recent = [...courses].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 3)
   const starting = courses.filter((c) => c.category && STARTING_POINTS.includes(c.category) && c.progress.completed === 0)
-  return <AcademyShell current="home">
+  return <AcademyShell current="home" nav={nav}>
     <section className="ac-hero" aria-labelledby="academy-title">
       <p className="ac-overline">Partner Academy</p>
       <h1 id="academy-title">Learn at your own pace.</h1>
@@ -79,7 +79,7 @@ export function AcademyHome() {
     <section className="ac-section ac-help" aria-labelledby="help">
       <h2 id="help">Need help?</h2>
       <p>If a client asks something a lesson does not answer, do not improvise. Request a meeting from your <a href="/partner">Partner workspace</a>: technical scoping for technical questions, commercial assistance for pricing or terms, and escalation for complaints, mistakes or anything urgent.</p>
-      <p className="ac-muted">Approved resources and the knowledge base will appear in the Resource Centre in a later release.</p>
+      {nav?.resources ? <p>Approved brochures, guides and checklists are in the <Link href="/partner/resources">Resource Centre</Link>.</p> : <p className="ac-muted">Approved resources will appear in the Resource Centre in a later release.</p>}
     </section>
   </AcademyShell>
 }

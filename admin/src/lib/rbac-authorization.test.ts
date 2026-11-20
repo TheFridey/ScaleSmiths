@@ -125,11 +125,11 @@ describe("RBAC — security settings", () => {
   })
 
   it("lets partners open only the Partner Academy pages beyond /partner (Operation Empower B1.2)", () => {
-    for (const pathname of ["/partner/academy", "/partner/academy/academy-c01", "/partner/academy/seo-and-growth"]) {
+    for (const pathname of ["/partner/academy", "/partner/academy/academy-c01", "/partner/academy/seo-and-growth", "/partner/resources", "/partner/resources/resource-r01", "/partner/resources/legacy-0b8f3c5e-1d2a-4c3b-9e8f-1a2b3c4d5e6f"]) {
       expect(authorizeRequest("independent_partner", { pathname, method: "GET" }).allowed, pathname).toBe(true)
     }
     expect(authorizeRequest("independent_partner", { pathname: "/api/partner/academy", method: "POST" }).allowed).toBe(true)
-    for (const [pathname, method] of [["/partner/academy", "POST"], ["/partner/academy/x/y", "GET"], ["/partner/academy/UPPER", "GET"], ["/partner/academy/../expansion", "GET"], ["/partner/academy-c01", "GET"], ["/partner/other", "GET"], ["/expansion", "GET"]] as const) {
+    for (const [pathname, method] of [["/partner/academy", "POST"], ["/partner/academy/x/y", "GET"], ["/partner/academy/UPPER", "GET"], ["/partner/academy/../expansion", "GET"], ["/partner/academy-c01", "GET"], ["/partner/resources/a/b", "GET"], ["/partner/resources", "POST"], ["/partner/resourcesx", "GET"], ["/partner/other", "GET"], ["/expansion", "GET"]] as const) {
       expect(authorizeRequest("independent_partner", { pathname, method }).allowed, `${method} ${pathname}`).toBe(false)
     }
     for (const role of generalAdminRoles) expect(authorizeRequest(role, { pathname: "/partner/academy", method: "GET" }).allowed, role).toBe(false)

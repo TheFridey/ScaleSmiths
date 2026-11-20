@@ -89,6 +89,27 @@ Unit: `admin/src/lib/empower-content.test.ts`. Real PostgreSQL as the restricted
 16. Automated accessibility checks report no serious or critical violations; colour-contrast tokens meet the values in [DESIGN-SPECIFICATION.md](DESIGN-SPECIFICATION.md).
 17. All functions are keyboard operable; `/` focuses search.
 
+### B1.3 evidence (2026-11-20, Resource Centre part of Phase 2)
+
+Real PostgreSQL: `admin/test/integration/empower-resources.integration.test.ts`. Unit: `empower-content.test.ts` (search rules), `empower-curriculum.test.ts` (resource drafts), `rbac-authorization.test.ts`. Browser: `empower-academy.spec.ts` "B1.3 Resource Centre". Migration 0094.
+
+| Criterion | Status | Evidence |
+|---|---|---|
+| 1 Only published, in-date, permitted content | MET | Integration (draft and withdrawn excluded); browser (withdrawn guide disappears) |
+| 2 Filtering in SQL | MET | Category and audience filters are SQL predicates; invalid values refused |
+| 3 Ribbon, version, approval and review dates | MET | Browser and integration |
+| 4 Copy only on client-facing | MET | Browser |
+| 5 Switch off returns 404 | MET | Integration |
+| 6 Identical results for identical queries | MET | Integration |
+| 7 Exact alias first | PARTIAL | Exact title match boosted; alias ranking arrives with knowledge entries (B1.4) |
+| 8 Synonyms | MET | Integration and browser ("ssl" style term finds the HTTPS guide; switching it off removes the match) |
+| 9 Hidden and absent look the same | MET | Both return the same empty result or 404 |
+| 10 Length limit; rate limit | PARTIAL | 200-character limit enforced; reads are not rate-limited (read-only GET); zero-result logging not built (`AP-PRIV-02` undecided) |
+| 12 p95 under 200 ms at 1,000 entries | NOT VERIFIED | GIN expression index on published rows; no load test |
+| 14 Legacy resources labelled | MET | Integration (partner audience only) |
+| 15–17 Width, accessibility, keyboard | MET for tested screens | Browser at 320/390/768/1024/1440 with no overflow; axe clean of serious issues; `/` shortcut not built |
+| Knowledge search and objection workspace (W5, W6) | NOT STARTED | B1.4 and B1.5 |
+
 ## Phase 3: Partner Academy
 
 1. Courses, modules and lessons appear only when their content versions are published and within review.

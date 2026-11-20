@@ -21,7 +21,7 @@ const rows = (value:unknown): Row[] => Array.isArray(value) ? value : []
 const label = (value:unknown) => str(value).replaceAll('_',' ').replace(/([a-z0-9])([A-Z])/g,'$1 $2').replace(/^./,first=>first.toUpperCase()).replace(/\bseo\b/gi,'SEO')
 const money = (value:unknown) => formatPence(str(value || '0'))
 
-export function ExpansionWorkspace({founder=false,academy=false}:{founder?:boolean;academy?:boolean}) {
+export function ExpansionWorkspace({founder=false,academy=false,resources=false}:{founder?:boolean;academy?:boolean;resources?:boolean}) {
   const [data,setData] = useState<Snapshot|null>(null)
   const [error,setError] = useState('')
   const [tab,setTab] = useState('overview')
@@ -68,7 +68,7 @@ export function ExpansionWorkspace({founder=false,academy=false}:{founder?:boole
   const items = [{id:'overview',name:'Overview',icon:LayoutDashboard},{id:'pipeline',name:'Prospects & scope',icon:BriefcaseBusiness},{id:'resources',name:'Resource library',icon:BookOpen},{id:'finance',name:'Commission centre',icon:PoundSterling},...(founder?[{id:'research',name:'Research & allocation',icon:BriefcaseBusiness},{id:'recognition',name:'Recognition',icon:ShieldCheck},{id:'profiles',name:'Web pages',icon:BookOpen},{id:'programme',name:'Programme',icon:Users},{id:'operations',name:'Partner operations',icon:ShieldCheck}]:[{id:'achievements',name:'Achievements',icon:ShieldCheck},{id:'profile',name:'My web page',icon:BookOpen},{id:'referrals',name:'Referrals',icon:Users},{id:'onboarding',name:'Onboarding',icon:BookOpen},{id:'meetings',name:'Meetings',icon:LayoutDashboard}]),...(founder?[{id:'recruitment',name:'Recruitment',icon:Users},{id:'capacity',name:'Delivery capacity',icon:ShieldCheck}]:[]),...(founder && data?.contentAdmin?.enabled===true?[{id:'content',name:'Content',icon:BookOpen}]:[])]
   return <div className={`expansion ${founder?'expansion-founder':''}`}>
     <header className="ex-header"><a href={founder?'/expansion':'/partner'} className="ex-brand"><Image src="/brand/favicon.png" alt="ScaleSmiths emblem" width={38} height={38} unoptimized /><span>SCALESMITHS<small>{founder?'COMMERCIAL OPERATIONS':'INDEPENDENT PARTNER NETWORK'}</small></span></a><div className="ex-header-right"><span className="ex-badge">{founder?'Founder workspace':'Partner workspace'}</span>{!founder && <button className="ex-link" onClick={()=>signOut({callbackUrl:'/login'})}>Sign out</button>}</div></header>
-    <div className="ex-body"><aside className="ex-sidebar"><p className="ex-overline">YOUR WORKSPACE</p><nav aria-label="Partner workspace">{items.map(({id,name,icon:Icon})=><button key={id} aria-current={tab===id?'page':undefined} onClick={()=>{setTab(id);setSelected('')}}><Icon size={18}/>{name}</button>)}</nav>{!founder && academy && <Link className="ex-academy-link" href="/partner/academy"><BookOpen size={18}/>Partner Academy<small>Optional learning</small></Link>}<div className="ex-sidebar-note"><ShieldCheck size={20}/><strong>You sell. We deliver.</strong><p>Scope, pricing and delivery commitments require ScaleSmiths approval.</p></div></aside>
+    <div className="ex-body"><aside className="ex-sidebar"><p className="ex-overline">YOUR WORKSPACE</p><nav aria-label="Partner workspace">{items.map(({id,name,icon:Icon})=><button key={id} aria-current={tab===id?'page':undefined} onClick={()=>{setTab(id);setSelected('')}}><Icon size={18}/>{name}</button>)}</nav>{!founder && academy && <Link className="ex-academy-link" href="/partner/academy"><BookOpen size={18}/>Partner Academy<small>Optional learning</small></Link>}{!founder && resources && <Link className="ex-academy-link" href="/partner/resources"><BookOpen size={18}/>Resource Centre<small>Approved material</small></Link>}<div className="ex-sidebar-note"><ShieldCheck size={20}/><strong>You sell. We deliver.</strong><p>Scope, pricing and delivery commitments require ScaleSmiths approval.</p></div></aside>
     <main className="ex-main" id="partner-main"><div className="ex-page-heading"><div><p className="ex-overline">OPERATION EXPANSION</p><h1>{items.find(item=>item.id===tab)?.name}</h1><p>{founder?'A clear view of people, pipeline and financial commitments.':`Welcome${workspace.displayName?`, ${workspace.displayName}`:''}. Build relationships. Create opportunities.`}</p></div><button className="ex-button" onClick={()=>{setTab('pipeline');setSelected('')}}><Plus size={17}/>{founder?'Review pipeline':'Register prospect'}</button></div>
     {error && <div className="ex-error" role="alert">{error}<button onClick={()=>refresh().catch(e=>setError(e.message))}>Retry</button></div>}
     {!data && !error && <div role="status" className="ex-empty">Loading your authorised workspace…</div>}
@@ -326,7 +326,7 @@ function Action({action,title,command,initial={},children}:{action:string;title:
     event.preventDefault();const form=event.currentTarget; const input:Row={...initial,action};const data=new FormData(form)
     for(const [key,value] of data) input[key]=value
     for(const field of Array.from(form.elements)) if(field instanceof HTMLInputElement){if(field.type==='checkbox')input[field.name]=field.checked;if(field.type==='number')input[field.name]=Number(field.value)}
-    if(CONTENT_FIELD_ACTIONS.includes(action)) {const fields:Row={};for(const key of Object.keys(input)) if(key.startsWith('f_')){const v=input[key];delete input[key];if(typeof v==='string'&&v.trim())fields[key.slice(2)]=v};for(const [k,target] of [['checks_json','checks'],['modules_json','modules']] as const) if(typeof fields[k]==='string'){try{const parsed=JSON.parse(String(fields[k]));if(Array.isArray(parsed)&&parsed.length) fields[target]=parsed}catch{/* the server validates */}delete fields[k]};input.fields=fields;for(const key of ['lintOverrideReason','selfApprovalReason','changeSummary']) if(input[key]==='') delete input[key]}
+    if(CONTENT_FIELD_ACTIONS.includes(action)) {const fields:Row={};for(const key of Object.keys(input)) if(key.startsWith('f_')){const v=input[key];delete input[key];if(typeof v==='string'&&v.trim())fields[key.slice(2)]=v};for(const [k,target] of [['checks_json','checks'],['modules_json','modules'],['related_json','related']] as const) if(typeof fields[k]==='string'){try{const parsed=JSON.parse(String(fields[k]));if(Array.isArray(parsed)&&parsed.length) fields[target]=parsed}catch{/* the server validates */}delete fields[k]};input.fields=fields;for(const key of ['lintOverrideReason','selfApprovalReason','changeSummary']) if(input[key]==='') delete input[key]}
     if(CONTENT_OPTIONAL_ACTIONS.includes(action)) for(const key of ['lintOverrideReason','selfApprovalReason','changeSummary','reviewBy']) if(input[key]==='') delete input[key]
     if(action==='discovery') {input.discovery=Object.fromEntries(DISCOVERY_FIELDS.map(key=>[key,input[key] || '']));for(const key of DISCOVERY_FIELDS) delete input[key]}
     if(action==='refund_payment') { for(const field of ['netPence','grossPence','termsApprovalReference']) if(!input[field]) delete input[field] }
@@ -467,7 +467,7 @@ function CourseEditor({fields,lessons}:{fields:Row;lessons:LessonChoice[]}) {
     </fieldset>
   </>
 }
-function ContentFields({kind,fields={},lessons=[]}:{kind:string;fields?:Row;lessons?:LessonChoice[]}) {
+function ContentFields({kind,fields={},lessons=[],related=[]}:{kind:string;fields?:Row;lessons?:LessonChoice[];related?:LessonChoice[]}) {
   const f=(k:string)=>str(fields[k])
   if(kind==='knowledge') return <><Field name="f_question" title="Question, as a client would ask it" required={false} value={f('question')}/><Field name="f_answer" title="Precise partner-facing answer" area required={false} value={f('answer')}/>
     <Field name="f_client_explanation" title="Client-friendly explanation (write none for partner-only entries)" area required={false} value={f('client_explanation')}/><Field name="f_limitations" title="Limitation: what this answer must not be stretched to mean" area required={false} value={f('limitations')}/>
@@ -478,7 +478,7 @@ function ContentFields({kind,fields={},lessons=[]}:{kind:string;fields?:Row;less
     <Field name="f_client_line" title="Client-facing line" area required={false} value={f('client_line')}/><Field name="f_limitation" title="Limitation" area required={false} value={f('limitation')}/><Field name="f_escalation" title="Escalate when" required={false} value={f('escalation')}/><Field name="f_resource" title="Supporting resource" required={false} value={f('resource')}/></>
   if(kind==='lesson') return <><Field name="f_course_code" title="Course code (for example C04)" required={false} value={f('course_code')}/><Field name="f_lesson_code" title="Lesson code (for example C04-L3)" required={false} value={f('lesson_code')}/><Field name="f_reading_minutes" title="Reading time in minutes" required={false} value={f('reading_minutes')}/><ChecksEditor initial={fields.checks}/></>
   if(kind==='course') return <CourseEditor fields={fields} lessons={lessons}/>
-  if(kind==='resource') return <><Field name="f_summary" title="One-line summary" required={false} value={f('summary')}/><Field name="f_category" title="Category" required={false} value={f('category')}/></>
+  if(kind==='resource') return <><Field name="f_summary" title="One-line summary" required={false} value={f('summary')}/><BlankSelect name="f_category" title="Resource category" options={RESOURCE_CATEGORY_OPTIONS} value={f('category')}/><RelatedPicker initial={fields.related} choices={related}/></>
   return <><Field name="f_subject" title="Subject line" required={false} value={f('subject')}/><Field name="f_use_when" title="Use when" required={false} value={f('use_when')}/></>
 }
 /** Read-only rendering of a version's fields: structured lists in plain language, never raw JSON. */
@@ -491,7 +491,7 @@ function FieldsView({kind,fields,lessons}:{kind:string;fields:Row;lessons:Lesson
   return <>{entries.length>0 && <dl>{entries.map(([k,val])=><div key={k}><dt>{label(k)}</dt><dd className="ex-prewrap">{Array.isArray(val)?val.join(', '):str(val)}</dd></div>)}</dl>}
     {checks.length>0 && <div className="ex-course-preview"><p><strong>Knowledge checks</strong></p><ol>{checks.map(q=><li key={q.id}>{q.prompt} <span className="ex-note">({label(q.type)}; correct: {q.answer.map(a=>q.options.find(o=>o.id===a)?.text||a).join(', ')||'not set'})</span><br/><span className="ex-note">{q.explanation}</span></li>)}</ol></div>}</>
 }
-function ContentVersion({item,v,live,decisions,actorId,founders,lessons,command}:{item:Row;v:Row;live?:Row;decisions:Row[];actorId:string;founders:number;lessons:LessonChoice[];command:Command}) {
+function ContentVersion({item,v,live,decisions,actorId,founders,lessons,related=[],command}:{item:Row;v:Row;live?:Row;decisions:Row[];actorId:string;founders:number;lessons:LessonChoice[];related?:LessonChoice[];command:Command}) {
   const authored=str(v.created_by)===actorId,fields=(v.fields||{}) as Row,sources=rows(v.source_refs).map(str)
   const markdown=['lesson','course','resource'].includes(str(item.kind))
   return <div className="ex-list-row ex-content-version"><div>
@@ -502,7 +502,7 @@ function ContentVersion({item,v,live,decisions,actorId,founders,lessons,command}
     {decisions.map(d=><p key={str(d.id)}>{label(d.decision)} by {str(d.decided_by_name)} · {str(d.reference)} · {str(d.notes)}{d.self_approval_reason?` · self-approved: ${str(d.self_approval_reason)}`:''}</p>)}
     {v.status==='draft' && !authored && <p>Drafted by {str(v.author_name)}. Only the author can edit or submit it; archive it to start your own revision.</p>}
     {v.status==='draft' && authored && <><Action action="save_content_draft" title="Save draft" initial={{versionId:v.id}} command={command}><Field name="title" title="Title" value={str(v.title)}/><Field name="body" title={markdown?'Body (Markdown: headings, lists, bold, links; no HTML)':'Body (plain text)'} area required={false} value={str(v.body)}/>
-      <Field name="sourceRefs" title="Sources, one per line" area required={false} value={sources.join('\n')}/><Field name="changeSummary" title="Change summary" required={false} value={str(v.change_summary)}/><ContentFields kind={str(item.kind)} fields={fields} lessons={lessons}/></Action>
+      <Field name="sourceRefs" title="Sources, one per line" area required={false} value={sources.join('\n')}/><Field name="changeSummary" title="Change summary" required={false} value={str(v.change_summary)}/><ContentFields kind={str(item.kind)} fields={fields} lessons={lessons} related={related.filter(x=>x.id!==str(item.id))}/></Action>
       <Action action="submit_content" title="Submit for review" initial={{versionId:v.id}} command={command}>{item.audience==='client_facing' && <Field name="lintOverrideReason" title="Only if the audience check flags a term: why it is safe for clients" required={false}/>}</Action></>}
     {v.status==='in_review' && (authored && founders>1?<p>You wrote this version, so another founder must record the decision.</p>:
       <Action action="decide_content" title="Record decision" initial={{versionId:v.id}} command={command}><Select name="decision" title="Decision" options={['approved','changes_requested','rejected']}/><Field name="reference" title="Decision reference (for example a founder decision ID)"/>
@@ -517,6 +517,7 @@ function ContentStudio({a,command}:{a:Row;command:Command}) {
   const [filter,setFilter]=useState('all')
   const actorId=str(a.actorId),founders=Number(a.activeFounders||0)
   const lessons:LessonChoice[]=items.filter(i=>i.kind==='lesson').map(i=>{const own=versions.filter(v=>v.item_id===i.id);const live=own.find(v=>v.status==='published');const latest=own[0];return {id:str(i.id),label:str((live||latest)?.title||i.slug),status:live?(live.review_overdue===true?'past_review_date':'published'):str(latest?.status||'draft')}})
+  const related:LessonChoice[]=[...lessons.map(l=>({...l,label:`Lesson: ${l.label}`})),...items.filter(i=>i.kind==='resource').map(i=>{const own=versions.filter(v=>v.item_id===i.id);const live=own.find(v=>v.status==='published');const latest=own[0];return {id:str(i.id),label:`Resource: ${str((live||latest)?.title||i.slug)}`,status:live?'published':str(latest?.status||'draft')}})]
   const shown=items.filter(i=>filter==='all'||i.kind===filter)
   return <section className="ex-panel"><p className="ex-overline">FOUNDER CONTENT · OPERATION EMPOWER</p><h2>Content studio</h2>
     <p>Draft, review, approve and publish partner content and Academy courses. Partners see only published, in-date content, and only when the Partner Academy is switched on for this environment. A version can be edited only by its author and only while it is a draft; once submitted it is permanent. {founders>1?'More than one founder is active, so another founder must approve content you wrote.':'You are the only active founder: approving your own version needs a recorded reason.'}</p>
@@ -527,13 +528,34 @@ function ContentStudio({a,command}:{a:Row;command:Command}) {
       <Action action="create_content_item" title="Create draft" initial={kind==='course'?{kind,audience:'partner_only'}:{kind}} command={command}><Field name="slug" title="Slug (lowercase letters, numbers and hyphens; permanent)"/>
         {kind==='course'?<p className="ex-note">Academy courses are for partners only.</p>:<Select name="audience" title="Audience (permanent)" options={['partner_only','client_facing']}/>}<Select name="cadence" title="Review cadence" options={['service','commercial']}/>
         <Field name="title" title="Title"/><Field name="body" title={['lesson','course','resource'].includes(kind)?(kind==='course'?'Course description (Markdown)':'Body (Markdown: headings, lists, bold, links; no HTML)'):'Body (plain text)'} area required={false}/><Field name="sourceRefs" title="Sources, one per line (for example faq:hosting-provided)" area required={false}/>
-        <ContentFields key={kind} kind={kind} lessons={lessons}/></Action></details>
+        <ContentFields key={kind} kind={kind} lessons={lessons} related={related}/></Action></details>
     {shown.length?shown.map(item=>{
       const own=versions.filter(v=>v.item_id===item.id),open=own.some(v=>['draft','in_review','approved'].includes(str(v.status))),live=own.find(v=>v.status==='published'),latest=own[0]
       return <details className="ex-resource" key={str(item.id)}><summary>{str(item.slug)} · {label(item.kind)} · {item.audience==='client_facing'?'Client-facing':'Partner only'} <span className="ex-badge">{live?`Published v${str(live.version)}`:'Not published'}</span>{latest && latest!==live && <span className="ex-badge">v{str(latest.version)} {label(latest.status)}</span>}</summary>
         <p>Review at least every {str(item.review_cadence_months)} months · created by {str(item.created_by_name)} · {own.length} version{own.length===1?'':'s'} in history</p>
         {!open && own.length>0 && <Action action="start_content_revision" title="Start a new revision" initial={{itemId:item.id}} command={command}><Field name="changeSummary" title="What will change" required={false}/></Action>}
-        {own.map(v=><ContentVersion key={str(v.id)} item={item} v={v} live={live} decisions={approvals.filter(x=>x.version_id===v.id)} actorId={actorId} founders={founders} lessons={lessons} command={command}/>)}
+        {own.map(v=><ContentVersion key={str(v.id)} item={item} v={v} live={live} decisions={approvals.filter(x=>x.version_id===v.id)} actorId={actorId} founders={founders} lessons={lessons} related={related} command={command}/>)}
       </details>}):<Empty text={items.length?'Nothing of this type yet.':'No content yet. Create the first draft above.'}/>}
+    <SynonymsPanel synonyms={rows(a.synonyms)} command={command}/>
   </section>
+}
+
+const RESOURCE_CATEGORY_OPTIONS = ['brochure','guide','checklist','template','reference']
+/** Related lessons and resources for a resource, chosen from a list (no JSON). Only published ones are ever shown to partners. */
+function RelatedPicker({initial,choices}:{initial:unknown;choices:LessonChoice[]}) {
+  const [chosen,setChosen]=useState<string[]>(()=>Array.isArray(initial)?(initial as string[]):[])
+  return <fieldset className="ex-checks"><legend>Related lessons and resources ({chosen.length} of 10)</legend>
+    <input type="hidden" name="f_related_json" value={JSON.stringify(chosen)}/>
+    <ul className="ex-lesson-order">{chosen.map(id=>{const c=choices.find(x=>x.id===id);return <li key={id}><span>{c?c.label:'Unknown item'} <span className="ex-badge">{c?label(c.status):'missing'}</span></span><button type="button" className="ex-link" onClick={()=>setChosen(list=>list.filter(x=>x!==id))}>Remove</button></li>})}</ul>
+    {chosen.length<10 && <label className="ex-field">Add a related item<select value="" onChange={e=>{const id=e.target.value;if(id) setChosen(list=>[...list,id])}}><option value="">Choose…</option>{choices.filter(c=>!chosen.includes(c.id)).map(c=><option key={c.id} value={c.id}>{c.label} ({label(c.status)})</option>)}</select></label>}
+  </fieldset>
+}
+/** B1.3: founder-managed search synonyms. Retiring a synonym switches it off; nothing is deleted. */
+function SynonymsPanel({synonyms,command}:{synonyms:Row[];command:Command}) {
+  return <details className="ex-resource"><summary>Search synonyms ({synonyms.filter(x=>x.active===true).length} active)</summary>
+    <p>When a partner searches for a term, its expansion is searched as well. For example <strong>ssl</strong> → <em>https certificate</em>. Synonyms change search only, never content.</p>
+    <Action action="add_search_synonym" title="Add synonym" command={command}><Field name="term" title="Term partners might type (lowercase)"/><Field name="expansion" title="Also search for"/></Action>
+    {synonyms.length?<ul className="ex-lesson-order">{synonyms.map(x=><li key={str(x.id)}><span><strong>{str(x.term)}</strong> → {str(x.expansion)} <span className="ex-badge">{x.active===true?'Active':'Off'}</span></span>
+      <Action action="set_search_synonym_active" title={x.active===true?'Switch off':'Switch on'} initial={{id:x.id,active:x.active!==true}} command={command}/></li>)}</ul>:<Empty text="No synonyms yet."/>}
+  </details>
 }

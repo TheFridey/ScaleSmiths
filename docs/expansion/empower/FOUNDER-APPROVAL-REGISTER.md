@@ -48,6 +48,9 @@ Blocking columns: **P1** blocks Phase 1 (founder content workspace), **P2** bloc
 | `AP-ACA-02` | Run the curriculum importer against a real environment (`--allow-database`) | Founders | Import as drafts into staging first; never into production without a recorded instruction | N | N | Y | `FOUNDER DECISION` | |
 | `AP-ACA-03` | The 65 draft knowledge-check questions (`KNOWLEDGE-CHECKS.md`) | Lesson approvers | Approve with each lesson version; each answer is taken from its lesson text | N | N | Y | `DRAFT` | |
 | `AP-ACA-04` | Knowledge-check attempt history (answers given) and partner "clear my history" control | Founders, privacy adviser | Keep attempts for the AP-PRIV-04 period; build the clear control before enabling | N | N | Y | `FOUNDER DECISION` | |
+| `AP-RES-01` | Switch on `PARTNER_RESOURCE_CENTRE_ENABLED` in a real environment | Founders | After the first resources (priority order in `AP-PUB-02`) are approved and published | N | Y | N | `FOUNDER DECISION` | |
+| `AP-RES-02` | Initial search synonyms (for example ssl, wp, seo, aeo, crm) | Founders | Add in the studio after resources are published; review with the review cadence | N | Y | N | `FOUNDER DECISION` | |
+| `AP-RES-03` | R13 follow-up templates imported partner-only (the file mixes client templates with partner instructions) | Founders | Keep partner-only, or split the client templates into a separate client-facing resource | N | Y | N | `DRAFT` | |
 | `AP-PUB-02` | Publication priority order for the Resource Centre | Founders | As recommended in [CONTENT-REVIEW-REGISTER.md](CONTENT-REVIEW-REGISTER.md) section 5 | N | Y | N | `DRAFT` | |
 
 ## B. Package documents

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import {
-  approvalAuthority, audienceLintHits, checkSubmission, contentFields, contentSlug, courseLessonIds, gradeCheck, isServable, linkProblems, publicChecks, reviewByDate, reviewCadence, sourceRefs,
+  approvalAuthority, audienceLintHits, checkSubmission, contentFields, contentSlug, courseLessonIds, expandQuery, gradeCheck, isServable, linkProblems, publicChecks, reviewByDate, reviewCadence, searchQuery, sourceRefs, synonymExpansion, synonymTerm,
 } from "./empower-content"
 
 const knowledge = {
@@ -87,7 +87,7 @@ describe("submission", () => {
     expect(() => checkSubmission({ ...base, fields: { ...knowledge, answer: "See http://example.com" } })).toThrow(/HTTPS/)
   })
   it("requires a real body for lessons and resources", () => {
-    expect(() => checkSubmission({ ...base, kind: "resource", audience: "partner_only", fields: {}, body: "short" })).toThrow(/body/)
+    expect(() => checkSubmission({ ...base, kind: "resource", audience: "partner_only", fields: { summary: "A short guide", category: "guide" }, body: "short" })).toThrow(/body/)
   })
 })
 
@@ -146,5 +146,37 @@ describe("Academy course structure and knowledge checks (B1.2)", () => {
     expect(() => gradeCheck(checks, "q1", ["a", "b"])).toThrow(/one answer/)
     expect(() => gradeCheck(checks, "q1", ["x"])).toThrow(/listed answers/)
     expect(() => gradeCheck(checks, "q9", ["a"])).toThrow(/not part/)
+  })
+})
+
+describe("Resource Centre search rules (B1.3)", () => {
+  it("normalises search text and bounds it", () => {
+    expect(searchQuery("  hosting \u0000 price  ")).toBe("hosting price")
+    expect(searchQuery("   ")).toBeNull()
+    expect(searchQuery(undefined)).toBeNull()
+    expect(() => searchQuery("x".repeat(201))).toThrow(/200/)
+    expect(() => searchQuery({})).toThrow(/text/)
+  })
+  it("expands whole-word synonyms deterministically, keeping the original query first", () => {
+    const synonyms = [{ term: "wp", expansion: "wordpress" }, { term: "ssl", expansion: "https certificate" }, { term: "ssl cert", expansion: "https certificate" }]
+    expect(expandQuery("Do you do SSL?", synonyms)).toBe("Do you do SSL? or https certificate")
+    expect(expandQuery("ssl cert for wp", synonyms)).toBe("ssl cert for wp or https certificate or wordpress")
+    expect(expandQuery("sslx", synonyms)).toBe("sslx")
+    expect(expandQuery("ssl", synonyms)).toBe(expandQuery("ssl", [...synonyms].reverse()))
+  })
+  it("validates synonyms and resource fields", () => {
+    expect(synonymTerm(" SSL ")).toBe("ssl")
+    expect(() => synonymTerm("<b>")).toThrow()
+    expect(() => synonymExpansion("say \"hi\"")).toThrow()
+    expect(contentFields("resource", { summary: "A guide", category: "guide", related: ["11111111-1111-4111-8111-111111111111"] }, true)).toMatchObject({ category: "guide", related: ["11111111-1111-4111-8111-111111111111"] })
+    expect(() => contentFields("resource", { summary: "A guide", category: "secret" }, false)).toThrow(/resource category/)
+    expect(() => contentFields("resource", { summary: "A guide", category: "guide", related: ["nope"] }, false)).toThrow(/not valid/)
+    expect(() => contentFields("resource", { category: "guide" }, true)).toThrow(/summary/)
+  })
+})
+
+describe("synonym expansions cannot change query meaning (B1.3 review)", () => {
+  it("drops exclusion prefixes and bare or/and words", () => {
+    expect(expandQuery("ssl", [{ term: "ssl", expansion: "-https or certificate and renewal" }])).toBe("ssl or https certificate renewal")
   })
 })

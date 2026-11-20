@@ -120,3 +120,47 @@ export function parsePackage(files: { curriculum: string; foundations: string; p
   for (const code of Object.keys(checks)) if (!lessons[code]) problems.push(`${code}: knowledge check for an unknown lesson`)
   return { courses, lessons, checks, problems }
 }
+
+// ---------------------------------------------------------------- B1.3: Resource Centre drafts (resources/R01..R13)
+export interface ParsedResource { code: string; title: string; audience: "client_facing" | "partner_only"; category: string; cadence: "service" | "commercial"; summary: string; body: string; sources: string[]; file: string }
+/** Category and one-line summary per resource. R13 is imported partner-only: the file mixes client templates with partner instructions. */
+export const RESOURCE_PLAN: Record<string, { category: string; summary: string; partnerOnly?: boolean; commercial?: boolean }> = {
+  R01: { category: "brochure", summary: "Who ScaleSmiths is, how it works and its published starting prices." },
+  R02: { category: "reference", summary: "How the partnership works day to day, subject to the partner agreement." },
+  R03: { category: "guide", summary: "What a website project includes, what is separate, timing, ownership and migration." },
+  R04: { category: "guide", summary: "What a Growth Partnership can include, how work is prioritised and what it is not." },
+  R05: { category: "guide", summary: "When custom software makes sense, how it is scoped and delivered, and automation." },
+  R06: { category: "guide", summary: "SEO, local and technical SEO, AI search and honest expectations." },
+  R07: { category: "template", summary: "Questions for a first discovery conversation, with partner notes." },
+  R08: { category: "reference", summary: "Approved responses to twelve common objections, with limits and escalation." },
+  R09: { category: "checklist", summary: "What to do before, during and after a client meeting." },
+  R10: { category: "guide", summary: "Which meeting to request, what always needs escalating and what to include." },
+  R11: { category: "reference", summary: "Published client prices and the starting-price boundary.", commercial: true },
+  R12: { category: "reference", summary: "How commission is proposed to work. Proposed policy, not an entitlement.", commercial: true },
+  R13: { category: "template", summary: "Follow-up email templates for prospects who agreed to be contacted.", partnerOnly: true },
+}
+export const resourceSlug = (code: string) => `resource-${code.toLowerCase()}`
+
+export function parseResource(markdown: string, file: string, problems: string[]): ParsedResource | null {
+  const text = clean(markdown)
+  const [, code, title] = text.match(/^# (R\d{2}) (.+)$/m) ?? []
+  if (!code) { problems.push(`${file}: no "# Rnn Title" heading`); return null }
+  const plan = RESOURCE_PLAN[code]
+  if (!plan) { problems.push(`${code}: not in the resource plan`); return null }
+  const lines = text.split("\n")
+  let i = lines.findIndex((l) => /^# R\d{2} /.test(l)) + 1
+  while (i < lines.length && !lines[i].startsWith("|")) i++
+  const header = [] as string[]
+  while (i < lines.length && lines[i].startsWith("|")) header.push(lines[i++])
+  while (i < lines.length && (lines[i].trim() === "" || lines[i].trim() === "---")) i++
+  const body = unlinkRelative(lines.slice(i).join("\n").trim())
+  const audienceRow = header.find((l) => /^\|\s*Audience\s*\|/.test(l)) ?? ""
+  const sourcesRow = header.find((l) => /^\|\s*Sources\s*\|/.test(l))?.replace(/^\|\s*Sources\s*\|/, "").replace(/\|\s*$/, "") ?? ""
+  // Classify by how the audience cell starts: "Partner only, with client-facing lines marked" is partner-only.
+  const audienceCell = audienceRow.split("|")[2]?.trim() ?? ""
+  const audience = plan.partnerOnly || !/^client-facing/i.test(audienceCell) ? "partner_only" : "client_facing"
+  if (!audienceRow) problems.push(`${code}: no audience row`)
+  if (body.length < 20) problems.push(`${code}: body is missing`)
+  const sources = [...new Set([...splitSources(sourcesRow.replace(/faq:\s/g, "faq:")), `docs/expansion/empower/resources/${file}`])]
+  return { code, title: title.trim(), audience, category: plan.category, cadence: plan.commercial ? "commercial" : "service", summary: plan.summary, body, sources, file }
+}

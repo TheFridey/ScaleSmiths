@@ -1,0 +1,42 @@
+{
+  "cli_version": "0.12.2",
+  "checkpoint_id": "01M7WN0BS4TCC38M6K7VZ5YFKT",
+  "session_id": "aebf5df5-fc53-46f8-adc5-609b4932802f",
+  "strategy": "manual-commit",
+  "created_at": "2026-11-20T14:15:48.2315687Z",
+  "branch": "claude/empower-b1-planning",
+  "checkpoints_count": 3,
+  "files_touched": [
+    "docs/expansion/empower/B1-STATUS.md"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-opus-5-5",
+  "turn_id": "d2a030cd7a35",
+  "checkpoint_transcript_start": 734,
+  "transcript_lines_at_start": 734,
+  "compact_transcript_start": 56,
+  "token_usage": {
+    "input_tokens": 34,
+    "cache_creation_tokens": 16318,
+    "cache_read_tokens": 4123346,
+    "output_tokens": 11889,
+    "api_call_count": 15
+  },
+  "redaction": {
+    "replacements": 13,
+    "layers": {
+      "betterleaks": 0,
+      "connection_string": 0,
+      "credential_key": 0,
+      "credential_value": 0,
+      "credentialed_uri": 0,
+      "entropy": 12,
+      "key_context": 1,
+      "provider_token": 0,
+      "shell_stdin": 0
+    }
+  },
+  "session_metrics": {
+    "turn_count": 3
+  }
+}

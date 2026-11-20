@@ -30,6 +30,8 @@
 
 Suggested (not required) order: C01, C12, C02, C04, C08, then any.
 
+Totals: 13 courses, 38 modules, **91 lessons**. The lesson-by-lesson inventory, with every identifier checked for gaps and duplicates, is in [CONTENT-REVIEW-REGISTER.md](CONTENT-REVIEW-REGISTER.md) section 3. (An earlier summary of this package said 94; the count is 91.)
+
 ---
 
 ## C01 Welcome to ScaleSmiths
@@ -294,7 +296,7 @@ Suggested (not required) order: C01, C12, C02, C04, C08, then any.
 
 **Learning objectives:**
 1. use the acknowledge, clarify, answer, confirm pattern;
-2. respond to the eight most common objections with approved wording;
+2. respond to the five most common objections covered in this course (and the twelve in R08) with approved wording;
 3. recognise objections that need escalation;
 4. never resolve an objection with an unapproved discount or promise.
 
@@ -334,7 +336,7 @@ Suggested (not required) order: C01, C12, C02, C04, C08, then any.
 | M1 Client pricing | C11-L1 Published starting prices | The four offers and the boundary |
 | | C11-L2 Proposals and payment terms | Terms are per proposal; no blanket deposit policy |
 | M2 Partner terms (proposed) | C11-L3 How commission is proposed to work | 30% on eligible collected payments; build plus first Growth Partnership payment |
-| | C11-L4 Worked examples | £705 standard; discounted examples; bespoke |
+| | C11-L4 Worked examples | £705 standard; discounted examples; bespoke; historical agreements keep their accepted terms |
 | | C11-L5 What is not decided | Withdrawals, refunds, VAT, achievements, referrals |
 | M3 Boundaries | C11-L6 What you may and may not agree | No pricing, discounts, terms or timelines |
 | | C11-L7 Markets | No market is approved yet; GBP only |

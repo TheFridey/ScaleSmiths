@@ -9,6 +9,8 @@
 
 Rules: send only to people you have spoken to who agreed to hear from you; personalise every message; no pressure or false urgency; include only published prices; stop if asked.
 
+*[REQUIRES LEGAL AND PRIVACY REVIEW]* Whether T6 (a single acknowledgement after an opt-out) should be sent at all, through which channel, and whether every template needs an opt-out line, are open under `AP-LEG-03` and `AP-PRIV-01`. Until decided, record the opt-out in the portal and do not send T6 without ScaleSmiths' agreement.
+
 ## T1 After a discovery conversation
 
 > Subject: Our conversation about [business name]

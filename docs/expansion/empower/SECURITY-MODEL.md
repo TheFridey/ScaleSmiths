@@ -50,6 +50,11 @@ No new role or capability is required.
 - `fields` JSON is validated against a schema per `kind` on the server.
 - Search input is length-limited (200 characters), passed as a bound parameter to `websearch_to_tsquery`, and rate-limited per partner (the public site's `web/src/lib/rate-limit-policy.ts` is the model; an admin-side equivalent was not verified).
 
+### 3.4a Revoked and suspended partners
+
+- Every partner read and write reuses `partnerGuard` (`admin/src/lib/server/expansion-operations.ts`), which requires an activated partner profile, an active user, the `independent_partner` role and the current `session_version`. Deactivating a user or bumping the session version therefore denies Empower content and progress writes on the next request, with no Empower-specific code.
+- A revoked partner's progress rows are retained under the approved retention period (`AP-PRIV-04`) and are not shown to anyone else.
+
 ### 3.5 Independence and privacy
 
 - Progress is private to the partner by default. Founders see aggregates only, unless the partner chooses to share (decision `AP-GOV-03`).
@@ -77,3 +82,4 @@ No new role or capability is required.
 - Role tests: a partner cannot reach any founder content action; an owner cannot reach partner routes.
 - A browser test that a partner sees no draft, no expired item and no client-facing copy control on partner-only items.
 - A test asserting progress tables are not referenced by commercial queries.
+- A real-PostgreSQL test that a deactivated partner, and a partner whose session version was bumped, receive 403 from every Empower read and progress write.

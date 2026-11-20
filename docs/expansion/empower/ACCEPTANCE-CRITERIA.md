@@ -7,7 +7,8 @@
 - [x] Package exists under `docs/expansion/empower/` with architecture, curriculum, lesson content, resource drafts, knowledge inventory, wireframes, approval register, phases, acceptance criteria and security model.
 - [x] Every item carries an approval status; no item is marked approved.
 - [x] `node scripts/check-documentation-links.mjs` passes.
-- [ ] Founders have reviewed the package *(manual)*.
+- [x] Every document read back in full and audited; findings recorded in [CONTENT-REVIEW-REGISTER.md](CONTENT-REVIEW-REGISTER.md) (agent review, not human approval).
+- [ ] Founders have reviewed the package and the review register *(manual)*.
 
 ## Phase 1: content foundation
 
@@ -29,6 +30,8 @@
 **Access**
 12. A partner account receives 403 for every founder content action and the founder Content workspace.
 13. An owner or administrator cannot reach any `/partner` route (existing RBAC rule still holds).
+13a. A deactivated partner, or one whose session version has been bumped, receives 403 from every Empower read and progress write (real PostgreSQL).
+13b. A content editor role, if one is ever added, holds no commission, withdrawal or financial capability (RBAC test); in B1 only founders write content.
 14. With `EMPOWER_FOUNDER_CONTENT_ENABLED` off, the Content workspace is not reachable.
 
 **Seeding**

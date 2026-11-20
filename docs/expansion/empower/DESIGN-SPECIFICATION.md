@@ -26,17 +26,19 @@ The Partner Portal is part of the admin app, so Empower uses the **admin token s
 | Hover surface | `--s3` | `#2a2d31` | admin | — |
 | Primary text | `--t1` | `#f1f5f9` | admin | 16.82:1 on `--bg` |
 | Secondary text | `--t2` | `#a6b0be` | admin | 7.85:1 on `--s1`; 7.09:1 on `--s2` |
-| Muted text (new) | `--emp-muted` | `#8a93a3` | new | 5.95:1 on `--bg`; 5.02:1 on `--s2` |
-| Decorative text only | `--t3` | `#667085` | admin | **3.71:1 on `--bg`: fails AA for body text**; use only for disabled states and decoration |
+| Muted text (new) | `--emp-muted` | `#939cac` | new (corrected in review from `#8a93a3`, which is 4.47:1 on `--s3` and fails there) | 6.66:1 on `--bg`; 5.62:1 on `--s2`; 5.00:1 on `--s3` |
+| Decorative text only | `--t3` | `#667085` | admin | **Fails AA for body text on every admin surface**: 3.71:1 on `--bg`, 3.46:1 on `--s1`, 3.12:1 on `--s2`, 2.78:1 on `--s3`; use only for disabled states and decoration |
 | Metallic gold (solid) | `--acc` | `#d1b266` | admin | 9.01:1 on `--bg`; 7.60:1 on `--s2` |
 | Gold gradient (decoration) | `--emp-gold` | `linear-gradient(135deg,#e6cf8f 0%,#d1b266 45%,#a8873f 100%)` | new, from `--acc` | Dark text `#131416` on it: 5.44:1 at the darkest stop |
 | Silver | `--emp-silver` | `#cfc7bc` | public `--silver` | 11.01:1 on `--bg`; 9.29:1 on `--s2` |
 | Silver line | `--emp-silver-line` | `rgba(207,199,188,.18)` | new | — |
 | Approved | `--grn` | `#10b981` | admin | 6.79:1 on `--s1` |
 | Review due / draft | `--amb` | `#f59e0b` | admin | 8.02:1 on `--s1` |
-| Blocked / withdrawn | `--red` | `#ef4444` | admin | used with a label |
+| Blocked / withdrawn | `--red` | `#ef4444` | admin | 4.58:1 on `--s1`, **4.13:1 on `--s2` (fails for normal text)**; use for icons, rules and large text, with a text label in `--t1` or `--t2` |
 
 Contrast values were calculated with the WCAG 2.x relative-luminance formula (the same method as `web/src/lib/color-contrast.ts`). They must be asserted in tests at implementation, as the public site already does.
+
+**Admin-wide muted text (`AP-DES-03`).** `--t3` is not only an Empower concern: at planning time it is used through `var(--t3)` 68 times in 36 admin files (mostly the Forge panels, Dashboard, Clients, Kanban, Messages and ProspectPipeline) and through the Tailwind `text-t3` class 72 times in 15 files. Changing the global token would alter all of them. Recommendation: Empower uses `--emp-muted` only; a separate, founder-approved change raises `--t3` to `#939cac` (or retires it for text) with screenshot comparison of the affected screens and the contrast assertions above. Do not change the global token inside an Empower PR.
 
 **Clean-up recommended alongside:** `expansion.css` hard-codes `#131416`, `#18191b`, `#edf0f5` and `#c3a86c`. Empower styles should use tokens only; replacing the hard-coded portal values is a small, separate change (`AP-ENG-05`).
 

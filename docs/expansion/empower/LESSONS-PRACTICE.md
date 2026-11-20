@@ -170,8 +170,8 @@ Website from £2,000; Growth Partnership from £350 per month; Business Growth A
 - Commission is proposed at **30% of eligible payments actually collected**, VAT-exclusive, under the final partner agreement.
 - For a standard website plan it applies to the build fee and the **first** Growth Partnership payment only. Later monthly payments earn no acquisition commission.
 - Only payments a ScaleSmiths founder has verified as collected count. A pending contract value is never earned.
-- Commission is calculated once on the cumulative amount, so splitting payments cannot change the total.
-- Refunds do not reduce commission automatically; they are held for founder review (refund treatment is undecided).
+- Under the current plans (`standard-v2`, `growth-only-v1`, `bespoke-v1`), build payments are pooled and rounded once on the cumulative amount, so splitting payments cannot increase the total. Historical `standard-v1` agreements keep their original per-milestone rounding, which can differ by a few pence.
+- Refunds do not reduce commission automatically; they are held for founder review, and any reversal is a recorded, approved entry with a reason (final refund treatment is undecided).
 
 ### C11-L4 Worked examples
 
@@ -184,11 +184,13 @@ Website from £2,000; Growth Partnership from £350 per month; Business Growth A
 | Growth Partnership only | first £350 | **£105** |
 | Bespoke project, £10,000 eligible collected | £10,000 | **£3,000** (30% unless a different approved rate) |
 
-Payment order (deposit then balance, or equal instalments) does not change the total. Commission becomes due only as payments are collected and verified.
+Payment order (deposit then balance, or equal instalments) does not change the total. Commission becomes due only as payments are collected and verified. These are illustrations, not earnings forecasts: nothing is earned until a client pays and a founder verifies the payment.
+
+**Historical agreements.** Agreements accepted under the earlier `standard-v1` plan (a six-month Growth Partnership term, £4,100 minimum contract value) keep the terms under which they were accepted. The current proposed standard is the twelve-month `standard-v2` term (£6,200 minimum contract value). Never quote the six-month term for a new client, and never describe either term to a client: terms come from ScaleSmiths' proposal.
 
 ### C11-L5 What is not decided
 
-Withdrawal frequency, minimum and invoicing; partner VAT treatment; refund and clawback treatment; achievement rewards (planned, not payable); the partner referral reward (planned, not payable); market approval (no market, including the UK, is approved yet); discount allowances (none approved).
+Withdrawal frequency, minimum and invoicing; partner VAT treatment; refund and clawback treatment; achievement rewards (planned, not payable); the partner referral reward (planned, not payable); market approval (the software starts with no market approved, including the UK, and approves markets only when a founder records it); discount allowances (none approved).
 
 ### C11-L6 What you may and may not agree
 

@@ -35,6 +35,16 @@ Blocking columns: **P1** blocks Phase 1 (founder content workspace), **P2** bloc
 | `AP-ENG-04` | Content seeding as drafts only | Engineering | Reviewed seed script, draft status only | Y | N | N | `DRAFT` | |
 | `AP-ENG-05` | Replace hard-coded colours in `expansion.css` | Engineering | Separate small change | N | N | N | `DRAFT` | |
 | `AP-B0` | B0 (PR #155) merged with branch protection applied | Founders | Prerequisite for any implementation | Y | Y | Y | `BLOCKED` | |
+| `AP-DES-03` | Admin-wide `--t3` contrast fix (68 `var(--t3)` uses in 36 files, 72 `text-t3` uses in 15 files) | Founders, engineering | Separate reviewed change to `#939cac` with screenshot comparison; not inside an Empower PR | N | N | N | `FOUNDER DECISION` | |
+| `AP-COM-08` | Service scope boundaries partners may describe: maintenance, hosting, SEO/AEO, analytics, support (none is unlimited) | Founders | Written service catalogue, as already required by B0 "Approved service scope, Academy materials" | N | Y | Y | `FOUNDER DECISION` | |
+| `AP-COM-09` | Approved earnings illustrations for partners (which worked examples, with which caveats) | Founders, accountant, solicitor | Only the R12 arithmetic, labelled illustrative and gross, never as a forecast | N | Y (R12) | Y (C11) | `FOUNDER DECISION` | |
+| `AP-COM-10` | Territory and exclusivity wording partners may use | Founders, solicitor | Only the generic "commercial checks in progress" notice; no territory claims | N | N | Y (C07) | `FOUNDER DECISION` | |
+| `AP-COM-11` | Description of achievement and referral rewards in training | Founders, solicitor | "Planned and conditional, not payable" until a programme version is approved in writing | N | Y (R12) | Y (C11) | `FOUNDER DECISION` | |
+| `AP-COM-12` | Bespoke scoping and rate authority: who may scope, and who approves a non-30% rate | Founders | Founders only; recorded approval reference, as the engine already requires | N | Y | Y (C06, C13) | `FOUNDER DECISION` | |
+| `AP-PRIV-03` | Resource view and download logging | Founders, privacy adviser | Do not log individual views or downloads in B1; aggregate counts only if needed | N | Y | N | `FOUNDER DECISION` | |
+| `AP-PRIV-04` | Retention of learning progress, including after a partner leaves | Founders, privacy adviser | Delete progress a fixed period after the partnership ends; partner can clear it at any time | N | N | Y | `FOUNDER DECISION` | |
+| `AP-PUB-01` | Withdrawal and correction procedure for published content | Founders | Withdraw (archive with reason) at once when wrong; publish a corrected new version through review; tell partners via "updated since you read it" | Y | Y | Y | `FOUNDER DECISION` | |
+| `AP-PUB-02` | Publication priority order for the Resource Centre | Founders | As recommended in [CONTENT-REVIEW-REGISTER.md](CONTENT-REVIEW-REGISTER.md) section 5 | N | Y | N | `DRAFT` | |
 
 ## B. Package documents
 

@@ -41,7 +41,9 @@ ScaleSmiths publishes four starting points:
 
 It also takes on established-business transformation and custom platforms. These are **never** sold against a website starting price and are scoped after discovery.
 
-A starting price is exactly that. The published boundary reads: "A starting price is the entry point for an agreed scope. It is not unlimited development, marketing, support, integrations or a guaranteed result." Prices are in GBP only. ScaleSmiths does not bill in other currencies or publish converted prices.
+A starting price is exactly that. The published boundary (`STARTING_PRICE_BOUNDARY`) reads in full: "A starting price is the entry point for an agreed scope. It is not unlimited development, marketing, support, integrations or a guaranteed result. Every proposal depends on requirements, complexity and the deliverables we write down. Prices are in GBP. We do not bill in other currencies or publish fixed converted prices."
+
+VAT: the client terms say VAT treatment is set in the agreed project documents (`legal-policies.ts`). There is no approved partner wording yet on whether a quoted price includes VAT *[FOUNDER DECISION `AP-COM-07`]*; if asked, say the proposal will state it.
 
 **Rule:** quote only these four figures, always with the boundary. Anything else is a ScaleSmiths proposal.
 

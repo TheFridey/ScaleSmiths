@@ -275,7 +275,7 @@
 ### Commission (partner only)
 
 **KB-COMM-01 How is my commission calculated?**
-- Answer: Proposed: 30% of eligible, verified, collected payments (ex VAT); build fee plus first Growth Partnership payment for standard plans; bespoke per approved terms. See [R12](resources/R12-commission-and-payment-reference.md).
+- Answer: Proposed: 30% of eligible, verified, collected payments (ex VAT); build fee plus first Growth Partnership payment for standard plans (£705 on the standard example); later monthly payments earn no acquisition commission; bespoke per approved terms; historical `standard-v1` agreements keep their accepted terms. See [R12](resources/R12-commission-and-payment-reference.md).
 - Client explanation: none. Partner only; never discuss with clients.
 - Source: `partner-programme.ts`, [COMMISSION-RULES.md](../COMMISSION-RULES.md).
 - Limitation: not an entitlement until the agreement and plan are approved and enabled.

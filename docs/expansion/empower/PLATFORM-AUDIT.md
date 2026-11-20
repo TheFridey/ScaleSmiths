@@ -75,7 +75,8 @@ Seven meeting types exist: `joint_sales`, `technical_scoping`, `bespoke_discover
 | Plans | `standard-v2`, `growth-only-v1`, `bespoke-v1` all disabled by default | `CONFIRMED: SYSTEM BEHAVIOUR` |
 | Achievements and referrals | Implemented; **not payable** | `CONFIRMED: SYSTEM BEHAVIOUR` |
 | Withdrawals | Implemented; **not operational** (no approved policy) | `CONFIRMED: SYSTEM BEHAVIOUR` |
-| Markets | No market approved, including the UK | `CONFIRMED: SYSTEM BEHAVIOUR` |
+| Markets | The market register is fail-closed and starts with no market approved, including the UK; founders approve markets one by one. Live production state not inspected | `CONFIRMED: SYSTEM BEHAVIOUR` (default) |
+| Historical plan | `standard-v1`: six-month term, £4,100 minimum; accepted agreements keep their terms and per-milestone rounding | `CONFIRMED: SYSTEM BEHAVIOUR` ([ARCHITECTURE.md](../intelligence/ARCHITECTURE.md), [COMMERCIAL-ACCEPTANCE-MATRIX.md](../intelligence/COMMERCIAL-ACCEPTANCE-MATRIX.md)) |
 
 Sources: `web/src/lib/partner-programme.ts`, [COMMISSION-RULES.md](../COMMISSION-RULES.md), [COMMERCIAL-INTEGRATION.md](../intelligence/COMMERCIAL-INTEGRATION.md), [DISCOUNT-ALLOWANCES.md](../intelligence/DISCOUNT-ALLOWANCES.md), [MARKET-ELIGIBILITY.md](../intelligence/MARKET-ELIGIBILITY.md), [PROGRAMME-ALIGNMENT.md](../intelligence/PROGRAMME-ALIGNMENT.md).
 

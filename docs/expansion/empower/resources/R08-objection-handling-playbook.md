@@ -23,3 +23,24 @@ Method: **acknowledge, clarify, answer, confirm.** Never resolve an objection wi
 | `AP-OBJ-10` | "Are you employed by ScaleSmiths?" | — | Be accurate about independence | "I'm an independent partner of ScaleSmiths. ScaleSmiths scopes, contracts and delivers the work directly." | Never | `DRAFT`, `BLOCKED` (`AP-GOV-05` title) |
 | `AP-OBJ-11` | "Do you do hosting / email too?" (faq:hosting-provided, faq:business-email) | "What do you use now?" | Published facts only | "Yes. Hosting can be part of a build or a managed service, and Managed Business Email starts from £15 a month for three mailboxes, with setup included." | DNS or email delivery problems now → technical scoping | `DRAFT` |
 | `AP-OBJ-12` | "We're not ready yet." | "What would need to change?" | Accept it; offer a resource; no pressure | "No problem. I can send you a short guide, and you're welcome to get in touch when the time is right." | Never | `DRAFT` |
+
+## Limitations and supporting resources
+
+Each response must be read with its limitation. Added in the B1 content review ([../CONTENT-REVIEW-REGISTER.md](../CONTENT-REVIEW-REGISTER.md)).
+
+| ID | Limitation (what the response must not be stretched to mean) | Supporting approved resource or entry |
+|---|---|---|
+| `AP-OBJ-01` | No discount, payment plan or "special price" may be offered or hinted at; the audit price is fixed at £395 | R11, KB-TERMS-01 |
+| `AP-OBJ-02` | Never criticise the current supplier or ask for their pricing; a second opinion is not a promise that ScaleSmiths will find problems | R03, KB-SEO-04 |
+| `AP-OBJ-03` | No position, traffic, enquiry or revenue figure, including "typical" results | R06, KB-SEO-01 |
+| `AP-OBJ-04` | Not a promise that the current platform can be kept, or that a migration is advisable | R03, KB-MIG-01 |
+| `AP-OBJ-05` | No range, "usually", or week count, even informally | R03 |
+| `AP-OBJ-06` | Risk is reduced, never removed; no "no ranking loss" promise | R03, KB-RED-01 |
+| `AP-OBJ-07` | One agreed follow-up, then stop if there is no reply (R13 T4, T5) | R13 |
+| `AP-OBJ-08` | Do not interpret contract clauses; ownership follows the signed documents | KB-TERMS-02 |
+| `AP-OBJ-09` | Do not claim AI is or is not used on a particular project; do not compare prices with AI tools | KB-AUTO-01 |
+| `AP-OBJ-10` | Do not describe commission or partner terms to the client | R02 |
+| `AP-OBJ-11` | No hosting price, uptime figure or deliverability guarantee | KB-HOST-01, KB-EMAIL-01 |
+| `AP-OBJ-12` | Send only an approved client-facing resource; no repeat contact without agreement | R01, R13 |
+
+No response uses case studies, testimonials, statistics or competitor comparisons. Any future proof point needs `AP-PROOF-01`.

@@ -60,6 +60,8 @@ draft ──► in_review ──► approved ──► published ──► super
   └──► archived ◄──────── changes ──────┴──► archived
 ```
 
+Mapping to the publication states named in the Operation Empower directive: *submitted for review* is `in_review`; *changes requested* is an `empower_content_approvals` row with `decision='changes_requested'` that returns the version to editing as a new draft version (the reviewed version is kept); *withdrawn* is `published → archived` with a mandatory reason and an audit event, used when published content is found to be wrong. A correction is always a new version that goes through review again; a published version is never edited.
+
 - `in_review → approved` requires an `empower_content_approvals` row with `decision='approved'` by a user holding `expansion.founder`, and it must be a **different** founder from the version's author when two founders are active (founder decision `AP-GOV-04`).
 - `approved → published` is a separate action, so approval and release can be scheduled apart.
 - Publishing version N of an item moves the previously published version to `superseded` in the same transaction. There is at most one published version per item (partial unique index).

@@ -1,0 +1,3 @@
+<task-notification>
+<summary>Commit security review found: authorization / separation-of-duties bypass in admin/src/lib/server/empower-content.ts</summary>
+</task-notification>

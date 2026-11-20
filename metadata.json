@@ -1,0 +1,51 @@
+{
+  "cli_version": "0.12.2",
+  "checkpoint_id": "01M7WV3TH0KPBHMMEF2TGAJXET",
+  "strategy": "manual-commit",
+  "branch": "feature/operation-empower",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "admin/drizzle/0091_empower_content_foundation.sql",
+    "admin/src/components/expansion/ExpansionWorkspace.tsx",
+    "admin/src/lib/server/empower-content.ts",
+    "admin/test/integration/empower-content.integration.test.ts",
+    "scripts/migration-checksums.json"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 24,
+    "cache_creation_tokens": 14180,
+    "cache_read_tokens": 4634338,
+    "output_tokens": 9636,
+    "api_call_count": 10,
+    "subagent_tokens": {
+      "input_tokens": 4,
+      "cache_creation_tokens": 20038,
+      "cache_read_tokens": 38123,
+      "output_tokens": 5926,
+      "api_call_count": 2
+    }
+  },
+  "redaction": {
+    "replacements": 96,
+    "layers": {
+      "betterleaks": 28,
+      "connection_string": 0,
+      "credential_key": 0,
+      "credential_value": 0,
+      "credentialed_uri": 79,
+      "entropy": 24,
+      "key_context": 3,
+      "provider_token": 0,
+      "shell_stdin": 0
+    }
+  }
+}

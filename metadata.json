@@ -1,0 +1,56 @@
+{
+  "cli_version": "0.12.2",
+  "checkpoint_id": "01M7Z3B45B1R6A3H3GT6RTB504",
+  "strategy": "manual-commit",
+  "branch": "feature/operation-launch-ready",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "admin/drizzle/0096_partner_notifications.sql",
+    "admin/drizzle/meta/_journal.json",
+    "admin/scripts/postgres-privilege-policy.mjs",
+    "admin/src/components/expansion/ExpansionWorkspace.tsx",
+    "admin/src/lib/partner-email.ts",
+    "admin/src/lib/server/expansion.ts",
+    "admin/src/lib/server/partner-invitations.ts",
+    "admin/src/lib/server/partner-notifications.ts",
+    "scripts/migration-checksums.json",
+    "scripts/shared-migration-plan.json"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 94,
+    "cache_creation_tokens": 481492,
+    "cache_read_tokens": 21587942,
+    "output_tokens": 37883,
+    "api_call_count": 47,
+    "subagent_tokens": {
+      "input_tokens": 0,
+      "cache_creation_tokens": 0,
+      "cache_read_tokens": 0,
+      "output_tokens": 0,
+      "api_call_count": 0
+    }
+  },
+  "redaction": {
+    "replacements": 736,
+    "layers": {
+      "betterleaks": 296,
+      "connection_string": 0,
+      "credential_key": 0,
+      "credential_value": 25,
+      "credentialed_uri": 627,
+      "entropy": 77,
+      "key_context": 19,
+      "provider_token": 0,
+      "shell_stdin": 0
+    }
+  }
+}

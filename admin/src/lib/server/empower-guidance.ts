@@ -4,6 +4,7 @@ import { db, type AdminDatabaseTransaction } from "@/lib/db"
 import { ContentError, courseLessonIds, expandQuery, searchQuery, type Synonym } from "@/lib/empower-content"
 import { discoveryGaps, explain, guidancePlanFor, MEETING_GUIDANCE, MEETING_STATUS, OPPORTUNITY_STATUS, type GuidancePlan } from "@/lib/partner-guidance"
 import { partnerAcademyEnabled, partnerGuard, partnerKnowledgeEnabled, partnerResourcesEnabled } from "./empower-partner"
+import { continueLearningFor } from "./empower-academy"
 import { requireCapability } from "./rbac"
 
 /*
@@ -101,12 +102,13 @@ export async function searchGuidance(input: { q?: unknown; type?: unknown }) {
         where ${SERVABLE} ${kinds}
           and (empower_search_document(v.title,v.body,v.fields) @@ q.query or lower(v.title) = q.raw
                or exists (select 1 from ${aliases} a(alias) where lower(regexp_replace(a.alias, '[?!.]+$', '')) = q.raw))
-        order by rank desc, array_position(array['knowledge','resource','lesson','course']::text[], i.kind), i.slug limit 30`)
+        order by rank desc, array_position(array['knowledge','resource','lesson','course']::text[], i.kind), i.slug limit 60`)
     } else {
       found = await rows(tx, sql`select ${COLUMNS} from empower_content_versions v join empower_content_items i on i.id=v.item_id
         where ${SERVABLE} ${kinds} order by v.approved_at desc, i.slug limit 12`)
     }
-    return { query: q, type, available, results: await shapeItems(tx, found) }
+    // Fetched with headroom: lessons outside a published course are dropped while shaping, then the page is capped at 30.
+    return { query: q, type, available, results: (await shapeItems(tx, found)).slice(0, 30) }
   })
 }
 
@@ -186,17 +188,16 @@ export async function partnerToday() {
     const meetings = await rows(tx, sql`select m.id,m.meeting_type,m.status,m.confirmed_start,m.proposed_start,m.created_at,p.business_name from expansion_meeting_requests m
       left join expansion_opportunities o on o.id=m.opportunity_id left join prospects p on p.id=o.prospect_id
       where m.partner_id=${partnerId} and m.status in ('requested','under_review','info_required','alternative_proposed','confirmed')
+        and not (m.status='confirmed' and m.confirmed_start < now() - interval '1 day')
       order by (m.status='confirmed') desc, coalesce(m.confirmed_start,m.proposed_start,m.created_at) limit 8`)
-    const continueLearning = modules().academy ? await rows(tx, sql`select ci.slug course_slug,cv.title course_title,s.last_lesson_item_id,lv.title lesson_title,s.last_viewed_at
-      from empower_academy_course_state s join empower_content_items ci on ci.id=s.course_item_id join empower_content_versions cv on cv.item_id=ci.id and cv.status='published' and cv.review_by >= (now() at time zone 'UTC')::date
-      join empower_content_versions lv on lv.item_id=s.last_lesson_item_id and lv.status='published' and lv.review_by >= (now() at time zone 'UTC')::date
-      where s.partner_id=${partnerId} order by s.last_viewed_at desc limit 3`) : []
+    // Learning records are read only by the Academy service (Academy isolation rule); this asks it for the partner's own pointers.
+    const continueLearning = modules().academy ? await continueLearningFor(tx, partnerId) : []
     const kinds = kindFilter(GUIDANCE_TYPES)
     const recent = kinds ? await shapeItems(tx, await rows(tx, sql`select ${COLUMNS} from empower_content_versions v join empower_content_items i on i.id=v.item_id where ${SERVABLE} ${kinds} order by v.approved_at desc, i.slug limit 5`)) : []
     return {
       opportunities: opportunities.map((o) => ({ id: String(o.id), businessName: String(o.business_name), status: explain(OPPORTUNITY_STATUS, o.status), statusKey: String(o.status), followUp: iso(o.next_follow_up_at) })),
       meetings: meetings.map((m) => ({ id: String(m.id), type: String(m.meeting_type), businessName: m.business_name ? String(m.business_name) : null, status: explain(MEETING_STATUS, m.status), statusKey: String(m.status), confirmedStart: iso(m.confirmed_start), proposedStart: iso(m.proposed_start) })),
-      continueLearning: continueLearning.map((c) => ({ courseTitle: String(c.course_title), lessonTitle: String(c.lesson_title), href: `/partner/academy/${String(c.course_slug)}?lesson=${String(c.last_lesson_item_id)}` })),
+      continueLearning,
       recentGuidance: recent,
       available: { answers: modules().knowledge, resources: modules().resources, academy: modules().academy },
     }

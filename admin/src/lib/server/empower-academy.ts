@@ -168,3 +168,17 @@ export async function attemptAcademyCheck(input: { courseVersionId?: unknown; le
     return result
   })
 }
+
+/**
+ * Operation Empower B1.6: the partner's own continue-learning pointers for their workspace overview. Read-only; the caller has already
+ * resolved the partner through partnerGuard, and only servable courses and lessons are returned. Kept here so learning records stay
+ * readable only by the Academy service.
+ */
+export async function continueLearningFor(tx: Executor, partnerId: string): Promise<{ courseTitle: string; lessonTitle: string; href: string }[]> {
+  const found = (await tx.execute(sql`select ci.slug course_slug,cv.title course_title,s.last_lesson_item_id,lv.title lesson_title
+    from empower_academy_course_state s join empower_content_items ci on ci.id=s.course_item_id
+    join empower_content_versions cv on cv.item_id=ci.id and cv.status='published' and cv.review_by >= (now() at time zone 'UTC')::date
+    join empower_content_versions lv on lv.item_id=s.last_lesson_item_id and lv.status='published' and lv.review_by >= (now() at time zone 'UTC')::date
+    where s.partner_id=${partnerId} order by s.last_viewed_at desc limit 3`)).rows as Record<string, unknown>[]
+  return found.map((c) => ({ courseTitle: String(c.course_title), lessonTitle: String(c.lesson_title), href: `/partner/academy/${String(c.course_slug)}?lesson=${String(c.last_lesson_item_id)}` }))
+}

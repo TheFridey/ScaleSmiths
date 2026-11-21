@@ -128,7 +128,7 @@ export async function partnerSnapshot() {
 }
 export async function founderSnapshot() {
   const actor = await requireCapability('expansion.manage')
-  return db.transaction(async tx=>{
+  const snapshot = await db.transaction(async tx=>{
   await currentActor(tx,actor,'expansion.manage')
   const [applications,partners,opportunities,capacity,resources,clients,planSettings,discountPolicies,claims,markets,exclusivities,sectors,areas] = await Promise.all([
     tx.execute(sql`select * from partner_applications order by submitted_at desc limit 200`),
@@ -147,10 +147,12 @@ export async function founderSnapshot() {
   ])
   const gates: Row = {}
   for (const o of opportunities.rows as Row[]) if (!['closed_lost','withdrawn','contract_accepted'].includes(String(o.status))) gates[String(o.id)] = (await exclusivityOutcome(tx,o)).status
-  // Operation Empower B1.6: the founder operations queue over existing records (no new state, no private Academy progress).
-  const operations = await founderOperations(tx)
-  return { operations,sectors:sectors.rows,areas:areas.rows,markets:markets.rows,exclusivities:exclusivities.rows,exclusivityStatus:gates,discountPolicies:discountPolicies.rows,additionalClaims:claims.rows,planSettings:planSettings.rows,applications:applications.rows,partners:partners.rows,opportunities:opportunities.rows,capacity:capacity.rows,resources:resources.rows,clients:clients.rows }
+  return { sectors:sectors.rows,areas:areas.rows,markets:markets.rows,exclusivities:exclusivities.rows,exclusivityStatus:gates,discountPolicies:discountPolicies.rows,additionalClaims:claims.rows,planSettings:planSettings.rows,applications:applications.rows,partners:partners.rows,opportunities:opportunities.rows,capacity:capacity.rows,resources:resources.rows,clients:clients.rows }
   })
+  // Operation Empower B1.6: the founder operations queue over existing records (no new state, no private Academy progress). It runs in its
+  // own read transaction after the snapshot, so a failure only marks the queue unavailable and never takes the founder dashboard down.
+  const operations = await db.transaction(async (tx) => { await currentActor(tx,actor,'expansion.manage'); return founderOperations(tx) }).catch(() => ({ unavailable: true as const }))
+  return { operations, ...snapshot }
 }
 export async function partnerMutation(input: Input) {
   const actor = await requireCapability('expansion.partner')

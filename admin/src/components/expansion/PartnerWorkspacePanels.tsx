@@ -104,7 +104,7 @@ export function MeetingPrep({ meetingId }: { meetingId: string }) {
   if (error) return <Failed error={error} retry={retry} />
   if (!data) return <Loading />
   const m = data.meeting
-  return <div className="gd-prep" aria-label="Meeting preparation">
+  return <section className="gd-prep" role="region" aria-label="Meeting preparation">
     <p><StatusPill s={m.status} /> <span className="gd-muted">{m.statusKey === "confirmed" ? `Booked for ${when(m.confirmedStart)} (${m.timeZone})` : m.statusKey === "alternative_proposed" ? `ScaleSmiths proposed ${when(m.proposedStart)}` : m.status.meaning}</span></p>
     {data.opportunity ? <>
       <h3 className="gd-sub">{data.opportunity.businessName}: what you have recorded</h3>
@@ -113,7 +113,7 @@ export function MeetingPrep({ meetingId }: { meetingId: string }) {
     </> : <p className="gd-muted">This request is not linked to a prospect.</p>}
     <h3 className="gd-sub">Approved material for this meeting</h3>
     <GuidanceList items={data.guidance} empty={<p>No approved material for this meeting type yet.</p>} />
-  </div>
+  </section>
 }
 
 type Ops = {
@@ -124,8 +124,9 @@ type Ops = {
 }
 
 /** Founder operations queue over existing records; each line opens the existing workspace where the action lives. */
-export function FounderOperations({ ops, onTab }: { ops: Ops | undefined; onTab: (tab: string) => void }) {
+export function FounderOperations({ ops, onTab }: { ops: Ops | { unavailable: true } | undefined; onTab: (tab: string) => void }) {
   if (!ops) return null
+  if ("unavailable" in ops) return <section className="gd-panel" aria-labelledby="ops-heading"><p className="gd-overline">Founder operations</p><h2 id="ops-heading">Needs your attention</h2><p className="gd-error" role="alert">The operations queue could not be loaded. The rest of the workspace is unaffected; reload to try again.</p></section>
   const total = ops.meetings.length + ops.scopes.length + ops.contentAwaitingDecision.length + ops.contentExpiring.length
   return <section className="gd-panel" aria-labelledby="ops-heading">
     <p className="gd-overline">Founder operations</p><h2 id="ops-heading">Needs your attention <span className="gd-status">{total}</span></h2>
@@ -137,10 +138,10 @@ export function FounderOperations({ ops, onTab }: { ops: Ops | undefined; onTab:
         {ops.scopes.length ? <ul className="gd-rows">{ops.scopes.slice(0, 6).map((o) => <li className="gd-row" key={o.id}><div><strong>{o.business_name}</strong><p>{o.partner_name}</p></div><StatusPill s={o.status} /></li>)}</ul> : <p className="gd-muted">None waiting.</p>}
         {ops.scopes.length > 0 && <button type="button" className="gd-action" onClick={() => onTab("pipeline")}>Open prospects and scope</button>}</div>
       <div><h3 className="gd-sub">Content awaiting a decision or publication ({ops.contentAwaitingDecision.length})</h3>
-        {ops.contentAwaitingDecision.length ? <ul className="gd-rows">{ops.contentAwaitingDecision.slice(0, 6).map((c) => <li className="gd-row" key={c.slug}><div><strong>{c.title}</strong><p>{c.kind} · v{c.version}</p></div></li>)}</ul> : <p className="gd-muted">Nothing waiting.</p>}
+        {ops.contentAwaitingDecision.length ? <ul className="gd-rows">{ops.contentAwaitingDecision.slice(0, 6).map((c) => <li className="gd-row" key={`${c.kind}:${c.slug}:${c.version}`}><div><strong>{c.title}</strong><p>{c.kind} · v{c.version}</p></div></li>)}</ul> : <p className="gd-muted">Nothing waiting.</p>}
         <button type="button" className="gd-action" onClick={() => onTab("content")}>Open Content studio</button></div>
       <div><h3 className="gd-sub">Published content due for review within 30 days ({ops.contentExpiring.length})</h3>
-        {ops.contentExpiring.length ? <ul className="gd-rows">{ops.contentExpiring.slice(0, 6).map((c) => <li className="gd-row" key={c.slug}><div><strong>{c.title}</strong><p>{c.kind} · review by {String(c.review_by).slice(0, 10)}</p></div></li>)}</ul> : <p className="gd-muted">Nothing due.</p>}</div>
+        {ops.contentExpiring.length ? <ul className="gd-rows">{ops.contentExpiring.slice(0, 6).map((c) => <li className="gd-row" key={`${c.kind}:${c.slug}:${c.review_by}`}><div><strong>{c.title}</strong><p>{c.kind} · review by {String(c.review_by).slice(0, 10)}</p></div></li>)}</ul> : <p className="gd-muted">Nothing due.</p>}</div>
     </div>
   </section>
 }
@@ -150,6 +151,6 @@ export function MeetingPrepToggle({ meetingId }: { meetingId: string }) {
   const [open, setOpen] = useState(false)
   return <div>
     <button type="button" className="gd-action" aria-expanded={open} aria-controls={`prep-${meetingId}`} onClick={() => setOpen((o) => !o)}>{open ? "Hide preparation" : "Prepare for this meeting"}</button>
-    <div id={`prep-${meetingId}`}>{open && <MeetingPrep meetingId={meetingId} />}</div>
+    <div id={`prep-${meetingId}`} aria-live="polite">{open && <MeetingPrep meetingId={meetingId} />}</div>
   </div>
 }

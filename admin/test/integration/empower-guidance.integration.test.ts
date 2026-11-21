@@ -148,7 +148,7 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("Empower B1.6 unified 
   it("gives founders a queue over real records, and refuses suspended partners", async () => {
     const ops = await state.database!.transaction((tx) => founderOperations(tx))
     expect(ops.meetings.map((m) => String((m as Record<string, unknown>).id))).toEqual(expect.arrayContaining([meetingA, meetingB]))
-    expect((await runAs(founderA, () => founderSnapshot())).operations.meetings.length).toBeGreaterThanOrEqual(2)
+    expect(((await runAs(founderA, () => founderSnapshot())).operations as { meetings: unknown[] }).meetings.length).toBeGreaterThanOrEqual(2)
     await pool.query("update admin_users set active=false, session_version=session_version+1 where id=$1", [partnerB.id])
     await expect(runAs(partnerB, () => partnerToday())).rejects.toMatchObject({ status: 403 })
     await expect(runAs(partnerB, () => searchGuidance({ q: "seo" }))).rejects.toMatchObject({ status: 403 })

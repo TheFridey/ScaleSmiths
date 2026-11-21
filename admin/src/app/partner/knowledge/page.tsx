@@ -1,3 +1,4 @@
+import { partnerObjectionsEnabled } from "@/lib/server/empower-objections"
 import { partnerWorkspaceEnabled } from "@/lib/server/empower-guidance"
 import { notFound } from "next/navigation"
 import { guardPageCapability } from "@/lib/server/rbac"
@@ -8,5 +9,5 @@ export const dynamic = "force-dynamic"
 export default async function KnowledgePage() {
   await guardPageCapability("expansion.partner")
   if (!partnerKnowledgeEnabled()) notFound()
-  return <KnowledgeBase nav={{ academy: partnerAcademyEnabled(), resources: partnerResourcesEnabled(), knowledge: true, guidance: partnerWorkspaceEnabled() }} />
+  return <KnowledgeBase nav={{ academy: partnerAcademyEnabled(), resources: partnerResourcesEnabled(), knowledge: true, objections: partnerObjectionsEnabled(), guidance: partnerWorkspaceEnabled() }} />
 }

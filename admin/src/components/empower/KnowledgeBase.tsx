@@ -8,11 +8,11 @@ type Entry = {
   escalation: { required: string; condition: string | null; route: string | null }; topic: string | null; sources: string[]; approvedAt: string | null; reviewBy: string | null
   related: { title: string; href: string }[]
 }
-const ROUTE_LABELS: Record<string, string> = { technical_scoping: "Technical scoping", bespoke_discovery: "Bespoke discovery", commercial_assistance: "Commercial assistance", joint_sales: "Joint sales meeting", proposal_review: "Proposal review", training: "Training", escalation: "Escalation" }
+export const ROUTE_LABELS: Record<string, string> = { technical_scoping: "Technical scoping", bespoke_discovery: "Bespoke discovery", commercial_assistance: "Commercial assistance", joint_sales: "Joint sales meeting", proposal_review: "Proposal review", training: "Training", escalation: "Escalation" }
 const topicLabel = (t: string) => t.replace(/-/g, " ").replace(/^./, (c) => c.toUpperCase()).replace(/\bseo\b/i, "SEO").replace(/\bdns\b/i, "DNS").replace(/\bcrm\b/i, "CRM").replace(/\bai\b/i, "AI")
 
 /** Sends an ordinary partner meeting request. Nothing is booked until ScaleSmiths confirms a time. */
-function RequestHelp({ route, purpose, context }: { route: string | null; purpose: string; context: string }) {
+export function RequestHelp({ route, purpose, context }: { route: string | null; purpose: string; context: string }) {
   const [open, setOpen] = useState(false)
   const [type, setType] = useState(route ?? "technical_scoping")
   const [when, setWhen] = useState("")
@@ -67,7 +67,12 @@ export function KnowledgeBase({ nav }: { nav: PartnerNav }) {
   const [data, setData] = useState<{ entries: Entry[]; topics: string[] } | null>(null)
   const [error, setError] = useState("")
   const input = useRef<HTMLInputElement>(null)
-  useEffect(() => { input.current?.focus() }, [])
+  useEffect(() => {
+    // B1.5: other partner pages deep-link to an answer with ?q=…
+    const q = new URLSearchParams(window.location.search).get("q")?.slice(0, 200).trim()
+    if (q) { setQuery(q); setSubmitted(q) }
+    input.current?.focus()
+  }, [])
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "/" && document.activeElement?.tagName !== "INPUT" && document.activeElement?.tagName !== "TEXTAREA") { e.preventDefault(); input.current?.focus() } }
     window.addEventListener("keydown", onKey); return () => window.removeEventListener("keydown", onKey)

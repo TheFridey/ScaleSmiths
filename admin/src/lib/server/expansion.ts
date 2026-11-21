@@ -4,6 +4,9 @@ import { sql } from 'drizzle-orm'
 import { db, type AdminDatabaseTransaction } from '@/lib/db'
 import { requireCapability } from './rbac'
 import { issueInvitation } from './partner-invitations'
+import { founderAgreementRegister, reissueAgreement } from './partner-agreements-core'
+import { notifyPartner, partnerPortalOrigin } from './partner-notifications'
+import { canTransition, FOUNDER_REVIEW_STATUSES, APPLICATION_STATUS_LABELS, isApplicationStatus } from '@/lib/partner-lifecycle'
 import { founderOperations } from './empower-guidance'
 import { runApplicantRetention } from './expansion-retention'
 import { ExpansionError, expansionText, expansionId, expansionInteger, prospectDomain, parseDiscovery, technicalReviewFlags, assertPartnerTransition, capacityPeriod } from '@/lib/expansion'
@@ -147,7 +150,11 @@ export async function founderSnapshot() {
   ])
   const gates: Row = {}
   for (const o of opportunities.rows as Row[]) if (!['closed_lost','withdrawn','contract_accepted'].includes(String(o.status))) gates[String(o.id)] = (await exclusivityOutcome(tx,o)).status
-  return { sectors:sectors.rows,areas:areas.rows,markets:markets.rows,exclusivities:exclusivities.rows,exclusivityStatus:gates,discountPolicies:discountPolicies.rows,additionalClaims:claims.rows,planSettings:planSettings.rows,applications:applications.rows,partners:partners.rows,opportunities:opportunities.rows,capacity:capacity.rows,resources:resources.rows,clients:clients.rows }
+  const agreementRegister = await founderAgreementRegister(tx)
+  // Founder-only audit trail for recruitment: review decisions, invitations and agreement events, newest first.
+  const applicationAudit = await tx.execute(sql`select a.entity_id,a.action,a.details,a.created_at,u.display_name actor_name from expansion_audit a left join admin_users u on u.id=a.actor_id
+    where a.action in ('application_reviewed','invitation_issued','agreement_reissued','partner_revoked') order by a.created_at desc limit 300`)
+  return { agreementRegister,applicationAudit:applicationAudit.rows,sectors:sectors.rows,areas:areas.rows,markets:markets.rows,exclusivities:exclusivities.rows,exclusivityStatus:gates,discountPolicies:discountPolicies.rows,additionalClaims:claims.rows,planSettings:planSettings.rows,applications:applications.rows,partners:partners.rows,opportunities:opportunities.rows,capacity:capacity.rows,resources:resources.rows,clients:clients.rows }
   })
   // Operation Empower B1.6: the founder operations queue over existing records (no new state, no private Academy progress). It runs in its
   // own read transaction after the snapshot, so a failure only marks the queue unavailable and never takes the founder dashboard down.
@@ -219,9 +226,20 @@ export async function partnerMutation(input: Input) {
     return {id}
   })
 }
+type Outgoing = Parameters<typeof notifyPartner>[1]
+/** Emails queued by a founder decision are sent only after that decision commits, each in its own short transaction. */
+async function deliverOutbox(outbox: Outgoing[]) {
+  const results: { kind: string; status: string }[] = []
+  for (const message of outbox) {
+    try { const r = await db.transaction(tx => notifyPartner(tx, message)); results.push({ kind: message.email.kind, status: r.status }) }
+    catch { results.push({ kind: message.email.kind, status: 'failed' }) }
+  }
+  return results
+}
 export async function founderMutation(input: Input) {
   const actor = await requireCapability('expansion.manage')
-  return db.transaction(async tx => {
+  const outbox: Outgoing[] = []
+  const result = await db.transaction(async tx => {
     await currentActor(tx,actor,'expansion.manage')
     if (input.action === 'preview_applicant_retention' || input.action === 'purge_applicants' ||
         input.action === 'set_applicant_retention_hold' || input.action === 'release_applicant_retention_hold') {
@@ -229,23 +247,49 @@ export async function founderMutation(input: Input) {
     }
     if (input.action === 'review_application') {
       const id = expansionInteger(input.id,'application',1,2147483647)
-      const statuses = ['under_review','conversation_arranged','assessment_in_progress','approved_in_principle','agreement_pending','onboarding','declined','withdrawn','archived']
-      if (!statuses.includes(String(input.status))) throw new ExpansionError('Invalid recruitment state.')
+      if (!(FOUNDER_REVIEW_STATUSES as readonly string[]).includes(String(input.status))) throw new ExpansionError('Invalid recruitment state.')
       const current = await tx.execute(sql`select * from partner_applications where id=${id} for update`)
       if (!current.rows[0] || ['activated','archived'].includes(String(current.rows[0].status))) throw new ExpansionError('Application cannot be reviewed.',409)
+      const from = String(current.rows[0].status)
+      // Same map as the database guard (migration 0095); checked here so the founder gets a clear explanation.
+      if (!canTransition(from,input.status)) throw new ExpansionError(`An application cannot move from "${isApplicationStatus(from)?APPLICATION_STATUS_LABELS[from]:from}" to "${APPLICATION_STATUS_LABELS[input.status as keyof typeof APPLICATION_STATUS_LABELS]}".`,409)
       const confirmations = {legal:input.legal===true,agreement:input.agreement===true,independentStatus:input.independentStatus===true,operations:input.operations===true,confirmedBy:actor.id,confirmedAt:new Date().toISOString()}
       let residence: string | null = null
       try { residence = normaliseCountry(input.residenceCountry) } catch { throw new ExpansionError('Use a two-letter ISO country code for the applicant residence.') }
       // Residence is recorded for review only. International applicants may be considered; nothing here authorises operating or activation.
+      // The applicant message is the only text that can reach the applicant; internal review notes never do.
+      const applicantMessage = input.status === 'information_requested' && from !== 'information_requested' ? expansionText(input.applicantMessage,'Message to the applicant',2000) : null
       await tx.execute(sql`update partner_applications set status=${String(input.status)},review_notes=${expansionText(input.notes,'Review notes',6000)},onboarding_confirmations=${JSON.stringify(confirmations)}::jsonb,residence_country=coalesce(${residence},residence_country) where id=${id}`)
-      await audit(tx,actor.id,id,'application_reviewed',{status:input.status,confirmations})
+      await audit(tx,actor.id,id,'application_reviewed',{from,status:input.status,confirmations,applicantMessage})
+      const applicant = current.rows[0] as Row
+      if (input.notifyApplicant === true && from !== input.status && (input.status === 'information_requested' || input.status === 'declined')) {
+        outbox.push({ to: String(applicant.email), applicationId: id, actorId: actor.id, idempotencyKey: `application-${id}-${String(input.status)}-${randomUUID()}`,
+          email: input.status === 'declined' ? { kind: 'application_declined', name: String(applicant.name) } : { kind: 'information_requested', name: String(applicant.name), message: applicantMessage as string } })
+      }
       return {id}
     }
     if (input.action === 'invite') {
       let operatingCountry: string | null = null
       try { operatingCountry = input.operatingCountry === undefined || input.operatingCountry === '' ? 'GB' : normaliseCountry(input.operatingCountry) } catch { throw new ExpansionError('Use a two-letter ISO country code for the operating market.') }
-      const result = await issueInvitation(tx,expansionInteger(input.id,'application',1,2147483647),actor.id,expansionText(input.agreementVersion,'Agreement version',100),operatingCountry as string)
-      await audit(tx,actor.id,result.partnerId,'invitation_issued')
+      const applicationId = expansionInteger(input.id,'application',1,2147483647)
+      const result = await issueInvitation(tx,applicationId,actor.id,input.agreementVersionId,operatingCountry as string)
+      await audit(tx,actor.id,result.partnerId,'invitation_issued',{agreementVersionId:input.agreementVersionId,emailed:input.emailInvitation===true})
+      if (input.emailInvitation === true) {
+        const details = (await tx.execute(sql`select a.name,a.email,cv.title,cv.version from partner_applications a join expansion_partners p on p.application_id=a.id join empower_content_versions cv on cv.id=p.agreement_content_version_id where a.id=${applicationId}`)).rows[0] as Row
+        // The secret link exists only here and in the founder's browser; it is never stored. Retrying means issuing a new invitation.
+        outbox.push({ to: String(details.email), applicationId, partnerId: result.partnerId, actorId: actor.id, idempotencyKey: `invitation-${result.partnerId}-${result.expiresAt}`,
+          email: { kind: 'invitation', name: String(details.name), link: `${partnerPortalOrigin()}/partner/activate#token=${result.invitationToken}`, expiresAt: result.expiresAt, agreementTitle: String(details.title), agreementVersion: Number(details.version) } })
+      }
+      return result
+    }
+    if (input.action === 'reissue_agreement') {
+      const result = await reissueAgreement(tx,expansionId(input.id),input.agreementVersionId)
+      await audit(tx,actor.id,result.partnerId,'agreement_reissued',{versionId:result.versionId,label:result.label})
+      if (input.notifyPartner === true) {
+        const details = (await tx.execute(sql`select u.email,u.display_name,cv.title,cv.version from expansion_partners p join admin_users u on u.id=p.user_id join empower_content_versions cv on cv.id=p.agreement_content_version_id where p.id=${result.partnerId}`)).rows[0] as Row
+        outbox.push({ to: String(details.email), partnerId: result.partnerId, actorId: actor.id, idempotencyKey: `agreement-reissued-${result.partnerId}-${result.versionId}`,
+          email: { kind: 'agreement_reissued', name: String(details.display_name), agreementUrl: `${partnerPortalOrigin()}/partner/agreement`, agreementTitle: String(details.title), agreementVersion: Number(details.version) } })
+      }
       return result
     }
     if (input.action === 'set_partner_operating_market') {
@@ -616,4 +660,6 @@ export async function founderMutation(input: Input) {
     } else throw new ExpansionError('Unknown founder action.')
     return {id}
   })
+  if (!outbox.length) return result
+  return { ...result, notifications: await deliverOutbox(outbox) }
 }

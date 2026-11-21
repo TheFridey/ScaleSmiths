@@ -10,6 +10,9 @@ interface LogoProps {
   label?: string
 }
 
+const WORDMARK_WIDTH = 662
+const WORDMARK_HEIGHT = 85
+
 /**
  * Site mark is the coding-bracket S extracted from the forge brand plate
  * (gold &lt; over silver &gt;). Optional wordmark sits beside it for wider lockups.
@@ -32,14 +35,16 @@ export function Logo({ size = 36, showName = true, className, href = "/", label 
       {mark}
       {showName ? (
         <>
-          <span
-            className="font-syne font-semibold uppercase leading-none tracking-[0.22em]"
-            style={{ fontSize: Math.max(12, Math.round(size * 0.38)) }}
-            aria-hidden="true"
-          >
-            <span className="text-[#d4cdc3]">Scale</span>
-            <span className="text-acc">Smiths</span>
-          </span>
+          {/* The silver and gold metallic wordmark is a brand asset: render it, never retype it. */}
+          <Image
+            src="/brand/scalesmiths-wordmark.webp"
+            alt=""
+            width={WORDMARK_WIDTH}
+            height={WORDMARK_HEIGHT}
+            quality={90}
+            className="block w-auto max-w-full shrink object-contain"
+            style={{ height: Math.max(14, Math.round(size * 0.56)) }}
+          />
           <span className="sr-only">{label}</span>
         </>
       ) : null}
@@ -47,7 +52,7 @@ export function Logo({ size = 36, showName = true, className, href = "/", label 
   )
 
   return href ? (
-    <Link href={href} prefetch={false} aria-label={`${label} home`}>
+    <Link href={href} prefetch={false} aria-label={`${label} home`} className="inline-flex min-w-0 shrink-0 rounded-lg">
       {inner}
     </Link>
   ) : (

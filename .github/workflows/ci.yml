@@ -296,6 +296,120 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+  empower-browser:
+    name: Empower Browser Acceptance
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: ss_empower_browser_e2e
+          POSTGRES_USER: scalesmiths_ci
+          POSTGRES_PASSWORD: local_ci_only
+        ports:
+          - 55440:5432
+        options: >-
+          --health-cmd "pg_isready -U scalesmiths_ci -d ss_empower_browser_e2e"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      # Disposable loopback database only; every identity is synthetic (.invalid). Runtime connects as the restricted admin role.
+      POSTGRES_PROVISIONING_DATABASE_URL: postgresql://scalesmiths_ci:local_ci_only@127.0.0.1:55440/ss_empower_browser_e2e
+      MIGRATION_DATABASE_URL: postgresql://scalesmiths_expansion_migration:local_ci_only_migration@127.0.0.1:55440/ss_empower_browser_e2e
+      ADMIN_DATABASE_URL: postgresql://scalesmiths_expansion_admin:local_ci_only_admin@127.0.0.1:55440/ss_empower_browser_e2e
+      WEB_DATABASE_URL: postgresql://scalesmiths_expansion_web:local_ci_only_web@127.0.0.1:55440/ss_empower_browser_e2e
+      EMPOWER_ADMIN_BASE_URL: http://localhost:3103
+      EMPOWER_BROWSER_DATABASE_URL: postgresql://scalesmiths_expansion_admin:local_ci_only_admin@127.0.0.1:55440/ss_empower_browser_e2e
+      EMPOWER_BROWSER_SUPERUSER_URL: postgresql://scalesmiths_ci:local_ci_only@127.0.0.1:55440/ss_empower_browser_e2e
+    defaults:
+      run:
+        working-directory: admin
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+
+      - name: Setup Node
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: admin/package-lock.json
+
+      - name: Use supported npm
+        run: npm install --global npm@10.9.2
+
+      - name: Install admin and web migration dependencies
+        run: |
+          npm ci --no-audit --no-fund
+          npm ci --prefix ../web --no-audit --no-fund
+
+      - name: Generate throwaway test secrets for this run only
+        run: |
+          # Never production values: random per run, masked in logs, discarded with the runner.
+          auth_secret="$(openssl rand -hex 32)"; mfa_key="$(openssl rand -hex 32)"
+          echo "::add-mask::$auth_secret"; echo "::add-mask::$mfa_key"
+          { echo "AUTH_SECRET=$auth_secret"; echo "MFA_ENCRYPTION_KEY=$mfa_key"; } >> "$GITHUB_ENV"
+
+      - name: Provision restricted roles, migrate and verify privileges
+        run: |
+          set -o pipefail
+          mkdir -p ../ci-artifacts
+          {
+            node scripts/provision-postgres-roles.mjs --confirm-provision
+            node scripts/migrate-shared-test-database.mjs
+            node scripts/provision-postgres-roles.mjs --confirm-provision
+            node scripts/verify-postgres-privileges.mjs
+          } 2>&1 | tee ../ci-artifacts/empower-browser-roles.log
+
+      - name: Seed synthetic founders (with MFA) and partners
+        env:
+          EMPOWER_BROWSER_DATABASE_URL: postgresql://scalesmiths_ci:local_ci_only@127.0.0.1:55440/ss_empower_browser_e2e
+        run: node scripts/seed-empower-browser.mjs
+
+      - name: Build production admin server
+        run: npm run build
+
+      - name: Start production admin server
+        env:
+          NODE_ENV: production
+          AUTH_URL: http://localhost:3103
+          AUTH_TRUST_HOST: "true"
+          EMPOWER_FOUNDER_CONTENT_ENABLED: "true"
+          PARTNER_ACADEMY_ENABLED: "true"
+          PARTNER_RESOURCE_CENTRE_ENABLED: "true"
+          PARTNER_KNOWLEDGE_BASE_ENABLED: "true"
+          PARTNER_OBJECTION_HANDLING_ENABLED: "true"
+          PARTNER_UNIFIED_WORKSPACE_ENABLED: "true"
+        run: |
+          nohup node ./node_modules/next/dist/bin/next start -H 127.0.0.1 -p 3103 > ../ci-artifacts/empower-server.log 2>&1 &
+          for attempt in $(seq 1 60); do curl -sf -o /dev/null http://127.0.0.1:3103/login && exit 0; sleep 1; done
+          echo "Admin server did not become ready"; tail -50 ../ci-artifacts/empower-server.log; exit 1
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Empower browser journeys (B1.1 to B1.6)
+        run: |
+          set -o pipefail
+          PLAYWRIGHT_CHROMIUM_EXECUTABLE="$(node -e "console.log(require('playwright-core').chromium.executablePath())")" \
+            npx playwright test -c playwright.empower.config.ts 2>&1 | tee ../ci-artifacts/empower-browser.log
+          # The specs skip themselves without their variables; CI must never pass on a skipped journey.
+          sed -E 's/\x1b\[[0-9;]*m//g' ../ci-artifacts/empower-browser.log > ../ci-artifacts/empower-browser.plain.log
+          grep -E "[0-9]+ passed" ../ci-artifacts/empower-browser.plain.log
+          if grep -Eq "[0-9]+ (skipped|did not run)" ../ci-artifacts/empower-browser.plain.log; then echo "Empower browser journeys were skipped"; exit 1; fi
+
+      - name: Upload Empower browser evidence and failure artifacts
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        with:
+          name: empower-browser-acceptance
+          path: |
+            ci-artifacts
+            admin/test-results/empower
+            docs/expansion/empower/evidence
+          if-no-files-found: ignore
+          retention-days: 14
+
   database:
     name: Database and Migrations
     runs-on: ubuntu-latest
@@ -393,7 +507,7 @@ jobs:
           EXPANSION_WEB_TEST_DATABASE_URL: postgresql://scalesmiths_expansion_web:local_ci_only_web@127.0.0.1:55440/ss_expansion_test
         run: |
           set -o pipefail
-          npx vitest run --config vitest.integration.config.ts test/integration/expansion-concurrency.integration.test.ts test/integration/empower-content.integration.test.ts test/integration/empower-academy.integration.test.ts test/integration/empower-resources.integration.test.ts test/integration/empower-knowledge.integration.test.ts test/integration/empower-guidance.integration.test.ts 2>&1 | tee ../ci-artifacts/expansion-concurrency.log
+          npx vitest run --config vitest.integration.config.ts test/integration/expansion-concurrency.integration.test.ts test/integration/empower-content.integration.test.ts test/integration/empower-academy.integration.test.ts test/integration/empower-resources.integration.test.ts test/integration/empower-knowledge.integration.test.ts test/integration/partner-onboarding.integration.test.ts test/integration/empower-objections.integration.test.ts test/integration/empower-guidance.integration.test.ts 2>&1 | tee ../ci-artifacts/expansion-concurrency.log
           # The suite skips itself when its database variable is absent; CI must never pass on a skipped suite.
           sed -E 's/\x1b\[[0-9;]*m//g' ../ci-artifacts/expansion-concurrency.log > ../ci-artifacts/expansion-concurrency.plain.log
           grep -E "Tests +[0-9]+ passed" ../ci-artifacts/expansion-concurrency.plain.log

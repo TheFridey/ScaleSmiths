@@ -13,7 +13,8 @@ Recorded 2026-11-20 by an agent. Model review is not human approval and is not p
 | Accessibility review | PARTIAL: token-level review complete; no rendered screens exist to test |
 | Knowledge-check questions | NOT STARTED (written per lesson after approval; finding F14) |
 | PR #156 (planning) | COMPLETE: merged into `master` as `8950011` (owner instruction), CI, Security and CodeQL green |
-| B1 implementation (`feature/operation-empower`) | B1.1 content governance, B1.2 Partner Academy, B1.3 Resource Centre and B1.4 Knowledge Base COMPLETE on the branch, tested, not approved or enabled (reports: [B1.2](B1-2-ACADEMY-REPORT.md), [B1.3](B1-3-RESOURCE-CENTRE-REPORT.md), [B1.4](B1-4-KNOWLEDGE-BASE-REPORT.md)); B1.5 onwards NOT STARTED |
+| B1 implementation (`feature/operation-empower`) | B1.1 content governance, B1.2 Partner Academy, B1.3 Resource Centre and B1.4 Knowledge Base COMPLETE on the branch, tested, not approved or enabled (reports: [B1.2](B1-2-ACADEMY-REPORT.md), [B1.3](B1-3-RESOURCE-CENTRE-REPORT.md), [B1.4](B1-4-KNOWLEDGE-BASE-REPORT.md)); merged as PR #157 |
+| B1.5 objection handling (`feature/operation-empower-b1-5`) | Implemented and tested, draft PR; nothing approved, published or enabled ([report](B1-5-OBJECTION-HANDLING-REPORT.md)) |
 | B1 deployment, publication, partner activation | NOT STARTED; not authorised |
 
 ## B0 merge record (2026-11-20)

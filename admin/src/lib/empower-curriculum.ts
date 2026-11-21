@@ -228,3 +228,84 @@ export function parseKnowledgeBase(markdown: string, refs: { r08: string; r11: s
       audience: partnerOnly ? "partner_only" : "client_facing", cadence: COMMERCIAL_TOPIC_SET.has(topic) ? "commercial" : "service", sources }] as ParsedKnowledge[]
   })
 }
+
+/* ---------------------------------------------------------------------------------------------------------------------------
+ * Operation Empower B1.5: the twelve objection responses in resources/R08-objection-handling-playbook.md, imported as drafts.
+ * Category and cadence are default suggestions for founder review; they are not approvals. Ambiguous source rows are imported
+ * without the ambiguous field and reported, never guessed.
+ * ------------------------------------------------------------------------------------------------------------------------- */
+export const OBJECTION_CATEGORY_BY_ID: Record<string, string> = {
+  "AP-OBJ-01": "price", "AP-OBJ-02": "existing-supplier", "AP-OBJ-03": "seo", "AP-OBJ-04": "website-migration", "AP-OBJ-05": "delivery-times",
+  "AP-OBJ-06": "website-migration", "AP-OBJ-07": "decision-timing", "AP-OBJ-08": "ownership", "AP-OBJ-09": "competitor-comparison",
+  "AP-OBJ-10": "partner-independence", "AP-OBJ-11": "hosting", "AP-OBJ-12": "decision-timing",
+}
+/** Commercial categories, and contract ownership, take the 3-month review cadence. */
+const COMMERCIAL_OBJECTIONS = new Set(["AP-OBJ-01", "AP-OBJ-08"])
+const ROUTE_WORDS: [RegExp, string][] = [
+  [/commercial assistance/i, "commercial_assistance"], [/technical scoping/i, "technical_scoping"], [/joint sales/i, "joint_sales"],
+  [/bespoke discovery/i, "bespoke_discovery"], [/proposal review/i, "proposal_review"], [/\bescalation\b/i, "escalation"],
+]
+export const objectionSlug = (id: string) => `objection-${id.toLowerCase().replace(/^ap-obj-/, "")}`
+
+export type ParsedObjection = {
+  id: string; slug: string; category: string; cadence: "service" | "commercial"; concern: string; clientLine: string; guidance: string
+  discoveryQuestions: string[]; limitation: string; escalation: { required: "never" | "always" | "when"; condition?: string; route?: string } | null
+  relatedCodes: string[]; sources: string[]; blocked: string | null; notes: string[]
+}
+
+/** "Never", "X → route words", "Always for X → route words". More than one route is refused (null) rather than reduced to one. */
+export function parseObjectionEscalation(text: string): ParsedObjection["escalation"] {
+  const t = stripEnd(text)
+  if (/^never$/i.test(t)) return { required: "never" }
+  const [before, after = ""] = t.split("→").map((s) => s.trim())
+  const routes = ROUTE_WORDS.filter(([re]) => re.test(after)).map(([, r]) => r)
+  if (routes.length !== 1 || /\bor\b/i.test(after)) return null
+  const route = routes[0]
+  if (/^always$/i.test(before)) return { required: "always", route }
+  const condition = before.replace(/^always\s+(for\s+)?/i, "").replace(/^(when|if)\s+/i, "").trim()
+  return { required: "when", condition: condition.charAt(0).toLowerCase() + condition.slice(1), route }
+}
+
+export function parseObjectionPlaybook(markdown: string, problems: string[]): ParsedObjection[] {
+  const text = clean(markdown)
+  const limits: Record<string, { limitation: string; refs: string[] }> = {}
+  const out: ParsedObjection[] = []
+  for (const line of text.split("\n")) {
+    const cells = line.split("|").map((c) => c.trim())
+    const id = cells[1]?.match(/^`(AP-OBJ-\d{2})`$/)?.[1]
+    if (!id) continue
+    if (cells.length === 5) { // limitations table: | ID | limitation | refs |
+      limits[id] = { limitation: stripEnd(cells[2]) + ".", refs: cells[3].split(/,\s*/).map((r) => r.trim()).filter((r) => /^(R\d{2}|KB-[A-Z]+-\d{2})$/.test(r)) }
+    }
+  }
+  for (const line of text.split("\n")) {
+    const cells = line.split("|").map((c) => c.trim())
+    const id = cells[1]?.match(/^`(AP-OBJ-\d{2})`$/)?.[1]
+    if (!id || cells.length < 9) continue
+    const notes: string[] = []
+    const objectionCell = cells[2]
+    const concern = unquote(objectionCell.replace(/\s*\([^)]*\)\s*$/, ""))
+    const faqs = [...objectionCell.matchAll(/faq:[a-z0-9-]+/g)].map((m) => m[0])
+    const question = unquote(cells[3])
+    const discoveryQuestions = /^[—-]$/.test(question) || !question ? [] : [question]
+    if (!discoveryQuestions.length) notes.push("No discovery question in the source; founders should add one or confirm none is needed.")
+    const guidance = cells[4].replace(/\s+/g, " ").trim()
+    if (/PROPOSED POLICY/i.test(guidance)) notes.push("Partner guidance refers to a proposed policy that is not yet approved.")
+    const clientLine = unquote(cells[5])
+    const escalation = parseObjectionEscalation(cells[6])
+    if (!escalation) notes.push(`Escalation "${stripEnd(cells[6])}" names zero or several routes; left blank for a founder to decide.`)
+    const status = cells[7]
+    const blocked = /BLOCKED/.test(status) ? (status.match(/AP-[A-Z]+-\d{2}/)?.[0] ?? "a founder decision") : null
+    if (blocked) notes.push(`Source status is BLOCKED on ${blocked}; do not submit until it is decided.`)
+    const limit = limits[id]
+    if (!limit) problems.push(`${id}: no limitation row in the playbook`)
+    const category = OBJECTION_CATEGORY_BY_ID[id]
+    if (!category) problems.push(`${id}: no category mapping`)
+    if (!concern || !clientLine || !guidance) problems.push(`${id}: missing concern, client line or guidance`)
+    out.push({ id, slug: objectionSlug(id), category, cadence: COMMERCIAL_OBJECTIONS.has(id) ? "commercial" : "service", concern, clientLine, guidance, discoveryQuestions,
+      limitation: limit?.limitation ?? "", escalation, relatedCodes: limit?.refs ?? [], sources: [`docs/expansion/empower/resources/R08-objection-handling-playbook.md#${id.toLowerCase()}`, ...faqs], blocked, notes })
+  }
+  const ids = out.map((o) => o.id)
+  if (new Set(ids).size !== ids.length) problems.push("Duplicate objection IDs in the playbook")
+  return out
+}

@@ -44,7 +44,7 @@ Configure these exact check-run contexts after each has run on a pull request. G
 - `Cross-browser Smoke` (`CI / Cross-browser Smoke`)
 - `Admin` (`CI / Admin`)
 - `Admin Forge E2E` (`CI / Admin Forge E2E`)
-- `Empower Browser Acceptance` (`CI / Empower Browser Acceptance`): every Empower partner and founder browser journey (B1.1 to B1.5) on a production build, disposable database and synthetic MFA identities; fails if a journey is skipped
+- `Empower Browser Acceptance` (`CI / Empower Browser Acceptance`): every Empower partner and founder browser journey (B1.1 to B1.6) and the Launch Ready partner onboarding journey on a production build, disposable database and synthetic MFA identities; fails if a journey is skipped
 - `Database and Migrations` (`CI / Database and Migrations`)
 - `Backup and Restore` (`CI / Backup and Restore`)
 - `Root Hygiene` (`CI / Root Hygiene`)

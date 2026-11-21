@@ -1,0 +1,63 @@
+{
+  "cli_version": "0.12.2",
+  "checkpoint_id": "01M7Z4P5S0Y9TW642X816JCJJK",
+  "strategy": "manual-commit",
+  "branch": "feature/operation-launch-ready",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "admin/playwright.empower.config.ts",
+    "admin/src/app/partner/activate/activate.css",
+    "admin/src/components/expansion/expansion.css",
+    "admin/test/e2e/partner-onboarding.spec.ts",
+    "docs/launch-ready/evidence/activation-agreement-1024.png",
+    "docs/launch-ready/evidence/activation-agreement-1440.png",
+    "docs/launch-ready/evidence/activation-agreement-390.png",
+    "docs/launch-ready/evidence/activation-agreement-768.png",
+    "docs/launch-ready/evidence/activation-welcome-1024.png",
+    "docs/launch-ready/evidence/activation-welcome-1440.png",
+    "docs/launch-ready/evidence/activation-welcome-390.png",
+    "docs/launch-ready/evidence/activation-welcome-768.png",
+    "docs/launch-ready/evidence/founder-recruitment-1024.png",
+    "docs/launch-ready/evidence/founder-recruitment-1440.png",
+    "docs/launch-ready/evidence/founder-recruitment-390.png",
+    "docs/launch-ready/evidence/founder-recruitment-768.png",
+    "docs/launch-ready/evidence/partner-agreement-1024.png",
+    "docs/launch-ready/evidence/partner-agreement-1440.png",
+    "docs/launch-ready/evidence/partner-agreement-390.png",
+    "docs/launch-ready/evidence/partner-agreement-768.png",
+    "docs/launch-ready/evidence/partner-first-login-1024.png",
+    "docs/launch-ready/evidence/partner-first-login-1440.png",
+    "docs/launch-ready/evidence/partner-first-login-390.png",
+    "docs/launch-ready/evidence/partner-first-login-768.png"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 44,
+    "cache_creation_tokens": 29611,
+    "cache_read_tokens": 11142899,
+    "output_tokens": 19393,
+    "api_call_count": 21
+  },
+  "redaction": {
+    "replacements": 826,
+    "layers": {
+      "betterleaks": 334,
+      "connection_string": 0,
+      "credential_key": 0,
+      "credential_value": 42,
+      "credentialed_uri": 673,
+      "entropy": 77,
+      "key_context": 19,
+      "provider_token": 0,
+      "shell_stdin": 0
+    }
+  }
+}

@@ -476,6 +476,10 @@
     {"idx":87,"version":"7","when":1794951004016,"tag":"0087_expansion_partner_profiles","breakpoints":true},
     {"idx":88,"version":"7","when":1794951005016,"tag":"0088_expansion_review_medium_findings","breakpoints":true},
     {"idx":89,"version":"7","when":1794951006016,"tag":"0089_expansion_profile_entitlement_view","breakpoints":true},
-    {"idx":90,"version":"7","when":1794951007016,"tag":"0090_expansion_domain_release_guard_hardening","breakpoints":true}
+    {"idx":90,"version":"7","when":1794951007016,"tag":"0090_expansion_domain_release_guard_hardening","breakpoints":true},
+    {"idx":91,"version":"7","when":1794951008016,"tag":"0091_empower_content_foundation","breakpoints":true},
+    {"idx":92,"version":"7","when":1794951009016,"tag":"0092_empower_academy","breakpoints":true},
+    {"idx":93,"version":"7","when":1794951010016,"tag":"0093_empower_academy_partner_lessons","breakpoints":true},
+    {"idx":94,"version":"7","when":1794951011016,"tag":"0094_empower_resource_search","breakpoints":true}
   ]
 }

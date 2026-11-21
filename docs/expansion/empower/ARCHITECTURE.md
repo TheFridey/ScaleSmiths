@@ -27,7 +27,7 @@
   │ Draft editor → Review → Approve → Publish        │      │ Academy   Resources   Knowledge search  │
   │ Supersede / Archive / Review-due queue           │      │ Objection workspace   My progress       │
   └───────────────┬──────────────────────────────────┘      └───────────────────┬─────────────────────┘
-                  │ expansion.founder (writes)                                  │ expansion.partner (reads)
+                  │ expansion.manage (writes)                                   │ expansion.partner (reads)
                   ▼                                                             ▼
         content service (server only)  ──────────── published, partner-audience, in-review-window rows only
                   │
@@ -62,7 +62,7 @@ draft ──► in_review ──► approved ──► published ──► super
 
 Mapping to the publication states named in the Operation Empower directive: *submitted for review* is `in_review`; *changes requested* is an `empower_content_approvals` row with `decision='changes_requested'` that returns the version to editing as a new draft version (the reviewed version is kept); *withdrawn* is `published → archived` with a mandatory reason and an audit event, used when published content is found to be wrong. A correction is always a new version that goes through review again; a published version is never edited.
 
-- `in_review → approved` requires an `empower_content_approvals` row with `decision='approved'` by a user holding `expansion.founder`, and it must be a **different** founder from the version's author when two founders are active (founder decision `AP-GOV-04`).
+- `in_review → approved` requires an `empower_content_approvals` row with `decision='approved'` by a user holding `expansion.manage`, and it must be a **different** founder from the version's author when two founders are active (founder decision `AP-GOV-04`).
 - `approved → published` is a separate action, so approval and release can be scheduled apart.
 - Publishing version N of an item moves the previously published version to `superseded` in the same transaction. There is at most one published version per item (partial unique index).
 - A published version whose `review_by` date has passed is **not served to partners** (fail closed) and appears in the founder "review due" queue. This mirrors `reviewExpiresAt` in `web/src/lib/public-claims.ts`.
@@ -140,7 +140,7 @@ What would justify revisiting: a corpus of thousands of items, evidence from zer
 | Onboarding toolkit | Link published handbook, brochure, pricing and commission references to `brochures`, `pricing_documents`, `commission_documents` and `academy` items. Requires the toolkit join to accept Empower items (small change) or the content to remain mirrored in `expansion_resources` |
 | Meetings | Every escalation rule names a meeting type. "Request help" in the knowledge viewer opens the existing meeting request form pre-filled with the type and a reference to the entry |
 | Audit | Every content write calls the existing `audit()` helper with an `empower_*` event name |
-| RBAC | No new role. Reads: `expansion.partner`. Writes and approvals: `expansion.founder`. Founder preview uses the partner renderer with a "preview" banner |
+| RBAC | No new role. Reads: `expansion.partner`. Writes and approvals: `expansion.manage`. Founder preview uses the partner renderer with a "preview" banner |
 | `partner-programme.ts` | Commercial lessons and the commission reference embed figures by **reference** to the programme constants, rendered with the plan version they come from, so they cannot drift from the engine |
 
 ## 7. Feature flags
@@ -154,6 +154,48 @@ Following the B0 pattern (everything defaults off):
 | `EMPOWER_FOUNDER_CONTENT_ENABLED` | `false` in production until Phase 1 is accepted | Founder content workspace |
 
 With a flag off, partner routes return 404 and the tab is hidden. The founder workspace can be enabled first so content can be loaded and approved before partners see anything.
+
+## 7a. As built in B1.1 (migration 0091)
+
+- Tables `empower_content_items`, `empower_content_versions`, `empower_content_approvals`. Statuses add `changes_requested` (terminal for that version) to the model above; a rejected version is archived with the decision as its reason.
+- Drafts are editable; from submission onwards a version is immutable (`empower_content_lifecycle` trigger). One published version and one in-progress version (draft, in review or approved) per item, by partial unique indexes.
+- Each item carries `review_cadence_months` (3 commercial, 6 service, `AP-GOV-06`); the approval trigger refuses a review date outside it. Commercial knowledge topics must use 3 months.
+- Founders are holders of `expansion.manage` (owner and administrator roles); there is no separate `expansion.founder` capability. The two-founder rule counts active users in those roles.
+- Audit uses the existing append-only `expansion_audit` table with `empower_*` actions.
+- Not yet built: `empower_content_links`, the Markdown renderer, diff view, preview as partner, legacy read adapter and seed script. Bodies render as plain text.
+
+## 7b. As built in B1.2 (migration 0092): the Partner Academy
+
+This replaces the separate `empower_courses` / `empower_modules` / `empower_lessons` tables proposed in section 3.2: the B1.1 model already versions, reviews and publishes structured content, so a course is simply a content item of kind `course`.
+
+- **Course structure** lives in the course version's `fields`: `category`, `objectives[]`, optional `estimated_minutes`, and ordered `modules[]`, each with an ordered list of lesson item ids. It is edited freely while the course is a draft and is immutable from submission, like any version. `empower_course_structure_guard` refuses any structure that references a missing or non-lesson item, or repeats a lesson. Courses are partner-only (database check).
+- **Publication integrity.** A course can be submitted, and published, only when every linked lesson has a published, in-date version; the lesson rows are share-locked while this is checked, so a concurrent withdrawal is serialised. Lessons are approved on their own, by a founder other than their author, so no one can slip an unreviewed lesson of their own into someone else's course. The course itself needs the same two-founder approval.
+- **Serving (fail closed).** A partner sees a course only while its current version is published and in date and at least one of its lessons is too. A lesson whose current version is withdrawn or past its review date is listed as "Lesson under review" with no content. A course always shows each lesson's *current* published version, so a corrected lesson reaches partners without republishing the course.
+- **Knowledge checks** are part of the lesson version (`fields.checks`: single, multiple or true/false, each with approved answer and explanation), so they are approved, superseded and withdrawn with the lesson. Partners receive questions without answers; grading happens on the server.
+- **Learning records** (`empower_academy_completions`, `empower_academy_check_attempts`, `empower_academy_course_state`) are private to the partner, keyed by the server-derived partner id, and append-only except the "continue where you left off" pointer. The database accepts a completion or attempt only while `empower_academy_lesson_servable(course version, lesson version)` holds, and takes the timestamp from its own clock. A completion is unique per partner and lesson version, so repeated presses record one completion.
+- **Progress semantics.** Current progress counts lessons whose *current* published version the partner has completed. When a lesson gets a new version, the earlier completion is kept and shown as "updated since you read it"; the new version is not claimed as complete. When a course is superseded, progress is recomputed against its current lessons; when a course or lesson is withdrawn or expires, it stops being offered and every historical record is kept. Progress is reproducible from these rows alone. Knowledge-check attempts are recorded (answer given and result) because the directive requires feedback history; this replaces the earlier "attempted only" proposal and needs `AP-PRIV-04` for retention.
+- **Rendering.** `SafeMarkdown` maps `marked` tokens (pinned 18.1.2) directly to React elements: no HTML strings, raw HTML shown as text, images as alt text, links limited to HTTPS allow-listed hosts and Partner Portal paths.
+- **Routes and switches.** `/partner/academy` and `/partner/academy/[course]` pages and `/api/partner/academy` behind `PARTNER_ACADEMY_ENABLED` (default off), independent of `EMPOWER_FOUNDER_CONTENT_ENABLED`. The external-identity boundary in `rbac.ts` admits exactly these page paths for partners.
+- **Importer.** `admin/scripts/import-empower-curriculum.mjs` loads the planning package (13 courses, 38 modules, 91 lessons, 65 draft questions from `KNOWLEDGE-CHECKS.md`) as drafts only.
+
+## 7c. As built in B1.3 (migration 0094): the Resource Centre
+
+- **Resources** are B1.1 content items of kind `resource`, with `fields.summary`, `fields.category` (brochure, guide, checklist, template, reference) and optional `fields.related` (up to 10 lesson or resource item ids). Both audiences are served to partners; the audience ribbon says whether an item may be shared, and only client-facing items offer a copy control.
+- **Search** (section 4, as designed, minus `pg_trgm` and zero-result logging): `empower_search_document(title, body, fields)` builds a weighted `tsvector` (A title, question and aliases; B body, summary and answers; C category and topic) from the immutable version, with a GIN expression index restricted to published rows. Queries use `websearch_to_tsquery('english', …)` after deterministic synonym expansion; ranking is `ts_rank_cd` plus a boost for an exact or contained title match, ties broken by slug. Filters (category, audience, published, in date) are in SQL. Query text is limited to 200 characters and passed as a bound parameter.
+- **Synonyms** (`empower_search_synonyms`) are founder-managed in the studio; a synonym is switched off, never deleted or rewritten (database trigger), and every change is audited.
+- **Legacy library (AP-ENG-01, freeze with read adapter):** published, partner-audience `expansion_resources` rows appear read-only, labelled "Earlier library", matched by plain substring when searching; client-audience legacy rows are never shown.
+- **Downloads** return the approved version as `text/markdown` with its audience and approval details in a header, `nosniff`, no storage and no logging (`AP-PRIV-03`).
+- **Related content:** a resource lists its related published resources and, when the Academy is on, related lessons with a link into the course that contains them; Academy lessons list the published resources that name them as related.
+- **Routes and switch:** `/partner/resources`, `/partner/resources/[slug]`, `GET /api/partner/resources` behind `PARTNER_RESOURCE_CENTRE_ENABLED` (default off). The partner identity boundary admits exactly these page paths.
+- **Importer:** the 13 resource drafts (`resources/R01`–`R13`) import as drafts with their stated audience; R13 is imported partner-only because the file mixes client templates with partner instructions.
+
+## 7d. As built in B1.4 (no migration): the Knowledge Base
+
+- **Entries** are B1.1 content items of kind `knowledge` with the section 3.3 fields (question, answer, client explanation, limitation, escalation rule, condition and meeting route, aliases, topic). A knowledge version cannot be submitted without them.
+- **Search** reuses `empower_search_document` and the synonyms from B1.3. An exact match on the question or any alias (case-insensitive, trailing punctuation ignored) adds a fixed boost so it always ranks first; then `ts_rank_cd`; ties by slug. Topic filtering is in SQL against the approved topic list.
+- **Partner view** (`/partner/knowledge`, switch `PARTNER_KNOWLEDGE_BASE_ENABLED`, default off): search-first with the input focused and `/` to refocus; topic chips; the top result expanded; the client explanation first with a copy control only for client-facing entries; the precise answer, limitation, escalation rule and sources; related published resources.
+- **Escalation** uses the existing B0 meeting request (`request_meeting` on `/api/partner`), pre-filled with the entry's route and reference. The server derives the partner from the session; nothing is booked until a founder confirms. A search with no approved answer offers the same request instead of a guess.
+- **Importer:** the 32 planned entries import as drafts. Client explanations that point at the objection playbook or the pricing reference resolve to that approved wording; an entry naming more than one escalation route is refused; entries with no client-safe explanation are partner-only.
 
 ## 8. Open engineering decisions
 

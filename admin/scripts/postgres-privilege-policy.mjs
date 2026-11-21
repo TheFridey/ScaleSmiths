@@ -48,6 +48,11 @@ export const ADMIN_FUNCTION_GRANTS = [
   // Called by name from inside trigger bodies, which run as the invoking runtime role (trigger functions themselves need no grant).
   { schema: "public", name: "expansion_flag_qualifications", arguments: "uuid, text, text" },
   { schema: "public", name: "expansion_partner_entitlement_ok", arguments: "uuid, integer" },
+  // Operation Empower B1.2: course structure and Academy servability, called from trigger bodies and Academy reads.
+  { schema: "public", name: "empower_course_lesson_ids", arguments: "jsonb" },
+  { schema: "public", name: "empower_academy_lesson_servable", arguments: "uuid, uuid" },
+  // Operation Empower B1.3: Resource Centre search document (index expression and queries).
+  { schema: "public", name: "empower_search_document", arguments: "text, text, jsonb" },
 ]
 
 export const TENANT_RLS_FUNCTION_GRANTS = [

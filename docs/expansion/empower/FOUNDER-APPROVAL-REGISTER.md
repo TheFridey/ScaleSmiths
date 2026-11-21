@@ -11,9 +11,9 @@ Blocking columns: **P1** blocks Phase 1 (founder content workspace), **P2** bloc
 | `AP-GOV-01` | Partner role wording matches the final agreement | Founders, solicitor | Write agreement first, then align C01, C12 and R02 | N | Y | Y | `BLOCKED` (agreement) | |
 | `AP-GOV-02` | The Academy as optional and voluntary, with private progress, does not create employment indicators | Founders, employment solicitor | Keep optional, no targets, no scoring, no link to commission | N | N | Y | `FOUNDER DECISION` | |
 | `AP-GOV-03` | Founder visibility of partner progress | Founders, privacy adviser | Aggregates only; individual view only with partner opt-in | N | N | Y | `FOUNDER DECISION` | |
-| `AP-GOV-04` | Two-person rule for approval | Founders | Author cannot approve while two founders are active; recorded override otherwise | Y | Y | Y | `FOUNDER DECISION` | |
+| `AP-GOV-04` | Two-person rule for approval | Founders | Author cannot approve while two founders are active; recorded override otherwise | Y | Y | Y | `FOUNDER DECISION` | APPROVED as recommended by repository owner (TheFridey), 2026-11-20, in-session instruction 'Accept, start B1.1'; review by 2027-05-20 |
 | `AP-GOV-05` | Approved partner title and sign-off | Founders, solicitor | "Independent partner of ScaleSmiths" | N | Y | Y | `FOUNDER DECISION` | |
-| `AP-GOV-06` | Review cadence | Founders | Commercial 3 months; service 6 months; on source change | Y | Y | Y | `FOUNDER DECISION` | |
+| `AP-GOV-06` | Review cadence | Founders | Commercial 3 months; service 6 months; on source change | Y | Y | Y | `FOUNDER DECISION` | APPROVED as recommended by repository owner (TheFridey), 2026-11-20, in-session instruction 'Accept, start B1.1'; review by 2027-05-20 |
 | `AP-PRIV-01` | Privacy notice covers Academy progress, search logs and discovery notes | Founders, privacy adviser | Update partner privacy notice before P2 | N | Y | Y | `FOUNDER DECISION` | |
 | `AP-PRIV-02` | Search-log retention | Founders, privacy adviser | 90 days, hashed partner id | N | Y | N | `FOUNDER DECISION` | |
 | `AP-LEG-03` | Approved marketing process (channels, screening, opt-outs) | Founders, privacy adviser | Already open in [COMMERCIAL-ACTIVATION-GATES.md](../hardening/COMMERCIAL-ACTIVATION-GATES.md) | N | N | Y (C07) | `BLOCKED` | |
@@ -29,8 +29,8 @@ Blocking columns: **P1** blocks Phase 1 (founder content workspace), **P2** bloc
 | `AP-PROOF-01` | Partner use of each published project and any verified claim | Founders | Approve per project; descriptions only by default | N | Y | Y | `FOUNDER DECISION` | |
 | `AP-DES-01` | Visual direction | Founders | As in [DESIGN-SPECIFICATION.md](DESIGN-SPECIFICATION.md) | Y | Y | Y | `DRAFT` | |
 | `AP-DES-02` | Self-host Syne in admin | Founders, engineering | Yes, reuse the public WOFF2 files | N | N | N | `FOUNDER DECISION` | |
-| `AP-ENG-01` | Freeze or migrate `expansion_resources` | Engineering | Freeze, add read adapter | Y | N | N | `FOUNDER DECISION` | |
-| `AP-ENG-02` | Markdown renderer dependency | Engineering | Small maintained renderer, HTML disabled | Y | N | N | `FOUNDER DECISION` | |
+| `AP-ENG-01` | Freeze or migrate `expansion_resources` | Engineering | Freeze, add read adapter | Y | N | N | `FOUNDER DECISION` | APPROVED as recommended by repository owner (TheFridey), 2026-11-20, in-session instruction 'Accept, start B1.1'; review by 2027-05-20 |
+| `AP-ENG-02` | Markdown renderer dependency | Engineering | Small maintained renderer, HTML disabled | Y | N | N | `FOUNDER DECISION` | APPROVED as recommended by repository owner (TheFridey), 2026-11-20, in-session instruction 'Accept, start B1.1'; review by 2027-05-20 |
 | `AP-ENG-03` | Route structure | Engineering | Child routes under `/partner` | Y | N | N | `DRAFT` | |
 | `AP-ENG-04` | Content seeding as drafts only | Engineering | Reviewed seed script, draft status only | Y | N | N | `DRAFT` | |
 | `AP-ENG-05` | Replace hard-coded colours in `expansion.css` | Engineering | Separate small change | N | N | N | `DRAFT` | |
@@ -44,6 +44,15 @@ Blocking columns: **P1** blocks Phase 1 (founder content workspace), **P2** bloc
 | `AP-PRIV-03` | Resource view and download logging | Founders, privacy adviser | Do not log individual views or downloads in B1; aggregate counts only if needed | N | Y | N | `FOUNDER DECISION` | |
 | `AP-PRIV-04` | Retention of learning progress, including after a partner leaves | Founders, privacy adviser | Delete progress a fixed period after the partnership ends; partner can clear it at any time | N | N | Y | `FOUNDER DECISION` | |
 | `AP-PUB-01` | Withdrawal and correction procedure for published content | Founders | Withdraw (archive with reason) at once when wrong; publish a corrected new version through review; tell partners via "updated since you read it" | Y | Y | Y | `FOUNDER DECISION` | |
+| `AP-ACA-01` | Switch on `PARTNER_ACADEMY_ENABLED` in a real environment | Founders | Only after at least one course and its lessons are approved and published, and `AP-GOV-02`, `AP-GOV-03`, `AP-PRIV-01` and `AP-PRIV-04` are decided | N | N | Y | `FOUNDER DECISION` | |
+| `AP-ACA-02` | Run the curriculum importer against a real environment (`--allow-database`) | Founders | Import as drafts into staging first; never into production without a recorded instruction | N | N | Y | `FOUNDER DECISION` | |
+| `AP-ACA-03` | The 65 draft knowledge-check questions (`KNOWLEDGE-CHECKS.md`) | Lesson approvers | Approve with each lesson version; each answer is taken from its lesson text | N | N | Y | `DRAFT` | |
+| `AP-ACA-04` | Knowledge-check attempt history (answers given) and partner "clear my history" control | Founders, privacy adviser | Keep attempts for the AP-PRIV-04 period; build the clear control before enabling | N | N | Y | `FOUNDER DECISION` | |
+| `AP-RES-01` | Switch on `PARTNER_RESOURCE_CENTRE_ENABLED` in a real environment | Founders | After the first resources (priority order in `AP-PUB-02`) are approved and published | N | Y | N | `FOUNDER DECISION` | |
+| `AP-RES-02` | Initial search synonyms (for example ssl, wp, seo, aeo, crm) | Founders | Add in the studio after resources are published; review with the review cadence | N | Y | N | `FOUNDER DECISION` | |
+| `AP-RES-03` | R13 follow-up templates imported partner-only (the file mixes client templates with partner instructions) | Founders | Keep partner-only, or split the client templates into a separate client-facing resource | N | Y | N | `DRAFT` | |
+| `AP-KB-01` | Switch on `PARTNER_KNOWLEDGE_BASE_ENABLED` in a real environment | Founders | After the first knowledge entries are approved and published, and `AP-PRIV-01` covers help requests | N | Y | N | `FOUNDER DECISION` | |
+| `AP-KB-02` | KB-SEC-01 escalation wording (questionnaires and procurement to technical scoping; incidents reported as escalation) | Delivery founder | Approve the reworded entry, or split incidents into their own entry | N | Y | N | `DRAFT` | |
 | `AP-PUB-02` | Publication priority order for the Resource Centre | Founders | As recommended in [CONTENT-REVIEW-REGISTER.md](CONTENT-REVIEW-REGISTER.md) section 5 | N | Y | N | `DRAFT` | |
 
 ## B. Package documents

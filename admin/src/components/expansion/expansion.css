@@ -11,3 +11,19 @@
 .ex-badge-art{filter:drop-shadow(0 6px 18px rgba(201,162,74,.28));max-width:100%;height:auto}
 .ex-note{font-size:.9rem;opacity:.8}
 @media (max-width:640px){.ex-recognition-body{grid-template-columns:1fr;justify-items:center;text-align:center}}
+
+/* Operation Empower B1.1 content studio */
+.ex-content-counts{display:flex;flex-wrap:wrap;gap:6px}
+.ex-content-version{align-items:flex-start}
+.ex-content-version>div{min-width:0;flex:1}
+
+/* Operation Empower B1.2: Academy entry point and studio editors */
+.ex-academy-link{display:flex;align-items:center;gap:8px;margin:12px 0;padding:10px 12px;border:1px solid rgba(209,178,102,.45);border-radius:10px;color:#f1f5f9;text-decoration:none}
+.ex-academy-link small{margin-left:auto;color:#939cac;font-size:12px}
+.ex-check-edit{padding:12px;margin:10px 0;border:1px solid rgba(255,255,255,.12);border-radius:10px}
+.ex-check-option{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ex-inline-actions{display:flex;flex-wrap:wrap;gap:10px}
+.ex-lesson-order{display:grid;gap:6px;padding-left:20px}
+.ex-lesson-order li{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.ex-course-preview ol,.ex-course-preview ul{padding-left:20px}
+.ex-preview{margin:8px 0}

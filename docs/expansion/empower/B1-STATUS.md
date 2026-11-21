@@ -12,8 +12,8 @@ Recorded 2026-11-20 by an agent. Model review is not human approval and is not p
 | Founder approval register | PARTIAL: consolidated and extended; **no decision is recorded** |
 | Accessibility review | PARTIAL: token-level review complete; no rendered screens exist to test |
 | Knowledge-check questions | NOT STARTED (written per lesson after approval; finding F14) |
-| PR #156 (planning) | Open, retargeted to `master` after the B0 merge, not merged |
-| B1 implementation (`feature/operation-empower`) | **NOT STARTED**: gate items 5 to 7 below are still open |
+| PR #156 (planning) | COMPLETE: merged into `master` as `8950011` (owner instruction), CI, Security and CodeQL green |
+| B1 implementation (`feature/operation-empower`) | B1.1 content governance, B1.2 Partner Academy, B1.3 Resource Centre and B1.4 Knowledge Base COMPLETE on the branch, tested, not approved or enabled (reports: [B1.2](B1-2-ACADEMY-REPORT.md), [B1.3](B1-3-RESOURCE-CENTRE-REPORT.md), [B1.4](B1-4-KNOWLEDGE-BASE-REPORT.md)); B1.5 onwards NOT STARTED |
 | B1 deployment, publication, partner activation | NOT STARTED; not authorised |
 
 ## B0 merge record (2026-11-20)
@@ -71,11 +71,27 @@ The reviewer package for B0 (financial invariants, migrations 0073 to 0090, Post
 | 2. Merge commit verified | Yes |
 | 3. `master` CI verified after merge | Yes: CI, Security, CodeQL success |
 | 4. No unauthorised production deployment | Yes, as far as GitHub shows; host-side automation not verified |
-| 5. PR #156 reconciled with the merged foundation | Partly: retargeted to `master`, diff is only the 29 planning files, not merged |
-| 6. Approved planning baseline on the implementation branch | No: PR #156 is unmerged and no planning item is founder-approved |
+| 5. PR #156 reconciled with the merged foundation | Yes: merged as `8950011` |
+| 6. Approved planning baseline on the implementation branch | Yes for Phase 1: owner accepted `AP-GOV-04`, `AP-GOV-06`, `AP-ENG-01`, `AP-ENG-02` on 2026-11-20. Content items remain unapproved |
 | 7. Repository governance satisfied | Owner exception for B0; not yet recorded in the protected-areas document |
 
-`feature/operation-empower` has not been created. B1 application code must not be built on the B0 feature branch or a substitute branch.
+`feature/operation-empower` was created from `master` at `8950011`.
+
+## B1.1 content governance (2026-11-20)
+
+| Capability | Status |
+|---|---|
+| Versioned content items with permanent audience and review cadence | COMPLETE |
+| Draft editing, submission, founder decision (approve, request changes, reject) with append-only evidence | COMPLETE |
+| Two-founder rule (`AP-GOV-04`) | COMPLETE: refused in the service while more than one founder is active; self-approval needs a recorded reason, enforced in the database |
+| Review dates within cadence (`AP-GOV-06`), expired content never served | COMPLETE |
+| Publication with supersession, withdrawal with reason | COMPLETE |
+| Audience restriction in SQL (`servableContent`) | COMPLETE at service level; no partner route yet |
+| Audit history (`expansion_audit`, `empower_*`) | COMPLETE |
+| Founder Content studio in `/expansion`, behind `EMPOWER_FOUNDER_CONTENT_ENABLED` (default `false`) | COMPLETE |
+| Markdown renderer, content links, diff view, preview as partner, seed script, legacy adapter | DEFERRED to later slices (plain text only today) |
+
+Nothing is published to partners. No content item has been created or approved in any real environment. Evidence: [ACCEPTANCE-CRITERIA.md](ACCEPTANCE-CRITERIA.md), "B1.1 evidence". B1 application code must not be built on the B0 feature branch or a substitute branch.
 
 ## PR #156 handling
 

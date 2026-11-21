@@ -1,0 +1,37 @@
+Background (from the session that started this one):
+ScaleSmiths Ltd (UK) runs a public site (`web/`, scalesmiths.co.uk) and an admin and partner app (`admin/`, canonical origin partners.scalesmiths.co.uk). PR TheFridey/ScaleSmiths#159 (branch `feature/operation-launch-ready`) delivered partner agreements, enforced onboarding gates, the founder recruitment workspace, partner email (off by default), and a web repair migration for Web Vitals. It touched `web/` only for the application-received email and the status list. A broad premium visual pass of the public site was explicitly not done there and is listed as a remaining item in `docs/launch-ready/F-RELEASE-READINESS.md` on that branch. The owner works in British English, wants small reviewable commits, and must approve any deploy. The main checkout `D:\Projects\scalesmiths\ss` has another agent's uncommitted edits to AGENTS.md, CLAUDE.md and .entire; do not touch them.
+
+Task:
+Carry out the public-website part of "Operation Launch Ready" Phase Five for ScaleSmiths, in `web/` only (Next.js 15). Audit and improve: header and navigation, the mobile menu, hero sections, service pages, CTAs (every CTA must lead somewhere meaningful), contact and partner-recruitment forms (`/partners`), trust sections, footer, loading behaviour, error pages (404/500), SEO fundamentals and accessibility (WCAG 2.2 AA, keyboard, focus, contrast, reduced motion). Preserve the brand: the metallic interlocking S emblem and the silver/gold wordmark from `web/public/brand/`. Never redraw them. Keep the premium dark presentation with restrained gold accents. Purposeful hover, press and focus states; support `prefers-reduced-motion`. Test at 390, 768, 1024 and 1440 px with Playwright (the repo already has web e2e and technical SEO specs), check console errors, run axe, and capture before/after screenshots. Read `AGENTS.md`, `CLAUDE.md` and `.entire/agent-guide.md` first. Run web typecheck, lint, unit tests and the build. Do not enable `PARTNER_APPLICATIONS_ENABLED` or change commercial wording (the advertised 30% commission stays as is; any change needs founder approval). Done means: a focused PR against `master` with a short UX report under `docs/launch-ready/` listing findings, fixes, screenshots and anything not done. Do not deploy.
+
+Shared notes folder for this group of sessions (outside the repo; read siblings' notes there, leave hand-over notes or large findings there instead of pasting them into messages): C:\Users\rhysl\AppData\Roaming\Claude\side-session-notes\local_799253fb-8aa1-4efe-8a68-995219d19816
+
+---
+
+<task-notification>
+<task-id>bcyigjd6f</task-id>
+<tool-use-id>toolu_011N3MNJVHPYveVVQ2dR5SDo</tool-use-id>
+<output-file>D:\Hermes\temp\claude\7a351de23d2a83e6\8ab9bb96-9c90-4440-a091-b8da32eee5b9\tasks\bcyigjd6f.output</output-file>
+<status>completed</status>
+<summary>Background command "cd "D:/Projects/scalesmiths/ss/.claude/worktrees/elastic-galileo-514e1c/web"; npm ci --no-audit --no-fund --loglevel=error &gt; "D:/Hermes/temp/claude/7a351de23d2a83e6/8ab9bb96-9c90-4440-a091-b8da32eee5b9/scratchpad/npmci.log" 2&gt;&amp;1; echo exit $?" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>blpj33iwi</task-id>
+<tool-use-id>toolu_016i431oL94fuN6LP5o2v25M</tool-use-id>
+<output-file>D:\Hermes\temp\claude\7a351de23d2a83e6\8ab9bb96-9c90-4440-a091-b8da32eee5b9\tasks\blpj33iwi.output</output-file>
+<status>completed</status>
+<summary>Background command "cd "D:/Projects/scalesmiths/ss/.claude/worktrees/elastic-galileo-514e1c/web"; npm run build &gt; "D:/Hermes/temp/claude/7a351de23d2a83e6/8ab9bb96-9c90-4440-a091-b8da32eee5b9/scratchpad/build-before.log" 2&gt;&amp;1; echo "exit $?"; tail -5 "D:/Hermes/temp/claude/7a351de23d2a83e6/8ab9bb96-9c90-4440-a091-b8da32eee5b9/scratchpad/build-before.log"" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>blol5ko8i</task-id>
+<tool-use-id>toolu_012LtZ43sjJEcYj4ZkBZtQdS</tool-use-id>
+<output-file>D:\Hermes\temp\claude\7a351de23d2a83e6\8ab9bb96-9c90-4440-a091-b8da32eee5b9\tasks\blol5ko8i.output</output-file>
+<status>failed</status>
+<summary>Background command "cd "D:/Projects/scalesmiths/ss/.claude/worktrees/elastic-galileo-514e1c/web"; node ./node_modules/next/dist/bin/next start --hostname 127.0.0.1 --port 3217 &gt; "D:/Hermes/temp/claude/7a351de23d2a83e6/8ab9bb96-9c90-4440-a091-b8da32eee5b9/scratchpad/server.log" 2&gt;&amp;1" failed with exit code 127</summary>
+</task-notification>

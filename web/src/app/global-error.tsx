@@ -9,7 +9,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
   }, [error])
 
   return (
-    <html lang="en">
+    <html lang="en-GB">
       <body style={{ margin: 0, background: "#05070d", color: "#f5f7fa", fontFamily: "system-ui, sans-serif" }}>
         {renderGlobalErrorFallback(reset)}
       </body>

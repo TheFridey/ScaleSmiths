@@ -53,6 +53,9 @@ export const ADMIN_FUNCTION_GRANTS = [
   { schema: "public", name: "empower_academy_lesson_servable", arguments: "uuid, uuid" },
   // Operation Empower B1.3: Resource Centre search document (index expression and queries).
   { schema: "public", name: "empower_search_document", arguments: "text, text, jsonb" },
+  // Operation Empower B1.5: objection field and client-line checks, called from the objection trigger body.
+  { schema: "public", name: "empower_objection_fields_problem", arguments: "jsonb" },
+  { schema: "public", name: "empower_client_line_leaks", arguments: "text" },
 ]
 
 export const TENANT_RLS_FUNCTION_GRANTS = [

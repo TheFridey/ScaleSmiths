@@ -1,0 +1,49 @@
+{
+  "cli_version": "0.12.2",
+  "checkpoint_id": "01M7YKQX2BGEEGH98CB9MB5E2E",
+  "strategy": "manual-commit",
+  "branch": "feature/operation-empower",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "admin/test/e2e/empower-academy.spec.ts",
+    "admin/test/integration/empower-knowledge.integration.test.ts",
+    "admin/test/integration/empower-resources.integration.test.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 22,
+    "cache_creation_tokens": 7998,
+    "cache_read_tokens": 8421705,
+    "output_tokens": 4937,
+    "api_call_count": 9,
+    "subagent_tokens": {
+      "input_tokens": 0,
+      "cache_creation_tokens": 0,
+      "cache_read_tokens": 0,
+      "output_tokens": 0,
+      "api_call_count": 0
+    }
+  },
+  "redaction": {
+    "replacements": 497,
+    "layers": {
+      "betterleaks": 194,
+      "connection_string": 0,
+      "credential_key": 0,
+      "credential_value": 5,
+      "credentialed_uri": 449,
+      "entropy": 50,
+      "key_context": 9,
+      "provider_token": 0,
+      "shell_stdin": 0
+    }
+  }
+}

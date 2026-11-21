@@ -24,6 +24,33 @@ export const KNOWLEDGE_TOPICS = [
 /** Commercial topics must use the 3-month cadence. */
 export const COMMERCIAL_TOPICS: readonly string[] = ["commercial-terms", "payment-schedules", "commission"]
 export const ESCALATION_RULES = ["always", "when", "never"] as const
+/** Operation Empower B1.5: objection categories. Partners only see categories that have approved, published responses. */
+export const OBJECTION_CATEGORIES = [
+  "price", "existing-supplier", "competitor-comparison", "website-migration", "seo", "ai-search", "hosting", "maintenance",
+  "contract-length", "payment-schedules", "data-security", "bespoke-development", "delivery-times", "commercial-eligibility",
+  "decision-timing", "ownership", "partner-independence",
+] as const
+/** Commercial objection categories are reviewed on the 3-month cadence (AP-GOV-06). */
+export const COMMERCIAL_OBJECTION_CATEGORIES: readonly string[] = ["price", "contract-length", "payment-schedules", "commercial-eligibility"]
+/**
+ * B1.5 content safety: wording that could become an unsupported commercial promise. A hit blocks submission unless a founder records
+ * why the wording is safe (for example "nobody can guarantee rankings" is a refusal, not a promise). Founders change this list by code review.
+ */
+export const UNSUPPORTED_CLAIM_PATTERNS: readonly { label: string; pattern: RegExp }[] = [
+  { label: "a guarantee", pattern: /\bguarantee(?:d|s|ing)?\b/i },
+  { label: "a ranking position", pattern: /\b(?:page (?:one|1)|first page|top (?:spot|position|three|3|ten|10)|number one|#1)\b/i },
+  { label: "a traffic, lead or sales figure", pattern: /\b(?:\d+\s*%|\d+x|double|triple)\s+(?:more\s+)?(?:traffic|visitors|leads|enquiries|sales|revenue|conversions)\b/i },
+  { label: "a discount or special price", pattern: /\b(?:discount|special price|money off|price match|cheaper than)\b/i },
+  { label: "a delivery time", pattern: /\b(?:\d+|one|two|three|four|six|eight|twelve)\s*(?:-\s*\d+\s*)?(?:working\s+)?(?:days?|weeks?|months?)\b(?!\s+(?:a|per)\s+month)/i },
+  { label: "a competitor comparison", pattern: /\b(?:better|faster|cheaper) than\b|\bunlike (?:other|most) agencies\b/i },
+  { label: "an integration promise", pattern: /\b(?:any|every|all) (?:integration|system|platform)s?\b|\bintegrates? with anything\b/i },
+  { label: "a security guarantee", pattern: /\b(?:100\s*%\s*secure|fully secure|unhackable|cannot be hacked|never be hacked|bullet-?proof)\b/i },
+  { label: "a financial return", pattern: /\b(?:roi|return on investment|pay(?:s)? for itself|guaranteed income)\b/i },
+]
+export function unsupportedClaimHits(parts: readonly string[]): string[] {
+  const haystack = parts.join("\n")
+  return UNSUPPORTED_CLAIM_PATTERNS.filter((c) => c.pattern.test(haystack)).map((c) => c.label)
+}
 /** External link hosts a body may reference. Founders change this list by code review only. */
 export const LINK_ALLOW_LIST = ["scalesmiths.co.uk", "ico.org.uk", "gov.uk"] as const
 /** Terms that must not appear in client-facing content without a recorded override (SECURITY-MODEL 3.1). A safety net, not a guarantee. */
@@ -109,8 +136,31 @@ export function contentFields(kind: ContentKind, value: unknown, complete: boole
     return out
   }
   if (kind === "objection") {
-    const out = keep(["concern", "clarifying_question", "guidance", "client_line", "limitation", "escalation", "resource"])
-    if (complete) for (const [key, label] of [["concern", "Customer concern"], ["guidance", "Partner guidance"], ["client_line", "Client-facing line"], ["limitation", "Limitation"], ["escalation", "Escalation"]]) req(out, key, label)
+    // B1.5: partner-only explanation (guidance), client-safe language (client_line), limitation and escalation are separate fields
+    // so the one thing a partner can copy to a client never contains internal policy.
+    const out = keep(["category", "source_id", "concern", "client_line", "guidance", "limitation", "escalation_required", "escalation_condition", "escalation_route"], ["discovery_questions", "aliases", "related"])
+    if (out.category !== undefined) oneOf(out.category, OBJECTION_CATEGORIES, "objection category")
+    if (out.escalation_required !== undefined) oneOf(out.escalation_required, ESCALATION_RULES, "escalation rule")
+    if (out.escalation_route !== undefined) oneOf(out.escalation_route, MEETING_TYPES, "escalation meeting type")
+    if (out.source_id !== undefined && !/^[A-Z]{2,8}-[A-Z]{2,8}-\d{2}$/.test(String(out.source_id))) fail("Source ID must look like AP-OBJ-01.")
+    for (const key of ["discovery_questions", "aliases"] as const) {
+      if (out[key] === undefined) continue
+      const list = (Array.isArray(out[key]) ? out[key] as unknown[] : String(out[key]).split("\n")).map((v) => String(v).trim()).filter(Boolean)
+      if (list.length > 10) fail(`List at most 10 ${key === "aliases" ? "alternative phrasings" : "discovery questions"}.`)
+      for (const v of list) if (v.length > 300 || /[\u0000-\u001f<>]/.test(v)) fail("Each list entry must be plain text of at most 300 characters.")
+      if (list.length) out[key] = list; else delete out[key]
+    }
+    const related = relatedItems(out.related)
+    if (related.length) out.related = related; else delete out.related
+    if (typeof out.client_line === "string" && audienceLintHits("client_facing", [out.client_line]).length) fail(`The client-facing line must not contain partner-only terms (${audienceLintHits("client_facing", [out.client_line]).join(", ")}).`)
+    if (complete) {
+      oneOf(out.category, OBJECTION_CATEGORIES, "objection category")
+      req(out, "concern", "Customer concern"); req(out, "client_line", "Recommended client-facing response"); req(out, "guidance", "Why this response is appropriate")
+      req(out, "limitation", "Limitation")
+      const rule = oneOf(out.escalation_required, ESCALATION_RULES, "escalation rule")
+      if (rule === "when") req(out, "escalation_condition", "Escalation condition")
+      if (rule !== "never") oneOf(out.escalation_route, MEETING_TYPES, "escalation meeting type")
+    }
     return out
   }
   if (kind === "lesson") {
@@ -180,8 +230,15 @@ export function checkSubmission(input: { kind: ContentKind; audience: ContentAud
     // Software does not decide legal sufficiency: a founder must cite the legal review this text relies on.
     if (!sources.some((s) => /^legal:\S{3,}/.test(s))) fail("Cite the legal review of this agreement as a source starting legal: (for example legal:solicitor-review-2026-12).")
   }
-  const lintHits = audienceLintHits(input.audience, [input.title, input.body, ...flatText(fields)])
+  if (input.kind === "objection") {
+    if (input.audience !== "partner_only") fail("Objection responses are partner-only; the client-facing line is the only text a partner copies to a client.")
+    if (COMMERCIAL_OBJECTION_CATEGORIES.includes(String(fields.category)) && input.cadenceMonths !== REVIEW_CADENCES.commercial) fail("Commercial objection responses must use the 3-month review cadence.")
+  }
+  // The limitation and escalation condition list what must NOT be promised, so they are excluded from the claim check by design.
+  const claimHits = input.kind === "objection" ? unsupportedClaimHits([input.title, input.body, String(fields.concern ?? ""), String(fields.client_line ?? ""), String(fields.guidance ?? "")]).map((c) => `possible ${c}`) : []
+  const lintHits = [...audienceLintHits(input.audience, [input.title, input.body, ...flatText(fields)]), ...claimHits]
   const lintOverrideReason = optionalText(input.lintOverrideReason, "Override reason", 2000)
+  if (claimHits.length && (!lintOverrideReason || lintOverrideReason.length < 10)) fail(`This response may contain ${claimHits.map((c) => c.replace(/^possible /, "")).join(", ")}. Remove it, or record why the wording is safe for founder review (at least 10 characters).`)
   if (lintHits.length && (!lintOverrideReason || lintOverrideReason.length < 10)) fail(`Client-facing content mentions ${lintHits.join(", ")}. Remove it, or record why it is safe (at least 10 characters).`)
   return { fields, sources, lintHits, lintOverrideReason: lintHits.length ? lintOverrideReason : null }
 }

@@ -16,7 +16,7 @@ import { randomUUID } from "node:crypto"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { createRequire } from "node:module"
-import { parsePackage, parseResource, parseKnowledgeBase, lessonSlug, courseSlug, cadenceFor, resourceSlug, knowledgeSlug } from "../src/lib/empower-curriculum.ts"
+import { parsePackage, parseResource, parseKnowledgeBase, parseObjectionPlaybook, lessonSlug, courseSlug, cadenceFor, resourceSlug, knowledgeSlug } from "../src/lib/empower-curriculum.ts"
 const require = createRequire(import.meta.url)
 const { Pool } = require("pg")
 
@@ -39,10 +39,13 @@ const resources = []
 for (const f of resourceFiles) { const parsed = parseResource(await read(`resources/${f}`), f, pkg.problems); if (parsed) resources.push(parsed) }
 const knowledge = parseKnowledgeBase(await read("KNOWLEDGE-BASE.md"), { r08: await read("resources/R08-objection-handling-playbook.md"), r11: await read("resources/R11-commercial-pricing-reference.md") }, pkg.problems)
 if (knowledge.length !== 32) pkg.problems.push(`Expected 32 knowledge entries, found ${knowledge.length}`)
+// Operation Empower B1.5: the twelve objection responses from R08, as drafts. Incomplete source rows are imported and reported, never guessed.
+const objections = parseObjectionPlaybook(await read("resources/R08-objection-handling-playbook.md"), pkg.problems)
+if (objections.length !== 12) pkg.problems.push(`Expected 12 objection responses, found ${objections.length}`)
 if (pkg.problems.length) { console.error(JSON.stringify({ aborted: true, problems: pkg.problems }, null, 2)); process.exit(1) }
 
 const pool = new Pool({ connectionString: raw, max: 1 })
-const report = { database: dbName, dryRun, created: [], revised: [], unchanged: [], inProgress: [], problems: [] }
+const report = { database: dbName, dryRun, created: [], revised: [], unchanged: [], inProgress: [], problems: [], objectionNotes: {} }
 // jsonb does not preserve key order, so compare canonically.
 const canon = (v) => Array.isArray(v) ? v.map(canon) : v && typeof v === "object" ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, canon(v[k])])) : v
 const same = (a, b) => JSON.stringify(canon(a)) === JSON.stringify(canon(b))
@@ -91,9 +94,23 @@ try {
         ...(k.escalation.condition ? { escalation_condition: k.escalation.condition } : {}), ...(k.escalation.route ? { escalation_route: k.escalation.route } : {}) }
       await upsert({ slug: knowledgeSlug(k.code), kind: "knowledge", cadence: k.cadence, audience: k.audience, title: k.question, body: "", fields, sources: k.sources, summary: "Draft imported from KNOWLEDGE-BASE.md; not approved." })
     }
+    for (const o of objections) {
+      // Related links resolve only to items that exist (imported above); a missing reference is reported, not invented.
+      const related = []
+      for (const code of o.relatedCodes) {
+        const slug = /^R\d{2}$/.test(code) ? resourceSlug(code) : knowledgeSlug(code)
+        const found = (await client.query("select id from empower_content_items where slug=$1", [slug])).rows[0]
+        if (found) related.push(found.id); else (report.objectionNotes[o.id] ??= []).push(`Related ${code} not found; not linked.`)
+      }
+      const fields = { category: o.category, source_id: o.id, concern: o.concern, client_line: o.clientLine, guidance: o.guidance, limitation: o.limitation,
+        ...(o.discoveryQuestions.length ? { discovery_questions: o.discoveryQuestions } : {}), ...(related.length ? { related } : {}),
+        ...(o.escalation ? { escalation_required: o.escalation.required, ...(o.escalation.condition ? { escalation_condition: o.escalation.condition } : {}), ...(o.escalation.route ? { escalation_route: o.escalation.route } : {}) } : {}) }
+      await upsert({ slug: o.slug, kind: "objection", cadence: o.cadence, title: o.concern, body: "", fields, sources: o.sources, summary: `Draft imported from resources/R08-objection-handling-playbook.md (${o.id}); not approved.` })
+      if (o.notes.length) (report.objectionNotes[o.id] ??= []).push(...o.notes)
+    }
     await client.query(dryRun ? "rollback" : "commit")
   } catch (error) { await client.query("rollback"); throw error } finally { client.release() }
 } finally { await pool.end() }
 report.totals = { created: report.created.length, revised: report.revised.length, unchanged: report.unchanged.length, inProgress: report.inProgress.length }
-console.log(JSON.stringify(dryRun ? { ...report, note: "Dry run: everything was rolled back." } : report.totals, null, 2))
+console.log(JSON.stringify(dryRun ? { ...report, note: "Dry run: everything was rolled back." } : { ...report.totals, objectionNotes: report.objectionNotes }, null, 2))
 if (!dryRun) console.log("Imported as drafts only. Nothing was submitted, approved or published.")

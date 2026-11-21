@@ -117,3 +117,18 @@ kbd{padding:1px 6px;border:1px solid var(--ac-line);border-radius:4px;font-size:
 .ac-skeleton{display:grid;gap:12px}.ac-skeleton span{display:block;height:84px;border-radius:12px;background:linear-gradient(90deg,var(--ac-s2) 0%,color-mix(in srgb,var(--ac-s2) 70%,#fff 4%) 50%,var(--ac-s2) 100%);background-size:200% 100%;animation:ac-shimmer 1.4s ease-in-out infinite}
 @keyframes ac-shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
 @media(prefers-reduced-motion:reduce){.ac-skeleton span{animation:none}}
+/* Operation Empower B1.5: objection handling. Client-safe language and partner-only guidance are visibly separate. */
+.ac-objection summary h3{margin:0;font-size:clamp(17px,2.2vw,20px);line-height:1.35}
+.ac-say-actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:10px}
+.ac-partner-only{border-left:3px solid var(--ac-gold-deep);padding-left:14px;margin-top:14px}
+.ac-partner-only h4{margin:16px 0 6px;font-size:14px;letter-spacing:.02em;color:var(--ac-gold)}
+.ac-questions{margin:0;padding-left:20px;display:grid;gap:4px}
+.ac-related{margin-top:16px;border-top:1px solid var(--ac-line);padding-top:12px}.ac-related h4{margin:0 0 8px;font-size:14px}
+.ac-related ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}.ac-related li{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.ac-related a{min-height:44px;display:inline-flex;align-items:center}
+.ac-categories{margin-top:6px}.ac-count{display:inline-block;min-width:1.6em;text-align:center;border-radius:999px;background:var(--ac-s3);color:var(--ac-gold);font-size:11px;padding:0 6px;margin-left:4px}
+.ac-sources{font-size:12px;margin-top:12px}
+.ac-skeleton-list{display:grid;gap:12px}.ac-skeleton-list span{display:block;height:96px;border-radius:12px;background:linear-gradient(90deg,var(--ac-s1) 0%,var(--ac-s2) 50%,var(--ac-s1) 100%);background-size:200% 100%;animation:ac-obj-shimmer 1.4s ease-in-out infinite}
+@keyframes ac-obj-shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
+.ac-objection{transition:border-color .16s ease,box-shadow .16s ease}.ac-objection:hover{border-color:var(--ac-gold-deep);box-shadow:0 10px 28px -20px #000}
+@media(prefers-reduced-motion:reduce){.ac-skeleton-list span{animation:none}.ac-objection{transition:none}}

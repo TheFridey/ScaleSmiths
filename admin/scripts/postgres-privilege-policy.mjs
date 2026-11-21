@@ -59,6 +59,9 @@ export const ADMIN_FUNCTION_GRANTS = [
   { schema: "public", name: "partner_agreement_digest", arguments: "text, text" },
   { schema: "public", name: "partner_agreement_current", arguments: "uuid" },
   { schema: "public", name: "partner_application_transition_allowed", arguments: "text, text" },
+  // Operation Empower B1.5: objection field and client-line checks, called from the objection trigger body.
+  { schema: "public", name: "empower_objection_fields_problem", arguments: "jsonb" },
+  { schema: "public", name: "empower_client_line_leaks", arguments: "text" },
 ]
 
 export const TENANT_RLS_FUNCTION_GRANTS = [

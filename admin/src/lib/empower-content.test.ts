@@ -43,7 +43,8 @@ describe("kind-specific fields", () => {
     expect(() => contentFields("knowledge", { ...knowledge, escalation_route: "phone_call" }, false)).toThrow(/meeting type/)
   })
   it("validates objection and lesson structure", () => {
-    expect(() => contentFields("objection", { concern: "Too expensive" }, true)).toThrow(/Partner guidance/)
+    expect(() => contentFields("objection", { concern: "Too expensive" }, true)).toThrow(/objection category/)
+    expect(() => contentFields("objection", { category: "price", concern: "Too expensive" }, true)).toThrow(/Recommended client-facing response/)
     expect(() => contentFields("lesson", { lesson_code: "C4-L3" }, false)).toThrow(/C04-L3/)
     expect(contentFields("lesson", { lesson_code: "C04-L3", course_code: "C04", reading_minutes: "7" }, true)).toEqual({ lesson_code: "C04-L3", course_code: "C04", reading_minutes: "7" })
   })

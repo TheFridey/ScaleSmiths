@@ -482,6 +482,7 @@
     {"idx":93,"version":"7","when":1794951010016,"tag":"0093_empower_academy_partner_lessons","breakpoints":true},
     {"idx":94,"version":"7","when":1794951011016,"tag":"0094_empower_resource_search","breakpoints":true},
     {"idx":95,"version":"7","when":1794952001000,"tag":"0095_partner_agreements","breakpoints":true},
-    {"idx":96,"version":"7","when":1794952002000,"tag":"0096_partner_notifications","breakpoints":true}
+    {"idx":96,"version":"7","when":1794952002000,"tag":"0096_partner_notifications","breakpoints":true},
+    {"idx":97,"version":"7","when":1794953000000,"tag":"0097_empower_objections","breakpoints":true}
   ]
 }

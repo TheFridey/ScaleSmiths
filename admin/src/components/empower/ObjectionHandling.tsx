@@ -93,7 +93,7 @@ export function ObjectionHandling({ nav }: { nav: PartnerNav }) {
       <p className="ac-overline">Objection handling</p>
       <h1 id="obj-title">What did the client say?</h1>
       <p>Founder-approved answers for real conversations: the words you can use, why they work, the questions to ask next, what not to promise, and when to bring ScaleSmiths in. Type the objection the way the client put it. Press <kbd>/</kbd> to search from anywhere on this page.</p>
-      <form className="ac-filters" role="search" onSubmit={(e) => { e.preventDefault(); setSubmitted(query.trim()) }}>
+      <form className="ac-filters" role="search" onSubmit={(e) => { e.preventDefault(); setSubmitted(query.trim()); setAttempt((n) => n + 1) }}>
         <label className="ac-field">Search approved responses<input ref={input} type="search" value={query} maxLength={200} onChange={(e) => setQuery(e.target.value)} placeholder="For example: it's too expensive" /></label>
         <button className="ac-button" type="submit">Search</button>
         {(submitted || category !== "all") && <button type="button" className="ac-button ac-secondary" onClick={() => { setQuery(""); setSubmitted(""); setCategory("all") }}>Clear</button>}

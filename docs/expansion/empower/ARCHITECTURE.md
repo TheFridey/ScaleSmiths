@@ -197,6 +197,15 @@ This replaces the separate `empower_courses` / `empower_modules` / `empower_less
 - **Escalation** uses the existing B0 meeting request (`request_meeting` on `/api/partner`), pre-filled with the entry's route and reference. The server derives the partner from the session; nothing is booked until a founder confirms. A search with no approved answer offers the same request instead of a guess.
 - **Importer:** the 32 planned entries import as drafts. Client explanations that point at the objection playbook or the pricing reference resolve to that approved wording; an entry naming more than one escalation route is refused; entries with no client-safe explanation are partner-only.
 
+## 7e. As built in B1.5 (migration 0095 on `feature/operation-empower-b1-5`): objection handling
+
+- **Responses** are B1.1 content items of kind `objection` (partner-only; the database refuses any other audience). Fields: category, source ID, customer concern, alternative phrasings, client-facing line, partner explanation, discovery questions, limitation, escalation rule, condition and route, and related items. Commercial categories (price, contract length, payment schedules, commercial eligibility) need the 3-month cadence.
+- **Database guard** (`empower_objection_guard`): nothing reaches `in_review`, `approved` or `published` without a valid category, concern, client line, explanation, limitation and escalation. The client line can never contain partner-only terms, and related links must be existing resources, lessons or knowledge entries. This holds for direct SQL as the runtime role too. The B1.1 lifecycle, two-founder approval and append-only evidence are unchanged.
+- **Content safety:** submission is blocked for possible guarantees, ranking positions, traffic or sales figures, discounts, delivery times, competitor comparisons, integration or security promises and financial returns, unless a founder records why the wording is safe (stored with the version). The limitation is excluded from this check because it lists what must not be promised.
+- **Search** reuses the B1.3 index and synonyms; an exact concern or phrasing match ranks first, then `ts_rank_cd`, ties by slug; at most 20 results; category filtering in SQL against the approved list. Categories are offered only where approved responses exist. With no query, the six most recently approved responses are shown.
+- **Partner view** (`/partner/objections`, switch `PARTNER_OBJECTION_HANDLING_ENABLED`, default off): search-first; category chips with counts; cards with the copyable client-safe response, then a marked partner-only panel (explanation, discovery questions, limitations, escalation); related resources, Academy lessons and Knowledge Base answers, each only when servable and its module is on; help through the existing meeting request.
+- **Importer:** the twelve `R08` responses import as drafts with their source IDs. Rows with no discovery question (`AP-OBJ-08`, `AP-OBJ-10`), an ambiguous route (`AP-OBJ-05`) or a `BLOCKED` status (`AP-OBJ-10`) are imported and reported.
+
 ## 8. Open engineering decisions
 
 | ID | Question | Recommendation |

@@ -1,0 +1,645 @@
+<task-notification>
+<task-id>bd8tvkmp7</task-id>
+<tool-use-id>toolu_01SZFPmRngdjH6x3ErTuBrQA</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\aebf5df5-fc53-46f8-adc5-609b4932802f\tasks\bd8tvkmp7.output</output-file>
+<status>completed</status>
+<summary>Background command "Final checks, then commit and push B1.4" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b1fj1e4mq</task-id>
+<tool-use-id>toolu_0165G5BdvMtmAQrAfEcraAjb</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\aebf5df5-fc53-46f8-adc5-609b4932802f\tasks\b1fj1e4mq.output</output-file>
+<status>completed</status>
+<summary>Background command "Wait for all PR #157 checks to finish" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bvhfub4ax</task-id>
+<tool-use-id>toolu_01N6TgzpcAojQK3HsmxwuFZM</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\aebf5df5-fc53-46f8-adc5-609b4932802f\tasks\bvhfub4ax.output</output-file>
+<status>completed</status>
+<summary>Background command "Wait for CI on the fix commit" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+Not yet
+
+---
+
+merge everything to master and push live asap
+
+---
+
+run ssh step by step use command "ssh scalesmiths" to access the VPS
+
+---
+
+Try again
+
+---
+
+<task-notification>
+<task-id>bpwfgt8o1</task-id>
+<tool-use-id>toolu_01E9tMzjD4F5wueFsccxq8K6</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\aebf5df5-fc53-46f8-adc5-609b4932802f\tasks\bpwfgt8o1.output</output-file>
+<status>completed</status>
+<summary>Background command "Wait for master CI on the merge commit" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+It's back, resume
+
+---
+
+<task-notification>
+<task-id>bytwduco4</task-id>
+<tool-use-id>toolu_01QZGAmyT7gLPTF1uu2Q65pr</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\aebf5df5-fc53-46f8-adc5-609b4932802f\tasks\bytwduco4.output</output-file>
+<status>completed</status>
+<summary>Background command "Wait for VPS build to finish" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+this button with the link https://admin.scalesmiths.co.uk/login redirects too https://www.confirmakill.co.uk/login/ and not the partner login. Same in the footer link. the correct domain is partners.scalesmiths.co.uk which is pointed on cloudlfare just needs sorting on the server in nginx files etc.
+
+---
+
+Done, continue
+
+---
+
+Push and open PR
+
+---
+
+<pasted_content id="831a">
+OPERATION LAUNCH READY
+ScaleSmiths — Production Engineering, Partner Onboarding, Agreements, Approval Gates & Premium UX
+You are acting as the Principal Software Engineer, Product Designer, Security Engineer, QA Lead and Release Engineer for ScaleSmiths Limited.
+Your assignment is to bring the ScaleSmiths website, administration platform and international partner onboarding experience to a professional, production-ready standard.
+This is an implementation assignment, not a research-only exercise.
+You must inspect the existing systems, identify deficiencies, implement appropriate improvements, test your changes and produce verifiable evidence.
+Do not stop after completing an audit. Do not repeatedly ask what to work on next. Continue through the workstreams in dependency order, making safe engineering decisions within the boundaries below.
+1. SYSTEMS AND CONTEXT
+Company: ScaleSmiths Limited
+Repository: https://github.com/TheFridey/ScaleSmiths
+Relevant production services:
+
+* https://scalesmiths.co.uk
+* https://partners.scalesmiths.co.uk
+* Existing ScaleSmiths administration application
+* https://app.scalesmiths.co.uk — ScaleSmiths Connect
+
+Infrastructure includes Next.js, TypeScript, PostgreSQL, Nginx and Linux VPS deployments. Verify actual versions, service names, architecture and deployment methods before acting.
+The company is building an international network of independent sales partners who introduce businesses to ScaleSmiths services.
+The partner programme must support application review, contractual onboarding, training, lead management, commissions, milestones, performance visibility and ongoing communication.
+ScaleSmiths already has substantial functionality. Extend and improve the existing architecture; do not replace working systems unnecessarily.
+Other agents may be working on the repository concurrently. Inspect active branches, commits, pull requests, working trees and deployments before making changes.
+2. NON-NEGOTIABLE ENGINEERING RULES
+
+1. Inspect the actual repository and production state. Never assume an earlier report is still accurate.
+2. Read existing architecture documents, contribution guidance, security policies and deployment procedures.
+3. Use an isolated feature branch. Never overwrite another agent's uncommitted work.
+4. Prefer small, reviewable commits with descriptive messages.
+5. Do not expose secrets, credentials, tokens or personal information in logs, reports or commits.
+6. Never modify production databases destructively.
+7. Use reversible migrations with verified backups and rollback procedures.
+8. Never bypass legal, commercial, founder or security approval gates.
+9. Never activate unfinished partner features simply to demonstrate them.
+10. Do not deploy automatically unless deployment is explicitly authorised and all release gates pass.
+11. Do not manufacture test results or mark incomplete features as finished.
+12. Avoid placeholder functionality, fake data presented as real, dead buttons and cosmetic-only fixes.
+13. Preserve existing brand identity and functionality.
+14. Continue independently through all safe, authorised development work rather than repeatedly requesting permission.
+
+If blocked by an external approval, document the blocker, keep the feature safely disabled and continue with independent tasks.
+3. PHASE ONE — FULL PRODUCTION AND CODEBASE AUDIT
+Before changing application code, establish a verified baseline.
+Repository inspection
+Inspect:
+
+* Public website architecture
+* Partner application architecture
+* Administration application
+* Authentication and authorisation
+* Partner database schema
+* Application and approval workflows
+* Agreement/document infrastructure
+* Commission and milestone logic
+* Feature flags
+* Email delivery
+* Background jobs
+* Audit logging
+* API routes
+* Error handling
+* CI/CD and deployment workflows
+* Existing tests and coverage
+
+Identify duplicated functionality, unfinished implementations, dead code, inconsistent UI components and unsafe assumptions.
+Production investigation
+Using authorised VPS access, investigate:
+
+* Application service health
+* Recent server and application errors
+* Nginx errors and upstream failures
+* Failed API requests
+* Database connection errors
+* Authentication failures
+* Unhandled exceptions
+* Deployment-related failures
+* Missing environment configuration
+* Background job failures
+* Email delivery failures
+* Browser console errors
+* Client-side hydration errors
+
+Distinguish genuine defects from harmless warnings, expected authentication redirects and historical errors.
+Do not indiscriminately clear logs.
+Deliverable
+Create a baseline report containing:
+
+* Verified architecture
+* Currently deployed commits
+* Active feature flags
+* Confirmed defects
+* Reproduction steps
+* Severity
+* Root causes where established
+* Proposed fixes
+* Relevant test coverage
+* Deployment risks
+
+Then proceed immediately to implementation.
+4. PHASE TWO — COMPLETE PARTNER ONBOARDING
+The objective is a coherent, secure, professional experience from initial application to fully activated independent sales partner.
+Application lifecycle
+Audit and implement the appropriate lifecycle:
+Application received → Under review → Additional information required / Rejected / Conditionally approved → Agreement pending → Agreement accepted → Founder approval complete → Account activated → Onboarding in progress → Active partner
+Adapt this lifecycle to the existing system rather than introducing unnecessary duplicate states.
+Ensure transitions are enforced server-side.
+Founder administration
+Founders should be able to:
+
+* View applicants in a clear, searchable directory
+* Filter by status, country, submission date and review state
+* Inspect applicant information
+* Record internal review notes
+* Request additional information
+* Approve or reject applications
+* Issue approved agreement versions
+* Monitor agreement acceptance
+* Complete mandatory approval steps
+* Activate eligible accounts
+* Suspend or revoke access
+* View a complete audit history
+
+Design an efficient workflow with minimal unnecessary navigation.
+Use meaningful status indicators, clear actions and confirmation dialogs for consequential decisions.
+Applicant experience
+Applicants should receive:
+
+* Professional application confirmation
+* Clear next-step communications
+* Secure access to outstanding onboarding tasks
+* A readable agreement review experience
+* Explicit acceptance controls
+* Clear explanations of pending approvals
+* Account activation instructions
+* Appropriate error and recovery states
+
+Do not expose internal founder notes or confidential administrative information.
+Partner first-login experience
+After activation, the partner should encounter a polished onboarding experience.
+Include, where appropriate:
+
+* Welcome dashboard
+* Onboarding progress
+* Profile completion
+* Agreement status
+* Required training
+* Academy access
+* Resource Centre
+* Knowledge Base
+* Lead submission guidance
+* Commission structure
+* Milestone progression
+* Support and communication access
+
+Existing feature flags and commercial approval requirements must remain enforced.
+Do not expose unfinished modules.
+Email communications
+Review the existing email infrastructure.
+Implement or repair transactional communications for appropriate lifecycle events, with:
+
+* Consistent ScaleSmiths branding
+* Clear subjects
+* Responsive layouts
+* Correct sender identity
+* Safe links
+* No confidential information leakage
+* Retry and failure handling
+* Idempotency where needed
+* Auditability
+
+Test delivery safely without sending unintended emails to real applicants.
+5. PHASE THREE — PARTNER AGREEMENTS
+Build or complete a secure, versioned agreement workflow.
+Important: Software implementation is authorised. Legal drafting, commercial approval and publication of binding terms are not automatically authorised.
+Do not invent legally binding terms or declare documents legally compliant without appropriate review.
+Agreement requirements
+The system should support:
+
+* Draft agreement templates
+* Explicit document versions
+* Founder approval before publication
+* Immutable published versions
+* Assignment of an approved version to an applicant
+* Full agreement review before acceptance
+* Explicit affirmative acceptance
+* Acceptance timestamp
+* Authenticated account identity
+* Exact accepted document version
+* Document content hash
+* Tamper-evident audit history
+* Downloadable accepted agreement
+* Founder visibility
+* Reissue when an agreement changes
+* Appropriate withdrawal and supersession workflows
+
+Assess whether the existing system supports electronic signing adequately or whether an external e-signature provider is required.
+Do not claim legal equivalence between a simple checkbox and a compliant electronic-signature process.
+Commercial terms
+Respect the existing independent sales partner model.
+The current advertised structure includes 30% commission on eligible initial sales payments, but the authoritative approved commercial specification must be identified before implementing calculations or publishing contractual language.
+Do not assume that advertised commission terms alone define:
+
+* Eligibility
+* Payment timing
+* Refunds
+* Chargebacks
+* Cancellations
+* Tax treatment
+* Territory rights
+* Exclusivity
+* Termination
+* Disputes
+* Governing law
+
+Identify unresolved commercial decisions and place them behind explicit founder approval.
+Agreement security
+Ensure:
+
+* Partners cannot alter agreement versions
+* Published versions cannot be silently edited
+* Acceptance cannot be backdated
+* Acceptance cannot be forged by client-side requests
+* Partners cannot accept agreements for other users
+* A revoked agreement cannot activate an account
+* Superseded agreements follow explicit policy
+* Audit records cannot be silently deleted
+
+Write regression tests for these conditions.
+6. PHASE FOUR — FOUNDER APPROVAL GATES
+This is a critical security and governance requirement.
+Approval must be enforced in the backend, not merely represented by disabled buttons.
+Mandatory principles
+
+* No application activation without required approvals
+* No agreement publication without appropriate approval
+* No access to restricted partner resources before eligibility
+* No commission entitlement without the applicable verified conditions
+* No cross-partner access to private information
+* No unauthorised founder impersonation
+* No approval by users lacking the correct role
+* No silent approval when a dependency fails
+* No bypass through direct API requests
+* No duplicate approval or activation from retries
+
+Governance
+Where multiple founders must approve an action, implement the established approval policy.
+Do not invent a new voting or commercial governance structure.
+Review the existing B1.1–B1.4 founder-content, Academy, Resources and Knowledge workflows and their feature flags.
+Preserve their existing safeguards.
+Auditability
+Every consequential action should record:
+
+* Actor
+* Target
+* Action
+* Previous state
+* New state
+* Timestamp
+* Relevant document or policy version
+* Reason where required
+
+Sensitive audit information must be accessible only to authorised personnel.
+Testing
+Create negative tests for:
+
+* Unauthorised approvals
+* Missing agreements
+* Expired or withdrawn invitations
+* Duplicate submissions
+* Replay attempts
+* Invalid state transitions
+* Cross-tenant access
+* Direct API bypasses
+* Concurrent approval races
+* Suspended accounts
+* Revoked permissions
+
+Fail closed when a mandatory approval cannot be verified.
+7. PHASE FIVE — PREMIUM WEBSITE AND PARTNER UX
+ScaleSmiths should feel like a polished, established international technology company.
+The visual standard should be comparable to high-quality modern SaaS platforms, not a generic template or unfinished internal dashboard.
+Brand
+Preserve the official ScaleSmiths identity:
+
+* Metallic interlocking S emblem
+* Silver and gold wordmark
+* Premium dark presentation where appropriate
+* Restrained gold accents
+* Professional typography
+* Consistent visual hierarchy
+
+Use existing authoritative brand assets. Do not redraw or reinterpret the logo.
+Public website
+Audit and improve:
+
+* Header and navigation
+* Hero sections
+* Service pages
+* Calls to action
+* Mobile menus
+* Contact forms
+* Partner recruitment journey
+* Trust and credibility sections
+* Footer
+* Loading behaviour
+* Performance
+* SEO fundamentals
+* Accessibility
+* Error pages
+
+Ensure every CTA leads somewhere meaningful.
+Partner dashboard
+Improve:
+
+* Navigation and information architecture
+* Dashboard overview
+* Applicant/onboarding status
+* Member and profile views
+* Lead management
+* Commission visibility
+* Milestone tracking
+* Training and resources
+* Settings
+* Notifications
+* Empty states
+* Error states
+* Confirmation dialogs
+
+Prioritise clarity and ease of use over decorative complexity.
+Animation and interaction
+Introduce polished, purposeful interactions:
+
+* Responsive hover states
+* Smooth panel transitions
+* Subtle card elevation
+* Clear active and selected states
+* Button press feedback
+* Loading skeletons
+* Success confirmations
+* Error feedback
+* Dropdown animations
+* Modal transitions
+* Keyboard focus indicators
+
+Animations should feel responsive and premium.
+Avoid excessive movement, distracting effects and sluggish transitions.
+Support `prefers-reduced-motion`.
+Mobile quality
+Test realistic device widths, including approximately:
+
+* 390px
+* 768px
+* 1024px
+* 1440px
+
+Verify touch targets, mobile keyboards, forms, navigation, scrolling, modals and content overflow.
+Accessibility
+Target WCAG 2.2 AA where practicable.
+Check:
+
+* Keyboard navigation
+* Visible focus
+* Accessible names
+* Colour contrast
+* Form labels
+* Error announcements
+* Semantic structure
+* Screen-reader usability
+* Reduced motion
+
+Do not sacrifice accessibility for visual effects.
+8. PHASE SIX — PRODUCTION ERROR REMEDIATION
+Treat error remediation as an engineering workstream, not a log-clearing exercise.
+For each confirmed production error:
+
+1. Capture a safe reproduction.
+2. Identify the affected service.
+3. Determine severity and user impact.
+4. Trace the underlying cause.
+5. Implement the smallest robust correction.
+6. Add regression coverage.
+7. Verify the fix in a safe environment.
+8. Document deployment and rollback requirements.
+
+Prioritise authentication, onboarding, agreements, approvals, data integrity and broken customer-facing functionality.
+Observability
+Improve visibility into:
+
+* Unhandled exceptions
+* API failure rates
+* Authentication failures
+* Background job failures
+* Email delivery failures
+* Database failures
+* Deployment regressions
+
+Use structured logs and correlation identifiers where appropriate.
+Do not log passwords, access tokens, agreement secrets or unnecessary personal information.
+Evaluate external alerting, but do not introduce paid services or transmit production data to new providers without approval.
+9. PHASE SEVEN — COMPREHENSIVE TESTING
+Testing must cover actual behaviour, not simply successful compilation.
+Automated checks
+Run relevant:
+
+* TypeScript checks
+* Linting
+* Unit tests
+* Integration tests
+* Database migration tests
+* Production builds
+* Security regressions
+* Browser end-to-end tests
+
+Browser testing
+Use Playwright or the repository's established browser tooling.
+Test real application journeys.
+Cover:
+
+* Mouse interactions
+* Hover states
+* Buttons
+* Links
+* Dropdowns
+* Forms
+* Modals
+* Keyboard navigation
+* Mobile layouts
+* Validation errors
+* Loading states
+* Empty states
+* Network failures
+* Session expiration
+
+Capture screenshots at relevant breakpoints.
+Inspect console errors and failed network requests.
+Do not claim complete coverage merely because a script hovered over buttons.
+Multi-role testing
+Test using appropriately isolated accounts representing:
+
+* Founder
+* Applicant
+* Pending partner
+* Active partner
+* Suspended partner
+* Unauthorised visitor
+
+Verify both permitted actions and denied actions.
+Use synthetic or isolated test data.
+Never create unintended real commissions, send real applicant emails or alter genuine agreements during testing.
+Acceptance criteria
+The operation is not complete until:
+
+* Critical onboarding journeys pass
+* Approval gates are enforced server-side
+* Agreement version integrity is demonstrated
+* Unauthorised access tests pass
+* Relevant production errors are resolved or documented
+* No known critical browser regressions remain
+* Builds and CI checks pass
+* A safe rollback procedure exists
+* Unresolved legal/commercial approvals remain explicitly gated
+
+10. RELEASE MANAGEMENT
+Prepare the implementation for production without assuming deployment permission.
+Before release:
+
+* Identify exact target commit
+* Confirm clean working tree
+* Verify CI
+* Review migrations
+* Confirm backup availability
+* Document rollback
+* Check feature flags
+* Check pending legal approvals
+* Confirm no secrets were introduced
+
+Do not modify production agreement records or enable unapproved commercial functionality.
+If deployment is authorised, use the established release process and verify production after deployment.
+Never declare deployment successful solely because a process restarted.
+11. REQUIRED DELIVERABLES
+Create or update suitable repository documentation covering:
+A. Baseline audit
+
+* Current architecture
+* Deployed state
+* Defects and risks
+
+B. Implementation changelog
+
+* Files changed
+* Features added
+* Defects fixed
+* Migrations
+* Commits
+
+C. UX review
+
+* Before/after findings
+* Screenshots
+* Responsive results
+* Accessibility findings
+
+D. Partner onboarding report
+
+* Lifecycle
+* Permissions
+* Agreement workflow
+* Approval gates
+* Email notifications
+
+E. Test evidence
+
+* Commands executed
+* Pass/fail counts
+* Browser coverage
+* Known limitations
+
+F. Release-readiness report
+
+* Ready features
+* Disabled features
+* Outstanding approvals
+* Remaining blockers
+* Deployment instructions
+* Rollback instructions
+
+Open a pull request when the implementation is ready for review, if repository permissions permit.
+12. EXECUTION STRATEGY
+Work in the following order:
+
+1. Verify repository and production baseline.
+2. Fix critical production errors affecting onboarding and authentication.
+3. Complete partner application lifecycle.
+4. Complete agreement versioning and acceptance.
+5. Enforce founder approval gates.
+6. Integrate onboarding communications and first-login experience.
+7. Perform the premium public website and partner dashboard visual pass.
+8. Complete accessibility and responsive improvements.
+9. Run comprehensive regression testing.
+10. Resolve failures and repeat tests.
+11. Prepare the final pull request and release-readiness report.
+
+Keep changes coherent and avoid unnecessary architectural rewrites.
+Do not stop after writing a plan. Execute the plan.
+Do not stop after the first successful test.
+Do not declare an incomplete workflow complete.
+Do not ask for confirmation between ordinary, reversible engineering tasks.
+Where a legal, financial, security or production-release decision requires founder authorisation, preserve the gate, record the blocker and continue other work.
+FINAL OBJECTIVE
+Deliver a ScaleSmiths platform that is visually premium, technically robust and ready for controlled international partner onboarding.
+The finished experience must make applicants confident in the company, make partners understand exactly what they need to do next, and give founders complete visibility and control over applications, agreements and approvals.
+Build it, verify it, document it and prepare it for release. Do not substitute a roadmap for implementation.
+Begin by inspecting the repository and actual production state now.
+</pasted_content id="831a">
+
+---
+
+<task-notification>
+<task-id>bx640ntdh</task-id>
+<tool-use-id>toolu_01BGHigkkqYYvCR9dYJvSuL5</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\aebf5df5-fc53-46f8-adc5-609b4932802f\tasks\bx640ntdh.output</output-file>
+<status>completed</status>
+<summary>Background command "Check diff and install dependencies" completed (exit code 0)</summary>
+</task-notification>

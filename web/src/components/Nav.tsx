@@ -32,6 +32,9 @@ const serviceLinks = [
 
 const PARTNER_CTA_CLASS = "bg-gradient-to-b from-[#ecd9a8] via-[#c8aa6e] to-[#a8884a] text-black shadow-[0_0_0_1px_rgba(219,193,142,.45),0_6px_18px_rgba(200,170,110,.18)] transition-[transform,box-shadow,filter] duration-200 hover:-translate-y-px hover:brightness-110 hover:shadow-[0_0_0_1px_rgba(236,217,168,.8),0_10px_26px_rgba(200,170,110,.32)] motion-reduce:transition-none motion-reduce:hover:translate-y-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ecd9a8]"
 
+// Drawer rows: the current page carries a gold rail and gold text, so the drawer answers "where am I?".
+const DRAWER_LINK_CLASS = "flex min-h-14 items-center border-b border-b1 font-syne font-bold text-t1 transition-colors hover:text-acc active:text-acc aria-[current=page]:border-l-2 aria-[current=page]:border-l-acc aria-[current=page]:pl-3 aria-[current=page]:text-acc"
+
 const links = [
   { href: "/industries", label: "Industries" },
   { href: "/work", label: "Work" },
@@ -97,7 +100,7 @@ export function Nav() {
     if (!open) return
     // Lock both html and body. Compensating padding prevents the classic
     // scrollbar-gutter jump on desktop-width viewports that still show the
-    // mobile toggle below the `md` breakpoint (e.g. narrow browser windows).
+    // mobile toggle below the `lg` breakpoint (tablets and narrow browser windows).
     const html = document.documentElement
     const { body } = document
     const scrollbarGap = Math.max(0, window.innerWidth - html.clientWidth)
@@ -157,7 +160,7 @@ export function Nav() {
             <m.div
               key="mobile-nav-overlay"
               className={cn(
-                "fixed inset-x-0 bottom-0 z-40 overflow-hidden overscroll-none bg-black/55 md:hidden",
+                "fixed inset-x-0 bottom-0 z-40 overflow-hidden overscroll-none bg-black/55 lg:hidden",
                 navOffset,
               )}
               initial={reducedMotion ? false : { opacity: 0 }}
@@ -186,13 +189,13 @@ export function Nav() {
                   </m.div>
                   {links.map((link) => (
                     <m.div key={link.href} variants={staggerItem}>
-                      <Link href={link.href} prefetch={false} onClick={closeMenu} className="flex min-h-14 items-center border-b border-b1 font-syne text-xl font-bold text-t1">{link.label}</Link>
+                      <Link href={link.href} prefetch={false} onClick={closeMenu} aria-current={isActive(link.href) ? "page" : undefined} className={cn(DRAWER_LINK_CLASS, "text-xl")}>{link.label}</Link>
                     </m.div>
                   ))}
                   <m.p variants={staggerItem} className="pb-3 pt-7 font-dm text-[11px] font-semibold uppercase tracking-[.16em] text-t3">Services</m.p>
                   {serviceLinks.map((link) => (
                     <m.div key={link.href} variants={staggerItem}>
-                      <Link href={link.href} prefetch={false} onClick={closeMenu} className="flex min-h-14 items-center border-b border-b1 font-syne text-lg font-bold text-t1">
+                      <Link href={link.href} prefetch={false} onClick={closeMenu} aria-current={pathname === link.href ? "page" : undefined} className={cn(DRAWER_LINK_CLASS, "text-lg")}>
                         {link.label}
                       </Link>
                     </m.div>
@@ -223,7 +226,9 @@ export function Nav() {
       )}>
         <Logo showName={false} size={scrolled ? 38 : 44} />
 
-        <div className="ml-auto hidden items-center gap-3 md:flex lg:gap-7">
+        {/* Full bar from 1024px. Below that the links do not fit beside the emblem and CTAs,
+            so tablets get the same drawer as phones rather than a cramped, wrapping bar. */}
+        <div className="ml-auto hidden items-center gap-4 lg:flex xl:gap-7">
           <div
             ref={servicesRef}
             className="relative"
@@ -233,7 +238,9 @@ export function Nav() {
             <button
               ref={servicesTriggerRef}
               type="button"
-              onClick={() => setServicesOpen(true)}
+              // Pointer users already opened the menu on hover, so a click keeps it open.
+              // Keyboard activation (detail === 0) toggles, so Enter or Space can close it again.
+              onClick={(event) => setServicesOpen((value) => (event.detail === 0 ? !value : true))}
               aria-expanded={servicesOpen}
               aria-controls={servicesMenuId}
               className={cn("group relative inline-flex items-center gap-1.5 py-2 font-dm text-[13px] font-medium tracking-[.01em]", servicesActive ? "text-t1" : "text-t2 hover:text-t1")}
@@ -290,23 +297,24 @@ export function Nav() {
               </Link>
             )
           })}
-          <Link href="/partners" prefetch={false} aria-current={isActive("/partners") ? "page" : undefined} className={cn("inline-flex min-h-9 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 font-dm text-[12px] font-bold lg:px-4 lg:text-[13px]", PARTNER_CTA_CLASS)}>
+          <Link href="/partners" prefetch={false} aria-current={isActive("/partners") ? "page" : undefined} className={cn("inline-flex min-h-9 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 font-dm text-[13px] font-bold xl:px-4", PARTNER_CTA_CLASS)}>
             <Handshake size={14} aria-hidden="true" /> Become a Partner
           </Link>
-          <Link href="/portal/login" prefetch={false} aria-label="Client Portal" className="group inline-flex min-h-9 items-center gap-2 border-l border-b1 pl-4 font-dm text-[13px] font-medium text-t2 transition-colors hover:text-t1 lg:pl-5">
+          <Link href="/portal/login" prefetch={false} aria-label="Client Portal" title="Client Portal" className="group inline-flex min-h-9 min-w-9 items-center justify-center gap-2 whitespace-nowrap border-l border-b1 pl-4 font-dm text-[13px] font-medium text-t2 transition-colors hover:text-t1 xl:pl-5">
             <LogIn size={14} className="text-acc" aria-hidden="true" />
-            <span className="hidden lg:inline">Client Portal</span>
-            <ArrowUpRight size={12} className="hidden text-t3 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 lg:block" aria-hidden="true" />
+            <span className="hidden xl:inline">Client Portal</span>
+            <ArrowUpRight size={12} className="hidden text-t3 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 motion-reduce:transition-none xl:block" aria-hidden="true" />
           </Link>
-          <Link href="/quote" prefetch={false} className="btn-sm group">
+          <Link href="/quote" prefetch={false} className="btn-sm group whitespace-nowrap">
             Start a Project <ArrowUpRight size={13} className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" aria-hidden="true" />
           </Link>
         </div>
 
-        <Link href="/partners" prefetch={false} aria-label="Become a Partner" className={cn("ml-auto inline-flex min-h-11 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 font-dm text-[12px] font-bold md:hidden", PARTNER_CTA_CLASS)}>
-          <Handshake size={14} aria-hidden="true" /> Partner
+        <Link href="/partners" prefetch={false} aria-label="Become a Partner" className={cn("ml-auto inline-flex min-h-11 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 font-dm text-[12px] font-bold sm:px-4 sm:text-[13px] lg:hidden", PARTNER_CTA_CLASS)}>
+          <Handshake size={14} aria-hidden="true" />
+          <span><span className="hidden sm:inline">Become a </span>Partner</span>
         </Link>
-        <button ref={toggleRef} type="button" className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-control bg-s1/70 text-t1 md:hidden"
+        <button ref={toggleRef} type="button" className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-control bg-s1/70 text-t1 transition-colors hover:border-b3 active:bg-s2 lg:hidden"
           onClick={() => setOpen((value) => !value)} aria-label={open ? "Close menu" : "Open menu"} aria-expanded={open} aria-controls="mobile-navigation">
           {open ? <X size={20} aria-hidden="true" /> : <Menu size={20} aria-hidden="true" />}
         </button>

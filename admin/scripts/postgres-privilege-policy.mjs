@@ -34,6 +34,8 @@ export const WEB_TABLE_GRANTS = new Map([
   // Durable counters for the public rate limits. Web upserts its own counters
   // but never deletes: expired rows are pruned by the admin worker.
   ["web_rate_limits", ["SELECT", "INSERT", "UPDATE"]],
+  // Operation Launch Ready: the public application form records its own confirmation-email outcome (recipient as a hash only).
+  ["partner_notifications", ["INSERT"]],
 ])
 
 export const WEB_INSERT_TABLES = [
@@ -53,6 +55,10 @@ export const ADMIN_FUNCTION_GRANTS = [
   { schema: "public", name: "empower_academy_lesson_servable", arguments: "uuid, uuid" },
   // Operation Empower B1.3: Resource Centre search document (index expression and queries).
   { schema: "public", name: "empower_search_document", arguments: "text, text, jsonb" },
+  // Operation Launch Ready: agreement text digest, agreement currency and the application transition map, called from trigger bodies and service reads.
+  { schema: "public", name: "partner_agreement_digest", arguments: "text, text" },
+  { schema: "public", name: "partner_agreement_current", arguments: "uuid" },
+  { schema: "public", name: "partner_application_transition_allowed", arguments: "text, text" },
   // Operation Empower B1.5: objection field and client-line checks, called from the objection trigger body.
   { schema: "public", name: "empower_objection_fields_problem", arguments: "jsonb" },
   { schema: "public", name: "empower_client_line_leaks", arguments: "text" },

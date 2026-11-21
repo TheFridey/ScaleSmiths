@@ -31,7 +31,7 @@ export function InsightCategoryPage({ topic }: { topic: InsightTopicSlug }) {
   return (
     <>
       <JsonLd data={schema} />
-      <main className="relative overflow-hidden px-6 pb-24 pt-10 md:px-12 md:pt-14">
+      <div className="relative overflow-hidden px-6 pb-24 pt-10 md:px-12 md:pt-14">
         {enterprise ? (
           <div
             aria-hidden="true"
@@ -137,7 +137,7 @@ export function InsightCategoryPage({ topic }: { topic: InsightTopicSlug }) {
             </div>
           </section>
         </div>
-      </main>
+      </div>
     </>
   )
 }

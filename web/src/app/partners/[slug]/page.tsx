@@ -19,7 +19,7 @@ export default async function PartnerProfilePage({ params }: { params: Promise<{
   const profile = await getPublicPartnerProfile((await params).slug)
   if (!profile) notFound()
   return (
-    <main className="mx-auto max-w-3xl px-6 py-16 md:py-24" data-testid="partner-profile">
+    <div className="mx-auto max-w-3xl px-6 py-16 md:py-24" data-testid="partner-profile">
       <p className="text-xs font-semibold uppercase tracking-[.16em] text-[#dbc18e]">Independent ScaleSmiths partner</p>
       <h1 className="mt-4 break-words font-syne text-4xl font-extrabold leading-tight md:text-5xl">{profile.displayName}</h1>
       <p className="mt-3 flex items-center gap-2 text-sm text-white/80"><ShieldCheck size={16} aria-hidden="true" /> Verified ScaleSmiths partner · {profile.operatingArea}</p>
@@ -42,6 +42,6 @@ export default async function PartnerProfilePage({ params }: { params: Promise<{
         )}
         <p className="mt-3 text-xs text-white/60">Partners are independent. Scope, pricing and delivery are agreed with ScaleSmiths, not with the partner.</p>
       </section>
-    </main>
+    </div>
   )
 }

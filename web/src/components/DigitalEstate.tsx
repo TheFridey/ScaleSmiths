@@ -81,7 +81,7 @@ export function DigitalEstate() {
             ))}
           </div>
 
-          <aside className="hidden flex-col justify-between rounded-3xl bg-bg p-8 lg:flex" aria-live="polite">
+          <div className="hidden flex-col justify-between rounded-3xl bg-bg p-8 lg:flex" aria-live="polite">
             <div>
               <p className="font-dm text-[10px] font-semibold uppercase tracking-[.18em] text-acc">Selected responsibility</p>
               <h3 className="mt-5 font-syne text-4xl font-bold tracking-[-.03em]">{active.label}</h3>
@@ -90,7 +90,7 @@ export function DigitalEstate() {
             <p className="mt-10 border-t border-b1 pt-6 font-dm text-xs leading-relaxed text-t3">
               Every estate is scoped individually. A node represents a capability that may be managed, not an automatic inclusion or invented live status.
             </p>
-          </aside>
+          </div>
 
           <div className="relative grid gap-0 border-l border-b2 pl-6 lg:hidden">
             {estateNodes.map((node) => (

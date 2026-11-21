@@ -76,7 +76,7 @@ export default function FaqPage() {
   return (
     <>
       <JsonLd data={schema} />
-      <main>
+      <div>
         <header className="px-6 pb-14 pt-10 md:px-12 md:pt-14">
           <div className="mx-auto max-w-[1240px]">
             <Breadcrumbs items={[{ name: "Home", href: "/" }, { name: "FAQ" }]} />
@@ -122,7 +122,7 @@ export default function FaqPage() {
             </div>
           </div>
         </section>
-      </main>
+      </div>
     </>
   )
 }

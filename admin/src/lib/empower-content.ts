@@ -6,7 +6,7 @@
 import { ExpansionError } from "./expansion"
 import { MEETING_TYPES } from "./expansion-operations"
 
-export const CONTENT_KINDS = ["resource", "lesson", "knowledge", "objection", "template", "course"] as const
+export const CONTENT_KINDS = ["resource", "lesson", "knowledge", "objection", "template", "course", "agreement"] as const
 export type ContentKind = (typeof CONTENT_KINDS)[number]
 export const CONTENT_AUDIENCES = ["partner_only", "client_facing"] as const
 export type ContentAudience = (typeof CONTENT_AUDIENCES)[number]
@@ -181,6 +181,8 @@ export function contentFields(kind: ContentKind, value: unknown, complete: boole
     if (complete) { req(out, "summary", "One-line summary"); oneOf(out.category, RESOURCE_CATEGORIES, "resource category") }
     return out
   }
+  // An agreement is its title and full text only; nothing structured that could diverge from the accepted text.
+  if (kind === "agreement") return keep([])
   return keep(["subject", "use_when"])
 }
 
@@ -222,6 +224,12 @@ export function checkSubmission(input: { kind: ContentKind; audience: ContentAud
   const problems = linkProblems([input.body, ...flatText(fields)].join("\n"))
   if (problems.length) fail(problems.join(" "))
   if (input.kind === "knowledge" && COMMERCIAL_TOPICS.includes(String(fields.topic)) && input.cadenceMonths !== REVIEW_CADENCES.commercial) fail("Commercial knowledge must use the 3-month review cadence.")
+  if (input.kind === "agreement") {
+    if (input.audience !== "partner_only" || input.cadenceMonths !== REVIEW_CADENCES.commercial) fail("Partner agreements are partner-only and reviewed on the commercial (3-month) cadence.")
+    if (input.body.trim().length < 200) fail("An agreement must contain its full text.")
+    // Software does not decide legal sufficiency: a founder must cite the legal review this text relies on.
+    if (!sources.some((s) => /^legal:\S{3,}/.test(s))) fail("Cite the legal review of this agreement as a source starting legal: (for example legal:solicitor-review-2026-12).")
+  }
   if (input.kind === "objection") {
     if (input.audience !== "partner_only") fail("Objection responses are partner-only; the client-facing line is the only text a partner copies to a client.")
     if (COMMERCIAL_OBJECTION_CATEGORIES.includes(String(fields.category)) && input.cadenceMonths !== REVIEW_CADENCES.commercial) fail("Commercial objection responses must use the 3-month review cadence.")

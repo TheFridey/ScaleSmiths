@@ -37,7 +37,7 @@ export default async function IndustryHubPage({ params }: { params: Promise<{ hu
   return (
     <>
       <JsonLd data={schemas} />
-      <main>
+      <div>
         <section className="px-6 py-20 md:px-12 md:py-28">
           <div className="mx-auto max-w-[1240px]">
             <Breadcrumbs
@@ -145,7 +145,7 @@ export default async function IndustryHubPage({ params }: { params: Promise<{ hu
             </ul>
           </div>
         </section>
-      </main>
+      </div>
     </>
   )
 }

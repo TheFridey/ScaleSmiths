@@ -1,0 +1,15 @@
+{
+  "tool_use_id": "toolu_01Kr7jgSD3xiycWRM39VdqYX",
+  "agent_id": "a40a9532f2f46b5a5",
+  "subagent_type": "regression-reviewer",
+  "task_description": "Independent B1.5 security review",
+  "token_usage": {
+    "input_tokens": 14,
+    "cache_creation_tokens": 60962,
+    "cache_read_tokens": 211727,
+    "output_tokens": 8179,
+    "api_call_count": 7
+  },
+  "started_at": "2026-11-21T18:39:54.7318645Z",
+  "completed_at": "2026-11-21T18:41:40.3581104Z"
+}

@@ -131,7 +131,7 @@ Founder decisions, none made here:
 
 ## 19–21. Final commit, draft PR, deployment status
 
-Recorded in section 23 and on the PR. **Not deployed.** Nothing is published or enabled.
+Implementation commit `112c896` on `feature/operation-empower-b1-6`; draft PR [TheFridey/ScaleSmiths#162](https://github.com/TheFridey/ScaleSmiths/pull/162). Remote CI is on the PR checks. **Not deployed.** Nothing is published or enabled.
 
 ## 22. Recommended next actions
 

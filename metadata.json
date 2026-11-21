@@ -1,0 +1,46 @@
+{
+  "cli_version": "0.12.2",
+  "checkpoint_id": "01M7YXGQWZMXEKXYV06YZEAW2K",
+  "strategy": "manual-commit",
+  "branch": "feature/operation-launch-ready",
+  "checkpoints_count": 3,
+  "files_touched": [
+    ".github/workflows/ci.yml",
+    "admin/src/app/api/partner/activate/route.test.ts",
+    "admin/src/lib/partner-lifecycle.test.ts",
+    "admin/src/lib/server/expansion.test.ts",
+    "admin/src/lib/server/partner-invitations.database.test.ts",
+    "admin/test/integration/expansion-concurrency.integration.test.ts",
+    "admin/test/integration/partner-onboarding.integration.test.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 2,
+    "cache_creation_tokens": 2350,
+    "cache_read_tokens": 446266,
+    "output_tokens": 641,
+    "api_call_count": 1
+  },
+  "redaction": {
+    "replacements": 711,
+    "layers": {
+      "betterleaks": 290,
+      "connection_string": 0,
+      "credential_key": 0,
+      "credential_value": 15,
+      "credentialed_uri": 613,
+      "entropy": 77,
+      "key_context": 18,
+      "provider_token": 0,
+      "shell_stdin": 0
+    }
+  }
+}

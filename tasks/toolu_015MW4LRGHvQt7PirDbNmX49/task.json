@@ -1,0 +1,15 @@
+{
+  "tool_use_id": "toolu_015MW4LRGHvQt7PirDbNmX49",
+  "agent_id": "a9f0aed4027c75906",
+  "subagent_type": "regression-reviewer",
+  "task_description": "Independent review of B1.4",
+  "token_usage": {
+    "input_tokens": 18,
+    "cache_creation_tokens": 37723,
+    "cache_read_tokens": 233404,
+    "output_tokens": 5230,
+    "api_call_count": 9
+  },
+  "started_at": "2026-11-20T22:44:59.8111814Z",
+  "completed_at": "2026-11-20T22:46:54.3418499Z"
+}

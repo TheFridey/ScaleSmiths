@@ -43,7 +43,7 @@
 
 1. Confirm CI is green on the merge commit and the working tree is clean.
 2. Take the pre-release backup as in the pre-Empower release (`pg_dump -Fc` as the local `postgres` superuser plus journals and SHA256SUMS). age, rclone and jq are still not installed, so the backup is local and unencrypted; record that limitation.
-3. Build an immutable tree `/var/www/scalesmiths/releases/<sha>` via `git archive`, copy `.env`, link `generated-sites` to the canonical folder, then run `npm ci && npm run build` in web and admin.
+3. Build an immutable `$RELEASE_TREE` (`releases/<sha>` beside the canonical checkout `/var/www/scalesmiths/ScaleSmiths`) via `git archive`, copy `.env`, link `generated-sites` to the canonical folder, then run `npm ci && npm run build` in web and admin.
 4. `npm run db:migrate` from the release root. Expect web 25/25 and admin 97/97. Verify `web_vital` is present in `experience_event_name`.
 5. Recreate the PM2 canaries with the new `cwd` and `SS_RELEASE_ID`, then `pm2 save`.
 6. Smoke checks: both health endpoints show the new release with the database OK; `/`, `/faq`, `/partners`, `partners.scalesmiths.co.uk/login`; `POST /api/experience-events` with a `web_vital` event returns 2xx; partner pages redirect anonymous visitors; all partner switches still off.

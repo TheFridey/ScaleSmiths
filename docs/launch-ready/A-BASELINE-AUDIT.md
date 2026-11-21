@@ -12,7 +12,7 @@ Recorded 2026-11-21 against `master` at `a436712` and the live production host. 
 | Background work | `scalesmiths-megaton-worker` from `releases/6dcfeff`, and Forge operations jobs inside admin |
 | Email | Resend over HTTPS (`client-request-notifications.ts`, `invoice-delivery.ts`, `request-notifications.ts`). No partner lifecycle email exists |
 | App at `app.scalesmiths.co.uk` (Connect) | Not part of this repository; not inspected |
-| Deployment | PM2 host deploy (`docs/operations/pm2-host-deploy.md`), immutable trees under `/var/www/scalesmiths/releases/<sha>` |
+| Deployment | PM2 host deploy (`docs/operations/pm2-host-deploy.md`), immutable `releases/<sha>` trees beside the canonical checkout `/var/www/scalesmiths/ScaleSmiths` (`$RELEASE_TREE` in the deploy doc) |
 
 ### Partner onboarding as built
 

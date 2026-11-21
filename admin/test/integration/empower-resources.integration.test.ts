@@ -35,7 +35,9 @@ let pool: Pool
 const runAs = <T>(actor: Actor, operation: () => Promise<T>) => state.actors!.run(actor, operation)
 const reviewBy = () => { const d = new Date(); d.setUTCMonth(d.getUTCMonth() + 2); return d.toISOString().slice(0, 10) }
 const refused = (p: Promise<unknown>) => p.then(() => { throw new Error("expected a refusal") }, (e: unknown) => String((e as { message?: string }).message ?? e))
-const tag = suffix.replace(/[0-9]/g, "")  // a letters-only token so full-text search can find this run's rows
+// A letters-only token unique to this run, so full-text search can find this run's rows. Digits map to letters, so it is
+// never empty even when the random suffix is all digits.
+const tag = `rt${suffix.replace(/[0-9]/g, (d) => "abcdefghij"[Number(d)])}`
 async function published(slug: string, audience: "client_facing" | "partner_only", title: string, body: string, fields: Record<string, unknown>, kind: "resource" | "lesson" = "resource") {
   const c = await runAs(founderA, () => createContentItem({ kind, slug, audience, cadence: "service", title, body, fields, sourceRefs: ["faq:hosting-provided"] }))
   await runAs(founderA, () => submitContentVersion({ versionId: c.versionId }))

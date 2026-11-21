@@ -28,7 +28,8 @@ function safeUrl(value: string | undefined): string {
   if (!["127.0.0.1", "localhost", "[::1]"].includes(url.hostname) || !["55440", "55444"].includes(url.port) || url.pathname !== "/ss_expansion_test") throw new Error("Knowledge tests require the designated disposable database.")
   return value
 }
-const suffix = randomUUID().slice(0, 8), tag = suffix.replace(/[0-9]/g, "") || "kbtag"
+// Letters-only and unique per run (digits map to letters), so full-text search matches this run's rows only.
+const suffix = randomUUID().slice(0, 8), tag = `kt${suffix.replace(/[0-9]/g, (d) => "abcdefghij"[Number(d)])}`
 const mk = (role: Actor["role"], name: string): Actor => ({ id: randomUUID(), role, active: true, sessionVersion: 1, displayName: `TEST ONLY Knowledge ${name} ${suffix}` })
 const founderA = mk("owner", "founder A"), founderB = mk("owner", "founder B"), partner = mk("independent_partner", "partner")
 let pool: Pool

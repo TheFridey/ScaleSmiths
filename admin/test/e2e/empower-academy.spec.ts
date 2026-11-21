@@ -320,7 +320,7 @@ test('B1.3 Resource Centre in a real browser', async ({ browser }) => {
   const su = new Pool({ connectionString: superUrl, max: 1 })
   const shots = evidence.replace('b1-2', 'b1-3')
   await mkdir(shots, { recursive: true })
-  const run = Date.now().toString(36), tag = run.replace(/[0-9]/g, '') || 'tag'
+  const run = Date.now().toString(36), tag = `t${run.replace(/[0-9]/g, (d) => 'abcdefghij'[Number(d)])}`
   const GUIDE = `browser-guide-${run}`, REF = `browser-reference-${run}`, TITLE = `Hosting guide ${tag}`
   try {
     await su.query('delete from login_rate_limits'); await su.query('delete from web_rate_limits')
@@ -411,7 +411,7 @@ test('B1.4 Knowledge Base in a real browser', async ({ browser }) => {
   const su = new Pool({ connectionString: superUrl, max: 1 })
   const shots = evidence.replace('b1-2', 'b1-4')
   await mkdir(shots, { recursive: true })
-  const run = Date.now().toString(36), tag = run.replace(/[0-9]/g, '') || 'tag'
+  const run = Date.now().toString(36), tag = `t${run.replace(/[0-9]/g, (d) => 'abcdefghij'[Number(d)])}`
   const KB = `browser-kb-${run}`, QUESTION = `Do you provide hosting ${tag}?`, ALIAS = `do you do web hosting ${tag}`
   try {
     await su.query('delete from login_rate_limits'); await su.query('delete from web_rate_limits')

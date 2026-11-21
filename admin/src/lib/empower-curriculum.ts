@@ -164,3 +164,67 @@ export function parseResource(markdown: string, file: string, problems: string[]
   const sources = [...new Set([...splitSources(sourcesRow.replace(/faq:\s/g, "faq:")), `docs/expansion/empower/resources/${file}`])]
   return { code, title: title.trim(), audience, category: plan.category, cadence: plan.commercial ? "commercial" : "service", summary: plan.summary, body, sources, file }
 }
+
+// ---------------------------------------------------------------- B1.4: Knowledge Base drafts (KNOWLEDGE-BASE.md)
+export interface ParsedKnowledge { code: string; question: string; answer: string; clientExplanation: string; limitations: string; escalation: { required: "always" | "when" | "never"; condition?: string; route?: string }; topic: string; audience: "client_facing" | "partner_only"; cadence: "service" | "commercial"; sources: string[] }
+export const KNOWLEDGE_TOPIC_BY_PREFIX: Record<string, string> = {
+  HOST: "hosting", DOM: "domains", DNS: "dns", EMAIL: "business-email", SEC: "website-security", ANL: "analytics", SEO: "seo", AIS: "ai-search", MIG: "wordpress-migration", RED: "redirects",
+  ACC: "accessibility", ECOM: "e-commerce", BOOK: "booking-systems", CRM: "crm", SW: "custom-software", AUTO: "automation", TERMS: "commercial-terms", PAY: "payment-schedules", COMM: "commission", ONB: "client-onboarding", COM: "client-onboarding",
+}
+const COMMERCIAL_TOPIC_SET = new Set(["commercial-terms", "payment-schedules", "commission"])
+export const knowledgeSlug = (code: string) => code.toLowerCase()
+const unquote = (s: string) => s.trim().replace(/^"([\s\S]*)"\.?$/, "$1").trim()
+const stripEnd = (s: string) => s.trim().replace(/\.$/, "").trim()
+
+/** "never", "always → `route`", "always for X → `route`", "when X → `route`", or just "`route`". */
+export function parseEscalation(text: string): ParsedKnowledge["escalation"] | null {
+  const t = stripEnd(text)
+  if (/^never$/i.test(t)) return { required: "never" }
+  // One entry, one route: an entry naming several routes is refused rather than silently reduced to the first.
+  if ((t.match(/`[a-z_]+`/g) ?? []).length > 1) return null
+  const route = t.match(/`([a-z_]+)`/)?.[1]
+  if (!route) return null
+  const before = t.split("→")[0].trim()
+  if (!before || /^`/.test(before)) return { required: "always", route }
+  if (/^always$/i.test(before)) return { required: "always", route }
+  const condition = before.replace(/^always\s+/i, "").replace(/^(for|when)\s+/i, "").trim()
+  return { required: "when", condition: condition.charAt(0).toLowerCase() + condition.slice(1), route }
+}
+
+/** Client-facing lines from the objection playbook, by AP-OBJ id. */
+export function objectionLines(r08: string): Record<string, string> {
+  const out: Record<string, string> = {}
+  for (const line of clean(r08).split("\n")) {
+    const cells = line.split("|").map((c) => c.trim())
+    const id = cells[1]?.match(/`(AP-OBJ-\d{2})`/)?.[1]
+    if (id && cells.length >= 7 && !out[id]) out[id] = unquote(cells[5])
+  }
+  return out
+}
+
+export function parseKnowledgeBase(markdown: string, refs: { r08: string; r11: string }, problems: string[]): ParsedKnowledge[] {
+  const lines = objectionLines(refs.r08)
+  const boundary = clean(refs.r11).match(/\*\*Starting-price boundary[^*]*\*\*\s*"([^"]+)"/)?.[1] ?? ""
+  const blocks = ("\n" + clean(markdown)).split(/\n(?=\*\*KB-[A-Z]+-\d{2} )/).filter((b) => /^\*\*KB-[A-Z]+-\d{2} /.test(b))
+  return blocks.flatMap((block) => {
+    const [, code, question] = block.match(/^\*\*(KB-[A-Z]+-\d{2}) (.+?)\*\*/) ?? []
+    const field = (name: string) => unlinkRelative(block.match(new RegExp(`^- ${name}: (.+)$`, "m"))?.[1]?.trim() ?? "")
+    const prefix = code?.split("-")[1] ?? ""
+    const topic = KNOWLEDGE_TOPIC_BY_PREFIX[prefix]
+    const answer = field("Answer"), limitations = field("Limitation"), rawClient = field("Client explanation")
+    let clientExplanation = unquote(rawClient)
+    const objection = rawClient.match(/`(AP-OBJ-\d{2})`/)?.[1]
+    if (objection) clientExplanation = lines[objection] ?? ""
+    else if (/^the published wording in/i.test(rawClient)) clientExplanation = boundary
+    else if (/^none\b/i.test(rawClient)) clientExplanation = "none"
+    else if (/^as answer/i.test(rawClient)) clientExplanation = answer
+    const escalation = parseEscalation(field("Escalation"))
+    if (!code || !topic) { problems.push(`Unreadable knowledge entry: ${block.split("\n")[0].slice(0, 60)}`); return [] }
+    if (!answer || !limitations || !clientExplanation || !escalation) problems.push(`${code}: incomplete entry`)
+    const sources = [...new Set([...splitSources(stripEnd(field("Source").replace(/\(\*owner review\*\)/g, "").replace(/No FAQ answer exists\.?/i, ""))), `docs/expansion/empower/KNOWLEDGE-BASE.md#${code.toLowerCase()}`])]
+    // Partner-only when the entry is commission guidance or has no client-safe explanation at all.
+    const partnerOnly = prefix === "COMM" || clientExplanation === "none"
+    return [{ code, question: question.trim(), answer, clientExplanation, limitations: stripEnd(limitations) + ".", escalation: escalation ?? { required: "never" }, topic,
+      audience: partnerOnly ? "partner_only" : "client_facing", cadence: COMMERCIAL_TOPIC_SET.has(topic) ? "commercial" : "service", sources }] as ParsedKnowledge[]
+  })
+}

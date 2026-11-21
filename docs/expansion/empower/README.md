@@ -30,6 +30,7 @@ This is B1 research, architecture and content design only. It changes no applica
 | [B1-STATUS.md](B1-STATUS.md) | B0 merge record, B1 implementation gate and deliverable status |
 | [B1-2-ACADEMY-REPORT.md](B1-2-ACADEMY-REPORT.md) | B1.2 Partner Academy: design, verification, browser evidence and outstanding approvals |
 | [B1-3-RESOURCE-CENTRE-REPORT.md](B1-3-RESOURCE-CENTRE-REPORT.md) | B1.3 Resource Centre: search, synonyms, downloads, verification and outstanding approvals |
+| [B1-4-KNOWLEDGE-BASE-REPORT.md](B1-4-KNOWLEDGE-BASE-REPORT.md) | B1.4 Knowledge Base: alias-first search, help requests, verification and outstanding approvals |
 | [KNOWLEDGE-CHECKS.md](KNOWLEDGE-CHECKS.md) | The 65 draft Academy knowledge-check questions |
 
 ## Status vocabulary

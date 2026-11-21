@@ -16,7 +16,7 @@ import { randomUUID } from "node:crypto"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { createRequire } from "node:module"
-import { parsePackage, parseResource, lessonSlug, courseSlug, cadenceFor, resourceSlug } from "../src/lib/empower-curriculum.ts"
+import { parsePackage, parseResource, parseKnowledgeBase, lessonSlug, courseSlug, cadenceFor, resourceSlug, knowledgeSlug } from "../src/lib/empower-curriculum.ts"
 const require = createRequire(import.meta.url)
 const { Pool } = require("pg")
 
@@ -37,6 +37,8 @@ const resourceFiles = (await readdir(path.join(root, "resources"))).filter((f) =
 if (resourceFiles.length !== 13) throw new Error(`Expected 13 resource drafts, found ${resourceFiles.length}.`)
 const resources = []
 for (const f of resourceFiles) { const parsed = parseResource(await read(`resources/${f}`), f, pkg.problems); if (parsed) resources.push(parsed) }
+const knowledge = parseKnowledgeBase(await read("KNOWLEDGE-BASE.md"), { r08: await read("resources/R08-objection-handling-playbook.md"), r11: await read("resources/R11-commercial-pricing-reference.md") }, pkg.problems)
+if (knowledge.length !== 32) pkg.problems.push(`Expected 32 knowledge entries, found ${knowledge.length}`)
 if (pkg.problems.length) { console.error(JSON.stringify({ aborted: true, problems: pkg.problems }, null, 2)); process.exit(1) }
 
 const pool = new Pool({ connectionString: raw, max: 1 })
@@ -83,6 +85,11 @@ try {
     for (const res of resources) {
       await upsert({ slug: resourceSlug(res.code), kind: "resource", cadence: res.cadence, audience: res.audience, title: res.title, body: res.body, fields: { summary: res.summary, category: res.category }, sources: res.sources,
         summary: `Draft imported from resources/${res.file}; not approved.` })
+    }
+    for (const k of knowledge) {
+      const fields = { question: k.question, answer: k.answer, client_explanation: k.clientExplanation, limitations: k.limitations, escalation_required: k.escalation.required, topic: k.topic,
+        ...(k.escalation.condition ? { escalation_condition: k.escalation.condition } : {}), ...(k.escalation.route ? { escalation_route: k.escalation.route } : {}) }
+      await upsert({ slug: knowledgeSlug(k.code), kind: "knowledge", cadence: k.cadence, audience: k.audience, title: k.question, body: "", fields, sources: k.sources, summary: "Draft imported from KNOWLEDGE-BASE.md; not approved." })
     }
     await client.query(dryRun ? "rollback" : "commit")
   } catch (error) { await client.query("rollback"); throw error } finally { client.release() }

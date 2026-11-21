@@ -123,7 +123,7 @@ export async function downloadResource(input: { slug?: unknown }) {
   return { filename: `${r.slug.replace(/[^a-z0-9-]/g, "")}.md`, text: [...header, r.body, ""].join("\n") }
 }
 
-/** For the Academy lesson viewer: published resources that name this lesson as related. Empty while the Resource Centre is off. */
+/** Published resources that name any of these items (lessons or knowledge entries) as related. Empty while the Resource Centre is off. */
 export async function relatedResourcesForLessons(tx: Executor, lessonIds: string[]) {
   if (!partnerResourcesEnabled() || !lessonIds.length) return {} as Record<string, { title: string; href: string }[]>
   const out: Record<string, { title: string; href: string }[]> = {}

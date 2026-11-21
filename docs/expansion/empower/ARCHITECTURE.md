@@ -189,6 +189,14 @@ This replaces the separate `empower_courses` / `empower_modules` / `empower_less
 - **Routes and switch:** `/partner/resources`, `/partner/resources/[slug]`, `GET /api/partner/resources` behind `PARTNER_RESOURCE_CENTRE_ENABLED` (default off). The partner identity boundary admits exactly these page paths.
 - **Importer:** the 13 resource drafts (`resources/R01`–`R13`) import as drafts with their stated audience; R13 is imported partner-only because the file mixes client templates with partner instructions.
 
+## 7d. As built in B1.4 (no migration): the Knowledge Base
+
+- **Entries** are B1.1 content items of kind `knowledge` with the section 3.3 fields (question, answer, client explanation, limitation, escalation rule, condition and meeting route, aliases, topic). A knowledge version cannot be submitted without them.
+- **Search** reuses `empower_search_document` and the synonyms from B1.3. An exact match on the question or any alias (case-insensitive, trailing punctuation ignored) adds a fixed boost so it always ranks first; then `ts_rank_cd`; ties by slug. Topic filtering is in SQL against the approved topic list.
+- **Partner view** (`/partner/knowledge`, switch `PARTNER_KNOWLEDGE_BASE_ENABLED`, default off): search-first with the input focused and `/` to refocus; topic chips; the top result expanded; the client explanation first with a copy control only for client-facing entries; the precise answer, limitation, escalation rule and sources; related published resources.
+- **Escalation** uses the existing B0 meeting request (`request_meeting` on `/api/partner`), pre-filled with the entry's route and reference. The server derives the partner from the session; nothing is booked until a founder confirms. A search with no approved answer offers the same request instead of a guess.
+- **Importer:** the 32 planned entries import as drafts. Client explanations that point at the objection playbook or the pricing reference resolve to that approved wording; an entry naming more than one escalation route is refused; entries with no client-safe explanation are partner-only.
+
 ## 8. Open engineering decisions
 
 | ID | Question | Recommendation |

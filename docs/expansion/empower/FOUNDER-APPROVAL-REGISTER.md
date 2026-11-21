@@ -51,6 +51,8 @@ Blocking columns: **P1** blocks Phase 1 (founder content workspace), **P2** bloc
 | `AP-RES-01` | Switch on `PARTNER_RESOURCE_CENTRE_ENABLED` in a real environment | Founders | After the first resources (priority order in `AP-PUB-02`) are approved and published | N | Y | N | `FOUNDER DECISION` | |
 | `AP-RES-02` | Initial search synonyms (for example ssl, wp, seo, aeo, crm) | Founders | Add in the studio after resources are published; review with the review cadence | N | Y | N | `FOUNDER DECISION` | |
 | `AP-RES-03` | R13 follow-up templates imported partner-only (the file mixes client templates with partner instructions) | Founders | Keep partner-only, or split the client templates into a separate client-facing resource | N | Y | N | `DRAFT` | |
+| `AP-KB-01` | Switch on `PARTNER_KNOWLEDGE_BASE_ENABLED` in a real environment | Founders | After the first knowledge entries are approved and published, and `AP-PRIV-01` covers help requests | N | Y | N | `FOUNDER DECISION` | |
+| `AP-KB-02` | KB-SEC-01 escalation wording (questionnaires and procurement to technical scoping; incidents reported as escalation) | Delivery founder | Approve the reworded entry, or split incidents into their own entry | N | Y | N | `DRAFT` | |
 | `AP-PUB-02` | Publication priority order for the Resource Centre | Founders | As recommended in [CONTENT-REVIEW-REGISTER.md](CONTENT-REVIEW-REGISTER.md) section 5 | N | Y | N | `DRAFT` | |
 
 ## B. Package documents

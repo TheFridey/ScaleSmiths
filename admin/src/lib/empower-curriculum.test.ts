@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync } from "node:fs"
 import path from "node:path"
 import { describe, expect, it } from "vitest"
-import { parsePackage, parseResource } from "./empower-curriculum"
+import { parseEscalation, parseKnowledgeBase, parsePackage, parseResource } from "./empower-curriculum"
 import { checkSubmission, contentFields, knowledgeChecks, linkProblems } from "./empower-content"
 
 const dir = path.resolve(__dirname, "..", "..", "..", "docs", "expansion", "empower")
@@ -61,5 +61,44 @@ describe("Resource Centre drafts (B1.3)", () => {
       expect(() => checkSubmission({ kind: "resource", audience: r.audience, cadenceMonths: r.cadence === "commercial" ? 3 : 6, title: r.title, body: r.body, fields, sources: r.sources }), r.code).not.toThrow()
       expect(linkProblems(r.body), r.code).toEqual([])
     }
+  })
+})
+
+describe("Knowledge Base drafts (B1.4)", () => {
+  const problems: string[] = []
+  const entries = parseKnowledgeBase(read("KNOWLEDGE-BASE.md"), { r08: read("resources/R08-objection-handling-playbook.md"), r11: read("resources/R11-commercial-pricing-reference.md") }, problems)
+  it("reads all 32 entries (the package summary said 33; the file has 32) with topics, escalation and resolved client explanations, and no problems", () => {
+    expect(problems).toEqual([])
+    expect(entries).toHaveLength(32)
+    expect(new Set(entries.map((e) => e.code)).size).toBe(32)
+    expect(entries.find((e) => e.code === "KB-SEO-01")!.clientExplanation).toMatch(/^No honest agency can promise a position/)
+    expect(entries.find((e) => e.code === "KB-TERMS-01")!.clientExplanation).toMatch(/^A starting price is the entry point/)
+    expect(entries.find((e) => e.code === "KB-ONB-02")!.clientExplanation).toBe(entries.find((e) => e.code === "KB-ONB-02")!.answer)
+    expect(entries.filter((e) => e.audience === "partner_only").map((e) => e.code)).toEqual(["KB-COMM-01", "KB-COMM-02", "KB-COMM-03"])
+    expect(entries.find((e) => e.code === "KB-HOST-01")!.escalation).toEqual({ required: "when", condition: "the client needs a price, a specific provider or a migration", route: "technical_scoping" })
+    expect(entries.find((e) => e.code === "KB-MIG-01")!.escalation).toEqual({ required: "always", route: "technical_scoping" })
+    expect(entries.find((e) => e.code === "KB-COMM-02")!.escalation).toEqual({ required: "always", route: "commercial_assistance" })
+    expect(entries.find((e) => e.code === "KB-SEO-01")!.escalation).toEqual({ required: "never" })
+  })
+  it("produces entries that pass submission, including the client-facing audience check, with no override", () => {
+    for (const e of entries) {
+      const fields = contentFields("knowledge", { question: e.question, answer: e.answer, client_explanation: e.clientExplanation, limitations: e.limitations, escalation_required: e.escalation.required,
+        escalation_condition: e.escalation.condition, escalation_route: e.escalation.route, topic: e.topic }, true)
+      expect(() => checkSubmission({ kind: "knowledge", audience: e.audience, cadenceMonths: e.cadence === "commercial" ? 3 : 6, title: e.question, body: "", fields, sources: e.sources }), e.code).not.toThrow()
+    }
+  })
+})
+
+describe("knowledge parser review fixes (B1.4)", () => {
+  it("refuses an escalation that names more than one route instead of keeping only the first", () => {
+    expect(parseEscalation("always for X → `technical_scoping` or `escalation`.")).toBeNull()
+    expect(parseEscalation("when the client sends a security questionnaire or procurement requirements → `technical_scoping`. A suspected incident is always reported the same day as an escalation request (see R10).")).toMatchObject({ required: "when", route: "technical_scoping" })
+  })
+  it("treats any entry without a client-safe explanation as partner-only", () => {
+    const problems: string[] = []
+    const md = "**KB-HOST-09 Internal question?**\n- Answer: An internal answer.\n- Client explanation: none.\n- Source: faq:hosting-provided.\n- Limitation: Partner preparation only.\n- Escalation: never.\n"
+    const [entry] = parseKnowledgeBase(md, { r08: "", r11: "" }, problems)
+    expect(problems).toEqual([])
+    expect(entry).toMatchObject({ code: "KB-HOST-09", audience: "partner_only", clientExplanation: "none" })
   })
 })

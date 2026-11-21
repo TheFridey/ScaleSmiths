@@ -212,9 +212,9 @@ Recommended publication priority (`AP-PUB-02`), adjusted from the suggested orde
 
 None of these is published by this review.
 
-## 6. Knowledge base audit (33 entries)
+## 6. Knowledge base audit (32 entries)
 
-Counted: 33 entries across all 20 taxonomy topics (hosting 3, domains 1, DNS 1, business email 2, security 1, analytics 1, SEO 4, AI search 1, migration 1, redirects 1, accessibility 1, e-commerce 1, booking 1, CRM 1, custom software 2, automation 1, commercial terms 2, payment schedules 1, commission 3, client onboarding 3).
+Counted: 32 entries across all 20 taxonomy topics (corrected 2026-11-20 in B1.4: the original package summary and this register said 33, but the per-topic counts below total 32; the importer parses exactly 32) (hosting 3, domains 1, DNS 1, business email 2, security 1, analytics 1, SEO 4, AI search 1, migration 1, redirects 1, accessibility 1, e-commerce 1, booking 1, CRM 1, custom software 2, automation 1, commercial terms 2, payment schedules 1, commission 3, client onboarding 3).
 
 | Result | Entries |
 |---|---|

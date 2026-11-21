@@ -99,7 +99,7 @@
 - Client explanation: "Yes. HTTPS is standard, and security is built in rather than added at the end."
 - Source: faq:ssl, `web/src/lib/security-page.ts`.
 - Limitation: no certification, compliance or "unhackable" claims.
-- Escalation: always for security questionnaires, procurement, or a suspected incident → `technical_scoping` or `escalation`.
+- Escalation: when the client sends a security questionnaire or procurement requirements → `technical_scoping`. A suspected incident is always reported the same day as an escalation request (see R10).
 - Status: `CONFIRMED: PUBLISHED`; entry `DRAFT`.
 
 ### Analytics

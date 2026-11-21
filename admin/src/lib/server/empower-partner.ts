@@ -9,6 +9,7 @@ type Executor = Pick<AdminDatabaseTransaction, "execute">
 type Actor = Awaited<ReturnType<typeof requireCapability>>
 export const partnerAcademyEnabled = () => process.env.PARTNER_ACADEMY_ENABLED === "true"
 export const partnerResourcesEnabled = () => process.env.PARTNER_RESOURCE_CENTRE_ENABLED === "true"
+export const partnerKnowledgeEnabled = () => process.env.PARTNER_KNOWLEDGE_BASE_ENABLED === "true"
 const rows = async (tx: Executor, query: SQL) => (await tx.execute(query)).rows as Record<string, unknown>[]
 /** Same rule as the rest of the Partner Portal: an activated partner profile, an active user, the partner role and the current session. */
 export async function partnerGuard(tx: Executor, actor: Actor) {

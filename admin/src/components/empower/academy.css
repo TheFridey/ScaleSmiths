@@ -89,3 +89,13 @@
 .ac-list-reset{list-style:none;padding:0;margin:0}
 .ac-resource h3 a{color:var(--ac-t1);text-decoration:none}.ac-resource h3 a:hover{text-decoration:underline}
 .ac-resource-title{margin:0 0 6px;font-family:var(--font-syne);font-size:clamp(24px,4vw,32px);line-height:1.2}
+/* Operation Empower B1.4 Knowledge Base */
+.ac-kb-list{display:grid;gap:12px}
+.ac-entry summary{cursor:pointer;list-style:none;display:grid;gap:6px}
+.ac-entry summary::-webkit-details-marker{display:none}
+.ac-entry h3{margin:0;font-size:18px}.ac-entry h4{margin:14px 0 4px;font-size:15px;color:var(--ac-t2)}
+.ac-say{margin-top:10px;padding:12px 14px;border-left:3px solid var(--ac-gold);border-radius:8px;background:var(--ac-s1)}
+.ac-say-text{font-size:17px;margin:4px 0 10px}
+.ac-chip[aria-pressed="true"]{border-color:var(--ac-gold);color:var(--ac-t1)}
+button.ac-chip{background:transparent;cursor:pointer;min-height:32px}
+kbd{padding:1px 6px;border:1px solid var(--ac-line);border-radius:4px;font-size:.9em}

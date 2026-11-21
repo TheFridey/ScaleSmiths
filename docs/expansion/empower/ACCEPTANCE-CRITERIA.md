@@ -101,14 +101,16 @@ Real PostgreSQL: `admin/test/integration/empower-resources.integration.test.ts`.
 | 4 Copy only on client-facing | MET | Browser |
 | 5 Switch off returns 404 | MET | Integration |
 | 6 Identical results for identical queries | MET | Integration |
-| 7 Exact alias first | PARTIAL | Exact title match boosted; alias ranking arrives with knowledge entries (B1.4) |
+| 7 Exact alias first | MET (B1.4) | Knowledge search ranks an exact question or alias match first (integration, browser); resources boost an exact title |
 | 8 Synonyms | MET | Integration and browser ("ssl" style term finds the HTTPS guide; switching it off removes the match) |
 | 9 Hidden and absent look the same | MET | Both return the same empty result or 404 |
 | 10 Length limit; rate limit | PARTIAL | 200-character limit enforced; reads are not rate-limited (read-only GET); zero-result logging not built (`AP-PRIV-02` undecided) |
 | 12 p95 under 200 ms at 1,000 entries | NOT VERIFIED | GIN expression index on published rows; no load test |
 | 14 Legacy resources labelled | MET | Integration (partner audience only) |
 | 15–17 Width, accessibility, keyboard | MET for tested screens | Browser at 320/390/768/1024/1440 with no overflow; axe clean of serious issues; `/` shortcut not built |
-| Knowledge search and objection workspace (W5, W6) | NOT STARTED | B1.4 and B1.5 |
+| Knowledge search (W5) | MET (B1.4) | `empower-knowledge.integration.test.ts` (4) and the browser journey: alias-first ranking, client line with copy only on client-facing entries, partner-only entries without a client line, drafts and withdrawn entries excluded, related resources, help request creates a normal meeting request with nothing booked, no-answer state offers help; axe clean; five widths |
+| 13 "Request help" pre-filled, nothing booked | MET (B1.4) | Browser and SQL check of the created request |
+| Objection workspace (W6) | NOT STARTED | B1.5 |
 
 ## Phase 3: Partner Academy
 

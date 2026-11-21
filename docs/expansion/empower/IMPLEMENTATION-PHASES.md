@@ -8,7 +8,7 @@
 |---|---|---|
 | Phase 1 content foundation | B1.1 content governance | Implemented and tested (migration 0091); see [B1-STATUS.md](B1-STATUS.md) |
 | Phase 3 Academy | B1.2 Partner Academy | Implemented and tested (migration 0092); see [B1-2-ACADEMY-REPORT.md](B1-2-ACADEMY-REPORT.md). Delivered before Phase 2 by founder direction; reuses the Phase 1 model instead of separate course tables |
-| Phase 2 Resource Centre | B1.3 Resource Centre | Implemented and tested (migration 0094); see [B1-3-RESOURCE-CENTRE-REPORT.md](B1-3-RESOURCE-CENTRE-REPORT.md). Knowledge search and the objection workspace remain (B1.4, B1.5) |
+| Phase 2 Resource Centre | B1.3 Resource Centre | Implemented and tested (migration 0094); see [B1-3-RESOURCE-CENTRE-REPORT.md](B1-3-RESOURCE-CENTRE-REPORT.md). Knowledge search delivered in B1.4 ([report](B1-4-KNOWLEDGE-BASE-REPORT.md)); the objection workspace remains (B1.5) |
 
 Nothing is approved, published or enabled in any real environment.
 

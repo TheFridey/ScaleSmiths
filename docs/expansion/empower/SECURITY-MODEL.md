@@ -72,6 +72,13 @@ No new role or capability is required.
 - Synonyms change search only, are founder-only, cannot be rewritten or deleted, and are audited. The web role has no access.
 - Legacy `expansion_resources` are exposed only for the partner audience and only when published.
 
+### 3.4d Knowledge Base (B1.4, as built)
+
+- Read-only search behind `PARTNER_KNOWLEDGE_BASE_ENABLED` and `partnerGuard`; only published, in-date entries; topic values allow-listed; query bound as a parameter.
+- Partner-only entries never show a client line or copy control; an entry whose client explanation is "none" is treated as having none.
+- Help requests go through the existing partner meeting command, keyed to the signed-in partner by the server; no meeting is created for anyone else and nothing is booked automatically.
+- Searches are not logged (`AP-PRIV-02` undecided).
+
 ### 3.5 Independence and privacy
 
 - Progress is private to the partner by default. Founders see aggregates only, unless the partner chooses to share (decision `AP-GOV-03`).

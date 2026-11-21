@@ -1,0 +1,62 @@
+{
+  "cli_version": "0.12.2",
+  "checkpoint_id": "01M7ZTF7ST9B5T02RY6NC59AWW",
+  "strategy": "manual-commit",
+  "branch": "feature/operation-empower-b1-6",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".env.example",
+    ".github/workflows/ci.yml",
+    "admin/src/app/api/partner/workspace/route.ts",
+    "admin/src/app/partner/academy/[course]/page.tsx",
+    "admin/src/app/partner/academy/page.tsx",
+    "admin/src/app/partner/guidance/page.tsx",
+    "admin/src/app/partner/knowledge/page.tsx",
+    "admin/src/app/partner/page.tsx",
+    "admin/src/app/partner/resources/[slug]/page.tsx",
+    "admin/src/app/partner/resources/page.tsx",
+    "admin/src/components/empower/AcademyShell.tsx",
+    "admin/src/components/empower/GuidanceCard.tsx",
+    "admin/src/components/empower/GuidanceSearch.tsx",
+    "admin/src/components/empower/guidance.css",
+    "admin/src/components/expansion/ExpansionWorkspace.tsx",
+    "admin/src/components/expansion/PartnerWorkspacePanels.tsx",
+    "admin/src/lib/authorization-policy.ts",
+    "admin/src/lib/partner-guidance.test.ts",
+    "admin/src/lib/partner-guidance.ts",
+    "admin/src/lib/rbac.ts",
+    "admin/src/lib/server/empower-guidance.ts",
+    "admin/src/lib/server/expansion.ts",
+    "admin/test/integration/empower-guidance.integration.test.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 62,
+    "cache_creation_tokens": 71849,
+    "cache_read_tokens": 26770201,
+    "output_tokens": 59642,
+    "api_call_count": 31
+  },
+  "redaction": {
+    "replacements": 1072,
+    "layers": {
+      "betterleaks": 464,
+      "connection_string": 0,
+      "credential_key": 0,
+      "credential_value": 61,
+      "credentialed_uri": 857,
+      "entropy": 103,
+      "key_context": 28,
+      "provider_token": 0,
+      "shell_stdin": 0
+    }
+  }
+}

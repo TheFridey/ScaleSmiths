@@ -610,7 +610,10 @@
     {"path":"admin/drizzle/0091_empower_content_foundation.sql","sha256":"26a1b7e9352aa7d33f720533bf8447bd521040e1beb4df726af42884780cc921","lifecycle":"forward","reason":"Operation Empower B1.1: founder-controlled versioned content with database-enforced lifecycle, draft-only editing, append-only approval evidence, review cadence and one published version per item."},
     {"path":"admin/drizzle/0092_empower_academy.sql","sha256":"87d64864eedb1c19f3d5f39c435c2a1bcb572293e378ccd4176bb258db22e298","lifecycle":"forward","reason":"Operation Empower B1.2: Academy course kind with database-checked lesson references, private append-only lesson completions and knowledge-check attempts accepted only for published in-date content, and a continue-learning pointer."},
     {"path":"admin/drizzle/0093_empower_academy_partner_lessons.sql","sha256":"330929820bb1c917a9ff5cc6bc8127aae464a3795898586bbaa0a3993fdcc32f","lifecycle":"forward","reason":"Operation Empower B1.2 review fix: Academy courses may reference and serve only partner-only lessons."},
-    {"path":"admin/drizzle/0094_empower_resource_search.sql","sha256":"ff503f9e80426c95d8187d37ac1bca8ec4da0df0294eaa7002123efda4e040ec","lifecycle":"forward","reason":"Operation Empower B1.3: weighted full-text search document indexed for published content, and founder-managed synonyms that are retired, never deleted."}
+    {"path":"admin/drizzle/0094_empower_resource_search.sql","sha256":"ff503f9e80426c95d8187d37ac1bca8ec4da0df0294eaa7002123efda4e040ec","lifecycle":"forward","reason":"Operation Empower B1.3: weighted full-text search document indexed for published content, and founder-managed synonyms that are retired, never deleted."},
+    {"path":"web/drizzle/0024_repair_web_vital_event.sql","sha256":"8ada41bf0eb3e3ac5170a65d8748880630066b564ea2f43d824d945932288dc9","lifecycle":"forward","reason":"Repairs production schema drift: re-asserts the web_vital experience event label that 0013 should have added (idempotent)."},
+    {"path":"admin/drizzle/0095_partner_agreements.sql","sha256":"9d6e8ea26a5c7a0e5f2a97ff54d5d8050a9eea1fdcd590be867ec83693b7e130","lifecycle":"forward","reason":"Operation Launch Ready: partner agreements as governed content, append-only acceptance with database-computed version, hash and time, activation only after accepting the current issued version, and an enforced application lifecycle with information_requested."},
+    {"path":"admin/drizzle/0096_partner_notifications.sql","sha256":"1604fb9d87cba83b60af368f21e55526216e5dc771b38c73e21769f168540c1c","lifecycle":"forward","reason":"Operation Launch Ready: auditable, idempotent partner lifecycle email log storing only a recipient hash; outcomes move forward only and history is retained."}
   ],
   "journals": {
     "web": {
@@ -709,7 +712,8 @@
           "tag": "0022_quote_acquisition",
           "breakpoints": true
         },
-        {"idx":23,"version":"7","when":1794950400000,"tag":"0023_partner_applications","breakpoints":true}
+        {"idx":23,"version":"7","when":1794950400000,"tag":"0023_partner_applications","breakpoints":true},
+        {"idx":24,"version":"7","when":1794952000000,"tag":"0024_repair_web_vital_event","breakpoints":true}
       ]
     },
     "admin": {
@@ -901,7 +905,9 @@
         {"idx":91,"version":"7","when":1794951008016,"tag":"0091_empower_content_foundation","breakpoints":true},
         {"idx":92,"version":"7","when":1794951009016,"tag":"0092_empower_academy","breakpoints":true},
         {"idx":93,"version":"7","when":1794951010016,"tag":"0093_empower_academy_partner_lessons","breakpoints":true},
-        {"idx":94,"version":"7","when":1794951011016,"tag":"0094_empower_resource_search","breakpoints":true}
+        {"idx":94,"version":"7","when":1794951011016,"tag":"0094_empower_resource_search","breakpoints":true},
+        {"idx":95,"version":"7","when":1794952001000,"tag":"0095_partner_agreements","breakpoints":true},
+        {"idx":96,"version":"7","when":1794952002000,"tag":"0096_partner_notifications","breakpoints":true}
       ]
     }
   },

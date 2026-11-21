@@ -21,7 +21,7 @@ export default function ManagedBusinessEmailPage() {
   return (
     <>
       <JsonLd data={schema} />
-      <main>
+      <div>
         <section className="px-6 pb-20 pt-10 md:px-12 md:pb-28">
           <div className="mx-auto max-w-[1240px]"><PageBreadcrumbs className="mb-10" items={[{ name: "Home", path: "/" }, { name: "Services", path: "/services" }, { name: "Managed Business Email", path: "/services/managed-business-email" }]} /></div>
           <div className="offer-hero-grid" data-offer-hero>
@@ -106,7 +106,7 @@ export default function ManagedBusinessEmailPage() {
             <div className="mt-7 flex flex-wrap gap-3"><Link href={managedBusinessEmail.onboardingPath} className="btn-primary">Get business email <ArrowRight size={16} /></Link><Link href="/services" className="btn-ghost">Explore the wider digital estate</Link></div>
           </div>
         </section>
-      </main>
+      </div>
     </>
   )
 }

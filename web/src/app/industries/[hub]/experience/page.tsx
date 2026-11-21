@@ -76,7 +76,7 @@ export default async function IndustryExperiencePage({ params }: { params: Promi
   return (
     <>
       <JsonLd data={schemas} />
-      <main>
+      <div>
         <article className="px-6 py-20 md:px-12 md:py-28">
           <div className="mx-auto max-w-[1100px]">
             <Breadcrumbs
@@ -123,7 +123,7 @@ export default async function IndustryExperiencePage({ params }: { params: Promi
             </section>
           </div>
         </article>
-      </main>
+      </div>
     </>
   )
 }

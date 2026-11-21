@@ -30,7 +30,7 @@ export default function LocationsPage() {
         buildWebPageSchema(base, { name: "ScaleSmiths locations and service areas", description, path: "/locations", type: "CollectionPage" }),
         buildBreadcrumbSchema(base, [{ name: "Home", path: "/" }, { name: "Locations", path: "/locations" }]),
       ]} />
-      <main className="px-6 pb-24 pt-10 md:px-12 md:pt-14">
+      <div className="px-6 pb-24 pt-10 md:px-12 md:pt-14">
         <div className="mx-auto max-w-[1240px]">
           <Breadcrumbs items={[{ name: "Home", href: "/" }, { name: "Locations" }]} />
           <header className="mt-10 max-w-[850px]">
@@ -69,7 +69,7 @@ export default function LocationsPage() {
             </div>
           </section>
         </div>
-      </main>
+      </div>
     </>
   )
 }

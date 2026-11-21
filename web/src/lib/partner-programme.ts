@@ -84,10 +84,10 @@ export const FEATURE_AVAILABILITY: ReadonlyArray<{ feature: string; status: Avai
   { feature: "International activation", status: "AVAILABLE SUBJECT TO APPROVAL", note: "Only in markets ScaleSmiths has approved and can support." },
 ]
 
-/** Partner sign-in lives on the existing admin origin; no separate partner subdomain or auth stack. */
+/** Partner sign-in uses the admin app at its canonical origin, partners.scalesmiths.co.uk; one auth stack, no separate partner app. */
 export function partnerLoginUrl(env: { NEXT_PUBLIC_ADMIN_URL?: string; NODE_ENV?: string } = process.env as never): string {
   const configured = env.NEXT_PUBLIC_ADMIN_URL?.trim()
-  let base = env.NODE_ENV === "production" ? "https://admin.scalesmiths.co.uk" : "http://localhost:3103"
+  let base = env.NODE_ENV === "production" ? "https://partners.scalesmiths.co.uk" : "http://localhost:3103"
   if (configured) { try { const url = new URL(configured); if (["http:", "https:"].includes(url.protocol) && !url.username && !url.password) base = url.origin } catch { /* keep default */ } }
   return `${base}/login`
 }

@@ -28,9 +28,9 @@ describe("Scale Your Future calculations", () => {
     expect(ACHIEVEMENTS).toHaveLength(8)
   })
   it("partner login reuses the admin origin and rejects credentials", () => {
-    expect(partnerLoginUrl({ NODE_ENV: "production" })).toBe("https://admin.scalesmiths.co.uk/login")
+    expect(partnerLoginUrl({ NODE_ENV: "production" })).toBe("https://partners.scalesmiths.co.uk/login")
     expect(partnerLoginUrl({ NODE_ENV: "development" })).toBe("http://localhost:3103/login")
     expect(partnerLoginUrl({ NEXT_PUBLIC_ADMIN_URL: "https://admin.example.test/", NODE_ENV: "production" })).toBe("https://admin.example.test/login")
-    expect(partnerLoginUrl({ NEXT_PUBLIC_ADMIN_URL: "https://u:p@evil.test", NODE_ENV: "production" })).toBe("https://admin.scalesmiths.co.uk/login")
+    expect(partnerLoginUrl({ NEXT_PUBLIC_ADMIN_URL: "https://u:p@evil.test", NODE_ENV: "production" })).toBe("https://partners.scalesmiths.co.uk/login")
   })
 })

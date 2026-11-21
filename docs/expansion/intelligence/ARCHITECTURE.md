@@ -4,7 +4,7 @@ Baseline: master `4c399b8` (PR #154, Expansion hardening, already merged). Branc
 
 ## Decisions
 
-1. **No second stack.** The public site (`web`) and admin/partner portal (`admin`) are reused. Partner sign-in stays on the existing admin origin (`/login`); the public site links to it through `partnerLoginUrl()` (`NEXT_PUBLIC_ADMIN_URL`, production fallback `https://admin.scalesmiths.co.uk`). No partner subdomain.
+1. **No second stack.** The public site (`web`) and admin/partner portal (`admin`) are reused. Partner sign-in stays in the admin app (`/login`), served at its canonical origin `https://partners.scalesmiths.co.uk`; the public site links to it through `partnerLoginUrl()` (`NEXT_PUBLIC_ADMIN_URL`, production fallback `https://partners.scalesmiths.co.uk`). No separate partner app.
 2. **One commission engine.** `admin/src/lib/expansion-finance.ts` remains the only place commission is computed. Plan versions are immutable snapshots: `standard-v1` (six-month, historical, untouched), `standard-v2` (twelve-month), `growth-only-v1`. Flexible payment schedules are expressed as milestone amounts (`scheduleCommissionTerms`), so they reuse cumulative rounding and cannot raise total entitlement.
 3. **Public figures share one module.** `web/src/lib/partner-programme.ts` drives the recruitment page tables, hero figures and calculator with the same 30% / cumulative-rounding rule as the admin engine. A test asserts each required example.
 4. **Planned features stay labelled.** `FEATURE_AVAILABILITY` is the single public register; nothing planned is shown as operational.

@@ -113,6 +113,7 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("Empower B1.5 objectio
     // A direct write as the runtime role cannot put partner-only terms into the client line, or a bad category into review.
     const ok = await draft(`obj-direct-${suffix}`, objection("dns"))
     await expect(pool.query("update empower_content_versions set fields = fields || '{\"client_line\":\"Ask about the partner commission.\"}'::jsonb where id=$1", [ok.versionId])).rejects.toThrow(/partner-only terms/)
+    for (const leak of ["There is a referral-reward for this.", "This is founder	only pricing.", "Basis-points apply."]) await expect(pool.query("update empower_content_versions set fields = jsonb_set(fields, '{client_line}', to_jsonb($2::text)) where id=$1", [ok.versionId, leak])).rejects.toThrow(/partner-only terms/)
     await expect(pool.query("update empower_content_versions set fields = fields || '{\"category\":\"gossip\"}'::jsonb, status='in_review', submitted_by=$2, submitted_at=now() where id=$1", [ok.versionId, founderA.id])).rejects.toThrow()
     await expect(pool.query("insert into empower_content_items(id,kind,slug,audience,review_cadence_months,created_by) values($1,'objection',$2,'client_facing',6,$3)", [randomUUID(), `obj-public-${suffix}`, founderA.id])).rejects.toThrow(/objection_partner_only/)
   })

@@ -49,3 +49,40 @@ Partner guard on every request (active partner, active user, partner role, curre
 ## Evidence
 
 Fill-in sections below record the actual runs.
+
+### Tests run (local, Windows 11, PostgreSQL 18 with the restricted roles, 2026-11-21)
+
+| Check | Result |
+|---|---|
+| Admin typecheck, lint, production build | clean, clean, pass |
+| Admin unit (full) | 168 files, 1,279 passed, 4 skipped |
+| New B1.5 unit tests (rules, claims, client-copy boundary, all 12 entries parsed, review fixes) | pass |
+| Migrations and privileges (`provision` → `migrate` → `provision` → `verify`) | web 24/24, admin 96/96; verification passed |
+| Real PostgreSQL: B1.5 (9 tests covering the 16 required cases) and B1.1–B1.4 | 37 passed |
+| Real PostgreSQL: expansion concurrency, including B0 financial invariants and the £705 acquisition ledger (`70500`) | 89 passed |
+| Web typecheck and unit (web unchanged by this branch) | clean; 86 files, 468 passed |
+| Importer on the disposable DB | 161 drafts created (12 objections); a second run reported 161 unchanged |
+| Playwright on a production build and disposable DB | 4 passed: three B1 journeys and the twenty-step B1.5 journey |
+| Repository checks (migration history, shared plan, GitHub Actions, env hygiene, documentation links, local state, dependency governance, domain boundaries, production topology, authorization policy) | pass |
+
+Required database cases: 1–3 visibility of drafts, submitted and published responses; 4 response expiry; 5 withdrawal; 6 invalid category in service, API and database; 7 the client-copy boundary in service and database, including hyphen and tab variants; 8 unapproved related resources hidden and unknown links refused; 9 an expired related article hidden while the response is valid; 10 founder, viewer and partner permissions; 11 deterministic ranking with exact phrasing first; 12 synonyms; 13 concurrent publication leaves one live version; 14 forged or self approval refused; 15 switch off, non-partners and suspended partners refused; 16 the web role cannot read content tables.
+
+Browser journey (`admin/test/e2e/empower-objections.spec.ts`): all twenty directive steps, axe WCAG 2.2 AA with no serious or critical findings on the search result and empty state, 320/390/768/1024/1440 px with no horizontal overflow, and console errors checked. Screenshots are in `evidence/b1-5/`.
+
+Not run locally: the Docker golden-path suite (Docker is unavailable; it runs in CI) and PostgreSQL 16 (CI uses `postgres:16-alpine`). The new CI job "Empower Browser Acceptance" runs for the first time on the draft PR.
+
+### Independent model review (not human review)
+
+No critical or high findings. Fixed: the database partner-only term check now matches hyphen and whitespace variants, as the studio does; the unsupported-claim check now also covers discovery questions and alternative phrasings. Recorded:
+
+- **Constraint and trigger on existing objection rows:** the new partner-only constraint and field guard would refuse an existing client-facing or incomplete objection row. Production holds 0 content items (read-only check on 2026-11-21), so there is nothing to migrate. Recheck before release.
+- **Low:** the results section uses `aria-busy` alongside a live status line; announcements may repeat on some screen readers.
+- **Low:** the unsupported-claim check is enforced in the service only. The database guards the client-copy boundary and the required fields, not wording.
+
+### Outstanding founder approvals
+
+`AP-OBJ-ENABLE`, `AP-OBJ-05-ROUTE`, `AP-OBJ-QUESTIONS`, `AP-OBJ-CLAIMS`, `AP-GOV-05` (blocks `AP-OBJ-10`), `AP-PRIV-01` (help requests), and `AP-COM-03`: the live site and `master` advertise a twelve-month minimum commitment, with no six-month offer and no deployment drift (release `37995d2`), yet the register still lists the minimum term as an open founder decision. Historical plans are immutable (`expansion_plans_immutable`).
+
+### Feature flags and deployment
+
+`PARTNER_OBJECTION_HANDLING_ENABLED` defaults to off and is unset in production; no partner switch is enabled anywhere. **Not deployed.**

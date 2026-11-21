@@ -227,7 +227,9 @@ export function checkSubmission(input: { kind: ContentKind; audience: ContentAud
     if (COMMERCIAL_OBJECTION_CATEGORIES.includes(String(fields.category)) && input.cadenceMonths !== REVIEW_CADENCES.commercial) fail("Commercial objection responses must use the 3-month review cadence.")
   }
   // The limitation and escalation condition list what must NOT be promised, so they are excluded from the claim check by design.
-  const claimHits = input.kind === "objection" ? unsupportedClaimHits([input.title, input.body, String(fields.concern ?? ""), String(fields.client_line ?? ""), String(fields.guidance ?? "")]).map((c) => `possible ${c}`) : []
+  const listText = (v: unknown) => (Array.isArray(v) ? v.map(String) : [])
+  const claimHits = input.kind === "objection" ? unsupportedClaimHits([input.title, input.body, String(fields.concern ?? ""), String(fields.client_line ?? ""), String(fields.guidance ?? ""),
+    ...listText(fields.discovery_questions), ...listText(fields.aliases)]).map((c) => `possible ${c}`) : []
   const lintHits = [...audienceLintHits(input.audience, [input.title, input.body, ...flatText(fields)]), ...claimHits]
   const lintOverrideReason = optionalText(input.lintOverrideReason, "Override reason", 2000)
   if (claimHits.length && (!lintOverrideReason || lintOverrideReason.length < 10)) fail(`This response may contain ${claimHits.map((c) => c.replace(/^possible /, "")).join(", ")}. Remove it, or record why the wording is safe for founder review (at least 10 characters).`)

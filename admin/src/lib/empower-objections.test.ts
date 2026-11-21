@@ -84,3 +84,11 @@ describe("B1.5 objection playbook import", () => {
     expect(parseObjectionEscalation("Never")).toEqual({ required: "never" })
   })
 })
+
+describe("B1.5 review fixes", () => {
+  it("checks partner-visible discovery questions and phrasings for unsupported claims too", () => {
+    expect(() => submission({ ...complete, discovery_questions: ["Would a guaranteed first page help?"] })).toThrow(/record why the wording is safe/)
+    expect(() => submission({ ...complete, aliases: ["can you double my sales"] })).not.toThrow()
+    expect(() => submission({ ...complete, aliases: ["what ROI will I get"] })).toThrow(/financial return/)
+  })
+})

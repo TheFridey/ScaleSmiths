@@ -1,0 +1,67 @@
+{
+  "cli_version": "0.12.2",
+  "checkpoint_id": "01M7ZGZ2CF5NKPM87T42EK8D66",
+  "strategy": "manual-commit",
+  "branch": "feature/operation-empower-b1-5",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".env.example",
+    ".github/workflows/ci.yml",
+    "admin/drizzle/0095_empower_objections.sql",
+    "admin/drizzle/meta/_journal.json",
+    "admin/scripts/import-empower-curriculum.mjs",
+    "admin/scripts/postgres-privilege-policy.mjs",
+    "admin/src/app/api/partner/objections/route.ts",
+    "admin/src/app/partner/academy/[course]/page.tsx",
+    "admin/src/app/partner/academy/page.tsx",
+    "admin/src/app/partner/knowledge/page.tsx",
+    "admin/src/app/partner/objections/page.tsx",
+    "admin/src/app/partner/resources/[slug]/page.tsx",
+    "admin/src/app/partner/resources/page.tsx",
+    "admin/src/components/empower/AcademyShell.tsx",
+    "admin/src/components/empower/KnowledgeBase.tsx",
+    "admin/src/components/empower/ObjectionHandling.tsx",
+    "admin/src/components/empower/academy.css",
+    "admin/src/components/expansion/ExpansionWorkspace.tsx",
+    "admin/src/lib/authorization-policy.ts",
+    "admin/src/lib/empower-content.test.ts",
+    "admin/src/lib/empower-content.ts",
+    "admin/src/lib/empower-curriculum.ts",
+    "admin/src/lib/empower-objections.test.ts",
+    "admin/src/lib/rbac.ts",
+    "admin/src/lib/server/empower-objections.ts",
+    "admin/test/integration/empower-objections.integration.test.ts",
+    "scripts/migration-checksums.json",
+    "scripts/shared-migration-plan.json"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 64,
+    "cache_creation_tokens": 35495,
+    "cache_read_tokens": 8299796,
+    "output_tokens": 18338,
+    "api_call_count": 31
+  },
+  "redaction": {
+    "replacements": 56,
+    "layers": {
+      "betterleaks": 129,
+      "connection_string": 0,
+      "credential_key": 0,
+      "credential_value": 0,
+      "credentialed_uri": 43,
+      "entropy": 12,
+      "key_context": 1,
+      "provider_token": 0,
+      "shell_stdin": 0
+    }
+  }
+}

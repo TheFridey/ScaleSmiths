@@ -23,7 +23,7 @@ export default async function MissingIndustryRequestPage({
   const href = missingIndustryHref(hint || undefined)
 
   return (
-    <main className="px-6 py-20 md:px-12 md:py-28">
+    <div className="px-6 py-20 md:px-12 md:py-28">
       <div className="mx-auto max-w-[820px]">
         <Breadcrumbs
           items={[
@@ -54,6 +54,6 @@ export default async function MissingIndustryRequestPage({
           Or browse published pages and hubs while we expand coverage from evidence, not vanity page counts.
         </p>
       </div>
-    </main>
+    </div>
   )
 }

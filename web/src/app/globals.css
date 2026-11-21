@@ -678,6 +678,20 @@ body {
 }
 .btn-sm:hover { opacity: 0.9; }
 
+/* Press feedback: a short settle on activation so taps and clicks feel registered. */
+.btn-primary:active,
+.btn-sm:active {
+  transform: translateY(1px);
+  opacity: 1;
+  box-shadow: 0 6px 18px rgba(232,160,69,0.16);
+}
+.btn-ghost:active {
+  transform: translateY(1px);
+  background: rgba(232, 160, 69, 0.11);
+}
+.btn-ghost { transition: border-color 0.2s, background-color 0.2s, color 0.2s, box-shadow 0.2s, transform 0.15s; }
+.btn-sm { transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s; }
+
 /* Light-surface button variants — forge copper on paper, not Bootstrap white */
 .surface-paper .btn-primary {
   background: var(--paper-acc);
@@ -1001,6 +1015,14 @@ body {
   border-radius: 6px;
 }
 
+/* Forge gold is too faint on the light paper relief (under 3:1), so focus there uses forge copper. */
+.surface-paper :focus-visible {
+  outline-color: var(--paper-acc);
+}
+.surface-paper .surface-chrome :focus-visible {
+  outline-color: rgba(232, 160, 69, 0.85);
+}
+
 /* Skip link uses CTA ink, never white on gold */
 .skip-link:focus,
 .skip-link:focus-visible {
@@ -1020,11 +1042,25 @@ body {
 /* ── Reduced motion ──────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   .btn-primary:hover,
+  .btn-primary:active,
+  .btn-sm:active,
+  .btn-ghost:active,
   .card-lift:hover {
     transform: none;
   }
 
   html {
     scroll-behavior: auto;
+  }
+
+  /* Safety net for utility-class motion (hover lifts, pulses, spins) that components do not
+     opt out of individually. Colour and opacity changes still apply, just without movement. */
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

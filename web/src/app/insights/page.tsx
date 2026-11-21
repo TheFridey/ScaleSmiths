@@ -61,7 +61,7 @@ export default function InsightsPage() {
           ]),
         ]}
       />
-      <main>
+      <div>
         <header className="relative overflow-hidden px-6 pb-16 pt-10 md:px-12 md:pb-24 md:pt-14">
           <div
             aria-hidden="true"
@@ -124,7 +124,7 @@ export default function InsightsPage() {
                 Read the guide <ArrowRight size={16} aria-hidden="true" />
               </Link>
             </div>
-            <aside className="surface-chrome rounded-2xl border border-b1 p-7 md:p-9">
+            <section aria-label="Enterprise topic clusters" className="surface-chrome rounded-2xl border border-b1 p-7 md:p-9">
               <p className="font-syne text-xl font-bold tracking-[-0.015em] text-t1 md:text-2xl">Enterprise topic clusters</p>
               <p className="mt-4 font-dm text-sm leading-[1.7] text-t2">
                 The enterprise library is organised around operating problems, not keyword pages. Start with the constraint you actually have.
@@ -142,7 +142,7 @@ export default function InsightsPage() {
               <Link href="/insights/enterprise" prefetch={false} className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-acc hover:underline">
                 View all enterprise articles <ArrowRight size={14} aria-hidden="true" />
               </Link>
-            </aside>
+            </section>
           </div>
         </PaperBand>
 
@@ -220,7 +220,7 @@ export default function InsightsPage() {
             </div>
           </div>
         </section>
-      </main>
+      </div>
     </>
   )
 }

@@ -27,7 +27,7 @@ export default function IndustriesIndexPage() {
   return (
     <>
       <JsonLd data={schemas} />
-      <main>
+      <div>
         <section className="relative overflow-hidden px-6 py-20 md:px-12 md:py-28">
           <div
             aria-hidden="true"
@@ -166,7 +166,7 @@ export default function IndustriesIndexPage() {
             </div>
           </div>
         </section>
-      </main>
+      </div>
     </>
   )
 }

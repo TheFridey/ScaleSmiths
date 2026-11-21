@@ -7,7 +7,9 @@
 --   * related links point only at existing resources, lessons or knowledge entries.
 -- The B1.1 lifecycle, approval and two-founder rules are unchanged and still apply.
 
-ALTER TABLE empower_content_items ADD CONSTRAINT empower_content_items_objection_partner_only CHECK (kind <> 'objection' OR audience = 'partner_only');
+-- NOT VALID: enforced for every new item (items are immutable, so never updated). B1.1 allowed client-facing objection drafts, so a
+-- legacy row must not abort this migration; such rows are never served, because partner search requires audience = 'partner_only'.
+ALTER TABLE empower_content_items ADD CONSTRAINT empower_content_items_objection_partner_only CHECK (kind <> 'objection' OR audience = 'partner_only') NOT VALID;
 
 CREATE FUNCTION empower_objection_fields_problem(fields jsonb) RETURNS text LANGUAGE sql IMMUTABLE AS $$
   SELECT CASE

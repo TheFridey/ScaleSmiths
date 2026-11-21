@@ -100,6 +100,7 @@ export async function createContentItem(input: DraftInput & { kind?: unknown; sl
   const actor = await founder()
   const kind = contentKind(input.kind), slug = contentSlug(input.slug), audience = contentAudience(input.audience), cadence = reviewCadence(input.cadence)
   if (kind === "course" && audience !== "partner_only") throw new ContentError("Academy courses are for partners only.")
+  if (kind === "agreement" && (audience !== "partner_only" || cadence !== 3)) throw new ContentError("Partner agreements are partner-only and reviewed on the commercial (3-month) cadence.")
   const values = draftValues(kind, input)
   const itemId = randomUUID(), versionId = randomUUID()
   return db.transaction(async (tx) => guarded(async () => {
@@ -234,7 +235,7 @@ export async function servableContent(tx: Executor, audiences: readonly ContentA
   const today = options.asOf ? sql`${options.asOf}::date` : sql`(now() at time zone 'UTC')::date`
   return rows(tx, sql`select i.id item_id,i.slug,i.kind,i.audience,v.id version_id,v.version,v.title,v.body,v.fields,v.source_refs,v.approved_at,v.review_by,v.published_at
     from empower_content_versions v join empower_content_items i on i.id=v.item_id
-    where v.status='published' and v.review_by >= ${today} and i.audience in (${list}) ${kind ? sql`and i.kind=${contentKind(kind)}` : sql``}
+    where v.status='published' and v.review_by >= ${today} and i.audience in (${list}) ${kind ? sql`and i.kind=${contentKind(kind)}` : sql`and i.kind<>'agreement'`}
     order by i.kind, i.slug`)
 }
 

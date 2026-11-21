@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { NextRequest } from "next/server"
 
-const mocks = vi.hoisted(() => ({ execute: vi.fn(), limiter: vi.fn(), monitor: vi.fn() }))
+const mocks = vi.hoisted(() => ({ execute: vi.fn(), limiter: vi.fn(), monitor: vi.fn(), confirm: vi.fn() }))
+vi.mock("@/lib/server/partner-application-email", () => ({ sendApplicationReceived: mocks.confirm }))
 vi.mock("@/lib/db", () => ({ db: { execute: mocks.execute } }))
 vi.mock("@/lib/server/rate-limit", () => ({ checkWebRateLimit: mocks.limiter }))
 vi.mock("@/lib/server-monitoring", () => ({ captureWebException: mocks.monitor }))
@@ -17,6 +18,7 @@ describe("partner application route", () => {
     vi.stubEnv("PARTNER_APPLICATION_PRIVACY_VERSION", "approved-test-v1")
     vi.stubEnv("PARTNER_APPLICATION_RETENTION_DAYS", "180")
     mocks.execute.mockReset().mockResolvedValue({ rows: [] })
+    mocks.confirm.mockReset().mockResolvedValue("disabled")
     mocks.monitor.mockReset()
     mocks.limiter.mockReset().mockResolvedValue({ ok: true, remaining: 2, limit: 3, resetAt: Date.now() + 10000 })
   })
@@ -36,6 +38,7 @@ describe("partner application route", () => {
     expect((await POST(request({ ...valid, privacyAcknowledged: false }))).status).toBe(400)
     expect(mocks.limiter).toHaveBeenCalledOnce()
     expect(mocks.execute).not.toHaveBeenCalled()
+    expect(mocks.confirm).not.toHaveBeenCalled()
   })
   it("rejects a stale privacy acknowledgement instead of recording the current version", async () => {
     expect((await POST(request({ ...valid, privacyVersion: "old-version" }))).status).toBe(409)
@@ -59,12 +62,14 @@ describe("partner application route", () => {
     expect(response.headers.get("Cache-Control")).toContain("no-store")
     expect(mocks.execute).toHaveBeenCalledOnce()
     expect(mocks.limiter).toHaveBeenCalledTimes(2)
+    expect(mocks.confirm).toHaveBeenCalledExactlyOnceWith({ name: valid.name, email: valid.email.toLowerCase() })
   })
   it("fails closed on database outage and never reports success", async () => {
     mocks.execute.mockRejectedValue(new Error("offline"))
     const response = await POST(request(valid))
     expect(response.status).toBe(503)
     expect(await response.json()).toHaveProperty("error")
+    expect(mocks.confirm).not.toHaveBeenCalled()
   })
   it("never forwards applicant information from production database exceptions to monitoring", async () => {
     vi.stubEnv("NODE_ENV", "production")

@@ -99,3 +99,21 @@
 .ac-chip[aria-pressed="true"]{border-color:var(--ac-gold);color:var(--ac-t1)}
 button.ac-chip{background:transparent;cursor:pointer;min-height:32px}
 kbd{padding:1px 6px;border:1px solid var(--ac-line);border-radius:4px;font-size:.9em}
+/* Operation Launch Ready: partner agreement page. */
+.ac-page-head{margin-bottom:20px}.ac-page-head h1{margin:6px 0 8px}
+.academy .ac-card+.ac-card{margin-top:16px}
+.ac-callout{border:1px solid var(--ac-gold-deep);background:color-mix(in srgb,var(--ac-gold) 9%,transparent);border-radius:10px;padding:12px 14px;margin:12px 0}
+.ac-callout-error{border-color:#b4574c;background:#2e1c1a}
+.ac-link{background:none;border:0;color:var(--ac-gold);text-decoration:underline;text-underline-offset:4px;cursor:pointer;padding:6px 0;min-height:44px}
+.ac-button-secondary{display:inline-flex;align-items:center;min-height:44px;padding:10px 16px;border-radius:10px;border:1px solid var(--ac-gold-deep);color:var(--ac-gold)!important;text-decoration:none;font-weight:600;transition:background-color .15s ease,border-color .15s ease}
+.ac-button-secondary:hover{background:color-mix(in srgb,var(--ac-gold) 12%,transparent);border-color:var(--ac-gold)}
+.ac-document{max-height:min(60vh,600px);overflow:auto;border:1px solid var(--ac-line);border-radius:10px;padding:18px;margin:10px 0 16px;background:var(--ac-bg)}
+.ac-document:focus-visible{outline:2px solid var(--ac-gold);outline-offset:3px}
+.ac-form fieldset{border:0;padding:0;margin:0;display:grid;gap:8px;max-width:520px}
+.ac-form input:not([type=checkbox]){min-height:48px;border-radius:10px;border:1px solid var(--ac-line);background:var(--ac-bg);color:inherit;padding:10px 14px;font-size:16px}
+.ac-small{font-size:12px;color:var(--ac-muted)}
+.ac-history{list-style:none;padding:0;margin:0;display:grid}.ac-history li{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;padding:12px 0;border-bottom:1px solid var(--ac-line)}
+.ac-history li:last-child{border-bottom:0}.ac-history a{min-height:44px;display:inline-flex;align-items:center}
+.ac-skeleton{display:grid;gap:12px}.ac-skeleton span{display:block;height:84px;border-radius:12px;background:linear-gradient(90deg,var(--ac-s2) 0%,color-mix(in srgb,var(--ac-s2) 70%,#fff 4%) 50%,var(--ac-s2) 100%);background-size:200% 100%;animation:ac-shimmer 1.4s ease-in-out infinite}
+@keyframes ac-shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
+@media(prefers-reduced-motion:reduce){.ac-skeleton span{animation:none}}

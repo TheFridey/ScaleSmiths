@@ -1,10 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
-const mocks = vi.hoisted(() => ({ limit: vi.fn(), activate: vi.fn() }))
+const mocks = vi.hoisted(() => ({ limit: vi.fn(), activate: vi.fn(), preview: vi.fn() }))
 vi.mock("@/lib/login-limiter", () => ({ checkLoginRateLimit: mocks.limit, getAuthRequestIp: () => "127.0.0.1", loginRateLimitKeys: () => ["partner-activation:test"] }))
 vi.mock("@/lib/server/partner-invitations", async (importOriginal) => ({
   ...await importOriginal<typeof import("@/lib/server/partner-invitations")>(),
   activatePartnerInvitation: mocks.activate,
+  previewInvitationAgreement: mocks.preview,
 }))
 import { POST } from "./route"
 
@@ -13,7 +14,7 @@ function request(body: string, origin = "http://localhost:3001", contentType = "
 }
 
 describe("public invitation consumer", () => {
-  beforeEach(() => { vi.stubEnv("AUTH_URL", "http://localhost:3001"); vi.stubEnv("PARTNER_ACTIVATION_ENABLED", "true"); mocks.limit.mockReset().mockResolvedValue(true); mocks.activate.mockReset().mockResolvedValue(undefined) })
+  beforeEach(() => { vi.stubEnv("AUTH_URL", "http://localhost:3001"); vi.stubEnv("PARTNER_ACTIVATION_ENABLED", "true"); mocks.limit.mockReset().mockResolvedValue(true); mocks.activate.mockReset().mockResolvedValue(undefined); mocks.preview.mockReset().mockResolvedValue({ versionId: "v", title: "Agreement" }) })
   afterEach(() => vi.unstubAllEnvs())
   it.each([undefined, "false", "TRUE", "1"])("closes activation for unapproved configuration %s", async (value) => {
     vi.stubEnv("PARTNER_ACTIVATION_ENABLED", value)
@@ -34,18 +35,30 @@ describe("public invitation consumer", () => {
     expect(mocks.activate).not.toHaveBeenCalled()
   })
   it("bounds the actual streamed body and rejects malformed JSON", async () => {
-    expect((await POST(request("x".repeat(4097)))).status).toBe(413)
+    expect((await POST(request("x".repeat(8193)))).status).toBe(413)
     expect((await POST(request("["))).status).toBe(400)
     expect((await POST(request("[]"))).status).toBe(400)
     expect((await POST(request("{}", "http://localhost:3001", "text/plain"))).status).toBe(415)
     expect(mocks.activate).not.toHaveBeenCalled()
   })
-  it("passes only token/password to the single-use consumer and returns no session", async () => {
-    const response = await POST(request(JSON.stringify({ token: "A".repeat(43), password: "secure-example-password", role: "owner" })))
+  it("passes only token, password and acceptance to the single-use consumer and returns no session", async () => {
+    const acceptance = { accepted: true, signatoryName: "Test Partner", versionId: "v", sha256: "a".repeat(64) }
+    const response = await POST(request(JSON.stringify({ token: "A".repeat(43), password: "secure-example-password", acceptance, role: "owner" })))
     expect(response.status).toBe(200)
     expect(await response.json()).toEqual({ ok: true })
-    expect(mocks.activate).toHaveBeenCalledExactlyOnceWith("A".repeat(43), "secure-example-password")
+    expect(mocks.activate).toHaveBeenCalledExactlyOnceWith("A".repeat(43), "secure-example-password", acceptance)
     expect(response.headers.get("set-cookie")).toBeNull()
     expect(response.headers.get("cache-control")).toContain("no-store")
+  })
+  it("previews the issued agreement without consuming the invitation, behind the same origin, switch and rate limit", async () => {
+    const response = await POST(request(JSON.stringify({ action: "preview", token: "A".repeat(43) })))
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({ agreement: { versionId: "v", title: "Agreement" } })
+    expect(mocks.preview).toHaveBeenCalledExactlyOnceWith("A".repeat(43))
+    expect(mocks.activate).not.toHaveBeenCalled()
+    expect(mocks.limit).toHaveBeenCalledTimes(1)
+    vi.stubEnv("PARTNER_ACTIVATION_ENABLED", "false")
+    expect((await POST(request(JSON.stringify({ action: "preview", token: "A".repeat(43) })))).status).toBe(403)
+    expect(mocks.preview).toHaveBeenCalledTimes(1)
   })
 })

@@ -393,7 +393,7 @@ jobs:
           EXPANSION_WEB_TEST_DATABASE_URL: postgresql://scalesmiths_expansion_web:local_ci_only_web@127.0.0.1:55440/ss_expansion_test
         run: |
           set -o pipefail
-          npx vitest run --config vitest.integration.config.ts test/integration/expansion-concurrency.integration.test.ts test/integration/empower-content.integration.test.ts test/integration/empower-academy.integration.test.ts test/integration/empower-resources.integration.test.ts test/integration/empower-knowledge.integration.test.ts 2>&1 | tee ../ci-artifacts/expansion-concurrency.log
+          npx vitest run --config vitest.integration.config.ts test/integration/expansion-concurrency.integration.test.ts test/integration/empower-content.integration.test.ts test/integration/empower-academy.integration.test.ts test/integration/empower-resources.integration.test.ts test/integration/empower-knowledge.integration.test.ts test/integration/partner-onboarding.integration.test.ts 2>&1 | tee ../ci-artifacts/expansion-concurrency.log
           # The suite skips itself when its database variable is absent; CI must never pass on a skipped suite.
           sed -E 's/\x1b\[[0-9;]*m//g' ../ci-artifacts/expansion-concurrency.log > ../ci-artifacts/expansion-concurrency.plain.log
           grep -E "Tests +[0-9]+ passed" ../ci-artifacts/expansion-concurrency.plain.log

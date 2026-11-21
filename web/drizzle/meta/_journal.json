@@ -163,6 +163,7 @@
       "tag": "0022_quote_acquisition",
       "breakpoints": true
     },
-    { "idx": 23, "version": "7", "when": 1794950400000, "tag": "0023_partner_applications", "breakpoints": true }
+    { "idx": 23, "version": "7", "when": 1794950400000, "tag": "0023_partner_applications", "breakpoints": true },
+    { "idx": 24, "version": "7", "when": 1794952000000, "tag": "0024_repair_web_vital_event", "breakpoints": true }
   ]
 }

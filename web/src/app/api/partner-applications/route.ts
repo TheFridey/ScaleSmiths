@@ -8,6 +8,7 @@ import { checkWebRateLimit } from "@/lib/server/rate-limit"
 import { rateLimitHeaders } from "@/lib/rate-limit-policy"
 import { siteBaseUrl } from "@/lib/site-identity"
 import { captureWebException } from "@/lib/server-monitoring"
+import { sendApplicationReceived } from "@/lib/server/partner-application-email"
 
 export const runtime = "nodejs"
 const headers = { "Cache-Control": "private, no-store" }
@@ -33,6 +34,8 @@ export async function POST(request: NextRequest) {
     await db.execute(sql`insert into partner_applications
       (name,email,phone,region,experience,business_activity,networks,industries,motivation,linkedin,privacy_version,retention_until)
       values (${d.name},${d.email},${d.phone},${d.region},${d.experience},${d.businessActivity},${d.networks},${d.industries},${d.motivation},${d.linkedin},${config.privacyVersion},now() + ${config.retentionDays} * interval '1 day')`)
+    // Confirmation email is a courtesy: its outcome is logged and never changes the response.
+    await sendApplicationReceived({ name: d.name, email: d.email }).catch(() => undefined)
     return NextResponse.json({ ok: true }, { status: 201, headers })
   } catch {
     // Driver errors can embed SQL parameters in their message, stack or cause.

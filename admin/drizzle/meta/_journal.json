@@ -480,6 +480,8 @@
     {"idx":91,"version":"7","when":1794951008016,"tag":"0091_empower_content_foundation","breakpoints":true},
     {"idx":92,"version":"7","when":1794951009016,"tag":"0092_empower_academy","breakpoints":true},
     {"idx":93,"version":"7","when":1794951010016,"tag":"0093_empower_academy_partner_lessons","breakpoints":true},
-    {"idx":94,"version":"7","when":1794951011016,"tag":"0094_empower_resource_search","breakpoints":true}
+    {"idx":94,"version":"7","when":1794951011016,"tag":"0094_empower_resource_search","breakpoints":true},
+    {"idx":95,"version":"7","when":1794952001000,"tag":"0095_partner_agreements","breakpoints":true},
+    {"idx":96,"version":"7","when":1794952002000,"tag":"0096_partner_notifications","breakpoints":true}
   ]
 }

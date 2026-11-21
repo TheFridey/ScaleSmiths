@@ -1,0 +1,42 @@
+{
+  "cli_version": "0.12.2",
+  "checkpoint_id": "01M7ZN7F50GT8SVRT6A87XDW55",
+  "session_id": "8ab9bb96-9c90-4440-a091-b8da32eee5b9",
+  "strategy": "manual-commit",
+  "created_at": "2026-11-21T18:17:32.227632Z",
+  "branch": "feature/launch-ready-web-ux",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "docs/launch-ready/PHASE-5-WEB-UX.md"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-opus-5-5",
+  "turn_id": "588a7ee0a77e",
+  "checkpoint_transcript_start": 1353,
+  "transcript_lines_at_start": 1353,
+  "compact_transcript_start": 133,
+  "token_usage": {
+    "input_tokens": 36,
+    "cache_creation_tokens": 16195,
+    "cache_read_tokens": 4978377,
+    "output_tokens": 7608,
+    "api_call_count": 19
+  },
+  "redaction": {
+    "replacements": 78,
+    "layers": {
+      "betterleaks": 192,
+      "connection_string": 0,
+      "credential_key": 0,
+      "credential_value": 0,
+      "credentialed_uri": 64,
+      "entropy": 12,
+      "key_context": 2,
+      "provider_token": 0,
+      "shell_stdin": 0
+    }
+  },
+  "session_metrics": {
+    "turn_count": 3
+  }
+}

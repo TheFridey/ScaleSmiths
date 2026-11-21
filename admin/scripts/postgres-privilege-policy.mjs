@@ -34,6 +34,8 @@ export const WEB_TABLE_GRANTS = new Map([
   // Durable counters for the public rate limits. Web upserts its own counters
   // but never deletes: expired rows are pruned by the admin worker.
   ["web_rate_limits", ["SELECT", "INSERT", "UPDATE"]],
+  // Operation Launch Ready: the public application form records its own confirmation-email outcome (recipient as a hash only).
+  ["partner_notifications", ["INSERT"]],
 ])
 
 export const WEB_INSERT_TABLES = [

@@ -9,6 +9,7 @@ import { AdminIdentityError } from "@/lib/admin-users"
 import { hasCapability } from "@/lib/rbac"
 import { marketGate } from "@/lib/expansion-gates"
 import { acceptOnActivation, agreementForInvitation, assertIssuableAgreement } from "./partner-agreements-core"
+import { notifyPartner, partnerPortalOrigin } from "./partner-notifications"
 
 export function requirePartnerActivationEnabled() {
   if (process.env.PARTNER_ACTIVATION_ENABLED !== "true") {
@@ -84,7 +85,7 @@ export async function activatePartnerInvitation(tokenInput: unknown, passwordInp
   const credential = validateActivationCredential(tokenInput, passwordInput)
   // Hash before locking to bound lock duration. Rate limiting precedes this service.
   const passwordHash = await bcrypt.hash(credential.password, 12)
-  await db.transaction(async (tx) => {
+  const activated = await db.transaction(async (tx) => {
     const result = await tx.execute(sql`select p.id, p.user_id, p.application_id, p.operating_country from expansion_partners p join admin_users u on u.id = p.user_id join partner_applications a on a.id = p.application_id where p.invitation_hash = ${invitationHash(credential.token)} and p.invitation_expires_at > now() and p.activated_at is null and u.active = false and u.role = 'independent_partner' and a.status = 'onboarding' and a.onboarding_confirmations @> '{"agreement":true,"legal":true,"independentStatus":true,"operations":true}'::jsonb for update of p, u, a`)
     const invitation = result.rows[0] as { id: string; user_id: string; application_id: number; operating_country: string } | undefined
     if (!invitation) throw new AdminIdentityError("Invitation is invalid or unavailable.", 400, "invitation_invalid")
@@ -97,5 +98,12 @@ export async function activatePartnerInvitation(tokenInput: unknown, passwordInp
     await tx.execute(sql`update expansion_partners set invitation_hash = null, invitation_expires_at = null, activated_at = ${now} where id = ${invitation.id}`)
     await tx.execute(sql`update partner_applications set status = 'activated' where id = ${invitation.application_id}`)
     await tx.insert(adminSecurityAudit).values({ actorUserId: invitation.user_id, targetUserId: invitation.user_id, action: "partner_activated", success: true, metadataJson: { partnerId: invitation.id, applicationId: invitation.application_id, acceptanceId, agreementVersionId: agreement.versionId, agreementVersion: agreement.version, sha256: agreement.sha256 } })
+    const [identity] = await tx.select({ email: adminUsers.email, name: adminUsers.displayName }).from(adminUsers).where(eq(adminUsers.id, invitation.user_id)).limit(1)
+    return { partnerId: invitation.id, applicationId: invitation.application_id, email: identity.email, name: identity.name }
   })
+  // Welcome email after the activation has committed; its outcome never affects the activation.
+  try {
+    await db.transaction((tx) => notifyPartner(tx, { to: activated.email, partnerId: activated.partnerId, applicationId: activated.applicationId, idempotencyKey: `activated-${activated.partnerId}`,
+      email: { kind: "activated", name: activated.name, signInUrl: `${partnerPortalOrigin()}/login` } }))
+  } catch { /* recorded as a warning by the notifier; activation already succeeded */ }
 }

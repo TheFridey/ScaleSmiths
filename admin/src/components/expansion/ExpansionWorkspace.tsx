@@ -22,6 +22,12 @@ const str = (value:unknown) => value == null ? '' : String(value)
 const rows = (value:unknown): Row[] => Array.isArray(value) ? value : []
 const label = (value:unknown) => str(value).replaceAll('_',' ').replace(/([a-z0-9])([A-Z])/g,'$1 $2').replace(/^./,first=>first.toUpperCase()).replace(/\bseo\b/gi,'SEO')
 const money = (value:unknown) => formatPence(str(value || '0'))
+const EMAIL_OUTCOMES: Record<string,string> = {sent:'email sent',failed:'email could not be delivered; contact them directly',not_configured:'email is not configured; contact them directly',disabled:'partner email is switched off; contact them directly'}
+/** Plain-language outcome of any partner email a founder decision queued. */
+function emailOutcome(result:unknown) {
+  const list = (result as {notifications?:{kind:string;status:string}[]}|undefined)?.notifications
+  return list?.length ? ' '+list.map(n=>`${n.kind.replaceAll('_',' ')}: ${EMAIL_OUTCOMES[n.status]||n.status}.`).join(' ') : ''
+}
 
 export function ExpansionWorkspace({founder=false,academy=false,resources=false,knowledge=false}:{founder?:boolean;academy?:boolean;resources?:boolean;knowledge?:boolean}) {
   const [data,setData] = useState<Snapshot|null>(null)
@@ -371,7 +377,7 @@ export function Action({action,title,command,initial={},children,confirm}:{actio
     if(confirm && !armed) {setArmed(true);setMessage('');return}
     setArmed(false)
     setBusy(true);setMessage('');setFailed(false)
-    try {await command(input);setMessage('Change recorded.')} catch(e){setFailed(true);setMessage(e instanceof Error?e.message:'Unable to confirm the outcome.')} finally{setBusy(false)}
+    try {const result=await command(input);setMessage(`Change recorded.${emailOutcome(result)}`)} catch(e){setFailed(true);setMessage(e instanceof Error?e.message:'Unable to confirm the outcome.')} finally{setBusy(false)}
   }
   return <form onSubmit={submit} className="ex-form"><fieldset disabled={busy}>{children}{armed && confirm ? <div className="ex-confirm" role="alertdialog" aria-live="assertive" aria-label={`Confirm: ${title}`}><p>{confirm}</p><div className="ex-confirm-actions"><button className="ex-button ex-button-danger" type="submit" autoFocus>Confirm: {title}</button><button className="ex-link" type="button" onClick={()=>setArmed(false)}>Cancel</button></div></div> : <button className="ex-button" type="submit">{busy?'Saving…':title}</button>}</fieldset>{message && <p className={failed?'ex-form-error':'ex-success'} role={failed?'alert':'status'}>{message}</p>}</form>
 }

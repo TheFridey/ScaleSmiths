@@ -99,6 +99,8 @@ export function RecruitmentPanel({ workspace, command, invitation, clearInvitati
             </label>
             <Field name="residenceCountry" title="Applicant residence, two-letter code (information only; authorises nothing)" required={false} value={str(row.residence_country)} />
             <Field name="notes" title="Internal review notes (never shown to the applicant)" area value={str(row.review_notes)} />
+            <Field name="applicantMessage" title="Message to the applicant (required when requesting information; this exact text is emailed)" area required={false} />
+            <Check name="notifyApplicant" title="Email the applicant about this decision (information requested or declined only)" />
             <fieldset className="ex-checkset"><legend>Founder confirmations (all four are required before onboarding)</legend>
               {CONFIRMATIONS.map(([name, title]) => <Check key={name} name={name} title={title} checked={confirmations[name] === true} />)}</fieldset>
           </Action> : <p className="ex-note">{s === 'activated' ? 'This applicant is an active partner. Manage access under Partner accounts.' : 'This application is closed.'}</p>}
@@ -107,6 +109,7 @@ export function RecruitmentPanel({ workspace, command, invitation, clearInvitati
               confirm="This creates an inactive partner identity and a 48-hour single-use link. The applicant must read and accept the agreement you choose before the account activates.">
               <AgreementSelect agreements={agreements} />
               <Field name="operatingCountry" title="Partner operating market, two-letter code (must be an approved market)" value="GB" />
+              <Check name="emailInvitation" title="Email the secure link to the applicant (the link is also shown here once)" />
             </Action>
             : <p className="ex-note" role="note">No published agreement is available. Draft, approve and publish one in Content studio (type: agreement) before inviting.</p>)}
         </details>
@@ -139,7 +142,7 @@ export function RecruitmentPanel({ workspace, command, invitation, clearInvitati
         <Action action="set_partner_operating_market" title="Set operating market" command={command} initial={{ id: row.id }}><Field name="countryCode" title="Operating market, two-letter code" /></Action>
         {row.activated_at && agreements.length ? <Action action="reissue_agreement" title="Issue a new agreement version" command={command} initial={{ id: row.id }}
           confirm="The partner keeps access and is asked to accept the new version. Their earlier acceptance stays on record.">
-          <AgreementSelect agreements={agreements} /></Action> : null}
+          <AgreementSelect agreements={agreements} /><Check name="notifyPartner" title="Email the partner that a new version is ready" /></Action> : null}
         <Action action="revoke_partner" title="Suspend access and end sessions" command={command} initial={{ id: row.id }}
           confirm="The partner is signed out everywhere and cannot sign in. Their agreement, opportunities and history are kept." />
       </div>)}

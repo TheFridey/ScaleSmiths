@@ -64,7 +64,7 @@ async function applicant(label: string, status = "submitted") {
   return r.rows[0].id
 }
 const review = (id: number, status: string, confirmations: Record<string, boolean> = {}) =>
-  runAs(founderA, () => founderMutation({ action: "review_application", id, status, notes: `TEST ONLY review to ${status}`, ...confirmations }))
+  runAs(founderA, () => founderMutation({ action: "review_application", id, status, notes: `TEST ONLY review to ${status}`, applicantMessage: "TEST ONLY: please share two references.", ...confirmations }))
 async function toOnboarding(id: number) {
   for (const s of ["under_review", "assessment_in_progress", "approved_in_principle", "agreement_pending"]) await review(id, s)
   await review(id, "onboarding", ALL_CONFIRMED)
@@ -93,7 +93,9 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("Operation Launch Read
     await expect(review(id, "onboarding", ALL_CONFIRMED)).rejects.toMatchObject({ status: 409 })
     await expect(review(id, "approved_in_principle")).rejects.toMatchObject({ status: 409 })
     await expect(review(id, "activated")).rejects.toThrow(/Invalid recruitment state/)
-    await review(id, "under_review"); await review(id, "information_requested"); await review(id, "assessment_in_progress")
+    await review(id, "under_review")
+    await expect(runAs(founderA, () => founderMutation({ action: "review_application", id, status: "information_requested", notes: "TEST ONLY" }))).rejects.toThrow(/Message to the applicant/)
+    await review(id, "information_requested"); await review(id, "assessment_in_progress")
     // A direct write as the runtime role cannot skip steps either.
     await expect(pool.query("update partner_applications set status='onboarding' where id=$1", [id])).rejects.toThrow(/cannot move from assessment_in_progress to onboarding/)
     await review(id, "approved_in_principle"); await review(id, "agreement_pending")
@@ -115,13 +117,17 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("Operation Launch Read
     const id = await applicant("journey")
     await toOnboarding(id)
     await expect(runAs(founderA, () => founderMutation({ action: "invite", operatingCountry: MARKET, id, agreementVersion: "free-text-v1" }))).rejects.toMatchObject({ status: 400 })
-    const invitation = await runAs(founderA, () => founderMutation({ action: "invite", operatingCountry: MARKET, id, agreementVersionId: v1.versionId })) as { invitationToken: string }
+    // Partner email is off by default: the founder is told, the attempt is logged with no address, and nothing is sent.
+    const invitation = await runAs(founderA, () => founderMutation({ action: "invite", operatingCountry: MARKET, id, agreementVersionId: v1.versionId, emailInvitation: true })) as { invitationToken: string; notifications: { kind: string; status: string }[] }
+    expect(invitation.notifications).toEqual([{ kind: "invitation", status: "disabled" }])
     const shown = await previewInvitationAgreement(invitation.invitationToken)
     expect(shown).toMatchObject({ versionId: v1.versionId, version: 1, sha256: await digest(v1.versionId) })
     await expect(activatePartnerInvitation(invitation.invitationToken, "TestOnly!Onboarding-123")).rejects.toMatchObject({ status: 400 })
     await activatePartnerInvitation(invitation.invitationToken, "TestOnly!Onboarding-123", await acceptance(v1.versionId))
     await expect(activatePartnerInvitation(invitation.invitationToken, "TestOnly!Onboarding-123", await acceptance(v1.versionId))).rejects.toMatchObject({ status: 400 })
     expect((await pool.query("select status from partner_applications where id=$1", [id])).rows).toEqual([{ status: "activated" }])
+    const log = (await pool.query("select kind, status, recipient_sha256 ~ '^[0-9a-f]{64}$' hashed from partner_notifications where application_id=$1 order by created_at", [id])).rows
+    expect(log).toEqual([{ kind: "invitation", status: "disabled", hashed: true }, { kind: "activated", status: "disabled", hashed: true }])
     const partner = await partnerActor(id)
     const overview = await runAs(partner, () => partnerAgreementOverview())
     expect(overview).toMatchObject({ pending: false, issuedCurrent: true, accepted: { versionId: v1.versionId, version: 1, signatoryName: "TEST ONLY Partner" } })

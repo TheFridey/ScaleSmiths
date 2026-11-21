@@ -5,6 +5,7 @@ import { db, type AdminDatabaseTransaction } from '@/lib/db'
 import { requireCapability } from './rbac'
 import { issueInvitation } from './partner-invitations'
 import { founderAgreementRegister, reissueAgreement } from './partner-agreements-core'
+import { notifyPartner, partnerPortalOrigin } from './partner-notifications'
 import { canTransition, FOUNDER_REVIEW_STATUSES, APPLICATION_STATUS_LABELS, isApplicationStatus } from '@/lib/partner-lifecycle'
 import { runApplicantRetention } from './expansion-retention'
 import { ExpansionError, expansionText, expansionId, expansionInteger, prospectDomain, parseDiscovery, technicalReviewFlags, assertPartnerTransition, capacityPeriod } from '@/lib/expansion'
@@ -220,9 +221,20 @@ export async function partnerMutation(input: Input) {
     return {id}
   })
 }
+type Outgoing = Parameters<typeof notifyPartner>[1]
+/** Emails queued by a founder decision are sent only after that decision commits, each in its own short transaction. */
+async function deliverOutbox(outbox: Outgoing[]) {
+  const results: { kind: string; status: string }[] = []
+  for (const message of outbox) {
+    try { const r = await db.transaction(tx => notifyPartner(tx, message)); results.push({ kind: message.email.kind, status: r.status }) }
+    catch { results.push({ kind: message.email.kind, status: 'failed' }) }
+  }
+  return results
+}
 export async function founderMutation(input: Input) {
   const actor = await requireCapability('expansion.manage')
-  return db.transaction(async tx => {
+  const outbox: Outgoing[] = []
+  const result = await db.transaction(async tx => {
     await currentActor(tx,actor,'expansion.manage')
     if (input.action === 'preview_applicant_retention' || input.action === 'purge_applicants' ||
         input.action === 'set_applicant_retention_hold' || input.action === 'release_applicant_retention_hold') {
@@ -240,20 +252,39 @@ export async function founderMutation(input: Input) {
       let residence: string | null = null
       try { residence = normaliseCountry(input.residenceCountry) } catch { throw new ExpansionError('Use a two-letter ISO country code for the applicant residence.') }
       // Residence is recorded for review only. International applicants may be considered; nothing here authorises operating or activation.
+      // The applicant message is the only text that can reach the applicant; internal review notes never do.
+      const applicantMessage = input.status === 'information_requested' && from !== 'information_requested' ? expansionText(input.applicantMessage,'Message to the applicant',2000) : null
       await tx.execute(sql`update partner_applications set status=${String(input.status)},review_notes=${expansionText(input.notes,'Review notes',6000)},onboarding_confirmations=${JSON.stringify(confirmations)}::jsonb,residence_country=coalesce(${residence},residence_country) where id=${id}`)
-      await audit(tx,actor.id,id,'application_reviewed',{from,status:input.status,confirmations})
+      await audit(tx,actor.id,id,'application_reviewed',{from,status:input.status,confirmations,applicantMessage})
+      const applicant = current.rows[0] as Row
+      if (input.notifyApplicant === true && from !== input.status && (input.status === 'information_requested' || input.status === 'declined')) {
+        outbox.push({ to: String(applicant.email), applicationId: id, actorId: actor.id, idempotencyKey: `application-${id}-${String(input.status)}-${randomUUID()}`,
+          email: input.status === 'declined' ? { kind: 'application_declined', name: String(applicant.name) } : { kind: 'information_requested', name: String(applicant.name), message: applicantMessage as string } })
+      }
       return {id}
     }
     if (input.action === 'invite') {
       let operatingCountry: string | null = null
       try { operatingCountry = input.operatingCountry === undefined || input.operatingCountry === '' ? 'GB' : normaliseCountry(input.operatingCountry) } catch { throw new ExpansionError('Use a two-letter ISO country code for the operating market.') }
-      const result = await issueInvitation(tx,expansionInteger(input.id,'application',1,2147483647),actor.id,input.agreementVersionId,operatingCountry as string)
-      await audit(tx,actor.id,result.partnerId,'invitation_issued',{agreementVersionId:input.agreementVersionId})
+      const applicationId = expansionInteger(input.id,'application',1,2147483647)
+      const result = await issueInvitation(tx,applicationId,actor.id,input.agreementVersionId,operatingCountry as string)
+      await audit(tx,actor.id,result.partnerId,'invitation_issued',{agreementVersionId:input.agreementVersionId,emailed:input.emailInvitation===true})
+      if (input.emailInvitation === true) {
+        const details = (await tx.execute(sql`select a.name,a.email,cv.title,cv.version from partner_applications a join expansion_partners p on p.application_id=a.id join empower_content_versions cv on cv.id=p.agreement_content_version_id where a.id=${applicationId}`)).rows[0] as Row
+        // The secret link exists only here and in the founder's browser; it is never stored. Retrying means issuing a new invitation.
+        outbox.push({ to: String(details.email), applicationId, partnerId: result.partnerId, actorId: actor.id, idempotencyKey: `invitation-${result.partnerId}-${result.expiresAt}`,
+          email: { kind: 'invitation', name: String(details.name), link: `${partnerPortalOrigin()}/partner/activate#token=${result.invitationToken}`, expiresAt: result.expiresAt, agreementTitle: String(details.title), agreementVersion: Number(details.version) } })
+      }
       return result
     }
     if (input.action === 'reissue_agreement') {
       const result = await reissueAgreement(tx,expansionId(input.id),input.agreementVersionId)
       await audit(tx,actor.id,result.partnerId,'agreement_reissued',{versionId:result.versionId,label:result.label})
+      if (input.notifyPartner === true) {
+        const details = (await tx.execute(sql`select u.email,u.display_name,cv.title,cv.version from expansion_partners p join admin_users u on u.id=p.user_id join empower_content_versions cv on cv.id=p.agreement_content_version_id where p.id=${result.partnerId}`)).rows[0] as Row
+        outbox.push({ to: String(details.email), partnerId: result.partnerId, actorId: actor.id, idempotencyKey: `agreement-reissued-${result.partnerId}-${result.versionId}`,
+          email: { kind: 'agreement_reissued', name: String(details.display_name), agreementUrl: `${partnerPortalOrigin()}/partner/agreement`, agreementTitle: String(details.title), agreementVersion: Number(details.version) } })
+      }
       return result
     }
     if (input.action === 'set_partner_operating_market') {
@@ -624,4 +655,6 @@ export async function founderMutation(input: Input) {
     } else throw new ExpansionError('Unknown founder action.')
     return {id}
   })
+  if (!outbox.length) return result
+  return { ...result, notifications: await deliverOutbox(outbox) }
 }

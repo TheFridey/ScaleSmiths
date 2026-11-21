@@ -30,7 +30,7 @@ $$;
 
 -- The same partner-only vocabulary the studio checks (CLIENT_BLOCKED_TERMS). Not overridable for the client-facing line.
 CREATE FUNCTION empower_client_line_leaks(line text) RETURNS boolean LANGUAGE sql IMMUTABLE AS $$
-  SELECT coalesce(line, '') ~* '\m(commission|basis points|payout|withdrawal|referral reward|founder[- ]only|internal only|partner[- ]only|achievement bonus)\M'
+  SELECT coalesce(line, '') ~* '\m(commission|basis[-[:space:]]+points|payout|withdrawal|referral[-[:space:]]+reward|founder[-[:space:]]+only|internal[-[:space:]]+only|partner[-[:space:]]+only|achievement[-[:space:]]+bonus)\M'
 $$;
 
 CREATE FUNCTION empower_objection_guard() RETURNS trigger LANGUAGE plpgsql AS $$

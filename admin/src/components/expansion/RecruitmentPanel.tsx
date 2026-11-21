@@ -10,6 +10,10 @@ const str = (v: unknown) => (v == null ? '' : String(v))
 const rows = (v: unknown): Row[] => (Array.isArray(v) ? v : [])
 const statusLabel = (v: unknown) => (isApplicationStatus(v) ? APPLICATION_STATUS_LABELS[v] : str(v))
 const day = (v: unknown) => str(v).slice(0, 10)
+/** Applicant-supplied links are rendered only as absolute HTTPS URLs; anything else (javascript:, data:, relative) stays text. */
+export function httpsLink(value: unknown): string | null {
+  try { const url = new URL(str(value)); return url.protocol === 'https:' && !url.username && !url.password ? url.toString() : null } catch { return null }
+}
 
 /** Badge tone by lifecycle stage; colour is never the only signal (the label is always shown). */
 function tone(status: unknown) {
@@ -88,7 +92,7 @@ export function RecruitmentPanel({ workspace, command, invitation, clearInvitati
         const confirmations = (row.onboarding_confirmations ?? {}) as Row
         return <details className="ex-resource ex-applicant" key={str(row.id)}>
           <summary><span className="ex-applicant-name">{str(row.name)}</span><span className={tone(s)}>{statusLabel(s)}</span><small>{str(row.residence_country) || str(row.region)} · received {day(row.submitted_at)}</small></summary>
-          <p>{str(row.email)}{row.phone ? ` · ${str(row.phone)}` : ''} · {str(row.region)}{row.linkedin ? <> · <a href={str(row.linkedin)} rel="noopener noreferrer nofollow" target="_blank">LinkedIn</a></> : null}</p>
+          <p>{str(row.email)}{row.phone ? ` · ${str(row.phone)}` : ''} · {str(row.region)}{row.linkedin ? (httpsLink(row.linkedin) ? <> · <a href={httpsLink(row.linkedin)!} rel="noopener noreferrer nofollow" target="_blank">LinkedIn<span className="sr-only"> (opens in a new tab)</span></a></> : <> · LinkedIn: {str(row.linkedin)}</>) : null}</p>
           <dl>{['experience', 'business_activity', 'networks', 'industries', 'motivation'].map((key) => <div key={key}><dt>{key.replaceAll('_', ' ')}</dt><dd>{str(row[key]) || '—'}</dd></div>)}</dl>
           <p>Retention review {day(row.retention_until)} · privacy notice {str(row.privacy_version)}</p>
           <ol className="ex-steps" aria-label="Onboarding checks">{CONFIRMATIONS.map(([key, text]) => <li key={key} data-done={confirmations[key] === true}>{confirmations[key] === true ? 'Done: ' : 'Outstanding: '}{text}</li>)}</ol>

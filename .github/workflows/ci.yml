@@ -379,6 +379,7 @@ jobs:
           PARTNER_RESOURCE_CENTRE_ENABLED: "true"
           PARTNER_KNOWLEDGE_BASE_ENABLED: "true"
           PARTNER_OBJECTION_HANDLING_ENABLED: "true"
+          PARTNER_UNIFIED_WORKSPACE_ENABLED: "true"
           # Disposable CI server only: the Launch Ready onboarding journey issues an invitation, which this switch gates.
           PARTNER_ACTIVATION_ENABLED: "true"
         run: |
@@ -389,7 +390,7 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Run Empower and partner onboarding browser journeys (B1.1 to B1.5, Launch Ready)
+      - name: Run Empower and partner onboarding browser journeys (B1.1 to B1.6, Launch Ready)
         run: |
           set -o pipefail
           PLAYWRIGHT_CHROMIUM_EXECUTABLE="$(node -e "console.log(require('playwright-core').chromium.executablePath())")" \
@@ -508,7 +509,7 @@ jobs:
           EXPANSION_WEB_TEST_DATABASE_URL: postgresql://scalesmiths_expansion_web:local_ci_only_web@127.0.0.1:55440/ss_expansion_test
         run: |
           set -o pipefail
-          npx vitest run --config vitest.integration.config.ts test/integration/expansion-concurrency.integration.test.ts test/integration/empower-content.integration.test.ts test/integration/empower-academy.integration.test.ts test/integration/empower-resources.integration.test.ts test/integration/empower-knowledge.integration.test.ts test/integration/partner-onboarding.integration.test.ts test/integration/empower-objections.integration.test.ts 2>&1 | tee ../ci-artifacts/expansion-concurrency.log
+          npx vitest run --config vitest.integration.config.ts test/integration/expansion-concurrency.integration.test.ts test/integration/empower-content.integration.test.ts test/integration/empower-academy.integration.test.ts test/integration/empower-resources.integration.test.ts test/integration/empower-knowledge.integration.test.ts test/integration/partner-onboarding.integration.test.ts test/integration/empower-objections.integration.test.ts test/integration/empower-guidance.integration.test.ts 2>&1 | tee ../ci-artifacts/expansion-concurrency.log
           # The suite skips itself when its database variable is absent; CI must never pass on a skipped suite.
           sed -E 's/\x1b\[[0-9;]*m//g' ../ci-artifacts/expansion-concurrency.log > ../ci-artifacts/expansion-concurrency.plain.log
           grep -E "Tests +[0-9]+ passed" ../ci-artifacts/expansion-concurrency.plain.log

@@ -1,4 +1,5 @@
 import { partnerObjectionsEnabled } from "@/lib/server/empower-objections"
+import { partnerWorkspaceEnabled } from "@/lib/server/empower-guidance"
 import { notFound } from "next/navigation"
 import { guardPageCapability } from "@/lib/server/rbac"
 import { partnerAcademyEnabled, partnerResourcesEnabled, partnerKnowledgeEnabled } from "@/lib/server/empower-partner"
@@ -8,5 +9,5 @@ export const dynamic = "force-dynamic"
 export default async function AcademyPage() {
   await guardPageCapability("expansion.partner")
   if (!partnerAcademyEnabled()) notFound()
-  return <AcademyHome nav={{ academy: true, resources: partnerResourcesEnabled(), knowledge: partnerKnowledgeEnabled(), objections: partnerObjectionsEnabled() }} />
+  return <AcademyHome nav={{ academy: true, resources: partnerResourcesEnabled(), knowledge: partnerKnowledgeEnabled(), objections: partnerObjectionsEnabled(), guidance: partnerWorkspaceEnabled() }} />
 }

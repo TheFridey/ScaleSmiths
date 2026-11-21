@@ -1,4 +1,5 @@
 import { partnerObjectionsEnabled } from "@/lib/server/empower-objections"
+import { partnerWorkspaceEnabled } from "@/lib/server/empower-guidance"
 import { notFound } from "next/navigation"
 import { guardPageCapability } from "@/lib/server/rbac"
 import { partnerAcademyEnabled, partnerResourcesEnabled, partnerKnowledgeEnabled } from "@/lib/server/empower-partner"
@@ -9,5 +10,5 @@ export default async function ResourcePage({ params }: { params: Promise<{ slug:
   if (!partnerResourcesEnabled()) notFound()
   const { slug } = await params
   if (slug.length > 160 || !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug)) notFound()
-  return <ResourceView slug={slug} nav={{ academy: partnerAcademyEnabled(), resources: true, knowledge: partnerKnowledgeEnabled(), objections: partnerObjectionsEnabled() }} />
+  return <ResourceView slug={slug} nav={{ academy: partnerAcademyEnabled(), resources: true, knowledge: partnerKnowledgeEnabled(), objections: partnerObjectionsEnabled(), guidance: partnerWorkspaceEnabled() }} />
 }

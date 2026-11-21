@@ -1,3 +1,4 @@
+import { partnerObjectionsEnabled } from "@/lib/server/empower-objections"
 import { notFound } from "next/navigation"
 import { guardPageCapability } from "@/lib/server/rbac"
 import { partnerAcademyEnabled, partnerResourcesEnabled, partnerKnowledgeEnabled } from "@/lib/server/empower-partner"
@@ -8,5 +9,5 @@ export default async function AcademyCoursePage({ params }: { params: Promise<{ 
   if (!partnerAcademyEnabled()) notFound()
   const { course } = await params
   if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(course) || course.length > 120) notFound()
-  return <AcademyCourse slug={course} nav={{ academy: true, resources: partnerResourcesEnabled(), knowledge: partnerKnowledgeEnabled() }} />
+  return <AcademyCourse slug={course} nav={{ academy: true, resources: partnerResourcesEnabled(), knowledge: partnerKnowledgeEnabled(), objections: partnerObjectionsEnabled() }} />
 }

@@ -422,9 +422,10 @@ const CONTENT_OPTIONAL_ACTIONS = ['submit_content','decide_content','start_conte
 const KNOWLEDGE_TOPIC_OPTIONS = ['hosting','domains','dns','business-email','website-security','analytics','seo','ai-search','wordpress-migration','redirects','accessibility','e-commerce','booking-systems','crm','custom-software','automation','commercial-terms','payment-schedules','commission','client-onboarding']
 const COURSE_CATEGORY_OPTIONS = ['getting-started','services','technical-knowledge','digital-growth','sales-fundamentals','discovery','commercial-policies','professional-conduct','advanced-opportunities']
 const CONTENT_ROUTES = ['joint_sales','technical_scoping','bespoke_discovery','commercial_assistance','proposal_review','training','escalation']
+const OBJECTION_CATEGORY_OPTIONS = ['price','existing-supplier','competitor-comparison','website-migration','seo','ai-search','hosting','maintenance','contract-length','payment-schedules','data-security','bespoke-development','delivery-times','commercial-eligibility','decision-timing','ownership','partner-independence']
 const CONTENT_STATUS_ORDER = ['draft','in_review','approved','published','changes_requested','superseded','archived']
 const CONTENT_KIND_OPTIONS = ['knowledge','objection','lesson','course','resource','template','agreement']
-type LessonChoice = {id:string;label:string;status:string}
+type LessonChoice = {id:string;label:string;status:string;kind?:string}
 type CheckDraft = {id:string;type:'single'|'multiple'|'true_false';prompt:string;options:{id:string;text:string}[];answer:string[];explanation:string}
 type ModuleDraft = {title:string;summary?:string;lessons:string[]}
 function BlankSelect({name,title,options,value}:{name:string;title:string;options:string[];value?:string}) {return <label className="ex-field">{title}<select name={name} defaultValue={value||''}><option value="">Not set</option>{options.map(o=><option key={o} value={o}>{label(o)}</option>)}</select></label>}
@@ -485,11 +486,20 @@ function ContentFields({kind,fields={},lessons=[],related=[]}:{kind:string;field
     <BlankSelect name="f_escalation_required" title="Escalation" options={['always','when','never']} value={f('escalation_required')}/><Field name="f_escalation_condition" title="Escalate when (required if conditional)" required={false} value={f('escalation_condition')}/>
     <BlankSelect name="f_escalation_route" title="Escalation meeting type" options={CONTENT_ROUTES} value={f('escalation_route')}/><BlankSelect name="f_topic" title="Topic" options={KNOWLEDGE_TOPIC_OPTIONS} value={f('topic')}/>
     <Field name="f_aliases" title="Other ways people ask it, one per line" area required={false} value={Array.isArray(fields.aliases)?(fields.aliases as string[]).join('\n'):''}/></>
-  if(kind==='objection') return <><Field name="f_concern" title="Customer concern" required={false} value={f('concern')}/><Field name="f_clarifying_question" title="Clarifying question" required={false} value={f('clarifying_question')}/><Field name="f_guidance" title="Partner guidance" area required={false} value={f('guidance')}/>
-    <Field name="f_client_line" title="Client-facing line" area required={false} value={f('client_line')}/><Field name="f_limitation" title="Limitation" area required={false} value={f('limitation')}/><Field name="f_escalation" title="Escalate when" required={false} value={f('escalation')}/><Field name="f_resource" title="Supporting resource" required={false} value={f('resource')}/></>
+  // B1.5: client-safe language, partner-only explanation and limitation are separate fields; only the client-facing line is ever offered for copying.
+  if(kind==='objection') return <><BlankSelect name="f_category" title="Category" options={OBJECTION_CATEGORY_OPTIONS} value={f('category')}/><Field name="f_source_id" title="Source ID (for example AP-OBJ-01; optional)" required={false} value={f('source_id')}/>
+    <Field name="f_concern" title="Customer concern, as the client says it" required={false} value={f('concern')}/>
+    <Field name="f_aliases" title="Other ways clients say it, one per line" area required={false} value={Array.isArray(fields.aliases)?(fields.aliases as string[]).join('\n'):''}/>
+    <Field name="f_client_line" title="Recommended response: client-facing words the partner may copy (no partner-only terms)" area required={false} value={f('client_line')}/>
+    <Field name="f_guidance" title="Why this response is appropriate (partner only)" area required={false} value={f('guidance')}/>
+    <Field name="f_discovery_questions" title="Discovery questions, one per line" area required={false} value={Array.isArray(fields.discovery_questions)?(fields.discovery_questions as string[]).join('\n'):''}/>
+    <Field name="f_limitation" title="Limitation: what the partner must not promise" area required={false} value={f('limitation')}/>
+    <BlankSelect name="f_escalation_required" title="Escalation" options={['always','when','never']} value={f('escalation_required')}/><Field name="f_escalation_condition" title="Escalate when (required if conditional)" required={false} value={f('escalation_condition')}/>
+    <BlankSelect name="f_escalation_route" title="Escalation meeting type" options={CONTENT_ROUTES} value={f('escalation_route')}/>
+    <RelatedPicker initial={fields.related} choices={related}/></>
   if(kind==='lesson') return <><Field name="f_course_code" title="Course code (for example C04)" required={false} value={f('course_code')}/><Field name="f_lesson_code" title="Lesson code (for example C04-L3)" required={false} value={f('lesson_code')}/><Field name="f_reading_minutes" title="Reading time in minutes" required={false} value={f('reading_minutes')}/><ChecksEditor initial={fields.checks}/></>
   if(kind==='course') return <CourseEditor fields={fields} lessons={lessons}/>
-  if(kind==='resource') return <><Field name="f_summary" title="One-line summary" required={false} value={f('summary')}/><BlankSelect name="f_category" title="Resource category" options={RESOURCE_CATEGORY_OPTIONS} value={f('category')}/><RelatedPicker initial={fields.related} choices={related}/></>
+  if(kind==='resource') return <><Field name="f_summary" title="One-line summary" required={false} value={f('summary')}/><BlankSelect name="f_category" title="Resource category" options={RESOURCE_CATEGORY_OPTIONS} value={f('category')}/><RelatedPicker initial={fields.related} choices={related.filter(c=>c.kind!=='knowledge')}/></>
   return <><Field name="f_subject" title="Subject line" required={false} value={f('subject')}/><Field name="f_use_when" title="Use when" required={false} value={f('use_when')}/></>
 }
 /** Read-only rendering of a version's fields: structured lists in plain language, never raw JSON. */
@@ -528,7 +538,7 @@ function ContentStudio({a,command}:{a:Row;command:Command}) {
   const [filter,setFilter]=useState('all')
   const actorId=str(a.actorId),founders=Number(a.activeFounders||0)
   const lessons:LessonChoice[]=items.filter(i=>i.kind==='lesson').map(i=>{const own=versions.filter(v=>v.item_id===i.id);const live=own.find(v=>v.status==='published');const latest=own[0];return {id:str(i.id),label:str((live||latest)?.title||i.slug),status:live?(live.review_overdue===true?'past_review_date':'published'):str(latest?.status||'draft')}})
-  const related:LessonChoice[]=[...lessons.map(l=>({...l,label:`Lesson: ${l.label}`})),...items.filter(i=>i.kind==='resource').map(i=>{const own=versions.filter(v=>v.item_id===i.id);const live=own.find(v=>v.status==='published');const latest=own[0];return {id:str(i.id),label:`Resource: ${str((live||latest)?.title||i.slug)}`,status:live?'published':str(latest?.status||'draft')}})]
+  const related:LessonChoice[]=[...lessons.map(l=>({...l,label:`Lesson: ${l.label}`})),...items.filter(i=>i.kind==='resource'||i.kind==='knowledge').map(i=>{const own=versions.filter(v=>v.item_id===i.id);const live=own.find(v=>v.status==='published');const latest=own[0];return {id:str(i.id),label:`${i.kind==='knowledge'?'Knowledge':'Resource'}: ${str((live||latest)?.title||i.slug)}`,status:live?'published':str(latest?.status||'draft'),kind:str(i.kind)}})]
   const shown=items.filter(i=>filter==='all'||i.kind===filter)
   return <section className="ex-panel"><p className="ex-overline">FOUNDER CONTENT · OPERATION EMPOWER</p><h2>Content studio</h2>
     <p>Draft, review, approve and publish partner content and Academy courses. Partners see only published, in-date content, and only when the Partner Academy is switched on for this environment. A version can be edited only by its author and only while it is a draft; once submitted it is permanent. {founders>1?'More than one founder is active, so another founder must approve content you wrote.':'You are the only active founder: approving your own version needs a recorded reason.'}</p>
@@ -555,7 +565,7 @@ const RESOURCE_CATEGORY_OPTIONS = ['brochure','guide','checklist','template','re
 /** Related lessons and resources for a resource, chosen from a list (no JSON). Only published ones are ever shown to partners. */
 function RelatedPicker({initial,choices}:{initial:unknown;choices:LessonChoice[]}) {
   const [chosen,setChosen]=useState<string[]>(()=>Array.isArray(initial)?(initial as string[]):[])
-  return <fieldset className="ex-checks"><legend>Related lessons and resources ({chosen.length} of 10)</legend>
+  return <fieldset className="ex-checks"><legend>Related items ({chosen.length} of 10)</legend>
     <input type="hidden" name="f_related_json" value={JSON.stringify(chosen)}/>
     <ul className="ex-lesson-order">{chosen.map(id=>{const c=choices.find(x=>x.id===id);return <li key={id}><span>{c?c.label:'Unknown item'} <span className="ex-badge">{c?label(c.status):'missing'}</span></span><button type="button" className="ex-link" onClick={()=>setChosen(list=>list.filter(x=>x!==id))}>Remove</button></li>})}</ul>
     {chosen.length<10 && <label className="ex-field">Add a related item<select value="" onChange={e=>{const id=e.target.value;if(id) setChosen(list=>[...list,id])}}><option value="">Choose…</option>{choices.filter(c=>!chosen.includes(c.id)).map(c=><option key={c.id} value={c.id}>{c.label} ({label(c.status)})</option>)}</select></label>}

@@ -66,6 +66,24 @@ The site was already in good shape: no contrast failures, no broken internal lin
 | `npm run check:performance-budgets` | not run in effect: the Lighthouse CLI is not installed locally, so every route reported "Lighthouse unavailable". CI runs this gate. |
 | Root: `check:env-hygiene`, `check:architecture-docs`, `check:dependency-governance` | pass |
 
+### CI performance budget investigation
+
+The first CI run on this PR (run 44918769407, head `5b6df16`) failed only on `normal: main-thread blocking: 1110 ms > 900 ms`. The gate, its routes and its limits are unchanged. The evidence points to runner variance, not a code regression:
+
+- **Same bytes.** The PR's homepage loads the same chunks as master's, at the same sizes (shared chunk `1255` is 174 KB on both). The DOM (1,182 nodes) and HTML (67 KB) are also identical. The only addition is the 8 KB `app/error` chunk.
+- **Uniformly slower CI sample.** Every main-thread category grew 3–5×, including "Parse HTML & CSS" (69 → 329 ms) on an identical document, which code cannot cause. Lighthouse's CPU benchmark for that runner was 1632, against 2633 on master's passing run.
+- **Master varies just as much.** In the last 28 CI runs, unchanged code recorded TBT from 0 to 1,125 ms on the homepage. Master alone recorded 11, 27, 31, 349 and 1,125 ms, and the 1,125 ms run was on a benchmark-709 runner. TBT tracks the runner benchmark.
+- **Same machine, alternating builds, the gate's exact Lighthouse 12.8.2 desktop flags:**
+
+| Build | Runs | TBT (ms) | Main-thread work (ms) |
+| --- | --- | --- | --- |
+| master `a436712` | 5 | 0, 0, 0, 0, 0 | median 717 (one run 3,814) |
+| this PR | 5 | 0, 0, 0, 0, 0 | median 553 |
+| master, 4× CPU slowdown | 4 | 14, 53, 115, 29 | 1,730 – 16,085 |
+| this PR, 4× CPU slowdown | 4 | 30, 31, 13, 14 | 1,755 – 3,217 |
+
+No code change was made for performance: none was justified by the measurements.
+
 ## Screenshots
 
 In [`phase-5-web-screenshots/`](phase-5-web-screenshots/). Viewport captures, dark scheme, reduced motion.

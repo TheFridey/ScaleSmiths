@@ -1,3 +1,4 @@
+import { partnerWorkspaceEnabled } from "@/lib/server/empower-guidance"
 import { notFound } from "next/navigation"
 import { guardPageCapability } from "@/lib/server/rbac"
 import { partnerAcademyEnabled, partnerResourcesEnabled, partnerKnowledgeEnabled } from "@/lib/server/empower-partner"
@@ -7,5 +8,5 @@ export const dynamic = "force-dynamic"
 export default async function ResourcesPage() {
   await guardPageCapability("expansion.partner")
   if (!partnerResourcesEnabled()) notFound()
-  return <ResourceCentre nav={{ academy: partnerAcademyEnabled(), resources: true, knowledge: partnerKnowledgeEnabled() }} />
+  return <ResourceCentre nav={{ academy: partnerAcademyEnabled(), resources: true, knowledge: partnerKnowledgeEnabled(), guidance: partnerWorkspaceEnabled() }} />
 }

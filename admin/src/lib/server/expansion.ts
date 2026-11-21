@@ -4,6 +4,7 @@ import { sql } from 'drizzle-orm'
 import { db, type AdminDatabaseTransaction } from '@/lib/db'
 import { requireCapability } from './rbac'
 import { issueInvitation } from './partner-invitations'
+import { founderOperations } from './empower-guidance'
 import { runApplicantRetention } from './expansion-retention'
 import { ExpansionError, expansionText, expansionId, expansionInteger, prospectDomain, parseDiscovery, technicalReviewFlags, assertPartnerTransition, capacityPeriod } from '@/lib/expansion'
 import { buildAcceptedTerms, COMMERCIAL_PLAN_KEYS, parseCommissionTerms, type CommercialPlanKey, type PlanRequest } from '@/lib/expansion-finance'
@@ -146,7 +147,9 @@ export async function founderSnapshot() {
   ])
   const gates: Row = {}
   for (const o of opportunities.rows as Row[]) if (!['closed_lost','withdrawn','contract_accepted'].includes(String(o.status))) gates[String(o.id)] = (await exclusivityOutcome(tx,o)).status
-  return { sectors:sectors.rows,areas:areas.rows,markets:markets.rows,exclusivities:exclusivities.rows,exclusivityStatus:gates,discountPolicies:discountPolicies.rows,additionalClaims:claims.rows,planSettings:planSettings.rows,applications:applications.rows,partners:partners.rows,opportunities:opportunities.rows,capacity:capacity.rows,resources:resources.rows,clients:clients.rows }
+  // Operation Empower B1.6: the founder operations queue over existing records (no new state, no private Academy progress).
+  const operations = await founderOperations(tx)
+  return { operations,sectors:sectors.rows,areas:areas.rows,markets:markets.rows,exclusivities:exclusivities.rows,exclusivityStatus:gates,discountPolicies:discountPolicies.rows,additionalClaims:claims.rows,planSettings:planSettings.rows,applications:applications.rows,partners:partners.rows,opportunities:opportunities.rows,capacity:capacity.rows,resources:resources.rows,clients:clients.rows }
   })
 }
 export async function partnerMutation(input: Input) {

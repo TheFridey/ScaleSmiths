@@ -186,7 +186,7 @@ test('Operation Launch Ready: recruitment, agreement acceptance and partner onbo
     // The production build sends upgrade-insecure-requests and HSTS. On this plain-HTTP loopback stack Chrome therefore upgrades
     // background RSC prefetches to HTTPS and they fail (ERR_SSL_PROTOCOL_ERROR / ERR_FAILED, "Falling back to browser navigation").
     // That cannot happen on the HTTPS production origin, so exactly those messages are excluded; every other console error fails.
-    const harnessOnly = /Failed to fetch RSC payload for http:\/\/localhost:3103\/.*Falling back to browser navigation|net::ERR_SSL_PROTOCOL_ERROR|net::ERR_FAILED/s
+    const harnessOnly = /Failed to fetch RSC payload for http:\/\/localhost:3103\/[\s\S]*Falling back to browser navigation|net::ERR_SSL_PROTOCOL_ERROR|net::ERR_FAILED/
     expect(consoleErrors.filter((e) => !harnessOnly.test(e) && !/favicon|Download the React DevTools/.test(e))).toEqual([])
     await Promise.all([a.context.close(), b.context.close(), partner.context.close()])
   } finally { await su.end() }

@@ -1,6 +1,6 @@
 # Expansion hardening release runbook
 
-Use this addendum with the canonical release runbook. The production checkout is `/var/www/scalesmiths/ScaleSmiths`. The two existing Next.js apps share PostgreSQL. Public recruitment uses `https://scalesmiths.co.uk/partners` and the partner and founder workspaces use `https://admin.scalesmiths.co.uk/partner` and `/expansion` on the admin origin. Host Nginx owns routing. The canonical release path is Docker with host-Nginx blue/green switching. The parent operational runbook also documents the PM2 route if the operator has verified that it still serves live traffic. [Canonical release runbook](../../operations/release-runbook.md)
+Use this addendum with the canonical release runbook. The production checkout is `/var/www/scalesmiths/ScaleSmiths`. The two existing Next.js apps share PostgreSQL. Public recruitment uses `https://scalesmiths.co.uk/partners` and the partner and founder workspaces use `https://partners.scalesmiths.co.uk/partner` and `/expansion` on the admin app's canonical origin (`AUTH_URL`; `admin.scalesmiths.co.uk` still proxies to the same app for machine endpoints). Host Nginx owns routing. The canonical release path is Docker with host-Nginx blue/green switching. The parent operational runbook also documents the PM2 route if the operator has verified that it still serves live traffic. [Canonical release runbook](../../operations/release-runbook.md)
 
 ## Sign-off before preparing a release
 

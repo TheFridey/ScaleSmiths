@@ -1,0 +1,75 @@
+{
+  "cli_version": "0.12.2",
+  "checkpoint_id": "01M7ZXV4TRVB145HCHRFFPNZ13",
+  "strategy": "manual-commit",
+  "branch": "feature/operation-empower-b1-6",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "admin/playwright.empower.config.ts",
+    "admin/src/components/expansion/PartnerWorkspacePanels.tsx",
+    "admin/src/components/expansion/expansion.css",
+    "admin/src/lib/server/empower-academy.ts",
+    "admin/src/lib/server/empower-guidance.ts",
+    "admin/src/lib/server/expansion.ts",
+    "admin/test/e2e/empower-workspace.spec.ts",
+    "admin/test/integration/empower-guidance.integration.test.ts",
+    "docs/expansion/empower/B1-6-UNIFIED-PARTNER-OPERATIONS-REPORT.md",
+    "docs/expansion/empower/evidence/b1-6/founder-operations-1024.png",
+    "docs/expansion/empower/evidence/b1-6/founder-operations-1440.png",
+    "docs/expansion/empower/evidence/b1-6/founder-operations-320.png",
+    "docs/expansion/empower/evidence/b1-6/founder-operations-390.png",
+    "docs/expansion/empower/evidence/b1-6/founder-operations-768.png",
+    "docs/expansion/empower/evidence/b1-6/guidance-search-1024.png",
+    "docs/expansion/empower/evidence/b1-6/guidance-search-1440.png",
+    "docs/expansion/empower/evidence/b1-6/guidance-search-320.png",
+    "docs/expansion/empower/evidence/b1-6/guidance-search-390.png",
+    "docs/expansion/empower/evidence/b1-6/guidance-search-768.png",
+    "docs/expansion/empower/evidence/b1-6/meeting-preparation-1024.png",
+    "docs/expansion/empower/evidence/b1-6/meeting-preparation-1440.png",
+    "docs/expansion/empower/evidence/b1-6/meeting-preparation-320.png",
+    "docs/expansion/empower/evidence/b1-6/meeting-preparation-390.png",
+    "docs/expansion/empower/evidence/b1-6/meeting-preparation-768.png",
+    "docs/expansion/empower/evidence/b1-6/partner-today-1024.png",
+    "docs/expansion/empower/evidence/b1-6/partner-today-1440.png",
+    "docs/expansion/empower/evidence/b1-6/partner-today-320.png",
+    "docs/expansion/empower/evidence/b1-6/partner-today-390.png",
+    "docs/expansion/empower/evidence/b1-6/partner-today-768.png"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 64,
+    "cache_creation_tokens": 54652,
+    "cache_read_tokens": 29720385,
+    "output_tokens": 39081,
+    "api_call_count": 32,
+    "subagent_tokens": {
+      "input_tokens": 16,
+      "cache_creation_tokens": 56623,
+      "cache_read_tokens": 247246,
+      "output_tokens": 6852,
+      "api_call_count": 8
+    }
+  },
+  "redaction": {
+    "replacements": 1129,
+    "layers": {
+      "betterleaks": 475,
+      "connection_string": 0,
+      "credential_key": 0,
+      "credential_value": 67,
+      "credentialed_uri": 904,
+      "entropy": 105,
+      "key_context": 28,
+      "provider_token": 0,
+      "shell_stdin": 0
+    }
+  }
+}

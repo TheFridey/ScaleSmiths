@@ -52,7 +52,7 @@
 .ex-table{width:100%;border-collapse:collapse;font-size:12px;min-width:560px}.ex-table th{text-align:left;font-weight:600;color:#d8c594;background:#1f2023;padding:10px 12px;border-bottom:1px solid #34353a}
 .ex-table td{padding:10px 12px;border-bottom:1px solid #2a2b2f;color:#cdd2da;vertical-align:top;overflow-wrap:anywhere}.ex-table tr:last-child td{border-bottom:0}.ex-table tbody tr:hover{background:#1e1f23}
 .ex-table small{color:#9aa1ad}
-@keyframes ex-rise{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@keyframes ex-rise{from{transform:translateY(4px)}to{transform:none}}
 @media(max-width:900px){.ex-filters{grid-template-columns:1fr 1fr}}
 @media(max-width:560px){.ex-filters{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){.ex-confirm{animation:none}.ex-button:active:not(:disabled),.ex-chip:active{transform:none}}
@@ -67,3 +67,4 @@
 .ex-next-cta:hover{background:#2a251c;border-color:#cfb578}
 @media(max-width:700px){.ex-next-list li{flex-direction:column;align-items:flex-start}}
 @media(prefers-reduced-motion:reduce){.ex-next-list li,.ex-progress span{transition:none}.ex-next-list li:hover{transform:none}}
+.ex-table td:last-child a,.ex-table td:last-child{white-space:nowrap}.ex-table .ex-pill{white-space:nowrap}

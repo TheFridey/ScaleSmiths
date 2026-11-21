@@ -32,5 +32,5 @@
 .activate-button:disabled{opacity:.6;cursor:not-allowed}
 .activate-button:focus-visible{outline:2px solid #f2dfb2;outline-offset:3px}
 .activate .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
-@keyframes activate-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes activate-in{from{transform:translateY(6px)}to{transform:none}}
 @media(prefers-reduced-motion:reduce){.activate-card{animation:none}.activate-button{transition:none}.activate-button:active:not(:disabled){transform:none}}

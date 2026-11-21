@@ -1,0 +1,52 @@
+{
+  "cli_version": "0.12.2",
+  "checkpoint_id": "01M7YPTW2G4V2ADBV3K3AN6T1Q",
+  "session_id": "aebf5df5-fc53-46f8-adc5-609b4932802f",
+  "strategy": "manual-commit",
+  "created_at": "2026-11-21T09:26:15.8850486Z",
+  "branch": "fix/partner-login-origin",
+  "checkpoints_count": 8,
+  "files_touched": [
+    "docs/expansion/hardening/RELEASE-RUNBOOK.md",
+    "docs/expansion/intelligence/ARCHITECTURE.md",
+    "web/src/lib/partner-programme.test.ts",
+    "web/src/lib/partner-programme.ts"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-opus-5-5",
+  "turn_id": "6515038ed0e8",
+  "checkpoint_transcript_start": 6195,
+  "transcript_lines_at_start": 6195,
+  "compact_transcript_start": 535,
+  "token_usage": {
+    "input_tokens": 204,
+    "cache_creation_tokens": 132736,
+    "cache_read_tokens": 32205889,
+    "output_tokens": 50319,
+    "api_call_count": 97,
+    "subagent_tokens": {
+      "input_tokens": 0,
+      "cache_creation_tokens": 0,
+      "cache_read_tokens": 0,
+      "output_tokens": 0,
+      "api_call_count": 0
+    }
+  },
+  "redaction": {
+    "replacements": 530,
+    "layers": {
+      "betterleaks": 196,
+      "connection_string": 0,
+      "credential_key": 0,
+      "credential_value": 9,
+      "credentialed_uri": 455,
+      "entropy": 67,
+      "key_context": 15,
+      "provider_token": 0,
+      "shell_stdin": 0
+    }
+  },
+  "session_metrics": {
+    "turn_count": 45
+  }
+}

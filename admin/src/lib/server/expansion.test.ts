@@ -68,6 +68,11 @@ describe("production Expansion prospect/scope/capacity service against PostgreSQ
     await state.database.exec(readFileSync(new URL("../../../drizzle/0084_expansion_research_allocation.sql", import.meta.url), "utf8"))
     await state.database.exec(readFileSync(new URL("../../../drizzle/0085_expansion_market_enforcement.sql", import.meta.url), "utf8"))
     await state.database.exec(readFileSync(new URL("../../../drizzle/0088_expansion_review_medium_findings.sql", import.meta.url), "utf8"))
+    // Operation Launch Ready: the founder snapshot reads the agreement register. Minimal content tables plus the real 0095 agreement DDL.
+    await state.database.exec(`create table if not exists empower_content_items(id uuid primary key, kind text not null, slug text not null);
+      create table if not exists empower_content_versions(id uuid primary key, item_id uuid not null references empower_content_items(id), version integer not null, title text not null, body text not null, status text not null, review_by date, published_at timestamptz)`)
+    const agreements = readFileSync(new URL("../../../drizzle/0095_partner_agreements.sql", import.meta.url), "utf8")
+    await state.database.exec(agreements.slice(agreements.indexOf("CREATE FUNCTION partner_agreement_digest"), agreements.indexOf("-- 'information_requested'")))
   }, 30000)
   beforeEach(async () => {
     asFounder()

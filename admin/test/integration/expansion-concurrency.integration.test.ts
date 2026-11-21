@@ -42,6 +42,7 @@ import { translateDbError } from "../../src/lib/db-errors"
 import { approveProgramme, attributeReferral, createProgramme, createReferralCode, decideQualification, getProgrammeOverview, revokeQualification, reviewAchievementReward } from "../../src/lib/server/expansion-programme"
 import { allocateExpansionInvoice, approveExpansionPayout, cancelExpansionPayout, cancelWithdrawal, getWithdrawalOverview, prepareWithdrawalPayout, requestWithdrawal, reviewWithdrawal, setWithdrawalPolicy, getPartnerFinance, prepareExpansionPayout, refundExpansionPayment, settleExpansionPayout, verifyExpansionPayment } from "../../src/lib/server/expansion-finance"
 import { activatePartnerInvitation } from "../../src/lib/server/partner-invitations"
+import { createContentItem, decideContentVersion, publishContentVersion, submitContentVersion } from "../../src/lib/server/empower-content"
 import { createInvoice, transitionInvoice } from "../../src/lib/server/invoices"
 
 // Deliberately independent from DATABASE_URL / TEST_DATABASE_URL. This suite never provisions,
@@ -68,6 +69,27 @@ let acceptedContractId: string
 let acceptedOpportunityId: string
 let period: string
 const runAs = <T>(actor: Actor, operation: () => Promise<T>) => state.actors!.run(actor, operation)
+// Operation Launch Ready: invitations issue a published agreement and activation accepts it. One TEST ONLY agreement per run,
+// drafted, approved by the second founder and published through the real content service.
+let agreementCache: { versionId: string; acceptance: Record<string, unknown> } | null = null
+async function issuedAgreement() {
+  if (agreementCache) return agreementCache
+  const previous = process.env.EMPOWER_FOUNDER_CONTENT_ENABLED
+  process.env.EMPOWER_FOUNDER_CONTENT_ENABLED = "true"
+  try {
+    const reviewBy = (() => { const d = new Date(); d.setUTCMonth(d.getUTCMonth() + 2); return d.toISOString().slice(0, 10) })()
+    const body = `TEST ONLY partner agreement for automated concurrency tests (${suffix}). It is not a real agreement and binds nobody. `.repeat(3)
+    const created = await runAs(founder, () => createContentItem({ kind: "agreement", slug: `test-agreement-${suffix}`, audience: "partner_only", cadence: "commercial", title: `TEST ONLY Partner Agreement ${suffix}`, body, fields: {}, sourceRefs: ["legal:test-only-review"] }))
+    await runAs(founder, () => submitContentVersion({ versionId: created.versionId }))
+    await runAs(founder2, () => decideContentVersion({ versionId: created.versionId, decision: "approved", reference: "TEST ONLY FD-AGR", notes: "TEST ONLY agreement approval", reviewBy }))
+    await runAs(founder2, () => publishContentVersion({ versionId: created.versionId }))
+    const digest = (await pool.query<{ d: string }>("select partner_agreement_digest(title, body) d from empower_content_versions where id=$1", [created.versionId])).rows[0].d
+    agreementCache = { versionId: created.versionId, acceptance: { accepted: true, signatoryName: "TEST ONLY Partner", versionId: created.versionId, sha256: digest } }
+    return agreementCache
+  } finally {
+    if (previous === undefined) delete process.env.EMPOWER_FOUNDER_CONTENT_ENABLED; else process.env.EMPOWER_FOUNDER_CONTENT_ENABLED = previous
+  }
+}
 
 async function race<T>(operations: Array<() => Promise<T>>) {
   let arrived = 0, release!: () => void
@@ -209,9 +231,10 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("Expansion real separa
     vi.stubEnv("PARTNER_ACTIVATION_ENABLED", "true")
     try {
       const applicantId = await application(`TEST ONLY activation ${suffix}`, `activate-${suffix}@example.invalid`, "onboarding")
-      const invitation = await runAs(founder, () => founderMutation({ action: "invite", id: applicantId, agreementVersion: "test-reviewed-v1" }))
+      const agreement = await issuedAgreement()
+      const invitation = await runAs(founder, () => founderMutation({ action: "invite", id: applicantId, agreementVersionId: agreement.versionId }))
       const token = String((invitation as { invitationToken: string }).invitationToken)
-      const results = await race([() => activatePartnerInvitation(token, "TestOnly!Activation-A-123"), () => activatePartnerInvitation(token, "TestOnly!Activation-B-123")])
+      const results = await race([() => activatePartnerInvitation(token, "TestOnly!Activation-A-123", agreement.acceptance), () => activatePartnerInvitation(token, "TestOnly!Activation-B-123", agreement.acceptance)])
       expect(results.filter(result => result.status === "fulfilled")).toHaveLength(1)
       expect(results.filter(result => result.status === "rejected")).toHaveLength(1)
       const identity = await pool.query("select u.active,u.session_version,p.invitation_hash,p.invitation_expires_at,p.activated_at is not null as activated from expansion_partners p join admin_users u on u.id=p.user_id where p.application_id=$1", [applicantId])
@@ -1235,14 +1258,15 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("Expansion real separa
       try {
         await setMkt("QU", "approved")
         const applicantId = await application(`TEST ONLY 5C activation ${suffix}`, `five-c-activate-${suffix}@example.invalid`, "onboarding")
-        await expect(runAs(founder, () => founderMutation({ action: "invite", id: applicantId, agreementVersion: "test-reviewed-v1", operatingCountry: "QT" }))).rejects.toMatchObject({ status: 409 })   // never configured: international applicants are not invited
-        const invitation = await runAs(founder, () => founderMutation({ action: "invite", id: applicantId, agreementVersion: "test-reviewed-v1", operatingCountry: "QU" }))
+        const agreement = await issuedAgreement()
+        await expect(runAs(founder, () => founderMutation({ action: "invite", id: applicantId, agreementVersionId: agreement.versionId, operatingCountry: "QT" }))).rejects.toMatchObject({ status: 409 })   // never configured: international applicants are not invited
+        const invitation = await runAs(founder, () => founderMutation({ action: "invite", id: applicantId, agreementVersionId: agreement.versionId, operatingCountry: "QU" }))
         const token = String((invitation as { invitationToken: string }).invitationToken)
-        const results = await race<unknown>([() => activatePartnerInvitation(token, "TestOnly!Activation-5C-123"), () => setMkt("QU", "suspended")])
+        const results = await race<unknown>([() => activatePartnerInvitation(token, "TestOnly!Activation-5C-123", agreement.acceptance), () => setMkt("QU", "suspended")])
         expect(results[1].status).toBe("fulfilled")
         const row = async () => (await pool.query("select p.activated_at is not null activated,p.invitation_hash is not null pending,p.operating_country from expansion_partners p where p.application_id=$1", [applicantId])).rows[0]
         if (results[0].status === "fulfilled") expect(await row()).toMatchObject({ activated: true, pending: false })
-        else { expect(await row()).toMatchObject({ activated: false, pending: true, operating_country: "QU" }); await expect(activatePartnerInvitation(token, "TestOnly!Activation-5C-123")).rejects.toMatchObject({ status: 409 }); await setMkt("QU", "approved"); await activatePartnerInvitation(token, "TestOnly!Activation-5C-123"); expect(await row()).toMatchObject({ activated: true }) }
+        else { expect(await row()).toMatchObject({ activated: false, pending: true, operating_country: "QU" }); await expect(activatePartnerInvitation(token, "TestOnly!Activation-5C-123", agreement.acceptance)).rejects.toMatchObject({ status: 409 }); await setMkt("QU", "approved"); await activatePartnerInvitation(token, "TestOnly!Activation-5C-123", agreement.acceptance); expect(await row()).toMatchObject({ activated: true }) }
       } finally { vi.unstubAllEnvs() }
     })
     it("revoking a partner's operating market stops new progression without touching accepted contracts or ledger", async () => {

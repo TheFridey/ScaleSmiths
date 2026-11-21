@@ -27,3 +27,43 @@
 .ex-lesson-order li{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .ex-course-preview ol,.ex-course-preview ul{padding-left:20px}
 .ex-preview{margin:8px 0}
+/* Operation Launch Ready: founder recruitment controls. Colour is never the only signal; every pill carries its label. */
+.expansion .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.ex-button,.ex-chip,.ex-link{transition:background-color .16s ease,border-color .16s ease,color .16s ease,transform .08s ease,box-shadow .16s ease}
+.ex-button:active:not(:disabled),.ex-chip:active{transform:translateY(1px) scale(.99)}
+.ex-button-danger{background:#e7b4a8;border-color:#e7b4a8;color:#2a1210}.ex-button-danger:hover{background:#f1c6bb}
+.ex-confirm{border:1px solid #7a5a3a;background:#241f18;border-radius:8px;padding:14px 16px;margin-top:8px;animation:ex-rise .18s ease-out}
+.ex-confirm p{margin:0 0 12px;color:#e8d9b8}.ex-confirm-actions{display:flex;flex-wrap:wrap;gap:14px;align-items:center}
+.ex-chips{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 18px}
+.ex-chip{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:8px 14px;border-radius:999px;border:1px solid #3b3c42;background:#202125;color:#c5cad4;font-size:12px;cursor:pointer}
+.ex-chip:hover{border-color:#6b5a39;color:#eadbb5}.ex-chip[aria-pressed=true]{background:#2f2a1f;border-color:#cfb578;color:#f0dcae}
+.ex-chip span{font-size:11px;background:#2c2d33;border-radius:999px;padding:1px 8px;color:#d9c08a}
+.ex-filters{display:grid;grid-template-columns:minmax(0,2fr) repeat(3,minmax(0,1fr));gap:0 16px}
+.ex-result-count{font-size:12px;margin:0 0 4px}
+.ex-applicant summary{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}.ex-applicant-name{font-weight:600;color:#f1f2f5}.ex-applicant summary small{color:#9aa1ad;font-size:11px;flex-basis:100%}
+.ex-pill{display:inline-flex;align-items:center;border-radius:999px;padding:3px 10px;font-size:11px;line-height:1.5;border:1px solid #45464d;background:#25262b;color:#cfd3db}
+.ex-pill-ok{border-color:#3f6b4f;background:#1d2a22;color:#b6e3c5}.ex-pill-gold{border-color:#6b5a39;background:#2a251c;color:#ecd39b}
+.ex-pill-warn{border-color:#7a5a3a;background:#2b2118;color:#f2c99b}.ex-pill-muted{border-color:#3a3b40;background:#1f2023;color:#9ca2ad}
+.ex-steps{list-style:none;padding:0;margin:14px 0;display:grid;gap:6px}.ex-steps li{font-size:12px;color:#aab0bc;padding-left:22px;position:relative}
+.ex-steps li::before{content:"";position:absolute;left:2px;top:6px;width:10px;height:10px;border-radius:50%;border:1.5px solid #6c6f78}
+.ex-steps li[data-done=true]{color:#cfe6d6}.ex-steps li[data-done=true]::before{background:#6fb68a;border-color:#6fb68a}
+.ex-checkset{border:1px solid #34353a!important;border-radius:8px;padding:6px 14px!important;margin:6px 0 12px!important}.ex-checkset legend{font-size:12px;color:#d8c594;padding:0 6px}
+.ex-table-wrap{overflow-x:auto;border:1px solid #303136;border-radius:8px}
+.ex-table{width:100%;border-collapse:collapse;font-size:12px;min-width:560px}.ex-table th{text-align:left;font-weight:600;color:#d8c594;background:#1f2023;padding:10px 12px;border-bottom:1px solid #34353a}
+.ex-table td{padding:10px 12px;border-bottom:1px solid #2a2b2f;color:#cdd2da;vertical-align:top;overflow-wrap:anywhere}.ex-table tr:last-child td{border-bottom:0}.ex-table tbody tr:hover{background:#1e1f23}
+.ex-table small{color:#9aa1ad}
+@keyframes ex-rise{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@media(max-width:900px){.ex-filters{grid-template-columns:1fr 1fr}}
+@media(max-width:560px){.ex-filters{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){.ex-confirm{animation:none}.ex-button:active:not(:disabled),.ex-chip:active{transform:none}}
+/* Partner first-login guidance */
+.ex-progress{height:6px;border-radius:999px;background:#26272c;overflow:hidden;margin:4px 0 18px}.ex-progress span{display:block;height:100%;background:linear-gradient(90deg,#a8873f,#e2c98f);transition:width .4s ease}
+.ex-next-list{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.ex-next-list li{display:flex;justify-content:space-between;align-items:center;gap:16px;border:1px solid #303136;border-radius:10px;padding:14px 16px;background:#1d1e21;transition:border-color .16s ease,transform .16s ease,box-shadow .16s ease}
+.ex-next-list li:hover{border-color:#55482f;transform:translateY(-1px);box-shadow:0 10px 24px -18px #000}
+.ex-next-list li p{margin:4px 0 0;font-size:12px}.ex-next-list li strong{color:#eef0f4;font-weight:600}
+.ex-next-list li[data-done=true]{border-color:#2f4a3a;background:#1a211d}.ex-next-list li[data-done=true] strong::before{content:"✓ ";color:#8fd0a8}
+.ex-next-cta{flex:0 0 auto;display:inline-flex;align-items:center;min-height:44px;padding:8px 14px;border-radius:8px;border:1px solid #6b5a39;color:#e9d29d!important;background:transparent;font-size:12px;font-weight:600;text-decoration:none;cursor:pointer}
+.ex-next-cta:hover{background:#2a251c;border-color:#cfb578}
+@media(max-width:700px){.ex-next-list li{flex-direction:column;align-items:flex-start}}
+@media(prefers-reduced-motion:reduce){.ex-next-list li,.ex-progress span{transition:none}.ex-next-list li:hover{transform:none}}

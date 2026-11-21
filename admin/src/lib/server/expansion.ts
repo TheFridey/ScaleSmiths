@@ -4,6 +4,8 @@ import { sql } from 'drizzle-orm'
 import { db, type AdminDatabaseTransaction } from '@/lib/db'
 import { requireCapability } from './rbac'
 import { issueInvitation } from './partner-invitations'
+import { founderAgreementRegister, reissueAgreement } from './partner-agreements-core'
+import { canTransition, FOUNDER_REVIEW_STATUSES, APPLICATION_STATUS_LABELS, isApplicationStatus } from '@/lib/partner-lifecycle'
 import { runApplicantRetention } from './expansion-retention'
 import { ExpansionError, expansionText, expansionId, expansionInteger, prospectDomain, parseDiscovery, technicalReviewFlags, assertPartnerTransition, capacityPeriod } from '@/lib/expansion'
 import { buildAcceptedTerms, COMMERCIAL_PLAN_KEYS, parseCommissionTerms, type CommercialPlanKey, type PlanRequest } from '@/lib/expansion-finance'
@@ -146,7 +148,11 @@ export async function founderSnapshot() {
   ])
   const gates: Row = {}
   for (const o of opportunities.rows as Row[]) if (!['closed_lost','withdrawn','contract_accepted'].includes(String(o.status))) gates[String(o.id)] = (await exclusivityOutcome(tx,o)).status
-  return { sectors:sectors.rows,areas:areas.rows,markets:markets.rows,exclusivities:exclusivities.rows,exclusivityStatus:gates,discountPolicies:discountPolicies.rows,additionalClaims:claims.rows,planSettings:planSettings.rows,applications:applications.rows,partners:partners.rows,opportunities:opportunities.rows,capacity:capacity.rows,resources:resources.rows,clients:clients.rows }
+  const agreementRegister = await founderAgreementRegister(tx)
+  // Founder-only audit trail for recruitment: review decisions, invitations and agreement events, newest first.
+  const applicationAudit = await tx.execute(sql`select a.entity_id,a.action,a.details,a.created_at,u.display_name actor_name from expansion_audit a left join admin_users u on u.id=a.actor_id
+    where a.action in ('application_reviewed','invitation_issued','agreement_reissued','partner_revoked') order by a.created_at desc limit 300`)
+  return { agreementRegister,applicationAudit:applicationAudit.rows,sectors:sectors.rows,areas:areas.rows,markets:markets.rows,exclusivities:exclusivities.rows,exclusivityStatus:gates,discountPolicies:discountPolicies.rows,additionalClaims:claims.rows,planSettings:planSettings.rows,applications:applications.rows,partners:partners.rows,opportunities:opportunities.rows,capacity:capacity.rows,resources:resources.rows,clients:clients.rows }
   })
 }
 export async function partnerMutation(input: Input) {
@@ -224,23 +230,30 @@ export async function founderMutation(input: Input) {
     }
     if (input.action === 'review_application') {
       const id = expansionInteger(input.id,'application',1,2147483647)
-      const statuses = ['under_review','conversation_arranged','assessment_in_progress','approved_in_principle','agreement_pending','onboarding','declined','withdrawn','archived']
-      if (!statuses.includes(String(input.status))) throw new ExpansionError('Invalid recruitment state.')
+      if (!(FOUNDER_REVIEW_STATUSES as readonly string[]).includes(String(input.status))) throw new ExpansionError('Invalid recruitment state.')
       const current = await tx.execute(sql`select * from partner_applications where id=${id} for update`)
       if (!current.rows[0] || ['activated','archived'].includes(String(current.rows[0].status))) throw new ExpansionError('Application cannot be reviewed.',409)
+      const from = String(current.rows[0].status)
+      // Same map as the database guard (migration 0095); checked here so the founder gets a clear explanation.
+      if (!canTransition(from,input.status)) throw new ExpansionError(`An application cannot move from "${isApplicationStatus(from)?APPLICATION_STATUS_LABELS[from]:from}" to "${APPLICATION_STATUS_LABELS[input.status as keyof typeof APPLICATION_STATUS_LABELS]}".`,409)
       const confirmations = {legal:input.legal===true,agreement:input.agreement===true,independentStatus:input.independentStatus===true,operations:input.operations===true,confirmedBy:actor.id,confirmedAt:new Date().toISOString()}
       let residence: string | null = null
       try { residence = normaliseCountry(input.residenceCountry) } catch { throw new ExpansionError('Use a two-letter ISO country code for the applicant residence.') }
       // Residence is recorded for review only. International applicants may be considered; nothing here authorises operating or activation.
       await tx.execute(sql`update partner_applications set status=${String(input.status)},review_notes=${expansionText(input.notes,'Review notes',6000)},onboarding_confirmations=${JSON.stringify(confirmations)}::jsonb,residence_country=coalesce(${residence},residence_country) where id=${id}`)
-      await audit(tx,actor.id,id,'application_reviewed',{status:input.status,confirmations})
+      await audit(tx,actor.id,id,'application_reviewed',{from,status:input.status,confirmations})
       return {id}
     }
     if (input.action === 'invite') {
       let operatingCountry: string | null = null
       try { operatingCountry = input.operatingCountry === undefined || input.operatingCountry === '' ? 'GB' : normaliseCountry(input.operatingCountry) } catch { throw new ExpansionError('Use a two-letter ISO country code for the operating market.') }
-      const result = await issueInvitation(tx,expansionInteger(input.id,'application',1,2147483647),actor.id,expansionText(input.agreementVersion,'Agreement version',100),operatingCountry as string)
-      await audit(tx,actor.id,result.partnerId,'invitation_issued')
+      const result = await issueInvitation(tx,expansionInteger(input.id,'application',1,2147483647),actor.id,input.agreementVersionId,operatingCountry as string)
+      await audit(tx,actor.id,result.partnerId,'invitation_issued',{agreementVersionId:input.agreementVersionId})
+      return result
+    }
+    if (input.action === 'reissue_agreement') {
+      const result = await reissueAgreement(tx,expansionId(input.id),input.agreementVersionId)
+      await audit(tx,actor.id,result.partnerId,'agreement_reissued',{versionId:result.versionId,label:result.label})
       return result
     }
     if (input.action === 'set_partner_operating_market') {

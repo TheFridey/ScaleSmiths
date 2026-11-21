@@ -53,6 +53,10 @@ export const ADMIN_FUNCTION_GRANTS = [
   { schema: "public", name: "empower_academy_lesson_servable", arguments: "uuid, uuid" },
   // Operation Empower B1.3: Resource Centre search document (index expression and queries).
   { schema: "public", name: "empower_search_document", arguments: "text, text, jsonb" },
+  // Operation Launch Ready: agreement text digest, agreement currency and the application transition map, called from trigger bodies and service reads.
+  { schema: "public", name: "partner_agreement_digest", arguments: "text, text" },
+  { schema: "public", name: "partner_agreement_current", arguments: "uuid" },
+  { schema: "public", name: "partner_application_transition_allowed", arguments: "text, text" },
 ]
 
 export const TENANT_RLS_FUNCTION_GRANTS = [

@@ -1,5 +1,5 @@
 export const PARTNER_APPLICATION_STATUSES = [
-  "submitted", "under_review", "conversation_arranged", "assessment_in_progress",
+  "submitted", "under_review", "information_requested", "conversation_arranged", "assessment_in_progress",
   "approved_in_principle", "agreement_pending", "onboarding", "activated",
   "declined", "withdrawn", "archived",
 ] as const

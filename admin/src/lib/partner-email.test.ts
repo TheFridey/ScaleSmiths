@@ -10,6 +10,16 @@ describe("partner lifecycle email content", () => {
     expect(email.text).toContain("Please share <b>two</b> references & dates.")
   })
 
+  it("never puts applicant-typed URLs, domains or addresses into the greeting", () => {
+    for (const name of ["www.evil.example Free money", "https://evil.example", "evil.example", "me@evil.example", "<b>Hi</b>", "Visit:now", "1234"]) {
+      const email = buildPartnerEmail({ kind: "application_received", name })
+      expect(email.text.startsWith("Hello there,")).toBe(true)
+      expect(`${email.html}${email.text}`).not.toMatch(/evil\.example|<b>Hi/)
+    }
+    expect(buildPartnerEmail({ kind: "application_received", name: "Siân O'Neill-Jones" }).text.startsWith("Hello Siân,")).toBe(true)
+    expect(buildPartnerEmail({ kind: "application_received", name: "D'Arcy Smith" }).text.startsWith("Hello D'Arcy,")).toBe(true)
+  })
+
   it("only links to ScaleSmiths HTTPS origins", () => {
     expect(safeLink("https://partners.scalesmiths.co.uk/partner/activate#token=abc")).toContain("partners.scalesmiths.co.uk")
     for (const bad of ["http://partners.scalesmiths.co.uk/x", "https://evil.example/x", "https://user:pw@partners.scalesmiths.co.uk/", "javascript:alert(1)"]) expect(() => safeLink(bad)).toThrow()

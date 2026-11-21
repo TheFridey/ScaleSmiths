@@ -23,7 +23,15 @@ export function escapeHtml(value: string) {
 }
 /** Header values never carry line breaks or NULs. */
 export const headerSafe = (value: string) => value.replace(/[\r\n\0]/g, " ").trim()
-const firstName = (name: string) => headerSafe(name).split(/\s+/)[0]?.slice(0, 60) || "there"
+/**
+ * The greeting uses a first name only if it is plainly a name (letters, apostrophes, hyphens). Anything else, such as a URL, domain,
+ * email address or markup typed into a public form, is dropped, so applicant-controlled text cannot turn our email into a message
+ * of the sender's choosing.
+ */
+export const firstName = (name: string) => {
+  const token = headerSafe(name).normalize("NFC").split(/\s+/)[0] ?? ""
+  return /^\p{L}[\p{L}'’-]{0,39}$/u.test(token) ? token : "there"
+}
 
 /** Only ScaleSmiths HTTPS links are allowed into an email; anything else fails loudly rather than being sent. */
 export function safeLink(value: string): string {

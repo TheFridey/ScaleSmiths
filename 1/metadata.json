@@ -1,0 +1,76 @@
+{
+  "cli_version": "0.12.2",
+  "checkpoint_id": "01M7ZGZ2CF5NKPM87T42EK8D66",
+  "session_id": "aebf5df5-fc53-46f8-adc5-609b4932802f",
+  "strategy": "manual-commit",
+  "created_at": "2026-11-21T17:03:18.4342493Z",
+  "branch": "feature/operation-empower-b1-5",
+  "checkpoints_count": 2,
+  "files_touched": [
+    ".env.example",
+    ".github/workflows/ci.yml",
+    "admin/drizzle/0095_empower_objections.sql",
+    "admin/drizzle/meta/_journal.json",
+    "admin/scripts/import-empower-curriculum.mjs",
+    "admin/scripts/postgres-privilege-policy.mjs",
+    "admin/src/app/api/partner/objections/route.ts",
+    "admin/src/app/partner/academy/[course]/page.tsx",
+    "admin/src/app/partner/academy/page.tsx",
+    "admin/src/app/partner/knowledge/page.tsx",
+    "admin/src/app/partner/objections/page.tsx",
+    "admin/src/app/partner/resources/[slug]/page.tsx",
+    "admin/src/app/partner/resources/page.tsx",
+    "admin/src/components/empower/AcademyShell.tsx",
+    "admin/src/components/empower/KnowledgeBase.tsx",
+    "admin/src/components/empower/ObjectionHandling.tsx",
+    "admin/src/components/empower/academy.css",
+    "admin/src/components/expansion/ExpansionWorkspace.tsx",
+    "admin/src/lib/authorization-policy.ts",
+    "admin/src/lib/empower-content.test.ts",
+    "admin/src/lib/empower-content.ts",
+    "admin/src/lib/empower-curriculum.ts",
+    "admin/src/lib/empower-objections.test.ts",
+    "admin/src/lib/rbac.ts",
+    "admin/src/lib/server/empower-objections.ts",
+    "admin/test/integration/empower-objections.integration.test.ts",
+    "scripts/migration-checksums.json",
+    "scripts/shared-migration-plan.json"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-opus-5-5",
+  "turn_id": "a29a17446638",
+  "checkpoint_transcript_start": 10705,
+  "transcript_lines_at_start": 10705,
+  "compact_transcript_start": 964,
+  "token_usage": {
+    "input_tokens": 158,
+    "cache_creation_tokens": 120261,
+    "cache_read_tokens": 50158074,
+    "output_tokens": 67859,
+    "api_call_count": 78,
+    "subagent_tokens": {
+      "input_tokens": 0,
+      "cache_creation_tokens": 0,
+      "cache_read_tokens": 0,
+      "output_tokens": 0,
+      "api_call_count": 0
+    }
+  },
+  "redaction": {
+    "replacements": 857,
+    "layers": {
+      "betterleaks": 340,
+      "connection_string": 0,
+      "credential_key": 0,
+      "credential_value": 42,
+      "credentialed_uri": 700,
+      "entropy": 77,
+      "key_context": 23,
+      "provider_token": 0,
+      "shell_stdin": 0
+    }
+  },
+  "session_metrics": {
+    "turn_count": 53
+  }
+}

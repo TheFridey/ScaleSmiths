@@ -3,7 +3,7 @@
   "checkpoint_id": "01M7ZGZ2CF5NKPM87T42EK8D66",
   "strategy": "manual-commit",
   "branch": "feature/operation-empower-b1-5",
-  "checkpoints_count": 1,
+  "checkpoints_count": 3,
   "files_touched": [
     ".env.example",
     ".github/workflows/ci.yml",
@@ -41,25 +41,39 @@
       "compact_transcript": "/0/transcript.jsonl",
       "content_hash": "/0/content_hash.txt",
       "prompt": "/0/prompt.txt"
+    },
+    {
+      "metadata": "/1/metadata.json",
+      "transcript": "/1/full.jsonl",
+      "compact_transcript": "/1/transcript.jsonl",
+      "content_hash": "/1/content_hash.txt",
+      "prompt": "/1/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 64,
-    "cache_creation_tokens": 35495,
-    "cache_read_tokens": 8299796,
-    "output_tokens": 18338,
-    "api_call_count": 31
+    "input_tokens": 222,
+    "cache_creation_tokens": 155756,
+    "cache_read_tokens": 58457870,
+    "output_tokens": 86197,
+    "api_call_count": 109,
+    "subagent_tokens": {
+      "input_tokens": 0,
+      "cache_creation_tokens": 0,
+      "cache_read_tokens": 0,
+      "output_tokens": 0,
+      "api_call_count": 0
+    }
   },
   "redaction": {
-    "replacements": 56,
+    "replacements": 913,
     "layers": {
-      "betterleaks": 129,
+      "betterleaks": 469,
       "connection_string": 0,
       "credential_key": 0,
-      "credential_value": 0,
-      "credentialed_uri": 43,
-      "entropy": 12,
-      "key_context": 1,
+      "credential_value": 42,
+      "credentialed_uri": 743,
+      "entropy": 89,
+      "key_context": 24,
       "provider_token": 0,
       "shell_stdin": 0
     }

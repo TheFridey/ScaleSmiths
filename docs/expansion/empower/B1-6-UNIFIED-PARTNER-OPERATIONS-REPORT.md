@@ -50,7 +50,7 @@ Rehearsal results on disposable PostgreSQL 18, with restricted roles provisioned
 
 ## 6. B1.6 implemented components
 
-Branch `feature/operation-empower-b1-6` from `master` `a436712`. It does not depend on #159 or #161. Everything is behind `PARTNER_UNIFIED_WORKSPACE_ENABLED` (default **off**), and each module still needs its own switch. There are no new tables, no new state and no migration.
+Branch `feature/operation-empower-b1-6` from `master` `a436712`; it was later brought up to date with `master` after #159, #160 and #161 merged (migrations 0095 agreements, 0096 notifications, 0097 objections, as rehearsed). B1.6 adds no migration of its own. Everything is behind `PARTNER_UNIFIED_WORKSPACE_ENABLED` (default **off**), and each module still needs its own switch. There are no new tables, no new state and no migration.
 
 - `admin/src/lib/partner-guidance.ts`:
   - a deterministic rule table mapping recorded discovery to Knowledge Base topics, Academy course categories and a fixed resource vocabulary, each rule with a stated reason;
@@ -111,7 +111,7 @@ Recorded as accepted:
 
 ## 17. Remaining defects and limitations
 
-- Objection responses (#161) and agreement status (#159) are not yet in the workspace. They join once those PRs merge, through the guidance service and Today panel.
+- Objection responses (#161) and agreement status (#159) are not yet in the workspace's guidance search or Today panel. Both PRs have merged; the partner navigation links the objection page when its switch is on. Feeding them into the guidance service and Today panel is a follow-up.
 - `empower-workspace.spec.ts` runs in CI only once the Empower Browser Acceptance job from #161 is on `master`. Until then it runs locally.
 - PostgreSQL 14 is not executed (section 5).
 

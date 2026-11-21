@@ -7,7 +7,7 @@ export const metadata = metadataForEnterpriseContactPage()
 
 export default function EnterpriseContactPage() {
   return (
-    <main className="relative overflow-hidden px-6 py-12 md:px-12 md:py-16">
+    <div className="relative overflow-hidden px-6 py-12 md:px-12 md:py-16">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_20%_0%,_rgba(37,99,235,0.14),_transparent_50%),radial-gradient(ellipse_at_90%_10%,_rgba(15,23,42,0.55),_transparent_45%),linear-gradient(180deg,_rgba(8,8,8,0.2)_0%,_transparent_35%)]"
@@ -33,6 +33,6 @@ export default function EnterpriseContactPage() {
           <EnterpriseEnquiryForm />
         </div>
       </div>
-    </main>
+    </div>
   )
 }

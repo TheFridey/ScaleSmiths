@@ -227,7 +227,7 @@ export function StrategyCallForm({ intent = "strategy_call" }: StrategyCallFormP
   const inputClass = "field-control"
 
   return (
-    <main className="mx-auto max-w-[720px] px-6 py-12 md:px-12 md:py-16">
+    <div className="mx-auto max-w-[720px] px-6 py-12 md:px-12 md:py-16">
       <PageBreadcrumbs
         className="mb-8"
         items={[
@@ -451,7 +451,7 @@ export function StrategyCallForm({ intent = "strategy_call" }: StrategyCallFormP
           {submitting ? "Sending securely…" : submitLabel} <ArrowRight size={15} aria-hidden="true" />
         </button>
       </form>
-    </main>
+    </div>
   )
 }
 

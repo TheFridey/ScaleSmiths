@@ -78,7 +78,7 @@ export function HeroApproachBand({ verifiedStats = [] }: { verifiedStats?: strin
           </ul>
         </div>
 
-        <aside aria-labelledby="home-buyer-fit" className="rounded-3xl border border-b1 bg-bg p-6 md:p-8">
+        <section aria-labelledby="home-buyer-fit" className="rounded-3xl border border-b1 bg-bg p-6 md:p-8">
           <p className="font-dm text-xs font-semibold uppercase tracking-[0.14em] text-acc">Find the right conversation</p>
           <h2 id="home-buyer-fit" className="mt-2 font-syne text-2xl font-extrabold tracking-[-0.02em]">
             The same company. A different starting point.
@@ -94,7 +94,7 @@ export function HeroApproachBand({ verifiedStats = [] }: { verifiedStats?: strin
               </li>
             ))}
           </ul>
-        </aside>
+        </section>
       </div>
 
       <div className="mx-auto mt-12 max-w-[1240px] border-t border-b1 pt-8">

@@ -50,7 +50,7 @@ export default function InternationalPage() {
   return (
     <>
       <JsonLd data={schemas} />
-      <main>
+      <div>
         <article className="px-6 py-20 md:px-12 md:py-28">
           <div className="mx-auto max-w-[1100px]">
             <Breadcrumbs items={[{ name: "Home", href: "/" }, { name: "International clients" }]} />
@@ -127,7 +127,7 @@ export default function InternationalPage() {
             </section>
           </div>
         </article>
-      </main>
+      </div>
     </>
   )
 }

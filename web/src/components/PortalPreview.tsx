@@ -15,17 +15,17 @@ const milestones = [
 export function PortalPreview() {
   const reducedMotion = usePrefersReducedMotion()
   return (
-    <m.div initial={reducedMotion ? false : { opacity: 0, y: 24, rotateX: 3, scale: 0.985 }} whileInView={{ opacity: 1, y: 0, rotateX: 0, scale: 1 }} viewport={{ once: true, amount: 0.18 }} transition={motionTransitions.gentle} style={{ transformPerspective: 1200 }} className="overflow-hidden rounded-[1.35rem] border border-b2 bg-bg shadow-[0_32px_100px_rgba(0,0,0,.4)]" aria-label="Demonstration of the ScaleSmiths client portal using example data">
+    <m.div initial={reducedMotion ? false : { opacity: 0, y: 24, rotateX: 3, scale: 0.985 }} whileInView={{ opacity: 1, y: 0, rotateX: 0, scale: 1 }} viewport={{ once: true, amount: 0.18 }} transition={motionTransitions.gentle} style={{ transformPerspective: 1200 }} role="figure" className="overflow-hidden rounded-[1.35rem] border border-b2 bg-bg shadow-[0_32px_100px_rgba(0,0,0,.4)]" aria-label="Demonstration of the ScaleSmiths client portal using example data">
       <div className="flex items-center justify-between border-b border-b1 bg-s1 px-4 py-3 md:px-5">
         <div className="flex items-center gap-2" aria-hidden="true"><span className="h-2 w-2 rounded-full bg-t3/50" /><span className="h-2 w-2 rounded-full bg-t3/30" /><span className="h-2 w-2 rounded-full bg-t3/20" /></div>
         <span className="rounded border border-acc/20 bg-acc/10 px-2 py-1 font-dm text-[10px] font-semibold uppercase tracking-[.14em] text-acc">Demonstration preview</span>
         <ShieldCheck size={15} className="text-t3" aria-hidden="true" />
       </div>
       <div className="grid md:grid-cols-[150px_1fr]">
-        <aside className="hidden border-r border-b1 bg-s1/55 p-4 md:block" aria-label="Example portal navigation">
+        <div className="hidden border-r border-b1 bg-s1/55 p-4 md:block" aria-hidden="true">
           <p className="font-syne text-sm font-bold">ScaleSmiths</p>
-          <nav className="mt-7 grid gap-2 font-dm text-xs text-t3"><span className="rounded-md bg-acc/10 px-3 py-2 text-acc">Overview</span><span className="px-3 py-2">Timeline</span><span className="px-3 py-2">Requests</span><span className="px-3 py-2">Reports</span></nav>
-        </aside>
+          <div className="mt-7 grid gap-2 font-dm text-xs text-t3"><span className="rounded-md bg-acc/10 px-3 py-2 text-acc">Overview</span><span className="px-3 py-2">Timeline</span><span className="px-3 py-2">Requests</span><span className="px-3 py-2">Reports</span></div>
+        </div>
         <m.div className="p-4 md:p-6" initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }} variants={{ hidden: {}, visible: { transition: { staggerChildren: reducedMotion ? 0 : motionStagger.tight } } }}>
           <m.div variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }} className="flex flex-wrap items-start justify-between gap-4">
             <div><p className="font-dm text-[10px] font-semibold uppercase tracking-[.14em] text-acc">Project workspace</p><h3 className="mt-1 font-syne text-xl font-bold">Example Growth Platform</h3><p className="mt-1 font-dm text-xs text-t3">Neutral demonstration data</p></div>

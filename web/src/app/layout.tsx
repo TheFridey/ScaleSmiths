@@ -72,7 +72,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={syne.variable}>
+    <html lang="en-GB" className={syne.variable}>
       <head>
         <JsonLd
           data={[buildOrganizationSchema(siteUrl), buildWebsiteSchema(siteUrl)]}

@@ -243,7 +243,7 @@ test('B2.1 partner pipeline: Journey A (pipeline, guidance, founder help) and Jo
       expect((await su.query('select p.user_id from expansion_opportunities o join expansion_partners p on p.id=o.partner_id where o.id=$1', [oppId])).rows[0].user_id).toBe((await su.query('select id from admin_users where email=$1', [P1])).rows[0].id)
       // [UI] The queue item opens the opportunity itself in the founder workspace.
       await row.getByRole('link', { name: new RegExp(`^Open scope to review: ${BUSINESS}`) }).click()
-      await expect(founder.page).toHaveURL(new RegExp(`/expansion\?tab=pipeline&opportunity=${oppId}`))
+      await expect(founder.page).toHaveURL(`${origin()}/expansion?tab=pipeline&opportunity=${oppId}`)
       await expect(founder.page.getByRole('heading', { name: BUSINESS })).toBeVisible()
       // [API] An authorised founder decision through the existing command; audit records it and the partner sees the outcome.
       expect((await api(founder.context, '/api/expansion', { action: 'review_scope', id: oppId, decision: 'more_information', notes: 'TEST ONLY internal: confirm booking provider before pricing' })).status).toBe(200)

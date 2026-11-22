@@ -1,5 +1,5 @@
 /* Operation Ascend B2.1: partner pipeline. Same black, charcoal, restrained gold and silver as the Empower partner surfaces. */
-.pl-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:12px;margin:0 0 20px}
+.pl-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin:16px 0 20px}
 .pl-summary div{border:1px solid #33343a;border-radius:12px;background:linear-gradient(180deg,#1c1d21,#17181b);padding:14px 16px}
 .pl-summary dt{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#b9bec8}
 .pl-summary dd{margin:4px 0 0;font-size:26px;font-weight:650;color:#f1e2b8;font-variant-numeric:tabular-nums}
@@ -67,6 +67,9 @@
 @keyframes pl-in{from{transform:translateX(24px);opacity:0}to{transform:none;opacity:1}}
 @media (max-width:719px){
   .pl-views{margin-left:0}
+  .pl-field{flex:1 1 100%}
+  .pl-field select{width:100%}
+  .pl-summary dd{font-size:22px}
   .pl-timeline li{grid-template-columns:1fr}
   .pl-dialog{padding:16px 16px 32px}
   .pl-dialog-head{top:-16px;padding-top:16px;margin-top:-16px}

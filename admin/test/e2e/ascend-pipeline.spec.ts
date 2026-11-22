@@ -85,6 +85,7 @@ test('B2.1 partner pipeline: Journey A (pipeline, guidance, founder help) and Jo
       await shots(p1.page, 'pipeline-table')
       await p1.page.getByRole('button', { name: 'List', exact: true }).click()
       await expect(p1.page.getByRole('list', { name: 'Pipeline list' }).getByRole('button', { name: new RegExp(`^Open ${BUSINESS}`) })).toBeVisible()
+      await shots(p1.page, 'pipeline-list')
       await p1.page.getByLabel('Search').fill('no business matches this')
       await expect(p1.page.getByText('No opportunities match these filters.')).toBeVisible()
       await p1.page.getByRole('button', { name: 'Clear filters' }).click()
@@ -157,7 +158,10 @@ test('B2.1 partner pipeline: Journey A (pipeline, guidance, founder help) and Jo
       await expect(dialog.locator('p.pl-live')).toHaveText(/Request sent to ScaleSmiths/)
       await expect(dialog.getByText('Meeting requested').first()).toBeVisible()
       await axe(p1.page, '[role=dialog]', 'pipeline detail')
+      await dialog.evaluate((el) => { el.scrollTop = 0 })
       await shots(p1.page, 'pipeline-detail', false)
+      await dialog.locator('.pl-timeline').scrollIntoViewIfNeeded()
+      await shots(p1.page, 'pipeline-history', false)
       const m = (await su.query('select id,status from expansion_meeting_requests where opportunity_id=$1 order by created_at desc limit 1', [oppId])).rows[0]
       expect(m.status).toBe('requested'); meetingId = String(m.id)
       await founder.page.goto(`${origin()}/expansion`)

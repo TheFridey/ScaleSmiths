@@ -44,7 +44,7 @@ export type History = { accepted: number; lost: number }
 /** The observed rate from closed expansion opportunities, or null with the reason when there is not enough history. */
 export function historicalConversion(h: History) {
   const closed = h.accepted + h.lost
-  if (closed < MIN_CLOSED_OUTCOMES) return { basisPoints: null, closed, reason: `Only ${closed} closed ${closed === 1 ? "outcome" : "outcomes"} so far; at least ${MIN_CLOSED_OUTCOMES} are needed before a historical conversion rate is shown.` }
+  if (closed < MIN_CLOSED_OUTCOMES) return { basisPoints: null, closed, reason: `${closed === 0 ? "No closed outcomes yet" : `Only ${closed} closed ${closed === 1 ? "outcome" : "outcomes"} so far`}; at least ${MIN_CLOSED_OUTCOMES} are needed before a historical conversion rate is shown.` }
   return { basisPoints: Math.floor((h.accepted * 10000) / closed), closed, reason: null }
 }
 

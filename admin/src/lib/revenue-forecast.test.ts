@@ -21,7 +21,8 @@ describe("forecast assumptions", () => {
 describe("historical conversion", () => {
   it("is never shown below the minimum number of closed outcomes", () => {
     expect(historicalConversion({ accepted: 3, lost: 2 })).toMatchObject({ basisPoints: null, closed: 5 })
-    expect(historicalConversion({ accepted: 0, lost: 0 }).reason).toMatch(/at least 10/)
+    expect(historicalConversion({ accepted: 0, lost: 0 }).reason).toBe("No closed outcomes yet; at least 10 are needed before a historical conversion rate is shown.")
+    expect(historicalConversion({ accepted: 1, lost: 0 }).reason).toMatch(/^Only 1 closed outcome so far/)
     expect(historicalConversion({ accepted: 3, lost: MIN_CLOSED_OUTCOMES - 3 })).toMatchObject({ basisPoints: 3000, closed: 10, reason: null })
     expect(historicalConversion({ accepted: 1, lost: 2 + MIN_CLOSED_OUTCOMES }).basisPoints).toBe(769)
   })

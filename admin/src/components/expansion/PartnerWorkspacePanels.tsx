@@ -38,7 +38,7 @@ const AGREEMENT: Record<AgreementState, { label: string; tone: string; action: s
 function agreementMeaning(a: Agreement) {
   const day = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" })
   switch (a.state) {
-    case "none": return "ScaleSmiths has not issued a partner agreement to your account yet."
+    case "none": return "No partner agreement has been issued to you through the portal yet."
     case "awaiting_acceptance": return `${a.issued?.title ?? "Your agreement"} (version ${a.issued?.version ?? "?"}) has been issued to you and is not yet accepted.`
     case "update_awaiting_acceptance": return `ScaleSmiths issued version ${a.issued?.version ?? "?"}${a.accepted ? `; you accepted version ${a.accepted.version} on ${day(a.accepted.acceptedAt)}` : ""}. Read and accept the update.`
     case "accepted": return `You accepted ${a.issued?.title ?? "your agreement"} (version ${a.issued?.version ?? "?"})${a.accepted ? ` on ${day(a.accepted.acceptedAt)}` : ""}.`
@@ -144,7 +144,13 @@ export function MeetingPrep({ meetingId }: { meetingId: string }) {
   </section>
 }
 
+const APPLICATION_STATUS: Record<string, string> = { submitted: "New", under_review: "Under review", information_requested: "Information requested" }
+const AGREEMENT_ATTENTION: Record<string, string> = { awaiting_acceptance: "Not yet accepted", update_awaiting_acceptance: "Update not yet accepted", unavailable: "Issued version no longer current" }
+const EMAIL_KIND: Record<string, string> = { application_received: "Application received", information_requested: "Information requested", application_declined: "Application declined", invitation: "Invitation", activated: "Account activated", agreement_reissued: "Agreement updated" }
 type Ops = {
+  applications: { id: number; name: string; status: string; submittedAt: string | null }[]
+  agreements: { partnerId: string; partnerName: string; state: string }[]
+  notifications: { id: string; kind: string; status: string; reason: string | null; attempts: number; at: string | null; recipientName: string | null }[]
   meetings: { id: string; meeting_type: string; partner_name: string; business_name: string | null; status: Status; created_at: string }[]
   scopes: { id: string; partner_name: string; business_name: string; status: Status }[]
   contentAwaitingDecision: { kind: string; slug: string; title: string; version: number }[]
@@ -155,10 +161,18 @@ type Ops = {
 export function FounderOperations({ ops, onTab }: { ops: Ops | { unavailable: true } | undefined; onTab: (tab: string) => void }) {
   if (!ops) return null
   if ("unavailable" in ops) return <section className="gd-panel" aria-labelledby="ops-heading"><p className="gd-overline">Founder operations</p><h2 id="ops-heading">Needs your attention</h2><p className="gd-error" role="alert">The operations queue could not be loaded. The rest of the workspace is unaffected; reload to try again.</p></section>
-  const total = ops.meetings.length + ops.scopes.length + ops.contentAwaitingDecision.length + ops.contentExpiring.length
+  const total = ops.applications.length + ops.agreements.length + ops.notifications.length + ops.meetings.length + ops.scopes.length + ops.contentAwaitingDecision.length + ops.contentExpiring.length
   return <section className="gd-panel" aria-labelledby="ops-heading">
     <p className="gd-overline">Founder operations</p><h2 id="ops-heading">Needs your attention <span className="gd-status">{total}</span></h2>
     <div className="gd-grid">
+      <div><h3 className="gd-sub">Applications awaiting a decision ({ops.applications.length})</h3>
+        {ops.applications.length ? <ul className="gd-rows">{ops.applications.slice(0, 6).map((a) => <li className="gd-row" key={a.id}><div><strong>{a.name}</strong><p>{a.submittedAt ? `Submitted ${new Date(a.submittedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" })}` : "Submitted"}</p></div><span className="gd-status" data-tone={a.status === "submitted" ? "action" : "progress"}>{APPLICATION_STATUS[a.status] ?? a.status}</span></li>)}</ul> : <p className="gd-muted">None waiting.</p>}
+        {ops.applications.length > 0 && <button type="button" className="gd-action" onClick={() => onTab("recruitment")}>Open recruitment</button>}</div>
+      <div><h3 className="gd-sub">Partner agreements needing attention ({ops.agreements.length})</h3>
+        {ops.agreements.length ? <ul className="gd-rows">{ops.agreements.slice(0, 6).map((a) => <li className="gd-row" key={a.partnerId}><div><strong>{a.partnerName}</strong></div><span className="gd-status" data-tone={a.state === "unavailable" ? "closed" : "action"}>{AGREEMENT_ATTENTION[a.state] ?? a.state}</span></li>)}</ul> : <p className="gd-muted">Every active partner has accepted their current agreement, or holds none.</p>}
+        {ops.agreements.length > 0 && <button type="button" className="gd-action" onClick={() => onTab("recruitment")}>Open the agreement register</button>}</div>
+      <div><h3 className="gd-sub">Partner emails not delivered, last 30 days ({ops.notifications.length})</h3>
+        {ops.notifications.length ? <ul className="gd-rows">{ops.notifications.slice(0, 6).map((n) => <li className="gd-row" key={n.id}><div><strong>{EMAIL_KIND[n.kind] ?? n.kind}{n.recipientName ? ` · ${n.recipientName}` : ""}</strong><p>{n.status === "not_configured" ? "Email is switched on but no provider is configured." : `Failed${n.reason ? ` (${n.reason.replaceAll("_", " ")})` : ""} after ${n.attempts} attempt${n.attempts === 1 ? "" : "s"}.`} The decision itself is recorded; tell the person another way, or issue a new invitation.</p></div><span className="gd-status" data-tone="action">Not delivered</span></li>)}</ul> : <p className="gd-muted">No undelivered partner email.</p>}</div>
       <div><h3 className="gd-sub">Partner meeting and help requests ({ops.meetings.length})</h3>
         {ops.meetings.length ? <ul className="gd-rows">{ops.meetings.slice(0, 6).map((m) => <li className="gd-row" key={m.id}><div><strong>{MEETING_TYPES[m.meeting_type] ?? m.meeting_type}</strong><p>{m.partner_name}{m.business_name ? ` · ${m.business_name}` : ""}</p></div><StatusPill s={m.status} /></li>)}</ul> : <p className="gd-muted">None waiting.</p>}
         {ops.meetings.length > 0 && <button type="button" className="gd-action" onClick={() => onTab("operations")}>Open partner operations</button>}</div>

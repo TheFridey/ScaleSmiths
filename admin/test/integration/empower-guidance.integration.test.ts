@@ -184,8 +184,8 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("Empower B1.6 unified 
   })
 
   it("B1.7: Today shows each partner's own agreement state from real records, through issue, acceptance, update and withdrawal", async () => {
-    const state = async (actor: Actor) => (await runAs(actor, () => partnerToday())).agreement
-    expect(await state(partnerA)).toMatchObject({ state: "none", issued: null, accepted: null, href: "/partner/agreement" })
+    const stateOf = async (actor: Actor) => (await runAs(actor, () => partnerToday())).agreement
+    expect(await stateOf(partnerA)).toMatchObject({ state: "none", issued: null, accepted: null, href: "/partner/agreement" })
     const c = await runAs(founderA, () => createContentItem({ kind: "agreement", slug: `agreement-gw-${suffix}`, audience: "partner_only", cadence: "commercial", title: `TEST ONLY Workspace Agreement ${suffix}`, body: AGREEMENT_BODY, fields: {}, sourceRefs: ["legal:test-only-review"] } as never))
     await runAs(founderA, () => submitContentVersion({ versionId: c.versionId }))
     await runAs(founderB, () => decideContentVersion({ versionId: c.versionId, decision: "approved", reference: "TEST ONLY FD-GW-AGR", notes: "TEST ONLY agreement approval", reviewBy: inMonths(2) }))
@@ -193,28 +193,37 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("Empower B1.6 unified 
     const partnerAId = String((await pool.query("select id from expansion_partners where user_id=$1", [partnerA.id])).rows[0].id)
     await runAs(founderA, () => founderMutation({ action: "reissue_agreement", id: partnerAId, agreementVersionId: c.versionId }))
     // Issued is not accepted: nothing is inferred from the issue alone.
-    expect(await state(partnerA)).toMatchObject({ state: "awaiting_acceptance", issued: { title: `TEST ONLY Workspace Agreement ${suffix}`, version: 1 }, accepted: null })
+    expect(await stateOf(partnerA)).toMatchObject({ state: "awaiting_acceptance", issued: { title: `TEST ONLY Workspace Agreement ${suffix}`, version: 1 }, accepted: null })
     expect((await runAs(partnerA, () => partnerAgreementOverview())).state).toBe("awaiting_acceptance")
     // Partner B holds no agreement and sees nothing of partner A's.
-    const b = await state(partnerB)
+    const b = await stateOf(partnerB)
     expect(b).toMatchObject({ state: "none", issued: null, accepted: null }); expect(JSON.stringify(b)).not.toContain("Workspace Agreement")
     const digest = async (versionId: string) => (await pool.query<{ d: string }>("select partner_agreement_digest(title, body) d from empower_content_versions where id=$1", [versionId])).rows[0].d
     const sha256 = await digest(c.versionId)
     await runAs(partnerA, () => acceptReissuedAgreement({ accepted: true, versionId: c.versionId, sha256, signatoryName: "Test Only Partner" }))
-    expect(await state(partnerA)).toMatchObject({ state: "accepted", issued: { version: 1 }, accepted: { version: 1 } })
+    expect(await stateOf(partnerA)).toMatchObject({ state: "accepted", issued: { version: 1 }, accepted: { version: 1 } })
     // Founders publish version 2: version 1 is superseded, so the issued version is no longer current.
     const rev = await runAs(founderA, () => startContentRevision({ itemId: c.itemId, changeSummary: "TEST ONLY clause update" }))
     await runAs(founderA, () => saveContentDraft({ versionId: rev.versionId, title: `TEST ONLY Workspace Agreement v2 ${suffix}`, body: `${AGREEMENT_BODY} Revised clause.`, fields: {}, sourceRefs: ["legal:test-only-review-2"] }))
     await runAs(founderA, () => submitContentVersion({ versionId: rev.versionId }))
     await runAs(founderB, () => decideContentVersion({ versionId: rev.versionId, decision: "approved", reference: "TEST ONLY FD-GW-AGR2", notes: "TEST ONLY v2 approval", reviewBy: inMonths(2) }))
     await runAs(founderB, () => publishContentVersion({ versionId: rev.versionId }))
-    expect(await state(partnerA)).toMatchObject({ state: "unavailable", issued: null, accepted: { version: 1 } })
+    expect(await stateOf(partnerA)).toMatchObject({ state: "unavailable", issued: null, accepted: { version: 1 } })
     await runAs(founderA, () => founderMutation({ action: "reissue_agreement", id: partnerAId, agreementVersionId: rev.versionId }))
-    expect(await state(partnerA)).toMatchObject({ state: "update_awaiting_acceptance", issued: { version: 2 }, accepted: { version: 1 } })
+    expect(await stateOf(partnerA)).toMatchObject({ state: "update_awaiting_acceptance", issued: { version: 2 }, accepted: { version: 1 } })
     // Withdrawing the issued version makes it unavailable; the earlier acceptance record is untouched.
     await runAs(founderB, () => archiveContentVersion({ versionId: rev.versionId, reason: "TEST ONLY withdrawn agreement" }))
-    expect(await state(partnerA)).toMatchObject({ state: "unavailable", issued: null, accepted: { version: 1 } })
+    expect(await stateOf(partnerA)).toMatchObject({ state: "unavailable", issued: null, accepted: { version: 1 } })
     expect((await pool.query("select count(*)::int n from partner_agreement_acceptances where partner_id=$1", [partnerAId])).rows[0].n).toBe(1)
+    // Founders see the same state in "Needs your attention", plus new applications and undelivered partner email (no address or body).
+    const appId = (await pool.query<{ id: number }>("insert into partner_applications(name,email,region,experience,motivation,privacy_version,status,retention_until) values($1,$2,'TEST ONLY','Demonstration experience','Founder queue test only','test-reviewed-v1','submitted',now()+interval '30 days') returning id", [`TEST ONLY Applicant ${suffix}`, `gw-applicant-${suffix}@example.invalid`])).rows[0].id
+    await pool.query("insert into partner_notifications(id,idempotency_key,kind,application_id,partner_id,recipient_sha256,status,failure_reason,attempts,actor_id) values($1,$2,'agreement_reissued',null,$3,$4,'failed','delivery_failed',1,$5)", [randomUUID(), `gw-fail-${suffix}`, partnerAId, "a".repeat(64), founderA.id])
+    const ops = await state.database!.transaction((tx) => founderOperations(tx))
+    expect(ops.applications).toEqual(expect.arrayContaining([expect.objectContaining({ id: appId, name: `TEST ONLY Applicant ${suffix}`, status: "submitted" })]))
+    expect(ops.agreements).toEqual(expect.arrayContaining([{ partnerId: partnerAId, partnerName: partnerA.displayName, state: "unavailable" }]))
+    expect(ops.agreements.map((x) => x.partnerName)).not.toContain(partnerB.displayName)
+    expect(ops.notifications).toEqual(expect.arrayContaining([expect.objectContaining({ kind: "agreement_reissued", status: "failed", reason: "delivery_failed", recipientName: partnerA.displayName })]))
+    expect(JSON.stringify(ops)).not.toMatch(/example\.invalid|a{64}/)
   })
 
   it("gives founders a queue over real records, and refuses suspended partners", async () => {

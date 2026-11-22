@@ -7,6 +7,7 @@ import { partnerAcademyEnabled, partnerGuard, partnerKnowledgeEnabled, partnerRe
 import { continueLearningFor } from "./empower-academy"
 import { partnerObjectionsEnabled } from "./empower-objections"
 import { agreementStatusFor } from "./partner-agreements-core"
+import { agreementState } from "@/lib/partner-agreements"
 import { requireCapability } from "./rbac"
 
 /*
@@ -226,7 +227,12 @@ export async function partnerToday() {
   })
 }
 
-/** Founder operations queue over existing records. Private Academy progress is never read here. */
+/**
+ * Founder operations queue over existing records. Private Academy progress is never read here.
+ * B1.7 adds applications awaiting a decision, activated partners whose agreement needs attention, and partner emails that were not
+ * delivered (failed, or switched on without a provider), so founders can see and act on them where they already work (Recruitment).
+ * No recipient address or message body is read: partner_notifications holds neither.
+ */
 export async function founderOperations(tx: Executor) {
   const meetings = await rows(tx, sql`select m.id,m.meeting_type,m.status,m.created_at,u.display_name partner_name,p.business_name from expansion_meeting_requests m
     join expansion_partners ep on ep.id=m.partner_id join admin_users u on u.id=ep.user_id left join expansion_opportunities o on o.id=m.opportunity_id left join prospects p on p.id=o.prospect_id
@@ -237,7 +243,22 @@ export async function founderOperations(tx: Executor) {
     where v.status in ('in_review','approved') order by v.submitted_at nulls last limit 50`)
   const expiring = await rows(tx, sql`select i.kind,i.slug,v.title,v.review_by from empower_content_versions v join empower_content_items i on i.id=v.item_id
     where v.status='published' and v.review_by <= (now() at time zone 'UTC')::date + 30 order by v.review_by, i.slug limit 50`)
+  const applications = await rows(tx, sql`select id,name,status,submitted_at from partner_applications
+    where status in ('submitted','under_review','information_requested') order by (status='submitted') desc, submitted_at limit 50`)
+  const agreements = await rows(tx, sql`select p.id,u.display_name partner_name,p.agreement_content_version_id issued_id,coalesce(partner_agreement_current(p.agreement_content_version_id), false) issued_current,
+      a.content_version_id accepted_id
+    from expansion_partners p join admin_users u on u.id=p.user_id left join partner_agreement_acceptances a on a.id=p.agreement_acceptance_id and a.partner_id=p.id
+    where p.activated_at is not null and u.active and p.agreement_content_version_id is not null
+      and (a.content_version_id is distinct from p.agreement_content_version_id or not coalesce(partner_agreement_current(p.agreement_content_version_id), false))
+    order by u.display_name limit 50`)
+  const notifications = await rows(tx, sql`select n.id,n.kind,n.status,n.failure_reason,n.attempts,n.updated_at,coalesce(u.display_name,pa.name) recipient_name
+    from partner_notifications n left join expansion_partners p on p.id=n.partner_id left join admin_users u on u.id=p.user_id left join partner_applications pa on pa.id=n.application_id
+    where n.status in ('failed','not_configured') and n.updated_at > now() - interval '30 days' order by n.updated_at desc limit 50`)
   return {
+    applications: applications.map((a) => ({ id: Number(a.id), name: String(a.name), status: String(a.status), submittedAt: iso(a.submitted_at) })),
+    agreements: agreements.map((a) => ({ partnerId: String(a.id), partnerName: String(a.partner_name),
+      state: agreementState({ issuedVersionId: String(a.issued_id), issuedCurrent: a.issued_current === true, acceptedVersionId: a.accepted_id ? String(a.accepted_id) : null }) })),
+    notifications: notifications.map((n) => ({ id: String(n.id), kind: String(n.kind), status: String(n.status), reason: n.failure_reason ? String(n.failure_reason) : null, attempts: Number(n.attempts), at: iso(n.updated_at), recipientName: n.recipient_name ? String(n.recipient_name) : null })),
     meetings: meetings.map((m) => ({ ...m, status: explain(MEETING_STATUS, m.status), statusKey: String(m.status) })),
     scopes: scopes.map((o) => ({ ...o, status: explain(OPPORTUNITY_STATUS, o.status), statusKey: String(o.status) })),
     contentAwaitingDecision: inReview, contentExpiring: expiring,

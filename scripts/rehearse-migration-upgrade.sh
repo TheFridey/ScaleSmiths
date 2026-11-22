@@ -27,7 +27,8 @@ DB_NAME=ss_expansion_test FRESH_DB=ss_rehearsal_fresh_test
 
 node -e '
 const u = new URL(process.argv[1]);
-if (!["127.0.0.1", "localhost"].includes(u.hostname) || u.port !== "55440" || u.pathname !== "/ss_expansion_test") {
+// libpq and node-pg let ?host=/?port=/?dbname= override the authority, so any query string or fragment is refused.
+if (!["127.0.0.1", "localhost"].includes(u.hostname) || u.port !== "55440" || u.pathname !== "/ss_expansion_test" || u.search || u.hash) {
   console.error("Refusing: the rehearsal runs only against a disposable loopback server on port 55440, database ss_expansion_test."); process.exit(2) }
 ' "$SUPER"
 
@@ -62,10 +63,17 @@ WORKTREE="$(mktemp -d "${TMPDIR:-/tmp}/aegis-baseline.XXXXXX")"
 cleanup() { git -C "$ROOT" worktree remove --force "$WORKTREE" >/dev/null 2>&1 || true; }
 trap cleanup EXIT
 git -C "$ROOT" worktree add --detach "$WORKTREE" "$BASELINE_REF" >/dev/null
+# The baseline reuses the current dependencies; that is sound only while the migrator stack is unchanged, so it is checked.
+for app in admin web; do for pkg in drizzle-orm drizzle-kit pg; do
+  [[ "$(git -C "$WORKTREE" show HEAD:$app/package-lock.json | jq -r ".packages[\"node_modules/$pkg\"].version")" == "$(jq -r ".packages[\"node_modules/$pkg\"].version" "$ROOT/$app/package-lock.json")" ]] \
+    || { echo "Refusing: $app $pkg differs between the baseline and the current tree; install the baseline's own dependencies."; exit 2; }
+done; done
 ln -s "$ROOT/admin/node_modules" "$WORKTREE/admin/node_modules"; ln -s "$ROOT/web/node_modules" "$WORKTREE/web/node_modules"
 BASE_SHA="$(git -C "$WORKTREE" rev-parse HEAD)"; HEAD_SHA="$(git -C "$ROOT" rev-parse HEAD)"
 echo "baseline=$BASE_SHA head=$HEAD_SHA server=$(psql "$SUPER" -XAtc 'show server_version')" | tee "$OUT/rehearsal-identity.txt"
 
+[[ "$(psql "$SUPER" -XAt -c "select count(*) from pg_tables where schemaname in ('public','drizzle')")" == 0 ]] \
+  || { echo "Refusing: $DB_NAME is not empty; start from a freshly created disposable server."; exit 2; }
 echo "== 1. Baseline schema with the baseline release's own tooling"
 migrate_with "$WORKTREE/admin" "$DB_NAME" 2>&1 | tee "$OUT/1-baseline-migrate.log" | tail -n 3
 
@@ -75,7 +83,8 @@ set_role_urls "$DB_NAME"
   npx vitest run --config vitest.integration.config.ts test/integration/expansion-concurrency.integration.test.ts \
   test/integration/empower-content.integration.test.ts test/integration/empower-academy.integration.test.ts \
   test/integration/empower-resources.integration.test.ts test/integration/empower-knowledge.integration.test.ts) 2>&1 \
-  | sed -E 's/\x1b\[[0-9;]*m//g' | tee "$OUT/2-baseline-data.log" | grep -E "Test Files|Tests " || true
+  | sed -E 's/\x1b\[[0-9;]*m//g' > "$OUT/2-baseline-data.log" || { echo "Baseline data suites failed; the baseline would be under-populated."; tail -n 30 "$OUT/2-baseline-data.log"; exit 1; }
+grep -E "Test Files|Tests " "$OUT/2-baseline-data.log"
 
 echo "== 3. Fingerprint every pre-existing row over the pre-upgrade column list"
 psql "$SUPER" -X -At -v ON_ERROR_STOP=1 -c "select jsonb_object_agg(format('%I.%I', table_schema, table_name), cols) from (
@@ -92,6 +101,7 @@ migrate_with "$ROOT/admin" "$DB_NAME" 2>&1 | tee "$OUT/4-upgrade-migrate.log" | 
 echo "== 5. Every pre-existing row is unchanged"
 fingerprint "$SUPER" "$OUT/3-pre-upgrade-columns.json" "$OUT/3-journal-max-ids.json" > "$OUT/5-after.txt"
 psql "$SUPER" -X -At -c "select 'appended journal entries: admin ' || (select count(*) from drizzle.__drizzle_migrations where id > ($(jq '."drizzle.__drizzle_migrations"' "$OUT/3-journal-max-ids.json"))) || ', web ' || (select count(*) from drizzle.__drizzle_web_migrations where id > ($(jq '."drizzle.__drizzle_web_migrations"' "$OUT/3-journal-max-ids.json")))" | tee "$OUT/5-appended.txt"
+grep -qE "admin [1-9][0-9]*, web [0-9]+" "$OUT/5-appended.txt" || { echo "Nothing was upgraded: the baseline already matched the current history."; exit 1; }
 if diff -u "$OUT/3-before.txt" "$OUT/5-after.txt" > "$OUT/5-row-diff.txt"; then echo "rows: identical"; else echo "ROWS CHANGED:"; cat "$OUT/5-row-diff.txt"; exit 1; fi
 
 echo "== 6. Upgraded schema equals a fresh install of the current history"

@@ -27,5 +27,5 @@ IDOR (covered by ownership + 404), SQL injection (parameterised `sql` template t
 
 ## Not covered yet
 
-- Browser E2E of the role matrix (Journey E) — not written in this session.
+- Journey E runs in the browser acceptance suite (`ascend-pipeline.spec.ts`); applicant and anonymous page access rely on the existing middleware tests.
 - Founder visibility of interactions — none exists; FD-ASC-04.

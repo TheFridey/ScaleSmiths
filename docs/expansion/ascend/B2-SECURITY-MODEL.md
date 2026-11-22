@@ -21,6 +21,16 @@ Applies to B2.1 as implemented; later slices must extend this file before they s
 | Rendering | Notes rendered as React text (no HTML), `white-space: pre-wrap` | "records interactions…" stores `<script>` verbatim; React escapes |
 | Query bounds | Pipeline ≤ 500 opportunities, meetings ≤ 1000, detail timeline ≤ 200 audit rows, interactions ≤ 100 | code review |
 
+## B2.2 additions
+
+| Boundary | Enforcement | Test |
+|---|---|---|
+| Feature off | `PARTNER_QUALIFICATION_ENABLED` gates the partner field (null) and the founder API (404) | both database suites |
+| Founder only | `ascend.qualification` policy rule (`expansion.manage`), re-checked against the live session (role, active, session version) | `expansion-qualification.database.test.ts` |
+| No protected characteristics | Factors read only declared `DISCOVERY_FIELDS`; extra keys change nothing | `partner-qualification.test.ts` |
+| No authority | Display only; nothing writes or reads it for decisions | code review, database test asserts no state change |
+| Duplicate confidentiality | Name-variant and company-number matches return the existing generic 409, never which record matched | `expansion.test.ts` |
+
 ## Threats considered
 
 IDOR (covered by ownership + 404), SQL injection (parameterised `sql` template throughout; malformed id test), forged transitions (server-side `assertPartnerTransition`), tampered monetary values (B2.1 reads no amounts and writes none), unsafe note rendering (text only), information in logs (no logging added), notification abuse (no notifications sent by B2.1).

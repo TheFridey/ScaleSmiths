@@ -5,6 +5,8 @@ import { AcademyShell, type PartnerNav } from "@/components/empower/AcademyShell
 import { ProspectGuidance } from "@/components/expansion/PartnerWorkspacePanels"
 import { filterPipeline, INTERACTION_KINDS, type PipelineCard, type PipelineFilter, type TimelineEntry } from "@/lib/partner-pipeline"
 import { explain, MEETING_STATUS } from "@/lib/partner-guidance"
+import type { Qualification } from "@/lib/partner-qualification"
+import { QualificationChecklist } from "./QualificationChecklist"
 import "@/components/empower/guidance.css"
 import "./pipeline.css"
 
@@ -16,6 +18,7 @@ type Detail = {
   meetings: { id: string; status: string; meetingType: string; confirmedStart: string | null; proposedStart: string | null; createdAt: string }[]
   interactions: { id: string; kind: string; summary: string; occurredOn: string; createdAt: string | null }[]
   timeline: TimelineEntry[]
+  qualification: Qualification | null
 }
 type View = "board" | "table" | "list"
 
@@ -191,6 +194,11 @@ function OpportunityDialog({ id, guidance, onClose, onChanged }: { id: string; g
           <p className="gd-muted">{[d.opportunity.industry, d.opportunity.region, d.opportunity.website?.replace(/^https?:\/\//, "")].filter(Boolean).join(" · ")}{d.opportunity.createdAt ? ` · Added ${date(d.opportunity.createdAt)}` : ""}</p>
           {d.opportunity.missingForScope.length > 0 && !["closed", "won", "approved", "review"].includes(String(d.opportunity.column)) && <><p className="gd-muted">Before the scope can be submitted, discovery still needs: {d.opportunity.missingForScope.map((k) => FIELD_LABELS[k] ?? k).join(", ")}.</p><a className="gd-link" href="/partner">Update discovery in your workspace</a></>}
         </section>
+
+        {d.qualification && <section className="pl-block" aria-labelledby={`${titleId}-qa`}>
+          <h3 id={`${titleId}-qa`} className="gd-sub">Qualification readiness</h3>
+          <QualificationChecklist q={d.qualification} headingId={`${titleId}-qa`} onEscalate={d.opportunity.column === "closed" ? undefined : (route) => { if (assist.current) { assist.current.value = route; assist.current.focus() } }} />
+        </section>}
 
         <section className="pl-block" aria-labelledby={`${titleId}-stage`}>
           <h3 id={`${titleId}-stage`} className="gd-sub">Move stage</h3>

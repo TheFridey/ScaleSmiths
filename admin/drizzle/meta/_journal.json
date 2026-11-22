@@ -484,6 +484,7 @@
     {"idx":95,"version":"7","when":1794952001000,"tag":"0095_partner_agreements","breakpoints":true},
     {"idx":96,"version":"7","when":1794952002000,"tag":"0096_partner_notifications","breakpoints":true},
     {"idx":97,"version":"7","when":1794953000000,"tag":"0097_empower_objections","breakpoints":true},
-    {"idx":98,"version":"7","when":1794954000000,"tag":"0098_ascend_pipeline_interactions","breakpoints":true}
+    {"idx":98,"version":"7","when":1794954000000,"tag":"0098_ascend_pipeline_interactions","breakpoints":true},
+    {"idx":99,"version":"7","when":1794955000000,"tag":"0099_ascend_business_name_key","breakpoints":true}
   ]
 }

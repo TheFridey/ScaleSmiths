@@ -382,6 +382,8 @@ jobs:
           PARTNER_UNIFIED_WORKSPACE_ENABLED: "true"
           # Operation Ascend B2.1 partner pipeline (disposable CI server only).
           PARTNER_PIPELINE_ENABLED: "true"
+          # Operation Ascend B2.2 qualification readiness (disposable CI server only).
+          PARTNER_QUALIFICATION_ENABLED: "true"
           # Disposable CI server only: the Launch Ready onboarding journey issues an invitation, which this switch gates.
           PARTNER_ACTIVATION_ENABLED: "true"
         run: |
@@ -392,7 +394,7 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Run Empower, Ascend and partner onboarding browser journeys (B1.1 to B1.6, B2.1, Launch Ready)
+      - name: Run Empower, Ascend and partner onboarding browser journeys (B1.1 to B1.6, B2.1, B2.2, Launch Ready)
         run: |
           set -o pipefail
           PLAYWRIGHT_CHROMIUM_EXECUTABLE="$(node -e "console.log(require('playwright-core').chromium.executablePath())")" \

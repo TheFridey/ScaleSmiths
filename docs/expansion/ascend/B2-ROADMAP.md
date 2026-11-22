@@ -8,7 +8,7 @@
 | 0b | Admin hydration marker for history navigation (`claude/awesome-hawking-ximwzj`, `f3e6f4d`) | master | Draft PR opened by Ascend Phase Zero (see STATUS) |
 | 0c | B1.7 Project Aegis ([#163](https://github.com/TheFridey/ScaleSmiths/pull/163)) | master | Draft PR, CI green, awaiting founder decisions and human review |
 | 1 | B2.1 Advanced partner pipeline | master | Implemented on `feature/operation-ascend-b2`, switched off |
-| 2 | B2.2 Qualification | B2.1 | Not started |
+| 2 | B2.2 Qualification | B2.1 | Implemented on `feature/operation-ascend-b2-2` (stacked), switched off |
 | 3 | B2.3 Founder sales command centre | B2.1, #163 | Not started |
 | 4 | B2.4 Revenue intelligence and forecasting | finance engine (master) | Not started; can run in parallel with 2 |
 | 5 | B2.5 Partner performance | B2.1, B2.2 | Not started; blocked on Academy privacy decision for any founder view |
@@ -49,3 +49,4 @@ Likely causes, in order: (1) the admin hostname's DNS record points at the host 
 - **FD-ASC-03** Whether founders may ever reassign an opportunity between partners, and what happens to commission entitlement.
 - **FD-ASC-04** Whether founders may see partner interaction notes (currently partner-only; no founder view exists).
 - **FD-ASC-05** Minimum history before forecasts show a conversion rate (B2.4).
+- **FD-ASC-06** Whether a budget answer should stay mandatory for scope submission (current rule) or become voluntary as the Ascend directive suggests.

@@ -9,6 +9,8 @@ import {
   PIPELINE_COLUMNS, type PipelineCard, type PipelineMeeting, type TimelineEntry, type TimelineSource,
 } from "@/lib/partner-pipeline"
 import { partnerGuard } from "./empower-partner"
+import { partnerQualificationEnabled } from "./expansion-qualification"
+import { qualificationFor } from "@/lib/partner-qualification"
 import { requireCapability } from "./rbac"
 
 /*
@@ -103,6 +105,8 @@ export async function partnerOpportunityDetail(id: unknown) {
       meetings: meetings.map(toMeeting),
       interactions: interactions.map((i) => ({ id: String(i.id), kind: String(i.kind), summary: String(i.summary), occurredOn: String(i.occurred_on).slice(0, 10), createdAt: iso(i.created_at) })),
       timeline,
+      // B2.2: readiness factors for the partner's own opportunity; null while the qualification switch is off.
+      qualification: partnerQualificationEnabled() ? qualificationFor(o.discovery, { website: o.website_url }) : null,
     }
   })
 }

@@ -216,6 +216,47 @@ test('B2.1 partner pipeline: Journey A (pipeline, guidance, founder help) and Jo
       expect(await ledger(su)).toBe(ledgerBefore)
     })
 
+    await test.step('[UI+API] B1-B9 Founder sales command centre: queue, assignment, deep link, authorised decision, audit', async () => {
+      // [API] The partner completes discovery and submits the scope through the real partner commands.
+      expect((await api(p1.context, '/api/partner', { action: 'discovery', id: oppId, discovery: { objectives: 'Win more local enquiries online', pages: 'Home, services, contact', functionality: 'Online booking and payments', budget: 'Discussed with the owner', timescale: 'Spring', decisionProcess: 'Owner decides' } })).status).toBe(200)
+      const submitted = await api(p1.context, '/api/partner', { action: 'submit_scope', id: oppId, summary: `TEST ONLY scope for ${BUSINESS}` })
+      expect(submitted.status, JSON.stringify(submitted.body)).toBe(200)
+      await founder.page.setViewportSize({ width: 1440, height: 900 })
+      await founder.page.goto(`${origin()}/expansion/command`)
+      await expect(founder.page.getByRole('heading', { name: 'Sales command centre' })).toBeVisible()
+      await founder.page.getByLabel('Kind').selectOption('scope_review')
+      const row = founder.page.locator('li.sc-item').filter({ hasText: BUSINESS })
+      await expect(row).toBeVisible()
+      await expect(row.locator('.sc-tag')).toHaveText('Technical scoping')
+      await expect(row.getByText('No founder assigned')).toBeVisible()
+      await axe(founder.page, '.sc', 'command centre')
+      await shots(founder.page, 'command-centre')
+      await row.getByRole('button', { name: 'Assign' }).click()
+      const form = row.getByRole('form', { name: `Assign a founder to ${BUSINESS}` })
+      await form.getByLabel('Founder').selectOption({ label: 'TEST ONLY Founder A' })
+      await form.getByLabel('Reason').fill('TEST ONLY takes technical scoping this week')
+      await form.getByRole('button', { name: 'Save assignment' }).click()
+      await expect(row.getByText('Handled by TEST ONLY Founder A')).toBeVisible()
+      // [API] A stale second assignment from an old view is refused; the partner keeps ownership.
+      const stale = await api(founder.context, '/api/expansion/command', { action: 'assign', opportunityId: oppId, assigneeId: null, reason: 'TEST ONLY stale view', expectedCurrentId: null })
+      expect(stale.status).toBe(409)
+      expect((await su.query('select p.user_id from expansion_opportunities o join expansion_partners p on p.id=o.partner_id where o.id=$1', [oppId])).rows[0].user_id).toBe((await su.query('select id from admin_users where email=$1', [P1])).rows[0].id)
+      // [UI] The queue item opens the opportunity itself in the founder workspace.
+      await row.getByRole('link', { name: new RegExp(`^Open scope to review: ${BUSINESS}`) }).click()
+      await expect(founder.page).toHaveURL(new RegExp(`/expansion\?tab=pipeline&opportunity=${oppId}`))
+      await expect(founder.page.getByRole('heading', { name: BUSINESS })).toBeVisible()
+      // [API] An authorised founder decision through the existing command; audit records it and the partner sees the outcome.
+      expect((await api(founder.context, '/api/expansion', { action: 'review_scope', id: oppId, decision: 'more_information', notes: 'TEST ONLY internal: confirm booking provider before pricing' })).status).toBe(200)
+      expect((await su.query("select count(*)::int n from expansion_audit where entity_id=$1 and action in ('scope_reviewed','founder_assignment')", [oppId])).rows[0].n).toBe(2)
+      const detail = await api(p1.context, `/api/partner/pipeline?id=${oppId}`)
+      expect(detail.body.opportunity.status).toBe('more_information')
+      expect(JSON.stringify(detail.body)).not.toMatch(/confirm booking provider|founder_assignment|takes technical scoping/)
+      expect((detail.body.timeline as { label: string }[]).map((t) => t.label)).toContain('ScaleSmiths asked for more information')
+      // [API] Partners cannot open the command centre.
+      expect([401, 403]).toContain((await api(p1.context, '/api/expansion/command')).status)
+      expect(await ledger(su)).toBe(ledgerBefore)
+    })
+
     await test.step('[API] E1-E9 Isolation and refusals', async () => {
       const p2 = await login(browser, P2)
       expect((await api(p2.context, `/api/partner/pipeline?id=${oppId}`)).status).toBe(404)
@@ -227,7 +268,7 @@ test('B2.1 partner pipeline: Journey A (pipeline, guidance, founder help) and Jo
       expect((await api(p2.context, '/api/partner/pipeline', { action: 'schedule_follow_up', opportunityId: oppId, date: '' })).status).toBe(404)
       // A partner cannot skip the founder's decision, even on their own opportunity.
       expect((await api(p1.context, '/api/partner', { action: 'stage', id: oppId, status: 'approved' })).status).toBe(409)
-      expect((await su.query('select status from expansion_opportunities where id=$1', [oppId])).rows[0].status).toBe('discovery')
+      expect((await su.query('select status from expansion_opportunities where id=$1', [oppId])).rows[0].status).toBe('more_information')
       expect((await api(p2.context, '/api/expansion')).status).toBe(403)
       const p3 = await login(browser, P3)
       await su.query('update admin_users set active=false, session_version=session_version+1 where email=$1', [P3])

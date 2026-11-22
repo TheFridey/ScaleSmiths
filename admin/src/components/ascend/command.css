@@ -1,0 +1,47 @@
+/* Operation Ascend B2.3: founder sales command centre. Charcoal, restrained metallic gold and silver, as the founder workspace. */
+.sc{max-width:1680px;margin:0 auto;padding:32px 40px 56px;color:#edf0f5;font-size:14px}
+.sc-head{display:flex;justify-content:space-between;gap:24px;align-items:flex-start;margin-bottom:24px}
+.sc-overline{margin:0 0 10px;font-size:10px;font-weight:600;letter-spacing:.17em;text-transform:uppercase;color:#c7af79}
+.sc h1{margin:0 0 8px;font-size:clamp(24px,2.4vw,36px);font-weight:600;letter-spacing:-.03em}
+.sc-lede{margin:0;max-width:760px;line-height:1.7;color:#aab0bc}
+.sc-head-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.sc-h2{margin:0 0 14px;font-size:18px;font-weight:550}
+.sc-metrics{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin:0 0 10px}
+.sc-metrics div{border:1px solid #35363b;background:#1b1c1f;border-radius:8px;padding:16px}
+.sc-metrics dt{font-size:11px;color:#c2c7d0}
+.sc-metrics dd{margin:8px 0 6px;font-size:26px;font-weight:600;color:#e9d3a1;font-variant-numeric:tabular-nums}
+.sc-metrics p{margin:0;font-size:11px;line-height:1.5;color:#a4aab7}
+.sc-panel{border:1px solid #34353a;background:#1a1b1e;border-radius:8px;padding:24px;margin-top:24px;min-width:0}
+.sc-muted{margin:4px 0;font-size:12px;line-height:1.6;color:#a4aab7}
+.sc-rules{margin:0 0 14px;font-size:13px;color:#c9cdd5}
+.sc-rules summary{cursor:pointer;color:#e2cb93;min-height:44px;display:inline-flex;align-items:center}
+.sc-rules ol{margin:6px 0;padding-left:20px;line-height:1.7}
+.sc-filters{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:6px}
+.sc-field{display:flex;flex-direction:column;gap:6px;font-size:12px;color:#c4c9d2;min-width:0}
+.sc-field select,.sc-field input{min-height:44px;padding:8px 12px;border-radius:8px;border:1px solid #45464d;background:#222327;color:#eef0f3;font:inherit;font-size:13px;max-width:100%}
+.sc-grow{flex:1 1 260px}
+.sc-queue{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:10px}
+.sc-item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;border:1px solid #33343a;border-left:3px solid #6b5a39;border-radius:8px;padding:14px 16px;background:#1f2023}
+.sc-item[data-kind="assistance"]{border-left-color:#d8b36a}
+.sc-item[data-kind="notification_failed"],.sc-item[data-kind="stalled"]{border-left-color:#a0645a}
+.sc-kind{margin:0;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#d8bd84;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.sc-tag{font-size:10px;letter-spacing:.04em;text-transform:none;border:1px solid #7a5a3a;color:#f2c99b;border-radius:999px;padding:1px 8px}
+.sc-title{margin:4px 0 2px;font-size:15px;font-weight:600;color:#f4f5f7;overflow-wrap:anywhere}
+.sc-partner{font-weight:400;color:#b9bec8}
+.sc-item-actions{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap}
+.sc-assign{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;border-top:1px solid #2e2f34;padding-top:12px}
+.sc-full{flex-basis:100%}
+.sc-button{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:8px 16px;border-radius:6px;border:1px solid #cfb578;background:#cfb578;color:#161616;font:inherit;font-size:12px;font-weight:650;text-decoration:none;cursor:pointer}
+.sc-button:hover{background:#dfc68e}
+.sc-quiet{background:transparent;color:#e2cb93}.sc-quiet:hover{background:#2a251c}
+.sc-button:disabled{opacity:.6;cursor:not-allowed}
+.sc-link{color:#dfc68b;text-decoration:underline;text-underline-offset:4px;min-height:44px;display:inline-flex;align-items:center}
+.sc :focus-visible{outline:2px solid #d9bf83;outline-offset:3px}
+.sc-empty{border:1px dashed #3a3b41;border-radius:8px;padding:16px;color:#aeb4bf;margin:8px 0 0}
+.sc-error{border:1px solid #8a4b44;background:#33211f;color:#f4bab2;padding:12px;border-radius:8px}
+.sc-table-wrap{overflow-x:auto;border:1px solid #2e2f34;border-radius:8px}
+.sc-table{width:100%;border-collapse:collapse;min-width:860px;font-size:13px;color:#d6d9df}
+.sc-table th,.sc-table td{padding:10px 12px;border-bottom:1px solid #2a2b30;text-align:left;font-variant-numeric:tabular-nums}
+.sc-table thead th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#b9bec8;background:#17181b}
+@media (max-width:760px){.sc{padding:20px 16px 40px}.sc-head{flex-direction:column}.sc-item{grid-template-columns:1fr}.sc-panel{padding:16px}}
+@media (prefers-reduced-motion:reduce){.sc *{transition:none!important;animation:none!important}}

@@ -2,11 +2,20 @@
 
 **Nothing in this document is approved.** It prepares decisions for the founders. A decision exists only when an authorised founder records it, with date, reference and review-by date, in [FOUNDER-APPROVAL-REGISTER.md](FOUNDER-APPROVAL-REGISTER.md) (section G links each item here). A passing test, a green CI run or a model review is never an approval.
 
-Prepared 22 November 2026 against `master` `06d6b4f`. Evidence is in [B1-7-PROJECT-AEGIS-FINAL-REPORT.md](B1-7-PROJECT-AEGIS-FINAL-REPORT.md).
+Prepared 22 November 2026 against `master` `06d6b4f`, then updated the same day with release-stabilisation evidence. Evidence:
+
+- [B1-7-PROJECT-AEGIS-FINAL-REPORT.md](B1-7-PROJECT-AEGIS-FINAL-REPORT.md)
+- [production readiness audit](../../operations/AEGIS-PRODUCTION-READINESS-AUDIT.md)
+- [agreement integration review](AEGIS-AGREEMENT-INTEGRATION-REVIEW.md)
+- [controlled release runbook](../../operations/AEGIS-CONTROLLED-RELEASE-RUNBOOK.md)
 
 ## 1. AP-COM-03: the twelve-month Growth Partnership minimum term
 
-**Why this needs a decision now.** The public partner page already states the term, the admin engine already enforces it, and the register still lists `AP-COM-03` as `FOUNDER DECISION`. Published wording and the commercial engine therefore run ahead of a recorded decision. Nothing was changed to make them agree; the founders decide which is right.
+**Why this needs a decision now.** The term is already **live in production**. On 22 November 2026, `https://scalesmiths.co.uk/partners` (release `37995d2`) said: "a £2,000 website and a £350 monthly Growth Partnership with a twelve-month minimum commitment: £6,200 minimum contract value, excluding VAT".
+
+The admin engine already enforces the term, yet the register still lists `AP-COM-03` as `FOUNDER DECISION`. Published wording and the commercial engine therefore run ahead of a recorded decision.
+
+Nothing was changed to make them agree; the founders decide which is right. If the decision is not to approve, the live page and the engine must change in a reviewed PR before any partner relies on them.
 
 | Field | Current state (verified in code on `06d6b4f`) |
 |---|---|
@@ -19,6 +28,9 @@ Prepared 22 November 2026 against `master` `06d6b4f`. Evidence is in [B1-7-PROJE
 | Public wording today | `/partners` FAQ and body: "a twelve-month minimum commitment, a minimum contract value of £6,200 excluding VAT … earlier agreements keep the terms under which they were accepted" |
 | Content depending on it | Resource R04 (Growth Partnership guide), Academy C04-L3 and C11 (all `DRAFT`) |
 | Effective date | **To be set by the founders.** Recommended: the date the decision is recorded, applying to client agreements accepted on or after it |
+| Commission (verified in code, unchanged) | 30% acquisition commission on eligible, verified, VAT-exclusive collections; bespoke rates need a recorded approval reference |
+| Required publication updates if approved | None to the live page (it already says this). Academy C04-L3 and C11 and resource R04 can then move from `DRAFT` to review |
+| Founder identity and review date | To be recorded with the decision (below) |
 
 Founder decision fields (to be completed by a founder, not by engineering):
 
@@ -27,6 +39,8 @@ Founder decision fields (to be completed by a founder, not by engineering):
 | ☐ Approve as stated ☐ Approve with changes ☐ Reject (then the site and engine must change in a reviewed PR) | | | | | |
 
 ## 2. Partner agreement: clause checklist for the solicitor (AP-LR-01, AP-LR-02, AP-GOV-01)
+
+Solicitor-reviewed agreement documents are stated to exist, but none could be found or read from this session; the [agreement integration review](AEGIS-AGREEMENT-INTEGRATION-REVIEW.md) lists every source searched. It also lists what the founders need to supply, and a jurisdiction gap to close before a second market.
 
 There is **no partner agreement text in the repository**. Agreements are founder-authored governed content (kind `agreement`, two-founder approval, source reference `legal:<review>` required) and none has been drafted or published. Engineering therefore cannot verify any clause; it can only state what the agreement must cover and what the platform does.
 
@@ -58,7 +72,41 @@ Until AP-LR-01 and AP-LR-02 are decided and an agreement is published, `PARTNER_
 | `AP-AEGIS-PRIV-07` (new) | Partner email | Off; recipient stored only as SHA-256; no bodies or addresses logged | Approve wording (AP-LR-03) and provider (AP-LR-04) before enabling |
 | `AP-AEGIS-PRIV-08` (new) | International applicants | Application form open to any country; markets must be approved before activation | Decide lawful basis and transfer position per approved market |
 
+## 3a. Content readiness (22 November 2026)
+
+Counts are from the repository's registers. Production held 0 published content items at the last read-only check (B1.6); this was not re-checked on the host.
+
+| Module | Draft inventory | Blockers |
+|---|---|---|
+| Academy | 13 courses (C01–C13), 91 lessons, 65 knowledge-check questions; all `DRAFT` | C04 waits on `AP-COM-03`; C08 and C12 on `AP-PRIV-01`; C12 also `BLOCKED` on `AP-GOV-01`, `AP-GOV-02` and `AP-GOV-05`; `AP-ACA-03` (questions) |
+| Resource Centre | 13 resources (R01–R13), all `DRAFT` | R02 handbook `BLOCKED` on the agreement; R04 on `AP-COM-03`; R07 and R13 on `AP-PRIV-01`; R12 on `AP-COM-09` and `AP-COM-11`; `AP-RES-03` (R13 audience) |
+| Knowledge Base | 32 entries | Mostly `DRAFT` with wording `CONFIRMED: PUBLISHED`; KB-COMM-01 to 03 `BLOCKED`; `AP-KB-02` |
+| Objection handling | 12 responses (`AP-OBJ-01` to 12), each `DRAFT` | `AP-OBJ-10` `BLOCKED` on `AP-GOV-05`; `AP-OBJ-05-ROUTE`, `AP-OBJ-QUESTIONS`, `AP-OBJ-CLAIMS` |
+| Partner agreement | None drafted in the portal | Documents not yet supplied (section 2) |
+
+Register totals: 61 `DRAFT`, 12 `BLOCKED`, 38 `FOUNDER DECISION`, 4 `PROPOSED POLICY` and 11 `CONFIRMED: PUBLISHED` (that is, the wording matches the public site). **Nothing is approved for partner publication.**
+
+Recommended publication sequence (each item still needs two-founder approval in the Content studio):
+
+1. The agreement.
+2. Knowledge Base entries whose wording is already confirmed on the public site.
+3. Objection responses without a blocker.
+4. Resources in the `AP-PUB-02` order.
+5. Academy courses whose lessons and questions are approved.
+
+Commercial items (C04, R04, R12, KB-COMM) come only after `AP-COM-03` and `AP-LR-02`.
+
+## 3b. Additional privacy decisions
+
+| Item | Current behaviour (verified in code) | Decision |
+|---|---|---|
+| Founder help requests (meeting and help requests) | Stored with the partner, prospect and purpose text; visible to founders and the requesting partner | Covered by `AP-PRIV-01`; retention not yet set |
+| Search logging (guidance, objections, knowledge) | Nothing is logged | `AP-PRIV-02`: confirm no logging |
+| Resource downloads | Not logged | `AP-PRIV-03` |
+
 ## 4. Go / no-go checklist
+
+The release is split into **Gate A** (dormant code) and **Gate B** (activation), with a procedure for each in the [controlled release runbook](../../operations/AEGIS-CONTROLLED-RELEASE-RUNBOOK.md). Passing Gate A authorises nothing in Gate B.
 
 States: **PASS**, **PASS WITH LIMITATION**, **BLOCKED**, **FAIL**, **NOT VERIFIED**. Owners are roles. "Approval reference" stays empty until a founder records one.
 
@@ -75,7 +123,9 @@ States: **PASS**, **PASS WITH LIMITATION**, **BLOCKED**, **FAIL**, **NOT VERIFIE
 | Restore | Isolated drill with role re-provisioning | PASS WITH LIMITATION (disposable data, not a production bundle) | Operator | Production-bundle drill | | |
 | Monitoring | Health checks and failure hooks | NOT VERIFIED on the VPS | Operator | | | |
 | Email | Resend key, domain, wording | BLOCKED (AP-LR-03, AP-LR-04) | Founders | | | |
-| DNS | `admin.scalesmiths.co.uk` origin | BLOCKED (AP-LR-05) | Founders | | | |
+| DNS | `admin.scalesmiths.co.uk` origin | FAIL: on 22 November 2026 it redirected (301) to an unrelated domain, `www.confirmakill.co.uk` (audit P1) | Founders | AP-LR-05 | | |
+| Error monitoring | Production web reports `monitoring: provider "none"` | FAIL (audit P3) | Founders | Provider decision | | |
+| Canonical admin origin | Topology policy says `admin.`; code and production use `partners.` | Decision needed (audit P2) | Founders | | | |
 | Authentication | Founder MFA, partner sessions | PASS (browser journeys) | Engineering | | | |
 | Support procedures | Incident runbooks | PASS WITH LIMITATION (runbooks written, not exercised) | Founders | | | |
 | Agreement terms | Published agreement | BLOCKED (AP-LR-01, AP-LR-02) | Founders, solicitor | | | |

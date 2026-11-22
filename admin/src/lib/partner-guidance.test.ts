@@ -72,3 +72,12 @@ describe("B1.6 plain-language statuses use the real backend states", () => {
     expect(explain(OPPORTUNITY_STATUS, "nonsense")).toMatchObject({ label: "nonsense", tone: "neutral" })
   })
 })
+
+describe("B1.7 objection vocabulary", () => {
+  it("uses only real objection categories for every rule and meeting type, and covers every meeting type", async () => {
+    const { OBJECTION_CATEGORIES } = await import("./empower-content")
+    const { GUIDANCE_RULES, MEETING_GUIDANCE, MEETING_OBJECTIONS } = await import("./partner-guidance")
+    for (const c of [...GUIDANCE_RULES.flatMap((r) => r.objectionCategories), ...Object.values(MEETING_OBJECTIONS).flat()]) expect(OBJECTION_CATEGORIES).toContain(c)
+    expect(Object.keys(MEETING_OBJECTIONS).sort()).toEqual(Object.keys(MEETING_GUIDANCE).sort())
+  })
+})

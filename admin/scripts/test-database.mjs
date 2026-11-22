@@ -128,12 +128,15 @@ function fixtures() {
     { key: "qa", name: "E2E QA Failure", status: "qa", run: "paused", stage: "functional_qa", step: "failed", failure: "quality_failure" },
     { key: "preview", name: "E2E Preview Ready", status: "preview", run: "paused", stage: "preview", step: "awaiting_approval", pause: "Preview approval required." },
     { key: "feedback", name: "E2E Feedback Ready", status: "preview", run: "paused", stage: "preview", step: "awaiting_approval", pause: "Preview feedback ready." },
+    // Preview-approval regression (slow page re-render, failed request, double click); same shape as "preview".
+    { key: "latency", name: "E2E Approval Latency", status: "preview", run: "paused", stage: "preview", step: "awaiting_approval", pause: "Preview approval required." },
+    { key: "concurrent", name: "E2E Approval Concurrency", status: "preview", run: "paused", stage: "preview", step: "awaiting_approval", pause: "Preview approval required." },
     { key: "deploy", name: "E2E Deployment Blocked", status: "ready_to_deploy", run: "paused", stage: "deploy_readiness", step: "awaiting_approval", pause: "Deployment approval required." },
   ]
 }
 
 async function seedProject(db, fixture) {
-  const hasGeneratedBuild = fixture.key === "preview" || fixture.key === "feedback" || fixture.key === "deploy"
+  const hasGeneratedBuild = fixture.key === "preview" || fixture.key === "feedback" || fixture.key === "latency" || fixture.key === "concurrent" || fixture.key === "deploy"
   const primaryArtifactTitle = hasGeneratedBuild ? "Generated Site Code Summary" : `${fixture.name} artifact`
   const primaryArtifactMetadata = hasGeneratedBuild ? {
     fixture: true,
@@ -184,7 +187,7 @@ async function seedProject(db, fixture) {
     returning id
   `, [
     projectId,
-    fixture.key === "qa" ? "qa_report" : fixture.key === "preview" || fixture.key === "feedback" || fixture.key === "deploy" ? "generated_code" : "handover_doc",
+    fixture.key === "qa" ? "qa_report" : fixture.key === "preview" || fixture.key === "feedback" || fixture.key === "latency" || fixture.key === "concurrent" || fixture.key === "deploy" ? "generated_code" : "handover_doc",
     primaryArtifactTitle,
     JSON.stringify(primaryArtifactMetadata),
     fixture.step === "failed" ? "failed" : "validated",
@@ -244,7 +247,7 @@ async function seedProject(db, fixture) {
     fixture.step === "failed" ? 2 : 1, fixture.step === "awaiting_approval", fixture.failure ?? null,
     operatorError?.summary ?? null, operatorError,
   ])
-  if (fixture.key === "preview" || fixture.key === "feedback") {
+  if (fixture.key === "preview" || fixture.key === "feedback" || fixture.key === "latency" || fixture.key === "concurrent") {
     const sitemapStrategy = {
       strategySummary: "Deterministic approved sitemap fixture.",
       selectedStrategyPack: "professional_services",
@@ -332,7 +335,7 @@ async function assertFixture(db) {
       (select count(*)::int from forge_worker_heartbeats where worker_id = 'forge-e2e-worker') as workers
   `, [FIXTURE_OWNER_EMAIL])
   const row = fixture.rows[0]
-  if (row.owners !== 1 || row.projects !== 9 || row.runs !== 9 || row.workers !== 1) {
+  if (row.owners !== 1 || row.projects !== 11 || row.runs !== 11 || row.workers !== 1) {
     throw new Error(`Admin fixture is incomplete: ${JSON.stringify(row)}.`)
   }
 }

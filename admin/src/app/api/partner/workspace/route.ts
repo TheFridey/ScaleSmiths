@@ -4,7 +4,7 @@ import { expansionFailure, expansionHeaders } from "@/lib/server/expansion-http"
 export const dynamic = "force-dynamic"
 /**
  * Operation Empower B1.6 unified partner workspace, read-only. 404 unless PARTNER_UNIFIED_WORKSPACE_ENABLED=true.
- *   ?view=today | ?opportunity=<id> | ?meeting=<id> | ?q=<text>&type=<answer|resource|lesson|course>
+ *   ?view=today | ?opportunity=<id> | ?meeting=<id> | ?q=<text>&type=<answer|resource|lesson|course|objection> (objection only when PARTNER_OBJECTION_HANDLING_ENABLED=true)
  */
 export async function GET(request: Request) {
   try {

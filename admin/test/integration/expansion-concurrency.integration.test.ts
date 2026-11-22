@@ -596,13 +596,39 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("Expansion real separa
     })
     it("request versus an unpaid-refund adjustment: commission is never both reserved and reduced", async () => {
       await policy(); const p = await fundedPartner("w5")
-      const results = await race<Record<string, unknown>>([() => ask(p, "w5"), () => refund(p, "w5-adjust", { treatment: "adjust_unpaid", termsApprovalReference: refundClause })])
-      expect(results.filter(r => r.status === "fulfilled")).toHaveLength(1)
-      const rejected = results.find(r => r.status === "rejected") as PromiseRejectedResult
-      expect(rejected.reason).toMatchObject({ status: 409 })
+      const [request, adjustment] = await race<Record<string, unknown>>([() => ask(p, "w5"), () => refund(p, "w5-adjust", { treatment: "adjust_unpaid", termsApprovalReference: refundClause })])
+      // Both commands take the same partner row lock, so they serialise in one of two orders, and both orders are correct:
+      //  - request first: the adjustment finds the reservation and is refused (409); the ledger keeps the full £300;
+      //  - adjustment first: the ledger gains a -£60 entry, and the request then reserves it together with the original
+      //    entry ("refund adjustments always travel with a request"), so it reserves the net £240.
+      // The request is never refused here: an unpaid-refund adjustment opens no refund review. What must never happen is a
+      // reservation that leaves an adjustment behind, or a reservation larger than the partner's net ledger.
+      expect(request.status).toBe("fulfilled")
       const ledgerTotal = (await pool.query("select coalesce(sum(amount_pence),0)::text t from expansion_commission_ledger where partner_id=$1", [p.partnerId])).rows[0].t
-      expect(ledgerTotal).toBe(results[1].status === "fulfilled" ? "24000" : "30000")
-      expect(await live(p.partnerId)).toBe(results[0].status === "fulfilled" ? 1 : 0)
+      if (adjustment.status === "rejected") {
+        expect(adjustment.reason).toMatchObject({ status: 409 })
+        expect(ledgerTotal).toBe("30000")
+      } else {
+        expect(ledgerTotal).toBe("24000")
+      }
+      expect((request as PromiseFulfilledResult<Record<string, unknown>>).value.amountPence).toBe(ledgerTotal)
+      const reserved = (await pool.query(`select coalesce(sum(l.amount_pence),0)::text total,count(*)::int entries from expansion_withdrawal_entries w
+        join expansion_withdrawal_requests r on r.id=w.request_id join expansion_commission_ledger l on l.id=w.ledger_id where r.partner_id=$1 and w.released_at is null`, [p.partnerId])).rows[0]
+      expect(reserved.total).toBe(ledgerTotal)
+      const leftBehind = (await pool.query(`select count(*)::int c from expansion_commission_ledger l where l.partner_id=$1 and l.amount_pence<0
+        and not exists(select 1 from expansion_withdrawal_entries w where w.ledger_id=l.id and w.released_at is null)`, [p.partnerId])).rows[0].c
+      expect(leftBehind).toBe(0)
+      expect(await live(p.partnerId)).toBe(adjustment.status === "fulfilled" ? 2 : 1)
+    })
+    it("an unpaid-refund adjustment committed first travels with the next request, which reserves only the net commission", async () => {
+      // The ordering the race above reaches only when the adjustment wins the partner lock, made deterministic.
+      await policy(); const p = await fundedPartner("w5b")
+      await refund(p, "w5b-adjust", { treatment: "adjust_unpaid", termsApprovalReference: refundClause })
+      const request = await ask(p, "w5b")
+      expect(request.amountPence).toBe("24000")
+      const reserved = (await pool.query(`select coalesce(sum(l.amount_pence),0)::text total,count(*) filter (where l.amount_pence<0)::int negatives from expansion_withdrawal_entries w
+        join expansion_withdrawal_requests r on r.id=w.request_id join expansion_commission_ledger l on l.id=w.ledger_id where r.partner_id=$1 and w.released_at is null`, [p.partnerId])).rows[0]
+      expect(reserved).toEqual({ total: "24000", negatives: 1 })
     })
     it("approval versus refund review: payout preparation is blocked whichever wins", async () => {
       await policy(); const p = await fundedPartner("w6")

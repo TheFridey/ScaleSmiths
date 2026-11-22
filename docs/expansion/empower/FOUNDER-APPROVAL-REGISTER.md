@@ -135,3 +135,18 @@ Knowledge checks: all `DRAFT`, approved with their lesson.
 | KB-COMM-01 | `PROPOSED POLICY`, `BLOCKED` |
 | KB-COMM-02, KB-COMM-03 | `FOUNDER DECISION`, `BLOCKED` |
 | KB-ONB-01, KB-ONB-02, KB-COM-01 | `DRAFT` (wording `CONFIRMED: PUBLISHED`) |
+
+## G. B1.7 (Project Aegis) release decisions
+
+Added 22 November 2026. Each item is detailed in [B1-7-RELEASE-DECISIONS.md](B1-7-RELEASE-DECISIONS.md), with evidence and the go/no-go checklist. **None is decided.** `AP-COM-03` (section A) now has a prepared decision record there; its status above is unchanged.
+
+| ID | Decision | Owner | Recommendation | Status | Decision / date / ref |
+|---|---|---|---|---|---|
+| `AP-AEGIS-REL-01` | Approve a Wave 0 dormant code release of B1.7 (all partner switches unset) | Founders | After human review and green CI on the final PR head | `FOUNDER DECISION` | |
+| `AP-AEGIS-UNI-01` | Switch on `PARTNER_UNIFIED_WORKSPACE_ENABLED` in a real environment | Founders | Only in Wave 2, with at least one other module holding published content | `FOUNDER DECISION` | |
+| `AP-AEGIS-BAK-01` | Approve the off-host backup destination, encryption recipient holders and retention | Founders, operator | Use the existing framework (`BACKUP_OFFSITE_*`, age recipient); choose a provider by separate decision | `FOUNDER DECISION` | |
+| `AP-AEGIS-BAK-02` | Production restore drill from a real encrypted bundle into an isolated database, with role re-provisioning | Operator | Before Wave 0 | `BLOCKED` (needs AP-AEGIS-BAK-01 and VPS access) | |
+| `AP-AEGIS-PRIV-05` | Retention of immutable agreement acceptance records | Founders, solicitor | Keep for the agreement's limitation period | `FOUNDER DECISION` | |
+| `AP-AEGIS-PRIV-06` | Partner suspension and erasure scope | Founders, privacy adviser | Preserve financial and contractual records; erase the rest on request | `FOUNDER DECISION` | |
+| `AP-AEGIS-PRIV-07` | Partner email data handling | Founders, privacy adviser | As implemented (hashed recipient, no bodies logged), with AP-LR-03/04 | `FOUNDER DECISION` | |
+| `AP-AEGIS-PRIV-08` | International applicants: lawful basis and transfers per approved market | Founders, privacy adviser | Decide per market before activation | `FOUNDER DECISION` | |

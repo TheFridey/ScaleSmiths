@@ -1,5 +1,16 @@
 # Operation Empower B1.6: unified partner operations report
 
+> **Post-merge reconciliation (Project Aegis, B1.7, 22 November 2026).** All four pull requests discussed here have since merged into `master`, verified on GitHub:
+>
+> | PR | Merged (UTC) | Merge commit |
+> |---|---|---|
+> | [#159](https://github.com/TheFridey/ScaleSmiths/pull/159) Launch Ready (agreements 0095, notifications 0096, web 0024) | 2026-11-21 21:18 | `089733a` |
+> | [#160](https://github.com/TheFridey/ScaleSmiths/pull/160) public website UX | 2026-11-21 21:18 | `30f64d9` |
+> | [#161](https://github.com/TheFridey/ScaleSmiths/pull/161) B1.5 objections (0097) | 2026-11-21 22:12 | `d903e5e` |
+> | [#162](https://github.com/TheFridey/ScaleSmiths/pull/162) B1.6 (this report) | 2026-11-21 22:26 | `06d6b4f` |
+>
+> CI, Security and CodeQL passed on `06d6b4f`. Sections 1 to 5, 19 to 22 and 24 below are the **historical** record written before those merges; statements there that a PR is "open", "draft" or "not merged" were true at the time and are kept as evidence, not as current state. The follow-ups in section 17 (objection responses in guidance search, agreement status on Today) and the PostgreSQL 14 rehearsal were completed in B1.7: see [B1-7-PROJECT-AEGIS-FINAL-REPORT.md](B1-7-PROJECT-AEGIS-FINAL-REPORT.md).
+
 Status words are used precisely: **Implemented**, **Tested**, **Approved**, **Enabled**, **Published**, **Deployed**, **Production verified**. They are not interchangeable. Everything in this report is at most *Implemented and Tested*.
 
 ## 1. Starting repository state (verified 2026-11-21)
@@ -8,18 +19,18 @@ Status words are used precisely: **Implemented**, **Tested**, **Approved**, **En
 - The main checkout has another agent's uncommitted edits to `AGENTS.md`, `CLAUDE.md` and `.entire/agent-guide.md`; they were left untouched. All work happened in separate worktrees.
 - Production runs release `37995d2` (web and admin canaries). Every partner switch is unset. `RESEND_API_KEY` is unset. Production holds 0 content items, 0 partner applications and 0 partners (read-only checks).
 
-## 2. PR #159 (Operation Launch Ready)
+## 2. PR #159 (Operation Launch Ready) — historical; merged as `089733a`
 
 Open; head `1e61412`; 21 of 21 checks pass. It introduces admin `0095_partner_agreements` and `0096_partner_notifications`, plus web `0024`. Its agreement, activation, lifecycle and email controls were re-verified on the integrated rehearsal: the onboarding suite passed (section 5). Not merged.
 
-## 3. PR #160 (public website UX)
+## 3. PR #160 (public website UX) — historical; merged as `30f64d9`
 
 Open; head `6db8c0b`; 21 of 21 checks pass.
 
 - **Performance budget evidence:** the 900 ms main-thread budget is unchanged. The PR changes no workflow, test, spec, snapshot or route, and adds no skips. The earlier 1,110 ms failure came from a slower runner, not a code change: identical page bytes; that runner benchmarked about 38% slower; `master` itself varies from 0 to 1,125 ms; and alternating local runs showed no regression. This is recorded in `docs/launch-ready/PHASE-5-WEB-UX.md`.
 - **Separation:** the PR is kept apart from B1.6 and was not folded in.
 
-## 4. PR #161 (B1.5 objection handling)
+## 4. PR #161 (B1.5 objection handling) — historical; merged as `d903e5e`
 
 Draft; head `ab1c3f2`; 22 of 22 checks pass, including **Empower Browser Acceptance**, which ran four journeys and passed them all (B1.1–B1.2, B1.3, B1.4 and B1.5; none skipped). Since the last report:
 
@@ -109,11 +120,11 @@ Recorded as accepted:
 - the workspace API answers 404 before authentication when switched off (middleware already requires sign-in);
 - the founder note is shown to the partner in meeting preparation, as the existing meetings view already does.
 
-## 17. Remaining defects and limitations
+## 17. Remaining defects and limitations (as at the B1.6 merge; resolved in B1.7 where noted)
 
-- Objection responses (#161) and agreement status (#159) are not yet in the workspace's guidance search or Today panel. Both PRs have merged; the partner navigation links the objection page when its switch is on. Feeding them into the guidance service and Today panel is a follow-up.
+- **Resolved in B1.7.** Objection responses (#161) and agreement status (#159) were not yet in the workspace's guidance search or Today panel. Both PRs have merged; the partner navigation links the objection page when its switch is on. Feeding them into the guidance service and Today panel is a follow-up.
 - `empower-workspace.spec.ts` runs in CI only once the Empower Browser Acceptance job from #161 is on `master`. Until then it runs locally.
-- PostgreSQL 14 is not executed (section 5).
+- **Resolved in B1.7.** PostgreSQL 14 was not executed (section 5); B1.7 ran fresh and upgrade rehearsals on PostgreSQL 14.25.
 
 ## 18. Remaining approvals
 
@@ -129,11 +140,11 @@ Founder decisions, none made here:
 | Enabling switches | `AP-KB-01`, `AP-OBJ-ENABLE`, and a new decision to enable `PARTNER_UNIFIED_WORKSPACE_ENABLED` |
 | Content | every content item still needs founder approval |
 
-## 19–21. Final commit, draft PR, deployment status
+## 19–21. Final commit, draft PR, deployment status (historical; the PR merged as `06d6b4f`)
 
 Implementation commit `112c896` on `feature/operation-empower-b1-6`; draft PR [TheFridey/ScaleSmiths#162](https://github.com/TheFridey/ScaleSmiths/pull/162). Remote CI is on the PR checks. **Not deployed.** Nothing is published or enabled.
 
-## 22. Recommended next actions
+## 22. Recommended next actions (historical; items 1 to 4 were completed by the merges and B1.7)
 
 1. Founders review and merge #159 under the release process.
 2. Update #161 to the reconciled order (`0097`) from `integration/b159-b15-rehearsal`, re-run its full CI and merge after review.
@@ -165,7 +176,7 @@ Browser coverage for B1.6:
 
 Financial regression: no B1.6 code writes to any table. The guidance suite hashes the commission ledger, payouts, withdrawals, contracts and opportunity statuses before and after repeated use and finds them unchanged; the browser journeys check the ledger hash at every stage. Academy completion has no commercial path (isolation test).
 
-## 24. Consolidated release checklist (nothing here is authorised yet)
+## 24. Consolidated release checklist at the B1.6 merge (historical; superseded by [B1-7-RELEASE-DECISIONS.md](B1-7-RELEASE-DECISIONS.md))
 
 | Item | State |
 |---|---|

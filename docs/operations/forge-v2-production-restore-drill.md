@@ -44,7 +44,7 @@ First review the mutation-free plan:
 
 ```bash
 sudo --preserve-env -u root /usr/bin/bash scripts/backup/restore-backup-bundle.sh \
-  --bundle /var/backups/scalesmiths/scalesmiths-backup-<id>.tar.gz.age \
+  --bundle /var/backups/scalesmiths/scalesmiths-backup-<id>.age \
   --target-root /var/lib/scalesmiths-restore-drill/manual-<id> \
   --database-url-file /etc/scalesmiths/restore-drill-database-url \
   --confirm-isolated-restore \

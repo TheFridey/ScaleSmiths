@@ -70,6 +70,8 @@ test("Forge restores overview after browser history removes a view and contains 
     return fixture.id as number
   })
   await page.goto(`/forge/${projectId}`)
+  // A history entry pushed before hydration is invisible to the app router, so wait for the client first.
+  await expect(page.locator("html")).toHaveAttribute("data-scalesmiths-hydrated", "true")
   await page.evaluate(() => window.history.pushState(null, "", `${window.location.pathname}?view=advanced`))
   await expect(page.getByRole("button", { name: "Advanced", exact: true })).toHaveAttribute("aria-pressed", "true")
   await page.goBack()

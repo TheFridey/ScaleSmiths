@@ -15,7 +15,8 @@ export function QualificationChecklist({ q, headingId, onEscalate }: { q: Qualif
     </ul>
     {q.questions.length > 0 && <><p className="qa-sub">Questions to ask next</p><ul className="qa-questions">{q.questions.map((x) => <li key={x.field}>{x.prompt}</li>)}</ul></>}
     {q.escalations.length > 0 && <><p className="qa-sub">Suggested founder involvement</p><ul className="qa-escalations">{q.escalations.map((e) => <li key={e.route}>
-      <strong>{e.label}:</strong> {e.reason}{onEscalate && <> <button type="button" className="qa-link" onClick={() => onEscalate(e.route)}>Ask for {e.label.toLowerCase()}</button></>}
+      <p className="qa-esc"><strong>{e.label}:</strong> {e.reason}</p>
+      {onEscalate && <button type="button" className="qa-link" onClick={() => onEscalate(e.route)}>Ask for {e.label.toLowerCase()}</button>}
     </li>)}</ul></>}
   </div>
 }

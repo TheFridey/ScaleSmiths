@@ -1,0 +1,71 @@
+{
+  "cli_version": "0.12.2",
+  "checkpoint_id": "01M829FAQ3QJR2XNF1QPMBV5AE",
+  "strategy": "manual-commit",
+  "branch": "feature/operation-ascend-b2",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "docs/expansion/ascend/B2-IMPLEMENTATION-STATUS.md",
+    "docs/expansion/ascend/B2-SECURITY-MODEL.md",
+    "docs/expansion/ascend/evidence/b2-1/pipeline-board-1024.png",
+    "docs/expansion/ascend/evidence/b2-1/pipeline-board-1440.png",
+    "docs/expansion/ascend/evidence/b2-1/pipeline-board-1920.png",
+    "docs/expansion/ascend/evidence/b2-1/pipeline-board-320.png",
+    "docs/expansion/ascend/evidence/b2-1/pipeline-board-390.png",
+    "docs/expansion/ascend/evidence/b2-1/pipeline-board-768.png",
+    "docs/expansion/ascend/evidence/b2-1/pipeline-detail-1024.png",
+    "docs/expansion/ascend/evidence/b2-1/pipeline-detail-1440.png",
+    "docs/expansion/ascend/evidence/b2-1/pipeline-detail-1920.png",
+    "docs/expansion/ascend/evidence/b2-1/pipeline-detail-320.png",
+    "docs/expansion/ascend/evidence/b2-1/pipeline-detail-390.png",
+    "docs/expansion/ascend/evidence/b2-1/pipeline-detail-768.png",
+    "docs/expansion/ascend/evidence/b2-1/pipeline-history-1024.png",
+    "docs/expansion/ascend/evidence/b2-1/pipeline-history-1440.png",
+    "docs/expansion/ascend/evidence/b2-1/pipeline-history-1920.png",
+    "docs/expansion/ascend/evidence/b2-1/pipeline-history-320.png",
+    "docs/expansion/ascend/evidence/b2-1/pipeline-history-390.png",
+    "docs/expansion/ascend/evidence/b2-1/pipeline-history-768.png",
+    "docs/expansion/ascend/evidence/b2-1/pipeline-list-1024.png",
+    "docs/expansion/ascend/evidence/b2-1/pipeline-list-1440.png",
+    "docs/expansion/ascend/evidence/b2-1/pipeline-list-1920.png",
+    "docs/expansion/ascend/evidence/b2-1/pipeline-list-320.png",
+    "docs/expansion/ascend/evidence/b2-1/pipeline-list-390.png",
+    "docs/expansion/ascend/evidence/b2-1/pipeline-list-768.png",
+    "docs/expansion/ascend/evidence/b2-1/pipeline-table-1024.png",
+    "docs/expansion/ascend/evidence/b2-1/pipeline-table-1440.png",
+    "docs/expansion/ascend/evidence/b2-1/pipeline-table-1920.png",
+    "docs/expansion/ascend/evidence/b2-1/pipeline-table-320.png",
+    "docs/expansion/ascend/evidence/b2-1/pipeline-table-390.png",
+    "docs/expansion/ascend/evidence/b2-1/pipeline-table-768.png"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 14,
+    "cache_creation_tokens": 7600,
+    "cache_read_tokens": 2467524,
+    "output_tokens": 3694,
+    "api_call_count": 7
+  },
+  "redaction": {
+    "replacements": 121,
+    "layers": {
+      "betterleaks": 81,
+      "connection_string": 0,
+      "credential_key": 0,
+      "credential_value": 13,
+      "credentialed_uri": 22,
+      "entropy": 54,
+      "key_context": 4,
+      "provider_token": 0,
+      "shell_stdin": 0
+    }
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "cli_version": "0.12.2",
+  "checkpoint_id": "01M82NNH52ZS8SNC380AHPCCHG",
+  "strategy": "manual-commit",
+  "branch": "feature/operation-ascend-b2",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "admin/scripts/test-database.mjs",
+    "admin/src/app/api/forge/projects/[id]/route.ts",
+    "admin/src/app/api/partner/workspace/route.ts",
+    "admin/src/app/layout.tsx",
+    "admin/src/app/partner/agreement/page.tsx",
+    "admin/src/app/partner/page.tsx",
+    "admin/src/components/empower/GuidanceCard.tsx",
+    "admin/src/components/empower/GuidanceSearch.tsx",
+    "admin/src/components/empower/ObjectionHandling.tsx",
+    "admin/src/components/empower/guidance.css",
+    "admin/src/components/expansion/ExpansionWorkspace.tsx",
+    "admin/src/components/expansion/PartnerNextSteps.tsx",
+    "admin/src/components/expansion/PartnerWorkspacePanels.tsx",
+    "admin/src/components/forge/ForgeProjectDetail.tsx",
+    "admin/src/lib/partner-agreements.ts",
+    "admin/src/lib/partner-guidance.test.ts",
+    "admin/src/lib/partner-guidance.ts",
+    "admin/src/lib/server/empower-guidance.ts",
+    "admin/src/lib/server/partner-agreements-core.ts",
+    "admin/src/lib/server/partner-agreements.ts",
+    "admin/test/e2e/admin-workspace.spec.ts",
+    "admin/test/e2e/empower-workspace.spec.ts",
+    "admin/test/e2e/forge-journeys.spec.ts",
+    "admin/test/integration/empower-guidance.integration.test.ts",
+    "admin/test/integration/expansion-concurrency.integration.test.ts",
+    "docs/expansion/empower/B1-6-UNIFIED-PARTNER-OPERATIONS-REPORT.md",
+    "docs/expansion/empower/B1-STATUS.md",
+    "docs/expansion/empower/FOUNDER-APPROVAL-REGISTER.md",
+    "docs/operations/backup-and-restore.md",
+    "docs/operations/forge-v2-production-restore-drill.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 48,
+    "cache_creation_tokens": 17660,
+    "cache_read_tokens": 14071176,
+    "output_tokens": 12067,
+    "api_call_count": 22
+  },
+  "redaction": {
+    "replacements": 275,
+    "layers": {
+      "betterleaks": 210,
+      "connection_string": 0,
+      "credential_key": 0,
+      "credential_value": 17,
+      "credentialed_uri": 102,
+      "entropy": 121,
+      "key_context": 9,
+      "provider_token": 0,
+      "shell_stdin": 0
+    }
+  }
+}

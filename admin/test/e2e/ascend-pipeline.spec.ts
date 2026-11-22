@@ -259,6 +259,63 @@ test('B2.1 partner pipeline: Journey A (pipeline, guidance, founder help) and Jo
       expect(await ledger(su)).toBe(ledgerBefore)
     })
 
+    await test.step('[SQL+UI] C1-C8 Revenue intelligence: actual from verified records, reversals, commission, scenarios change nothing financial', async () => {
+      // [SQL] C1 Synthetic, clearly labelled collections on the disposable database: a build payment and its reversal, and a retainer.
+      const founderId = (await su.query('select id from admin_users where email=$1', [FOUNDER_A.email])).rows[0].id
+      const client = (await su.query("insert into clients(name) values($1) returning id", [`TEST ONLY Revenue Client ${run}`])).rows[0].id
+      const paid = (await su.query("insert into commercial_payments(client_id,category,amount,evidence,reference,actor_user_id,received_at) values($1,'website_build',150000,'TEST ONLY',$2,$3,now()) returning id", [client, `TEST-REV-${run}-1`, founderId])).rows[0].id
+      await su.query("insert into commercial_payments(client_id,category,amount,evidence,reference,actor_user_id,received_at,reverses_payment_id) values($1,'website_build',-150000,'TEST ONLY reversal',$2,$3,now(),$4)", [client, `TEST-REV-${run}-2`, founderId, paid])
+      await su.query("insert into commercial_payments(client_id,category,amount,evidence,reference,actor_user_id,received_at) values($1,'retainer',25000,'TEST ONLY',$2,$3,now())", [client, `TEST-REV-${run}-3`, founderId])
+      const sums = (await su.query("select coalesce(sum(amount),0)::text collected,coalesce(sum(amount) filter (where amount<0),0)::text reversals from commercial_payments")).rows[0]
+      const ledgerSums = (await su.query("select (select coalesce(sum(amount_pence),0) from expansion_commission_ledger)::text earned,(select coalesce(sum(amount_pence),0) from expansion_payouts where status='paid')::text paid")).rows[0]
+      const fingerprintFinance = async () => (await su.query(`select md5(string_agg(h, '|' order by t)) h from (
+          select 'payments' t, md5(coalesce(string_agg(x::text,'|' order by x.id),'')) h from commercial_payments x union all
+          select 'invoices', md5(coalesce(string_agg(x::text,'|' order by x.id),'')) from invoices x union all
+          select 'contracts', md5(coalesce(string_agg(x::text,'|' order by x.id),'')) from commercial_contracts x union all
+          select 'ledger', md5(coalesce(string_agg(x::text,'|' order by x.id::text),'')) from expansion_commission_ledger x union all
+          select 'payouts', md5(coalesce(string_agg(x::text,'|' order by x.id::text),'')) from expansion_payouts x) f`)).rows[0].h as string
+      const financeBefore = await fingerprintFinance()
+      // [API] C2-C5 The page's figures equal the authoritative sums.
+      const rev = await api(founder.context, '/api/expansion/revenue')
+      expect(rev.status, JSON.stringify(rev.body)).toBe(200)
+      expect(rev.body.actual.collectedPence).toBe(sums.collected)
+      expect(rev.body.actual.reversalsPence).toBe(sums.reversals)
+      expect(rev.body.actual.commission.earnedPence).toBe(ledgerSums.earned)
+      expect(rev.body.actual.commission.paidPence).toBe(ledgerSums.paid)
+      // [UI] Actual and projected sections are separate and labelled.
+      await founder.page.goto(`${origin()}/expansion/revenue`)
+      await expect(founder.page.getByRole('heading', { name: 'Revenue intelligence' })).toBeVisible()
+      await expect(founder.page.getByText('Actual · verified records')).toBeVisible()
+      await expect(founder.page.getByText('Projection · hypothetical, not money earned')).toBeVisible()
+      await expect(founder.page.locator('.rv-actual').getByText('Verified collected revenue')).toBeVisible()
+      await axe(founder.page, '.sc', 'revenue intelligence')
+      await shots(founder.page, 'revenue-actual')
+      // [UI] C6-C7 Assumptions are disclosed; a what-if updates on the page; saving records a version.
+      const baseline = founder.page.getByRole('tabpanel', { name: 'Baseline' })
+      const form = baseline.getByRole('form', { name: 'Baseline assumptions' })
+      await form.getByLabel('Qualified: chance of acceptance (%)').fill('10')
+      await form.getByLabel('Scope under review: chance of acceptance (%)').fill('30')
+      await form.getByLabel('Scope approved: chance of acceptance (%)').fill('70')
+      await form.getByLabel('Assumed average contract value (£)').fill('3000')
+      await form.getByLabel('Recurring revenue kept each month (%)').fill('95')
+      await form.getByLabel(/^Horizon/).fill('3')
+      await expect(baseline.getByLabel('Baseline projection')).toBeVisible()
+      await form.getByLabel('Why these assumptions (recorded with the version)').fill('TEST ONLY founder estimate for the journey')
+      await form.getByRole('button', { name: 'Save as new version' }).click()
+      await expect(founder.page.getByRole('tabpanel', { name: 'Baseline' }).getByText(/^Saved version \d+ by TEST ONLY Founder A/)).toBeVisible()
+      await founder.page.getByRole('tab', { name: 'Baseline' }).focus()
+      await founder.page.keyboard.press('ArrowRight')
+      await expect(founder.page.getByRole('tab', { name: 'Optimistic' })).toHaveAttribute('aria-selected', 'true')
+      await expect(founder.page.getByRole('tab', { name: 'Optimistic' })).toBeFocused()
+      await founder.page.getByRole('tab', { name: 'Baseline' }).click()
+      await baseline.getByLabel('Baseline projection').scrollIntoViewIfNeeded()
+      await axe(founder.page, '.sc', 'revenue forecast')
+      await shots(founder.page, 'revenue-forecast', false, async () => { await founder.page.getByRole('tabpanel', { name: 'Baseline' }).getByLabel('Baseline projection').scrollIntoViewIfNeeded() })
+      // C8 No financial record changed; partners cannot read revenue.
+      expect(await fingerprintFinance()).toBe(financeBefore)
+      expect([401, 403]).toContain((await api(p1.context, '/api/expansion/revenue')).status)
+    })
+
     await test.step('[API] E1-E9 Isolation and refusals', async () => {
       const p2 = await login(browser, P2)
       expect((await api(p2.context, `/api/partner/pipeline?id=${oppId}`)).status).toBe(404)

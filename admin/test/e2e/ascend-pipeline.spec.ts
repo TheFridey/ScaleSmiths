@@ -150,9 +150,11 @@ test('B2.1 partner pipeline: Journey A (pipeline, guidance, founder help) and Jo
       // [API] Discovery through the real partner command (the discovery form itself lives in the partner workspace).
       expect((await api(p1.context, '/api/partner', { action: 'discovery', id: oppId, discovery: { objectives: 'Win more local enquiries online', pages: 'Home, services, contact', decisionProcess: 'Owner decides', functionality: 'Online booking and payments' } })).status).toBe(200)
       await p1.page.keyboard.press('Escape')
+      // The New-stage and needs-action filters from A4 still apply and now hide this discovery-stage prospect.
+      await p1.page.getByRole('button', { name: 'Clear filters' }).click()
       await card().click()
       const dialog = p1.page.getByRole('dialog', { name: BUSINESS })
-      const qa = dialog.getByRole('region', { name: 'Qualification readiness' })
+      const qa =dialog.getByRole('region', { name: 'Qualification readiness' })
       await expect(qa.getByText('3 of 6')).toBeVisible()
       await expect(qa.getByText(/not a prediction that the business will buy/)).toBeVisible()
       await expect(qa.locator('li[data-met="true"]')).toHaveCount(3)

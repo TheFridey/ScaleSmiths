@@ -1,0 +1,63 @@
+{
+  "cli_version": "0.12.2",
+  "checkpoint_id": "01M827B0772E0H7VCVTB1ZSKQ5",
+  "strategy": "manual-commit",
+  "branch": "feature/operation-ascend-b2",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".env.example",
+    "admin/drizzle/0098_ascend_pipeline_interactions.sql",
+    "admin/drizzle/meta/_journal.json",
+    "admin/src/app/api/partner/pipeline/route.ts",
+    "admin/src/app/partner/page.tsx",
+    "admin/src/app/partner/pipeline/page.tsx",
+    "admin/src/components/ascend/PartnerPipeline.tsx",
+    "admin/src/components/ascend/pipeline.css",
+    "admin/src/components/empower/AcademyShell.tsx",
+    "admin/src/components/expansion/ExpansionWorkspace.tsx",
+    "admin/src/lib/authorization-policy.ts",
+    "admin/src/lib/partner-pipeline.test.ts",
+    "admin/src/lib/partner-pipeline.ts",
+    "admin/src/lib/rbac-authorization.test.ts",
+    "admin/src/lib/rbac.ts",
+    "admin/src/lib/server/partner-pipeline.database.test.ts",
+    "admin/src/lib/server/partner-pipeline.ts",
+    "docs/expansion/ascend/B2-ACCEPTANCE-CRITERIA.md",
+    "docs/expansion/ascend/B2-ARCHITECTURE.md",
+    "docs/expansion/ascend/B2-IMPLEMENTATION-STATUS.md",
+    "docs/expansion/ascend/B2-ROADMAP.md",
+    "docs/expansion/ascend/B2-SECURITY-MODEL.md",
+    "scripts/migration-checksums.json",
+    "scripts/shared-migration-plan.json"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 260,
+    "cache_creation_tokens": 237976,
+    "cache_read_tokens": 26392780,
+    "output_tokens": 88527,
+    "api_call_count": 131
+  },
+  "redaction": {
+    "replacements": 83,
+    "layers": {
+      "betterleaks": 64,
+      "connection_string": 0,
+      "credential_key": 0,
+      "credential_value": 6,
+      "credentialed_uri": 22,
+      "entropy": 34,
+      "key_context": 3,
+      "provider_token": 0,
+      "shell_stdin": 0
+    }
+  }
+}

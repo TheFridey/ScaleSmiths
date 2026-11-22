@@ -298,7 +298,7 @@ See [B1-7-RELEASE-DECISIONS.md](B1-7-RELEASE-DECISIONS.md) and register sections
 
 ## 26. Deployment rehearsal
 
-[`deployment-rehearsal-pg14.log`](evidence/b1-7/deployment-rehearsal-pg14.log) follows [PM2 host deploy](../../operations/pm2-host-deploy.md) on a disposable stack (PostgreSQL 14.25, PM2 6.0.14, throwaway secrets, no production access):
+[`deployment-rehearsal-pg14.txt`](evidence/b1-7/deployment-rehearsal-pg14.txt) follows [PM2 host deploy](../../operations/pm2-host-deploy.md) on a disposable stack (PostgreSQL 14.25, PM2 6.0.14, throwaway secrets, no production access):
 
 1. Immutable `releases/<sha>` trees for `37995d2` (the previous release) and `344cab9` (the candidate), by `git archive`, then `npm ci` and production builds of web and admin.
 2. The previous release ran on loopback 3200/3201 with `SS_RELEASE_ID` reported by both health endpoints.

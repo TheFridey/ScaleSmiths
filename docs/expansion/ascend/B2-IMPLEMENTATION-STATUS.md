@@ -67,7 +67,7 @@ Recommended merge order: #164 → #165 → #163. Nothing merged by Ascend.
 - **Outstanding decision FD-ASC-06:** scope submission still requires a budget answer (existing rule), whereas the directive treats budget as voluntary. The rule is unchanged pending a founder decision.
 - **Not done:** registrable-domain matching across subdomains (needs a public-suffix list); a founder review queue for near-miss names (matches are refused with the existing "contact commercial support" response).
 
-## B2.3 Founder sales command centre: Implemented (browser evidence pending CI)
+## B2.3 Founder sales command centre: Verified on CI (awaiting human review; stacked on #166 and #167)
 
 - **Branch:** `feature/operation-ascend-b2-3`, stacked on B2.2 and B2.1. Review after #166 and #167.
 - **Where:** `/expansion/command` (founder page; `/expansion/*` already requires `expansion.manage`) and `GET/POST /api/expansion/command` (policy rule `ascend.command`). It is linked from the founder workspace overview when switched on.
@@ -82,6 +82,22 @@ Recommended merge order: #164 → #165 → #163. Nothing merged by Ascend.
   - `sales-command.test.ts` (order, ages, destinations, validation);
   - `sales-command.database.test.ts` (PGlite, 8 cases: off by default and founder-only; real counts and queue order with destinations; activity un-stalls; alphabetical oversight with Commission centre figures; assign, reassign and release with history and audit while ownership is unchanged; one of two simultaneous assignments admitted; database refuses a second root or a cross-opportunity chain; refusals);
   - RBAC 72/72.
+- **Browser evidence (Journey B):** passed on CI run 45066928619 (7/7 Empower specs, none skipped). It covers:
+  - the MFA founder opens the centre, filters to scope reviews and sees the technical tag;
+  - axe on the centre;
+  - assigning with a reason;
+  - a stale assignment refused (409) with partner ownership unchanged;
+  - "Open" lands on the opportunity itself;
+  - an authorised `review_scope`, with audit rows for both;
+  - the partner sees the outcome but not the internal note or assignment;
+  - partners refused;
+  - ledger unchanged.
+  Screenshots: `evidence/b2-1/command-centre{,-queue,-partners}-<width>.png`, inspected.
+- **Found by CI or screenshots and fixed:**
+  - invalid definition-list markup (axe);
+  - bold metric notes;
+  - one card per row on phones;
+  - an unescaped test regex.
 - **Database:** 0100 applies on disposable PostgreSQL 16.14 and 14.25 (admin 101/101); history check passes.
 - **Financial impact:** none (reads the existing finance summary; writes no financial record).
 

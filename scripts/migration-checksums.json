@@ -614,7 +614,8 @@
     {"path":"web/drizzle/0024_repair_web_vital_event.sql","sha256":"8ada41bf0eb3e3ac5170a65d8748880630066b564ea2f43d824d945932288dc9","lifecycle":"forward","reason":"Repairs production schema drift: re-asserts the web_vital experience event label that 0013 should have added (idempotent)."},
     {"path":"admin/drizzle/0095_partner_agreements.sql","sha256":"9d6e8ea26a5c7a0e5f2a97ff54d5d8050a9eea1fdcd590be867ec83693b7e130","lifecycle":"forward","reason":"Operation Launch Ready: partner agreements as governed content, append-only acceptance with database-computed version, hash and time, activation only after accepting the current issued version, and an enforced application lifecycle with information_requested."},
     {"path":"admin/drizzle/0096_partner_notifications.sql","sha256":"1604fb9d87cba83b60af368f21e55526216e5dc771b38c73e21769f168540c1c","lifecycle":"forward","reason":"Operation Launch Ready: auditable, idempotent partner lifecycle email log storing only a recipient hash; outcomes move forward only and history is retained."},
-    {"path":"admin/drizzle/0097_empower_objections.sql","sha256":"2f0ead202db5ab3dcdf5d38bfb97ffbeaaf6dc4e4d65c851acbe4198dd008985","lifecycle":"forward","reason":"Operation Empower B1.5: objection responses are partner-only and cannot reach review or publication without category, concern, client-facing line, partner explanation, limitation and escalation; client-facing lines never carry partner-only terms; related links must exist."}
+    {"path":"admin/drizzle/0097_empower_objections.sql","sha256":"2f0ead202db5ab3dcdf5d38bfb97ffbeaaf6dc4e4d65c851acbe4198dd008985","lifecycle":"forward","reason":"Operation Empower B1.5: objection responses are partner-only and cannot reach review or publication without category, concern, client-facing line, partner explanation, limitation and escalation; client-facing lines never carry partner-only terms; related links must exist."},
+    {"path":"admin/drizzle/0098_ascend_pipeline_interactions.sql","sha256":"6a04a778756d3942270e60da41542c50c59c430636bd2ec51cfc1ff2f2e6579d","lifecycle":"forward","reason":"Operation Ascend B2.1: append-only partner interaction log on their own opportunities; a trigger refuses an interaction whose partner does not own the opportunity; no commercial meaning and never read by the finance engine."}
   ],
   "journals": {
     "web": {
@@ -909,7 +910,8 @@
         {"idx":94,"version":"7","when":1794951011016,"tag":"0094_empower_resource_search","breakpoints":true},
         {"idx":95,"version":"7","when":1794952001000,"tag":"0095_partner_agreements","breakpoints":true},
         {"idx":96,"version":"7","when":1794952002000,"tag":"0096_partner_notifications","breakpoints":true},
-        {"idx":97,"version":"7","when":1794953000000,"tag":"0097_empower_objections","breakpoints":true}
+        {"idx":97,"version":"7","when":1794953000000,"tag":"0097_empower_objections","breakpoints":true},
+        {"idx":98,"version":"7","when":1794954000000,"tag":"0098_ascend_pipeline_interactions","breakpoints":true}
       ]
     }
   },

@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import "./globals.css"
 import { InstallAppProvider } from "@/components/command-centre/InstallAppProvider"
+import { HydrationMarker } from "@/components/admin-shell/HydrationMarker"
 import type { Viewport } from "next"
 
 export const metadata: Metadata = {
@@ -28,6 +29,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="bg-bg text-t1">
+        <HydrationMarker />
         <InstallAppProvider>{children}</InstallAppProvider>
       </body>
     </html>

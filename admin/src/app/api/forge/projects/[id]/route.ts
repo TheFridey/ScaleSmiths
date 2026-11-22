@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { eq } from "drizzle-orm"
+import { and, eq } from "drizzle-orm"
 import { auth } from "../../../../../../auth"
 import { db } from "@/lib/db"
 import { forgeActivityLogs, forgeProjects } from "@/lib/schema"
@@ -129,11 +129,14 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   }
 
   const project = await db.transaction(async (tx) => {
+    // A status change applies only if the status is still the one the transition was checked against. Without this,
+    // two concurrent approvals (two tabs, or a repeated request) could both pass the check and both be recorded.
     const [updated] = await tx
       .update(forgeProjects)
       .set({ ...parsed.data, updatedAt: now })
-      .where(eq(forgeProjects.id, id))
+      .where(transition ? and(eq(forgeProjects.id, id), eq(forgeProjects.status, existing.status)) : eq(forgeProjects.id, id))
       .returning()
+    if (!updated) return null
 
     const records: Array<typeof forgeActivityLogs.$inferInsert> = [{
       projectId: id,
@@ -160,6 +163,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     return updated
   })
+
+  if (!project) {
+    return NextResponse.json({ error: "This project's status changed while your request was in progress. Reload to see the current status.", code: "status_conflict" }, { status: 409 })
+  }
 
   return NextResponse.json({ ok: true, project })
 }

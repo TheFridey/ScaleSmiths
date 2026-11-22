@@ -35,7 +35,7 @@ RPO and RTO are operational commitments, not guarantees. A successful timer invo
 
 The final files are:
 
-- `scalesmiths-backup-<id>.tar.gz.age` or `.gpg`;
+- `scalesmiths-backup-<id>.age` (age) or `scalesmiths-backup-<id>.gpg` (GPG); the encrypted file wraps a `tar.gz` archive;
 - `<bundle>.sha256`;
 - `<bundle>.verified.json`.
 
@@ -102,7 +102,7 @@ Validation requires the relevant private age identity or GPG passphrase file:
 
 ```bash
 sudo --preserve-env -u root /usr/bin/bash scripts/backup/validate-backup-bundle.sh \
-  --bundle /var/backups/scalesmiths/scalesmiths-backup-<id>.tar.gz.age
+  --bundle /var/backups/scalesmiths/scalesmiths-backup-<id>.age
 ```
 
 Validation checks the external checksum and marker, decrypts into a private temporary directory, rejects absolute/parent paths, duplicate or unrecognised outer members, and outer symlinks/special entries, verifies every internal checksum and required metadata file, and asks `pg_restore` to list the database archive. It never prints environment contents or key material.
@@ -124,7 +124,7 @@ Use a URL file to avoid command history exposure:
 
 ```bash
 sudo --preserve-env -u root /usr/bin/bash scripts/backup/restore-backup-bundle.sh \
-  --bundle /var/backups/scalesmiths/scalesmiths-backup-<id>.tar.gz.age \
+  --bundle /var/backups/scalesmiths/scalesmiths-backup-<id>.age \
   --target-root /var/lib/scalesmiths-restore-drill/manual-<id> \
   --database-url-file /etc/scalesmiths/restore-drill-database-url \
   --confirm-isolated-restore \
@@ -136,6 +136,19 @@ sudo --preserve-env -u root /usr/bin/bash scripts/backup/restore-backup-bundle.s
 ```
 
 Restored environment and Nginx files remain under the isolated root; they are never installed into production paths. The script compares both restored Drizzle journal tables with the bundle state and records the result. Never point this command at a live database, production tunnel, or production repository.
+
+### After a database restore: re-provision least-privilege roles
+
+The dump is taken with `--no-owner --no-privileges`, so a restored database has **no grants**: the restricted web and admin runtime roles cannot read anything until the roles are provisioned again (Project Aegis drill, 22 November 2026: before provisioning the web role could not see its own tables; afterwards it was refused the partner agreement and commission tables and could read its own). Before any application is pointed at a restored database, run against that database, with its own provisioning and role URLs:
+
+```bash
+node admin/scripts/provision-postgres-roles.mjs --confirm-provision
+npm run db:migrate
+node admin/scripts/provision-postgres-roles.mjs --confirm-provision
+node admin/scripts/verify-postgres-privileges.mjs
+```
+
+`db:migrate` applies only migrations newer than the backup (none if the release is unchanged). A restore is not complete until `verify-postgres-privileges.mjs` exits zero.
 
 ## Scheduled restore drills
 

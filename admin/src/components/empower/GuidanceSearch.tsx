@@ -5,10 +5,10 @@ import { AcademyShell, type PartnerNav } from "./AcademyShell"
 import { GuidanceList, TYPE_LABELS, type GuidanceItem } from "./GuidanceCard"
 import "./guidance.css"
 
-type Result = { query: string | null; type: string | null; available: { answers: boolean; resources: boolean; academy: boolean }; results: GuidanceItem[] }
+type Result = { query: string | null; type: string | null; available: { answers: boolean; resources: boolean; academy: boolean; objections: boolean }; results: GuidanceItem[] }
 const FILTERS: { key: string; label: string; needs: keyof Result["available"] | null }[] = [
   { key: "all", label: "Everything", needs: null }, { key: "answer", label: "Questions and answers", needs: "answers" },
-  { key: "resource", label: "Professional resources", needs: "resources" }, { key: "lesson", label: TYPE_LABELS.lesson + "s", needs: "academy" }, { key: "course", label: TYPE_LABELS.course + "s", needs: "academy" },
+  { key: "objection", label: "Objection responses", needs: "objections" }, { key: "resource", label: "Professional resources", needs: "resources" }, { key: "lesson", label: TYPE_LABELS.lesson + "s", needs: "academy" }, { key: "course", label: TYPE_LABELS.course + "s", needs: "academy" },
 ]
 
 /** One search across approved answers, resources and learning. Deterministic ranking; no generated text. */
@@ -37,7 +37,7 @@ export function GuidanceSearch({ nav }: { nav: PartnerNav }) {
     <section className="ac-hero" aria-labelledby="gd-title">
       <p className="ac-overline">Find guidance</p>
       <h1 id="gd-title">What do you need to know?</h1>
-      <p>Search every approved answer, resource and Academy course in one place. Results are founder-approved and within their review date; anything marked client-safe can be copied for a client.</p>
+      <p>Search every approved answer, objection response, resource and Academy course in one place. Results are founder-approved and within their review date; anything marked client-safe can be copied for a client.</p>
       <form className="gd-search" role="search" onSubmit={(e) => { e.preventDefault(); setSubmitted(query.trim()); setAttempt((n) => n + 1) }}>
         <label>Search approved guidance<input ref={input} type="search" value={query} maxLength={200} onChange={(e) => setQuery(e.target.value)} placeholder="For example: do you do hosting?" /></label>
         <button className="gd-button" type="submit">Search</button>

@@ -2,6 +2,18 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
+import type { AgreementState } from "@/lib/partner-agreements"
+
+/** Wording for each real agreement state (B1.7). Nothing claims acceptance unless an acceptance of the issued version is recorded. */
+const AGREEMENT_STEP: Record<AgreementState | "loading" | "error", { title: string; detail: string; cta: string }> = {
+  loading: { title: "Your partner agreement", detail: "Checking your agreement record.", cta: "View agreement" },
+  error: { title: "Your partner agreement", detail: "Your agreement record could not be loaded here. Open the agreement page to see it.", cta: "View agreement" },
+  none: { title: "Your partner agreement", detail: "No agreement has been issued to you through the portal yet.", cta: "View agreement" },
+  awaiting_acceptance: { title: "Accept your partner agreement", detail: "ScaleSmiths has issued your agreement. Read and accept it.", cta: "Review now" },
+  update_awaiting_acceptance: { title: "Accept the updated partner agreement", detail: "ScaleSmiths has issued a new version. Read and accept it.", cta: "Review now" },
+  accepted: { title: "Your partner agreement", detail: "Read or download the agreement you accepted.", cta: "View agreement" },
+  unavailable: { title: "Your partner agreement", detail: "The version issued to you is no longer current. ScaleSmiths will issue the updated agreement; your accepted copies remain available.", cta: "View agreement" },
+}
 
 type Step = { key: string; title: string; detail: string; done: boolean; href?: string; action?: () => void; cta: string }
 
@@ -10,14 +22,16 @@ type Step = { key: string; title: string; detail: string; done: boolean; href?: 
  * off are not offered. Commission terms are not restated here: partners read them in their accepted agreement and plan.
  */
 export function PartnerNextSteps({ academy, resources, knowledge, opportunities, onPipeline }: { academy: boolean; resources: boolean; knowledge: boolean; opportunities: number; onPipeline: () => void }) {
-  const [agreement, setAgreement] = useState<{ accepted: boolean; pending: boolean } | null>(null)
+  const [agreement, setAgreement] = useState<AgreementState | "error" | null>(null)
   useEffect(() => {
     let live = true
-    fetch("/api/partner/agreement", { cache: "no-store" }).then((r) => r.ok ? r.json() : null).then((d) => { if (live && d) setAgreement({ accepted: Boolean(d.accepted), pending: Boolean(d.pending) }) }).catch(() => {})
+    fetch("/api/partner/agreement", { cache: "no-store" }).then((r) => r.ok ? r.json() : null)
+      .then((d) => { if (live) setAgreement(d && typeof d.state === "string" ? d.state as AgreementState : "error") }).catch(() => { if (live) setAgreement("error") })
     return () => { live = false }
   }, [])
+  const copy = AGREEMENT_STEP[agreement ?? "loading"]
   const steps: Step[] = [
-    { key: "agreement", title: agreement?.pending ? "Accept the updated partner agreement" : "Your partner agreement", detail: agreement?.pending ? "ScaleSmiths has issued a new version. Read and accept it." : "Read or download the agreement you accepted.", done: Boolean(agreement?.accepted && !agreement.pending), href: "/partner/agreement", cta: agreement?.pending ? "Review now" : "View agreement" },
+    { key: "agreement", title: copy.title, detail: copy.detail, done: agreement === "accepted", href: "/partner/agreement", cta: copy.cta },
     ...(academy ? [{ key: "academy", title: "Start the Partner Academy", detail: "Short lessons on discovery, presenting ScaleSmiths and when to escalate.", done: false, href: "/partner/academy", cta: "Open Academy" }] : []),
     ...(resources ? [{ key: "resources", title: "Browse the Resource Centre", detail: "Approved guides and client-safe material you can share.", done: false, href: "/partner/resources", cta: "Open resources" }] : []),
     ...(knowledge ? [{ key: "knowledge", title: "Check the Knowledge Base", detail: "Precise answers to common client questions, with when to escalate.", done: false, href: "/partner/knowledge", cta: "Search answers" }] : []),

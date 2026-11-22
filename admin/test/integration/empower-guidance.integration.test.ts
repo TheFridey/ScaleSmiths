@@ -224,6 +224,14 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("Empower B1.6 unified 
     expect(ops.agreements.map((x) => x.partnerName)).not.toContain(partnerB.displayName)
     expect(ops.notifications).toEqual(expect.arrayContaining([expect.objectContaining({ kind: "agreement_reissued", status: "failed", reason: "delivery_failed", recipientName: partnerA.displayName })]))
     expect(JSON.stringify(ops)).not.toMatch(/example\.invalid|a{64}/)
+    // Founder-actionable application states are listed; one waiting on the applicant is not.
+    const application = async (status: string) => (await pool.query<{ id: number }>("insert into partner_applications(name,email,region,experience,motivation,privacy_version,status,retention_until) values($1,$2,'TEST ONLY','Demonstration experience','Founder queue test only','test-reviewed-v1',$3,now()+interval '30 days') returning id", [`TEST ONLY ${status} ${suffix}`, `gw-${status}-${suffix}@example.invalid`, status])).rows[0].id
+    const approvedId = await application("approved_in_principle"), waitingId = await application("information_requested")
+    const listed = (await state.database!.transaction((tx) => founderOperations(tx))).applications.map((x) => x.id)
+    expect(listed).toContain(approvedId); expect(listed).not.toContain(waitingId)
+    // A failure is superseded once the same kind of email to the same partner is delivered later.
+    await pool.query("insert into partner_notifications(id,idempotency_key,kind,application_id,partner_id,recipient_sha256,status,failure_reason,attempts,actor_id,updated_at) values($1,$2,'agreement_reissued',null,$3,$4,'sent',null,1,$5,now()+interval '1 second')", [randomUUID(), `gw-sent-${suffix}`, partnerAId, "b".repeat(64), founderA.id])
+    expect((await state.database!.transaction((tx) => founderOperations(tx))).notifications.filter((n) => n.recipientName === partnerA.displayName)).toEqual([])
   })
 
   it("gives founders a queue over real records, and refuses suspended partners", async () => {

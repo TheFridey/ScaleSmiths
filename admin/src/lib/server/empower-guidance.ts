@@ -243,8 +243,11 @@ export async function founderOperations(tx: Executor) {
     where v.status in ('in_review','approved') order by v.submitted_at nulls last limit 50`)
   const expiring = await rows(tx, sql`select i.kind,i.slug,v.title,v.review_by from empower_content_versions v join empower_content_items i on i.id=v.item_id
     where v.status='published' and v.review_by <= (now() at time zone 'UTC')::date + 30 order by v.review_by, i.slug limit 50`)
+  // Founder-actionable application states (0095's transition map). 'information_requested' waits on the applicant, so it is not
+  // listed; declined, withdrawn, archived and activated need nothing.
   const applications = await rows(tx, sql`select id,name,status,submitted_at from partner_applications
-    where status in ('submitted','under_review','information_requested') order by (status='submitted') desc, submitted_at limit 50`)
+    where status in ('submitted','under_review','conversation_arranged','assessment_in_progress','approved_in_principle','agreement_pending','onboarding')
+    order by (status='submitted') desc, submitted_at limit 50`)
   const agreements = await rows(tx, sql`select p.id,u.display_name partner_name,p.agreement_content_version_id issued_id,coalesce(partner_agreement_current(p.agreement_content_version_id), false) issued_current,
       a.content_version_id accepted_id
     from expansion_partners p join admin_users u on u.id=p.user_id left join partner_agreement_acceptances a on a.id=p.agreement_acceptance_id and a.partner_id=p.id
@@ -253,7 +256,11 @@ export async function founderOperations(tx: Executor) {
     order by u.display_name limit 50`)
   const notifications = await rows(tx, sql`select n.id,n.kind,n.status,n.failure_reason,n.attempts,n.updated_at,coalesce(u.display_name,pa.name) recipient_name
     from partner_notifications n left join expansion_partners p on p.id=n.partner_id left join admin_users u on u.id=p.user_id left join partner_applications pa on pa.id=n.application_id
-    where n.status in ('failed','not_configured') and n.updated_at > now() - interval '30 days' order by n.updated_at desc limit 50`)
+    where n.status in ('failed','not_configured') and n.updated_at > now() - interval '30 days'
+      -- Superseded: the same kind of email to the same partner or applicant was delivered later (for example a new invitation).
+      and not exists (select 1 from partner_notifications s where s.status='sent' and s.kind=n.kind and s.updated_at > n.updated_at
+        and s.partner_id is not distinct from n.partner_id and s.application_id is not distinct from n.application_id)
+    order by n.updated_at desc limit 50`)
   return {
     applications: applications.map((a) => ({ id: Number(a.id), name: String(a.name), status: String(a.status), submittedAt: iso(a.submitted_at) })),
     agreements: agreements.map((a) => ({ partnerId: String(a.id), partnerName: String(a.partner_name),

@@ -144,7 +144,7 @@ export function MeetingPrep({ meetingId }: { meetingId: string }) {
   </section>
 }
 
-const APPLICATION_STATUS: Record<string, string> = { submitted: "New", under_review: "Under review", information_requested: "Information requested" }
+const APPLICATION_STATUS: Record<string, string> = { submitted: "New", under_review: "Under review", conversation_arranged: "Conversation arranged", assessment_in_progress: "Assessment in progress", approved_in_principle: "Approved in principle", agreement_pending: "Agreement pending", onboarding: "Onboarding" }
 const AGREEMENT_ATTENTION: Record<string, string> = { awaiting_acceptance: "Not yet accepted", update_awaiting_acceptance: "Update not yet accepted", unavailable: "Issued version no longer current" }
 const EMAIL_KIND: Record<string, string> = { application_received: "Application received", information_requested: "Information requested", application_declined: "Application declined", invitation: "Invitation", activated: "Account activated", agreement_reissued: "Agreement updated" }
 type Ops = {

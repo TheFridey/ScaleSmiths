@@ -25,11 +25,13 @@ BASELINE_REF="${BASELINE_REF:?BASELINE_REF (the previously deployed release) is 
 OUT="${REHEARSAL_EVIDENCE_DIR:?REHEARSAL_EVIDENCE_DIR is required}"
 DB_NAME=ss_expansion_test FRESH_DB=ss_rehearsal_fresh_test
 
+# libpq also reads its target from the environment (PGHOSTADDR overrides the URL's host); none of it may steer this script.
+unset PGHOST PGHOSTADDR PGPORT PGDATABASE PGSERVICE PGSERVICEFILE PGSSLMODE PGPASSFILE PGOPTIONS
 node -e '
 const u = new URL(process.argv[1]);
 // libpq and node-pg let ?host=/?port=/?dbname= override the authority, so any query string or fragment is refused.
-if (!["127.0.0.1", "localhost"].includes(u.hostname) || u.port !== "55440" || u.pathname !== "/ss_expansion_test" || u.search || u.hash) {
-  console.error("Refusing: the rehearsal runs only against a disposable loopback server on port 55440, database ss_expansion_test."); process.exit(2) }
+if (u.hostname !== "127.0.0.1" || u.port !== "55440" || u.pathname !== "/ss_expansion_test" || u.search || u.hash) {
+  console.error("Refusing: the rehearsal runs only against a disposable loopback server at 127.0.0.1:55440, database ss_expansion_test."); process.exit(2) }
 ' "$SUPER"
 
 mkdir -p "$OUT"
@@ -113,6 +115,7 @@ dump() { pg_dump --schema-only --no-owner --no-privileges "$1" | grep -vE '^(--|
   | grep -vE '^ALTER TABLE ONLY [A-Za-z0-9_."]+ ALTER COLUMN [A-Za-z0-9_"]+ SET \(pg_attver=[0-9]+\);$' | sed '/^$/d'; }
 dump "$SUPER" > "$OUT/6-upgraded-schema.sql"
 dump "$(node -e 'const u=new URL(process.argv[1]); u.pathname="/'"$FRESH_DB"'"; console.log(u.toString())' "$SUPER")" > "$OUT/6-fresh-schema.sql"
+(cd "$OUT" && sha256sum 6-fresh-schema.sql 6-upgraded-schema.sql) > "$OUT/6-schema-comparison.txt"
 if diff -u "$OUT/6-fresh-schema.sql" "$OUT/6-upgraded-schema.sql" > "$OUT/6-schema-diff.txt"; then echo "schema: identical ($(wc -l < "$OUT/6-fresh-schema.sql") lines)"; else echo "SCHEMA DIFFERS:"; head -50 "$OUT/6-schema-diff.txt"; exit 1; fi
 psql "$SUPER" -X -At -c "select 'web='||(select count(*) from drizzle.__drizzle_web_migrations)||' admin='||(select count(*) from drizzle.__drizzle_migrations)" | tee "$OUT/6-journal-counts.txt"
 echo "Upgrade rehearsal passed. Evidence: $OUT"

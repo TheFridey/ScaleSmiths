@@ -1,0 +1,2 @@
+b037f7b71e0147ce630db5303e1f9a7eed098f2dea0b5c0a5668cdc0c78e6e66  6-fresh-schema.sql
+b037f7b71e0147ce630db5303e1f9a7eed098f2dea0b5c0a5668cdc0c78e6e66  6-upgraded-schema.sql

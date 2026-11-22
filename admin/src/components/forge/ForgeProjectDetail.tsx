@@ -1,6 +1,6 @@
 "use client"
 
-import { Children, useEffect, useMemo, useState, type ReactNode } from "react"
+import { Children, useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import Link from "next/link"
 import dynamic from "next/dynamic"
 import { useRouter } from "next/navigation"
@@ -69,6 +69,7 @@ import type { ForgeWorkspaceMetadata } from "@/lib/forge-workspace"
 import { ContextDrawer, DetailDrawer, WorkspaceShell } from "@/components/admin-shell/primitives"
 import { deriveForgeAttentionItems, type ForgeHealthJob } from "@/lib/forge-operational-health"
 import { normalizeForgeOperatorError } from "@/lib/forge-operator-error"
+import { confirmedStatusFrom, displayedStatus, previewDecisionFor, type ConfirmedStatus } from "@/lib/forge-preview-decision"
 import { useForgeWorkspaceNavigation, type ProductionStage, type WorkspaceStage, type WorkspaceView } from "./useForgeWorkspaceNavigation"
 import { ForgeProjectHeader, ForgeProjectNavigation, ForgeStageRail } from "./ForgeProjectChrome"
 
@@ -278,7 +279,11 @@ export function ForgeProjectDetail({
 }) {
   const router = useRouter()
   const projectId = project.id ?? 0
-  const archived = project.status === "archived"
+  // A status the server confirmed in response to an approval, shown until the next server render of this page arrives
+  // (see forge-preview-decision.ts). Every status-dependent read below uses `status`, never `project.status` directly.
+  const [confirmedStatus, setConfirmedStatus] = useState<ConfirmedStatus | null>(null)
+  const status = displayedStatus(project, confirmedStatus)
+  const archived = status === "archived"
   const stages = useMemo(
     () => buildStageTimeline({
       intake: initialIntake,
@@ -293,9 +298,9 @@ export function ForgeProjectDetail({
       deploy: initialDeploy,
       tasks,
       artifacts,
-      projectStatus: project.status,
+      projectStatus: status,
     }),
-    [artifacts, initialCopy, initialDeploy, initialDesign, initialGeneratedCode, initialIntake, initialPreview, initialQa, initialSeo, initialSitemap, initialVisualCritique, project.status, tasks],
+    [artifacts, initialCopy, initialDeploy, initialDesign, initialGeneratedCode, initialIntake, initialPreview, initialQa, initialSeo, initialSitemap, initialVisualCritique, status, tasks],
   )
   const completedStages = stages.filter((stage) => stage.status === "approved" || stage.status === "complete").length
   const activeTasks = tasks.filter((task) => task.status === "queued" || task.status === "running")
@@ -307,12 +312,15 @@ export function ForgeProjectDetail({
   const [previewContextOpen, setPreviewContextOpen] = useState(false)
   const [previewDecisionBusy, setPreviewDecisionBusy] = useState(false)
   const [previewDecisionError, setPreviewDecisionError] = useState("")
+  const [previewDecisionNotice, setPreviewDecisionNotice] = useState("")
+  // State updates are not visible to a second click in the same frame; a ref is, so one click records one decision.
+  const previewDecisionInFlight = useRef(false)
   const attentionItems = useMemo(() => buildProjectAttention({ project, tasks, jobs, runSteps, integrations, stages, aiUsage, preview: initialPreview, deploy: initialDeploy }), [aiUsage, initialDeploy, initialPreview, integrations, jobs, project, runSteps, stages, tasks])
   const activeJobs = jobs.filter((job) => job.status === "queued" || job.status === "running")
   const failedJobs = jobs.filter((job) => job.status === "failed" || job.status === "dead_letter")
-  const runStatus = failedTasks.length || failedJobs.length ? "failed" : activeTasks.some((task) => task.status === "running") || activeJobs.some((job) => job.status === "running") ? "running" : activeTasks.length || activeJobs.length ? "queued" : project.status === "deployed" ? "complete" : "idle"
+  const runStatus = failedTasks.length || failedJobs.length ? "failed" : activeTasks.some((task) => task.status === "running") || activeJobs.some((job) => job.status === "running") ? "running" : activeTasks.length || activeJobs.length ? "queued" : status === "deployed" ? "complete" : "idle"
   const progress = Math.round((completedStages / stages.length) * 100)
-  const primaryAction = resolvePrimaryProjectAction({ projectStatus: project.status, currentStep, failedTasks, activeTasks, intake: initialIntake, generatedCode: initialGeneratedCode, qa: initialQa, preview: initialPreview, deploy: initialDeploy })
+  const primaryAction = resolvePrimaryProjectAction({ projectStatus: status, currentStep, failedTasks, activeTasks, intake: initialIntake, generatedCode: initialGeneratedCode, qa: initialQa, preview: initialPreview, deploy: initialDeploy })
   const { activeView, activeStage, qaPane, setQaPane, launchPane, setLaunchPane, recordsPane, setRecordsPane, workflowOpen, setWorkflowOpen, navigate, selectStage } = useForgeWorkspaceNavigation(stages, currentStep)
 
   useEffect(() => {
@@ -327,25 +335,37 @@ export function ForgeProjectDetail({
   }, [])
 
   async function approvePreview() {
-    if (previewDecisionBusy) return
-    if (project.status !== "preview" && project.status !== "client_review") {
+    if (previewDecisionInFlight.current) return
+    const decision = previewDecisionFor(status)
+    if (!decision) {
       setLaunchPane("deploy")
       navigate("build", "launch")
       return
     }
+    previewDecisionInFlight.current = true
     setPreviewDecisionBusy(true)
     setPreviewDecisionError("")
-    const nextStatus = project.status === "preview" ? "client_review" : "ready_to_deploy"
+    setPreviewDecisionNotice("")
+    const basedOn = project
     try {
       const response = await fetch(`/api/forge/projects/${projectId}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ status: nextStatus, approvalScope: nextStatus === "ready_to_deploy" ? "client" : "internal" }),
+        body: JSON.stringify({ status: decision.nextStatus, approvalScope: decision.approvalScope }),
       })
       const json = await response.json().catch(() => ({}))
       if (!response.ok) throw new Error(json.error || "Unable to record preview approval.")
+      // Advance only on the status the server says it persisted. If it is missing, do not claim the approval happened.
+      const persisted = confirmedStatusFrom(json)
       router.refresh()
-      if (nextStatus === "ready_to_deploy") {
+      if (!persisted) throw new Error("The approval response could not be confirmed. Reload the page to see the current status before trying again.")
+      setConfirmedStatus({ basedOn, status: persisted })
+      if (persisted !== decision.nextStatus) {
+        setPreviewDecisionError(`The project is now ${labelize(persisted)}, not ${labelize(decision.nextStatus)}. It may have been changed elsewhere; review it before continuing.`)
+        return
+      }
+      setPreviewDecisionNotice(decision.doneMessage)
+      if (decision.nextStatus === "ready_to_deploy") {
         setLaunchPane("deploy")
         navigate("build", "launch")
       } else {
@@ -354,6 +374,7 @@ export function ForgeProjectDetail({
     } catch (error) {
       setPreviewDecisionError(error instanceof Error ? error.message : "Unable to record preview approval.")
     } finally {
+      previewDecisionInFlight.current = false
       setPreviewDecisionBusy(false)
     }
   }
@@ -420,7 +441,8 @@ export function ForgeProjectDetail({
             <div className="preview-workspace-toolbar"><div><p className="workspace-eyebrow">Generated site</p><h2>Review preview</h2></div><div><button type="button" className="forge-secondary-action" onClick={() => { setQaPane("visual"); navigate("build", "quality") }}><Monitor size={16} aria-hidden="true" />Capture screenshots</button><button type="button" className="forge-secondary-action" onClick={() => setPreviewContextOpen((open) => !open)}><PanelRightOpen size={16} aria-hidden="true" />{previewContextOpen ? "Hide feedback" : "Feedback"}</button></div></div>
             <div className={previewContextOpen ? "preview-workspace-grid is-split" : "preview-workspace-grid"}><ForgePreviewRail projectId={projectId} initialWorkspace={initialWorkspace} initialGeneratedCode={initialGeneratedCode} initialPreview={initialPreview} disabled={archived} />{previewContextOpen && <aside className="preview-feedback"><h2>Preview feedback</h2><p>Record approval or requested changes through the project command surface.</p><ForgeCommandChatPanel projectId={projectId} initialChat={initialCommandChat} disabled={archived} /></aside>}</div>
             {previewDecisionError && <div className="inline-alert tone-danger" role="alert">{previewDecisionError}</div>}
-            <div className="preview-decision-bar"><button type="button" className="forge-secondary-action" onClick={() => setPreviewContextOpen(true)}>Request changes</button><button type="button" className="forge-primary-action" disabled={previewDecisionBusy} onClick={() => void approvePreview()}>{project.status === "client_review" ? "Record client approval" : "Internally approve preview"}<CheckCircle2 size={16} aria-hidden="true" /></button></div>
+            <p className="sr-only" role="status" aria-live="polite">{previewDecisionBusy ? (previewDecisionFor(status)?.busyLabel ?? "") : previewDecisionNotice}</p>
+            <div className="preview-decision-bar"><button type="button" className="forge-secondary-action" onClick={() => setPreviewContextOpen(true)}>Request changes</button><button type="button" className="forge-primary-action" disabled={previewDecisionBusy} aria-busy={previewDecisionBusy} onClick={() => void approvePreview()}>{previewDecisionFor(status)?.label ?? "Internally approve preview"}<CheckCircle2 size={16} aria-hidden="true" /></button></div>
           </div>}
 
           {activeView === "attention" && <div className="project-attention-view"><header><p className="workspace-eyebrow">Interventions</p><h2>Needs attention</h2><p>Failures, approvals and production blockers for this project.</p></header>{attentionItems.length ? attentionItems.map((item) => <article key={item.id} id={item.id} data-incident-id={item.id} tabIndex={-1} className="project-attention-item"><span className={`tone-${item.severity}`}><ShieldCheck size={18} aria-hidden="true" /></span><div><div><h3>{item.title}</h3><Badge value={item.severity} tone={item.severity === "critical" || item.severity === "high" ? "bad" : "warn"} /></div><p>{item.reason}</p><small>{item.action}</small><details><summary>Technical details</summary><code>{item.technicalReference}</code></details></div><div className="flex flex-wrap gap-2">{item.jobId && item.availableActions.includes("retry") ? <ProjectJobAction jobId={item.jobId} action="retry" /> : null}{item.jobId && item.availableActions.includes("cancel") ? <ProjectJobAction jobId={item.jobId} action="cancel" /> : null}<button type="button" className="forge-row-action" onClick={() => navigate(item.view, item.stage)}>{item.actionLabel}<ChevronRight size={15} aria-hidden="true" /></button></div></article>) : <div className="attention-clear"><CheckCircle2 size={20} aria-hidden="true" />No recorded blocker requires intervention.</div>}</div>}

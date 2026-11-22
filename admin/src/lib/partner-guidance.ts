@@ -6,7 +6,7 @@
  * never from what the partner or client typed, so prospect details never reach a search query, a log or another partner.
  */
 import { DISCOVERY_FIELDS } from "./expansion"
-import { COURSE_CATEGORIES, KNOWLEDGE_TOPICS } from "./empower-content"
+import { COURSE_CATEGORIES, KNOWLEDGE_TOPICS, OBJECTION_CATEGORIES } from "./empower-content"
 
 type KnowledgeTopic = (typeof KNOWLEDGE_TOPICS)[number]
 type CourseCategory = (typeof COURSE_CATEGORIES)[number]
@@ -20,7 +20,7 @@ export type GuidanceRule = {
   courseCategories: CourseCategory[]
   /** Fixed vocabulary for resource search; founders change it by code review. */
   searchTerms: string[]
-  /** B1.5 objection categories, used once objection handling is merged and switched on. */
+  /** B1.5 objection categories; approved responses in these categories are offered when objection handling is switched on. */
   objectionCategories: string[]
   escalation?: "technical_scoping" | "bespoke_discovery" | "commercial_assistance"
   when: (d: DiscoveryRecord, p: { website: boolean }) => boolean
@@ -121,6 +121,17 @@ export const MEETING_GUIDANCE: Readonly<Record<string, { knowledgeTopics: Knowle
   proposal_review: { knowledgeTopics: ["client-onboarding"], courseCategories: ["services"], searchTerms: ["proposal"] },
   training: { knowledgeTopics: [], courseCategories: ["getting-started"], searchTerms: ["handbook"] },
   escalation: { knowledgeTopics: [], courseCategories: ["professional-conduct"], searchTerms: ["escalation"] },
+}
+
+/** Objection categories worth rehearsing before each meeting type (fixed vocabulary from OBJECTION_CATEGORIES; changed by code review). */
+export const MEETING_OBJECTIONS: Readonly<Record<string, readonly (typeof OBJECTION_CATEGORIES)[number][]>> = {
+  joint_sales: ["price", "existing-supplier", "competitor-comparison", "decision-timing"],
+  technical_scoping: ["website-migration", "hosting", "data-security"],
+  bespoke_discovery: ["bespoke-development", "delivery-times"],
+  commercial_assistance: ["price", "payment-schedules", "contract-length", "commercial-eligibility"],
+  proposal_review: ["price", "contract-length", "ownership"],
+  training: [],
+  escalation: [],
 }
 
 /* Plain-language status explanations, keyed by the real backend statuses (no new commercial states). */

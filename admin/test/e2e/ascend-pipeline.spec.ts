@@ -231,6 +231,8 @@ test('B2.1 partner pipeline: Journey A (pipeline, guidance, founder help) and Jo
       await expect(row.getByText('No founder assigned')).toBeVisible()
       await axe(founder.page, '.sc', 'command centre')
       await shots(founder.page, 'command-centre')
+      await shots(founder.page, 'command-centre-queue', false, async () => { await row.scrollIntoViewIfNeeded() })
+      await shots(founder.page, 'command-centre-partners', false, async () => { await founder.page.locator('#sc-partners').scrollIntoViewIfNeeded() })
       await row.getByRole('button', { name: 'Assign' }).click()
       const form = row.getByRole('form', { name: `Assign a founder to ${BUSINESS}` })
       await form.getByLabel('Founder').selectOption({ label: 'TEST ONLY Founder A' })

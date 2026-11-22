@@ -1,0 +1,11 @@
+import { notFound } from "next/navigation"
+import { guardPageCapability } from "@/lib/server/rbac"
+import { founderSalesCommandEnabled } from "@/lib/server/sales-command"
+import { SalesCommandCentre } from "@/components/ascend/SalesCommandCentre"
+export const dynamic = "force-dynamic"
+/** Operation Ascend B2.3: the founder sales command centre. 404 unless FOUNDER_SALES_COMMAND_ENABLED=true. */
+export default async function SalesCommandPage() {
+  await guardPageCapability("expansion.manage")
+  if (!founderSalesCommandEnabled()) notFound()
+  return <SalesCommandCentre />
+}

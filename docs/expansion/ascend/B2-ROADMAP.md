@@ -9,7 +9,7 @@
 | 0c | B1.7 Project Aegis ([#163](https://github.com/TheFridey/ScaleSmiths/pull/163)) | master | Draft PR, CI green, awaiting founder decisions and human review |
 | 1 | B2.1 Advanced partner pipeline | master | Implemented on `feature/operation-ascend-b2`, switched off |
 | 2 | B2.2 Qualification | B2.1 | Implemented on `feature/operation-ascend-b2-2` (stacked), switched off |
-| 3 | B2.3 Founder sales command centre | B2.1, #163 | Not started |
+| 3 | B2.3 Founder sales command centre | B2.1, #163 | Implemented on `feature/operation-ascend-b2-3` (stacked), switched off; `founderOperations` left untouched for #163 |
 | 4 | B2.4 Revenue intelligence and forecasting | finance engine (master) | Not started; can run in parallel with 2 |
 | 5 | B2.5 Partner performance | B2.1, B2.2 | Not started; blocked on Academy privacy decision for any founder view |
 | 6 | B2.6 Delivery handoff | B2.3 | Not started; Forge integration contract undefined |

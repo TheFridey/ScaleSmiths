@@ -67,6 +67,40 @@ Recommended merge order: #164 → #165 → #163. Nothing merged by Ascend.
 - **Outstanding decision FD-ASC-06:** scope submission still requires a budget answer (existing rule), whereas the directive treats budget as voluntary. The rule is unchanged pending a founder decision.
 - **Not done:** registrable-domain matching across subdomains (needs a public-suffix list); a founder review queue for near-miss names (matches are refused with the existing "contact commercial support" response).
 
-## B2.3 – B2.7: Not started
+## B2.3 Founder sales command centre: Verified on CI (awaiting human review; stacked on #166 and #167)
+
+- **Branch:** `feature/operation-ascend-b2-3`, stacked on B2.2 and B2.1. Review after #166 and #167.
+- **Where:** `/expansion/command` (founder page; `/expansion/*` already requires `expansion.manage`) and `GET/POST /api/expansion/command` (policy rule `ascend.command`). It is linked from the founder workspace overview when switched on.
+- **Switch:** `FOUNDER_SALES_COMMAND_ENABLED` (default off).
+- **Overview:** active opportunities, scopes awaiting review, scopes needing technical scoping, meetings to decide, partner help requests, approved without a contract, contracts accepted, stalled, applications to review, invited but not activated, and failed partner emails. All counts come from one repeatable-read snapshot.
+- **Work queue:** seven kinds in a published order, oldest first within each kind (the rule is shown on the page). Every item opens a real destination: the opportunity itself (`/expansion?tab=pipeline&opportunity=<id>`, a new deep link in the founder workspace), the meetings tab or recruitment. Thresholds: stalled after 21 days without recorded activity (status change, audit entry or partner interaction); proposal follow-up 7 days after approval.
+- **Partner oversight:** sorted alphabetically, never ranked. Shows status, region, open opportunities, contracts accepted and open help requests. Commission earned and paid come from `getExpansionFinance`, the Commission centre's own function. No learning data is read.
+- **Assignment:** migration `0100_ascend_founder_assignments`, append-only. Each row supersedes exactly one earlier row: a unique `supersedes_id`, one root per opportunity, and a trigger that keeps the chain within one opportunity. It is a compare-and-set on the current assignment (a stale view gets 409; a concurrent duplicate is refused by the database). Every change needs a reason, is audited (`founder_assignment`), never touches `partner_id` or commission, sends no notification, and is never shown to the partner.
+- **Ownership transfer between partners:** not implemented (FD-ASC-03).
+- **Relationship to B1.7 (#163):** `founderOperations` is unchanged, to avoid conflicting with #163, which extends it. Once #163 merges, its queue additions (agreements needing attention, undelivered email) can be read here too.
+- **Tests (local):**
+  - `sales-command.test.ts` (order, ages, destinations, validation);
+  - `sales-command.database.test.ts` (PGlite, 8 cases: off by default and founder-only; real counts and queue order with destinations; activity un-stalls; alphabetical oversight with Commission centre figures; assign, reassign and release with history and audit while ownership is unchanged; one of two simultaneous assignments admitted; database refuses a second root or a cross-opportunity chain; refusals);
+  - RBAC 72/72.
+- **Browser evidence (Journey B):** passed on CI run 45066928619 (7/7 Empower specs, none skipped). It covers:
+  - the MFA founder opens the centre, filters to scope reviews and sees the technical tag;
+  - axe on the centre;
+  - assigning with a reason;
+  - a stale assignment refused (409) with partner ownership unchanged;
+  - "Open" lands on the opportunity itself;
+  - an authorised `review_scope`, with audit rows for both;
+  - the partner sees the outcome but not the internal note or assignment;
+  - partners refused;
+  - ledger unchanged.
+  Screenshots: `evidence/b2-1/command-centre{,-queue,-partners}-<width>.png`, inspected.
+- **Found by CI or screenshots and fixed:**
+  - invalid definition-list markup (axe);
+  - bold metric notes;
+  - one card per row on phones;
+  - an unescaped test regex.
+- **Database:** 0100 applies on disposable PostgreSQL 16.14 and 14.25 (admin 101/101); history check passes.
+- **Financial impact:** none (reads the existing finance summary; writes no financial record).
+
+## B2.4 – B2.7: Not started
 
 Designs and dependencies are in `B2-ARCHITECTURE.md` and `B2-ROADMAP.md`. Next step: B2.4 (independent of B2.1) or B2.2.

@@ -616,7 +616,8 @@
     {"path":"admin/drizzle/0096_partner_notifications.sql","sha256":"1604fb9d87cba83b60af368f21e55526216e5dc771b38c73e21769f168540c1c","lifecycle":"forward","reason":"Operation Launch Ready: auditable, idempotent partner lifecycle email log storing only a recipient hash; outcomes move forward only and history is retained."},
     {"path":"admin/drizzle/0097_empower_objections.sql","sha256":"2f0ead202db5ab3dcdf5d38bfb97ffbeaaf6dc4e4d65c851acbe4198dd008985","lifecycle":"forward","reason":"Operation Empower B1.5: objection responses are partner-only and cannot reach review or publication without category, concern, client-facing line, partner explanation, limitation and escalation; client-facing lines never carry partner-only terms; related links must exist."},
     {"path":"admin/drizzle/0098_ascend_pipeline_interactions.sql","sha256":"6a04a778756d3942270e60da41542c50c59c430636bd2ec51cfc1ff2f2e6579d","lifecycle":"forward","reason":"Operation Ascend B2.1: append-only partner interaction log on their own opportunities; a trigger refuses an interaction whose partner does not own the opportunity; no commercial meaning and never read by the finance engine."},
-    {"path":"admin/drizzle/0099_ascend_business_name_key.sql","sha256":"ab0aa12e5e8581b07e220952d4da894f1baa2042d9110cd87c755a95f5bb8749","lifecycle":"forward","reason":"Operation Ascend B2.2: immutable business-name key for partner duplicate detection (and/&, leading The, trailing legal forms), with expression indexes on prospects and clients; registration matches on it or the previous plain key."}
+    {"path":"admin/drizzle/0099_ascend_business_name_key.sql","sha256":"ab0aa12e5e8581b07e220952d4da894f1baa2042d9110cd87c755a95f5bb8749","lifecycle":"forward","reason":"Operation Ascend B2.2: immutable business-name key for partner duplicate detection (and/&, leading The, trailing legal forms), with expression indexes on prospects and clients; registration matches on it or the previous plain key."},
+    {"path":"admin/drizzle/0100_ascend_founder_assignments.sql","sha256":"ec5b719ab5ec7ad62e10b7875dd58f92ded50a0710b7c07491c3e11d9e600030","lifecycle":"forward","reason":"Operation Ascend B2.3: append-only record of which founder handles an opportunity internally; each row supersedes exactly one earlier row so concurrent changes cannot both succeed; never changes partner ownership or commission."}
   ],
   "journals": {
     "web": {
@@ -913,7 +914,8 @@
         {"idx":96,"version":"7","when":1794952002000,"tag":"0096_partner_notifications","breakpoints":true},
         {"idx":97,"version":"7","when":1794953000000,"tag":"0097_empower_objections","breakpoints":true},
         {"idx":98,"version":"7","when":1794954000000,"tag":"0098_ascend_pipeline_interactions","breakpoints":true},
-        {"idx":99,"version":"7","when":1794955000000,"tag":"0099_ascend_business_name_key","breakpoints":true}
+        {"idx":99,"version":"7","when":1794955000000,"tag":"0099_ascend_business_name_key","breakpoints":true},
+        {"idx":100,"version":"7","when":1794956000000,"tag":"0100_ascend_founder_assignments","breakpoints":true}
       ]
     }
   },

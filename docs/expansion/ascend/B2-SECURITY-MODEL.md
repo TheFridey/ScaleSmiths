@@ -31,6 +31,16 @@ Applies to B2.1 as implemented; later slices must extend this file before they s
 | No authority | Display only; nothing writes or reads it for decisions | code review, database test asserts no state change |
 | Duplicate confidentiality | Name-variant and company-number matches return the existing generic 409, never which record matched | `expansion.test.ts` |
 
+## B2.3 additions
+
+| Boundary | Enforcement | Test |
+|---|---|---|
+| Founder only | `/expansion/command` page guard and `ascend.command` policy rule (`expansion.manage`), re-checked against the live session | database test "is off by default and founder-only"; browser Journey B |
+| Concurrent assignment | Compare-and-set on the current assignment, plus unique `supersedes_id` and one root per opportunity | "admits exactly one of two simultaneous assignments" |
+| No entitlement change | Assignment never writes `expansion_opportunities.partner_id`; no partner notification | database and browser tests assert ownership unchanged |
+| No ranking or private data | Partners alphabetical; no Academy or learning tables read | "lists partners alphabetically…" |
+| Bounded queries | Each queue source ≤ 200 rows, partners ≤ 1000, one repeatable-read snapshot | code review |
+
 ## Threats considered
 
 IDOR (covered by ownership + 404), SQL injection (parameterised `sql` template throughout; malformed id test), forged transitions (server-side `assertPartnerTransition`), tampered monetary values (B2.1 reads no amounts and writes none), unsafe note rendering (text only), information in logs (no logging added), notification abuse (no notifications sent by B2.1).

@@ -101,6 +101,48 @@ Recommended merge order: #164 → #165 → #163. Nothing merged by Ascend.
 - **Database:** 0100 applies on disposable PostgreSQL 16.14 and 14.25 (admin 101/101); history check passes.
 - **Financial impact:** none (reads the existing finance summary; writes no financial record).
 
-## B2.4 – B2.7: Not started
+## B2.4 Revenue intelligence and forecasting: Verified on CI (awaiting human review; stacked on #166 to #168)
+
+- **Branch:** `feature/operation-ascend-b2-4`, stacked on B2.3. Review after #166, #167 and #168.
+- **Where:** `/expansion/revenue` and `GET/POST /api/expansion/revenue` (policy rule `ascend.revenue`). Founders only, and `finance.read` is re-checked against the live session. Linked from the founder workspace when switched on.
+- **Switch:** `REVENUE_INTELLIGENCE_ENABLED` (default off).
+- **Actual figures:** no new source of truth. Everything comes from one repeatable-read snapshot, using the definitions these records already carry:
+  - **Verified collected revenue:** `commercial_payments`, net of reversals (shown separately). Also broken down by service category and by London month over the last 12 months; recurring means retainer plus premium partnership, one-off build means website build.
+  - **Partner-attributed:** payments referenced by `expansion_payment_events`.
+  - **Outstanding invoiced:** issued invoices less the payments recorded against them, labelled "not revenue until collected".
+  - **Contracted monthly recurring:** the Command Centre's own `contractMetrics`.
+  - **Commission earned, paid and liability:** the Commission centre's own `getExpansionFinance`.
+- **Forecast:** hypothetical, shown in a separately styled section labelled "Projection · hypothetical, not money earned".
+  - **Pipeline:** expansion opportunities at qualified, scope-under-review and approved, × the founder's stage probability × the founder's assumed contract value.
+  - **Recurring:** contracted monthly recurring decayed by a monthly retention assumption over a 1–24-month horizon.
+  - **Arithmetic:** integer pence and basis points throughout, with every component's calculation shown.
+  - **No invented rates:** a historical conversion rate and average value appear only once there are at least 10 closed outcomes (FD-ASC-05). Otherwise the page says how many exist.
+  - **No defaults:** ScaleSmiths supplies none, so a scenario shows nothing until a founder enters assumptions.
+  - **Command Centre estimates:** the founder-entered `commercial_forecasts` for the next three months are shown separately, labelled as estimates.
+- **Scenarios:** Conservative, Baseline and Optimistic, each versioned in migration `0101_ascend_forecast_assumptions` (append-only, with a rationale per version and an audit entry). What-if changes are recalculated in the browser and saved only on request. No financial table is written, and the finance engine never reads this table.
+- **Partner commission visibility:** already provided by the existing partner Commission centre (`getPartnerFinance`, the withdrawal overview), so nothing is duplicated. Commercial logic, the 30% rate and the £705 illustration are unchanged.
+- **Tests (local):**
+  - `revenue-forecast.test.ts`: validation, the 10-outcome threshold, exact projection arithmetic, money formatting.
+  - `revenue-intelligence.database.test.ts` (Journey C at service level, 5 cases):
+    - off by default; refuses partners, finance-only staff and revoked founders;
+    - exact collected, reversal, attributed, outstanding, MRR and commission figures against hand-calculated seeds;
+    - the twelve-month window;
+    - no invented rate;
+    - saving three versions changes a fingerprint of no financial table.
+  - RBAC.
+- **Database:** 0101 applies on disposable PostgreSQL 16.14 and 14.25. No function grants are needed.
+- **Browser evidence (Journey C):** passed on CI run 45071908491 (full CI green; 7/7 Empower specs, none skipped). It covers:
+  - TEST ONLY payments and a reversal seeded on the disposable database;
+  - API figures equal SQL sums over payments, the commission ledger and payouts;
+  - actual and projection sections separate and labelled;
+  - axe on both;
+  - a what-if projection, and saving records a version;
+  - scenario tabs with arrow keys;
+  - a fingerprint of payments, invoices, contracts, ledger and payouts unchanged;
+  - partners refused.
+  Screenshots: `evidence/b2-1/revenue-{actual,forecast}-<width>.png`, inspected. The phone projection layout and the "no history" wording were fixed after inspection.
+- **CI note:** one run failed in the existing finance race test described on #168 (a test-ordering flake, not a ledger defect); the next head was fully green.
+
+## B2.5 – B2.7: Not started
 
 Designs and dependencies are in `B2-ARCHITECTURE.md` and `B2-ROADMAP.md`. Next step: B2.4 (independent of B2.1) or B2.2.

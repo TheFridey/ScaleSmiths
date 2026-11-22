@@ -41,6 +41,15 @@ Applies to B2.1 as implemented; later slices must extend this file before they s
 | No ranking or private data | Partners alphabetical; no Academy or learning tables read | "lists partners alphabetically…" |
 | Bounded queries | Each queue source ≤ 200 rows, partners ≤ 1000, one repeatable-read snapshot | code review |
 
+## B2.4 additions
+
+| Boundary | Enforcement | Test |
+|---|---|---|
+| Founder with finance access | `ascend.revenue` policy rule (`expansion.manage`) plus a live `finance.read` check | "refuses partners, finance-only staff and revoked founders" |
+| Ledger untouched | Forecasting writes only `expansion_forecast_assumptions` (append-only); fingerprint of payments, invoices, contracts, ledger and payouts unchanged | database test C7-C8; browser Journey C |
+| No invented figures | Historical rate and average shown only from 10 closed outcomes; no default assumptions | "C6 never invents a conversion rate" |
+| Tampered values | Assumptions validated server-side (integer basis points, whole pence, bounded horizon) and by CHECK constraints | `revenue-forecast.test.ts`, "validates assumptions" |
+
 ## Threats considered
 
 IDOR (covered by ownership + 404), SQL injection (parameterised `sql` template throughout; malformed id test), forged transitions (server-side `assertPartnerTransition`), tampered monetary values (B2.1 reads no amounts and writes none), unsafe note rendering (text only), information in logs (no logging added), notification abuse (no notifications sent by B2.1).

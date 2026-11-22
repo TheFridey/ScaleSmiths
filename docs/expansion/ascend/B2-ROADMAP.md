@@ -10,7 +10,7 @@
 | 1 | B2.1 Advanced partner pipeline | master | Implemented on `feature/operation-ascend-b2`, switched off |
 | 2 | B2.2 Qualification | B2.1 | Implemented on `feature/operation-ascend-b2-2` (stacked), switched off |
 | 3 | B2.3 Founder sales command centre | B2.1, #163 | Implemented on `feature/operation-ascend-b2-3` (stacked), switched off; `founderOperations` left untouched for #163 |
-| 4 | B2.4 Revenue intelligence and forecasting | finance engine (master) | Not started; can run in parallel with 2 |
+| 4 | B2.4 Revenue intelligence and forecasting | finance engine (master) | Implemented on `feature/operation-ascend-b2-4` (stacked), switched off |
 | 5 | B2.5 Partner performance | B2.1, B2.2 | Not started; blocked on Academy privacy decision for any founder view |
 | 6 | B2.6 Delivery handoff | B2.3 | Not started; Forge integration contract undefined |
 | 7 | B2.7 Automation and full acceptance | B2.3, B2.6 | Not started |

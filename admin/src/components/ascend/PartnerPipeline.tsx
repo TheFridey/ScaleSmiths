@@ -4,6 +4,7 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState, type FormEven
 import { AcademyShell, type PartnerNav } from "@/components/empower/AcademyShell"
 import { ProspectGuidance } from "@/components/expansion/PartnerWorkspacePanels"
 import { filterPipeline, INTERACTION_KINDS, type PipelineCard, type PipelineFilter, type TimelineEntry } from "@/lib/partner-pipeline"
+import { explain, MEETING_STATUS } from "@/lib/partner-guidance"
 import "@/components/empower/guidance.css"
 import "./pipeline.css"
 
@@ -24,6 +25,7 @@ const ASSISTANCE = [
   { key: "commercial_assistance", label: "Commercial help (pricing, terms, objections)" }, { key: "technical_scoping", label: "Technical scoping" },
   { key: "bespoke_discovery", label: "Bespoke discovery" }, { key: "escalation", label: "Something else needs a founder" },
 ] as const
+const MEETING_TYPES: Record<string, string> = { joint_sales: "Joint sales meeting", technical_scoping: "Technical scoping", bespoke_discovery: "Bespoke discovery", commercial_assistance: "Commercial assistance", proposal_review: "Proposal review", training: "Training", escalation: "Escalation" }
 const FIELD_LABELS: Record<string, string> = { objectives: "Objectives", pages: "Pages", functionality: "Functionality", budget: "Budget", timescale: "Timescale", decisionProcess: "Decision process" }
 
 async function send(url: string, body: unknown) {
@@ -187,7 +189,7 @@ function OpportunityDialog({ id, guidance, onClose, onChanged }: { id: string; g
         <section className="pl-block" aria-label="Current stage">
           <p><span className="gd-status" data-tone="progress">{d.opportunity.statusLabel}</span> <span className="gd-muted">{d.opportunity.statusMeaning}</span></p>
           <p className="gd-muted">{[d.opportunity.industry, d.opportunity.region, d.opportunity.website?.replace(/^https?:\/\//, "")].filter(Boolean).join(" · ")}{d.opportunity.createdAt ? ` · Added ${date(d.opportunity.createdAt)}` : ""}</p>
-          {d.opportunity.missingForScope.length > 0 && !["closed", "won", "approved", "review"].includes(String(d.opportunity.column)) && <p className="gd-muted">Before the scope can be submitted, discovery still needs: {d.opportunity.missingForScope.map((k) => FIELD_LABELS[k] ?? k).join(", ")}. <a className="gd-link" href="/partner">Update discovery</a></p>}
+          {d.opportunity.missingForScope.length > 0 && !["closed", "won", "approved", "review"].includes(String(d.opportunity.column)) && <><p className="gd-muted">Before the scope can be submitted, discovery still needs: {d.opportunity.missingForScope.map((k) => FIELD_LABELS[k] ?? k).join(", ")}.</p><a className="gd-link" href="/partner">Update discovery in your workspace</a></>}
         </section>
 
         <section className="pl-block" aria-labelledby={`${titleId}-stage`}>
@@ -221,11 +223,12 @@ function OpportunityDialog({ id, guidance, onClose, onChanged }: { id: string; g
           </form>
         </div>}
 
-        {guidance && <ProspectGuidance opportunityId={id} onRequestHelp={() => assist.current?.focus()} />}
+        {/* Keyed by status so the guidance re-reads after a stage move in this dialog. */}
+        {guidance && <ProspectGuidance key={`${id}-${d.opportunity.status}`} opportunityId={id} onRequestHelp={() => assist.current?.focus()} />}
 
         <section className="pl-block" aria-labelledby={`${titleId}-meet`}>
           <h3 id={`${titleId}-meet`} className="gd-sub">Meetings</h3>
-          {d.meetings.length ? <ul className="gd-rows">{d.meetings.map((m) => <li className="gd-row" key={m.id}><div><strong>{m.meetingType.replaceAll("_", " ")}</strong><p className="gd-muted">{m.status.replaceAll("_", " ")}{m.confirmedStart ? ` · ${new Date(m.confirmedStart).toLocaleString("en-GB")}` : ""}</p></div></li>)}</ul>
+          {d.meetings.length ? <ul className="gd-rows">{d.meetings.map((m) => <li className="gd-row" key={m.id}><div><strong>{MEETING_TYPES[m.meetingType] ?? m.meetingType}</strong><p className="gd-muted">{explain(MEETING_STATUS, m.status).label}{m.confirmedStart ? ` · ${new Date(m.confirmedStart).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}` : ""}</p></div></li>)}</ul>
             : <p className="gd-muted">No meetings for this opportunity.</p>}
         </section>
         <section className="pl-block" aria-labelledby={`${titleId}-int-list`}>

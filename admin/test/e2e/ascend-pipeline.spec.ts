@@ -43,8 +43,8 @@ async function axe(page: Page, scope: string, label: string) {
   const serious = result.violations.filter((v) => ['serious', 'critical'].includes(String(v.impact)))
   expect(serious.map((v) => `${label}: ${v.id} ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual([])
 }
-async function shots(page: Page, name: string, fullPage = true) {
-  for (const width of WIDTHS) { await page.setViewportSize({ width, height: 900 }); await noOverflow(page); await page.screenshot({ path: `${evidence}/${name}-${width}.png`, fullPage }) }
+async function shots(page: Page, name: string, fullPage = true, settle?: () => Promise<void>) {
+  for (const width of WIDTHS) { await page.setViewportSize({ width, height: 900 }); await settle?.(); await noOverflow(page); await page.screenshot({ path: `${evidence}/${name}-${width}.png`, fullPage }) }
   await page.setViewportSize({ width: 1280, height: 900 })
 }
 const ledger = async (su: pg.Pool) => (await su.query("select md5(coalesce(string_agg(l::text, '|' order by l.id), '')) h from expansion_commission_ledger l")).rows[0].h as string
@@ -158,10 +158,8 @@ test('B2.1 partner pipeline: Journey A (pipeline, guidance, founder help) and Jo
       await expect(dialog.locator('p.pl-live')).toHaveText(/Request sent to ScaleSmiths/)
       await expect(dialog.getByText('Meeting requested').first()).toBeVisible()
       await axe(p1.page, '[role=dialog]', 'pipeline detail')
-      await dialog.evaluate((el) => { el.scrollTop = 0 })
-      await shots(p1.page, 'pipeline-detail', false)
-      await dialog.locator('.pl-timeline').scrollIntoViewIfNeeded()
-      await shots(p1.page, 'pipeline-history', false)
+      await shots(p1.page, 'pipeline-detail', false, async () => { await dialog.evaluate((el) => { el.scrollTop = 0 }) })
+      await shots(p1.page, 'pipeline-history', false, async () => { await dialog.evaluate((el) => { el.scrollTop = el.scrollHeight }) })
       const m = (await su.query('select id,status from expansion_meeting_requests where opportunity_id=$1 order by created_at desc limit 1', [oppId])).rows[0]
       expect(m.status).toBe('requested'); meetingId = String(m.id)
       await founder.page.goto(`${origin()}/expansion`)

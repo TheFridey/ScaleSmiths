@@ -73,6 +73,7 @@ export function transitionBlockedReason(from: string, to: string): string | null
   if (from === "scope_submitted") return "ScaleSmiths is reviewing the scope; the next stage is a founder decision."
   if (from === "approved") return "The scope is approved; contract acceptance is recorded by ScaleSmiths."
   if (to === "scope_submitted") return "Submit the scope from the opportunity's discovery form."
+  if (["registered", "contacted"].includes(to) || (to === "discovery" && from === "qualified")) return "The workflow does not move back to this stage; record the conversation as an interaction instead."
   if (["approved", "contract_accepted", "more_information", "bespoke_required", "deferred"].includes(to)) return "Only ScaleSmiths can record this outcome."
   return "This stage requires the approved commercial workflow."
 }

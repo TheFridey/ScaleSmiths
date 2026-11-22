@@ -47,3 +47,15 @@ export function capacityPeriod(value: unknown) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(period) || !Number.isFinite(date.getTime()) || date.toISOString().slice(0,10) !== period || date.getUTCDay() !== 1) throw new ExpansionError('Choose a valid Monday for the delivery week.')
   return period
 }
+/**
+ * Operation Ascend B2.2: the business-name key used for duplicate detection. Mirrors the SQL function
+ * expansion_business_name_key (migration 0099) exactly; a parity test runs both over the same names.
+ * "&" reads as "and", a leading "The" and trailing legal forms are ignored, then only a-z and 0-9 remain.
+ * A name that is nothing but a legal form keeps its plain key, so it never matches every other such name.
+ */
+export const LEGAL_FORMS = ['limited', 'ltd', 'plc', 'llp', 'lp', 'llc', 'inc', 'incorporated', 'cic'] as const
+export function businessNameKey(value: unknown) {
+  const spaced = String(value ?? '').toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, ' ')
+  const stripped = spaced.replace(new RegExp(String.raw`^\s*the\s+|(\s+(${LEGAL_FORMS.join('|')}))+\s*$`, 'g'), '').replace(/\s+/g, '')
+  return stripped || spaced.replace(/\s+/g, '')
+}

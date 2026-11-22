@@ -62,6 +62,8 @@ export const ADMIN_FUNCTION_GRANTS = [
   // Operation Empower B1.5: objection field and client-line checks, called from the objection trigger body.
   { schema: "public", name: "empower_objection_fields_problem", arguments: "jsonb" },
   { schema: "public", name: "empower_client_line_leaks", arguments: "text" },
+  // Operation Ascend B2.2: business-name key for partner duplicate detection (registration query and expression indexes).
+  { schema: "public", name: "expansion_business_name_key", arguments: "text" },
 ]
 
 export const TENANT_RLS_FUNCTION_GRANTS = [

@@ -146,6 +146,42 @@ test('B2.1 partner pipeline: Journey A (pipeline, guidance, founder help) and Jo
       expect((await su.query('select count(*)::int n from expansion_opportunity_interactions where opportunity_id=$1', [oppId])).rows[0].n).toBe(1)
     })
 
+    await test.step('[API+UI] B2.2 Qualification readiness: explainable factors, escalation shortcut, founder inspection, no state change', async () => {
+      // [API] Discovery through the real partner command (the discovery form itself lives in the partner workspace).
+      expect((await api(p1.context, '/api/partner', { action: 'discovery', id: oppId, discovery: { objectives: 'Win more local enquiries online', pages: 'Home, services, contact', decisionProcess: 'Owner decides', functionality: 'Online booking and payments' } })).status).toBe(200)
+      await p1.page.keyboard.press('Escape')
+      // The New-stage and needs-action filters from A4 still apply and now hide this discovery-stage prospect.
+      await p1.page.getByRole('button', { name: 'Clear filters' }).click()
+      await card().click()
+      const dialog = p1.page.getByRole('dialog', { name: BUSINESS })
+      const qa =dialog.getByRole('region', { name: 'Qualification readiness' })
+      await expect(qa.getByText('3 of 6')).toBeVisible()
+      await expect(qa.getByText(/not a prediction that the business will buy/)).toBeVisible()
+      await expect(qa.locator('li[data-met="true"]')).toHaveCount(3)
+      await expect(qa.getByText('Timescale understood')).toBeVisible()
+      await qa.getByRole('button', { name: 'Ask for technical scoping' }).click()
+      const help = dialog.getByRole('form', { name: 'Ask a founder for help' })
+      await expect(help.getByLabel('What do you need?')).toHaveValue('technical_scoping')
+      await expect(help.getByLabel('What do you need?')).toBeFocused()
+      await axe(p1.page, '[role=dialog]', 'qualification')
+      await shots(p1.page, 'qualification-partner', false, async () => { await qa.scrollIntoViewIfNeeded() })
+      // [API] Founders inspect the same factors; partners cannot reach the founder view.
+      const founderView = await api(founder.context, `/api/expansion/qualification?id=${oppId}`)
+      expect(founderView.status, JSON.stringify(founderView.body)).toBe(200)
+      expect(founderView.body.qualification.met).toBe(3)
+      expect([401, 403]).toContain((await api(p1.context, `/api/expansion/qualification?id=${oppId}`)).status)
+      // [UI] The founder sees how the readiness was derived on the opportunity itself.
+      await founder.page.setViewportSize({ width: 1440, height: 900 })
+      await founder.page.goto(`${origin()}/expansion`)
+      await founder.page.getByRole('navigation', { name: 'Partner workspace' }).getByRole('button', { name: 'Prospects & scope' }).click()
+      await founder.page.locator('.ex-list-row').filter({ hasText: BUSINESS }).first().click()
+      const inspect = founder.page.locator('details.qa-founder')
+      await expect(inspect.getByText('3 of 6')).toBeVisible()
+      await inspect.scrollIntoViewIfNeeded()
+      await founder.page.screenshot({ path: `${evidence}/qualification-founder-1440.png` })
+      expect((await su.query('select status from expansion_opportunities where id=$1', [oppId])).rows[0].status).toBe('discovery')
+    })
+
     let meetingId = ''
     await test.step('[UI] A9-A10 Partner asks a founder for help; it reaches the founder queue', async () => {
       const dialog = p1.page.getByRole('dialog', { name: BUSINESS })

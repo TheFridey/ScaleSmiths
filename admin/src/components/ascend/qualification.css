@@ -1,0 +1,21 @@
+/* Operation Ascend B2.2: readiness checklist. Same charcoal, restrained gold and silver as the partner surfaces. */
+.qa{display:grid;gap:10px}
+.qa-count{margin:0;font-size:14px;color:#e8eaee}
+.qa-count strong{color:#f1e2b8;font-variant-numeric:tabular-nums}
+.qa-notice{margin:0;font-size:12px;line-height:1.6;color:#aeb4bf;border-left:2px solid #6b5a39;padding-left:10px}
+.qa-factors{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.qa-factors li{display:grid;grid-template-columns:22px 1fr;gap:8px;align-items:start;border:1px solid #2e2f34;border-radius:10px;padding:10px 12px;background:#16171a}
+.qa-factors li[data-met="true"]{border-color:#3f6b4f}
+.qa-mark{font-size:15px;line-height:1.4;color:#9aa1ad}
+.qa-factors li[data-met="true"] .qa-mark{color:#b6e3c5}
+.qa-label{margin:0;font-size:13px;font-weight:600;color:#eef0f3;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.qa-state{font-size:11px;font-weight:500;border-radius:999px;padding:1px 8px;border:1px solid #4b4c52;color:#c9cdd5}
+.qa-factors li[data-met="true"] .qa-state{border-color:#3f6b4f;color:#b6e3c5}
+.qa-why{margin:4px 0 0;font-size:12px;line-height:1.6;color:#b4bac4}
+.qa-sub{margin:6px 0 0;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#d8bd84}
+.qa-questions,.qa-escalations{margin:0;padding-left:18px;font-size:13px;line-height:1.6;color:#dfe2e7;display:grid;gap:4px}
+.qa-esc{margin:0}
+.qa-link{display:inline-flex;align-items:center;background:none;border:0;padding:0 2px;min-height:44px;color:#e2cb93;font:inherit;text-decoration:underline;text-underline-offset:4px;cursor:pointer}
+.qa-link:focus-visible{outline:2px solid #d9bf83;outline-offset:2px;border-radius:4px}
+.qa-founder{border:1px solid #34353a;border-radius:8px;padding:4px 16px 14px;margin:12px 0;background:#18191c}
+.qa-founder>summary{font-size:13px;color:#e2cb93}

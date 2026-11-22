@@ -68,6 +68,7 @@ describe("production Expansion prospect/scope/capacity service against PostgreSQ
     await state.database.exec(readFileSync(new URL("../../../drizzle/0084_expansion_research_allocation.sql", import.meta.url), "utf8"))
     await state.database.exec(readFileSync(new URL("../../../drizzle/0085_expansion_market_enforcement.sql", import.meta.url), "utf8"))
     await state.database.exec(readFileSync(new URL("../../../drizzle/0088_expansion_review_medium_findings.sql", import.meta.url), "utf8"))
+    await state.database.exec(readFileSync(new URL("../../../drizzle/0099_ascend_business_name_key.sql", import.meta.url), "utf8"))
     // Operation Launch Ready: the founder snapshot reads the agreement register. Minimal content tables plus the real 0095 agreement DDL.
     await state.database.exec(`create table if not exists empower_content_items(id uuid primary key, kind text not null, slug text not null);
       create table if not exists empower_content_versions(id uuid primary key, item_id uuid not null references empower_content_items(id), version integer not null, title text not null, body text not null, status text not null, review_by date, published_at timestamptz)`)
@@ -146,6 +147,20 @@ describe("production Expansion prospect/scope/capacity service against PostgreSQ
     await expect(partnerMutation({ action: "register", businessName: "Suppressed business", website: "suppressed.co.uk" })).rejects.toThrow(generic)
     await expect(partnerMutation({ action: "register", businessName: "Another business", website: "different.co.uk", contactEmail: "suppressed-contact@example.invalid" })).rejects.toThrow(generic)
     expect((await state.database!.query("select * from prospects")).rows).toHaveLength(1)
+  })
+  it("treats spelling variants of a registered business or client, and a held company number, as duplicates (Operation Ascend B2.2)", async () => {
+    const generic = "This business already has an existing ScaleSmiths relationship. Please contact commercial support if you believe this is incorrect."
+    asPartner()
+    await partnerMutation({ action: "register", country: "GB", businessName: "Smith & Sons Ltd", website: "smith-sons.co.uk", companyNumber: "01234567" })
+    asPartner(OTHER_USER)
+    await expect(partnerMutation({ action: "register", businessName: "The Smith and Sons Limited", website: "different-smith.co.uk" })).rejects.toThrow(generic)
+    await expect(partnerMutation({ action: "register", businessName: "Unrelated Name", website: "another-site.co.uk", companyNumber: "01234567" })).rejects.toThrow(generic)
+    await state.database!.exec("insert into clients(id,name) values(9001,'Bakery & Co Ltd')")
+    await expect(partnerMutation({ action: "register", businessName: "The Bakery and Co", website: "bakery-co.co.uk" })).rejects.toThrow(generic)
+    // Matching on the previous plain key still applies, and genuinely different businesses are admitted.
+    await expect(partnerMutation({ action: "register", businessName: "SMITH-&-SONS-LTD", website: "x-smith.co.uk" })).rejects.toThrow(generic)
+    await partnerMutation({ action: "register", businessName: "Smithson Garage", website: "smithson-garage.co.uk" })
+    expect((await state.database!.query("select business_name from prospects order by id")).rows).toEqual([{ business_name: "Smith & Sons Ltd" }, { business_name: "Smithson Garage" }])
   })
   it("admits exactly one of simultaneously submitted duplicate registrations", async () => {
     asPartner()

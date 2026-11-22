@@ -40,6 +40,33 @@ Recommended merge order: #164 → #165 → #163. Nothing merged by Ascend.
 - **Outstanding decisions:** FD-ASC-01 to FD-ASC-05 (see `B2-ROADMAP.md`).
 - **Deployment status:** not deployed; switch off.
 
-## B2.2 – B2.7: Not started
+## B2.2 Intelligent prospect qualification: Verified on CI (awaiting human review; stacked on #166)
+
+- **Branch:** `feature/operation-ascend-b2-2`, stacked on B2.1 (`feature/operation-ascend-b2`). The draft PR targets `master` so the full CI runs; review it after #166.
+- **Implementation:**
+  - `admin/src/lib/partner-qualification.ts`: six equally weighted, declared readiness factors over existing discovery fields, with suggested questions (`discoveryGaps`) and escalation (`guidancePlanFor` plus `technicalReviewFlags`).
+  - `admin/src/lib/server/expansion-qualification.ts` and `GET /api/expansion/qualification` (founder inspection).
+  - A partner checklist in the pipeline dialog and a founder panel on each opportunity (`QualificationChecklist`, `FounderQualification`).
+  - Policy rule `ascend.qualification`.
+- **Switch:** `PARTNER_QUALIFICATION_ENABLED` (default off).
+- **Not a score:** the panel shows "N of 6 recorded" with each factor's reason. It states that it is not a prediction, it never rejects, nothing writes it, and no rule reads it. Personal fields are ignored (tested). Only approved, in-date content is recommended, through the existing B1.6 guidance panel.
+- **Duplicate detection:** migration `0099_ascend_business_name_key` adds the immutable `expansion_business_name_key` (treats `&` as "and"; ignores a leading "The" and trailing legal forms such as Ltd, Limited, PLC and LLP) with expression indexes on `prospects` and `clients`. Registration matches on the new key **or** the previous plain key, so nothing that matched before stops matching. It also refuses an already-held company number with the same confidential response, not a constraint error. Concurrency is unchanged (the existing admission advisory lock). The TypeScript `businessNameKey` and the SQL function are parity-tested over 31 names.
+- **Tests (local):** qualification unit (6); SQL/TS parity (3); `expansion.test.ts` 39/39, including the new spelling-variant and company-number case and all 38 existing cases; founder qualification database (3); pipeline database (11); RBAC 72/72.
+- **Browser evidence:** the qualification step in `ascend-pipeline.spec.ts` passed on CI run 45061926908 (7/7 Empower specs, none skipped). It covers:
+  - the partner sees "3 of 6", the notice and per-factor states;
+  - "Ask for technical scoping" pre-selects and focuses the help form;
+  - axe on the dialog;
+  - the founder API returns the same factors and refuses partners;
+  - the founder panel appears on the opportunity;
+  - the status is unchanged.
+  Screenshots: `evidence/b2-1/qualification-partner-<width>.png` and `qualification-founder-1440.png`, inspected.
+- **Found by CI and fixed:**
+  - the restricted admin role had no EXECUTE on the new function, so registration returned 503 (grant added to `ADMIN_FUNCTION_GRANTS`; reproduced and verified with CI's provisioning locally);
+  - escalation buttons broke their sentence.
+- **Financial impact:** none.
+- **Outstanding decision FD-ASC-06:** scope submission still requires a budget answer (existing rule), whereas the directive treats budget as voluntary. The rule is unchanged pending a founder decision.
+- **Not done:** registrable-domain matching across subdomains (needs a public-suffix list); a founder review queue for near-miss names (matches are refused with the existing "contact commercial support" response).
+
+## B2.3 – B2.7: Not started
 
 Designs and dependencies are in `B2-ARCHITECTURE.md` and `B2-ROADMAP.md`. Next step: B2.4 (independent of B2.1) or B2.2.

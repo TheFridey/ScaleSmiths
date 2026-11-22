@@ -131,6 +131,15 @@ describe("Operation Ascend B2.1 partner pipeline (PGlite)", () => {
     expect((await q("select count(*)::int c from expansion_audit where action='follow_up_scheduled'")).rows[0]).toEqual({ c: 2 })
   })
 
+  it("adds qualification readiness only when its own switch is on (Operation Ascend B2.2)", async () => {
+    expect((await partnerOpportunityDetail(OPP_A)).qualification).toBeNull()
+    vi.stubEnv("PARTNER_QUALIFICATION_ENABLED", "true")
+    await q("update expansion_opportunities set discovery=$1 where id=$2", [JSON.stringify({ objectives: "Win more local enquiries online", decisionProcess: "Owner decides" }), OPP_A])
+    const d = await partnerOpportunityDetail(OPP_A)
+    expect(d.qualification?.factors.filter((f) => f.met).map((f) => f.id)).toEqual(["requirement", "decision"])
+    expect(d.opportunity.status).toBe("scope_submitted")
+  })
+
   it("surfaces meetings and attention from real records only", async () => {
     as(USER_B)
     expect((await partnerPipeline()).cards[0].attention.map((a) => a.key)).toEqual(["discovery"])

@@ -101,7 +101,7 @@ Recommended merge order: #164 → #165 → #163. Nothing merged by Ascend.
 - **Database:** 0100 applies on disposable PostgreSQL 16.14 and 14.25 (admin 101/101); history check passes.
 - **Financial impact:** none (reads the existing finance summary; writes no financial record).
 
-## B2.4 Revenue intelligence and forecasting: Implemented (browser evidence pending CI)
+## B2.4 Revenue intelligence and forecasting: Verified on CI (awaiting human review; stacked on #166 to #168)
 
 - **Branch:** `feature/operation-ascend-b2-4`, stacked on B2.3. Review after #166, #167 and #168.
 - **Where:** `/expansion/revenue` and `GET/POST /api/expansion/revenue` (policy rule `ascend.revenue`). Founders only, and `finance.read` is re-checked against the live session. Linked from the founder workspace when switched on.
@@ -131,6 +131,17 @@ Recommended merge order: #164 → #165 → #163. Nothing merged by Ascend.
     - saving three versions changes a fingerprint of no financial table.
   - RBAC.
 - **Database:** 0101 applies on disposable PostgreSQL 16.14 and 14.25. No function grants are needed.
+- **Browser evidence (Journey C):** passed on CI run 45071908491 (full CI green; 7/7 Empower specs, none skipped). It covers:
+  - TEST ONLY payments and a reversal seeded on the disposable database;
+  - API figures equal SQL sums over payments, the commission ledger and payouts;
+  - actual and projection sections separate and labelled;
+  - axe on both;
+  - a what-if projection, and saving records a version;
+  - scenario tabs with arrow keys;
+  - a fingerprint of payments, invoices, contracts, ledger and payouts unchanged;
+  - partners refused.
+  Screenshots: `evidence/b2-1/revenue-{actual,forecast}-<width>.png`, inspected. The phone projection layout and the "no history" wording were fixed after inspection.
+- **CI note:** one run failed in the existing finance race test described on #168 (a test-ordering flake, not a ledger defect); the next head was fully green.
 
 ## B2.5 – B2.7: Not started
 

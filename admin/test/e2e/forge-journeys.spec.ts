@@ -269,6 +269,22 @@ test.describe("16b. preview approval follows the server's confirmation", () => {
   })
 })
 
+test("16c. two concurrent approvals of the same preview record exactly one", async ({ page }) => {
+  const row = await fixture(page, "E2E Approval Concurrency")
+  const statuses = await page.evaluate(async (id) => {
+    const send = () => fetch(`/api/forge/projects/${id}`, { method: "PATCH", cache: "no-store", headers: { "content-type": "application/json" }, body: JSON.stringify({ status: "client_review", approvalScope: "internal" }) }).then((r) => r.status)
+    return Promise.all([send(), send()])
+  }, row.project_id)
+  // Either the second request arrives after the first committed (no transition left, 200 without a second approval),
+  // or both raced and the compare-and-set refused one (409). Never two approvals, never a server error.
+  expect(statuses).toContain(200)
+  for (const status of statuses) expect([200, 409]).toContain(status)
+  expect(((await browserApi(page, `/api/forge/projects/${row.project_id}`)).body as { project: { status: string } }).project.status).toBe("client_review")
+  await page.goto(`/forge/${row.project_id}?view=advanced`)
+  await page.getByRole("button", { name: "Activity", exact: true }).click()
+  await expect(page.getByText(/Recorded internal preview approval/i)).toHaveCount(1)
+})
+
 test("17. blocks deployment without the required final evidence and approval", async ({ page }) => {
   const row = await fixture(page, "E2E Deployment Blocked")
   const response = await browserApi(page, `/api/forge/projects/${row.project_id}/deploy`, "POST", {

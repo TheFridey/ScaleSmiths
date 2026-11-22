@@ -10,7 +10,7 @@
 .sc-metrics div{border:1px solid #35363b;background:#1b1c1f;border-radius:8px;padding:16px}
 .sc-metrics dt{font-size:11px;color:#c2c7d0}
 .sc-metrics dd{margin:8px 0 6px;font-size:26px;font-weight:600;color:#e9d3a1;font-variant-numeric:tabular-nums}
-.sc-metrics p{margin:0;font-size:11px;line-height:1.5;color:#a4aab7}
+.sc-metrics .sc-note{margin:0;font-size:11px;line-height:1.5;color:#a4aab7}
 .sc-panel{border:1px solid #34353a;background:#1a1b1e;border-radius:8px;padding:24px;margin-top:24px;min-width:0}
 .sc-muted{margin:4px 0;font-size:12px;line-height:1.6;color:#a4aab7}
 .sc-rules{margin:0 0 14px;font-size:13px;color:#c9cdd5}

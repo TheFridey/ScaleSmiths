@@ -51,7 +51,7 @@ export function SalesCommandCentre() {
     {error ? <div className="sc-error" role="alert"><p>{error}</p><button type="button" className="sc-button sc-quiet" onClick={reload}>Try again</button></div>
       : !data ? <p className="sc-muted" role="status">Loading…</p> : <>
       <section aria-labelledby="sc-overview"><h2 id="sc-overview" className="sc-h2">Pipeline overview</h2>
-        <dl className="sc-metrics">{METRICS.map((m) => <div key={m.key}><dt>{m.label}</dt><dd>{data.overview[m.key] ?? 0}</dd><p>{m.note}</p></div>)}</dl>
+        <dl className="sc-metrics">{METRICS.map((m) => <div key={m.key}><dt>{m.label}</dt><dd>{data.overview[m.key] ?? 0}</dd><dd className="sc-note">{m.note}</dd></div>)}</dl>
         <p className="sc-muted">As of {new Date(data.generatedAt).toLocaleString("en-GB")}. Stalled means no recorded activity for {data.thresholds.stalledAfterDays} days; proposal follow-up starts {data.thresholds.proposalFollowUpAfterDays} days after approval.</p>
       </section>
 

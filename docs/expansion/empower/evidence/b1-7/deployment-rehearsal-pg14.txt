@@ -1,0 +1,81 @@
+[10:05:20] == 1. Previous release 37995d270a9cf7564b4e4d4a095514889a0773f7 on a fresh PostgreSQL 14 database
+Shared migrations current: web 24/24, admin 95/95.
+Verified principals: migration=scalesmiths_expansion_migration, web=scalesmiths_expansion_web, admin=scalesmiths_expansion_admin.
+  web health: {"status":"ok","release":"37995d270a9cf7564b4e4d4a095514889a0773f7"}
+  admin health: {"status":"ok","release":"37995d270a9cf7564b4e4d4a095514889a0773f7","database":"ok"}
+  admin health without token: 401
+  web /              200
+  web /pricing       200
+  web /services      200
+  web /partners      200
+  web /contact       200
+  web /privacy       308
+  web /sitemap.xml   200
+  web /robots.txt    200
+  web /no-such-page  404
+  admin /login             200
+  admin /partner           307
+  admin /partner/guidance  307
+  admin /partner/agreement 307
+  admin /expansion         307
+  admin /forge             307
+  admin api /api/partner/workspace?view=today  401
+  admin api /api/partner/agreement             401
+  admin api /api/expansion                     401
+  admin api /api/forge/projects                401
+[10:05:30] == 2. Pre-migration encrypted backup (age) of the previous release's database
+  bundle scalesmiths-backup-pre-release-20261122100530.age in 1s
+[10:05:31] == 3. Migrate to the candidate 344cab99df9eb15414dccbe4348391ab7fee02ae with its own tooling (forward only)
+Shared migrations current: web 25/25, admin 98/98.
+Verified principals: migration=scalesmiths_expansion_migration, web=scalesmiths_expansion_web, admin=scalesmiths_expansion_admin.
+[10:05:34] == 4. PM2 cut-over to the candidate
+  web health: {"status":"ok","release":"344cab99df9eb15414dccbe4348391ab7fee02ae"}
+  admin health: {"status":"ok","release":"344cab99df9eb15414dccbe4348391ab7fee02ae","database":"ok"}
+  admin health without token: 401
+  web /              200
+  web /pricing       200
+  web /services      200
+  web /partners      200
+  web /contact       200
+  web /privacy       308
+  web /sitemap.xml   200
+  web /robots.txt    200
+  web /no-such-page  404
+  admin /login             200
+  admin /partner           307
+  admin /partner/guidance  307
+  admin /partner/agreement 307
+  admin /expansion         307
+  admin /forge             307
+  admin api /api/partner/workspace?view=today  401
+  admin api /api/partner/agreement             401
+  admin api /api/expansion                     401
+  admin api /api/forge/projects                401
+  partner switches: 0 set in the host env (all unset, so every partner module is dormant)
+[10:05:39] == 5. Code rollback to 37995d270a9cf7564b4e4d4a095514889a0773f7 on the migrated schema (no schema rollback)
+  web health: {"status":"ok","release":"37995d270a9cf7564b4e4d4a095514889a0773f7"}
+  admin health: {"status":"ok","release":"37995d270a9cf7564b4e4d4a095514889a0773f7","database":"ok"}
+  admin health without token: 401
+  web /              200
+  web /pricing       200
+  web /services      200
+  web /partners      200
+  web /contact       200
+  web /privacy       308
+  web /sitemap.xml   200
+  web /robots.txt    200
+  web /no-such-page  404
+  admin /login             200
+  admin /partner           307
+  admin /partner/guidance  307
+  admin /partner/agreement 307
+  admin /expansion         307
+  admin /forge             307
+  admin api /api/partner/workspace?view=today  401
+  admin api /api/partner/agreement             401
+  admin api /api/expansion                     401
+  admin api /api/forge/projects                401
+[10:05:43] == 6. Recovery: restore the pre-migration backup into an isolated database
+  restored in 4s; journals web=24 admin=95 (previous release expects 24/95)
+  restore outcome: {"status":"passed","rtoMinutes":60,"rtoMet":true}
+[10:05:48] rehearsal complete

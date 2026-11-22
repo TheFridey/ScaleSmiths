@@ -70,7 +70,12 @@ export function ObjectionHandling({ nav }: { nav: PartnerNav }) {
   const [error, setError] = useState("")
   const [attempt, setAttempt] = useState(0)
   const input = useRef<HTMLInputElement>(null)
-  useEffect(() => { input.current?.focus() }, [])
+  useEffect(() => {
+    // B1.7: unified guidance links here with ?q=<concern>; run that search on arrival, as the Knowledge Base does.
+    const q = new URLSearchParams(window.location.search).get("q")?.slice(0, 200).trim()
+    if (q) { setQuery(q); setSubmitted(q) }
+    input.current?.focus()
+  }, [])
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "/" && !["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement?.tagName ?? "")) { e.preventDefault(); input.current?.focus() } }
     window.addEventListener("keydown", onKey); return () => window.removeEventListener("keydown", onKey)

@@ -4,6 +4,7 @@ import Link from "next/link"
 import { useEffect, useState } from "react"
 import { GuidanceList, type GuidanceItem } from "@/components/empower/GuidanceCard"
 import "@/components/empower/guidance.css"
+import type { AgreementState } from "@/lib/partner-agreements"
 
 type Status = { label: string; meaning: string; tone: string }
 const MEETING_TYPES: Record<string, string> = { joint_sales: "Joint sales meeting", technical_scoping: "Technical scoping", bespoke_discovery: "Bespoke discovery", commercial_assistance: "Commercial assistance", proposal_review: "Proposal review", training: "Training", escalation: "Escalation" }
@@ -25,12 +26,33 @@ function useWorkspace<T>(query: string) {
 const Loading = () => <div className="gd-skeleton" aria-hidden="true"><span /><span /></div>
 const Failed = ({ error, retry }: { error: string; retry: () => void }) => <div className="gd-error" role="alert"><p>{error}</p><button type="button" className="gd-button gd-button-quiet" onClick={retry}>Try again</button></div>
 
+type Agreement = { state: AgreementState; issued: { title: string; version: number; reviewBy: string } | null; accepted: { version: number; acceptedAt: string } | null; href: string }
+/** Plain wording per real agreement state. Text always carries the meaning; tone is decoration only. */
+const AGREEMENT: Record<AgreementState, { label: string; tone: string; action: string | null }> = {
+  none: { label: "No agreement issued", tone: "neutral", action: null },
+  awaiting_acceptance: { label: "Awaiting your acceptance", tone: "action", action: "Read and accept" },
+  update_awaiting_acceptance: { label: "Updated agreement to accept", tone: "action", action: "Read and accept the update" },
+  accepted: { label: "Accepted and current", tone: "done", action: null },
+  unavailable: { label: "Agreement unavailable", tone: "closed", action: null },
+}
+function agreementMeaning(a: Agreement) {
+  const day = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" })
+  switch (a.state) {
+    case "none": return "ScaleSmiths has not issued a partner agreement to your account yet."
+    case "awaiting_acceptance": return `${a.issued?.title ?? "Your agreement"} (version ${a.issued?.version ?? "?"}) has been issued to you and is not yet accepted.`
+    case "update_awaiting_acceptance": return `ScaleSmiths issued version ${a.issued?.version ?? "?"}${a.accepted ? `; you accepted version ${a.accepted.version} on ${day(a.accepted.acceptedAt)}` : ""}. Read and accept the update.`
+    case "accepted": return `You accepted ${a.issued?.title ?? "your agreement"} (version ${a.issued?.version ?? "?"})${a.accepted ? ` on ${day(a.accepted.acceptedAt)}` : ""}.`
+    case "unavailable": return "The version issued to you is no longer current. ScaleSmiths will issue the updated agreement; your accepted copies remain available."
+  }
+}
+
 type Today = {
+  agreement: Agreement
   opportunities: { id: string; businessName: string; status: Status; statusKey: string; followUp: string | null }[]
   meetings: { id: string; type: string; businessName: string | null; status: Status; statusKey: string; confirmedStart: string | null; proposedStart: string | null }[]
   continueLearning: { courseTitle: string; lessonTitle: string; href: string }[]
   recentGuidance: GuidanceItem[]
-  available: { answers: boolean; resources: boolean; academy: boolean }
+  available: { answers: boolean; resources: boolean; academy: boolean; objections: boolean }
 }
 
 /** Partner overview: real records only. Every action goes somewhere that exists. */
@@ -41,11 +63,17 @@ export function PartnerToday({ onOpenOpportunity, onTab }: { onOpenOpportunity: 
     <nav className="gd-actions" aria-label="Quick actions">
       <button type="button" className="gd-action" onClick={() => onTab("pipeline")}>Register a prospect</button>
       <Link className="gd-action" href="/partner/guidance">Find an answer</Link>
+      {data?.available.objections && <Link className="gd-action" href="/partner/objections">Handle an objection</Link>}
       <button type="button" className="gd-action" onClick={() => onTab("meetings")}>Prepare for a meeting</button>
       <button type="button" className="gd-action" onClick={() => onTab("meetings")}>Request founder help</button>
       <button type="button" className="gd-action" onClick={() => onTab("finance")}>View commission status</button>
     </nav>
-    {error ? <Failed error={error} retry={retry} /> : !data ? <Loading /> : <div className="gd-grid">
+    {error ? <Failed error={error} retry={retry} /> : !data ? <Loading /> : <><div className="gd-agreement" data-state={data.agreement.state}>
+      <div><h3 className="gd-sub">Partner agreement</h3><p>{agreementMeaning(data.agreement)}</p></div>
+      <div className="gd-actions"><span className="gd-status" data-tone={AGREEMENT[data.agreement.state].tone}>{AGREEMENT[data.agreement.state].label}</span>
+        {/* Only an acceptance that is due gets an action here; viewing stays with the single "Your next steps" link (no duplicate actions). */}
+        {AGREEMENT[data.agreement.state].action && <Link className="gd-button" href={data.agreement.href}>{AGREEMENT[data.agreement.state].action}</Link>}</div>
+    </div><div className="gd-grid">
       <div>
         <h3 className="gd-sub">Open prospects</h3>
         {data.opportunities.length ? <ul className="gd-rows">{data.opportunities.map((o) => <li className="gd-row" key={o.id}>
@@ -62,7 +90,7 @@ export function PartnerToday({ onOpenOpportunity, onTab }: { onOpenOpportunity: 
         {data.continueLearning.length > 0 && <><h3 className="gd-sub">Continue learning</h3><ul className="gd-rows">{data.continueLearning.map((c) => <li className="gd-row" key={c.href}><div><strong>{c.lessonTitle}</strong><p>{c.courseTitle}</p></div><Link className="gd-link" href={c.href}>Continue</Link></li>)}</ul></>}
       </div>
       {data.recentGuidance.length > 0 && <div style={{ gridColumn: "1 / -1" }}><h3 className="gd-sub">Recently approved guidance</h3><GuidanceList items={data.recentGuidance} empty={null} /></div>}
-    </div>}
+    </div></>}
   </section>
 }
 

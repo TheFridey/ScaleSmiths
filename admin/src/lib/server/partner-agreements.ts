@@ -3,7 +3,7 @@ import "server-only"
 import { sql } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { ExpansionError } from "@/lib/expansion"
-import { parseAcceptance } from "@/lib/partner-agreements"
+import { agreementState, parseAcceptance, type AgreementState } from "@/lib/partner-agreements"
 import { partnerGuard } from "./empower-partner"
 import { agreementColumns, recordAcceptance, rows, shape, type IssuedAgreement } from "./partner-agreements-core"
 import { requireCapability } from "./rbac"
@@ -11,6 +11,7 @@ import { requireCapability } from "./rbac"
 /* Operation Launch Ready: the session-bound partner and founder entry points over ./partner-agreements-core. */
 
 export type PartnerAgreementOverview = {
+  state: AgreementState
   issued: IssuedAgreement | null
   issuedCurrent: boolean
   accepted: { acceptanceId: string; versionId: string; version: number; title: string; sha256: string; acceptedAt: string; signatoryName: string } | null
@@ -31,6 +32,7 @@ export async function partnerAgreementOverview(): Promise<PartnerAgreementOvervi
     const latest = history.find((h) => h.latest === true)
     const issued = issuedRow ? shape(issuedRow) : null
     return {
+      state: agreementState({ issuedVersionId: issued?.versionId ?? null, issuedCurrent: issuedRow?.current === true, acceptedVersionId: latest ? String(latest.content_version_id) : null }),
       issued,
       issuedCurrent: issuedRow?.current === true,
       accepted: latest ? { acceptanceId: String(latest.id), versionId: String(latest.content_version_id), version: Number(latest.agreement_version), title: String(latest.agreement_title),

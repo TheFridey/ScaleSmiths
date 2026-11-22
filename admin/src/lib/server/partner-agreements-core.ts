@@ -5,7 +5,7 @@ import { sql, type SQL } from "drizzle-orm"
 import type { AdminDatabaseTransaction } from "@/lib/db"
 import { AdminIdentityError } from "@/lib/admin-users"
 import { ExpansionError } from "@/lib/expansion"
-import { acceptanceStatement, parseAcceptance, type AgreementAcceptanceInput } from "@/lib/partner-agreements"
+import { acceptanceStatement, agreementState, parseAcceptance, type AgreementAcceptanceInput, type AgreementState } from "@/lib/partner-agreements"
 
 /*
  * Operation Launch Ready: partner agreement records, independent of any session. Callers own the transaction and the authority
@@ -72,6 +72,30 @@ export async function agreementForInvitation(tx: Executor, tokenHash: string): P
   if (!row) throw new AdminIdentityError("Invitation is invalid or unavailable.", 400, "invitation_invalid")
   if (!row.version_id || row.current !== true) throw new AdminIdentityError("The agreement issued with this invitation is no longer current. ScaleSmiths will send you a new invitation.", 409, "agreement_not_current")
   return shape(row)
+}
+
+export type AgreementStatus = {
+  state: AgreementState
+  issued: { title: string; version: number; reviewBy: string } | null
+  accepted: { version: number; acceptedAt: string } | null
+  href: "/partner/agreement"
+}
+/** One partner's own agreement state for the workspace. The caller has already resolved partnerId from the session (partnerGuard). */
+export async function agreementStatusFor(tx: Executor, partnerId: string): Promise<AgreementStatus> {
+  const [r] = await rows(tx, sql`select p.agreement_content_version_id issued_id, cv.title issued_title, cv.version issued_version, cv.review_by issued_review_by,
+      coalesce(partner_agreement_current(p.agreement_content_version_id), false) issued_current,
+      a.content_version_id accepted_id, a.agreement_version accepted_version, a.accepted_at
+    from expansion_partners p left join empower_content_versions cv on cv.id = p.agreement_content_version_id
+    left join partner_agreement_acceptances a on a.id = p.agreement_acceptance_id and a.partner_id = p.id where p.id = ${partnerId}`)
+  if (!r) throw new ExpansionError("Partner not found.", 404)
+  const state = agreementState({ issuedVersionId: r.issued_id ? String(r.issued_id) : null, issuedCurrent: r.issued_current === true, acceptedVersionId: r.accepted_id ? String(r.accepted_id) : null })
+  return {
+    state,
+    // A withdrawn or expired version's text is not re-offered here; the agreement page shows the partner's accepted copies.
+    issued: r.issued_id && state !== "unavailable" ? { title: String(r.issued_title), version: Number(r.issued_version), reviewBy: String(r.issued_review_by).slice(0, 10) } : null,
+    accepted: r.accepted_id ? { version: Number(r.accepted_version), acceptedAt: new Date(String(r.accepted_at)).toISOString() } : null,
+    href: "/partner/agreement",
+  }
 }
 
 /** Founder register: who holds which version, and whether they have accepted it. */

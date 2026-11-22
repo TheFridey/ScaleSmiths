@@ -2,9 +2,11 @@ import "server-only"
 import { sql, type SQL } from "drizzle-orm"
 import { db, type AdminDatabaseTransaction } from "@/lib/db"
 import { ContentError, courseLessonIds, expandQuery, searchQuery, type Synonym } from "@/lib/empower-content"
-import { discoveryGaps, explain, guidancePlanFor, MEETING_GUIDANCE, MEETING_STATUS, OPPORTUNITY_STATUS, type GuidancePlan } from "@/lib/partner-guidance"
+import { discoveryGaps, explain, guidancePlanFor, MEETING_GUIDANCE, MEETING_OBJECTIONS, MEETING_STATUS, OPPORTUNITY_STATUS, type GuidancePlan } from "@/lib/partner-guidance"
 import { partnerAcademyEnabled, partnerGuard, partnerKnowledgeEnabled, partnerResourcesEnabled } from "./empower-partner"
 import { continueLearningFor } from "./empower-academy"
+import { partnerObjectionsEnabled } from "./empower-objections"
+import { agreementStatusFor } from "./partner-agreements-core"
 import { requireCapability } from "./rbac"
 
 /*
@@ -13,8 +15,13 @@ import { requireCapability } from "./rbac"
  * opportunities and meetings, and the Academy's existing continue-learning pointer. OFF unless PARTNER_UNIFIED_WORKSPACE_ENABLED=true.
  *
  * Client-safe copy is decided here, never in the browser: a Knowledge Base client explanation on a client-facing entry, or the summary
- * of a client-facing resource. Lessons, courses, partner-only entries and answers are never offered for copying.
- * (B1.5 objection responses join this workspace once that work is merged; until then they are not referenced.)
+ * of a client-facing resource, or the founder-approved client line of an objection response. Lessons, courses, partner-only entries
+ * and answers are never offered for copying.
+ *
+ * B1.7: approved B1.5 objection responses take part in search, contextual guidance and Today under their own switch
+ * (PARTNER_OBJECTION_HANDLING_ENABLED) and the same servability rule as the objection workspace: published, in review date and
+ * partner-only. An objection response is partner guidance; only its client line (B1.5 field `client_line`, checked by the
+ * database for partner-only wording) is ever offered for copying, and its partner explanation is labelled partner-only.
  */
 type Row = Record<string, unknown>
 type Executor = Pick<AdminDatabaseTransaction, "execute">
@@ -22,7 +29,7 @@ export const partnerWorkspaceEnabled = () => process.env.PARTNER_UNIFIED_WORKSPA
 const rows = async (tx: Executor, query: SQL): Promise<Row[]> => (await tx.execute(query)).rows as Row[]
 const SERVABLE = sql`v.status='published' and v.review_by >= (now() at time zone 'UTC')::date`
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-export const GUIDANCE_TYPES = ["answer", "resource", "lesson", "course"] as const
+export const GUIDANCE_TYPES = ["answer", "resource", "lesson", "course", "objection"] as const
 export type GuidanceType = (typeof GUIDANCE_TYPES)[number]
 
 export type GuidanceItem = {
@@ -34,12 +41,15 @@ async function partner() {
   if (!partnerWorkspaceEnabled()) throw new ContentError("The partner workspace is not available yet.", 404)
   return requireCapability("expansion.partner")
 }
-const modules = () => ({ resources: partnerResourcesEnabled(), knowledge: partnerKnowledgeEnabled(), academy: partnerAcademyEnabled() })
+const modules = () => ({ resources: partnerResourcesEnabled(), knowledge: partnerKnowledgeEnabled(), academy: partnerAcademyEnabled(), objections: partnerObjectionsEnabled() })
+const availability = () => { const m = modules(); return { answers: m.knowledge, resources: m.resources, academy: m.academy, objections: m.objections } }
 const iso = (v: unknown) => (v ? new Date(String(v)).toISOString() : null)
 const plain = (s: string, n = 220) => { const t = s.replace(/[#*_`>\[\]()|-]+/g, " ").replace(/\s+/g, " ").trim(); return t.length > n ? `${t.slice(0, n - 1).trimEnd()}…` : t }
 
 /** The one place that decides copyable client text. */
 export function clientSafeCopy(kind: string, audience: string, fields: Record<string, unknown>): string | null {
+  // An objection response is always partner-only; its client line is the one field written and checked to be said to a client.
+  if (kind === "objection") { if (audience !== "partner_only") return null; const t = String(fields.client_line ?? "").trim(); return t || null }
   if (audience !== "client_facing") return null
   if (kind === "knowledge") { const t = String(fields.client_explanation ?? "").trim(); return t && !/^none\b/i.test(t) ? t : null }
   if (kind === "resource") { const t = String(fields.summary ?? "").trim(); return t || null }
@@ -52,9 +62,10 @@ async function shapeItems(tx: Executor, found: Row[]): Promise<GuidanceItem[]> {
   const out: GuidanceItem[] = []
   for (const r of found) {
     const f = (r.fields ?? {}) as Record<string, unknown>, kind = String(r.kind), audience = String(r.audience) as GuidanceItem["audience"]
-    const base = { title: kind === "knowledge" ? String(f.question ?? r.title) : String(r.title), category: null as string | null, audience, approvedAt: iso(r.approved_at), reviewBy: r.review_by ? String(r.review_by).slice(0, 10) : null, copy: clientSafeCopy(kind, audience, f) }
+    const base = { title: kind === "knowledge" ? String(f.question ?? r.title) : kind === "objection" ? String(f.concern ?? r.title) : String(r.title), category: null as string | null, audience, approvedAt: iso(r.approved_at), reviewBy: r.review_by ? String(r.review_by).slice(0, 10) : null, copy: clientSafeCopy(kind, audience, f) }
     if (kind === "knowledge") out.push({ ...base, type: "answer", summary: plain(String(f.answer ?? "")), category: (f.topic as string) ?? null, href: `/partner/knowledge?q=${encodeURIComponent(base.title)}` })
     else if (kind === "resource") out.push({ ...base, type: "resource", summary: plain(String(f.summary ?? r.body ?? "")), category: (f.category as string) ?? null, href: `/partner/resources/${String(r.slug)}` })
+    else if (kind === "objection") out.push({ ...base, type: "objection", summary: plain(String(f.guidance ?? "")), category: (f.category as string) ?? null, href: `/partner/objections?q=${encodeURIComponent(base.title)}` })
     else if (kind === "course") out.push({ ...base, type: "course", summary: plain(String(r.body ?? "")), category: (f.category as string) ?? null, href: `/partner/academy/${String(r.slug)}` })
     else if (kind === "lesson") {
       const course = courses.find((c) => courseLessonIds(c.fields).includes(String(r.item_id)))
@@ -70,8 +81,10 @@ function kindFilter(types: readonly GuidanceType[]) {
   if (m.resources && types.includes("resource")) kinds.push("resource")
   if (m.academy && types.includes("lesson")) kinds.push("lesson")
   if (m.academy && types.includes("course")) kinds.push("course")
-  // Lessons and courses are partner learning; only partner-only lessons are ever served (as in the Academy).
-  return kinds.length ? sql`and i.kind in (${sql.join(kinds.map((k) => sql`${k}`), sql`,`)}) and (i.kind <> 'lesson' or i.audience='partner_only')` : null
+  if (m.objections && types.includes("objection")) kinds.push("objection")
+  // Lessons and courses are partner learning; only partner-only lessons are ever served (as in the Academy). Objection responses are
+  // served only when partner-only, exactly as the objection workspace does (a legacy client-facing row is never served).
+  return kinds.length ? sql`and i.kind in (${sql.join(kinds.map((k) => sql`${k}`), sql`,`)}) and (i.kind <> 'lesson' or i.audience='partner_only') and (i.kind <> 'objection' or i.audience='partner_only')` : null
 }
 /** A text[] literal with one bound parameter per element (drizzle would otherwise expand a JS array into a bare list). */
 const textArray = (xs: readonly string[]) => sql`array[${sql.join(xs.map((x) => sql`${x}`), sql`,`)}]::text[]`
@@ -86,7 +99,7 @@ export async function searchGuidance(input: { q?: unknown; type?: unknown }) {
     await tx.execute(sql`set transaction isolation level repeatable read`)
     await partnerGuard(tx, actor)
     const kinds = kindFilter(type ? [type] : GUIDANCE_TYPES)
-    const available = { answers: modules().knowledge, resources: modules().resources, academy: modules().academy }
+    const available = availability()
     if (!kinds) return { query: q, type, available, results: [] as GuidanceItem[] }
     let found: Row[]
     if (q) {
@@ -95,14 +108,14 @@ export async function searchGuidance(input: { q?: unknown; type?: unknown }) {
       const aliases = sql`jsonb_array_elements_text(case when jsonb_typeof(v.fields->'aliases')='array' then v.fields->'aliases' else '[]'::jsonb end)`
       found = await rows(tx, sql`with q as (select websearch_to_tsquery('english', ${expandQuery(q, synonyms)}) query, ${raw} raw)
         select ${COLUMNS},
-          (case when lower(regexp_replace(coalesce(v.fields->>'question', v.title), '[?!.]+$', '')) = q.raw or lower(v.title) = q.raw then 100
+          (case when lower(regexp_replace(coalesce(v.fields->>'question', v.fields->>'concern', v.title), '[?!.]+$', '')) = q.raw or lower(v.title) = q.raw then 100
                 when exists (select 1 from ${aliases} a(alias) where lower(regexp_replace(a.alias, '[?!.]+$', '')) = q.raw) then 90 else 0 end)
           + ts_rank_cd(empower_search_document(v.title,v.body,v.fields), q.query, 32) rank
         from empower_content_versions v join empower_content_items i on i.id=v.item_id cross join q
         where ${SERVABLE} ${kinds}
           and (empower_search_document(v.title,v.body,v.fields) @@ q.query or lower(v.title) = q.raw
                or exists (select 1 from ${aliases} a(alias) where lower(regexp_replace(a.alias, '[?!.]+$', '')) = q.raw))
-        order by rank desc, array_position(array['knowledge','resource','lesson','course']::text[], i.kind), i.slug limit 60`)
+        order by rank desc, array_position(array['knowledge','objection','resource','lesson','course']::text[], i.kind), i.slug limit 60`)
     } else {
       found = await rows(tx, sql`select ${COLUMNS} from empower_content_versions v join empower_content_items i on i.id=v.item_id
         where ${SERVABLE} ${kinds} order by v.approved_at desc, i.slug limit 12`)
@@ -112,12 +125,16 @@ export async function searchGuidance(input: { q?: unknown; type?: unknown }) {
   })
 }
 
-/** Approved guidance for a plan: Knowledge Base by topic, resources by the plan's fixed vocabulary, courses by category. */
-async function guidanceForPlan(tx: Executor, plan: Pick<GuidancePlan, "knowledgeTopics" | "searchTerms" | "courseCategories">) {
+/** Approved guidance for a plan: Knowledge Base by topic, objection responses by category, resources by the plan's fixed vocabulary, courses by category. */
+async function guidanceForPlan(tx: Executor, plan: Pick<GuidancePlan, "knowledgeTopics" | "searchTerms" | "courseCategories" | "objectionCategories">) {
   const m = modules(), found: Row[] = []
   if (m.knowledge && plan.knowledgeTopics.length) found.push(...await rows(tx, sql`select ${COLUMNS} from empower_content_versions v join empower_content_items i on i.id=v.item_id
     where i.kind='knowledge' and ${SERVABLE} and v.fields->>'topic' in (${sql.join(plan.knowledgeTopics.map((t) => sql`${t}`), sql`,`)})
     order by array_position(${textArray(plan.knowledgeTopics)}, v.fields->>'topic'), i.slug limit 6`))
+  // Objection categories come from the fixed rule table, never from prospect text.
+  if (m.objections && plan.objectionCategories.length) found.push(...await rows(tx, sql`select ${COLUMNS} from empower_content_versions v join empower_content_items i on i.id=v.item_id
+    where i.kind='objection' and i.audience='partner_only' and ${SERVABLE} and v.fields->>'category' in (${sql.join(plan.objectionCategories.map((c) => sql`${c}`), sql`,`)})
+    order by array_position(${textArray(plan.objectionCategories)}, v.fields->>'category'), i.slug limit 4`))
   // Vocabulary terms are fixed words from the mapping table (letters only), joined as OR; prospect text is never used here.
   const terms = plan.searchTerms.filter((t) => /^[a-z]{2,30}$/.test(t))
   if (m.resources && terms.length) found.push(...await rows(tx, sql`select ${COLUMNS} from empower_content_versions v join empower_content_items i on i.id=v.item_id
@@ -162,10 +179,12 @@ export async function meetingPreparation(meetingId: unknown) {
     const o = m.opportunity_id ? await ownOpportunity(tx, partnerId, String(m.opportunity_id)) : undefined
     const plan = o ? guidancePlanFor(o.discovery, { website: o.website_url }) : null
     const byType = MEETING_GUIDANCE[String(m.meeting_type)] ?? { knowledgeTopics: [], courseCategories: [], searchTerms: [] }
+    const byTypeObjections = MEETING_OBJECTIONS[String(m.meeting_type)] ?? []
     const merged = {
       knowledgeTopics: [...new Set([...byType.knowledgeTopics, ...(plan?.knowledgeTopics ?? [])])],
       searchTerms: [...new Set([...byType.searchTerms, ...(plan?.searchTerms ?? [])])],
       courseCategories: [...new Set([...byType.courseCategories, ...(plan?.courseCategories ?? [])])],
+      objectionCategories: [...new Set([...byTypeObjections, ...(plan?.objectionCategories ?? [])])],
     }
     const discovery = (o?.discovery ?? {}) as Record<string, unknown>
     const recorded = Object.entries(discovery).filter(([, v]) => typeof v === "string" && v.trim()).map(([field, value]) => ({ field, value: String(value).slice(0, 600) }))
@@ -178,7 +197,7 @@ export async function meetingPreparation(meetingId: unknown) {
   })
 }
 
-/** The partner's day: their own open opportunities and meetings, where to continue learning, and newly approved guidance. */
+/** The partner's day: their own agreement state, open opportunities and meetings, where to continue learning, and newly approved guidance. */
 export async function partnerToday() {
   const actor = await partner()
   return db.transaction(async (tx) => {
@@ -193,13 +212,16 @@ export async function partnerToday() {
     // Learning records are read only by the Academy service (Academy isolation rule); this asks it for the partner's own pointers.
     const continueLearning = modules().academy ? await continueLearningFor(tx, partnerId) : []
     const kinds = kindFilter(GUIDANCE_TYPES)
+    // B1.7: read from the partner's own agreement records (never inferred from an invitation); no other partner's record is reachable.
+    const agreement = await agreementStatusFor(tx, partnerId)
     const recent = kinds ? await shapeItems(tx, await rows(tx, sql`select ${COLUMNS} from empower_content_versions v join empower_content_items i on i.id=v.item_id where ${SERVABLE} ${kinds} order by v.approved_at desc, i.slug limit 5`)) : []
     return {
+      agreement,
       opportunities: opportunities.map((o) => ({ id: String(o.id), businessName: String(o.business_name), status: explain(OPPORTUNITY_STATUS, o.status), statusKey: String(o.status), followUp: iso(o.next_follow_up_at) })),
       meetings: meetings.map((m) => ({ id: String(m.id), type: String(m.meeting_type), businessName: m.business_name ? String(m.business_name) : null, status: explain(MEETING_STATUS, m.status), statusKey: String(m.status), confirmedStart: iso(m.confirmed_start), proposedStart: iso(m.proposed_start) })),
       continueLearning,
       recentGuidance: recent,
-      available: { answers: modules().knowledge, resources: modules().resources, academy: modules().academy },
+      available: availability(),
     }
   })
 }

@@ -3,14 +3,16 @@ import Link from "next/link"
 import type { ReactNode } from "react"
 import "./academy.css"
 
-export type PartnerNav = { academy?: boolean; resources?: boolean; knowledge?: boolean; objections?: boolean; guidance?: boolean }
+export type PartnerNav = { academy?: boolean; resources?: boolean; knowledge?: boolean; objections?: boolean; guidance?: boolean; pipeline?: boolean }
 /** Shared frame for the Partner Academy and Resource Centre: skip link, brand, grouped navigation. Sections that are off are labelled, not linked. */
-export function AcademyShell({ current, nav = { academy: true }, children }: { current: "home" | "course" | "resources" | "knowledge" | "agreement" | "objections" | "guidance"; nav?: PartnerNav; children: ReactNode }) {
+export function AcademyShell({ current, nav = { academy: true }, children }: { current: "home" | "course" | "resources" | "knowledge" | "agreement" | "objections" | "guidance" | "pipeline"; nav?: PartnerNav; children: ReactNode }) {
   return <div className="academy">
     <a className="ac-skip" href="#academy-main">Skip to content</a>
     <header className="ac-header">
-      <a href="/partner" className="ac-brand"><Image src="/brand/favicon.png" alt="" width={34} height={34} unoptimized /><span>SCALESMITHS<small>{current === "resources" ? "RESOURCE CENTRE" : current === "knowledge" ? "KNOWLEDGE BASE" : current === "agreement" ? "PARTNER AGREEMENT" : current === "objections" ? "OBJECTION HANDLING" : current === "guidance" ? "FIND GUIDANCE" : "PARTNER ACADEMY"}</small></span></a>
+      <a href="/partner" className="ac-brand"><Image src="/brand/favicon.png" alt="" width={34} height={34} unoptimized /><span>SCALESMITHS<small>{current === "resources" ? "RESOURCE CENTRE" : current === "knowledge" ? "KNOWLEDGE BASE" : current === "agreement" ? "PARTNER AGREEMENT" : current === "objections" ? "OBJECTION HANDLING" : current === "guidance" ? "FIND GUIDANCE" : current === "pipeline" ? "PIPELINE" : "PARTNER ACADEMY"}</small></span></a>
       <nav aria-label="Partner learning and resources">
+        {/* B2.1: the partner's own pipeline; linked only when switched on. */}
+        {nav.pipeline && <Link href="/partner/pipeline" aria-current={current === "pipeline" ? "page" : undefined}>Pipeline</Link>}
         {/* B1.6: one search across everything; linked only when switched on. */}
         {nav.guidance && <Link href="/partner/guidance" aria-current={current === "guidance" ? "page" : undefined}>Find guidance</Link>}
         {nav.academy && <Link href="/partner/academy" aria-current={current === "home" ? "page" : undefined}>Academy</Link>}

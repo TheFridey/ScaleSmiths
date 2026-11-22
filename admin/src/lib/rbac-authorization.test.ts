@@ -134,6 +134,15 @@ describe("RBAC — security settings", () => {
     }
     for (const role of generalAdminRoles) expect(authorizeRequest(role, { pathname: "/partner/academy", method: "GET" }).allowed, role).toBe(false)
   })
+
+  it("lets partners open the pipeline page and API, and nothing beneath the page (Operation Ascend B2.1)", () => {
+    expect(authorizeRequest("independent_partner", { pathname: "/partner/pipeline", method: "GET" }).allowed).toBe(true)
+    for (const method of ["GET", "POST"]) expect(authorizeRequest("independent_partner", { pathname: "/api/partner/pipeline", method }).allowed, method).toBe(true)
+    for (const [pathname, method] of [["/partner/pipeline", "POST"], ["/partner/pipeline/x", "GET"], ["/partner/pipelinex", "GET"]] as const) {
+      expect(authorizeRequest("independent_partner", { pathname, method }).allowed, `${method} ${pathname}`).toBe(false)
+    }
+    for (const role of generalAdminRoles) expect(authorizeRequest(role, { pathname: "/partner/pipeline", method: "GET" }).allowed, role).toBe(false)
+  })
 })
 
 describe("RBAC — prospects (leads)", () => {

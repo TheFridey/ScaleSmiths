@@ -132,3 +132,6 @@ kbd{padding:1px 6px;border:1px solid var(--ac-line);border-radius:4px;font-size:
 @keyframes ac-obj-shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
 .ac-objection{transition:border-color .16s ease,box-shadow .16s ease}.ac-objection:hover{border-color:var(--ac-gold-deep);box-shadow:0 10px 28px -20px #000}
 @media(prefers-reduced-motion:reduce){.ac-skeleton-list span{animation:none}.ac-objection{transition:none}}
+/* Operation Ascend B2.1: the brand never shrinks under a long partner navigation (it was clipped at 641-1100 px); the navigation wraps instead. */
+.ac-brand{flex-shrink:0}.ac-header nav{min-width:0;justify-content:flex-end}
+@media (max-width:640px){.ac-header nav{justify-content:flex-start}}

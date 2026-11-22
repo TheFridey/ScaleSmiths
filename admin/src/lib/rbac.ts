@@ -96,8 +96,8 @@ export function authorizeRequest(role: AdminRole, request: RbacRequest) {
   // protocol exceptions. Middleware handles the public auth protocol separately.
   if (role === "independent_partner") {
     // Operation Empower B1.2-B1.4: the Academy, Resource Centre and Knowledge Base pages are the only other partner pages (each checks its own switch).
-    // Operation Launch Ready: the partner's own agreement page. Operation Empower B1.5: the objection-handling workspace. Operation Empower B1.6: the unified guidance search. Each checks its own switch.
-    const partnerPage = (request.pathname === "/partner" || request.pathname === "/partner/knowledge" || request.pathname === "/partner/agreement" || request.pathname === "/partner/objections" || request.pathname === "/partner/guidance" || /^\/partner\/(academy|resources)(\/[a-z0-9]+(-[a-z0-9]+)*)?$/.test(request.pathname)) && ["GET", "HEAD"].includes(request.method.toUpperCase())
+    // Operation Launch Ready: the partner's own agreement page. Operation Empower B1.5: the objection-handling workspace. Operation Empower B1.6: the unified guidance search. Operation Ascend B2.1: the pipeline. Each checks its own switch.
+    const partnerPage = (request.pathname === "/partner" || request.pathname === "/partner/knowledge" || request.pathname === "/partner/agreement" || request.pathname === "/partner/objections" || request.pathname === "/partner/guidance" || request.pathname === "/partner/pipeline" ||/^\/partner\/(academy|resources)(\/[a-z0-9]+(-[a-z0-9]+)*)?$/.test(request.pathname)) && ["GET", "HEAD"].includes(request.method.toUpperCase())
     const partnerApi = (request.pathname === "/api/partner" || request.pathname.startsWith("/api/partner/")) && capability === "expansion.partner"
     const logout = request.pathname === "/api/security/logout" && request.method.toUpperCase() === "POST"
     if (!partnerPage && !partnerApi && !logout) return { allowed: false as const, capability, reason: "external_identity_boundary" as const }

@@ -336,7 +336,7 @@ See [B1-7-RELEASE-DECISIONS.md](B1-7-RELEASE-DECISIONS.md) and register sections
 
 ## 30–31. Final commit and pull request
 
-On the draft PR from `feature/operation-aegis-b1-7`. The final head SHA and CI status are on the PR. The last application-code commit is `344cab9`; later commits are documentation and evidence only. **Not merged. Not deployed.**
+Draft PR [TheFridey/ScaleSmiths#163](https://github.com/TheFridey/ScaleSmiths/pull/163) from `feature/operation-aegis-b1-7`. The final head SHA and CI status are on the PR. The last application-code commit is `344cab9`; later commits are documentation and evidence only. **Not merged. Not deployed.**
 
 ## Final acceptance matrix
 

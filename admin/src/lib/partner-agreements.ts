@@ -20,3 +20,18 @@ export function parseAcceptance(input: unknown): AgreementAcceptanceInput {
 export function acceptanceStatement(name: string, title: string, version: number): string {
   return `I, ${name}, confirm that I have read "${title}" (version ${version}) in full and accept it.`.slice(0, 1000)
 }
+
+/**
+ * B1.7: the partner's agreement state, derived only from their own records: the version currently issued to them
+ * (expansion_partners.agreement_content_version_id), whether that version is still current (published and within its review date),
+ * and the version of their latest acceptance. Acceptance is never inferred from an invitation.
+ */
+export type AgreementState = "none" | "awaiting_acceptance" | "accepted" | "update_awaiting_acceptance" | "unavailable"
+export function agreementState(input: { issuedVersionId: string | null; issuedCurrent: boolean; acceptedVersionId: string | null }): AgreementState {
+  if (!input.issuedVersionId) return "none"
+  if (!input.issuedCurrent) return "unavailable"
+  if (!input.acceptedVersionId) return "awaiting_acceptance"
+  return input.acceptedVersionId === input.issuedVersionId ? "accepted" : "update_awaiting_acceptance"
+}
+/** Whether the partner must act through the existing agreement page (there is no second acceptance route). */
+export const agreementNeedsAcceptance = (state: AgreementState) => state === "awaiting_acceptance" || state === "update_awaiting_acceptance"

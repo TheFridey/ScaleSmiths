@@ -14,7 +14,10 @@ Recorded 2026-11-20 by an agent. Model review is not human approval and is not p
 | Knowledge-check questions | NOT STARTED (written per lesson after approval; finding F14) |
 | PR #156 (planning) | COMPLETE: merged into `master` as `8950011` (owner instruction), CI, Security and CodeQL green |
 | B1 implementation (`feature/operation-empower`) | B1.1 content governance, B1.2 Partner Academy, B1.3 Resource Centre and B1.4 Knowledge Base COMPLETE on the branch, tested, not approved or enabled (reports: [B1.2](B1-2-ACADEMY-REPORT.md), [B1.3](B1-3-RESOURCE-CENTRE-REPORT.md), [B1.4](B1-4-KNOWLEDGE-BASE-REPORT.md)); merged as PR #157 |
-| B1.5 objection handling (`feature/operation-empower-b1-5`) | Implemented and tested, draft PR; nothing approved, published or enabled ([report](B1-5-OBJECTION-HANDLING-REPORT.md)) |
+| B1.5 objection handling (`feature/operation-empower-b1-5`) | Implemented and tested; merged as `d903e5e` (PR #161, 2026-11-21) after the B1.5 report was written; nothing approved, published or enabled ([report](B1-5-OBJECTION-HANDLING-REPORT.md)) |
+| Launch Ready agreements and onboarding (PR #159) | Merged as `089733a` (2026-11-21); agreements 0095, notifications 0096, web 0024; switches off |
+| B1.6 unified partner operations (PR #162) | Merged as `06d6b4f` (2026-11-21); `PARTNER_UNIFIED_WORKSPACE_ENABLED` off ([report](B1-6-UNIFIED-PARTNER-OPERATIONS-REPORT.md)) |
+| B1.7 Project Aegis (`feature/operation-aegis-b1-7`) | Implemented and tested, draft PR: objection responses in unified guidance, agreement state on Today, PostgreSQL 14 fresh and upgrade rehearsal, backup/restore drill, release decision package. Not merged, deployed or enabled ([report](B1-7-PROJECT-AEGIS-FINAL-REPORT.md), [decisions](B1-7-RELEASE-DECISIONS.md)) |
 | B1 deployment, publication, partner activation | NOT STARTED; not authorised |
 
 ## B0 merge record (2026-11-20)

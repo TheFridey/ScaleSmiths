@@ -58,3 +58,15 @@
 .gd-search label{flex:1 1 260px;display:grid;gap:6px;font-size:13px;color:#cfd3db}
 .gd-search input{min-height:48px;border-radius:10px;border:1px solid #42434a;background:#101113;color:#f2f3f6;padding:10px 14px;font-size:16px}
 .gd-search input:focus-visible{outline:2px solid #d9bf83;outline-offset:2px;border-color:#d9bf83}
+/* B1.7: agreement state on Today. The label text carries the state; the left rule is decoration only. */
+.gd-agreement{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;justify-content:space-between;margin:16px 0;padding:14px 16px;border:1px solid #35363c;border-left:3px solid #6a6c74;border-radius:10px;background:#1b1c20}
+.gd-agreement[data-state=awaiting_acceptance],.gd-agreement[data-state=update_awaiting_acceptance]{border-left-color:#d9bf83}
+.gd-agreement[data-state=accepted]{border-left-color:#3f6b4f}
+.gd-agreement p{margin:4px 0 0;font-size:13px;line-height:1.6;color:#c4c8d0;overflow-wrap:anywhere}
+.gd-agreement .gd-sub{margin:0}
+.gd-agreement>div:first-child{flex:1 1 260px;min-width:0}
+.gd-summary-label{color:#e2cb93;font-weight:600}
+/* B1.7: a link styled as a button keeps its dark text inside containers whose link colour is gold (.expansion a, .academy a);
+   without this, gold text sat on the gold fill (about 1.2:1 contrast). axe did not report it; found by screenshot inspection. */
+.expansion a.gd-button,.academy a.gd-button,a.gd-button{color:#161616}
+.expansion a.gd-button-quiet,.academy a.gd-button-quiet,a.gd-button-quiet{color:#e2cb93}

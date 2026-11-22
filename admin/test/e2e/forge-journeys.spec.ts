@@ -229,6 +229,62 @@ test("16. approves the preview through the existing project action", async ({ pa
   await expect(page.getByText(/Recorded internal preview approval/i)).toBeVisible()
 })
 
+test.describe("16b. preview approval follows the server's confirmation", () => {
+  // Request interception needs service workers off; the admin service worker is network-only, so behaviour is otherwise the same.
+  test.use({ serviceWorkers: "block" })
+  test("a failed request does not advance; a slow page re-render does not hide the next action; a double click records one approval", async ({ page }) => {
+    const row = await fixture(page, "E2E Approval Latency")
+    await page.goto(`/forge/${row.project_id}?view=preview`)
+    const internal = page.getByRole("button", { name: "Internally approve preview", exact: true })
+
+    // A failed PATCH: the interface reports it and does not claim the approval.
+    await page.route(`**/api/forge/projects/${row.project_id}`, (route) => route.request().method() === "PATCH"
+      ? route.fulfill({ status: 500, contentType: "application/json", body: JSON.stringify({ error: "Simulated approval failure." }) })
+      : route.continue())
+    await internal.click()
+    await expect(page.getByRole("alert").filter({ hasText: "Simulated approval failure." })).toBeVisible()
+    await expect(internal).toBeVisible()
+    await expect(page.getByRole("button", { name: "Record client approval", exact: true })).toHaveCount(0)
+    expect(((await browserApi(page, `/api/forge/projects/${row.project_id}`)).body as { project: { status: string } }).project.status).toBe("preview")
+    await page.unroute(`**/api/forge/projects/${row.project_id}`)
+
+    // The page's own server re-render is slower than this test's 10 s expectation; the confirmed status must not wait for it.
+    // (CI failed intermittently in exactly this shape: the approval was persisted, the next action never appeared.)
+    await page.route((url) => url.pathname === `/forge/${row.project_id}`, async (route) => {
+      if ((await route.request().allHeaders())["rsc"]) await new Promise((resolve) => setTimeout(resolve, 12_000))
+      await route.continue().catch(() => undefined)
+    })
+    await internal.dblclick()
+    await expect(page.getByRole("button", { name: "Record client approval", exact: true })).toBeVisible()
+    await expect(page.getByRole("status").filter({ hasText: "Internal approval recorded." })).toHaveCount(1)
+    expect(((await browserApi(page, `/api/forge/projects/${row.project_id}`)).body as { project: { status: string } }).project.status).toBe("client_review")
+    await page.unroute((url) => url.pathname === `/forge/${row.project_id}`)
+
+    // A reload shows the persisted state, and the double click recorded exactly one approval (activity is read from the database).
+    await page.reload()
+    await expect(page.getByRole("button", { name: "Record client approval", exact: true })).toBeVisible()
+    await page.getByRole("button", { name: "Advanced", exact: true }).click()
+    await page.getByRole("button", { name: "Activity", exact: true }).click()
+    await expect(page.getByText(/Recorded internal preview approval/i)).toHaveCount(1)
+  })
+})
+
+test("16c. two concurrent approvals of the same preview record exactly one", async ({ page }) => {
+  const row = await fixture(page, "E2E Approval Concurrency")
+  const statuses = await page.evaluate(async (id) => {
+    const send = () => fetch(`/api/forge/projects/${id}`, { method: "PATCH", cache: "no-store", headers: { "content-type": "application/json" }, body: JSON.stringify({ status: "client_review", approvalScope: "internal" }) }).then((r) => r.status)
+    return Promise.all([send(), send()])
+  }, row.project_id)
+  // Either the second request arrives after the first committed (no transition left, 200 without a second approval),
+  // or both raced and the compare-and-set refused one (409). Never two approvals, never a server error.
+  expect(statuses).toContain(200)
+  for (const status of statuses) expect([200, 409]).toContain(status)
+  expect(((await browserApi(page, `/api/forge/projects/${row.project_id}`)).body as { project: { status: string } }).project.status).toBe("client_review")
+  await page.goto(`/forge/${row.project_id}?view=advanced`)
+  await page.getByRole("button", { name: "Activity", exact: true }).click()
+  await expect(page.getByText(/Recorded internal preview approval/i)).toHaveCount(1)
+})
+
 test("17. blocks deployment without the required final evidence and approval", async ({ page }) => {
   const row = await fixture(page, "E2E Deployment Blocked")
   const response = await browserApi(page, `/api/forge/projects/${row.project_id}/deploy`, "POST", {

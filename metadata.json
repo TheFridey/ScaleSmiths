@@ -1,0 +1,42 @@
+{
+  "cli_version": "0.12.2",
+  "checkpoint_id": "01M827ZGCZVTMD4C1EYYS73FTW",
+  "strategy": "manual-commit",
+  "branch": "feature/operation-ascend-b2",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".github/workflows/ci.yml",
+    "admin/playwright.empower.config.ts",
+    "admin/test/e2e/ascend-pipeline.spec.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 52,
+    "cache_creation_tokens": 37128,
+    "cache_read_tokens": 7290199,
+    "output_tokens": 19561,
+    "api_call_count": 24
+  },
+  "redaction": {
+    "replacements": 106,
+    "layers": {
+      "betterleaks": 81,
+      "connection_string": 0,
+      "credential_key": 0,
+      "credential_value": 13,
+      "credentialed_uri": 22,
+      "entropy": 39,
+      "key_context": 4,
+      "provider_token": 0,
+      "shell_stdin": 0
+    }
+  }
+}

@@ -25,7 +25,8 @@ export async function partnerPerformance(periodInput: unknown = "30d", now = new
     await tx.execute(sql`set transaction isolation level repeatable read`)
     const partnerId = await partnerGuard(tx, actor)
     const [totals] = await rows(tx, sql`select (select count(*) from expansion_opportunities where partner_id=${partnerId})::int opportunity_count,
-      (select count(*) from expansion_meeting_requests where partner_id=${partnerId})::int meeting_count,\n      (select count(*) from expansion_contracts c join expansion_opportunities o on o.id=c.opportunity_id where o.partner_id=${partnerId} and c.accepted_at is not null)::int contract_count`)
+      (select count(*) from expansion_meeting_requests where partner_id=${partnerId})::int meeting_count,
+      (select count(*) from expansion_contracts c join expansion_opportunities o on o.id=c.opportunity_id where o.partner_id=${partnerId} and c.accepted_at is not null)::int contract_count`)
     const opportunities = await rows(tx, sql`select o.id,o.status,o.created_at,o.research_candidate_id,p.next_follow_up_at
       from expansion_opportunities o join prospects p on p.id=o.prospect_id
       where o.partner_id=${partnerId} order by o.created_at desc limit ${MAX_EVENTS}`)

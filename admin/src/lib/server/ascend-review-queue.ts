@@ -64,6 +64,14 @@ export async function claimInternalReviewJob(now = new Date()) {
   await authorisedFounder()
   const token=randomUUID()
   const job=await db.transaction(async tx=>{
+    // Reap exhausted leases first; without this, a crash on attempt five would stay leased forever.
+    const expired=await tx.execute(sql`update ascend_review_jobs set status='dead',
+      lease_token=null,lease_expires_at=null,updated_at=${now},last_error='Review lease expired after final attempt'
+      where status='leased' and lease_expires_at<=${now} and attempts>=5 returning id`)
+    for (const item of resultRows(expired)) {
+      await tx.execute(sql`insert into ascend_review_job_events(job_id,event,detail)
+        values(${item.id},'dead','{"reason":"exhausted_lease"}'::jsonb)`)
+    }
     const r=await tx.execute(sql`with next as (
       select id from ascend_review_jobs where
         ((status='pending' and available_at<=${now}) or

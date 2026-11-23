@@ -52,7 +52,7 @@ describe("B2.5 partner performance (real SQL/PGlite projection)", () => {
     state.database = new PGlite()
     await state.database.exec(String.raw`
       create table prospects(id integer primary key, next_follow_up_at timestamptz);
-      create table expansion_opportunities(id uuid primary key, partner_id uuid, prospect_id integer, status text, created_at timestamptz);
+      create table expansion_opportunities(id uuid primary key, partner_id uuid, prospect_id integer, status text, created_at timestamptz, research_candidate_id uuid);
       create table expansion_meeting_requests(id uuid primary key, partner_id uuid, status text, created_at timestamptz, confirmed_start timestamptz);
       create table expansion_contracts(id uuid primary key, opportunity_id uuid, accepted_at timestamptz);
       insert into prospects values (1,'2026-11-20T10:00:00Z'),(2,null),(3,null);

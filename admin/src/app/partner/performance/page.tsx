@@ -10,7 +10,7 @@ import { AcademyShell } from "@/components/empower/AcademyShell"
 import { PERFORMANCE_PERIODS, parsePerformancePeriod } from "@/lib/partner-performance"
 import "./performance.css"
 export const dynamic = "force-dynamic"
-const pounds = (value: string) => new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(Number(BigInt(value)) / 100)
+const pounds = (value: string) => { const n = BigInt(value); const abs = n < 0n ? -n : n; return (n < 0n ? "−" : "") + "£" + (abs / 100n).toLocaleString("en-GB") + "." + (abs % 100n).toString().padStart(2, "0") }
 const labels: Record<string, string> = { registered: "Registered", contacted: "Contacted", discovery: "Discovery", qualified: "Qualified", scope_submitted: "Scope submitted", more_information: "Information required", bespoke_required: "Bespoke scoping", deferred: "Deferred", approved: "Approved", contract_accepted: "Contract accepted", closed_lost: "Closed", withdrawn: "Withdrawn" }
 export default async function PartnerPerformancePage({ searchParams }: { searchParams: Promise<{ period?: string }> }) {
   await guardPageCapability("expansion.partner")
@@ -66,7 +66,7 @@ export default async function PartnerPerformancePage({ searchParams }: { searchP
         <h2 id="pf-recognition">Recognition</h2>
         <p>{data.recognition.qualifiedClients} founder-qualified client(s).</p>
         {data.recognition.programmeApproved ? <div className="pf-grid">{data.recognition.milestones.map((m) =>
-          <div className="pf-card" key={m.clients}><p>{m.label}</p><strong>{m.reached ? "Milestone reached" : m.clients + " qualifying clients"}</strong><span>{m.reward ? "Recorded reward: " + m.reward.status.replaceAll("_", " ") : "No reward approved or recorded"}</span></div>)}</div>
+          <div className="pf-card" key={m.clients}><p>{m.label}</p><strong>{m.reached ? "Milestone reached" : m.clients + " qualifying clients"}</strong><span>{m.reward ? "Recorded reward: " + String(m.reward.status).replaceAll("_", " ") : "No reward approved or recorded"}</span></div>)}</div>
           : <p>No founder-approved recognition programme is active. Proposed milestones are not rewards.</p>}
       </section>
       <p className="pf-detail">Generated {new Date(data.generatedAt).toLocaleString("en-GB", { timeZone: "Europe/London" })}. Your Academy learning history is private and is not used here.</p>

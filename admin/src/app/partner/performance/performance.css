@@ -18,3 +18,10 @@
 .pf-warning{border-left:3px solid #e8bd71;padding:.8rem;background:rgba(162,104,32,.15)}
 @media(max-width:600px){.pf-page{padding:1rem}.pf-periods a{flex:1;text-align:center;white-space:nowrap}}
 @media(prefers-reduced-motion:reduce){.pf-page *{scroll-behavior:auto!important;transition:none!important}}
+
+.pf-table-scroll{overflow-x:auto;max-width:100%;border:1px solid #61543e;border-radius:12px}
+.pf-table{border-collapse:collapse;width:100%;min-width:430px;font-variant-numeric:tabular-nums}
+.pf-table caption{text-align:left;padding:1rem;color:inherit;opacity:.86}
+.pf-table th,.pf-table td{padding:.85rem 1rem;text-align:left;border-bottom:1px solid #5d5140}
+.pf-table thead th{color:#f1cf81;font-weight:700}
+.pf-table tbody tr:last-child>*{border-bottom:0}

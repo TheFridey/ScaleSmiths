@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
 import "./handoff.css"
-type Candidate = { opportunityId:string;contractId:string;clientId:number;businessName:string;partnerName:string;acceptedAt:string;agreementReference:string;scopeVersion:number;deliveryProjectId:number|null;readiness:{ready:boolean;blockers:string[];alreadyHandedOff:boolean} }
+type Candidate = { opportunityId:string;contractId:string;clientId:number;businessName:string;partnerName:string;acceptedAt:string;agreementReference:string;scopeVersion:number;scopeSnapshot:unknown;deliveryProjectId:number|null;readiness:{ready:boolean;blockers:string[];alreadyHandedOff:boolean} }
 type Data = {generatedAt:string;candidates:Candidate[]}
 export function HandoffWorkbench(){
   const [data,setData]=useState<Data|null>(null),[message,setMessage]=useState(""),[error,setError]=useState("")
@@ -36,6 +36,7 @@ export function HandoffWorkbench(){
         <h2>{c.businessName}</h2><p>Originating partner: {c.partnerName}</p>
         <dl><div><dt>Agreement reference</dt><dd>{c.agreementReference}</dd></div><div><dt>Accepted scope version</dt><dd>{c.scopeVersion}</dd></div>
         <div><dt>Accepted on</dt><dd>{new Date(c.acceptedAt).toLocaleDateString("en-GB")}</dd></div></dl>
+        <details className="hd-scope"><summary>Review accepted scope snapshot</summary><pre>{JSON.stringify(c.scopeSnapshot,null,2)}</pre></details>
         {c.deliveryProjectId?<p className="hd-success">Already handed over. <Link href={"/projects/"+c.deliveryProjectId}>Open internal delivery project</Link></p>:
           !c.readiness.ready?<div className="hd-blocked"><strong>Cannot hand over yet</strong><ul>{c.readiness.blockers.map((b,i)=><li key={i}>{b}</li>)}</ul></div>:
           <div className="hd-approve">

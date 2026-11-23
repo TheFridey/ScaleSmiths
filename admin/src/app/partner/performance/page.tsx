@@ -79,7 +79,7 @@ export default async function PartnerPerformancePage({ searchParams }: { searchP
         <h2 id="pf-recognition">Recognition</h2>
         <p>{data.recognition.qualifiedClients} founder-qualified client(s).</p>
         {data.recognition.programmeApproved ? <div className="pf-grid">{data.recognition.milestones.map((m) =>
-          <div className="pf-card" key={m.clients}><p>{m.label}</p><strong>{m.reached ? "Milestone reached" : m.clients + " qualifying clients"}</strong><span>{m.reward ? "Recorded reward: " + String(m.reward.status).replaceAll("_", " ") : "No reward approved or recorded"}</span>{Boolean(m.reward?.fulfilled_at) && <span>Fulfilled {new Date(String(m.reward.fulfilled_at)).toLocaleDateString("en-GB", { timeZone: "Europe/London" })}</span>}</div>)}</div>
+          <div className="pf-card" key={m.clients}><p>{m.label}</p><strong>{m.reached ? "Milestone reached" : m.clients + " qualifying clients"}</strong><span>{m.reward ? "Recorded reward: " + String(m.reward.status).replaceAll("_", " ") : "No reward approved or recorded"}</span>{m.reward && m.reward.fulfilled_at ? <span>Fulfilled {new Date(String(m.reward.fulfilled_at)).toLocaleDateString("en-GB", { timeZone: "Europe/London" })}</span> : null}</div>)}</div>
           : <p>No founder-approved recognition programme is active. Proposed milestones are not rewards.</p>}
       </section>
       <p className="pf-detail">Generated {new Date(data.generatedAt).toLocaleString("en-GB", { timeZone: "Europe/London" })}. Your Academy learning history is private and is not used here.</p>

@@ -39,10 +39,10 @@ export default async function PartnerPerformancePage({ searchParams }: { searchP
       <h1>Your performance</h1>
       <p className="pf-intro">Your own recorded business activity and verified commission. No targets, rankings or assumed earnings.</p>
       <nav className="pf-periods" aria-label="Performance time period">
-        {PERFORMANCE_PERIODS.map((p) => <Link key={p} href={"/partner/performance?period=" + p}
+        {PERFORMANCE_PERIODS.map((p) => <a key={p} href={"/partner/performance?period=" + p}
           aria-current={p === selected ? "page" : undefined} className={p === selected ? "pf-current" : ""}>
           {({ "7d": "7 days", "30d": "30 days", "90d": "90 days", "12m": "12 months", all: "All time" } as const)[p]}
-        </Link>)}
+        </a>)}
       </nav>
       {data.truncated && <p role="status" className="pf-warning">Your history exceeds the current reporting window. These counts may be incomplete; use the Commission Centre for authoritative financial balances.</p>}
       <section aria-labelledby="pf-overview">

@@ -29,6 +29,7 @@ export default async function PartnerPerformancePage({ searchParams }: { searchP
     { label: "Commission paid", value: pounds(data.metrics.paidPence), note: "Authoritative all-time completed payouts" },
     { label: "Commission unpaid", value: pounds(data.metrics.outstandingPence), note: "Earned less paid; subject to existing finance rules" },
   ]
+  const weeks = [...new Set([...data.trends.registered, ...data.trends.meetings, ...data.trends.contracts, ...data.trends.earned, ...data.trends.paid].map((r) => r.week))].sort()
   return <AcademyShell current="performance" nav={{
     academy: partnerAcademyEnabled(), resources: partnerResourcesEnabled(),
     knowledge: partnerKnowledgeEnabled(), objections: partnerObjectionsEnabled(),
@@ -60,14 +61,14 @@ export default async function PartnerPerformancePage({ searchParams }: { searchP
       <section aria-labelledby="pf-trends">
         <h2 id="pf-trends">Recorded activity by week</h2>
         <p className="pf-detail">Every row represents dated, recorded activity. A missing week is not displayed as a zero unless the underlying records establish it.</p>
-        <div className="pf-table-scroll"><table className="pf-table">
+        {weeks.length > 0 ? <div className="pf-table-scroll" role="region" aria-label="Weekly performance table" tabIndex={0}><table className="pf-table">
           <caption>Weekly registrations, confirmed meetings, accepted contracts, commission earned and commission paid</caption>
           <thead><tr><th scope="col">Week starting (UTC)</th><th scope="col">Prospects</th><th scope="col">Meetings</th><th scope="col">Contracts</th><th scope="col">Earned</th><th scope="col">Paid</th></tr></thead>
-          <tbody>{[...new Set([...data.trends.registered, ...data.trends.meetings, ...data.trends.contracts, ...data.trends.earned, ...data.trends.paid].map((r) => r.week))].sort().map((week) =>
+          <tbody>{weeks.map((week) =>
             <tr key={week}><th scope="row">{week}</th><td>{data.trends.registered.find((r) => r.week === week)?.count ?? 0}</td>
             <td>{data.trends.meetings.find((r) => r.week === week)?.count ?? 0}</td>
             <td>{data.trends.contracts.find((r) => r.week === week)?.count ?? 0}</td><td>{pounds(data.trends.earned.find((r) => r.week === week)?.pence ?? "0")}</td><td>{pounds(data.trends.paid.find((r) => r.week === week)?.pence ?? "0")}</td></tr>)}</tbody>
-        </table></div>
+        </table></div> : <p className="pf-empty">No activity was recorded during this period. Your weekly history will appear when there is recorded activity.</p>}
         <p className="pf-detail">Amounts earned and paid for the selected period are shown above; the Commission Centre provides the complete transaction history.</p>
       </section>
       <section aria-labelledby="pf-attention">

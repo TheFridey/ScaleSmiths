@@ -487,6 +487,7 @@
     {"idx":98,"version":"7","when":1794954000000,"tag":"0098_ascend_pipeline_interactions","breakpoints":true},
     {"idx":99,"version":"7","when":1794955000000,"tag":"0099_ascend_business_name_key","breakpoints":true},
     {"idx":100,"version":"7","when":1794956000000,"tag":"0100_ascend_founder_assignments","breakpoints":true},
-    {"idx":101,"version":"7","when":1794957000000,"tag":"0101_ascend_forecast_assumptions","breakpoints":true}
+    {"idx":101,"version":"7","when":1794957000000,"tag":"0101_ascend_forecast_assumptions","breakpoints":true},
+    {"idx":102,"version":"7","when":1794958000000,"tag":"0102_ascend_delivery_handoffs","breakpoints":true}
   ]
 }

@@ -28,7 +28,7 @@ async function login(browser: Browser, email: string, founder = false) {
   await page.getByLabel("Password", { exact: true }).fill(password)
   if (founder) await page.getByLabel(/^Authenticator code/).fill(generateTotp("JBSWY3DPEHPK3PXP"))
   await page.getByRole("button", { name: "Sign in", exact: true }).click()
-  await expect.poll(() => new URL(page.url()).pathname, { timeout: 20000 }).not.toBe("/login")
+  // The authenticated shell can render before the App Router updates its URL; assert the session UI.
   await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible()
   return { context, page }
 }

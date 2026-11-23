@@ -87,8 +87,9 @@ test("B2.5 personal performance uses owned real events, keeps finance immutable 
       await noOverflow(p1.page)
       const periodBounds = await p1.page.locator(".pf-periods a").evaluateAll((links) => links.map((link) => {
         const rect = link.getBoundingClientRect()
-        return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom }
+        return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, textFits: link.scrollWidth <= link.clientWidth + 1 }
       }))
+      expect(periodBounds.every((item) => item.textFits), `Period label overflows its control at ${width}px`).toBe(true)
       for (let i = 0; i < periodBounds.length; i++) for (let j = i + 1; j < periodBounds.length; j++) {
         const a = periodBounds[i], b = periodBounds[j]
         const horizontal = Math.min(a.right, b.right) - Math.max(a.left, b.left)

@@ -41,7 +41,7 @@ export function eventCount(events: readonly DatedEvent[], start: Date | null, no
 
 /** Money stays in integer pence and does not create or infer commission eligibility. */
 export function eventSumPence(events: readonly DatedEvent[], start: Date | null, now: Date): string {
-  return events.reduce((sum, event) => inPeriod(event.at, start, now) ? sum + BigInt(event.amountPence ?? "0") : sum, 0n).toString()
+  return events.reduce((sum, event) => inPeriod(event.at, start, now) ? sum + BigInt(event.amountPence ?? "0") : sum, BigInt(0)).toString()
 }
 
 export function ratio(numerator: number, denominator: number): { numerator: number; denominator: number; percentage: number | null } {
@@ -73,7 +73,7 @@ export function weeklySeries(events: readonly DatedEvent[], start: Date, now: Da
     day.setUTCHours(0, 0, 0, 0)
     day.setUTCDate(day.getUTCDate() - weekday)
     const key = day.toISOString().slice(0, 10)
-    const b = buckets.get(key) ?? { count: 0, pence: 0n }
+    const b = buckets.get(key) ?? { count: 0, pence: BigInt(0) }
     b.count++
     b.pence += BigInt(event.amountPence ?? "0")
     buckets.set(key, b)

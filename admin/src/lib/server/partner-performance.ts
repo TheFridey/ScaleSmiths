@@ -18,7 +18,9 @@ const iso = (value: unknown) => new Date(String(value)).toISOString()
 
 export async function partnerPerformance(periodInput: unknown = "30d", now = new Date()) {
   if (!partnerPerformanceEnabled()) throw new ExpansionError("Performance is not available yet.", 404)
-  const period: PerformancePeriod = parsePerformancePeriod(periodInput)
+  let period: PerformancePeriod
+  try { period = parsePerformancePeriod(periodInput) }
+  catch { throw new ExpansionError("Choose a valid performance period.", 400) }
   const start = periodStart(period, now)
   const actor = await requireCapability("expansion.partner")
   const activity = await db.transaction(async (tx) => {

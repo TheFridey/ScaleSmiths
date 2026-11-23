@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { ExpansionError } from "@/lib/expansion"
 import { expansionBody, expansionFailure, expansionHeaders } from "@/lib/server/expansion-http"
 import { checkDurableRateLimit } from "@/lib/server/rate-limit-store"
+import { ascendAutomationEnabled } from "@/lib/server/ascend-automation"
 import { requireCapability } from "@/lib/server/rbac"
 import {
   claimInternalReviewJob, finishInternalReviewJob, founderReviewJobQueue,
@@ -15,6 +16,7 @@ export async function GET() {
 /** Founder-invoked internal preparation only. No external dispatch and no unattended process. */
 export async function POST(request:Request) {
   try {
+    if(!ascendAutomationEnabled())throw new ExpansionError("Operational automation is unavailable.",404)
     const actor=await requireCapability("expansion.manage")
     const rate=await checkDurableRateLimit("ascend:review:"+actor.id,20,60000)
     if(!rate.ok)return NextResponse.json({error:"Too many review requests."},{status:429,headers:expansionHeaders})

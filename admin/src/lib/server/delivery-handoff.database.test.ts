@@ -36,7 +36,7 @@ describe("B2.6 contract to delivery integration with disposable PostgreSQL",()=>
     state.database=new PGlite()
     await state.database.exec(String.raw`
       create function commercial_history_immutable() returns trigger language plpgsql as $$ begin raise exception 'history is immutable'; end $$;
-      create table admin_users(id uuid primary key,role text,active boolean,session_version integer);
+      create table admin_users(id uuid primary key,role text,active boolean,session_version integer,display_name text);
       create table clients(id integer primary key);
       create table expansion_partners(id uuid primary key,user_id uuid);
       create table prospects(id integer primary key,business_name text);

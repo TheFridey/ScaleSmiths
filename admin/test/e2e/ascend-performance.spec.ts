@@ -72,6 +72,9 @@ test("B2.5 personal performance uses owned real events, keeps finance immutable 
     await p1.page.goto(origin() + "/partner/performance?period=30d")
     await expect(p1.page.getByRole("heading", { name: "Your performance" })).toBeVisible()
     await expect(p1.page.locator(".pf-card").filter({ hasText: "Prospects registered" })).toContainText(String(aAfter.data.metrics.registered))
+    // Next.js App Router must finish hydration before its client-side link navigation is exercised.
+    await expect(p1.page.locator("html")).toHaveAttribute("data-scalesmiths-hydrated", "true")
+    await expect(p1.page.getByRole("link", { name: "7 days" })).toHaveAttribute("href", "/partner/performance?period=7d")
     await p1.page.getByRole("link", { name: "7 days" }).click()
     await expect(p1.page).toHaveURL(/period=7d/)
     await expect(p1.page.getByText(/Current opportunity states, not a historical conversion funnel/)).toBeVisible()

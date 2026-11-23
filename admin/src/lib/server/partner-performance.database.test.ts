@@ -56,7 +56,7 @@ describe("B2.5 partner performance (real SQL/PGlite projection)", () => {
       create table expansion_meeting_requests(id uuid primary key, partner_id uuid, status text, created_at timestamptz, confirmed_start timestamptz);
       create table expansion_contracts(id uuid primary key, opportunity_id uuid, accepted_at timestamptz);
       insert into prospects values (1,'2026-11-20T10:00:00Z'),(2,null),(3,null);
-      insert into expansion_opportunities values
+      insert into expansion_opportunities(id,partner_id,prospect_id,status,created_at) values
        ('30000000-0000-4000-8000-000000000001','20000000-0000-4000-8000-000000000001',1,'qualified','2026-11-22T10:00:00Z'),
        ('30000000-0000-4000-8000-000000000002','20000000-0000-4000-8000-000000000001',2,'contract_accepted','2026-11-12T10:00:00Z'),
        ('30000000-0000-4000-8000-000000000003','20000000-0000-4000-8000-000000000002',3,'registered','2026-11-22T10:00:00Z');

@@ -55,7 +55,7 @@ describe("B2.7 durable internal review queue",()=>{
   })
   it("leases one task, rejects stale lease token and persists successful review",async()=>{
     await syncFounderReviewJobs()
-    const now=new Date("2026-11-23T14:00:00Z")
+    const now=new Date("2100-11-23T14:00:00Z")
     const claim=await claimInternalReviewJob(now)
     expect(claim).toMatchObject({attempt:1})
     expect(await claimInternalReviewJob(now)).toBeNull()
@@ -70,7 +70,7 @@ describe("B2.7 durable internal review queue",()=>{
   })
   it("backs off after failure and dead-letters on fifth failed attempt",async()=>{
     await syncFounderReviewJobs()
-    let time=new Date("2026-11-23T14:00:00Z")
+    let time=new Date("2100-11-23T14:00:00Z")
     for(let i=1;i<=5;i++){
       const claim=await claimInternalReviewJob(time)
       expect(claim?.attempt).toBe(i)
@@ -85,9 +85,9 @@ describe("B2.7 durable internal review queue",()=>{
   })
   it("recovers a crashed fifth lease by moving it to dead-letter status",async()=>{
     await syncFounderReviewJobs()
-    const one=await claimInternalReviewJob(new Date("2026-11-23T14:00:00Z"))
-    await query("update ascend_review_jobs set attempts=5,lease_expires_at='2026-11-23T14:00:10Z' where id=$1",[one!.id])
-    expect(await claimInternalReviewJob(new Date("2026-11-23T14:01:00Z"))).toBeNull()
+    const one=await claimInternalReviewJob(new Date("2100-11-23T14:00:00Z"))
+    await query("update ascend_review_jobs set attempts=5,lease_expires_at='2100-11-23T14:00:10Z' where id=$1",[one!.id])
+    expect(await claimInternalReviewJob(new Date("2100-11-23T14:01:00Z"))).toBeNull()
     expect((await founderReviewJobQueue()).items[0].status).toBe("dead")
   })
   it("fails closed for disabled feature, inactive founder or changed session",async()=>{

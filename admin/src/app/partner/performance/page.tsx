@@ -57,6 +57,19 @@ export default async function PartnerPerformancePage({ searchParams }: { searchP
           <div className="pf-statuses">{data.distribution.stages.map((s) => <div className="pf-stage" key={s.status}><span>{labels[s.status] ?? s.status.replaceAll("_", " ")}</span><strong>{s.count}</strong></div>)}</div>}
         {partnerPipelineEnabled() && <p><Link href="/partner/pipeline">Open your pipeline</Link></p>}
       </section>
+      <section aria-labelledby="pf-trends">
+        <h2 id="pf-trends">Recorded activity by week</h2>
+        <p className="pf-detail">Every row represents dated, recorded activity. A missing week is not displayed as a zero unless the underlying records establish it.</p>
+        <div className="pf-table-scroll"><table className="pf-table">
+          <caption>Weekly registrations, confirmed meetings and accepted contracts</caption>
+          <thead><tr><th scope="col">Week starting (UTC)</th><th scope="col">Prospects</th><th scope="col">Meetings</th><th scope="col">Contracts</th></tr></thead>
+          <tbody>{[...new Set([...data.trends.registered, ...data.trends.meetings, ...data.trends.contracts].map((r) => r.week))].sort().map((week) =>
+            <tr key={week}><th scope="row">{week}</th><td>{data.trends.registered.find((r) => r.week === week)?.count ?? 0}</td>
+            <td>{data.trends.meetings.find((r) => r.week === week)?.count ?? 0}</td>
+            <td>{data.trends.contracts.find((r) => r.week === week)?.count ?? 0}</td></tr>)}</tbody>
+        </table></div>
+        <p className="pf-detail">Amounts earned and paid for the selected period are shown above; the Commission Centre provides the complete transaction history.</p>
+      </section>
       <section aria-labelledby="pf-attention">
         <h2 id="pf-attention">Where to focus</h2>
         <p>{data.attention.followUpsDue === 0 ? "No overdue follow-ups in your current pipeline." : data.attention.followUpsDue + " follow-up(s) are due based on recorded dates."}</p>

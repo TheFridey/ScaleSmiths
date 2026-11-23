@@ -24,17 +24,20 @@ export async function partnerPerformance(periodInput: unknown = "30d", now = new
   const activity = await db.transaction(async (tx) => {
     await tx.execute(sql`set transaction isolation level repeatable read`)
     const partnerId = await partnerGuard(tx, actor)
-    const [totals] = await rows(tx, sql`select count(*)::int as opportunity_count from expansion_opportunities where partner_id=${partnerId}`)
+    const [totals] = await rows(tx, sql`select (select count(*) from expansion_opportunities where partner_id=${partnerId})::int opportunity_count,
+      (select count(*) from expansion_meeting_requests where partner_id=${partnerId})::int meeting_count,\n      (select count(*) from expansion_contracts c join expansion_opportunities o on o.id=c.opportunity_id where o.partner_id=${partnerId} and c.accepted_at is not null)::int contract_count`)
     const opportunities = await rows(tx, sql`select o.id,o.status,o.created_at,o.research_candidate_id,p.next_follow_up_at
       from expansion_opportunities o join prospects p on p.id=o.prospect_id
       where o.partner_id=${partnerId} order by o.created_at desc limit ${MAX_EVENTS}`)
     const meetings = await rows(tx, sql`select status,created_at,confirmed_start from expansion_meeting_requests where partner_id=${partnerId}
       order by created_at desc limit ${MAX_EVENTS}`)
-    const contracts = await rows(tx, sql`select c.accepted_at from expansion_contracts c
+    const contracts = await rows(tx, sql`select a.accepted_at from (
+      select distinct on (c.opportunity_id) c.accepted_at from expansion_contracts c
       join expansion_opportunities o on o.id=c.opportunity_id
       where o.partner_id=${partnerId} and c.accepted_at is not null
-      order by c.accepted_at desc limit ${MAX_EVENTS}`)
-    return { opportunities, meetings, contracts, truncated: Number(totals?.opportunity_count ?? 0) > MAX_EVENTS }
+      order by c.opportunity_id,c.accepted_at desc
+    ) a order by a.accepted_at desc limit ${MAX_EVENTS}`)
+    return { opportunities, meetings, contracts, truncated: [totals?.opportunity_count, totals?.meeting_count, totals?.contract_count].some((count) => Number(count ?? 0) > MAX_EVENTS) }
   })
   // Both services enforce the same active partner and session; the Commission centre remains the only source for money.
   const [finance, programme] = await Promise.all([getPartnerFinance(), getProgrammeOverview()])

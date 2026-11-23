@@ -20,7 +20,7 @@ B2.7 is intentionally stacked on `feature/operation-ascend-b2-6`. Its PR must ta
 - Review observation is insert-on-conflict-do-nothing: repeated discovery never duplicates tasks or resets completed/reviewed state.
 - `FOR UPDATE SKIP LOCKED`, lease tokens and compare-and-set prevent overlapping claims and stale completions; exhausted expired leases are moved to dead letter.
 - This is **not** an unattended processor or outward-facing notification engine. No cron or remote worker has been enabled. Nothing sends mail, changes opportunities, transfers money, publishes client data or creates delivery projects.
-- Disposable PostgreSQL integration tests cover duplicate observations, lease claiming, stale token refusal, retries, dead-letter exhaustion, expired final lease and fail-closed role/session checks.
+- Disposable PostgreSQL integration tests cover duplicate observations, lease claiming, stale token refusal, retries, dead-letter exhaustion, expired final lease and fail-closed role/session checks. CI acceptance for this new migration and review service is pending; earlier passing B2.7 checks covered the read-only foundation only.
 - Migration `0103` is recorded in the Drizzle journal, shared order plan and immutable SHA-256 manifest.
 
 ## Before B2.7 can be considered complete

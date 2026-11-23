@@ -48,7 +48,7 @@ export default async function PartnerPerformancePage({ searchParams }: { searchP
       <section aria-labelledby="pf-overview">
         <h2 id="pf-overview">Activity and commission</h2>
         <div className="pf-grid">{metrics.map((m) => <div className="pf-card" key={m.label}><p>{m.label}</p><strong>{m.value}</strong><span>{m.note}</span></div>)}</div>
-        <p className="pf-detail">For this period: {pounds(data.metrics.earnedInPeriodPence)} earned and {pounds(data.metrics.paidInPeriodPence)} paid, based on dated ledger and completed payout records. <Link href="/partner">Open Commission Centre</Link></p>
+        <p className="pf-detail">For this period: {pounds(data.metrics.earnedInPeriodPence)} earned and {pounds(data.metrics.paidInPeriodPence)} paid, based on dated ledger and completed payout records. <Link href="/partner?tab=finance">Open Commission Centre</Link></p>
       </section>
       <section aria-labelledby="pf-pipeline">
         <h2 id="pf-pipeline">Pipeline snapshot</h2>
@@ -61,12 +61,12 @@ export default async function PartnerPerformancePage({ searchParams }: { searchP
         <h2 id="pf-trends">Recorded activity by week</h2>
         <p className="pf-detail">Every row represents dated, recorded activity. A missing week is not displayed as a zero unless the underlying records establish it.</p>
         <div className="pf-table-scroll"><table className="pf-table">
-          <caption>Weekly registrations, confirmed meetings and accepted contracts</caption>
-          <thead><tr><th scope="col">Week starting (UTC)</th><th scope="col">Prospects</th><th scope="col">Meetings</th><th scope="col">Contracts</th></tr></thead>
-          <tbody>{[...new Set([...data.trends.registered, ...data.trends.meetings, ...data.trends.contracts].map((r) => r.week))].sort().map((week) =>
+          <caption>Weekly registrations, confirmed meetings, accepted contracts, commission earned and commission paid</caption>
+          <thead><tr><th scope="col">Week starting (UTC)</th><th scope="col">Prospects</th><th scope="col">Meetings</th><th scope="col">Contracts</th><th scope="col">Earned</th><th scope="col">Paid</th></tr></thead>
+          <tbody>{[...new Set([...data.trends.registered, ...data.trends.meetings, ...data.trends.contracts, ...data.trends.earned, ...data.trends.paid].map((r) => r.week))].sort().map((week) =>
             <tr key={week}><th scope="row">{week}</th><td>{data.trends.registered.find((r) => r.week === week)?.count ?? 0}</td>
             <td>{data.trends.meetings.find((r) => r.week === week)?.count ?? 0}</td>
-            <td>{data.trends.contracts.find((r) => r.week === week)?.count ?? 0}</td></tr>)}</tbody>
+            <td>{data.trends.contracts.find((r) => r.week === week)?.count ?? 0}</td><td>{pounds(data.trends.earned.find((r) => r.week === week)?.pence ?? "0")}</td><td>{pounds(data.trends.paid.find((r) => r.week === week)?.pence ?? "0")}</td></tr>)}</tbody>
         </table></div>
         <p className="pf-detail">Amounts earned and paid for the selected period are shown above; the Commission Centre provides the complete transaction history.</p>
       </section>
@@ -79,7 +79,7 @@ export default async function PartnerPerformancePage({ searchParams }: { searchP
         <h2 id="pf-recognition">Recognition</h2>
         <p>{data.recognition.qualifiedClients} founder-qualified client(s).</p>
         {data.recognition.programmeApproved ? <div className="pf-grid">{data.recognition.milestones.map((m) =>
-          <div className="pf-card" key={m.clients}><p>{m.label}</p><strong>{m.reached ? "Milestone reached" : m.clients + " qualifying clients"}</strong><span>{m.reward ? "Recorded reward: " + String(m.reward.status).replaceAll("_", " ") : "No reward approved or recorded"}</span></div>)}</div>
+          <div className="pf-card" key={m.clients}><p>{m.label}</p><strong>{m.reached ? "Milestone reached" : m.clients + " qualifying clients"}</strong><span>{m.reward ? "Recorded reward: " + String(m.reward.status).replaceAll("_", " ") : "No reward approved or recorded"}</span>{m.reward?.fulfilled_at && <span>Fulfilled {new Date(String(m.reward.fulfilled_at)).toLocaleDateString("en-GB", { timeZone: "Europe/London" })}</span>}</div>)}</div>
           : <p>No founder-approved recognition programme is active. Proposed milestones are not rewards.</p>}
       </section>
       <p className="pf-detail">Generated {new Date(data.generatedAt).toLocaleString("en-GB", { timeZone: "Europe/London" })}. Your Academy learning history is private and is not used here.</p>

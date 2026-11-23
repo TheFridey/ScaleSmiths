@@ -390,6 +390,8 @@ jobs:
           REVENUE_INTELLIGENCE_ENABLED: "true"
           # B2.6 explicit delivery handoff on disposable acceptance stack only.
           DELIVERY_HANDOFF_ENABLED: "true"
+          # B2.7 founder inbox acceptance runs only against disposable local CI stack.
+          ASCEND_AUTOMATION_ENABLED: "true"
           # Operation Ascend B2.5 partner performance (CI disposable stack only).
           PARTNER_PERFORMANCE_ENABLED: "true"
 

@@ -25,7 +25,7 @@ export async function partnerPerformance(periodInput: unknown = "30d", now = new
     await tx.execute(sql`set transaction isolation level repeatable read`)
     const partnerId = await partnerGuard(tx, actor)
     const [totals] = await rows(tx, sql`select count(*)::int as opportunity_count from expansion_opportunities where partner_id=${partnerId}`)
-    const opportunities = await rows(tx, sql`select o.id,o.status,o.created_at,p.next_follow_up_at
+    const opportunities = await rows(tx, sql`select o.id,o.status,o.created_at,o.research_candidate_id,p.next_follow_up_at
       from expansion_opportunities o join prospects p on p.id=o.prospect_id
       where o.partner_id=${partnerId} order by o.created_at desc limit ${MAX_EVENTS}`)
     const meetings = await rows(tx, sql`select status,created_at,confirmed_start from expansion_meeting_requests where partner_id=${partnerId}
@@ -46,7 +46,8 @@ export async function partnerPerformance(periodInput: unknown = "30d", now = new
   const ledger = finance.ledger.map((r) => ({ at: iso(r.created_at), amountPence: String(r.amount_pence) }))
   const payouts = finance.payouts.filter((r) => r.status === "paid" && r.paid_at)
     .map((r) => ({ at: iso(r.paid_at), amountPence: String(r.amount_pence) }))
-  const registered = opportunities.map((r) => ({ at: iso(r.created_at) }))
+  // Research-allocated opportunities are not prospects the partner registered.
+  const registered = opportunities.filter((r) => !r.research_candidate_id).map((r) => ({ at: iso(r.created_at) }))
   const status = new Map<string, number>()
   for (const o of opportunities) status.set(String(o.status), (status.get(String(o.status)) ?? 0) + 1)
   const followUps = opportunities.filter((r) => r.next_follow_up_at && inPeriod(iso(r.next_follow_up_at), null, now))

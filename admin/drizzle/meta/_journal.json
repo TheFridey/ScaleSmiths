@@ -450,44 +450,285 @@
       "tag": "0063_venture_validation_outcomes",
       "breakpoints": true
     },
-    { "idx": 64, "version": "7", "when": 1791676800000, "tag": "0064_command_centre", "breakpoints": true },
-    { "idx": 65, "version": "7", "when": 1791676800001, "tag": "0065_command_centre_sources_and_versions", "breakpoints": true },
-    {"idx": 66, "version": "7", "when": 1791849600000, "tag": "0066_megaton_foundation", "breakpoints": true},
-    {"idx":67,"version":"7","when":1791936000000,"tag":"0067_megaton_growth_and_alerts","breakpoints":true},
-    {"idx":68,"version":"7","when":1794951000001,"tag":"0068_expansion_foundation","breakpoints":true},
-    {"idx":69,"version":"7","when":1794951000002,"tag":"0069_expansion_finance","breakpoints":true},
-    {"idx":70,"version":"7","when":1794951000003,"tag":"0070_expansion_cancellations","breakpoints":true},
-    {"idx":71,"version":"7","when":1794951000004,"tag":"0071_expansion_financial_hardening","breakpoints":true},
-    {"idx":72,"version":"7","when":1794951000005,"tag":"0072_expansion_applicant_retention_holds","breakpoints":true},
-    {"idx":73,"version":"7","when":1794951000006,"tag":"0073_expansion_commercial_plans","breakpoints":true},
-    {"idx":74,"version":"7","when":1794951000007,"tag":"0074_expansion_allowances_and_additional_claims","breakpoints":true},
-    {"idx":75,"version":"7","when":1794951000008,"tag":"0075_expansion_withdrawals","breakpoints":true},
-    {"idx":76,"version":"7","when":1794951000009,"tag":"0076_expansion_market_and_exclusivity_gates","breakpoints":true},
-    {"idx":77,"version":"7","when":1794951000010,"tag":"0077_expansion_gate_hardening","breakpoints":true},
-    {"idx":78,"version":"7","when":1794951000011,"tag":"0078_expansion_state_integrity","breakpoints":true},
-    {"idx":79,"version":"7","when":1794951000012,"tag":"0079_expansion_achievements_referrals","breakpoints":true},
-    {"idx":80,"version":"7","when":1794951000013,"tag":"0080_expansion_sector_taxonomy","breakpoints":true},
-    {"idx":81,"version":"7","when":1794951000014,"tag":"0081_expansion_toolkit_meetings","breakpoints":true},
-    {"idx":82,"version":"7","when":1794951000015,"tag":"0082_expansion_review_fixes","breakpoints":true},
-    {"idx":83,"version":"7","when":1794951000016,"tag":"0083_expansion_review_flags_and_meeting_history","breakpoints":true},
-    {"idx":84,"version":"7","when":1794951001016,"tag":"0084_expansion_research_allocation","breakpoints":true},
-    {"idx":85,"version":"7","when":1794951002016,"tag":"0085_expansion_market_enforcement","breakpoints":true},
-    {"idx":86,"version":"7","when":1794951003016,"tag":"0086_expansion_founding_recognition","breakpoints":true},
-    {"idx":87,"version":"7","when":1794951004016,"tag":"0087_expansion_partner_profiles","breakpoints":true},
-    {"idx":88,"version":"7","when":1794951005016,"tag":"0088_expansion_review_medium_findings","breakpoints":true},
-    {"idx":89,"version":"7","when":1794951006016,"tag":"0089_expansion_profile_entitlement_view","breakpoints":true},
-    {"idx":90,"version":"7","when":1794951007016,"tag":"0090_expansion_domain_release_guard_hardening","breakpoints":true},
-    {"idx":91,"version":"7","when":1794951008016,"tag":"0091_empower_content_foundation","breakpoints":true},
-    {"idx":92,"version":"7","when":1794951009016,"tag":"0092_empower_academy","breakpoints":true},
-    {"idx":93,"version":"7","when":1794951010016,"tag":"0093_empower_academy_partner_lessons","breakpoints":true},
-    {"idx":94,"version":"7","when":1794951011016,"tag":"0094_empower_resource_search","breakpoints":true},
-    {"idx":95,"version":"7","when":1794952001000,"tag":"0095_partner_agreements","breakpoints":true},
-    {"idx":96,"version":"7","when":1794952002000,"tag":"0096_partner_notifications","breakpoints":true},
-    {"idx":97,"version":"7","when":1794953000000,"tag":"0097_empower_objections","breakpoints":true},
-    {"idx":98,"version":"7","when":1794954000000,"tag":"0098_ascend_pipeline_interactions","breakpoints":true},
-    {"idx":99,"version":"7","when":1794955000000,"tag":"0099_ascend_business_name_key","breakpoints":true},
-    {"idx":100,"version":"7","when":1794956000000,"tag":"0100_ascend_founder_assignments","breakpoints":true},
-    {"idx":101,"version":"7","when":1794957000000,"tag":"0101_ascend_forecast_assumptions","breakpoints":true},
-    {"idx":102,"version":"7","when":1794958000000,"tag":"0102_ascend_delivery_handoffs","breakpoints":true}
+    {
+      "idx": 64,
+      "version": "7",
+      "when": 1791676800000,
+      "tag": "0064_command_centre",
+      "breakpoints": true
+    },
+    {
+      "idx": 65,
+      "version": "7",
+      "when": 1791676800001,
+      "tag": "0065_command_centre_sources_and_versions",
+      "breakpoints": true
+    },
+    {
+      "idx": 66,
+      "version": "7",
+      "when": 1791849600000,
+      "tag": "0066_megaton_foundation",
+      "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "7",
+      "when": 1791936000000,
+      "tag": "0067_megaton_growth_and_alerts",
+      "breakpoints": true
+    },
+    {
+      "idx": 68,
+      "version": "7",
+      "when": 1794951000001,
+      "tag": "0068_expansion_foundation",
+      "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "7",
+      "when": 1794951000002,
+      "tag": "0069_expansion_finance",
+      "breakpoints": true
+    },
+    {
+      "idx": 70,
+      "version": "7",
+      "when": 1794951000003,
+      "tag": "0070_expansion_cancellations",
+      "breakpoints": true
+    },
+    {
+      "idx": 71,
+      "version": "7",
+      "when": 1794951000004,
+      "tag": "0071_expansion_financial_hardening",
+      "breakpoints": true
+    },
+    {
+      "idx": 72,
+      "version": "7",
+      "when": 1794951000005,
+      "tag": "0072_expansion_applicant_retention_holds",
+      "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "7",
+      "when": 1794951000006,
+      "tag": "0073_expansion_commercial_plans",
+      "breakpoints": true
+    },
+    {
+      "idx": 74,
+      "version": "7",
+      "when": 1794951000007,
+      "tag": "0074_expansion_allowances_and_additional_claims",
+      "breakpoints": true
+    },
+    {
+      "idx": 75,
+      "version": "7",
+      "when": 1794951000008,
+      "tag": "0075_expansion_withdrawals",
+      "breakpoints": true
+    },
+    {
+      "idx": 76,
+      "version": "7",
+      "when": 1794951000009,
+      "tag": "0076_expansion_market_and_exclusivity_gates",
+      "breakpoints": true
+    },
+    {
+      "idx": 77,
+      "version": "7",
+      "when": 1794951000010,
+      "tag": "0077_expansion_gate_hardening",
+      "breakpoints": true
+    },
+    {
+      "idx": 78,
+      "version": "7",
+      "when": 1794951000011,
+      "tag": "0078_expansion_state_integrity",
+      "breakpoints": true
+    },
+    {
+      "idx": 79,
+      "version": "7",
+      "when": 1794951000012,
+      "tag": "0079_expansion_achievements_referrals",
+      "breakpoints": true
+    },
+    {
+      "idx": 80,
+      "version": "7",
+      "when": 1794951000013,
+      "tag": "0080_expansion_sector_taxonomy",
+      "breakpoints": true
+    },
+    {
+      "idx": 81,
+      "version": "7",
+      "when": 1794951000014,
+      "tag": "0081_expansion_toolkit_meetings",
+      "breakpoints": true
+    },
+    {
+      "idx": 82,
+      "version": "7",
+      "when": 1794951000015,
+      "tag": "0082_expansion_review_fixes",
+      "breakpoints": true
+    },
+    {
+      "idx": 83,
+      "version": "7",
+      "when": 1794951000016,
+      "tag": "0083_expansion_review_flags_and_meeting_history",
+      "breakpoints": true
+    },
+    {
+      "idx": 84,
+      "version": "7",
+      "when": 1794951001016,
+      "tag": "0084_expansion_research_allocation",
+      "breakpoints": true
+    },
+    {
+      "idx": 85,
+      "version": "7",
+      "when": 1794951002016,
+      "tag": "0085_expansion_market_enforcement",
+      "breakpoints": true
+    },
+    {
+      "idx": 86,
+      "version": "7",
+      "when": 1794951003016,
+      "tag": "0086_expansion_founding_recognition",
+      "breakpoints": true
+    },
+    {
+      "idx": 87,
+      "version": "7",
+      "when": 1794951004016,
+      "tag": "0087_expansion_partner_profiles",
+      "breakpoints": true
+    },
+    {
+      "idx": 88,
+      "version": "7",
+      "when": 1794951005016,
+      "tag": "0088_expansion_review_medium_findings",
+      "breakpoints": true
+    },
+    {
+      "idx": 89,
+      "version": "7",
+      "when": 1794951006016,
+      "tag": "0089_expansion_profile_entitlement_view",
+      "breakpoints": true
+    },
+    {
+      "idx": 90,
+      "version": "7",
+      "when": 1794951007016,
+      "tag": "0090_expansion_domain_release_guard_hardening",
+      "breakpoints": true
+    },
+    {
+      "idx": 91,
+      "version": "7",
+      "when": 1794951008016,
+      "tag": "0091_empower_content_foundation",
+      "breakpoints": true
+    },
+    {
+      "idx": 92,
+      "version": "7",
+      "when": 1794951009016,
+      "tag": "0092_empower_academy",
+      "breakpoints": true
+    },
+    {
+      "idx": 93,
+      "version": "7",
+      "when": 1794951010016,
+      "tag": "0093_empower_academy_partner_lessons",
+      "breakpoints": true
+    },
+    {
+      "idx": 94,
+      "version": "7",
+      "when": 1794951011016,
+      "tag": "0094_empower_resource_search",
+      "breakpoints": true
+    },
+    {
+      "idx": 95,
+      "version": "7",
+      "when": 1794952001000,
+      "tag": "0095_partner_agreements",
+      "breakpoints": true
+    },
+    {
+      "idx": 96,
+      "version": "7",
+      "when": 1794952002000,
+      "tag": "0096_partner_notifications",
+      "breakpoints": true
+    },
+    {
+      "idx": 97,
+      "version": "7",
+      "when": 1794953000000,
+      "tag": "0097_empower_objections",
+      "breakpoints": true
+    },
+    {
+      "idx": 98,
+      "version": "7",
+      "when": 1794954000000,
+      "tag": "0098_ascend_pipeline_interactions",
+      "breakpoints": true
+    },
+    {
+      "idx": 99,
+      "version": "7",
+      "when": 1794955000000,
+      "tag": "0099_ascend_business_name_key",
+      "breakpoints": true
+    },
+    {
+      "idx": 100,
+      "version": "7",
+      "when": 1794956000000,
+      "tag": "0100_ascend_founder_assignments",
+      "breakpoints": true
+    },
+    {
+      "idx": 101,
+      "version": "7",
+      "when": 1794957000000,
+      "tag": "0101_ascend_forecast_assumptions",
+      "breakpoints": true
+    },
+    {
+      "idx": 102,
+      "version": "7",
+      "when": 1794958000000,
+      "tag": "0102_ascend_delivery_handoffs",
+      "breakpoints": true
+    },
+    {
+      "idx": 103,
+      "version": "7",
+      "when": 1794959000000,
+      "tag": "0103_ascend_review_jobs",
+      "breakpoints": true
+    }
   ]
 }

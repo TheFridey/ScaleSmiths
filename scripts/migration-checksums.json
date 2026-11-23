@@ -579,46 +579,252 @@
       "lifecycle": "forward",
       "reason": "Adds append-only coded customer-validation outcomes for Experiment #000 and a human-confirmed £450 care-floor flag. Outcomes are not evidence, approvals, or spend authority."
     },
-    { "path": "admin/drizzle/0064_command_centre.sql", "sha256": "3176800f472e05ff197f866f2a2b94004fd166df64bedab3e193672f0f1a483e", "lifecycle": "forward", "reason": "Extends existing prospects and outreach with shared ownership, trusted actors, tasks, contracts, payment evidence and append-only commercial history." },
-    { "path": "admin/drizzle/0065_command_centre_sources_and_versions.sql", "sha256": "2bda8d031ec079db2435fc134cf9a6aae2876590c56ba84352ff9da4ff7653d5", "lifecycle": "forward", "reason": "Adds discovery sources and advances prospect versions for updates from existing commercial workflows." },
-    {"path": "admin/drizzle/0066_megaton_foundation.sql", "sha256": "20143eb8c3d2d7e5c68c64dfd8abaa0051cf2834526b99c8d0b3936048cb8e87", "lifecycle": "forward", "reason": "Add admin-owned acquisition evidence, company mailbox approvals, ownership and jobs."},
-    {"path":"admin/drizzle/0067_megaton_growth_and_alerts.sql","sha256":"0e3b7823cfa2bbf3eeb4114f5cc561ca3ff91aed4e5ee9a02dee8e76aed5bd57","lifecycle":"forward","reason":"Add sourced AI discovery, private approval notifications and approved social outreach."},
-    {"path":"web/drizzle/0023_partner_applications.sql","sha256":"3896913981370c1ab242be899f5f1631fd90e9a483611d18a674d5d9f7a92ff6","lifecycle":"forward","reason":"Operation Expansion forward-only foundation."},
-    {"path":"admin/drizzle/0068_expansion_foundation.sql","sha256":"7ff062e300eea834657d1e78d1421a3dc5e54acd05f5bb6630e4e36cf3e5b89b","lifecycle":"forward","reason":"Operation Expansion forward-only foundation."},
-    {"path":"admin/drizzle/0069_expansion_finance.sql","sha256":"3f70358eb54d2330d3300e5564ffe76b18b2b1cf932053009afe2b2da1219145","lifecycle":"forward","reason":"Operation Expansion forward-only foundation."},
-    {"path":"admin/drizzle/0070_expansion_cancellations.sql","sha256":"7367bbb6152de1b9c40628d23bce26f17af9c8eb90cb5f332095c32693fe6483","lifecycle":"forward","reason":"Reviewed cancellation and immutable resource version lifecycle."},
-    {"path":"admin/drizzle/0071_expansion_financial_hardening.sql","sha256":"84cf9e54ac35e67c9e345781fcd7a637007904505932b741d49a9fd1f1fba078","lifecycle":"forward","reason":"Bounded canonical refunds and reversible payout claims with immutable history."},
-    {"path":"admin/drizzle/0072_expansion_applicant_retention_holds.sql","sha256":"197a4c6d3c4fa11a9573e9f853693f2023051210a78e46cba4426b8d3d3fa9dd","lifecycle":"forward","reason":"Operator-controlled applicant retention holds."},
-    {"path":"admin/drizzle/0073_expansion_commercial_plans.sql","sha256":"98814cbb8926a0c1231d552be2907bc0d53a03fbc43504ab0d0b085d7960bafc","lifecycle":"forward","reason":"Operation Intelligence commercial plan integration: interim milestone and disabled-by-default plan settings."},
-    {"path":"admin/drizzle/0074_expansion_allowances_and_additional_claims.sql","sha256":"27a46682001c3ac25f301e2675ed12f73df400b0a3bea9a4ba1cc99eac174a86","lifecycle":"forward","reason":"Operation Intelligence discount allowances (default none) and founder-reviewed existing-customer additional claims."},
-    {"path":"admin/drizzle/0075_expansion_withdrawals.sql","sha256":"02cce7d3f44ecc1b3ef0d466ca02f0edc54421cd26e94a32ec8f16ecfc1e88a6","lifecycle":"forward","reason":"Operation Intelligence partner withdrawal requests reserving existing commission ledger entries; append-only, no runtime DELETE."},
-    {"path":"admin/drizzle/0076_expansion_market_and_exclusivity_gates.sql","sha256":"58cd1650ea99c8e31a7e8f7e795941f7d750f905d8512c7042314289d6a131c3","lifecycle":"forward","reason":"Operation Intelligence fail-closed market eligibility and customer sector exclusivity decisions."},
-    {"path":"admin/drizzle/0077_expansion_gate_hardening.sql","sha256":"e365388b49751c28281576f5ba967e6b7689d16d67971280ce61e31bf4f0c936","lifecycle":"forward","reason":"Independent-review hardening: founder-confirmed customer market and partner-matched withdrawal reservations."},
-    {"path":"admin/drizzle/0078_expansion_state_integrity.sql","sha256":"e0b39654d4c89e255c9c332c0689f0833a7937e6a6a009a81d298495dae06baf","lifecycle":"forward","reason":"Database-enforced withdrawal state transitions and immutable exclusivity history with explicit supersession."},
-    {"path":"admin/drizzle/0079_expansion_achievements_referrals.sql","sha256":"b50b5c61c890b57f700b9a84984a980497d5b530094557c0fd8161b6f6e93c61","lifecycle":"forward","reason":"Operation Intelligence achievements and referrals: derived qualification, versioned programmes, database-gated rewards with no payable liability."},
-    {"path":"admin/drizzle/0080_expansion_sector_taxonomy.sql","sha256":"b8e04dc456a7c0fa495e08e5087a22d463f48110b3a2c738fab868f1a9965859","lifecycle":"forward","reason":"Founder-defined canonical sector taxonomy and aliases for exclusivity classification."},
-    {"path":"admin/drizzle/0081_expansion_toolkit_meetings.sql","sha256":"0a9e3c2137b038a45185c49528b828cb8eaf92129a96f4127b1b03014a93a66a","lifecycle":"forward","reason":"Manual onboarding fulfilment tracking and founder meeting request workflow."},
-    {"path":"admin/drizzle/0082_expansion_review_fixes.sql","sha256":"330a61eb627a71561681d051abdde05734bb75137fc71f60e821a749010f6c7e","lifecycle":"forward","reason":"Independent review fixes: live-only reward uniqueness and complete milestone immutability."},
-    {"path":"admin/drizzle/0083_expansion_review_flags_and_meeting_history.sql","sha256":"8620c0bf1916ea28feaab5887a5de6d0f9c27da25139a7f89f895dc20b6e0f29","lifecycle":"forward","reason":"Trigger-raised qualification review flags, gated reward lifecycle with explicit withdrawal, and protected meeting history with auditable corrections."},
-    {"path":"admin/drizzle/0084_expansion_research_allocation.sql","sha256":"20d85f8352126235116135e7b5346cb0fb1b2ae4379babc3bbbe32183085ba7c","lifecycle":"forward","reason":"Researched prospect allocation: founder-held research candidates, append-only allocation history, candidate exclusivity decisions and a guarded opportunity owner."},
-    {"path":"admin/drizzle/0085_expansion_market_enforcement.sql","sha256":"16a7f5ae796aea7f2f3f3839e1bc755cf2aa18ede87258d20930dc4f3da0a4f0","lifecycle":"forward","reason":"Applicant residence, partner operating market and customer commercial market recorded separately for fail-closed enforcement."},
-    {"path":"admin/drizzle/0086_expansion_founding_recognition.sql","sha256":"f76bc943e241266e1c0bd094d3b585e34e773c2d339e662183535a92a844532a","lifecycle":"forward","reason":"Founder-controlled Founding Partner recognition: nomination, evidence, review, decision, approved benefits, fulfilment history, correction and revocation."},
-    {"path":"admin/drizzle/0087_expansion_partner_profiles.sql","sha256":"24c9a164375b01ba5e38452374b74fd57edda0385a2a9a70dabb9b666453c90c","lifecycle":"forward","reason":"Personal partner webpages: consent-bound drafts, founder review, immutable approved versions, slugs bound for life, publications and a narrow security-barrier public view."},
-    {"path":"admin/drizzle/0088_expansion_review_medium_findings.sql","sha256":"2421aa7417018b4d307123276175a4c10d5cbb96b343cdd1fdbd6ba9bcacd831","lifecycle":"forward","reason":"Merge-remediation: founder-approved area taxonomy and audited release of a held research domain."},
-    {"path":"admin/drizzle/0089_expansion_profile_entitlement_view.sql","sha256":"09106a29ccfdbeb3ee829d1e35bae8372c7d13d559b693461f3f2ff21e74b9e5","lifecycle":"forward","reason":"Public profile view requires current entitlement: a revoked qualification or an open refund review suspends the page."},
-    {"path":"admin/drizzle/0090_expansion_domain_release_guard_hardening.sql","sha256":"b9a0dbb7ff51339cd69b4cbb6e8f15c2c77b07def92248135f8d5336be62a1c9","lifecycle":"forward","reason":"Domain-release guard hardened: full unworked checks, reason required, INSERT covered."},
-    {"path":"admin/drizzle/0091_empower_content_foundation.sql","sha256":"26a1b7e9352aa7d33f720533bf8447bd521040e1beb4df726af42884780cc921","lifecycle":"forward","reason":"Operation Empower B1.1: founder-controlled versioned content with database-enforced lifecycle, draft-only editing, append-only approval evidence, review cadence and one published version per item."},
-    {"path":"admin/drizzle/0092_empower_academy.sql","sha256":"87d64864eedb1c19f3d5f39c435c2a1bcb572293e378ccd4176bb258db22e298","lifecycle":"forward","reason":"Operation Empower B1.2: Academy course kind with database-checked lesson references, private append-only lesson completions and knowledge-check attempts accepted only for published in-date content, and a continue-learning pointer."},
-    {"path":"admin/drizzle/0093_empower_academy_partner_lessons.sql","sha256":"330929820bb1c917a9ff5cc6bc8127aae464a3795898586bbaa0a3993fdcc32f","lifecycle":"forward","reason":"Operation Empower B1.2 review fix: Academy courses may reference and serve only partner-only lessons."},
-    {"path":"admin/drizzle/0094_empower_resource_search.sql","sha256":"ff503f9e80426c95d8187d37ac1bca8ec4da0df0294eaa7002123efda4e040ec","lifecycle":"forward","reason":"Operation Empower B1.3: weighted full-text search document indexed for published content, and founder-managed synonyms that are retired, never deleted."},
-    {"path":"web/drizzle/0024_repair_web_vital_event.sql","sha256":"8ada41bf0eb3e3ac5170a65d8748880630066b564ea2f43d824d945932288dc9","lifecycle":"forward","reason":"Repairs production schema drift: re-asserts the web_vital experience event label that 0013 should have added (idempotent)."},
-    {"path":"admin/drizzle/0095_partner_agreements.sql","sha256":"9d6e8ea26a5c7a0e5f2a97ff54d5d8050a9eea1fdcd590be867ec83693b7e130","lifecycle":"forward","reason":"Operation Launch Ready: partner agreements as governed content, append-only acceptance with database-computed version, hash and time, activation only after accepting the current issued version, and an enforced application lifecycle with information_requested."},
-    {"path":"admin/drizzle/0096_partner_notifications.sql","sha256":"1604fb9d87cba83b60af368f21e55526216e5dc771b38c73e21769f168540c1c","lifecycle":"forward","reason":"Operation Launch Ready: auditable, idempotent partner lifecycle email log storing only a recipient hash; outcomes move forward only and history is retained."},
-    {"path":"admin/drizzle/0097_empower_objections.sql","sha256":"2f0ead202db5ab3dcdf5d38bfb97ffbeaaf6dc4e4d65c851acbe4198dd008985","lifecycle":"forward","reason":"Operation Empower B1.5: objection responses are partner-only and cannot reach review or publication without category, concern, client-facing line, partner explanation, limitation and escalation; client-facing lines never carry partner-only terms; related links must exist."},
-    {"path":"admin/drizzle/0098_ascend_pipeline_interactions.sql","sha256":"6a04a778756d3942270e60da41542c50c59c430636bd2ec51cfc1ff2f2e6579d","lifecycle":"forward","reason":"Operation Ascend B2.1: append-only partner interaction log on their own opportunities; a trigger refuses an interaction whose partner does not own the opportunity; no commercial meaning and never read by the finance engine."},
-    {"path":"admin/drizzle/0099_ascend_business_name_key.sql","sha256":"ab0aa12e5e8581b07e220952d4da894f1baa2042d9110cd87c755a95f5bb8749","lifecycle":"forward","reason":"Operation Ascend B2.2: immutable business-name key for partner duplicate detection (and/&, leading The, trailing legal forms), with expression indexes on prospects and clients; registration matches on it or the previous plain key."},
-    {"path":"admin/drizzle/0100_ascend_founder_assignments.sql","sha256":"ec5b719ab5ec7ad62e10b7875dd58f92ded50a0710b7c07491c3e11d9e600030","lifecycle":"forward","reason":"Operation Ascend B2.3: append-only record of which founder handles an opportunity internally; each row supersedes exactly one earlier row so concurrent changes cannot both succeed; never changes partner ownership or commission."},
-    {"path":"admin/drizzle/0101_ascend_forecast_assumptions.sql","sha256":"ea115082a83d18dfae9b5b777957235cbbbb0959d3ac98ddf6749f5a59eb7386","lifecycle":"forward","reason":"Operation Ascend B2.4: versioned, append-only founder forecast assumptions in their own table; forecasting writes nothing financial and the finance engine never reads it."}
+    {
+      "path": "admin/drizzle/0064_command_centre.sql",
+      "sha256": "3176800f472e05ff197f866f2a2b94004fd166df64bedab3e193672f0f1a483e",
+      "lifecycle": "forward",
+      "reason": "Extends existing prospects and outreach with shared ownership, trusted actors, tasks, contracts, payment evidence and append-only commercial history."
+    },
+    {
+      "path": "admin/drizzle/0065_command_centre_sources_and_versions.sql",
+      "sha256": "2bda8d031ec079db2435fc134cf9a6aae2876590c56ba84352ff9da4ff7653d5",
+      "lifecycle": "forward",
+      "reason": "Adds discovery sources and advances prospect versions for updates from existing commercial workflows."
+    },
+    {
+      "path": "admin/drizzle/0066_megaton_foundation.sql",
+      "sha256": "20143eb8c3d2d7e5c68c64dfd8abaa0051cf2834526b99c8d0b3936048cb8e87",
+      "lifecycle": "forward",
+      "reason": "Add admin-owned acquisition evidence, company mailbox approvals, ownership and jobs."
+    },
+    {
+      "path": "admin/drizzle/0067_megaton_growth_and_alerts.sql",
+      "sha256": "0e3b7823cfa2bbf3eeb4114f5cc561ca3ff91aed4e5ee9a02dee8e76aed5bd57",
+      "lifecycle": "forward",
+      "reason": "Add sourced AI discovery, private approval notifications and approved social outreach."
+    },
+    {
+      "path": "web/drizzle/0023_partner_applications.sql",
+      "sha256": "3896913981370c1ab242be899f5f1631fd90e9a483611d18a674d5d9f7a92ff6",
+      "lifecycle": "forward",
+      "reason": "Operation Expansion forward-only foundation."
+    },
+    {
+      "path": "admin/drizzle/0068_expansion_foundation.sql",
+      "sha256": "7ff062e300eea834657d1e78d1421a3dc5e54acd05f5bb6630e4e36cf3e5b89b",
+      "lifecycle": "forward",
+      "reason": "Operation Expansion forward-only foundation."
+    },
+    {
+      "path": "admin/drizzle/0069_expansion_finance.sql",
+      "sha256": "3f70358eb54d2330d3300e5564ffe76b18b2b1cf932053009afe2b2da1219145",
+      "lifecycle": "forward",
+      "reason": "Operation Expansion forward-only foundation."
+    },
+    {
+      "path": "admin/drizzle/0070_expansion_cancellations.sql",
+      "sha256": "7367bbb6152de1b9c40628d23bce26f17af9c8eb90cb5f332095c32693fe6483",
+      "lifecycle": "forward",
+      "reason": "Reviewed cancellation and immutable resource version lifecycle."
+    },
+    {
+      "path": "admin/drizzle/0071_expansion_financial_hardening.sql",
+      "sha256": "84cf9e54ac35e67c9e345781fcd7a637007904505932b741d49a9fd1f1fba078",
+      "lifecycle": "forward",
+      "reason": "Bounded canonical refunds and reversible payout claims with immutable history."
+    },
+    {
+      "path": "admin/drizzle/0072_expansion_applicant_retention_holds.sql",
+      "sha256": "197a4c6d3c4fa11a9573e9f853693f2023051210a78e46cba4426b8d3d3fa9dd",
+      "lifecycle": "forward",
+      "reason": "Operator-controlled applicant retention holds."
+    },
+    {
+      "path": "admin/drizzle/0073_expansion_commercial_plans.sql",
+      "sha256": "98814cbb8926a0c1231d552be2907bc0d53a03fbc43504ab0d0b085d7960bafc",
+      "lifecycle": "forward",
+      "reason": "Operation Intelligence commercial plan integration: interim milestone and disabled-by-default plan settings."
+    },
+    {
+      "path": "admin/drizzle/0074_expansion_allowances_and_additional_claims.sql",
+      "sha256": "27a46682001c3ac25f301e2675ed12f73df400b0a3bea9a4ba1cc99eac174a86",
+      "lifecycle": "forward",
+      "reason": "Operation Intelligence discount allowances (default none) and founder-reviewed existing-customer additional claims."
+    },
+    {
+      "path": "admin/drizzle/0075_expansion_withdrawals.sql",
+      "sha256": "02cce7d3f44ecc1b3ef0d466ca02f0edc54421cd26e94a32ec8f16ecfc1e88a6",
+      "lifecycle": "forward",
+      "reason": "Operation Intelligence partner withdrawal requests reserving existing commission ledger entries; append-only, no runtime DELETE."
+    },
+    {
+      "path": "admin/drizzle/0076_expansion_market_and_exclusivity_gates.sql",
+      "sha256": "58cd1650ea99c8e31a7e8f7e795941f7d750f905d8512c7042314289d6a131c3",
+      "lifecycle": "forward",
+      "reason": "Operation Intelligence fail-closed market eligibility and customer sector exclusivity decisions."
+    },
+    {
+      "path": "admin/drizzle/0077_expansion_gate_hardening.sql",
+      "sha256": "e365388b49751c28281576f5ba967e6b7689d16d67971280ce61e31bf4f0c936",
+      "lifecycle": "forward",
+      "reason": "Independent-review hardening: founder-confirmed customer market and partner-matched withdrawal reservations."
+    },
+    {
+      "path": "admin/drizzle/0078_expansion_state_integrity.sql",
+      "sha256": "e0b39654d4c89e255c9c332c0689f0833a7937e6a6a009a81d298495dae06baf",
+      "lifecycle": "forward",
+      "reason": "Database-enforced withdrawal state transitions and immutable exclusivity history with explicit supersession."
+    },
+    {
+      "path": "admin/drizzle/0079_expansion_achievements_referrals.sql",
+      "sha256": "b50b5c61c890b57f700b9a84984a980497d5b530094557c0fd8161b6f6e93c61",
+      "lifecycle": "forward",
+      "reason": "Operation Intelligence achievements and referrals: derived qualification, versioned programmes, database-gated rewards with no payable liability."
+    },
+    {
+      "path": "admin/drizzle/0080_expansion_sector_taxonomy.sql",
+      "sha256": "b8e04dc456a7c0fa495e08e5087a22d463f48110b3a2c738fab868f1a9965859",
+      "lifecycle": "forward",
+      "reason": "Founder-defined canonical sector taxonomy and aliases for exclusivity classification."
+    },
+    {
+      "path": "admin/drizzle/0081_expansion_toolkit_meetings.sql",
+      "sha256": "0a9e3c2137b038a45185c49528b828cb8eaf92129a96f4127b1b03014a93a66a",
+      "lifecycle": "forward",
+      "reason": "Manual onboarding fulfilment tracking and founder meeting request workflow."
+    },
+    {
+      "path": "admin/drizzle/0082_expansion_review_fixes.sql",
+      "sha256": "330a61eb627a71561681d051abdde05734bb75137fc71f60e821a749010f6c7e",
+      "lifecycle": "forward",
+      "reason": "Independent review fixes: live-only reward uniqueness and complete milestone immutability."
+    },
+    {
+      "path": "admin/drizzle/0083_expansion_review_flags_and_meeting_history.sql",
+      "sha256": "8620c0bf1916ea28feaab5887a5de6d0f9c27da25139a7f89f895dc20b6e0f29",
+      "lifecycle": "forward",
+      "reason": "Trigger-raised qualification review flags, gated reward lifecycle with explicit withdrawal, and protected meeting history with auditable corrections."
+    },
+    {
+      "path": "admin/drizzle/0084_expansion_research_allocation.sql",
+      "sha256": "20d85f8352126235116135e7b5346cb0fb1b2ae4379babc3bbbe32183085ba7c",
+      "lifecycle": "forward",
+      "reason": "Researched prospect allocation: founder-held research candidates, append-only allocation history, candidate exclusivity decisions and a guarded opportunity owner."
+    },
+    {
+      "path": "admin/drizzle/0085_expansion_market_enforcement.sql",
+      "sha256": "16a7f5ae796aea7f2f3f3839e1bc755cf2aa18ede87258d20930dc4f3da0a4f0",
+      "lifecycle": "forward",
+      "reason": "Applicant residence, partner operating market and customer commercial market recorded separately for fail-closed enforcement."
+    },
+    {
+      "path": "admin/drizzle/0086_expansion_founding_recognition.sql",
+      "sha256": "f76bc943e241266e1c0bd094d3b585e34e773c2d339e662183535a92a844532a",
+      "lifecycle": "forward",
+      "reason": "Founder-controlled Founding Partner recognition: nomination, evidence, review, decision, approved benefits, fulfilment history, correction and revocation."
+    },
+    {
+      "path": "admin/drizzle/0087_expansion_partner_profiles.sql",
+      "sha256": "24c9a164375b01ba5e38452374b74fd57edda0385a2a9a70dabb9b666453c90c",
+      "lifecycle": "forward",
+      "reason": "Personal partner webpages: consent-bound drafts, founder review, immutable approved versions, slugs bound for life, publications and a narrow security-barrier public view."
+    },
+    {
+      "path": "admin/drizzle/0088_expansion_review_medium_findings.sql",
+      "sha256": "2421aa7417018b4d307123276175a4c10d5cbb96b343cdd1fdbd6ba9bcacd831",
+      "lifecycle": "forward",
+      "reason": "Merge-remediation: founder-approved area taxonomy and audited release of a held research domain."
+    },
+    {
+      "path": "admin/drizzle/0089_expansion_profile_entitlement_view.sql",
+      "sha256": "09106a29ccfdbeb3ee829d1e35bae8372c7d13d559b693461f3f2ff21e74b9e5",
+      "lifecycle": "forward",
+      "reason": "Public profile view requires current entitlement: a revoked qualification or an open refund review suspends the page."
+    },
+    {
+      "path": "admin/drizzle/0090_expansion_domain_release_guard_hardening.sql",
+      "sha256": "b9a0dbb7ff51339cd69b4cbb6e8f15c2c77b07def92248135f8d5336be62a1c9",
+      "lifecycle": "forward",
+      "reason": "Domain-release guard hardened: full unworked checks, reason required, INSERT covered."
+    },
+    {
+      "path": "admin/drizzle/0091_empower_content_foundation.sql",
+      "sha256": "26a1b7e9352aa7d33f720533bf8447bd521040e1beb4df726af42884780cc921",
+      "lifecycle": "forward",
+      "reason": "Operation Empower B1.1: founder-controlled versioned content with database-enforced lifecycle, draft-only editing, append-only approval evidence, review cadence and one published version per item."
+    },
+    {
+      "path": "admin/drizzle/0092_empower_academy.sql",
+      "sha256": "87d64864eedb1c19f3d5f39c435c2a1bcb572293e378ccd4176bb258db22e298",
+      "lifecycle": "forward",
+      "reason": "Operation Empower B1.2: Academy course kind with database-checked lesson references, private append-only lesson completions and knowledge-check attempts accepted only for published in-date content, and a continue-learning pointer."
+    },
+    {
+      "path": "admin/drizzle/0093_empower_academy_partner_lessons.sql",
+      "sha256": "330929820bb1c917a9ff5cc6bc8127aae464a3795898586bbaa0a3993fdcc32f",
+      "lifecycle": "forward",
+      "reason": "Operation Empower B1.2 review fix: Academy courses may reference and serve only partner-only lessons."
+    },
+    {
+      "path": "admin/drizzle/0094_empower_resource_search.sql",
+      "sha256": "ff503f9e80426c95d8187d37ac1bca8ec4da0df0294eaa7002123efda4e040ec",
+      "lifecycle": "forward",
+      "reason": "Operation Empower B1.3: weighted full-text search document indexed for published content, and founder-managed synonyms that are retired, never deleted."
+    },
+    {
+      "path": "web/drizzle/0024_repair_web_vital_event.sql",
+      "sha256": "8ada41bf0eb3e3ac5170a65d8748880630066b564ea2f43d824d945932288dc9",
+      "lifecycle": "forward",
+      "reason": "Repairs production schema drift: re-asserts the web_vital experience event label that 0013 should have added (idempotent)."
+    },
+    {
+      "path": "admin/drizzle/0095_partner_agreements.sql",
+      "sha256": "9d6e8ea26a5c7a0e5f2a97ff54d5d8050a9eea1fdcd590be867ec83693b7e130",
+      "lifecycle": "forward",
+      "reason": "Operation Launch Ready: partner agreements as governed content, append-only acceptance with database-computed version, hash and time, activation only after accepting the current issued version, and an enforced application lifecycle with information_requested."
+    },
+    {
+      "path": "admin/drizzle/0096_partner_notifications.sql",
+      "sha256": "1604fb9d87cba83b60af368f21e55526216e5dc771b38c73e21769f168540c1c",
+      "lifecycle": "forward",
+      "reason": "Operation Launch Ready: auditable, idempotent partner lifecycle email log storing only a recipient hash; outcomes move forward only and history is retained."
+    },
+    {
+      "path": "admin/drizzle/0097_empower_objections.sql",
+      "sha256": "2f0ead202db5ab3dcdf5d38bfb97ffbeaaf6dc4e4d65c851acbe4198dd008985",
+      "lifecycle": "forward",
+      "reason": "Operation Empower B1.5: objection responses are partner-only and cannot reach review or publication without category, concern, client-facing line, partner explanation, limitation and escalation; client-facing lines never carry partner-only terms; related links must exist."
+    },
+    {
+      "path": "admin/drizzle/0098_ascend_pipeline_interactions.sql",
+      "sha256": "6a04a778756d3942270e60da41542c50c59c430636bd2ec51cfc1ff2f2e6579d",
+      "lifecycle": "forward",
+      "reason": "Operation Ascend B2.1: append-only partner interaction log on their own opportunities; a trigger refuses an interaction whose partner does not own the opportunity; no commercial meaning and never read by the finance engine."
+    },
+    {
+      "path": "admin/drizzle/0099_ascend_business_name_key.sql",
+      "sha256": "ab0aa12e5e8581b07e220952d4da894f1baa2042d9110cd87c755a95f5bb8749",
+      "lifecycle": "forward",
+      "reason": "Operation Ascend B2.2: immutable business-name key for partner duplicate detection (and/&, leading The, trailing legal forms), with expression indexes on prospects and clients; registration matches on it or the previous plain key."
+    },
+    {
+      "path": "admin/drizzle/0100_ascend_founder_assignments.sql",
+      "sha256": "ec5b719ab5ec7ad62e10b7875dd58f92ded50a0710b7c07491c3e11d9e600030",
+      "lifecycle": "forward",
+      "reason": "Operation Ascend B2.3: append-only record of which founder handles an opportunity internally; each row supersedes exactly one earlier row so concurrent changes cannot both succeed; never changes partner ownership or commission."
+    },
+    {
+      "path": "admin/drizzle/0101_ascend_forecast_assumptions.sql",
+      "sha256": "ea115082a83d18dfae9b5b777957235cbbbb0959d3ac98ddf6749f5a59eb7386",
+      "lifecycle": "forward",
+      "reason": "Operation Ascend B2.4: versioned, append-only founder forecast assumptions in their own table; forecasting writes nothing financial and the finance engine never reads it."
+    },
+    {
+      "path": "admin/drizzle/0102_ascend_delivery_handoffs.sql",
+      "sha256": "f4420394a3fe1fe718ab693e7271294447dc6082104da069c56ced39c3f8108f",
+      "lifecycle": "forward",
+      "reason": "Operation Ascend B2.6: immutable one-to-one founder-authorised linkage from an accepted commercial opportunity and contract to an internal delivery project, preserving attribution and financial history."
+    }
   ],
   "journals": {
     "web": {
@@ -717,8 +923,20 @@
           "tag": "0022_quote_acquisition",
           "breakpoints": true
         },
-        {"idx":23,"version":"7","when":1794950400000,"tag":"0023_partner_applications","breakpoints":true},
-        {"idx":24,"version":"7","when":1794952000000,"tag":"0024_repair_web_vital_event","breakpoints":true}
+        {
+          "idx": 23,
+          "version": "7",
+          "when": 1794950400000,
+          "tag": "0023_partner_applications",
+          "breakpoints": true
+        },
+        {
+          "idx": 24,
+          "version": "7",
+          "when": 1794952000000,
+          "tag": "0024_repair_web_vital_event",
+          "breakpoints": true
+        }
       ]
     },
     "admin": {
@@ -880,44 +1098,279 @@
           "tag": "0063_venture_validation_outcomes",
           "breakpoints": true
         },
-        { "idx": 64, "version": "7", "when": 1791676800000, "tag": "0064_command_centre", "breakpoints": true },
-        { "idx": 65, "version": "7", "when": 1791676800001, "tag": "0065_command_centre_sources_and_versions", "breakpoints": true },
-        {"idx": 66, "version": "7", "when": 1791849600000, "tag": "0066_megaton_foundation", "breakpoints": true},
-        {"idx":67,"version":"7","when":1791936000000,"tag":"0067_megaton_growth_and_alerts","breakpoints":true},
-        {"idx":68,"version":"7","when":1794951000001,"tag":"0068_expansion_foundation","breakpoints":true},
-        {"idx":69,"version":"7","when":1794951000002,"tag":"0069_expansion_finance","breakpoints":true},
-        {"idx":70,"version":"7","when":1794951000003,"tag":"0070_expansion_cancellations","breakpoints":true},
-        {"idx":71,"version":"7","when":1794951000004,"tag":"0071_expansion_financial_hardening","breakpoints":true},
-        {"idx":72,"version":"7","when":1794951000005,"tag":"0072_expansion_applicant_retention_holds","breakpoints":true},
-        {"idx":73,"version":"7","when":1794951000006,"tag":"0073_expansion_commercial_plans","breakpoints":true},
-        {"idx":74,"version":"7","when":1794951000007,"tag":"0074_expansion_allowances_and_additional_claims","breakpoints":true},
-        {"idx":75,"version":"7","when":1794951000008,"tag":"0075_expansion_withdrawals","breakpoints":true},
-        {"idx":76,"version":"7","when":1794951000009,"tag":"0076_expansion_market_and_exclusivity_gates","breakpoints":true},
-        {"idx":77,"version":"7","when":1794951000010,"tag":"0077_expansion_gate_hardening","breakpoints":true},
-        {"idx":78,"version":"7","when":1794951000011,"tag":"0078_expansion_state_integrity","breakpoints":true},
-        {"idx":79,"version":"7","when":1794951000012,"tag":"0079_expansion_achievements_referrals","breakpoints":true},
-        {"idx":80,"version":"7","when":1794951000013,"tag":"0080_expansion_sector_taxonomy","breakpoints":true},
-        {"idx":81,"version":"7","when":1794951000014,"tag":"0081_expansion_toolkit_meetings","breakpoints":true},
-        {"idx":82,"version":"7","when":1794951000015,"tag":"0082_expansion_review_fixes","breakpoints":true},
-        {"idx":83,"version":"7","when":1794951000016,"tag":"0083_expansion_review_flags_and_meeting_history","breakpoints":true},
-        {"idx":84,"version":"7","when":1794951001016,"tag":"0084_expansion_research_allocation","breakpoints":true},
-        {"idx":85,"version":"7","when":1794951002016,"tag":"0085_expansion_market_enforcement","breakpoints":true},
-        {"idx":86,"version":"7","when":1794951003016,"tag":"0086_expansion_founding_recognition","breakpoints":true},
-        {"idx":87,"version":"7","when":1794951004016,"tag":"0087_expansion_partner_profiles","breakpoints":true},
-        {"idx":88,"version":"7","when":1794951005016,"tag":"0088_expansion_review_medium_findings","breakpoints":true},
-        {"idx":89,"version":"7","when":1794951006016,"tag":"0089_expansion_profile_entitlement_view","breakpoints":true},
-        {"idx":90,"version":"7","when":1794951007016,"tag":"0090_expansion_domain_release_guard_hardening","breakpoints":true},
-        {"idx":91,"version":"7","when":1794951008016,"tag":"0091_empower_content_foundation","breakpoints":true},
-        {"idx":92,"version":"7","when":1794951009016,"tag":"0092_empower_academy","breakpoints":true},
-        {"idx":93,"version":"7","when":1794951010016,"tag":"0093_empower_academy_partner_lessons","breakpoints":true},
-        {"idx":94,"version":"7","when":1794951011016,"tag":"0094_empower_resource_search","breakpoints":true},
-        {"idx":95,"version":"7","when":1794952001000,"tag":"0095_partner_agreements","breakpoints":true},
-        {"idx":96,"version":"7","when":1794952002000,"tag":"0096_partner_notifications","breakpoints":true},
-        {"idx":97,"version":"7","when":1794953000000,"tag":"0097_empower_objections","breakpoints":true},
-        {"idx":98,"version":"7","when":1794954000000,"tag":"0098_ascend_pipeline_interactions","breakpoints":true},
-        {"idx":99,"version":"7","when":1794955000000,"tag":"0099_ascend_business_name_key","breakpoints":true},
-        {"idx":100,"version":"7","when":1794956000000,"tag":"0100_ascend_founder_assignments","breakpoints":true},
-        {"idx":101,"version":"7","when":1794957000000,"tag":"0101_ascend_forecast_assumptions","breakpoints":true}
+        {
+          "idx": 64,
+          "version": "7",
+          "when": 1791676800000,
+          "tag": "0064_command_centre",
+          "breakpoints": true
+        },
+        {
+          "idx": 65,
+          "version": "7",
+          "when": 1791676800001,
+          "tag": "0065_command_centre_sources_and_versions",
+          "breakpoints": true
+        },
+        {
+          "idx": 66,
+          "version": "7",
+          "when": 1791849600000,
+          "tag": "0066_megaton_foundation",
+          "breakpoints": true
+        },
+        {
+          "idx": 67,
+          "version": "7",
+          "when": 1791936000000,
+          "tag": "0067_megaton_growth_and_alerts",
+          "breakpoints": true
+        },
+        {
+          "idx": 68,
+          "version": "7",
+          "when": 1794951000001,
+          "tag": "0068_expansion_foundation",
+          "breakpoints": true
+        },
+        {
+          "idx": 69,
+          "version": "7",
+          "when": 1794951000002,
+          "tag": "0069_expansion_finance",
+          "breakpoints": true
+        },
+        {
+          "idx": 70,
+          "version": "7",
+          "when": 1794951000003,
+          "tag": "0070_expansion_cancellations",
+          "breakpoints": true
+        },
+        {
+          "idx": 71,
+          "version": "7",
+          "when": 1794951000004,
+          "tag": "0071_expansion_financial_hardening",
+          "breakpoints": true
+        },
+        {
+          "idx": 72,
+          "version": "7",
+          "when": 1794951000005,
+          "tag": "0072_expansion_applicant_retention_holds",
+          "breakpoints": true
+        },
+        {
+          "idx": 73,
+          "version": "7",
+          "when": 1794951000006,
+          "tag": "0073_expansion_commercial_plans",
+          "breakpoints": true
+        },
+        {
+          "idx": 74,
+          "version": "7",
+          "when": 1794951000007,
+          "tag": "0074_expansion_allowances_and_additional_claims",
+          "breakpoints": true
+        },
+        {
+          "idx": 75,
+          "version": "7",
+          "when": 1794951000008,
+          "tag": "0075_expansion_withdrawals",
+          "breakpoints": true
+        },
+        {
+          "idx": 76,
+          "version": "7",
+          "when": 1794951000009,
+          "tag": "0076_expansion_market_and_exclusivity_gates",
+          "breakpoints": true
+        },
+        {
+          "idx": 77,
+          "version": "7",
+          "when": 1794951000010,
+          "tag": "0077_expansion_gate_hardening",
+          "breakpoints": true
+        },
+        {
+          "idx": 78,
+          "version": "7",
+          "when": 1794951000011,
+          "tag": "0078_expansion_state_integrity",
+          "breakpoints": true
+        },
+        {
+          "idx": 79,
+          "version": "7",
+          "when": 1794951000012,
+          "tag": "0079_expansion_achievements_referrals",
+          "breakpoints": true
+        },
+        {
+          "idx": 80,
+          "version": "7",
+          "when": 1794951000013,
+          "tag": "0080_expansion_sector_taxonomy",
+          "breakpoints": true
+        },
+        {
+          "idx": 81,
+          "version": "7",
+          "when": 1794951000014,
+          "tag": "0081_expansion_toolkit_meetings",
+          "breakpoints": true
+        },
+        {
+          "idx": 82,
+          "version": "7",
+          "when": 1794951000015,
+          "tag": "0082_expansion_review_fixes",
+          "breakpoints": true
+        },
+        {
+          "idx": 83,
+          "version": "7",
+          "when": 1794951000016,
+          "tag": "0083_expansion_review_flags_and_meeting_history",
+          "breakpoints": true
+        },
+        {
+          "idx": 84,
+          "version": "7",
+          "when": 1794951001016,
+          "tag": "0084_expansion_research_allocation",
+          "breakpoints": true
+        },
+        {
+          "idx": 85,
+          "version": "7",
+          "when": 1794951002016,
+          "tag": "0085_expansion_market_enforcement",
+          "breakpoints": true
+        },
+        {
+          "idx": 86,
+          "version": "7",
+          "when": 1794951003016,
+          "tag": "0086_expansion_founding_recognition",
+          "breakpoints": true
+        },
+        {
+          "idx": 87,
+          "version": "7",
+          "when": 1794951004016,
+          "tag": "0087_expansion_partner_profiles",
+          "breakpoints": true
+        },
+        {
+          "idx": 88,
+          "version": "7",
+          "when": 1794951005016,
+          "tag": "0088_expansion_review_medium_findings",
+          "breakpoints": true
+        },
+        {
+          "idx": 89,
+          "version": "7",
+          "when": 1794951006016,
+          "tag": "0089_expansion_profile_entitlement_view",
+          "breakpoints": true
+        },
+        {
+          "idx": 90,
+          "version": "7",
+          "when": 1794951007016,
+          "tag": "0090_expansion_domain_release_guard_hardening",
+          "breakpoints": true
+        },
+        {
+          "idx": 91,
+          "version": "7",
+          "when": 1794951008016,
+          "tag": "0091_empower_content_foundation",
+          "breakpoints": true
+        },
+        {
+          "idx": 92,
+          "version": "7",
+          "when": 1794951009016,
+          "tag": "0092_empower_academy",
+          "breakpoints": true
+        },
+        {
+          "idx": 93,
+          "version": "7",
+          "when": 1794951010016,
+          "tag": "0093_empower_academy_partner_lessons",
+          "breakpoints": true
+        },
+        {
+          "idx": 94,
+          "version": "7",
+          "when": 1794951011016,
+          "tag": "0094_empower_resource_search",
+          "breakpoints": true
+        },
+        {
+          "idx": 95,
+          "version": "7",
+          "when": 1794952001000,
+          "tag": "0095_partner_agreements",
+          "breakpoints": true
+        },
+        {
+          "idx": 96,
+          "version": "7",
+          "when": 1794952002000,
+          "tag": "0096_partner_notifications",
+          "breakpoints": true
+        },
+        {
+          "idx": 97,
+          "version": "7",
+          "when": 1794953000000,
+          "tag": "0097_empower_objections",
+          "breakpoints": true
+        },
+        {
+          "idx": 98,
+          "version": "7",
+          "when": 1794954000000,
+          "tag": "0098_ascend_pipeline_interactions",
+          "breakpoints": true
+        },
+        {
+          "idx": 99,
+          "version": "7",
+          "when": 1794955000000,
+          "tag": "0099_ascend_business_name_key",
+          "breakpoints": true
+        },
+        {
+          "idx": 100,
+          "version": "7",
+          "when": 1794956000000,
+          "tag": "0100_ascend_founder_assignments",
+          "breakpoints": true
+        },
+        {
+          "idx": 101,
+          "version": "7",
+          "when": 1794957000000,
+          "tag": "0101_ascend_forecast_assumptions",
+          "breakpoints": true
+        },
+        {
+          "idx": 102,
+          "version": "7",
+          "when": 1794958000000,
+          "tag": "0102_ascend_delivery_handoffs",
+          "breakpoints": true
+        }
       ]
     }
   },

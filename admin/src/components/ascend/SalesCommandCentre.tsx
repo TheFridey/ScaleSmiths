@@ -29,7 +29,7 @@ const gbp = (pence: string) => { const n = Number(BigInt(pence)) / 100; return n
 const day = (v: string) => new Date(v).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
 
 /** Operation Ascend B2.3. Every number and item comes from existing records; every item opens the place it is decided. */
-export function SalesCommandCentre() {
+export function SalesCommandCentre({ handoffsEnabled = false }: { handoffsEnabled?: boolean }) {
   const [data, setData] = useState<Data | null>(null), [error, setError] = useState(""), [n, setN] = useState(0), [kind, setKind] = useState(""), [mine, setMine] = useState("")
   const reload = useCallback(() => setN((x) => x + 1), [])
   useEffect(() => {
@@ -46,7 +46,7 @@ export function SalesCommandCentre() {
     <header className="sc-head">
       <div><p className="sc-overline">Operation Ascend</p><h1 id="sc-title">Sales command centre</h1>
         <p className="sc-lede">What needs a founder now, across every partner. Counts and items are read from the live records; nothing here changes a partner&apos;s ownership or commission.</p></div>
-      <div className="sc-head-actions"><Link className="sc-link" href="/expansion">Partner network workspace</Link><button type="button" className="sc-button sc-quiet" onClick={reload}>Refresh</button></div>
+      <div className="sc-head-actions">{handoffsEnabled && <Link className="sc-link" href="/expansion/handoffs">Delivery handoffs</Link>}<Link className="sc-link" href="/expansion">Partner network workspace</Link><button type="button" className="sc-button sc-quiet" onClick={reload}>Refresh</button></div>
     </header>
     {error ? <div className="sc-error" role="alert"><p>{error}</p><button type="button" className="sc-button sc-quiet" onClick={reload}>Try again</button></div>
       : !data ? <p className="sc-muted" role="status">Loading…</p> : <>

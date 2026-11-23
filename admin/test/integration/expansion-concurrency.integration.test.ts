@@ -42,6 +42,7 @@ import { translateDbError } from "../../src/lib/db-errors"
 import { approveProgramme, attributeReferral, createProgramme, createReferralCode, decideQualification, getProgrammeOverview, revokeQualification, reviewAchievementReward } from "../../src/lib/server/expansion-programme"
 import { allocateExpansionInvoice, approveExpansionPayout, cancelExpansionPayout, cancelWithdrawal, getWithdrawalOverview, prepareWithdrawalPayout, requestWithdrawal, reviewWithdrawal, setWithdrawalPolicy, getPartnerFinance, prepareExpansionPayout, refundExpansionPayment, settleExpansionPayout, verifyExpansionPayment } from "../../src/lib/server/expansion-finance"
 import { activatePartnerInvitation } from "../../src/lib/server/partner-invitations"
+import { approveDeliveryHandoff, partnerDeliveryHandoffs } from "../../src/lib/server/delivery-handoff"
 import { createContentItem, decideContentVersion, publishContentVersion, submitContentVersion } from "../../src/lib/server/empower-content"
 import { createInvoice, transitionInvoice } from "../../src/lib/server/invoices"
 
@@ -205,6 +206,53 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("Expansion real separa
     await runAs(founder, () => allocateExpansionInvoice({ contractId: acceptedContractId, invoiceId, milestone: "deposit", netPence: "100000", evidenceReference: "TEST ONLY reviewed invoice allocation to accepted deposit" }))
   }, 60000)
   afterAll(async () => { state.gate = null; await pool?.end() })
+
+  it("B2.6 serialises two real founder approvals into exactly one internal project and immutable handoff", async () => {
+    const previous = process.env.DELIVERY_HANDOFF_ENABLED
+    process.env.DELIVERY_HANDOFF_ENABLED = "true"
+    try {
+      const before = await pool.query<{ count: number }>("select count(*)::int count from delivery_projects")
+      const command = {
+        opportunityId: acceptedOpportunityId,
+        expectedContractId: acceptedContractId,
+        confirm: true,
+        reason: "TEST ONLY founder-reviewed contract, accepted scope and delivery project admission.",
+      }
+      const results = await race([
+        () => runAs(founder, () => approveDeliveryHandoff(command)),
+        () => runAs(founder2, () => approveDeliveryHandoff(command)),
+      ])
+      expect(results.every(result => result.status === "fulfilled"), JSON.stringify(results)).toBe(true)
+      const values = results.map(result => result.status === "fulfilled" ? result.value : null)
+      expect(values.filter(value => value?.replay === false)).toHaveLength(1)
+      expect(values.filter(value => value?.replay === true)).toHaveLength(1)
+      expect(new Set(values.map(value => value?.id)).size).toBe(1)
+      expect(new Set(values.map(value => value?.deliveryProjectId)).size).toBe(1)
+      const linked = await pool.query<{ count: number; project_id: number }>(
+        "select count(*)::int count,max(delivery_project_id)::int project_id from expansion_delivery_handoffs where contract_id=$1",
+        [acceptedContractId],
+      )
+      expect(linked.rows[0].count).toBe(1)
+      expect(linked.rows[0].project_id).toBe(values[0]!.deliveryProjectId)
+      const projects = await pool.query<{ count: number }>("select count(*)::int count from delivery_projects")
+      expect(projects.rows[0].count).toBe(before.rows[0].count + 1)
+      const audit = await pool.query<{ count: number }>(
+        "select count(*)::int count from expansion_audit where entity_id=$1 and action='delivery_handoff_approved'",
+        [acceptedOpportunityId],
+      )
+      expect(audit.rows[0].count).toBe(1)
+      const partnerView = await runAs(first, () => partnerDeliveryHandoffs())
+      const own = partnerView.handoffs.find(item => item.opportunityId === acceptedOpportunityId)
+      expect(own?.delivery).toBeNull()
+      expect(JSON.stringify(own)).not.toContain("deliveryProjectId")
+      expect(JSON.stringify(own)).not.toContain(command.reason)
+      const other = await runAs(second, () => partnerDeliveryHandoffs())
+      expect(other.handoffs.find(item => item.opportunityId === acceptedOpportunityId)).toBeUndefined()
+    } finally {
+      if (previous === undefined) delete process.env.DELIVERY_HANDOFF_ENABLED
+      else process.env.DELIVERY_HANDOFF_ENABLED = previous
+    }
+  }, 45000)
 
   it("locks two simultaneous replays on distinct connections into exactly one £300 entitlement", async () => {
     const input = { contractId: acceptedContractId, invoiceId, milestone: "deposit" as const, reference: `concurrency-bank-${suffix}`, netPence: "100000", grossPence: "120000", evidenceReference: "TEST ONLY verified statement, net amount separately confirmed", confirmed: true }

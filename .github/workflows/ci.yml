@@ -388,6 +388,8 @@ jobs:
           FOUNDER_SALES_COMMAND_ENABLED: "true"
           # Operation Ascend B2.4 revenue intelligence (disposable CI server only).
           REVENUE_INTELLIGENCE_ENABLED: "true"
+          # B2.6 explicit delivery handoff on disposable acceptance stack only.
+          DELIVERY_HANDOFF_ENABLED: "true"
           # Disposable CI server only: the Launch Ready onboarding journey issues an invitation, which this switch gates.
           PARTNER_ACTIVATION_ENABLED: "true"
         run: |

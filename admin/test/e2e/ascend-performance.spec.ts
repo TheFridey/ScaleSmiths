@@ -85,6 +85,16 @@ test("B2.5 personal performance uses owned real events, keeps finance immutable 
     for (const width of WIDTHS) {
       await p1.page.setViewportSize({ width, height: 900 })
       await noOverflow(p1.page)
+      const periodBounds = await p1.page.locator(".pf-periods a").evaluateAll((links) => links.map((link) => {
+        const rect = link.getBoundingClientRect()
+        return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom }
+      }))
+      for (let i = 0; i < periodBounds.length; i++) for (let j = i + 1; j < periodBounds.length; j++) {
+        const a = periodBounds[i], b = periodBounds[j]
+        const horizontal = Math.min(a.right, b.right) - Math.max(a.left, b.left)
+        const vertical = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top)
+        expect(horizontal <= 1 || vertical <= 1, `Period controls overlap at ${width}px: ${i} and ${j}`).toBe(true)
+      }
       await p1.page.screenshot({ path: evidence + "/performance-" + width + ".png", fullPage: true })
     }
     expect((await call(founder.context, "/api/partner/performance")).status).not.toBe(200)

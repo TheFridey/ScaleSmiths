@@ -43,28 +43,30 @@ test("B2.5 personal performance uses owned real events, keeps finance immutable 
   const su = new Pool({ connectionString: superUrl, max: 1 })
   const evidence = "../docs/expansion/ascend/evidence/b2-5"
   await mkdir(evidence, { recursive: true })
-  const run = Date.now().toString(36)
   const fingerprint = async () => (await su.query("select md5(coalesce(string_agg(l::text, '|' order by l.id), '')) as h from expansion_commission_ledger l")).rows[0].h
   const before = await fingerprint()
   const founder = await login(browser, FOUNDER, true)
   const p1 = await login(browser, PARTNER_A)
   const p2 = await login(browser, PARTNER_B)
   try {
-    await su.query("delete from login_rate_limits")
-    // Same authorised synthetic market setup as the B2.1 browser journey.
-    const market = await call(founder.context, "/api/expansion", { action: "set_market", countryCode: "GB", countryName: "United Kingdom", status: "approved", planKeys: ["standard-v2"], legalReviewed: true, accountingReviewed: true, privacyReviewed: true, operationsReviewed: true, approvalReference: "TEST ONLY B2.5 " + run })
-    expect(market.status, JSON.stringify(market.data)).toBe(200)
     const aBefore = await call(p1.context, "/api/partner/performance?period=30d")
     const bBefore = await call(p2.context, "/api/partner/performance?period=30d")
     expect(aBefore.status).toBe(200)
     expect(bBefore.status).toBe(200)
-    const registered = await call(p1.context, "/api/partner", { action: "register", country: "GB", businessName: "TEST ONLY Performance " + run, website: "pf-" + run + ".example", industry: "TEST ONLY Trades" })
-    expect(registered.status, JSON.stringify(registered.data)).toBe(200)
     const aAfter = await call(p1.context, "/api/partner/performance?period=30d")
     const bAfter = await call(p2.context, "/api/partner/performance?period=30d")
     expect(aAfter.status).toBe(200)
     expect(bAfter.status).toBe(200)
-    expect(aAfter.data.metrics.registered).toBe(aBefore.data.metrics.registered + 1)
+    // The browser journey must not add lasting opportunities: the next B2.1 journey uses this same disposable DB.
+    // Assert source data directly instead of altering it and depending on test order.
+    const ownedCount = async (email: string) => Number((await su.query(`select count(*)::int AS c
+      from expansion_opportunities o join expansion_partners p on p.id=o.partner_id
+      join admin_users u on u.id=p.user_id
+      left join expansion_research_candidates rc on rc.id=o.research_candidate_id
+      where u.email=$1 and (o.research_candidate_id is null or (rc.status='allocated' and rc.allocated_partner_id=o.partner_id))`, [email])).rows[0].c)
+    expect(aAfter.data.distribution.total).toBe(await ownedCount(PARTNER_A))
+    expect(bAfter.data.distribution.total).toBe(await ownedCount(PARTNER_B))
+    expect(aAfter.data.metrics.registered).toBe(aBefore.data.metrics.registered)
     expect(bAfter.data.metrics.registered).toBe(bBefore.data.metrics.registered)
     expect(aAfter.data.metrics.earnedPence).toBe(aBefore.data.metrics.earnedPence)
     expect(aAfter.data.metrics.paidPence).toBe(aBefore.data.metrics.paidPence)

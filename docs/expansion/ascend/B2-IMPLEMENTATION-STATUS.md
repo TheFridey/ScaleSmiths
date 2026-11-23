@@ -1,8 +1,8 @@
 # Operation Ascend (B2): implementation status
 
-Labels: **Implemented** (code + automated tests, switched off) · **Verified** (also browser evidence and green CI on the PR head) · **Not started**. Nothing in B2 is deployed or activated.
+Labels: **Implemented** (code + automated tests, switched off) · **Verified** (also browser evidence and green CI on the PR head) · **Not started**. B2.1–B2.4 were merged into master (last merge e48967b) and the dormant code was reported deployed on 22 November 2026; their production feature flags remain off. B2.5 is being implemented on draft PR #171, not merged or deployed. Historic per-slice notes below describe the original pre-merge review evidence.
 
-## Phase Zero
+## Current checkpoint: B2.5\n\nDraft PR [#171](https://github.com/TheFridey/ScaleSmiths/pull/171) implements the feature-flagged read-only partner performance workspace, authoritative Commission Centre and recognition views, precise period helpers, weekly trends, PGlite tests and a Playwright journey in required Empower CI. **Engineering and CI acceptance remain in progress. Do not activate the flag or merge until the final head is verified.**\n\n## Phase Zero
 
 | Item | Branch / PR | State |
 |---|---|---|
@@ -143,6 +143,6 @@ Recommended merge order: #164 → #165 → #163. Nothing merged by Ascend.
   Screenshots: `evidence/b2-1/revenue-{actual,forecast}-<width>.png`, inspected. The phone projection layout and the "no history" wording were fixed after inspection.
 - **CI note:** one run failed in the existing finance race test described on #168 (a test-ordering flake, not a ledger defect); the next head was fully green.
 
-## B2.5 – B2.7: Not started
+## B2.5 in progress; B2.6–B2.7 not started
 
 Designs and dependencies are in `B2-ARCHITECTURE.md` and `B2-ROADMAP.md`. Next step: B2.4 (independent of B2.1) or B2.2.

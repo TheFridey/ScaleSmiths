@@ -5,7 +5,9 @@ import { partnerAcademyEnabled, partnerKnowledgeEnabled, partnerResourcesEnabled
 import { partnerObjectionsEnabled } from '@/lib/server/empower-objections'
 import { deliveryHandoffEnabled } from '@/lib/server/delivery-handoff'
 import { partnerPipelineEnabled } from '@/lib/server/partner-pipeline'
+import { partnerPerformanceEnabled } from '@/lib/server/partner-performance'
 export default async function PartnerPage() {
   await guardPageCapability('expansion.partner')
-  return <ExpansionWorkspace academy={partnerAcademyEnabled()} resources={partnerResourcesEnabled()} knowledge={partnerKnowledgeEnabled()} objections={partnerObjectionsEnabled()} unified={partnerWorkspaceEnabled()} pipeline={partnerPipelineEnabled()} handoffs={deliveryHandoffEnabled()} />
+  return <ExpansionWorkspace academy={partnerAcademyEnabled()} resources={partnerResourcesEnabled()} knowledge={partnerKnowledgeEnabled()} objections={partnerObjectionsEnabled()} unified={partnerWorkspaceEnabled()} pipeline={partnerPipelineEnabled()} handoffs={deliveryHandoffEnabled()} performance={partnerPerformanceEnabled()} />
+
 }

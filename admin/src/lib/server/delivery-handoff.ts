@@ -62,6 +62,7 @@ export async function founderHandoffQueue() {
       clientId:Number(r.contract_client_id),businessName:String(r.business_name),
       partnerName:String(r.partner_name),acceptedAt:String(r.accepted_at),
       agreementReference:String(r.agreement_reference),scopeVersion:Number(r.scope_version),
+      scopeSnapshot:r.scope_snapshot,
       deliveryProjectId:r.delivery_project_id?Number(r.delivery_project_id):null,
       readiness:handoffReadiness(asSource(r)),
     }))}

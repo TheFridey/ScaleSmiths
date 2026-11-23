@@ -824,6 +824,12 @@
       "sha256": "f4420394a3fe1fe718ab693e7271294447dc6082104da069c56ced39c3f8108f",
       "lifecycle": "forward",
       "reason": "Operation Ascend B2.6: immutable one-to-one founder-authorised linkage from an accepted commercial opportunity and contract to an internal delivery project, preserving attribution and financial history."
+    },
+    {
+      "path": "admin/drizzle/0103_ascend_review_jobs.sql",
+      "sha256": "223c39ec86a366ba9ef9db03e8fcf537ef8e6f618755f71643863f4de00fb3ca",
+      "lifecycle": "forward",
+      "reason": "Ascend B2.7: persistent bounded internal review queue and append-only transition history; no external actions or automatic commercial changes."
     }
   ],
   "journals": {
@@ -1369,6 +1375,13 @@
           "version": "7",
           "when": 1794958000000,
           "tag": "0102_ascend_delivery_handoffs",
+          "breakpoints": true
+        },
+        {
+          "idx": 103,
+          "version": "7",
+          "when": 1794959000000,
+          "tag": "0103_ascend_review_jobs",
           "breakpoints": true
         }
       ]

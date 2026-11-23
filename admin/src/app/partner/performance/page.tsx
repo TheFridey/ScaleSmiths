@@ -10,7 +10,7 @@ import { AcademyShell } from "@/components/empower/AcademyShell"
 import { PERFORMANCE_PERIODS, parsePerformancePeriod } from "@/lib/partner-performance"
 import "./performance.css"
 export const dynamic = "force-dynamic"
-const pounds = (value: string) => { const n = BigInt(value); const abs = n < 0n ? -n : n; return (n < 0n ? "−" : "") + "£" + (abs / 100n).toLocaleString("en-GB") + "." + (abs % 100n).toString().padStart(2, "0") }
+const pounds = (value: string) => { const n = BigInt(value); const abs = n < BigInt(0) ? -n : n; return (n < BigInt(0) ? "−" : "") + "£" + (abs / BigInt(100)).toLocaleString("en-GB") + "." + (abs % BigInt(100)).toString().padStart(2, "0") }
 const labels: Record<string, string> = { registered: "Registered", contacted: "Contacted", discovery: "Discovery", qualified: "Qualified", scope_submitted: "Scope submitted", more_information: "Information required", bespoke_required: "Bespoke scoping", deferred: "Deferred", approved: "Approved", contract_accepted: "Contract accepted", closed_lost: "Closed", withdrawn: "Withdrawn" }
 export default async function PartnerPerformancePage({ searchParams }: { searchParams: Promise<{ period?: string }> }) {
   await guardPageCapability("expansion.partner")

@@ -1,0 +1,71 @@
+{
+  "cli_version": "0.12.2",
+  "checkpoint_id": "01M876ZTBT8XN77SFBV3JKYK5P",
+  "session_id": "6e058854-6927-41bc-b920-ba8d633dd80b",
+  "strategy": "manual-commit",
+  "created_at": "2026-11-24T16:42:28.5929797Z",
+  "branch": "feature/operation-empower-b2-10-launch",
+  "checkpoints_count": 1,
+  "files_touched": [],
+  "agent": "Claude Code",
+  "model": "claude-opus-5-5",
+  "turn_id": "95acf3244505",
+  "checkpoint_transcript_start": 1607,
+  "transcript_lines_at_start": 1607,
+  "compact_transcript_start": 132,
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  },
+  "redaction": {
+    "replacements": 61,
+    "layers": {
+      "betterleaks": 0,
+      "connection_string": 0,
+      "credential_key": 0,
+      "credential_value": 0,
+      "credentialed_uri": 0,
+      "entropy": 60,
+      "key_context": 1,
+      "provider_token": 0,
+      "shell_stdin": 0
+    }
+  },
+  "skill_events_version": 1,
+  "skill_events": [
+    {
+      "id": "claude-skill-toolu_015nfYoWcwLF2j8RktkG7w7U",
+      "event_type": "tool_invocation",
+      "skill": {
+        "name": "anthropic-skills:built-in-browser"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "skill_tool_use",
+        "confidence": "explicit"
+      },
+      "turn_id": "95acf3244505",
+      "transcript_anchor": {
+        "unit": "line",
+        "start": 982,
+        "end": 983,
+        "entry_ids": [
+          "87443810-1a2a-44e5-91c0-f238b3b21593"
+        ],
+        "tool_use_id": "toolu_015nfYoWcwLF2j8RktkG7w7U"
+      },
+      "native": {
+        "tool_name": "Skill",
+        "tool_use_id": "toolu_015nfYoWcwLF2j8RktkG7w7U"
+      },
+      "collapse": {
+        "target": "tool_pair",
+        "label": "Skill: anthropic-skills:built-in-browser",
+        "default_collapsed": true
+      }
+    }
+  ]
+}

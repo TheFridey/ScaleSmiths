@@ -55,6 +55,9 @@ async function financialFingerprint(pool: pg.Pool) {
 test("B2.8 founder governs the automation engine end to end and the worker endpoint executes only approved work", async ({ browser }) => {
   origin()
   const pool = new Pool({ connectionString: superUrl, max: 2 })
+  // Suite convention on this disposable fixture: start from clear sign-in counters (the per-IP and per-identity
+  // limit of 5 per 10 minutes is shared by every spec, since all browser logins come from one local address).
+  await pool.query("delete from login_rate_limits"); await pool.query("delete from web_rate_limits")
   const financialBefore = await financialFingerprint(pool)
   const founder = await login(browser, "empower-founder-a@example.invalid", true)
   const partner = await login(browser, "empower-partner-one@example.invalid")
@@ -244,6 +247,8 @@ test("B2.8 founder governs the automation engine end to end and the worker endpo
     expect(await financialFingerprint(pool)).toEqual(financialBefore)
   } finally {
     await pool.query("update ascend_automation_controls set suspended = true, reason = 'TEST ONLY: browser suite finished; automation left suspended', version = version + 1 where scope = 'global'")
+    // Leave the counters as the following specs (which do not reset them themselves) found them before this spec existed.
+    await pool.query("delete from login_rate_limits"); await pool.query("delete from web_rate_limits")
     await founder.context.close(); await partner.context.close(); await anonymous.close(); await pool.end()
   }
 })

@@ -1,0 +1,558 @@
+<pasted_content id="f03e">
+OPERATION ASCEND — B2.9
+Production Acceptance, Security Hardening & Operational Certification
+Mission
+Complete the outstanding B2.9 workstream for ScaleSmiths, taking the newly deployed ASCEND execution engine from installed production infrastructure to a fully verified, secure, founder-governed operational system.
+This is an execution mandate, not a planning exercise.
+Inspect, implement, test, remediate and document everything within your available permissions. Work through the entire mandate autonomously. Do not stop after individual sections to request continuation.
+Repository: https://github.com/TheFridey/ScaleSmiths
+1. Current verified baseline
+As of 24 November 2026:
+
+* PR #176 has been merged into master.
+* Production release: `f55a6bc9ee71b185f306cae81c7ad4c138d664bc`.
+* All 21 GitHub checks passed on the approved PR head.
+* PostgreSQL 14 compatibility rehearsal passed.
+* Both production application builds completed successfully.
+* Migration `0104_ascend_execution_engine` has been applied.
+* Shared migration history is current: web 25/25, admin 105/105.
+* PostgreSQL least-privilege roles have been provisioned.
+* Admin runtime can access ASCEND execution tables; public web runtime cannot.
+* Public production health reports the correct release and healthy database.
+* Public recruitment remains enabled.
+* `/scale-your-future` correctly redirects to `/partners`.
+* Partner login returns HTTP 200.
+* Invalid recruitment submissions return HTTP 400 rather than a disabled-service response.
+* Both live PM2 application processes are online with zero restarts at last verification.
+
+Production topology:
+
+* Canonical checkout: `/var/www/scalesmiths/ScaleSmiths`
+* Live release: `/var/www/scalesmiths/releases/f55a6bc9ee71b185f306cae81c7ad4c138d664bc`
+* Web process: `scalesmiths-web-b257`
+* Admin process: `scalesmiths-admin-b257`
+* Live web port: 3300
+* Live admin port: 3301
+* Database: PostgreSQL 14
+* Previous production release retained: `07521b122da16d90d9064c024005cc7e7ffbc055`
+
+Latest pre-cutover backup:
+`/var/backups/scalesmiths/pre-b29-cutover-20261124T130607Z.dump`
+The backup passed checksum and archive validation, but has not yet undergone a complete restore rehearsal.
+Production configuration:
+
+```
+PARTNER_APPLICATIONS_ENABLED=true
+REDACTED
+PARTNER_APPLICATION_RETENTION_DAYS=180
+PARTNER_RETENTION_EXECUTION_ENABLED=false
+EMPOWER_FOUNDER_CONTENT_ENABLED=true
+ASCEND_ENGINE_ENABLED=true
+ASCEND_SCHEDULER_ENABLED=false
+ASCEND_AGENT_API_ENABLED=false
+```
+
+Database state:
+
+* Global emergency stop engaged.
+* Five automation definitions installed.
+* All five disabled.
+* Zero execution records at last verification.
+* Megaton worker stopped.
+* Unauthenticated worker requests return HTTP 401.
+* Disabled agent capability endpoint returns HTTP 404.
+
+Do not assume this baseline remains unchanged. Reconcile it against current evidence before making modifications.
+2. Non-negotiable operational constraints
+
+* Preserve live recruitment and existing partner functionality.
+* Do not bypass authentication, MFA, founder approval or branch protection.
+* Do not enable unattended financial operations.
+* Do not modify commission structures, ledgers, payouts or agreement acceptance records.
+* Do not send communications to real applicants, partners or clients.
+* Do not enable destructive retention execution.
+* Do not activate unapproved international markets.
+* Do not start Megaton merely because ASCEND is operational.
+* Do not expose credentials, tokens, personal information or production database exports.
+* Do not perform indiscriminate dependency upgrades or run `npm audit fix --force`.
+* Do not overwrite unrelated production changes.
+* Do not fabricate test results or claim production verification without production access.
+* Preserve existing release approval requirements.
+
+Where access or approval is unavailable, complete all independent work and report the precise blocker.
+3. Repository and production reconciliation
+Inspect:
+
+* Current master SHA and working tree.
+* PR #176 merge history.
+* Superseded PRs #174 and #177.
+* Current production release identity.
+* PM2 process configuration.
+* Nginx routing.
+* Database migration journals.
+* Environment configuration precedence.
+* Existing ASCEND and Megaton processes.
+* Repository release documentation.
+* Deployment and rollback scripts.
+
+Verify that all changes from PRs #174 and #177 are genuinely contained in master before closing them as superseded.
+Do not merge duplicate changes.
+Ensure future deployments preserve the live recruitment configuration. Eliminate configuration drift between the protected canonical environment and the live release through the supported deployment process.
+Never print complete environment files.
+4. Production backup and disaster recovery certification
+Perform a complete restore rehearsal using an isolated PostgreSQL 14 environment.
+Requirements:
+
+* Verify backup checksum.
+* Restore the pre-B2.9 production backup into an isolated database.
+* Confirm database structure and expected record counts.
+* Apply the complete outstanding migration sequence.
+* Verify migration `0104`.
+* Reapply and validate least-privilege grants.
+* Verify existing records remain intact.
+* Confirm ASCEND defaults are safe.
+* Verify compatibility with the previous application release.
+* Measure restore and migration duration.
+* Document recovery time and recovery point implications.
+
+Never restore over the live production database.
+Where production backup handling requires additional authorization, provide an executable operator procedure and separately complete a synthetic restore rehearsal.
+5. ASCEND machine-route security audit
+Conduct a comprehensive manual security review of:
+
+```
+/api/ascend/worker
+/api/ascend/v1/capabilities
+/api/ascend/v1/operations
+/api/ascend/v1/operations/[id]
+/api/ascend/v1/operations/[id]/cancel
+/api/expansion/automation/engine
+```
+
+Inspect the complete implementation, including middleware, service identity management, execution engine, database constraints, worker driver and action handlers.
+Specifically investigate the following potential weaknesses. These are investigation targets, not confirmed vulnerabilities:
+Service identity isolation
+
+* Whether worker claims correctly enforce allowed action types.
+* Whether execution start revalidates identity capabilities.
+* Whether lease renewal verifies the owning service identity.
+* Whether a different authenticated worker can renew or manipulate another worker's lease.
+* Whether revoked identities can retain effective execution privileges.
+* Whether token rotation immediately invalidates old credentials.
+* Whether identity scope is enforced consistently across all routes.
+
+Idempotency and scope
+
+* Whether idempotency comparisons include execution scope.
+* Whether payload fingerprints bind all security-relevant execution parameters.
+* Whether identical payloads across different markets can collide.
+* Whether conflicting requests correctly return a conflict response.
+* Whether concurrent submissions can bypass cooldown or rate restrictions.
+
+Market and data isolation
+
+* Whether action handlers correctly respect their declared market scope.
+* Whether aggregate queries accidentally expose cross-market information.
+* Whether execution status endpoints expose records belonging to unrelated identities.
+* Whether founder-only diagnostics are appropriately restricted.
+
+Worker safety
+
+* Lease ownership and expiry.
+* Duplicate execution prevention.
+* Stale worker recovery.
+* Concurrency enforcement.
+* Cancellation races.
+* Emergency-stop races.
+* Database statement timeouts.
+* Cooperative versus enforceable execution deadlines.
+* Recovery after database disconnection.
+* Malformed or oversized requests.
+* Replay resistance.
+
+Action classification
+Verify that every action advertised as read-only is actually read-only with respect to business records.
+Pay particular attention to `review.queue_preparation`, which may create internal review records.
+Do not classify internal mutation as read-only merely because it does not send communications or alter financial records.
+Implement fixes and regression tests for every confirmed defect.
+6. Founder command centre acceptance
+Perform a complete functional and visual acceptance pass on:
+`/expansion/automation/engine`
+Validate:
+
+* Founder authentication and MFA.
+* Non-founder access rejection.
+* Dashboard loading and error states.
+* Global emergency stop.
+* Individual automation controls.
+* Approval queues.
+* Execution details.
+* Worker health.
+* Service identity management.
+* Retry and cancellation controls.
+* Dead-letter handling.
+* Audit history.
+* Filtering, pagination and searching.
+* Empty states.
+* Large datasets.
+* Long diagnostic messages.
+* Expired approvals.
+* Revoked identities.
+* Keyboard navigation.
+* Accessibility.
+* Reduced-motion support.
+
+Test responsive layouts at:
+
+* 320px
+* 390px
+* 768px
+* 1024px
+* 1440px
+* 1920px
+
+Inspect every interactive element.
+Fix misleading labels, awkward interactions, poor visual hierarchy, clipped content, excessive scrolling, inconsistent button states and unclear feedback.
+Maintain the established ScaleSmiths visual identity and premium interface standards.
+7. Supervised first execution
+Prepare and verify the first controlled production ASCEND operation.
+Use `ops.queue_health` as the initial candidate, subject to verification that it performs only aggregate reads and permitted execution bookkeeping.
+Requirements:
+
+1. Confirm global emergency stop remains engaged initially.
+2. Confirm every automation is disabled.
+3. Create a narrowly scoped worker identity through the supported founder-authorized workflow.
+4. Restrict it to the single approved action.
+5. Store credentials securely.
+6. Bind worker communication to the intended internal endpoint.
+7. Configure concurrency of one.
+8. Keep scheduling and agent access disabled.
+9. Submit one controlled execution.
+10. Verify that founder approval is required where applicable.
+11. Verify that execution cannot proceed while the emergency stop is engaged.
+12. Obtain the necessary founder authorization to release the stop and execute the approved operation.
+13. Execute exactly one supervised operation.
+14. Verify result integrity and complete audit history.
+15. Re-engage the emergency stop.
+16. Disable the action.
+17. Stop the worker.
+18. Revoke temporary credentials where appropriate.
+
+Do not impersonate a founder or create approval records directly in the database.
+If interactive founder authentication is unavailable, complete the full sequence in an isolated environment and prepare the minimum necessary founder actions for production.
+8. Operational failure and recovery testing
+Exercise the engine under realistic adverse conditions:
+
+* Worker termination during execution.
+* Database connection loss.
+* Duplicate submissions.
+* Expired leases.
+* Worker restart.
+* Malformed payload.
+* Unauthorized action.
+* Revoked token.
+* Expired approval.
+* Emergency stop during execution.
+* Concurrency saturation.
+* Repeated transient failure.
+* Permanent failure.
+* Dead-letter recovery.
+* Interrupted deployment.
+* Application rollback.
+
+Use isolated environments for destructive and fault-injection scenarios.
+Prove that:
+
+* No unauthorized operation executes.
+* No financial or agreement records change.
+* No external communications are sent.
+* Execution history remains consistent.
+* Recovery does not create duplicate business effects.
+* The system fails closed.
+* Founders retain ultimate control.
+
+Distinguish at-least-once execution semantics from exactly-once business effects.
+9. Dependency and infrastructure security
+The production installation reported:
+
+* Web: 20 npm advisories, including two high severity.
+* Admin: 22 npm advisories, including three high severity.
+
+GitHub security workflows nevertheless passed.
+Investigate this discrepancy.
+For every advisory, determine:
+
+* Affected package and version.
+* Direct or transitive dependency.
+* Development-only or production dependency.
+* Whether vulnerable functionality is reachable.
+* Existing security exceptions.
+* Available compatible remediation.
+* Potential regression risk.
+
+Apply safe, targeted fixes with appropriate tests.
+Where a fix requires a major upgrade or architectural change, document the risk and create a dedicated remediation issue rather than introducing uncontrolled production changes.
+Also inspect:
+
+* Process privileges.
+* Environment file permissions.
+* Secret storage.
+* Worker credential lifecycle.
+* Public exposure of machine endpoints.
+* Logging and diagnostic redaction.
+* Database privilege boundaries.
+* Resource limits.
+* Process restart policies.
+
+10. Recruitment and partner journey regression
+B2.9 must not compromise the primary commercial purpose of ScaleSmiths.
+Verify the complete existing recruitment and partner journey in an isolated or appropriately controlled environment:
+
+* Public recruitment page.
+* Application form.
+* Privacy acknowledgement.
+* Input validation.
+* Duplicate handling.
+* Application persistence.
+* Founder application review.
+* Acceptance and rejection workflows.
+* Market eligibility.
+* Agreement presentation.
+* Agreement acceptance.
+* Partner account activation.
+* Partner authentication.
+* Academy.
+* Resource centre.
+* Knowledge base.
+* Objection handling.
+* Pipeline.
+* Performance dashboard.
+* Delivery handoff.
+
+Distinguish between functionality that exists, functionality that is enabled, and functionality that is commercially approved for production.
+Do not publish draft agreements, enable unapproved activation workflows or invent missing commercial decisions.
+Identify any remaining blockers preventing an accepted applicant from becoming a fully operational partner.
+11. Megaton containment
+Megaton remains a separate operational concern.
+Inspect:
+
+* Existing stopped PM2 worker.
+* Worker endpoint configuration.
+* Session binding.
+* Credential validity.
+* Restart history.
+* Outbound communications switches.
+* Retention deletion switches.
+* Mailbox synchronization.
+* Review notifications.
+* Social dispatch.
+* Worker preflight implementation.
+
+Verify the ASCEND preflight correctly detects unsafe Megaton configurations.
+Do not start Megaton.
+Prepare a documented remediation and activation plan for a separately authorized future rollout.
+12. TITAN OS and Jarvis integration readiness
+Validate the existing `ascend.operations/v1` contract.
+Prepare a versioned integration package containing:
+
+* Capability discovery.
+* Service identity requirements.
+* Operation submission.
+* Idempotency requirements.
+* Correlation identifiers.
+* Operation status retrieval.
+* Cancellation.
+* Approval boundaries.
+* Error classification.
+* Retry behavior.
+* Rate limits.
+* Scope restrictions.
+* Emergency-stop behavior.
+* Example request and response structures.
+* Integration tests.
+
+The architecture must allow TITAN OS to delegate narrowly scoped work to ASCEND without giving it unrestricted control over ScaleSmiths.
+Jarvis and TITAN OS must never acquire founder approval authority through machine credentials.
+Keep production agent access disabled until separately authorized.
+13. Observability and operational maturity
+Implement or verify meaningful operational visibility for:
+
+* Worker heartbeat.
+* Queue depth.
+* Oldest pending execution.
+* Approval backlog.
+* Execution duration.
+* Success and failure rates.
+* Retry frequency.
+* Dead-letter volume.
+* Lease expiry.
+* Concurrency utilization.
+* Emergency-stop status.
+* Service identity activity.
+* Database connectivity.
+* Resource consumption.
+
+Ensure diagnostics are actionable rather than decorative.
+Investigate execution-history growth and prepare a retention and aggregation strategy.
+Do not delete production history without an approved retention policy.
+14. Performance and scale certification
+Run reproducible synthetic workloads representing:
+
+* 10 partners.
+* 100 partners.
+* 1,000 partners.
+* 10,000 partners.
+* 50,000 partners where practical.
+
+Measure:
+
+* Queue throughput.
+* Claim latency.
+* Execution latency.
+* Database query performance.
+* Dashboard response times.
+* Memory consumption.
+* CPU consumption.
+* Concurrent worker behavior.
+* Index effectiveness.
+* Recovery under load.
+
+Compare against B2.8 benchmark evidence.
+Investigate regressions and inefficient queries.
+Do not generate large synthetic datasets in the production database.
+15. Full regression and release gates
+Run all relevant checks, including:
+
+* TypeScript.
+* ESLint.
+* Unit tests.
+* Real PostgreSQL integration tests.
+* PostgreSQL 14 compatibility.
+* Migration history and checksums.
+* Authorization policy tests.
+* Worker security tests.
+* Backup and restore.
+* Playwright.
+* Responsive visual tests.
+* Accessibility.
+* Dependency governance.
+* CodeQL.
+* Secret scanning.
+* Nginx topology.
+* Repository hygiene.
+* Existing Forge regression tests.
+
+Any new code changes must pass the complete applicable release gates.
+Use a dedicated B2.9 branch and PR.
+Do not modify branch protection to make checks pass.
+If changes require another production deployment, prepare the exact release SHA, migration impact, backup requirements and rollback procedure for the required human approval.
+16. Documentation and evidence
+Create or update:
+
+```
+docs/expansion/ascend/B2-9-PRODUCTION-CERTIFICATION.md
+docs/expansion/ascend/ASCEND-SECURITY-MODEL.md
+docs/expansion/ascend/ASCEND-OPERATOR-RUNBOOK.md
+docs/expansion/ascend/ASCEND-DISASTER-RECOVERY.md
+docs/expansion/ascend/TITAN-INTEGRATION-CONTRACT.md
+docs/expansion/ascend/evidence/b2-9/
+```
+
+Document actual results, commands, timestamps, test counts, screenshots and reproducible evidence.
+Clearly classify every item:
+
+* VERIFIED
+* IMPLEMENTED
+* REMEDIATED
+* PARTIAL
+* BLOCKED_EXTERNAL
+* NOT_TESTED
+
+Never represent synthetic evidence as production evidence.
+17. Prepare the transition to B3
+Once B2.9 is complete, produce a proposed B3 roadmap based on the actual repository architecture.
+Cover:
+
+* B3.1 — Partner intelligence and opportunity discovery.
+* B3.2 — AI-assisted prospect research and qualification.
+* B3.3 — Partner coaching and performance intelligence.
+* B3.4 — Commercial forecasting and revenue intelligence.
+* B3.5 — International expansion and jurisdiction intelligence.
+* B3.6 — Delivery capacity and resource orchestration.
+* B3.7 — TITAN OS and Jarvis operational integration.
+* B3.8 — Enterprise scaling and autonomous operational resilience.
+
+Reconcile these proposed stages with any existing authoritative roadmap before adopting them.
+Do not begin implementing B3 features at the expense of completing B2.9.
+18. Final deliverable
+Return a comprehensive execution report containing:
+
+1. Executive summary.
+2. Initial baseline and discrepancies.
+3. Every completed workstream.
+4. Confirmed security defects and fixes.
+5. Production verification evidence.
+6. Backup and restore evidence.
+7. Supervised execution evidence.
+8. Visual and accessibility improvements.
+9. Performance benchmarks.
+10. Dependency advisory disposition.
+11. Recruitment and partner journey status.
+12. Current automation and feature-switch state.
+13. Remaining founder decisions.
+14. Outstanding blockers.
+15. Git commits, branch and PR.
+16. Deployment and rollback status.
+17. B2.9 certification verdict.
+18. Recommended B3 starting point.
+
+The certification verdict must be one of:
+
+* CERTIFIED FOR SUPERVISED PRODUCTION OPERATION
+* CERTIFIED WITH RESTRICTIONS
+* NOT CERTIFIED
+
+A successful build or green CI alone does not constitute production certification.
+Execute as much of this mandate as possible in one continuous session. Prioritize verified functionality, production stability, security and operational maturity over superficial completion.
+Begin immediately.
+</pasted_content id="f03e">
+
+---
+
+<task-notification>
+<task-id>bcsebd8o1</task-id>
+<tool-use-id>toolu_01T2bZD1xdK7g4V2xyfLKoK1</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\93f0dc58-81ca-4a6e-b5f5-aa1f0ead67b8\tasks\bcsebd8o1.output</output-file>
+<status>completed</status>
+<summary>Background command "Install admin dependencies from lockfile" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b96tlbtc1</task-id>
+<tool-use-id>toolu_01JKEux6UYai2qvxUoXeH2bT</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\93f0dc58-81ca-4a6e-b5f5-aa1f0ead67b8\tasks\b96tlbtc1.output</output-file>
+<status>completed</status>
+<summary>Background command "Build admin app for production" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bxydn3rwh</task-id>
+<tool-use-id>toolu_01H72pS7ceCrjEGrfAvTJXoR</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\93f0dc58-81ca-4a6e-b5f5-aa1f0ead67b8\tasks\bxydn3rwh.output</output-file>
+<status>completed</status>
+<summary>Background command "Run restore rehearsal in a single transaction" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bqrxrcve8</task-id>
+<tool-use-id>toolu_01TgJvBCxUJz35ms7FrTTNWJ</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\93f0dc58-81ca-4a6e-b5f5-aa1f0ead67b8\tasks\bqrxrcve8.output</output-file>
+<status>completed</status>
+<summary>Background command "Provision benchmark DB and run ASCEND benchmark" completed (exit code 0)</summary>
+</task-notification>

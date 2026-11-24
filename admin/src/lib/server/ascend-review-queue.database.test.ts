@@ -27,7 +27,7 @@ vi.mock("./ascend-automation",()=>({
 }))
 import { syncFounderReviewJobs, founderReviewJobQueue, claimInternalReviewJob,
   finishInternalReviewJob, resolveInternalReviewJob } from "./ascend-review-queue"
-const query=(q:string,values:unknown[]=[])=>state.pg!.query(q,values)
+const query=(q:string,values:unknown[]=[])=>state.pg!.query<Record<string, unknown>>(q,values)
 describe("B2.7 durable internal review queue",()=>{
   beforeAll(async()=>{
     state.pg=new PGlite()
@@ -43,6 +43,15 @@ describe("B2.7 durable internal review queue",()=>{
     state.enabled=true;state.active=true;state.sessionVersion=1;state.role="owner"
     await query("truncate ascend_review_job_events,ascend_review_jobs restart identity cascade")
     await query("update admin_users set active=true,session_version=1,role='owner'")
+  })
+  it("does not persist unsafe or malformed source signals",async()=>{
+    const original=state.signals
+    try {
+      state.signals=[{...original[0],href:"//external.example"}, {...original[0],id:"sales:unsafe",href:"/partner"}] 
+      const result=await syncFounderReviewJobs()
+      expect(result.inserted).toBe(0)
+      expect((await query("select count(*)::int c from ascend_review_jobs")).rows[0].c).toBe(0)
+    } finally { state.signals=original }
   })
   it("records an observed event once and never duplicates an existing task",async()=>{
     const first=await syncFounderReviewJobs()

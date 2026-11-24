@@ -1,3 +1,4 @@
+import { isSafeReviewSignal } from "@/lib/ascend-review-validation"
 import "server-only"
 import { randomUUID } from "node:crypto"
 import { sql } from "drizzle-orm"
@@ -28,7 +29,7 @@ export async function syncFounderReviewJobs(now = new Date()) {
   if(observed.signals.length>1200) throw new ExpansionError("Signal volume exceeds the safe review cap.",503)
   let inserted=0
   for(const signal of observed.signals) {
-    if(signal.id.length>200 || signal.kind.length>80) continue
+    if(!isSafeReviewSignal(signal)) continue
     const jobId=randomUUID()
     const result=await db.transaction(async tx=>{
       const r=await tx.execute(sql`insert into ascend_review_jobs

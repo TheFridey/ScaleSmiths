@@ -52,6 +52,9 @@ test("B2.7 founder reviews a real queued advisory through the enabled UI without
     [id, key, JSON.stringify(payload)],
   )
   await pool.query("insert into ascend_review_job_events(job_id,event) values ($1,'observed')", [id])
+  // Other acceptance journeys on the same disposable CI IP can exhaust the five-attempt login budget.
+  // This is a test-only database reset, after origin() verifies loopback + disposable DB names.
+  await pool.query("delete from login_rate_limits where key like 'admin-login:%'")
   const founder = await login(browser, "empower-founder-a@example.invalid", true)
   const partner = await login(browser, "empower-partner-one@example.invalid")
   const anonymous = await browser.newContext()

@@ -146,3 +146,11 @@ Recommended merge order: #164 → #165 → #163. Nothing merged by Ascend.
 ## B2.5 in progress; B2.6–B2.7 not started
 
 Designs and dependencies are in `B2-ARCHITECTURE.md` and `B2-ROADMAP.md`. Next step: B2.4 (independent of B2.1) or B2.2.
+
+## B2.8 Execution engine: Implemented, verified on disposable infrastructure, not deployed
+
+- **Branch:** `claude/exciting-allen-l2zo4g`, consolidating #176, #177 (recovered VPS commits) and #174. Full record: [B2-8-EXECUTION-ENGINE.md](B2-8-EXECUTION-ENGINE.md).
+- **Database:** additive migration `0104_ascend_execution_engine` (journal, plan and checksum registered). Starts with the global emergency stop on and every automation disabled.
+- **Switches:** `ASCEND_ENGINE_ENABLED`, `ASCEND_SCHEDULER_ENABLED`, `ASCEND_AGENT_API_ENABLED`, all off by default and absent from production configuration.
+- **Evidence:** real-PostgreSQL integration 13/13 (in the CI restricted-role step: 157/157, 0 skipped); production-build browser journey 1/1 at six widths with axe; pure rules 9/9; ops scripts 10/10; authorisation policy 79/79; benchmark at 10-10,000 partners with zero duplicate completions.
+- **Not done:** production deployment, PostgreSQL 14 rehearsal, CI run on GitHub for the final head, retention policy for execution history, supersession and signal producers, partner-facing recommendations.

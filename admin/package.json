@@ -37,7 +37,8 @@
     "db:migrate": "node --env-file-if-exists=../.env ../scripts/migrate-database.mjs",
     "db:studio": "node --env-file-if-exists=../.env ./node_modules/drizzle-kit/bin.cjs studio",
     "db:provision-roles": "node --env-file-if-exists=../.env scripts/provision-postgres-roles.mjs",
-    "db:verify-privileges": "node --env-file-if-exists=../.env scripts/verify-postgres-privileges.mjs"
+    "db:verify-privileges": "node --env-file-if-exists=../.env scripts/verify-postgres-privileges.mjs",
+    "bench:ascend": "vitest run --config vitest.benchmark.config.ts"
   },
   "dependencies": {
     "@sentry/nextjs": "10.76.2",

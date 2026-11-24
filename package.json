@@ -45,6 +45,7 @@
     "test:forge-v2-release-docs": "node --test scripts/check-forge-v2-release-docs.test.mjs",
     "test:pr-metadata": "node --test scripts/check-pr-metadata.test.mjs",
     "test:forge-e2e": "node scripts/run-forge-e2e-tests.mjs",
-    "test:release-simulation": "node --test scripts/release-manager.test.mjs"
+    "test:release-simulation": "node --test scripts/release-manager.test.mjs",
+    "test:ascend-ops": "node --test ops/ascend/ascend-worker.test.mjs ops/ascend/worker-preflight.test.mjs"
   }
 }

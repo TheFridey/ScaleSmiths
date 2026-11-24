@@ -15,6 +15,9 @@
 | 5 | B2.5 Partner performance | B2.1, B2.2 | Implementation underway on draft PR #171, partner-only; any new founder visibility remains blocked on Academy privacy decision |
 | 6 | B2.6 Delivery handoff | B2.3 | Not started; Forge integration contract undefined |
 | 7 | B2.7 Automation and full acceptance | B2.3, B2.6 | Not started |
+| 8 | B2.8 Execution engine, worker, founder command centre, agent contract ([B2-8-EXECUTION-ENGINE.md](B2-8-EXECUTION-ENGINE.md)) | B2.7 | Implemented and verified on disposable infrastructure; not deployed; all switches off. Defined 24 Nov 2026 (no earlier B2.8 existed) |
+
+> Row statuses above B2.8 are historical; B2.1-B2.7 have since merged to master (see B2-IMPLEMENTATION-STATUS.md).
 
 Recommended merge order for Phase Zero: **#164 → hydration fix → #163**. #164 and the hydration fix touch disjoint files; #163 is the largest and benefits from a stable E2E baseline.
 

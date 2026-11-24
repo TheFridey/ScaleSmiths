@@ -459,6 +459,17 @@ jobs:
         options: >-
           --health-cmd "pg_isready -U scalesmiths_ci -d ss_expansion_test"
           --health-interval 5s --health-timeout 5s --health-retries 10
+      postgres14:
+        image: postgres:14-alpine
+        env:
+          POSTGRES_DB: ss_ascend_pg14_test
+          POSTGRES_USER: scalesmiths_ci
+          POSTGRES_PASSWORD: local_ci_only
+        ports:
+          - 55442:5432
+        options: >-
+          --health-cmd "pg_isready -U scalesmiths_ci -d ss_ascend_pg14_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
     env:
       TEST_DATABASE_URL: postgresql://scalesmiths_ci:local_ci_only@127.0.0.1:5432/scalesmiths_integration_test
     steps:
@@ -483,6 +494,42 @@ jobs:
         run: |
           npm ci --prefix web --ignore-scripts --no-audit --no-fund
           npm ci --prefix admin --ignore-scripts --no-audit --no-fund
+
+      # Production currently runs PostgreSQL 14. Exercise all shared migrations and new B2.8 security defaults
+      # on a disposable second server, within this existing required Database and Migrations status check.
+      - name: Rehearse ASCEND migrations on PostgreSQL 14
+        env:
+          POSTGRES_PROVISIONING_DATABASE_URL: postgresql://scalesmiths_ci:local_ci_only@127.0.0.1:55442/ss_ascend_pg14_test
+          MIGRATION_DATABASE_URL: postgresql://scalesmiths_ascend_migration:local_ci_only_migration@127.0.0.1:55442/ss_ascend_pg14_test
+          ADMIN_DATABASE_URL: postgresql://scalesmiths_ascend_admin:local_ci_only_admin@127.0.0.1:55442/ss_ascend_pg14_test
+          WEB_DATABASE_URL: postgresql://scalesmiths_ascend_web:local_ci_only_web@127.0.0.1:55442/ss_ascend_pg14_test
+        run: |
+          set -euo pipefail
+          cd admin
+          node scripts/provision-postgres-roles.mjs --confirm-provision
+          node scripts/migrate-shared-test-database.mjs
+          node scripts/provision-postgres-roles.mjs --confirm-provision
+          node scripts/verify-postgres-privileges.mjs
+          node --input-type=module <<'JS'
+          import pg from 'pg'
+          const client = new pg.Client({ connectionString: process.env.ADMIN_DATABASE_URL })
+          await client.connect()
+          try {
+            const version = (await client.query('show server_version')).rows[0].server_version
+            if (!version.startsWith('14.')) throw Error('Expected PostgreSQL 14, got ' + version)
+            const control = await client.query("select suspended from ascend_automation_controls where scope='global'")
+            if (control.rowCount !== 1 || control.rows[0].suspended !== true) throw Error('ASCEND global stop must default on')
+            const definitions = await client.query("select count(*)::int total, count(*) filter (where enabled)::int enabled from ascend_automation_definitions")
+            if (definitions.rows[0].total !== 5 || definitions.rows[0].enabled !== 0) throw Error('ASCEND definitions must default disabled')
+            const web = new pg.Client({ connectionString: process.env.WEB_DATABASE_URL })
+            await web.connect()
+            try {
+              const permissions = await web.query("select has_table_privilege(current_user, 'public.ascend_executions','SELECT') as can_read, has_table_privilege(current_user,'public.ascend_executions','INSERT') as can_write")
+              if (permissions.rows[0].can_read || permissions.rows[0].can_write) throw Error('Public web role must not access ASCEND executions')
+            } finally { await web.end() }
+            console.log('PostgreSQL ' + version + ': migration and ASCEND disabled-by-default checks passed')
+          } finally { await client.end() }
+          JS
 
       - name: Verify web and admin migration journals
         run: |
@@ -832,79 +879,3 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-  ascend-pg14:
-    name: ASCEND PostgreSQL 14 Compatibility
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
-    services:
-      postgres:
-        image: postgres:14-alpine
-        env:
-          POSTGRES_DB: ss_ascend_pg14_test
-          POSTGRES_USER: scalesmiths_ci
-          POSTGRES_PASSWORD: local_ci_only
-        ports:
-          - 55442:5432
-        options: >-
-          --health-cmd "pg_isready -U scalesmiths_ci -d ss_ascend_pg14_test"
-          --health-interval 5s --health-timeout 5s --health-retries 10
-    env:
-      # Disposable database only. Production is PostgreSQL 14, while the main CI suite runs on PostgreSQL 16.
-      POSTGRES_PROVISIONING_DATABASE_URL: postgresql://scalesmiths_ci:local_ci_only@127.0.0.1:55442/ss_ascend_pg14_test
-      MIGRATION_DATABASE_URL: postgresql://scalesmiths_ascend_migration:local_ci_only_migration@127.0.0.1:55442/ss_ascend_pg14_test
-      ADMIN_DATABASE_URL: postgresql://scalesmiths_ascend_admin:local_ci_only_admin@127.0.0.1:55442/ss_ascend_pg14_test
-      WEB_DATABASE_URL: postgresql://scalesmiths_ascend_web:local_ci_only_web@127.0.0.1:55442/ss_ascend_pg14_test
-    defaults:
-      run:
-        working-directory: admin
-    steps:
-      - name: Checkout complete migration history
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
-        with:
-          fetch-depth: 0
-
-      - name: Setup Node
-        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: admin/package-lock.json
-
-      - name: Use supported npm
-        run: npm install --global npm@10.9.2
-
-      - name: Install shared migration dependencies
-        run: |
-          npm ci --ignore-scripts --no-audit --no-fund
-          npm ci --prefix ../web --ignore-scripts --no-audit --no-fund
-
-      - name: Rehearse full migration history with restricted runtime roles
-        run: |
-          set -euo pipefail
-          node scripts/provision-postgres-roles.mjs --confirm-provision
-          node scripts/migrate-shared-test-database.mjs
-          node scripts/provision-postgres-roles.mjs --confirm-provision
-          node scripts/verify-postgres-privileges.mjs
-
-      - name: Assert B2.8 engine is securely stopped on PostgreSQL 14
-        run: |
-          node --input-type=module <<'JS'
-          import pg from 'pg'
-          const client = new pg.Client({ connectionString: process.env.ADMIN_DATABASE_URL })
-          await client.connect()
-          try {
-            const version = (await client.query('show server_version')).rows[0].server_version
-            if (!version.startsWith('14.')) throw Error('Expected PostgreSQL 14, got ' + version)
-            const control = await client.query("select suspended from ascend_automation_controls where scope='global'")
-            if (control.rowCount !== 1 || control.rows[0].suspended !== true) throw Error('ASCEND global stop must default on')
-            const definitions = await client.query("select count(*)::int total, count(*) filter (where enabled)::int enabled from ascend_automation_definitions")
-            if (definitions.rows[0].total !== 5 || definitions.rows[0].enabled !== 0) throw Error('ASCEND definitions must default disabled')
-            const web = new pg.Client({ connectionString: process.env.WEB_DATABASE_URL })
-            await web.connect()
-            try {
-              const permissions = await web.query("select has_table_privilege(current_user, 'public.ascend_executions','SELECT') as can_read, has_table_privilege(current_user,'public.ascend_executions','INSERT') as can_write")
-              if (permissions.rows[0].can_read || permissions.rows[0].can_write) throw Error('Public web role must not access ASCEND executions')
-            } finally { await web.end() }
-            console.log('PostgreSQL ' + version + ': all shared migrations and ASCEND disabled-by-default security checks passed')
-          } finally { await client.end() }
-          JS

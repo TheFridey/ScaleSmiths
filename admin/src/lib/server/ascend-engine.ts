@@ -6,7 +6,7 @@ import { hasCapability } from "@/lib/rbac"
 import type { AdminRole } from "@/lib/admin-users"
 import {
   ACTION_REGISTRY, ACTIVE_STATES, AscendFailure, RETRYABLE, SERVICE_CAPABILITIES, TERMINAL_STATES, approvalBinding, canonicalJson,
-  classifyFailure, retryDelaySeconds, sanitiseError, validatePayload, validateScope,
+  classifyFailure, normaliseScope, retryDelaySeconds, sanitiseError, validatePayload, validateScope,
   type ExecutionState, type FailureClass, type ServiceCapability,
 } from "@/lib/ascend-engine"
 import { requireCapability } from "./rbac"
@@ -120,15 +120,23 @@ export async function submitExecution(actor: Actor, input: SubmitInput, now = ne
   const payloadJson = canonicalJson(payload)
   const payloadSha = sha256(`${spec.type}@${spec.version}:${payloadJson}`)
 
+  if (actor.kind === "founder" && /^(agent|schedule):/.test(idempotencyKey)) throw new AscendError("That idempotency key prefix is reserved for machine callers.", 400, "invalid_payload")
+
   return db.transaction(async (tx) => {
     await ensureDefinitions(tx)
-    // Replays return the original record; a key reused for different work is refused, never merged.
-    const existing = await one(tx, sql`select id, status, action_type, payload_sha256, correlation_id from ascend_executions where idempotency_key = ${idempotencyKey}`)
+    // B2.9: lock the definition exclusively so concurrent submissions of one automation serialise. Under a shared lock two
+    // requests with different keys could both pass the cooldown check below and both insert.
+    const def = definitionOf((await one(tx, sql`select * from ascend_automation_definitions where action_type = ${spec.type} for update`))!)
+    let requested
+    try { requested = normaliseScope(input.scope, def.marketScope) } catch (e) { if (e instanceof AscendFailure) throw fromFailure(e); throw e }
+    const scopeJson = canonicalJson(requested)
+    // Replays return the original record; a key reused for different work (action, payload or market scope) is refused, never merged.
+    const sameWork = (r: Row) => r.action_type === spec.type && r.payload_sha256 === payloadSha && canonicalJson(r.scope) === scopeJson
+    const existing = await one(tx, sql`select id, status, action_type, payload_sha256, scope, correlation_id from ascend_executions where idempotency_key = ${idempotencyKey}`)
     if (existing) {
-      if (existing.action_type !== spec.type || existing.payload_sha256 !== payloadSha) throw new AscendError("This idempotency key was already used for different work.", 409, "duplicate")
+      if (!sameWork(existing)) throw new AscendError("This idempotency key was already used for different work.", 409, "duplicate")
       return { id: String(existing.id), status: String(existing.status) as ExecutionState, correlationId: String(existing.correlation_id), replay: true }
     }
-    const def = definitionOf((await one(tx, sql`select * from ascend_automation_definitions where action_type = ${spec.type} for share`))!)
     const rules: string[] = []
     if (!def.enabled) throw new AscendError("This automation is disabled. A founder must enable it first.", 409, "policy_rejection")
     if (def.expiresAt && new Date(def.expiresAt) <= now) throw new AscendError("This automation definition has expired.", 409, "policy_rejection")
@@ -136,7 +144,7 @@ export async function submitExecution(actor: Actor, input: SubmitInput, now = ne
     try { scope = validateScope(input.scope, def.marketScope) } catch (e) { if (e instanceof AscendFailure) throw fromFailure(e); throw e }
     rules.push(`markets ${scope.markets.join(",")} within ${def.marketScope.join(",")}`)
     if (def.cooldownSeconds > 0) {
-      const recent = await one(tx, sql`select id from ascend_executions where action_type = ${spec.type} and payload_sha256 = ${payloadSha}
+      const recent = await one(tx, sql`select id from ascend_executions where action_type = ${spec.type} and payload_sha256 = ${payloadSha} and scope = ${scopeJson}::jsonb
         and created_at > ${new Date(now.getTime() - def.cooldownSeconds * 1000)} and status not in ('cancelled','expired','superseded','failed','dead_lettered') limit 1`)
       if (recent) throw new AscendError(`The same operation ran within its ${def.cooldownSeconds}s cooldown.`, 429, "rate_limited")
       rules.push(`cooldown ${def.cooldownSeconds}s clear`)
@@ -155,8 +163,8 @@ export async function submitExecution(actor: Actor, input: SubmitInput, now = ne
       on conflict (idempotency_key) do nothing returning id`)
     if (!inserted.length) {
       // A concurrent request with the same key committed first: return its record (or refuse a mismatched reuse).
-      const winner = (await one(tx, sql`select id, status, action_type, payload_sha256, correlation_id from ascend_executions where idempotency_key = ${idempotencyKey}`))!
-      if (winner.action_type !== spec.type || winner.payload_sha256 !== payloadSha) throw new AscendError("This idempotency key was already used for different work.", 409, "duplicate")
+      const winner = (await one(tx, sql`select id, status, action_type, payload_sha256, scope, correlation_id from ascend_executions where idempotency_key = ${idempotencyKey}`))!
+      if (!sameWork(winner)) throw new AscendError("This idempotency key was already used for different work.", 409, "duplicate")
       return { id: String(winner.id), status: String(winner.status) as ExecutionState, correlationId: String(winner.correlation_id), replay: true }
     }
     await event(tx, id, "created", null, status, actor, { policyVersion: def.policyVersion, origin })
@@ -329,6 +337,8 @@ export async function createServiceIdentity(actor: FounderActor, input: { name: 
   const actions = Array.isArray(input.allowedActions) ? [...new Set(input.allowedActions)] : []
   if (actions.some((a) => typeof a !== "string" || !ACTION_REGISTRY[a])) throw new AscendError("Allowed actions must be registered automations.", 400, "invalid_payload")
   if (kind === "agent" && caps.includes("operations.submit") && !actions.length) throw new AscendError("An agent that submits work needs at least one allowed action.", 400, "invalid_payload")
+  // B2.9: a worker executes only the automations it is assigned. An empty list claims nothing (fail closed).
+  if (kind === "worker" && !actions.length) throw new AscendError("A worker needs at least one automation it may execute.", 400, "invalid_payload")
   const token = `asc_${randomBytes(32).toString("base64url")}`
   const id = randomUUID()
   await db.transaction(async (tx) => {
@@ -424,6 +434,12 @@ export async function claimExecution(service: ServiceActor, workerId: string, no
     // Serialise the claim decision so global and per-action concurrency caps are exact under concurrent workers.
     // Held only for this short transaction; the execution itself runs outside it.
     await tx.execute(sql`select pg_advisory_xact_lock(${CLAIM_LOCK_KEY})`)
+    // B2.9: claim only the automations this worker identity is assigned, re-read inside the claim lock so a narrowed
+    // or revoked identity takes effect immediately. An identity with no assignment claims nothing.
+    const identity = await one(tx, sql`select active, allowed_actions from ascend_service_identities where id = ${service.id}`)
+    if (!identity?.active) throw new AscendError("This service identity has been revoked.", 403, "authentication")
+    const permitted = (identity.allowed_actions as string[]).filter((a) => ACTION_REGISTRY[a])
+    if (!permitted.length) return null
     const worker = await one(tx, sql`select status from ascend_workers where id = ${workerId} and service_identity_id = ${service.id}`)
     if (!worker) throw new AscendError("Register the worker with a heartbeat first.", 409, "authentication")
     if (worker.status !== "active") return null
@@ -436,6 +452,7 @@ export async function claimExecution(service: ServiceActor, workerId: string, no
     for (let i = 0; i < 5; i++) {
       const candidate = await one(tx, sql`select e.id, e.action_type from ascend_executions e
         where e.status in ('queued','retry_scheduled') and e.available_at <= ${now} and e.deadline_at > ${now} and e.attempts < e.max_attempts
+          and e.action_type in (${sql.join(permitted.map((a) => sql`${a}`), sql`, `)})
           and not exists (select 1 from ascend_automation_controls c where c.suspended and c.scope = 'action:' || e.action_type)
           ${excluded.length ? sql`and e.action_type not in (${sql.join(excluded.map((x) => sql`${x}`), sql`, `)})` : sql``}
         order by e.available_at, e.id for update of e skip locked limit 1`)
@@ -457,10 +474,13 @@ export async function claimExecution(service: ServiceActor, workerId: string, no
 
 type StartDecision = { run: true; payload: Record<string, unknown>; scope: { markets: string[] } } | { run: false; status: ExecutionState; reason: string }
 
+/** B2.9: a lease is honoured only for a worker registered to the calling identity, not merely for whoever holds the token. */
+const ownedBy = (service: ServiceActor) => sql`and lease_owner in (select w.id from ascend_workers w where w.service_identity_id = ${service.id})`
+
 /** Revalidate everything immediately before execution, inside the row lock. Any doubt stops the run. */
 export async function startExecution(service: ServiceActor, claim: Pick<Claim, "id" | "token">, now = new Date()): Promise<StartDecision> {
   return db.transaction(async (tx) => {
-    const row = await one(tx, sql`select * from ascend_executions where id = ${claim.id} and lease_token = ${claim.token} and status = 'leased' for update`)
+    const row = await one(tx, sql`select * from ascend_executions where id = ${claim.id} and lease_token = ${claim.token} and status = 'leased' ${ownedBy(service)} for update`)
     if (!row) return { run: false, status: "leased", reason: "The lease is no longer held by this worker." }
     const settle = async (to: ExecutionState, failureClass: FailureClass | null, reason: string, extra: SQL = sql``) => {
       const terminal = TERMINAL_STATES.includes(to)
@@ -486,6 +506,10 @@ export async function startExecution(service: ServiceActor, claim: Pick<Claim, "
       const approver = await one(tx, sql`select role, active from admin_users where id = ${row.approved_by}`)
       if (!approver?.active || !hasCapability(approver.role as AdminRole, "expansion.manage")) return settle("failed", "permission", "The approving founder's authority has been revoked.")
     }
+    // B2.9: the executing identity's authority is re-read here too, so revocation or narrowing between claim and start stops the run.
+    const executor = await one(tx, sql`select active, capabilities, allowed_actions from ascend_service_identities where id = ${service.id}`)
+    if (!executor?.active || !(executor.capabilities as string[]).includes("worker.execute") || !(executor.allowed_actions as string[]).includes(String(row.action_type)))
+      return settle("queued", null, "The worker identity is no longer authorised for this automation.", sql`, attempts = attempts - 1`)
     if (row.requested_by_service) {
       const requester = await one(tx, sql`select active from ascend_service_identities where id = ${row.requested_by_service}`)
       if (!requester?.active) return settle("failed", "authentication", "The requesting service identity has been revoked.")
@@ -500,7 +524,7 @@ export async function startExecution(service: ServiceActor, claim: Pick<Claim, "
 /** Compare-and-set on the lease token: a stale or duplicate completion changes nothing. */
 export async function completeExecution(service: ServiceActor, claim: Pick<Claim, "id" | "token">, outcome: { ok: true; result: Record<string, unknown> } | { ok: false; error: unknown }, now = new Date(), random = Math.random) {
   return db.transaction(async (tx) => {
-    const row = await one(tx, sql`select id, attempts, max_attempts, cancel_requested from ascend_executions where id = ${claim.id} and lease_token = ${claim.token} and status = 'running' for update`)
+    const row = await one(tx, sql`select id, attempts, max_attempts, cancel_requested from ascend_executions where id = ${claim.id} and lease_token = ${claim.token} and status = 'running' ${ownedBy(service)} for update`)
     if (!row) throw new AscendError("The execution lease expired or changed; this result was not recorded.", 409, "duplicate")
     const clear = sql`lease_token = null, lease_owner = null, lease_expires_at = null, updated_at = ${now}`
     if (outcome.ok) {
@@ -529,7 +553,8 @@ export async function completeExecution(service: ServiceActor, claim: Pick<Claim
 export async function renewLease(service: ServiceActor, claim: Pick<Claim, "id" | "token">, now = new Date()) {
   return db.transaction(async (tx) => {
     const row = await one(tx, sql`select e.id, e.action_type, e.cancel_requested, d.timeout_seconds from ascend_executions e join ascend_automation_definitions d using (action_type)
-      where e.id = ${claim.id} and e.lease_token = ${claim.token} and e.status in ('leased','running') for update of e`)
+      where e.id = ${claim.id} and e.lease_token = ${claim.token} and e.status in ('leased','running')
+        and e.lease_owner in (select w.id from ascend_workers w where w.service_identity_id = ${service.id}) for update of e`)
     if (!row) throw new AscendError("The lease is no longer held.", 409, "duplicate")
     if (row.cancel_requested || (await suspension(tx, String(row.action_type)))) return { renewed: false as const, reason: "stop_requested" }
     const until = new Date(now.getTime() + (Number(row.timeout_seconds) + LEASE_GRACE_SECONDS) * 1000)
@@ -550,7 +575,7 @@ export async function workerTick(service: ServiceActor, input: { workerId: unkno
   let outcome: { ok: true; result: Record<string, unknown> } | { ok: false; error: unknown }
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), claim.timeoutSeconds * 1000)
-  try { outcome = { ok: true, result: await runAscendAction(claim.actionType, start.payload, start.scope, controller.signal, now) } }
+  try { outcome = { ok: true, result: await runAscendAction(claim.actionType, start.payload, start.scope, controller.signal, now, { timeoutMs: claim.timeoutSeconds * 1000 }) } }
   catch (error) { outcome = { ok: false, error: controller.signal.aborted ? new AscendFailure("deadline_exceeded", "The operation exceeded its execution time limit.") : error } }
   finally { clearTimeout(timer) }
   const done = await completeExecution(service, claim, outcome)

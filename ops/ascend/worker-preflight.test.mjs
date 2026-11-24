@@ -39,3 +39,13 @@ test('MEGATON_STOP defaults to stopped, matching megaton-config', () => {
 test('parses quoted values and never needs to print them', () => {
   assert.deepEqual(parseEnv('A="1"\nB=\'two\'\n# c\nbad line'), { A: '1', B: 'two' });
 });
+
+test('B2.9: parses exactly like node --env-file, so a switch that is on at runtime is never reported inactive', () => {
+  const text = 'MEGATON_ENABLED=true # live\nexport MEGATON_EXTERNAL_ENABLED=true\nMEGATON_STOP = false\nMEGATON_NOTIFICATIONS_ENABLED=true\n';
+  const env = parseEnv(text);
+  assert.equal(env.MEGATON_ENABLED, 'true');
+  assert.equal(env.MEGATON_EXTERNAL_ENABLED, 'true');
+  assert.equal(env.MEGATON_STOP, 'false');
+  assert.ok(active({ ...base, ...env }).includes('review_notifications'));
+  assert.equal(preflight({ ...base, ...env }).failures, 1);
+});

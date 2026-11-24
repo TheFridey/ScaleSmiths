@@ -44,7 +44,7 @@ describe.skipIf(!url)("ASCEND B2.8 workload benchmark", () => {
 
   it("measures throughput, latency and growth at 10, 100, 1,000 and 10,000 partners", async () => {
     const F = await state.actors!.run(founder, authorisedFounder)
-    const ident = await state.actors!.run(founder, () => createServiceIdentity(F, { name: `bench-worker-${randomUUID().slice(0, 6)}`, kind: "worker", capabilities: ["worker.execute"] }))
+    const ident = await state.actors!.run(founder, () => createServiceIdentity(F, { name: `bench-worker-${randomUUID().slice(0, 6)}`, kind: "worker", capabilities: ["worker.execute"], allowedActions: ["ops.queue_health", "pipeline.inactivity_scan", "onboarding.progress_check", "delivery.handoff_readiness", "review.queue_preparation"] }))
     const worker = await authenticateService(new Headers({ authorization: `Bearer ${ident.token}` }), "worker.execute")
     await state.actors!.run(founder, () => setControl(F, "global", false, "Benchmark only"))
     for (const t of ["ops.queue_health", "pipeline.inactivity_scan"]) await state.actors!.run(founder, () => updateDefinition(F, t, { enabled: true, requiresApproval: false, cooldownSeconds: 0, maxConcurrency: 8 }))

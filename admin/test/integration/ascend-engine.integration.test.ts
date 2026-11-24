@@ -70,6 +70,7 @@ const events = async (id: string) => (await q("select event from ascend_executio
 const statusOf = async (id: string) => String((await q("select status from ascend_executions where id = $1", [id]))[0].status)
 const configure = (actionType: string, patch: Record<string, unknown>) => as(founderA, () => updateDefinition(F, actionType, patch))
 const key = () => `test:${randomUUID()}`
+const ALL_ACTIONS = ["ops.queue_health", "pipeline.inactivity_scan", "onboarding.progress_check", "delivery.handoff_readiness", "review.queue_preparation"]
 
 async function financialFingerprint() {
   const tables = ["expansion_commission_ledger", "expansion_payouts", "expansion_payout_entries", "expansion_withdrawal_requests", "expansion_withdrawal_entries",
@@ -94,7 +95,7 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("ASCEND B2.8 execution
     for (const a of [founderA, founderB, partner]) await pool.query("insert into admin_users(id,email,display_name,password_hash,role,active,session_version) values($1,$2,$3,'test-fixture-not-for-login',$4,true,1)", [a.id, `ascend-${a.id}@example.invalid`, a.displayName, a.role])
     F = await as(founderA, authorisedFounder)
     FB = await as(founderB, authorisedFounder)
-    const w = await as(founderA, () => createServiceIdentity(F, { name: `test-worker-${suffix}`, kind: "worker", capabilities: ["worker.execute"] }))
+    const w = await as(founderA, () => createServiceIdentity(F, { name: `test-worker-${suffix}`, kind: "worker", capabilities: ["worker.execute"], allowedActions: ALL_ACTIONS }))
     const ag = await as(founderA, () => createServiceIdentity(F, { name: `test-agent-${suffix}`, kind: "agent", capabilities: ["operations.submit", "operations.read", "operations.cancel"], allowedActions: ["ops.queue_health", "pipeline.inactivity_scan"] }))
     const og = await as(founderA, () => createServiceIdentity(F, { name: `test-agent2-${suffix}`, kind: "agent", capabilities: ["operations.submit", "operations.read", "operations.cancel"], allowedActions: ["ops.queue_health"] }))
     workerToken = w.token; agentToken = ag.token; otherAgentToken = og.token
@@ -389,6 +390,85 @@ describe.skipIf(!process.env.EXPANSION_TEST_DATABASE_URL)("ASCEND B2.8 execution
       expect(await scheduleDue(new Date(now.getTime() + 3700e3))).toBe(0)
       await as(founderA, () => setControl(F, "global", false, "TEST ONLY: resume scheduler"))
     } finally { process.env.ASCEND_SCHEDULER_ENABLED = "false" }
+  })
+
+  it("K (B2.9): a worker claims and starts only its assigned automations; narrowing or revoking it stops the next start", async () => {
+    const narrow = await as(founderA, () => createServiceIdentity(F, { name: `test-narrow-${suffix}`, kind: "worker", capabilities: ["worker.execute"], allowedActions: ["ops.queue_health"] }))
+    const nw = await authenticateService(bearer(narrow.token), "worker.execute")
+    await expect(as(founderA, () => createServiceIdentity(F, { name: `test-empty-${suffix}`, kind: "worker", capabilities: ["worker.execute"] }))).rejects.toThrow(/at least one automation/)
+    const other = (await as(founderA, () => submitExecution(F, { actionType: "pipeline.inactivity_scan", idempotencyKey: key() }))).id
+    const mine = (await as(founderA, () => submitExecution(F, { actionType: "ops.queue_health", idempotencyKey: key() }))).id
+    await heartbeat(nw, { workerId: `w-k-${suffix}`, version: "test-1", maxConcurrency: 1, inFlight: 0 })
+    const claim = (await claimExecution(nw, `w-k-${suffix}`))!
+    expect(claim.id).toBe(mine)
+    expect(await claimExecution(nw, `w-k-${suffix}`)).toBeNull() // the scan is not this worker's to take
+    expect(await statusOf(other)).toBe("queued")
+    // Narrowed between claim and start: the run is refused and the work returns to the queue without losing an attempt.
+    await q("update ascend_service_identities set allowed_actions = '{pipeline.inactivity_scan}' where id = $1", [nw.id])
+    expect(await startExecution(nw, claim)).toMatchObject({ run: false, status: "queued" })
+    expect(Number((await q("select attempts from ascend_executions where id = $1", [mine]))[0].attempts)).toBe(0)
+    await as(founderA, () => revokeServiceIdentity(F, nw.id, "TEST ONLY: revoke narrow worker"))
+    await expect(claimExecution(nw, `w-k-${suffix}`)).rejects.toThrow(/revoked/)
+  })
+
+  it("L (B2.9): another identity cannot start, renew or complete a lease even with the lease token", async () => {
+    const thief = await as(founderA, () => createServiceIdentity(F, { name: `test-thief-${suffix}`, kind: "worker", capabilities: ["worker.execute"], allowedActions: ALL_ACTIONS }))
+    const tw = await authenticateService(bearer(thief.token), "worker.execute")
+    await heartbeat(tw, { workerId: `w-thief-${suffix}`, version: "test-1", maxConcurrency: 1, inFlight: 0 })
+    const { id } = await as(founderA, () => submitExecution(F, { actionType: "ops.queue_health", idempotencyKey: key() }))
+    await beat(`w-l-${suffix}`)
+    const claim = (await claimExecution(worker, `w-l-${suffix}`))!
+    expect(claim.id).toBe(id)
+    expect(await startExecution(tw, claim)).toMatchObject({ run: false })
+    expect(await statusOf(id)).toBe("leased")
+    expect((await startExecution(worker, claim)).run).toBe(true)
+    await expect(renewLease(tw, claim)).rejects.toThrow(/no longer held/)
+    await expect(completeExecution(tw, claim, { ok: true, result: { forged: true } })).rejects.toThrow(/not recorded/)
+    expect(await renewLease(worker, claim)).toMatchObject({ renewed: true })
+    expect(await completeExecution(worker, claim, { ok: true, result: { summary: "owner" } })).toMatchObject({ status: "completed" })
+    expect((await q("select result from ascend_executions where id = $1", [id]))[0].result).toEqual({ summary: "owner" })
+    await as(founderA, () => revokeServiceIdentity(F, tw.id, "TEST ONLY: revoke thief"))
+  })
+
+  it("M (B2.9): idempotency and cooldown are bound to the market scope", async () => {
+    await configure("ops.queue_health", { marketScope: ["GB", "IE"], cooldownSeconds: 3600 })
+    const k = key()
+    const gb = await as(founderA, () => submitExecution(F, { actionType: "ops.queue_health", payload: { staleWorkerMinutes: 1234 }, scope: { markets: ["GB"] }, idempotencyKey: k }))
+    await expect(as(founderA, () => submitExecution(F, { actionType: "ops.queue_health", payload: { staleWorkerMinutes: 1234 }, scope: { markets: ["IE"] }, idempotencyKey: k }))).rejects.toMatchObject({ status: 409, failureClass: "duplicate" })
+    await expect(as(founderA, () => submitExecution(F, { actionType: "ops.queue_health", payload: { staleWorkerMinutes: 1234 }, scope: { markets: ["GB", "IE"] }, idempotencyKey: k }))).rejects.toMatchObject({ status: 409 })
+    expect(await as(founderA, () => submitExecution(F, { actionType: "ops.queue_health", payload: { staleWorkerMinutes: 1234 }, scope: { markets: ["GB"] }, idempotencyKey: k }))).toMatchObject({ id: gb.id, replay: true })
+    // The same payload in another market is different work: the GB cooldown does not hold it.
+    const ie = await as(founderA, () => submitExecution(F, { actionType: "ops.queue_health", payload: { staleWorkerMinutes: 1234 }, scope: { markets: ["IE"] }, idempotencyKey: key() }))
+    expect(ie.replay).toBe(false)
+    await expect(as(founderA, () => submitExecution(F, { actionType: "ops.queue_health", payload: { staleWorkerMinutes: 1234 }, scope: { markets: ["GB"] }, idempotencyKey: key() }))).rejects.toMatchObject({ status: 429 })
+    await expect(as(founderA, () => submitExecution(F, { actionType: "ops.queue_health", idempotencyKey: "agent:00000000:reserved" }))).rejects.toThrow(/reserved/)
+  })
+
+  it("N (B2.9): concurrent submissions with different keys cannot bypass the cooldown", async () => {
+    await configure("pipeline.inactivity_scan", { cooldownSeconds: 3600 })
+    const results = await Promise.allSettled(Array.from({ length: 10 }, () => as(founderA, () => submitExecution(F, { actionType: "pipeline.inactivity_scan", payload: { inactiveDays: 33 }, idempotencyKey: key() }))))
+    expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1)
+    const refused = results.filter((r): r is PromiseRejectedResult => r.status === "rejected")
+    expect(refused).toHaveLength(9)
+    for (const r of refused) expect(r.reason).toMatchObject({ status: 429, failureClass: "rate_limited" })
+  })
+
+  it("O (B2.9): an analysis handler cannot write: its transaction is READ ONLY in PostgreSQL with a statement timeout", async () => {
+    const before = Number((await q("select count(*)::int c from ascend_review_jobs"))[0].c)
+    const { id } = await as(founderA, () => submitExecution(F, { actionType: "ops.queue_health", payload: { staleWorkerMinutes: 7 }, idempotencyKey: key() }))
+    await beat(`w-o-${suffix}`)
+    let readOnly: Record<string, unknown> | null = null
+    const database = state.database!
+    const realTx = database.transaction.bind(database)
+    const spy = vi.spyOn(database, "transaction").mockImplementation(((op: Parameters<typeof realTx>[0]) => realTx(async (tx) => {
+      const out = await op(tx)
+      const r = await tx.execute(sql`select current_setting('transaction_read_only') ro, current_setting('statement_timeout') st`)
+      if (String(r.rows[0].ro) === "on") readOnly = r.rows[0] as Record<string, unknown>
+      return out
+    })) as typeof realTx)
+    try { expect((await tick(`w-o-${suffix}`)).claimed).toMatchObject({ id, status: "completed" }) } finally { spy.mockRestore() }
+    expect(readOnly).toMatchObject({ ro: "on", st: "30s" })
+    expect(Number((await q("select count(*)::int c from ascend_review_jobs"))[0].c)).toBe(before)
   })
 
   it("leaves every financial and agreement table byte-for-byte unchanged", async () => {

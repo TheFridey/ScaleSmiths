@@ -293,7 +293,7 @@ function WorkersPanel({ data, ask, onDone }: { data: Overview; ask: Ask; onDone:
     e.preventDefault(); setErr("")
     try {
       const capabilities = form.kind === "worker" ? ["worker.execute"] : ["operations.submit", "operations.read", "operations.cancel"]
-      const r = await call<{ name: string; token: string }>({ action: "identity_create", name: form.name, kind: form.kind, capabilities, allowedActions: form.kind === "agent" ? form.actions : [] })
+      const r = await call<{ name: string; token: string }>({ action: "identity_create", name: form.name, kind: form.kind, capabilities, allowedActions: form.actions })
       setSecret({ name: r.name, token: r.token }); setForm({ name: "", kind: "worker", actions: [] }); await onDone("Identity created. Copy its token now.")
     } catch (x) { setErr((x as Error).message) }
   }
@@ -311,7 +311,7 @@ function WorkersPanel({ data, ask, onDone }: { data: Overview; ask: Ask; onDone:
         <div className="sc-head-actions"><button type="button" className="sc-button" onClick={() => navigator.clipboard?.writeText(secret.token)}>Copy token</button><button type="button" className="sc-button sc-quiet" onClick={() => setSecret(null)}>I have stored it</button></div></div>}
       {data.identities.length === 0 ? <p className="sc-empty">No service identities yet.</p> : <ul className="sc-queue">{data.identities.map((i) =>
         <li key={i.id} className="sc-item"><div><p className="sc-kind">{i.kind} <span className="ae-badge" data-tone={i.active ? "good" : "bad"}>{i.active ? "Active" : "Revoked"}</span></p><p className="sc-title">{i.name}</p>
-          <p className="sc-muted">{i.capabilities.join(", ")}{i.allowedActions.length ? ` · may request: ${i.allowedActions.map(title).join(", ")}` : ""} · created {when(i.createdAt)}{i.rotatedAt ? ` · rotated ${when(i.rotatedAt)}` : ""}</p></div>
+          <p className="sc-muted">{i.capabilities.join(", ")} · {i.allowedActions.length ? `${i.kind === "worker" ? "may execute" : "may request"}: ${i.allowedActions.map(title).join(", ")}` : i.kind === "worker" ? "may execute nothing (no automations assigned)" : "may request nothing"} · created {when(i.createdAt)}{i.rotatedAt ? ` · rotated ${when(i.rotatedAt)}` : ""}</p></div>
           {i.active && <div className="sc-item-actions">
             <button type="button" className="sc-button sc-quiet" onClick={() => ask({ heading: `Rotate ${i.name}`, body: "The current token stops working immediately. Update the worker or agent configuration with the new token.", confirm: "Rotate token", needsReason: false,
               run: async () => { const r = await call<{ name: string; token: string }>({ action: "identity_rotate", id: i.id }); setSecret({ name: r.name, token: r.token }); await onDone("Token rotated. Copy the new token now.") } })}>Rotate…</button>
@@ -322,8 +322,8 @@ function WorkersPanel({ data, ask, onDone }: { data: Overview; ask: Ask; onDone:
           <label className="sc-field"><span>Name</span><input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value.toLowerCase() })} pattern="[a-z][a-z0-9-]{2,62}" required placeholder="ascend-worker-1" /></label>
           <label className="sc-field"><span>Kind</span><select value={form.kind} onChange={(e) => setForm({ ...form, kind: e.target.value as "worker" | "agent" })}><option value="worker">Worker (executes work)</option><option value="agent">Agent (requests work)</option></select></label>
         </div>
-        {form.kind === "agent" && <fieldset style={{ border: 0, padding: 0, margin: "10px 0" }}><legend className="sc-muted">Automations this agent may request</legend>
-          {Object.values(ACTION_REGISTRY).map((s) => <label key={s.type} className="ae-check"><input type="checkbox" checked={form.actions.includes(s.type)} onChange={(e) => setForm({ ...form, actions: e.target.checked ? [...form.actions, s.type] : form.actions.filter((a) => a !== s.type) })} />{s.title}</label>)}</fieldset>}
+        <fieldset style={{ border: 0, padding: 0, margin: "10px 0" }}><legend className="sc-muted">{form.kind === "worker" ? "Automations this worker may execute (at least one; it claims nothing else)" : "Automations this agent may request"}</legend>
+          {Object.values(ACTION_REGISTRY).map((s) => <label key={s.type} className="ae-check"><input type="checkbox" checked={form.actions.includes(s.type)} onChange={(e) => setForm({ ...form, actions: e.target.checked ? [...form.actions, s.type] : form.actions.filter((a) => a !== s.type) })} />{s.title}</label>)}</fieldset>
         {err && <p className="sc-error" role="alert">{err}</p>}
         <p><button type="submit" className="sc-button">Create identity</button></p>
       </form>

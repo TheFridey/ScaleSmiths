@@ -132,7 +132,7 @@
 
 **KB-SEO-03 How long does SEO take?**
 - Answer: Varies with the starting point. Technical fixes can change indexation quickly; content and authority work is measured over months.
-- Client explanation: "Technical fixes can help quickly; the bigger gains build over months."
+- Client explanation: "Technical fixes can change things quickly; content and authority work is measured over months, and nobody can honestly promise a fixed timescale."
 - Source: faq:seo-timeline.
 - Limitation: no fixed timescale.
 - Escalation: never.
@@ -283,7 +283,7 @@
 - Status: `PROPOSED POLICY`, `BLOCKED`.
 
 **KB-COMM-02 When and how do I get paid?**
-- Answer: Not decided. Withdrawal requests are built but not operational; frequency, minimum, invoicing and VAT are open decisions.
+- Answer: Not decided. Withdrawal requests are planned and not operational: no frequency, minimum, invoicing or VAT policy is approved.
 - Client explanation: none.
 - Source: [PROGRAMME-ALIGNMENT.md](../intelligence/PROGRAMME-ALIGNMENT.md), [FOUNDER-DECISIONS.md](../intelligence/FOUNDER-DECISIONS.md).
 - Limitation: no date or method may be stated.
@@ -329,10 +329,10 @@
 Added in Operation Empower B2.10. Each answer restates what the Partner Portal actually does (the cited source file enforces it) or a published fact. Policy questions without an approved answer say so and route to a founder; nothing here creates a policy.
 
 **KB-PROG-01 What does ScaleSmiths do?**
-- Answer: ScaleSmiths designs and builds websites, runs ongoing Growth Partnerships (SEO, AI search visibility and website improvement), provides the one-off Business Growth Audit and managed business email, and scopes bespoke software and automation. Published starting prices: websites from £2,000, Growth Partnership from £350/month, Business Growth Audit £395, business email from £15/month. ScaleSmiths Limited issues every client contract and invoice.
+- Answer: ScaleSmiths designs and builds websites, runs ongoing Growth Partnerships (SEO and website improvement), provides the one-off Business Growth Audit and managed business email, and scopes bespoke software and automation. Published starting prices: websites from £2,000, Growth Partnership from £350/month, Business Growth Audit £395, business email from £15/month. ScaleSmiths Limited issues every client contract and invoice.
 - Client explanation: none.
-- Source: `web/src/lib/published-starting-prices.ts`, `web/src/app/partners/page.tsx`.
-- Limitation: a starting price is the entry point for an agreed scope, not a quote.
+- Source: `web/src/lib/published-starting-prices.ts`, `web/src/lib/service-pages.ts`.
+- Limitation: a starting price is the entry point for an agreed scope, not a quote. AI search wording awaits `AP-CNT-06`.
 - Escalation: never.
 - Status: `CONFIRMED: PUBLISHED`; entry `DRAFT`.
 
@@ -345,7 +345,7 @@ Added in Operation Empower B2.10. Each answer restates what the Partner Portal a
 - Status: `CONFIRMED: PUBLISHED`; entry `DRAFT`.
 
 **KB-PROG-03 How do I register a prospect?**
-- Answer: In the Partner Portal, open Prospects & pipeline and choose Register business. Business name and website are required; the contact, country and industry are optional but the client's country is needed before a contract can be accepted. The portal refuses a business that already has a ScaleSmiths relationship or has asked not to be contacted, without telling you which.
+- Answer: In the Partner Portal, open Prospects & pipeline and choose Register business. Business name and website are required; the contact, country and industry are optional at registration, but the opportunity cannot move past Registered until the client's country is recorded and that market is approved. The portal refuses a business that already has a ScaleSmiths relationship or has asked not to be contacted, without telling you which.
 - Client explanation: none.
 - Source: `admin/src/lib/server/expansion.ts` (prospect admission checks).
 - Limitation: registration records your introduction; it is not a contract or a guarantee of attribution.
@@ -361,20 +361,20 @@ Added in Operation Empower B2.10. Each answer restates what the Partner Portal a
 - Status: `FOUNDER DECISION`, `BLOCKED` on the partner agreement.
 
 **KB-PROG-05 How do I request a quote?**
-- Answer: Complete the discovery on the opportunity and submit the scope. A founder reviews scope and delivery capacity and either approves it, asks for more information or marks it bespoke. For bespoke or technical work, request a technical scoping meeting from Meetings & support.
+- Answer: Complete the discovery on the opportunity and submit the scope. A founder reviews scope and delivery capacity and either approves it, asks for more information or marks it bespoke. For technical questions request Technical scoping; for a workflow, system or bespoke build request Bespoke software discovery. Both are in Meetings & support.
 - Client explanation: "I'll pass this to the ScaleSmiths team. They'll review what you need and come back with a clear proposal."
 - Source: `admin/src/lib/expansion.ts` (opportunity transitions), `admin/src/lib/server/expansion-operations.ts` (meeting types).
 - Limitation: no turnaround time is promised.
-- Escalation: when the work is bespoke → `technical_scoping`.
+- Escalation: when the work is bespoke → `bespoke_discovery`.
 - Status: `CONFIRMED: SYSTEM BEHAVIOUR`; entry `DRAFT`.
 
 **KB-PROG-06 Can I offer discounts?**
-- Answer: Only within a discount allowance a founder has approved for you, shown under Commission. A discount is valid only once a founder reserves it against an approved opportunity. With no allowance, offer the standard price only.
+- Answer: No discount allowance has been approved for any partner. The software supports founder-set allowances, but none exists until a founder records one for you under Commission and reserves it against an approved opportunity. Never offer or hint at a reduced price; route the request to a founder.
 - Client explanation: none.
 - Source: `admin/src/components/expansion/ExpansionWorkspace.tsx` (PartnerCommercial), `admin/drizzle/0074_expansion_allowances_and_additional_claims.sql`.
 - Limitation: never promise a reduced price before it is reserved.
 - Escalation: when a client asks for a lower price → `commercial_assistance`.
-- Status: `CONFIRMED: SYSTEM BEHAVIOUR`; entry `DRAFT`.
+- Status: `FOUNDER DECISION` (`AP-COM-05`); allowance mechanism `CONFIRMED: SYSTEM BEHAVIOUR`; entry `DRAFT`.
 
 **KB-PROG-07 Can I arrange a joint meeting with a founder?**
 - Answer: Yes. In Meetings & support, choose a joint customer sales meeting, link the opportunity and give up to five preferred times. A founder confirms a real time, proposes another or asks for more information. Nothing is booked until a founder confirms, and founder involvement never reduces your commission.
@@ -393,10 +393,10 @@ Added in Operation Empower B2.10. Each answer restates what the Partner Portal a
 - Status: `CONFIRMED: SYSTEM BEHAVIOUR`; entry `DRAFT`.
 
 **KB-PROG-09 Can I operate internationally, and what are my approved markets?**
-- Answer: Anyone may apply from anywhere, and you may talk to businesses in any country. ScaleSmiths can only accept a client contract in a market it has approved; the current list is shown in Getting started. Contracts and prices are in GBP.
+- Answer: Anyone may apply from any country. You can progress an opportunity only when ScaleSmiths has approved both your operating market and the client's market; the current list is shown in Getting started. Until a partner marketing process is approved, work only through your own network and introductions. Contracts and prices are in GBP.
 - Client explanation: none.
 - Source: `admin/src/lib/server/expansion.ts` (market gate), `admin/drizzle/0076_expansion_market_and_exclusivity_gates.sql`.
-- Limitation: do not tell a client outside an approved market that ScaleSmiths can contract with them.
+- Limitation: do not tell a client outside an approved market that ScaleSmiths can work with them, and do not start unsolicited outreach.
 - Escalation: when the client is outside an approved market → `commercial_assistance`.
 - Status: `CONFIRMED: SYSTEM BEHAVIOUR`; entry `DRAFT`.
 

@@ -1,0 +1,8 @@
+1. PostgreSQL 14 migration rehearsal             PASS (PostgreSQL 14.25 (Debian 14.25-1.pgdg13+1))
+2. npm run test:integration                      exit=0 Tests 91 passed | 164 skipped (255)
+3a. Expansion roles + migrations (55444)         exit=0
+3c. Empower + onboarding suites                  exit=0 Tests 53 passed (53)
+3d. Concurrency + ASCEND engine (container namespace, 127.0.0.1:55440) exit=0 Tests 109 passed (109)
+4a. Sole-founder roles + migrations              exit=0
+4. Empower sole-founder suite                    exit=0 Tests 2 passed (2)
+5. Golden Path domain suite                      exit=0 Tests 5 passed (5)

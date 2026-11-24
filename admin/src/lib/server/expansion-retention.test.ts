@@ -21,7 +21,7 @@ describe('applicant retention against PostgreSQL via PGlite', () => {
       create table expansion_audit (actor_id uuid, entity_id text, action text, details jsonb);
     `)
     await database.exec(readFileSync(new URL('../../../drizzle/0072_expansion_applicant_retention_holds.sql', import.meta.url), 'utf8'))
-  })
+  }, 30000)
 
   afterAll(async () => { await database?.close() })
 

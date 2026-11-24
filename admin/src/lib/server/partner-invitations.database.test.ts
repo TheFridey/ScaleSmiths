@@ -184,7 +184,7 @@ describe("partner invitations against PostgreSQL", () => {
     const [row] = (await postgres.query<{ version: number; sha: string; method: string; recent: boolean; linked: boolean }>(`select a.agreement_version version, a.content_sha256 sha, a.method, a.accepted_at > now() - interval '1 minute' recent,
       p.agreement_acceptance_id = a.id linked from partner_agreement_acceptances a join expansion_partners p on p.id = a.partner_id`)).rows
     expect(row).toEqual({ version: 1, sha: (await acceptance()).sha256, method: "activation", recent: true, linked: true })
-  })
+  }, 30000) // Several real password hashes; budgeted like this file's PGlite hooks so full-suite CPU contention cannot fail it.
 
   it("fails closed when the issued agreement is withdrawn or superseded after the invitation", async () => {
     const invitation = await invite()

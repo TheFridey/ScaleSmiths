@@ -7,6 +7,7 @@ import * as research from '@/lib/server/expansion-research'
 import * as recognition from '@/lib/server/expansion-recognition'
 import * as profiles from '@/lib/server/expansion-profiles'
 import * as content from '@/lib/server/empower-content'
+import * as contentBatch from '@/lib/server/empower-content-batch'
 import { getOnboardingAdmin } from '@/lib/server/partner-journey'
 import { expansionBody, expansionFailure, expansionHeaders } from '@/lib/server/expansion-http'
 import { requireCapability } from '@/lib/server/rbac'
@@ -34,7 +35,7 @@ export async function POST(request: Request) {
       nominate_founding_partner:recognition.nominateFoundingPartner, add_recognition_evidence:recognition.addRecognitionEvidence, start_recognition_review:recognition.startRecognitionReview, decide_recognition:recognition.decideRecognition,
       approve_recognition_benefit:recognition.approveRecognitionBenefit, record_benefit_fulfilment:recognition.recordBenefitFulfilment, correct_recognition:recognition.correctRecognition, revoke_recognition:recognition.revokeRecognition,
       create_content_item:content.createContentItem, save_content_draft:content.saveContentDraft, start_content_revision:content.startContentRevision,
-      submit_content:content.submitContentVersion, decide_content:content.decideContentVersion, publish_content:content.publishContentVersion, archive_content:content.archiveContentVersion,
+      submit_content:content.submitContentVersion, decide_content:content.decideContentVersion, publish_content:content.publishContentVersion, submit_content_batch:contentBatch.submitContentBatch, decide_content_batch:contentBatch.decideContentBatch, publish_content_batch:contentBatch.publishContentBatch, archive_content:content.archiveContentVersion,
       add_search_synonym:content.addSearchSynonym, set_search_synonym_active:content.setSearchSynonymActive,
       review_profile:profiles.reviewProfile, publish_profile:profiles.publishProfile, revoke_publication:profiles.revokePublication,
       set_toolkit_item:operations.setToolkitItem, decide_meeting:operations.decideMeeting,

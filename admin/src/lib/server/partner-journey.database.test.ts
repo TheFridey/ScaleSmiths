@@ -26,7 +26,9 @@ describe("Operation Empower B2.10 partner journey (PGlite)", () => {
     state.database = new PGlite()
     await state.database.exec(`
       create table admin_users(id uuid primary key,role text,active boolean,session_version integer,display_name text);
-      create table expansion_partners(id uuid primary key,user_id uuid references admin_users(id),activated_at timestamptz,agreement_acceptance_id uuid);
+      create table partner_applications(id serial primary key,name text,status text,submitted_at timestamptz default now(),onboarding_confirmations jsonb default '{}',residence_country text);
+      create table expansion_partners(id uuid primary key,user_id uuid references admin_users(id),activated_at timestamptz,agreement_acceptance_id uuid,application_id integer,operating_country text,invitation_hash text,invitation_expires_at timestamptz,agreement_content_version_id uuid);
+      create function partner_agreement_current(p_version uuid) returns boolean language sql stable as $$ select false $$;
       create table expansion_resources(id uuid primary key,status text,audience text,title text);
       create table expansion_toolkit_items(id uuid primary key,partner_id uuid not null references expansion_partners(id),item_key text not null,status text not null check (status in ('not_requested','planned','awaiting_approval','in_preparation','available','completed','unavailable')),detail text,resource_id uuid,completed_at timestamptz,updated_by uuid not null references admin_users(id),updated_at timestamptz not null default now(),unique(partner_id,item_key),check (status not in ('available','completed') or (detail is not null and length(trim(detail))>0)));
       create table expansion_referral_codes(partner_id uuid primary key,code text);
@@ -44,7 +46,7 @@ describe("Operation Empower B2.10 partner journey (PGlite)", () => {
   afterAll(async () => { await state.database?.close() })
   beforeEach(async () => {
     vi.stubEnv("PARTNER_ACADEMY_ENABLED", "true")
-    await q("truncate expansion_onboarding_progress,expansion_toolkit_items,expansion_audit,empower_academy_completions,empower_content_versions,empower_content_items,expansion_markets,expansion_partners,admin_users cascade")
+    await q("truncate expansion_onboarding_progress,expansion_toolkit_items,expansion_audit,empower_academy_completions,empower_content_versions,empower_content_items,expansion_markets,expansion_partners,partner_applications,admin_users restart identity cascade")
     await q("insert into admin_users values($1,'owner',true,1,'Founder'),($2,'independent_partner',true,1,'Alex'),($3,'independent_partner',true,1,'Blake')", [FOUNDER, USER_A, USER_B])
     await q("insert into expansion_partners values($1,$2,now(),null),($3,$4,now(),null)", [PARTNER_A, USER_A, PARTNER_B, USER_B])
     await q("insert into expansion_markets values('GB','United Kingdom','approved'),('US','United States','under_review')")
@@ -107,5 +109,12 @@ describe("Operation Empower B2.10 partner journey (PGlite)", () => {
     expect(admin.requiredSteps).toBe(4)
     expect(admin.partners.find((p) => p.name === "Alex")).toMatchObject({ completed: 1, agreementAccepted: false, toolkitRequests: 1 })
     expect(admin.partners.find((p) => p.name === "Blake")).toMatchObject({ completed: 0 })
+    expect(admin.queue).toMatchObject({ toolkit_requests: 1, markets_approved: 1, markets_under_review: 1, agreements_current: 0, applications_to_review: 0 })
+    await q("insert into partner_applications(name,status,onboarding_confirmations,residence_country) values('Casey','under_review','{}','GB'),('Dana','onboarding','{\"agreement\":true,\"legal\":true,\"independentStatus\":true,\"operations\":true}','GB'),('Old','declined','{}','GB')")
+    await q("insert into expansion_partners(id,application_id,operating_country,invitation_hash,invitation_expires_at) values('20000000-0000-4000-8000-000000000009',2,'GB','h',now()-interval '1 hour')")
+    const later = await getOnboardingAdmin()
+    expect(later.queue).toMatchObject({ applications_to_review: 1, applicants_to_onboard: 1 })
+    const byName = (list: unknown[][]) => [...list].sort((x, y) => String(x[0]).localeCompare(String(y[0])))
+    expect(byName(later.applicants.map((a) => [a.name, a.status, a.confirmations, a.invitation, a.market]))).toEqual([["Casey", "under_review", 0, "not_issued", "approved"], ["Dana", "onboarding", 4, "expired", "approved"]])
   })
 })

@@ -743,6 +743,13 @@
       "when": 1794961000000,
       "tag": "0105_partner_onboarding_progress",
       "breakpoints": true
+    },
+    {
+      "idx": 106,
+      "version": "7",
+      "when": 1794962000000,
+      "tag": "0106_partner_recovery_and_withdrawal",
+      "breakpoints": true
     }
   ]
 }

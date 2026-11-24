@@ -124,7 +124,7 @@ export function deriveJourney(f: JourneyFacts): PartnerJourney {
     },
     {
       key: "approved_markets", title: "Confirm your approved markets",
-      detail: f.approvedMarkets.length ? `Contracts can currently be accepted for clients in: ${f.approvedMarkets.join(", ")}. You may talk to businesses elsewhere, but ScaleSmiths can only contract where a market is approved.` : "ScaleSmiths has not yet approved a market for client contracts. Register opportunities and a founder will confirm what is possible.",
+      detail: f.approvedMarkets.length ? `Approved markets: ${f.approvedMarkets.join(", ")}. An opportunity can progress only when both your operating market and the client's market are approved. Until a partner marketing process is approved, work through your own network and introductions.` : "ScaleSmiths has not yet approved a market. Opportunities cannot progress until a founder approves both your operating market and the client's market.",
       status: ack("approved_markets") ? "completed" : "action_required", completedAt: ack("approved_markets"), action: ack("approved_markets") ? null : { kind: "acknowledge", step: "approved_markets", label: "I have noted my markets" },
     },
   ]

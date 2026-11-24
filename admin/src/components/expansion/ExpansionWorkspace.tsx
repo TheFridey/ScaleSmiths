@@ -16,6 +16,7 @@ import { PartnerNextSteps } from './PartnerNextSteps'
 import { FounderOperations, MeetingPrepToggle, PartnerToday, ProspectGuidance } from './PartnerWorkspacePanels'
 import { SafeMarkdown } from '@/components/empower/SafeMarkdown'
 import { JourneySummary, JourneyView, UpcomingShowcase } from './PartnerJourney'
+import { ContentReviewQueue } from './ContentReviewQueue'
 import type { PartnerJourney } from '@/lib/partner-journey'
 import './expansion.css'
 
@@ -103,9 +104,9 @@ export function ExpansionWorkspace({founder=false,academy=false,resources=false,
       {tab==='onboarding' && !founder && (data.journey?<JourneyView journey={data.journey} command={command} onNavigate={navigate}/>:<ToolkitView items={rows(data?.toolkit)} academy={academy}/>)}
       {tab==='upcoming' && !founder && data.journey && <UpcomingShowcase journey={data.journey}/>}
       {tab==='meetings' && !founder && <MeetingsView meetings={rows(data?.meetings)} opportunities={opportunities} command={command} academy={academy} unified={unified} meetingType={meetingType}/>}
-      {tab==='operations' && founder && <OperationsAdmin toolkit={toolkitAdmin} onboarding={data?.onboardingAdmin||{}} meetings={rows(data?.meetings)} command={command}/>}
+      {tab==='operations' && founder && <OperationsAdmin toolkit={toolkitAdmin} onboarding={data?.onboardingAdmin||{}} meetings={rows(data?.meetings)} command={command} onTab={setTab}/>}
       {tab==='profiles' && founder && <ProfilesAdmin a={profilesAdmin} command={command}/>}
-      {tab==='content' && founder && contentAdmin.enabled===true && <ContentStudio a={contentAdmin} command={command}/>}
+      {tab==='content' && founder && contentAdmin.enabled===true && <><ContentReviewQueue a={contentAdmin} command={command}/><ContentStudio a={contentAdmin} command={command}/></>}
       {tab==='profile' && !founder && <ProfilePanel p={profile} command={command}/>}
       {tab==='recognition' && founder && <RecognitionAdmin r={recognitionAdmin} command={command}/>}
       {tab==='research' && founder && <ResearchAdmin r={researchAdmin} sectors={rows(workspace.sectors)} exclusivities={rows(workspace.exclusivities)} command={command}/>}
@@ -148,11 +149,20 @@ function MeetingsView({meetings,opportunities,command,academy=false,unified=fals
       {unified && <MeetingPrepToggle meetingId={str(m.id)}/>}
       {['requested','under_review','info_required','alternative_proposed','confirmed'].includes(str(m.status)) && <Action action="respond_meeting" title="Cancel request" initial={{meetingId:m.id,response:'cancel'}} command={command}><p>Cancels this request.</p></Action>}</details>):<Empty text="You have not requested a meeting."/>}</section>
 }
-function OperationsAdmin({toolkit,onboarding,meetings,command}:{toolkit:Row;onboarding:Row;meetings:Row[];command:Command}) {
+function OperationsAdmin({toolkit,onboarding,meetings,command,onTab}:{toolkit:Row;onboarding:Row;meetings:Row[];command:Command;onTab?:(tab:string)=>void}) {
   const partners=rows(toolkit.partners), checklist=rows(onboarding.partners), required=Number(onboarding.requiredSteps||4)
   const pendingToolkit=partners.flatMap(p=>rows(p.items).filter(i=>i.status==='awaiting_approval').map(i=>({partner:str(p.name),item:str(i.label),detail:str(i.detail)})))
   const openMeetings=meetings.filter(m=>['requested','under_review','info_required'].includes(str(m.status))).length
-  return <><section className="ex-panel"><p className="ex-overline">PARTNER ONBOARDING</p><h2>Onboarding command centre</h2>
+  const q=(onboarding.queue||{}) as Record<string,number>, applicants=rows(onboarding.applicants)
+  const waiting:[string,number,string,string][]=[['Applications to review',q.applications_to_review||0,'recruitment','Review in Recruitment'],['Applicants to onboard',q.applicants_to_onboard||0,'recruitment','Confirm and invite'],['Content awaiting approval',q.content_in_review||0,'content','Open the review queue'],['Approved content to publish',q.content_to_publish||0,'content','Publish from the review queue'],['Agreement versions in progress',q.agreement_versions_in_progress||0,'content','Review the agreement'],['Toolkit requests',q.toolkit_requests||0,'operations','Record fulfilment below'],['Meeting requests',q.meeting_requests||0,'operations','Decide below'],['Markets under review',q.markets_under_review||0,'finance','Review markets']]
+  const INVITE:Record<string,string>={not_issued:'Not issued',issued:'Issued, awaiting activation',expired:'Expired: reissue',not_outstanding:'Revoked or used',activated:'Activated'}
+  return <><section className="ex-panel"><p className="ex-overline">WAITING ON FOUNDERS</p><h2>Founder review queue</h2>
+    {q.agreements_current===0 && <p role="alert" className="ex-error">No partner agreement is published. Invitations cannot be issued until the final agreement is imported, approved by a second founder and published (Content tab).</p>}
+    <p>{q.markets_approved||0} market{q.markets_approved===1?'':'s'} approved · {q.agreements_current||0} current agreement version{q.agreements_current===1?'':'s'}</p>
+    <ul className="ex-waiting">{waiting.map(([name,count,target,cta])=><li key={name} data-zero={count===0}><span><strong>{count}</strong> {name}</span>{count>0 && <button type="button" className="jr-action" onClick={()=>onTab?.(target)}>{cta}</button>}</li>)}</ul></section>
+  <section className="ex-panel"><p className="ex-overline">APPLICANTS IN PROGRESS</p><h2>From application to activation</h2>
+    {applicants.length?<div className="ex-table-wrap"><table className="ex-table"><caption className="sr-only">Applicants in progress</caption><thead><tr><th scope="col">Applicant</th><th scope="col">Application</th><th scope="col">Founder confirmations</th><th scope="col">Invitation</th><th scope="col">Agreement issued</th><th scope="col">Market</th></tr></thead><tbody>{applicants.map(x=><tr key={str(x.id)}><th scope="row">{str(x.name)}<small>Applied {str(x.submittedAt).slice(0,10)}</small></th><td>{label(x.status)}</td><td>{str(x.confirmations)}/4</td><td>{INVITE[str(x.invitation)]||label(x.invitation)}</td><td>{x.agreementIssued?'Yes':'No'}</td><td>{label(x.market)}</td></tr>)}</tbody></table></div>:<Empty text="No applicants are in progress."/>}</section>
+  <section className="ex-panel"><p className="ex-overline">PARTNER ONBOARDING</p><h2>Onboarding command centre</h2>
     <p>Every activated partner, their required onboarding steps ({required}: agreement acceptance plus three acknowledgements the partner records), Academy activity and outstanding requests. Agreement acceptance and activation stay with the versioned agreement and invitation records; nothing here changes them. Applications and invitations are in the Recruitment tab.</p>
     <div className="ex-metrics"><Metric name="Activated partners" value={str(checklist.length)} note="With a partner identity"/><Metric name="Onboarding complete" value={str(checklist.filter(p=>Number(p.completed)>=required).length)} note={`All ${required} required steps`}/><Metric name="Toolkit requests" value={str(pendingToolkit.length)} note="Awaiting founder setup"/><Metric name="Open meeting requests" value={str(openMeetings)} note="Requested, in review or awaiting information"/></div>
     {checklist.length?<div className="ex-table-wrap"><table className="ex-table"><caption className="sr-only">Partner onboarding checklist</caption><thead><tr><th scope="col">Partner</th><th scope="col">Agreement</th><th scope="col">Required steps</th><th scope="col">Lessons completed</th><th scope="col">Opportunities</th><th scope="col">Open requests</th><th scope="col">Toolkit requests</th></tr></thead><tbody>{checklist.map(p=><tr key={str(p.id)}><th scope="row">{str(p.name)}</th><td>{p.agreementAccepted?'Accepted':'Not accepted'}</td><td>{str(p.completed)}/{required}{Number(p.completed)>=required?' · complete':''}</td><td>{str(p.lessons)}</td><td>{str(p.opportunities)}</td><td>{str(p.openRequests)}</td><td>{str(p.toolkitRequests)}</td></tr>)}</tbody></table></div>:<Empty text="No activated partners yet. Applications, invitations and agreement issue are in the Recruitment tab."/>}

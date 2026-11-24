@@ -34,7 +34,7 @@ ScaleSmiths is a web and software studio based in Hucknall, Nottinghamshire, wor
 | Managed Business Email: three 5GB mailboxes on your domain, setup included | From £15 per month |
 | Custom platforms, business systems and larger transformations | Scoped after discovery |
 
-A starting price is the entry point for an agreed scope. It is not unlimited development, marketing, support, integrations or a guaranteed result. Every proposal depends on requirements, complexity and the deliverables we write down. Prices are in GBP.
+A starting price is the entry point for an agreed scope. It is not unlimited development, marketing, support, integrations or a guaranteed result. Every proposal depends on requirements, complexity and the deliverables we write down. Prices are in GBP. We do not bill in other currencies or publish fixed converted prices.
 
 ### Selected published work
 

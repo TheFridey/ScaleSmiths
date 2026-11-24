@@ -9,7 +9,7 @@
 
 ## Before the meeting
 
-- [ ] The prospect is registered in the Partner Portal, and no "commercial checks" notice is unresolved.
+- [ ] The prospect is registered in the Partner Portal, and the portal does not show it as awaiting commercial approval from a founder.
 - [ ] I have looked at their website on a phone and on a computer.
 - [ ] I searched for their main service and town, and noted whether they appear.
 - [ ] I checked whether they have a Google Business Profile and read recent reviews.

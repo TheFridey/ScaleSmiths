@@ -842,6 +842,12 @@
       "sha256": "34d0b547d76856d6faef979733a5c0ce422b105b84876e4c3b7e368040bad9c4",
       "lifecycle": "forward",
       "reason": "Empower B2.10: append-only partner onboarding acknowledgements (how you earn, commercial boundaries, approved markets); grants no commercial right and activates nothing."
+    },
+    {
+      "path": "admin/drizzle/0106_partner_recovery_and_withdrawal.sql",
+      "sha256": "5291b1e97f24ed7fe12b42f19f45c3bccc1f5a951e37ea38175070e65409e955",
+      "lifecycle": "forward",
+      "reason": "Empower B2.10: partner password recovery and applicant withdrawal one-time links (SHA-256 digests only, short-lived, single use); replaces the partner notification kind constraint with a strict superset."
     }
   ],
   "journals": {
@@ -1408,6 +1414,13 @@
           "version": "7",
           "when": 1794961000000,
           "tag": "0105_partner_onboarding_progress",
+          "breakpoints": true
+        },
+        {
+          "idx": 106,
+          "version": "7",
+          "when": 1794962000000,
+          "tag": "0106_partner_recovery_and_withdrawal",
           "breakpoints": true
         }
       ]

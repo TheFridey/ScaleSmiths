@@ -60,9 +60,11 @@ export default auth(async (req) => {
     return next()
   }
 
-  // Only the invitation consumer is public; every other partner endpoint uses
-  // the same persisted Auth.js identity and revocation checks as internal users.
-  if ((pathname === "/partner/activate" && ["GET", "HEAD"].includes(req.method)) || (pathname === "/api/partner/activate" && req.method === "POST")) return next()
+  // Only the invitation consumer, password recovery and applicant withdrawal are public; every other partner endpoint uses
+  // the same persisted Auth.js identity and revocation checks as internal users. Each public endpoint proves identity with a
+  // one-time emailed link and is same-origin, rate limited and body bounded.
+  if (["/partner/activate", "/partner/reset", "/partner/withdraw"].includes(pathname) && ["GET", "HEAD"].includes(req.method)) return next()
+  if (["/api/partner/activate", "/api/partner/password-reset", "/api/partner/withdraw"].includes(pathname) && req.method === "POST") return next()
 
   // Only these non-sensitive installation assets are public on the admin origin.
   if (isPublicAdminBrandAsset(pathname) || pathname === "/manifest.webmanifest" || pathname === "/command-centre-sw.js" || /^\/app-icon\/(192|512|180)$/.test(pathname)) return next()

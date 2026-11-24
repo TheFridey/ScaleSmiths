@@ -129,7 +129,29 @@ export async function getOnboardingAdmin() {
       from expansion_partners p join admin_users u on u.id=p.user_id where p.activated_at is not null order by u.display_name`)
     const lessons = await lessonCompletionCounts(tx)
     const total = ACKNOWLEDGED_STEPS.length + 1
+    // Applicants still on the way in: application, review, invitation, account set-up and market, in one row each.
+    const applicants = await rows(tx, sql`select a.id, a.name, a.status, a.submitted_at, a.onboarding_confirmations, a.residence_country,
+        p.id partner_id, p.operating_country, p.invitation_expires_at, (p.invitation_hash is not null) invitation_outstanding, p.activated_at, (p.agreement_content_version_id is not null) agreement_issued,
+        m.status market_status
+      from partner_applications a left join expansion_partners p on p.application_id = a.id left join expansion_markets m on m.country_code = coalesce(p.operating_country, a.residence_country)
+      where a.status not in ('activated','declined','withdrawn','archived') order by a.submitted_at desc limit 200`)
+    const [queue] = await rows(tx, sql`select
+        (select count(*)::int from partner_applications where status in ('submitted','under_review','information_requested','conversation_arranged','assessment_in_progress')) applications_to_review,
+        (select count(*)::int from partner_applications where status in ('approved_in_principle','agreement_pending','onboarding')) applicants_to_onboard,
+        (select count(*)::int from empower_content_versions v join empower_content_items i on i.id = v.item_id where v.status = 'in_review' and i.kind <> 'agreement') content_in_review,
+        (select count(*)::int from empower_content_versions v join empower_content_items i on i.id = v.item_id where v.status = 'approved' and i.kind <> 'agreement') content_to_publish,
+        (select count(*)::int from empower_content_versions v join empower_content_items i on i.id = v.item_id where i.kind = 'agreement' and v.status in ('draft','in_review','approved')) agreement_versions_in_progress,
+        (select count(*)::int from empower_content_versions v join empower_content_items i on i.id = v.item_id where i.kind = 'agreement' and partner_agreement_current(v.id)) agreements_current,
+        (select count(*)::int from expansion_markets where status = 'approved') markets_approved,
+        (select count(*)::int from expansion_markets where status = 'under_review') markets_under_review,
+        (select count(*)::int from expansion_toolkit_items where status = 'awaiting_approval') toolkit_requests,
+        (select count(*)::int from expansion_meeting_requests where status in ('requested','under_review','info_required')) meeting_requests`)
+    const confirmations = (value: unknown) => { const c = (value ?? {}) as Record<string, unknown>; return ["agreement", "legal", "independentStatus", "operations"].filter((k) => c[k] === true).length }
     return {
+      queue: Object.fromEntries(Object.entries(queue ?? {}).map(([k, v]) => [k, Number(v)])),
+      applicants: applicants.map((a) => ({ id: Number(a.id), name: String(a.name), status: String(a.status), submittedAt: new Date(String(a.submitted_at)).toISOString(), confirmations: confirmations(a.onboarding_confirmations),
+        invitation: a.activated_at ? "activated" : a.invitation_outstanding === true ? (new Date(String(a.invitation_expires_at)) > new Date() ? "issued" : "expired") : a.partner_id ? "not_outstanding" : "not_issued",
+        agreementIssued: a.agreement_issued === true, market: a.market_status ? String(a.market_status) : "unknown" })),
       requiredSteps: total,
       partners: partners.map((p) => {
         const completed = Number(p.acknowledged) + (p.agreement_accepted === true ? 1 : 0)

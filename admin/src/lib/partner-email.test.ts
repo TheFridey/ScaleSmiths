@@ -42,3 +42,21 @@ describe("partner lifecycle email content", () => {
     expect(email.text).not.toMatch(/notes|score|assessment/i)
   })
 })
+
+describe("Operation Empower B2.10 recovery and withdrawal email content", () => {
+  const expiresAt = "2026-11-24T18:00:00.000Z"
+  it("sends a one-time password reset link to the partner portal only", () => {
+    const email = buildPartnerEmail({ kind: "password_reset", name: "Pat Partner", link: "https://partners.scalesmiths.co.uk/partner/reset#token=abc", expiresAt })
+    expect(email.subject).toBe("Reset your ScaleSmiths partner password")
+    expect(email.html).toContain("https://partners.scalesmiths.co.uk/partner/reset#token=abc")
+    expect(email.text).toContain("If you did not ask for this, ignore this email")
+    expect(email.text).toContain("24 November 2026")
+    expect(() => buildPartnerEmail({ kind: "password_reset", name: "Pat", link: "https://evil.example/reset", expiresAt })).toThrow("Unsafe link")
+  })
+  it("asks the applicant to confirm a withdrawal and states that nothing changes until they do", () => {
+    const email = buildPartnerEmail({ kind: "withdrawal_confirmation", name: "Ada", link: "https://partners.scalesmiths.co.uk/partner/withdraw#token=abc", expiresAt })
+    expect(email.subject).toBe("Confirm the withdrawal of your ScaleSmiths partner application")
+    expect(email.text).toContain("Nothing changes until you confirm it")
+    expect(() => buildPartnerEmail({ kind: "withdrawal_confirmation", name: "Ada", link: "http://partners.scalesmiths.co.uk/x", expiresAt })).toThrow("Unsafe link")
+  })
+})

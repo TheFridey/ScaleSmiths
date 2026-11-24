@@ -339,7 +339,7 @@ Totals: 13 courses, 38 modules, **91 lessons**. The lesson-by-lesson inventory, 
 | | C11-L4 Worked examples | £705 standard; discounted examples; bespoke; historical agreements keep their accepted terms |
 | | C11-L5 What is not decided | Withdrawals, refunds, VAT, achievements, referrals |
 | M3 Boundaries | C11-L6 What you may and may not agree | No pricing, discounts, terms or timelines |
-| | C11-L7 Markets | No market is approved yet; GBP only |
+| | C11-L7 Markets | Markets are approved one by one; check the current list in Getting started; GBP only |
 
 **Optional knowledge check:** five questions.
 

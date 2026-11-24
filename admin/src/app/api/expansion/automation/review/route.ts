@@ -1,3 +1,4 @@
+import { isSafeReviewSignal } from "@/lib/ascend-review-validation"
 import { NextResponse } from "next/server"
 import { ExpansionError } from "@/lib/expansion"
 import { expansionBody, expansionFailure, expansionHeaders } from "@/lib/server/expansion-http"
@@ -27,7 +28,7 @@ export async function POST(request:Request) {
       if(!claim)return NextResponse.json({result:null,message:"No review task is due."},{headers:expansionHeaders})
       try {
         // Only validate and prepare an internal suggestion. DO NOT send, notify, pay or create projects.
-        if(!claim.payload || !claim.payload.id || !claim.payload.href.startsWith("/") || claim.payload.href.startsWith("//"))
+        if(!isSafeReviewSignal(claim.payload))
           throw new ExpansionError("The stored signal is not a safe review task.",409)
         return NextResponse.json({result:await finishInternalReviewJob(claim.id,claim.token,true)},{headers:expansionHeaders})
       } catch {

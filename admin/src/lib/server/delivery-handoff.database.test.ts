@@ -29,7 +29,7 @@ vi.mock("./delivery-project-service",()=>({createDeliveryProjectWithTx:async(tx:
   return {id:Number(r.rows[0].id)}
 }}))
 import { approveDeliveryHandoff, founderHandoffQueue, partnerDeliveryHandoffs } from "./delivery-handoff"
-const q=(query:string,params:unknown[]=[])=>state.database!.query<Record<string,unknown>>(query,params)
+const q=(query:string,params:unknown[]=[])=>state.database!.query<Record<string, unknown>>(query,params)
 const approval=()=>({opportunityId:O,expectedContractId:C,confirm:true,reason:"Founder checked the signed agreement and accepted delivery scope."})
 describe("B2.6 contract to delivery integration with disposable PostgreSQL",()=>{
   beforeAll(async()=>{

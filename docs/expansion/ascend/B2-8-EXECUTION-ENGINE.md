@@ -155,8 +155,8 @@ finishes and is recorded truthfully, queued work remains intact, and the founder
 Additive and forward-only: seven `ascend_*` tables, one trigger function, three triggers, indexes, one control row (global
 stop on) and five definition rows (disabled). Registered in the Drizzle journal, `scripts/shared-migration-plan.json` (admin
 95-104) and `scripts/migration-checksums.json`. Applied by the shared migrator on PostgreSQL 16.15 together with all 130
-migrations; the privilege verifier passes. **Not yet rehearsed on PostgreSQL 14** (only 16 was available); no 15+ syntax is
-used. Rollback: revert the code; leaving the tables in place is safe because nothing else reads them.
+migrations; the privilege verifier passes. **Rehearsed on PostgreSQL 14.25** in the required Database and Migrations CI job
+(migration plus disabled-by-default checks; added by the repository owner), matching production's PostgreSQL 14.24. Rollback: revert the code; leaving the tables in place is safe because nothing else reads them.
 
 ## 10. Configuration
 
@@ -167,8 +167,8 @@ Admin: `ASCEND_ENGINE_ENABLED`, `ASCEND_SCHEDULER_ENABLED`, `ASCEND_AGENT_API_EN
 
 Use the existing PM2 release procedure in [pm2-host-deploy.md](../../operations/pm2-host-deploy.md). In addition:
 
-1. Take and verify a fresh backup before migrating (the 24 November pre-launch dump predates 0104). Confirm the live admin port
-   from `pm2 describe` and Nginx (last known 3301); do not guess.
+1. Take and verify a fresh backup before migrating (the 24 November pre-launch dump predates 0104). The owner verified on
+   24 November: PostgreSQL 14.24, PM2 web/admin on 3300/3301, release `07521b1`, 0104 not applied. Re-check before deploying.
 2. Deploy the release **without** changing the live web environment (recruitment variables must be preserved). Run migrations.
    Confirm `select scope, suspended from ascend_automation_controls` shows `global | t` and all definitions disabled.
 3. Optionally set `ASCEND_ENGINE_ENABLED=true` on the admin app only, restart, and review `/expansion/automation/engine`.
@@ -248,8 +248,8 @@ completed executions (a founder retention decision). These are single-host synth
 
 ## 15. Known limitations
 
-- Not deployed; production state (PM2, Nginx port, environment, database) was not inspected from this session.
-- No PostgreSQL 14 rehearsal yet. No GitHub CI run observed from this session before the PR was opened.
+- Not deployed. This session had no VPS access; production facts above were verified by the repository owner.
+- GitHub CI on head `9e7a99e`: all 22 checks green (restricted-role PostgreSQL step 157/157, Empower browser 11/11, PostgreSQL 14.25 rehearsal).
 - `superseded` is modelled but never produced; signal-originated executions (`origin = 'signal'`) are modelled but no producer
   exists yet; partner-facing recommendations are not built (all findings are founder-only aggregates).
 - Execution history has no retention policy; events grow about three rows per execution.

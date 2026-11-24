@@ -153,4 +153,5 @@ Designs and dependencies are in `B2-ARCHITECTURE.md` and `B2-ROADMAP.md`. Next s
 - **Database:** additive migration `0104_ascend_execution_engine` (journal, plan and checksum registered). Starts with the global emergency stop on and every automation disabled.
 - **Switches:** `ASCEND_ENGINE_ENABLED`, `ASCEND_SCHEDULER_ENABLED`, `ASCEND_AGENT_API_ENABLED`, all off by default and absent from production configuration.
 - **Evidence:** real-PostgreSQL integration 13/13 (in the CI restricted-role step: 157/157, 0 skipped); production-build browser journey 1/1 at six widths with axe; pure rules 9/9; ops scripts 10/10; authorisation policy 79/79; benchmark at 10-10,000 partners with zero duplicate completions.
-- **Not done:** production deployment, PostgreSQL 14 rehearsal, CI run on GitHub for the final head, retention policy for execution history, supersession and signal producers, partner-facing recommendations.
+- **CI:** all 22 checks green on `9e7a99e`, including the PostgreSQL 14.25 rehearsal of 0104 and Empower browser 11/11.
+- **Not done:** production deployment (blocked on founder release approval), retention policy for execution history, supersession and signal producers, partner-facing recommendations.

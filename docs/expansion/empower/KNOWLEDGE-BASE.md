@@ -324,6 +324,122 @@
 - Escalation: when the customer is outside the UK → `commercial_assistance`.
 - Status: `CONFIRMED: PUBLISHED`; entry `DRAFT`.
 
+### Partner programme (partner only)
+
+Added in Operation Empower B2.10. Each answer restates what the Partner Portal actually does (the cited source file enforces it) or a published fact. Policy questions without an approved answer say so and route to a founder; nothing here creates a policy.
+
+**KB-PROG-01 What does ScaleSmiths do?**
+- Answer: ScaleSmiths designs and builds websites, runs ongoing Growth Partnerships (SEO, AI search visibility and website improvement), provides the one-off Business Growth Audit and managed business email, and scopes bespoke software and automation. Published starting prices: websites from £2,000, Growth Partnership from £350/month, Business Growth Audit £395, business email from £15/month. ScaleSmiths Limited issues every client contract and invoice.
+- Client explanation: none.
+- Source: `web/src/lib/published-starting-prices.ts`, `web/src/app/partners/page.tsx`.
+- Limitation: a starting price is the entry point for an agreed scope, not a quote.
+- Escalation: never.
+- Status: `CONFIRMED: PUBLISHED`; entry `DRAFT`.
+
+**KB-PROG-02 What can I promise a prospective client?**
+- Answer: The published services and starting prices, and that ScaleSmiths will review their needs and come back with a next step. Scope, final price, discounts, delivery dates and results are confirmed by ScaleSmiths in writing; never promise them yourself.
+- Client explanation: none.
+- Source: `web/src/lib/published-starting-prices.ts` (STARTING_PRICE_BOUNDARY), `admin/src/components/expansion/ExpansionWorkspace.tsx` (workspace boundary note).
+- Limitation: does not authorise any commitment on behalf of ScaleSmiths.
+- Escalation: when a client asks for a commitment you cannot give → `commercial_assistance`.
+- Status: `CONFIRMED: PUBLISHED`; entry `DRAFT`.
+
+**KB-PROG-03 How do I register a prospect?**
+- Answer: In the Partner Portal, open Prospects & pipeline and choose Register business. Business name and website are required; the contact, country and industry are optional but the client's country is needed before a contract can be accepted. The portal refuses a business that already has a ScaleSmiths relationship or has asked not to be contacted, without telling you which.
+- Client explanation: none.
+- Source: `admin/src/lib/server/expansion.ts` (prospect admission checks).
+- Limitation: registration records your introduction; it is not a contract or a guarantee of attribution.
+- Escalation: when a business you know is refused → `commercial_assistance`.
+- Status: `CONFIRMED: SYSTEM BEHAVIOUR`; entry `DRAFT`.
+
+**KB-PROG-04 How does prospect ownership work?**
+- Answer: A registered business is held against your registration in the portal, and another partner cannot register the same business. How long an introduction is protected and how disputes are settled are set by your partner agreement.
+- Client explanation: none.
+- Source: `admin/src/lib/server/expansion.ts` (duplicate check); partner agreement (pending).
+- Limitation: no protection period may be stated until the agreement is published.
+- Escalation: when two introductions conflict → `commercial_assistance`.
+- Status: `FOUNDER DECISION`, `BLOCKED` on the partner agreement.
+
+**KB-PROG-05 How do I request a quote?**
+- Answer: Complete the discovery on the opportunity and submit the scope. A founder reviews scope and delivery capacity and either approves it, asks for more information or marks it bespoke. For bespoke or technical work, request a technical scoping meeting from Meetings & support.
+- Client explanation: "I'll pass this to the ScaleSmiths team. They'll review what you need and come back with a clear proposal."
+- Source: `admin/src/lib/expansion.ts` (opportunity transitions), `admin/src/lib/server/expansion-operations.ts` (meeting types).
+- Limitation: no turnaround time is promised.
+- Escalation: when the work is bespoke → `technical_scoping`.
+- Status: `CONFIRMED: SYSTEM BEHAVIOUR`; entry `DRAFT`.
+
+**KB-PROG-06 Can I offer discounts?**
+- Answer: Only within a discount allowance a founder has approved for you, shown under Commission. A discount is valid only once a founder reserves it against an approved opportunity. With no allowance, offer the standard price only.
+- Client explanation: none.
+- Source: `admin/src/components/expansion/ExpansionWorkspace.tsx` (PartnerCommercial), `admin/drizzle/0074_expansion_allowances_and_additional_claims.sql`.
+- Limitation: never promise a reduced price before it is reserved.
+- Escalation: when a client asks for a lower price → `commercial_assistance`.
+- Status: `CONFIRMED: SYSTEM BEHAVIOUR`; entry `DRAFT`.
+
+**KB-PROG-07 Can I arrange a joint meeting with a founder?**
+- Answer: Yes. In Meetings & support, choose a joint customer sales meeting, link the opportunity and give up to five preferred times. A founder confirms a real time, proposes another or asks for more information. Nothing is booked until a founder confirms, and founder involvement never reduces your commission.
+- Client explanation: "I'd like one of the ScaleSmiths founders to join us. I'll confirm a time with you."
+- Source: `admin/src/lib/server/expansion-operations.ts` (requestMeeting, decideMeeting).
+- Limitation: founder availability is not guaranteed.
+- Escalation: `joint_sales`.
+- Status: `CONFIRMED: SYSTEM BEHAVIOUR`; entry `DRAFT`.
+
+**KB-PROG-08 How do I request technical assistance?**
+- Answer: In Meetings & support, choose technical scoping, bespoke software discovery or complex opportunity escalation, and link the opportunity so the founders have the context.
+- Client explanation: none.
+- Source: `admin/src/lib/server/expansion-operations.ts` (MEETING_TYPES).
+- Limitation: do not give technical commitments before the founders have scoped the work.
+- Escalation: `technical_scoping`.
+- Status: `CONFIRMED: SYSTEM BEHAVIOUR`; entry `DRAFT`.
+
+**KB-PROG-09 Can I operate internationally, and what are my approved markets?**
+- Answer: Anyone may apply from anywhere, and you may talk to businesses in any country. ScaleSmiths can only accept a client contract in a market it has approved; the current list is shown in Getting started. Contracts and prices are in GBP.
+- Client explanation: none.
+- Source: `admin/src/lib/server/expansion.ts` (market gate), `admin/drizzle/0076_expansion_market_and_exclusivity_gates.sql`.
+- Limitation: do not tell a client outside an approved market that ScaleSmiths can contract with them.
+- Escalation: when the client is outside an approved market → `commercial_assistance`.
+- Status: `CONFIRMED: SYSTEM BEHAVIOUR`; entry `DRAFT`.
+
+**KB-PROG-10 How do referrals work?**
+- Answer: Create your permanent referral code under Referrals and give it to someone applying to become a partner. A founder records the attribution before they are activated. The planned referral reward is conditional and not payable until written terms are approved. There is no downline and no commission on anyone else's sales.
+- Client explanation: none.
+- Source: `admin/src/lib/server/expansion-programme.ts` (createReferralCode, attributeReferral), `web/src/lib/partner-programme.ts` (FEATURE_AVAILABILITY).
+- Limitation: no reward amount may be presented as an entitlement.
+- Escalation: never.
+- Status: `PROPOSED POLICY` (reward); code and attribution `CONFIRMED: SYSTEM BEHAVIOUR`; entry `DRAFT`.
+
+**KB-PROG-11 How do achievements work?**
+- Answer: Achievements count qualifying clients, decided by a founder from verified client records. The milestone schedule is planned: no reward is payable until written terms are approved, and there are no targets, deadlines or penalties.
+- Client explanation: none.
+- Source: `admin/src/lib/server/expansion-programme.ts`, `web/src/lib/partner-programme.ts` (ACHIEVEMENTS).
+- Limitation: reaching a milestone does not by itself create an entitlement.
+- Escalation: never.
+- Status: `PROPOSED POLICY`; entry `DRAFT`.
+
+**KB-PROG-12 What happens after a client accepts?**
+- Answer: ScaleSmiths Limited issues the contract and invoices, and the accepted work is handed over to the ScaleSmiths delivery team. You can follow accepted projects under Delivery handoffs where that view is enabled. Commission follows the client's eligible payments under your agreement.
+- Client explanation: "From here the ScaleSmiths team takes care of the contract, invoicing and delivery, and keeps you updated."
+- Source: `web/src/app/partners/page.tsx`, `admin/src/lib/server/delivery-handoff.ts`.
+- Limitation: no delivery date may be promised by the partner.
+- Escalation: never.
+- Status: `CONFIRMED: SYSTEM BEHAVIOUR`; entry `DRAFT`.
+
+**KB-PROG-13 What happens if a client cancels?**
+- Answer: Not yet decided. Cancellation and refund treatment of commission is an open founder, accounting and legal decision; currently nothing is deducted automatically and any case is held for founder review.
+- Client explanation: none.
+- Source: [COMMERCIAL-INTEGRATION.md](../intelligence/COMMERCIAL-INTEGRATION.md), KB-COMM-03.
+- Limitation: do not speculate.
+- Escalation: `commercial_assistance`.
+- Status: `FOUNDER DECISION`, `BLOCKED`.
+
+**KB-PROG-14 How do I contact ScaleSmiths?**
+- Answer: Use Meetings & support in the Partner Portal for anything about an opportunity, training or technical help, so the request reaches the founders with its context. The published general contact address is hello@scalesmiths.co.uk.
+- Client explanation: "You can reach ScaleSmiths at hello@scalesmiths.co.uk."
+- Source: `web/src` (published contact address), `admin/src/lib/server/expansion-operations.ts`.
+- Limitation: no response-time promise.
+- Escalation: never.
+- Status: `CONFIRMED: PUBLISHED`; entry `DRAFT`.
+
 ## 3. Gaps found (no published source yet)
 
 | Topic | Gap | Register item |

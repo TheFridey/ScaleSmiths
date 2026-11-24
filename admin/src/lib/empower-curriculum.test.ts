@@ -67,14 +67,15 @@ describe("Resource Centre drafts (B1.3)", () => {
 describe("Knowledge Base drafts (B1.4)", () => {
   const problems: string[] = []
   const entries = parseKnowledgeBase(read("KNOWLEDGE-BASE.md"), { r08: read("resources/R08-objection-handling-playbook.md"), r11: read("resources/R11-commercial-pricing-reference.md") }, problems)
-  it("reads all 32 entries (the package summary said 33; the file has 32) with topics, escalation and resolved client explanations, and no problems", () => {
+  it("reads all 46 entries (32 from B1.4, the package summary said 33; plus 14 B2.10 partner-programme entries) with topics, escalation and resolved client explanations, and no problems", () => {
     expect(problems).toEqual([])
-    expect(entries).toHaveLength(32)
-    expect(new Set(entries.map((e) => e.code)).size).toBe(32)
+    expect(entries).toHaveLength(46)
+    expect(new Set(entries.map((e) => e.code)).size).toBe(46)
+    expect(entries.filter((e) => e.code.startsWith("KB-PROG-")).every((e) => e.topic === "partner-programme" && e.audience === "partner_only" && e.cadence === "commercial")).toBe(true)
     expect(entries.find((e) => e.code === "KB-SEO-01")!.clientExplanation).toMatch(/^No honest agency can promise a position/)
     expect(entries.find((e) => e.code === "KB-TERMS-01")!.clientExplanation).toMatch(/^A starting price is the entry point/)
     expect(entries.find((e) => e.code === "KB-ONB-02")!.clientExplanation).toBe(entries.find((e) => e.code === "KB-ONB-02")!.answer)
-    expect(entries.filter((e) => e.audience === "partner_only").map((e) => e.code)).toEqual(["KB-COMM-01", "KB-COMM-02", "KB-COMM-03"])
+    expect(entries.filter((e) => e.audience === "partner_only" && !e.code.startsWith("KB-PROG-")).map((e) => e.code)).toEqual(["KB-COMM-01", "KB-COMM-02", "KB-COMM-03"])
     expect(entries.find((e) => e.code === "KB-HOST-01")!.escalation).toEqual({ required: "when", condition: "the client needs a price, a specific provider or a migration", route: "technical_scoping" })
     expect(entries.find((e) => e.code === "KB-MIG-01")!.escalation).toEqual({ required: "always", route: "technical_scoping" })
     expect(entries.find((e) => e.code === "KB-COMM-02")!.escalation).toEqual({ required: "always", route: "commercial_assistance" })

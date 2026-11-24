@@ -169,9 +169,9 @@ export function parseResource(markdown: string, file: string, problems: string[]
 export interface ParsedKnowledge { code: string; question: string; answer: string; clientExplanation: string; limitations: string; escalation: { required: "always" | "when" | "never"; condition?: string; route?: string }; topic: string; audience: "client_facing" | "partner_only"; cadence: "service" | "commercial"; sources: string[] }
 export const KNOWLEDGE_TOPIC_BY_PREFIX: Record<string, string> = {
   HOST: "hosting", DOM: "domains", DNS: "dns", EMAIL: "business-email", SEC: "website-security", ANL: "analytics", SEO: "seo", AIS: "ai-search", MIG: "wordpress-migration", RED: "redirects",
-  ACC: "accessibility", ECOM: "e-commerce", BOOK: "booking-systems", CRM: "crm", SW: "custom-software", AUTO: "automation", TERMS: "commercial-terms", PAY: "payment-schedules", COMM: "commission", ONB: "client-onboarding", COM: "client-onboarding",
+  ACC: "accessibility", ECOM: "e-commerce", BOOK: "booking-systems", CRM: "crm", SW: "custom-software", AUTO: "automation", TERMS: "commercial-terms", PAY: "payment-schedules", COMM: "commission", ONB: "client-onboarding", COM: "client-onboarding", PROG: "partner-programme",
 }
-const COMMERCIAL_TOPIC_SET = new Set(["commercial-terms", "payment-schedules", "commission"])
+const COMMERCIAL_TOPIC_SET = new Set(["commercial-terms", "payment-schedules", "commission", "partner-programme"])
 export const knowledgeSlug = (code: string) => code.toLowerCase()
 const unquote = (s: string) => s.trim().replace(/^"([\s\S]*)"\.?$/, "$1").trim()
 const stripEnd = (s: string) => s.trim().replace(/\.$/, "").trim()
@@ -223,7 +223,7 @@ export function parseKnowledgeBase(markdown: string, refs: { r08: string; r11: s
     if (!answer || !limitations || !clientExplanation || !escalation) problems.push(`${code}: incomplete entry`)
     const sources = [...new Set([...splitSources(stripEnd(field("Source").replace(/\(\*owner review\*\)/g, "").replace(/No FAQ answer exists\.?/i, ""))), `docs/expansion/empower/KNOWLEDGE-BASE.md#${code.toLowerCase()}`])]
     // Partner-only when the entry is commission guidance or has no client-safe explanation at all.
-    const partnerOnly = prefix === "COMM" || clientExplanation === "none"
+    const partnerOnly = prefix === "COMM" || prefix === "PROG" || clientExplanation === "none"
     return [{ code, question: question.trim(), answer, clientExplanation, limitations: stripEnd(limitations) + ".", escalation: escalation ?? { required: "never" }, topic,
       audience: partnerOnly ? "partner_only" : "client_facing", cadence: COMMERCIAL_TOPIC_SET.has(topic) ? "commercial" : "service", sources }] as ParsedKnowledge[]
   })

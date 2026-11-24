@@ -1,0 +1,75 @@
+{
+  "cli_version": "0.12.2",
+  "checkpoint_id": "01M87AK01QPJXGS07BP45P37C0",
+  "strategy": "manual-commit",
+  "branch": "feature/operation-empower-b2-10-launch",
+  "checkpoints_count": 4,
+  "files_touched": [
+    "admin/drizzle/meta/_journal.json",
+    "admin/playwright.empower.config.ts",
+    "admin/src/app/api/expansion/route.ts",
+    "admin/src/app/login/page.tsx",
+    "admin/src/components/expansion/ExpansionWorkspace.tsx",
+    "admin/src/components/expansion/journey.css",
+    "admin/src/lib/partner-email.test.ts",
+    "admin/src/lib/partner-journey.ts",
+    "admin/src/lib/server/ascend-review-queue.database.test.ts",
+    "admin/src/lib/server/delivery-handoff.database.test.ts",
+    "admin/src/lib/server/expansion-retention.test.ts",
+    "admin/src/lib/server/partner-invitations.database.test.ts",
+    "admin/src/lib/server/partner-journey.database.test.ts",
+    "admin/src/lib/server/partner-journey.ts",
+    "admin/src/lib/server/partner-performance.database.test.ts",
+    "admin/src/middleware.ts",
+    "docs/expansion/empower/CURRICULUM.md",
+    "docs/expansion/empower/KNOWLEDGE-BASE.md",
+    "docs/expansion/empower/KNOWLEDGE-CHECKS.md",
+    "docs/expansion/empower/LESSONS-PRACTICE.md",
+    "docs/expansion/empower/evidence/b2-10/ci-local/SUMMARY.txt",
+    "docs/expansion/empower/resources/R01-company-brochure.md",
+    "docs/expansion/empower/resources/R02-partner-handbook.md",
+    "docs/expansion/empower/resources/R09-meeting-preparation-checklist.md",
+    "docs/expansion/empower/resources/R12-commission-and-payment-reference.md",
+    "domain/partner-email.ts",
+    "scripts/check-release-env-drift.test.mjs",
+    "scripts/migration-checksums.json",
+    "scripts/shared-migration-plan.json"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 272,
+    "cache_creation_tokens": 217338,
+    "cache_read_tokens": 60308691,
+    "output_tokens": 129160,
+    "api_call_count": 131,
+    "subagent_tokens": {
+      "input_tokens": 112,
+      "cache_creation_tokens": 188098,
+      "cache_read_tokens": 7680022,
+      "output_tokens": 23608,
+      "api_call_count": 56
+    }
+  },
+  "redaction": {
+    "replacements": 465,
+    "layers": {
+      "betterleaks": 356,
+      "connection_string": 0,
+      "credential_key": 0,
+      "credential_value": 75,
+      "credentialed_uri": 215,
+      "entropy": 113,
+      "key_context": 5,
+      "provider_token": 0,
+      "shell_stdin": 0
+    }
+  }
+}

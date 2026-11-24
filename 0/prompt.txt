@@ -1,0 +1,1270 @@
+<pasted_content id="4864">
+OPERATION ASCEND — B2
+GLOBAL PARTNER GROWTH, SALES OPERATIONS & REVENUE INTELLIGENCE
+ScaleSmiths Next-Generation Partner Operating System
+Organisation: ScaleSmiths Limited
+Repository: https://github.com/TheFridey/ScaleSmiths
+Previous operation: Project AEGIS — B1.7
+Next proposed stage: B2 — Operation ASCEND
+Implementation branch: `feature/operation-ascend-b2`
+Execution mode: Autonomous engineering with verified testing and founder-controlled release gates.
+THE MISSION
+ScaleSmiths has developed the technical foundation for an international independent sales partner programme.
+B0 through B1.6 are merged.
+B1.7 is completed in draft PR #163, pending final human review and merge.
+Forge approval reliability has been addressed in draft PR #164.
+A separate hydration and history-navigation fix exists on branch:
+`claude/awesome-hawking-ximwzj`
+Commit:
+`f3e6f4d`
+The previous stages created:
+
+* Partner recruitment and onboarding.
+* Versioned agreement acceptance.
+* Founder administration.
+* Partner Academy.
+* Professional Resource Centre.
+* Technical Knowledge Base.
+* Objection Handling.
+* Unified Partner Workspace.
+* Prospect registration.
+* Meeting requests.
+* Commission infrastructure.
+* Recognition and referral systems.
+* Financial audit and concurrency safeguards.
+
+B2 transforms this foundation into a scalable commercial operating system.
+The platform should help independent partners generate business and help founders manage an expanding international sales network.
+The objective is to support growth from a handful of partners to hundreds or potentially thousands without needing a proportional increase in administrative work.
+This is a capacity target, not a claim that the current infrastructure supports those numbers.
+Do not implement superficial dashboards.
+Build genuinely functional systems backed by real data, strong permissions, appropriate automation and verified tests.
+PHASE ZERO — FINISH THE EXISTING FIXES
+This phase must be completed or correctly isolated before integrating B2.
+0.1 Verify the repository
+Fetch the latest master SHA.
+Inspect:
+
+* PR #163 — B1.7 Project AEGIS.
+* PR #164 — Forge Preview Approval.
+* Branch `claude/awesome-hawking-ximwzj`.
+* Current CI and CodeQL.
+* Current branch protection.
+* Active worktrees.
+* Migration history.
+* Relevant repository instructions.
+
+Do not assume the old state remains current.
+Do not overwrite or duplicate work.
+0.2 Complete the hydration fix
+Inspect commit `f3e6f4d`.
+Verify that the hydration marker reliably indicates that Next.js navigation is ready.
+Review:
+
+* `admin/src/app/layout.tsx`
+* `admin/src/components/admin-shell/HydrationMarker.tsx`
+* `admin/test/e2e/admin-workspace.spec.ts`
+
+Run the targeted test repeatedly.
+Confirm:
+
+* History navigation before hydration is not attempted by the test.
+* History navigation after hydration works.
+* Normal user navigation works.
+* Browser Back behaves correctly.
+* Existing assertions remain unchanged.
+* No arbitrary sleeps are introduced.
+* No timeouts are increased.
+* No unrelated production behaviour is changed.
+
+Open a small draft PR for the fix.
+Verify full CI.
+0.3 Complete the Forge approval fix
+Inspect PR #164.
+Verify:
+
+* Server-confirmed approval state.
+* Double-click protection.
+* Concurrent approval protection.
+* Failed request handling.
+* Stale-state regression coverage.
+* Browser tests.
+* CI and security checks.
+
+Confirm the server's response is authoritative.
+Do not reopen the earlier disproven root-cause hypothesis.
+0.4 Finalise B1.7
+Inspect PR #163.
+Confirm:
+
+* Full required CI passes.
+* Database rehearsal evidence is present.
+* All documented findings are accurate.
+* No secrets entered the repository.
+* The release decision package is complete.
+* Feature flags remain disabled.
+
+Recommend the merge order:
+
+1. Forge reliability fix.
+2. Hydration reliability fix.
+3. B1.7 integration and hardening.
+
+Do not merge without founder approval and the repository's required human review.
+If B1.7 remains unmerged, build B2 from the current master and keep dependent integration work separate until the required changes land.
+0.5 Operational risks
+Carry these known release issues into the B2 dependency register:
+
+* `admin.scalesmiths.co.uk` incorrectly redirects to `www.confirmakill.co.uk`.
+* Canonical admin hostname remains unresolved.
+* Production error monitoring is disabled.
+* Production off-host backups are unverified.
+* Resend configuration is incomplete.
+* AP-COM-03 remains a founder decision.
+* Approved partner agreement text is not yet available to the portal.
+* Agreement jurisdiction binding is not enforced.
+* Content approvals remain outstanding.
+
+Do not silently mark these resolved.
+The incorrect admin redirect is a security and trust concern. Propose the precise correction, but do not modify DNS without authorisation.
+PHASE ONE — B2 PRODUCT ARCHITECTURE
+Before coding, inspect the existing B-series roadmap, if one exists.
+Confirm whether B2 already has a defined scope.
+If a formally approved B2 specification exists, reconcile this directive with it rather than silently replacing it.
+Otherwise adopt the following proposed B2 structure.
+B2.1 — Advanced Partner Pipeline
+B2.2 — Intelligent Prospect Qualification
+B2.3 — Founder Sales Command Centre
+B2.4 — Revenue Intelligence & Forecasting
+B2.5 — Partner Performance & Development
+B2.6 — Delivery Handoff & Client Lifecycle
+B2.7 — Automation, Integration & Full Acceptance
+Create a dependency graph.
+Identify existing capabilities that can be extended rather than duplicated.
+Produce a concise implementation plan, then begin engineering.
+Do not stop at the planning stage.
+B2.1 — ADVANCED PARTNER PIPELINE
+The current platform supports prospect registration and core opportunity tracking.
+B2.1 must turn this into a professional, intuitive pipeline.
+Partner pipeline
+Provide a visual sales pipeline based on the existing authoritative opportunity lifecycle.
+Partners should be able to understand:
+
+* Which prospects are active.
+* Which require action.
+* Which are awaiting founder review.
+* Which meetings are pending.
+* Which meetings are confirmed.
+* Which opportunities are progressing.
+* Which opportunities are closed or no longer viable.
+* Which require further information.
+
+Do not invent status transitions that conflict with the existing financial or ownership rules.
+Views
+Implement:
+
+* Kanban-style pipeline where appropriate.
+* Table view.
+* Compact mobile list.
+* Prospect detail.
+* Search.
+* Filtering.
+* Sorting.
+
+Suggested filters:
+
+* Status.
+* Assigned partner.
+* Service interest.
+* Last activity.
+* Next action.
+* Meeting status.
+* Date added.
+
+Partner access must remain limited to their own authorised opportunities.
+Founder access must follow the established scope and role controls.
+Pipeline interactions
+Where supported by the existing state machine:
+
+* Open an opportunity.
+* Update permitted information.
+* Record an interaction.
+* Schedule an internal follow-up.
+* Request founder assistance.
+* View related meetings.
+* Access contextual guidance.
+* Review the opportunity's current status.
+
+Do not allow unrestricted drag-and-drop status changes.
+Any visual stage transition must call the server's authorised state transition.
+If a transition is forbidden, display why.
+Never let a UI gesture bypass commission eligibility or ownership checks.
+Activity timeline
+Create a meaningful, audit-backed timeline.
+Potential entries:
+
+* Prospect submitted.
+* Founder reviewed.
+* Information requested.
+* Meeting requested.
+* Meeting confirmed.
+* Proposal prepared.
+* Proposal issued.
+* Contract accepted.
+* Payment verified.
+* Commission event recorded.
+
+Only show events that genuinely occurred.
+Do not fabricate activity to populate the interface.
+Respect privacy and access restrictions.
+B2.2 — INTELLIGENT PROSPECT QUALIFICATION
+Build structured, deterministic qualification tools that help partners understand the needs of a business.
+Do not start with an expensive AI dependency.
+Qualification workspace
+Support existing or approved fields such as:
+
+* Business type.
+* Location.
+* Website availability.
+* Current digital presence.
+* Services required.
+* Main business problem.
+* Current supplier.
+* Budget indication, where voluntarily provided.
+* Desired timescale.
+* Decision-maker involvement.
+* Existing technical requirements.
+* Additional notes.
+
+Do not require unnecessary personal information.
+Qualification assistance
+Display:
+
+* Missing discovery information.
+* Suggested follow-up questions.
+* Related approved Knowledge Base articles.
+* Related objection responses.
+* Relevant professional resources.
+* Technical escalation suggestions.
+
+Use the existing content governance rules.
+Only published, current, partner-safe material may be recommended.
+Qualification score
+If implementing a score, make it transparent and explainable.
+Use a rules-based model.
+Examples:
+
+* Clearly identified business requirement.
+* Decision-maker confirmed.
+* Relevant service fit.
+* Requirements sufficiently documented.
+* Timeline understood.
+* Scope ready for founder review.
+
+Do not imply a business is guaranteed to purchase.
+Do not use protected personal characteristics.
+Do not automatically reject a prospect solely because of a score.
+Founders must be able to inspect the factors.
+Do not let the score override ownership, approval or financial rules.
+Duplicate prevention
+Review the existing prospect-ownership rules.
+Improve duplicate detection where necessary.
+Handle:
+
+* Same company with different spelling.
+* Duplicate domains.
+* Duplicate submissions.
+* Concurrent registrations.
+* Existing active ownership claims.
+
+Use server-enforced constraints and review processes.
+Do not expose another partner's confidential prospect records.
+B2.3 — FOUNDER SALES COMMAND CENTRE
+Build a practical sales operations experience for ScaleSmiths founders.
+The system must help a small central team coordinate a growing international network.
+Do not create a competing second CRM.
+Extend the existing founder Expansion workspace.
+Global pipeline overview
+Display actual:
+
+* Total active opportunities.
+* Opportunities awaiting review.
+* Meetings requiring confirmation.
+* Opportunities requiring technical scoping.
+* Proposals awaiting action.
+* Confirmed commercial outcomes.
+* Partner assistance requests.
+* Stalled opportunities.
+* Onboarding bottlenecks.
+
+Use real source data.
+Work queue
+Founders should see prioritised operational tasks.
+Examples:
+
+* New prospect requiring review.
+* Technical escalation.
+* Meeting request.
+* Missing qualification information.
+* Agreement awaiting action.
+* Proposal follow-up.
+* Partner application requiring review.
+* Notification delivery failure.
+
+Each queue item must link to a real actionable destination.
+No inert controls.
+Partner oversight
+Allow founders to inspect:
+
+* Partner status.
+* Partner region.
+* Open opportunities.
+* Confirmed outcomes.
+* Outstanding help requests.
+* Commission summaries.
+* Operational bottlenecks.
+
+Do not expose private learning progress without an approved policy.
+Do not rank partners using hidden or unexplained rules.
+Assignment and ownership
+Where founders can assign a task or opportunity:
+
+* Validate authorisation.
+* Preserve ownership history.
+* Record the reason.
+* Prevent accidental duplicate assignments.
+* Handle concurrent actions.
+* Notify the relevant partner only when approved notifications are enabled.
+
+Do not silently transfer a partner's commercial entitlement.
+B2.4 — REVENUE INTELLIGENCE & FORECASTING
+This stage should give ScaleSmiths useful visibility into business performance.
+It must use the existing financial engine.
+Do not create another source of truth.
+Revenue dashboard
+Provide:
+
+* Verified collected revenue.
+* Outstanding invoiced amounts.
+* Recognised commission liabilities.
+* Paid commissions.
+* Retainer revenue.
+* One-off build revenue.
+* Revenue by service.
+* Revenue by period.
+* Relevant partner-attributed revenue.
+* Pipeline opportunity value where supported.
+
+Clearly distinguish collected revenue from projected revenue.
+Never show forecast values as money earned.
+Forecasting
+Build a transparent forecast model.
+Suggested inputs:
+
+* Qualified active opportunities.
+* Historical conversion rates.
+* Existing contractual amounts.
+* Contracted recurring fees.
+* Known cancellation or refund events.
+* Approved pipeline stage assumptions.
+
+Use real historical data where available.
+If insufficient data exists, say so.
+Do not invent historical conversion rates.
+Forecast scenarios
+Support:
+
+* Conservative.
+* Baseline.
+* Optimistic.
+
+Every scenario must disclose its assumptions.
+Allow founders to adjust hypothetical values without changing accounting records.
+Use clearly separated forecast tables or views.
+Do not write forecasts to the financial ledger.
+Partner commission visibility
+Partners should be able to understand:
+
+* Eligible commission.
+* Earned commission.
+* Pending commission.
+* Adjustments.
+* Withdrawals.
+* Historical transactions.
+
+Use the existing approved definitions.
+Preserve the £705 example as an illustrative standard acquisition, not a promise.
+Do not change the 30% rate or other commercial logic without explicit founder authorisation.
+B2.5 — PARTNER PERFORMANCE & DEVELOPMENT
+Build fair, useful performance visibility that helps partners improve their results.
+This is intended for independent contractors.
+It must not create an employee-style performance management system.
+Personal performance
+Partners may view:
+
+* Their own registered prospects.
+* Meetings requested.
+* Meetings confirmed.
+* Qualified opportunities.
+* Completed sales.
+* Verified earned commissions.
+* Relevant achievement milestones.
+
+Avoid compulsory quotas or attendance requirements.
+Development insights
+Offer optional insights such as:
+
+* Common objections encountered.
+* Services generating interest.
+* Missing qualification information.
+* Frequently used approved resources.
+* Voluntarily completed learning.
+* Suggested material for a partner's next opportunity.
+
+Do not disclose learning progress to founders unless the privacy decision permits it.
+Do not make Academy completion a condition of commission.
+Recognition
+Integrate existing recognition and achievement systems.
+Do not invent new monetary bonuses.
+Any paid recognition event must use the existing approved commercial engine.
+Performance metrics
+Every metric should have:
+
+* A clear definition.
+* An authoritative data source.
+* An appropriate time period.
+* Correct access controls.
+* Reliable empty states.
+
+No fabricated leaderboards.
+No unsupported earnings predictions.
+No comparison of partners without explicit permission and privacy review.
+B2.6 — DELIVERY HANDOFF & CLIENT LIFECYCLE
+ScaleSmiths' sales process must connect cleanly to actual service delivery.
+This is particularly important as international partners bring in more clients.
+Handoff workflow
+When a prospect becomes an authorised client engagement, create a structured delivery handoff using the existing systems.
+Include:
+
+* Client business.
+* Approved service scope.
+* Accepted proposal or contract reference.
+* Commercial terms.
+* Technical requirements.
+* Project contacts.
+* Key deadlines.
+* Outstanding questions.
+* Assigned delivery owner.
+* Related opportunity.
+* Relevant approved documents.
+
+Do not create a real delivery commitment from an unapproved prospect.
+Founder controls
+The founder should be able to:
+
+* Review a proposed handoff.
+* Request clarification.
+* Approve the handoff.
+* Assign delivery responsibility.
+* Track handoff status.
+* Review missing requirements.
+
+Preserve audit history.
+Delivery status
+Partners should have appropriate read-only visibility into the status of opportunities they introduced.
+Do not expose internal engineering notes, credentials, confidential technical systems or unrelated client information.
+Integrate existing project systems
+Inspect whether existing Forge or other ScaleSmiths delivery tooling offers an appropriate integration boundary.
+Do not tightly couple the partner programme to Forge internal implementation details.
+Use a documented interface or existing shared contract.
+If no safe integration exists, implement an independent, reviewable handoff interface rather than invasive cross-product changes.
+B2.7 — CONTROLLED AUTOMATION & ACCEPTANCE
+Once B2's workflows exist, introduce limited automation that genuinely reduces manual administration.
+Automation examples
+
+* Detect opportunities awaiting founder review.
+* Highlight follow-ups due.
+* Identify expired meeting requests.
+* Flag incomplete qualification.
+* Surface pending handoffs.
+* Identify failed notification delivery.
+* Highlight approved content approaching review expiry.
+* Summarise operational bottlenecks.
+
+Do not send automatic messages to clients without approval.
+Do not automatically approve contracts.
+Do not automatically activate partners.
+Do not automatically create commission.
+Do not automatically move money.
+Do not automatically assign ownership where contractual entitlement may be affected.
+Automation architecture
+Use existing scheduled jobs and notification infrastructure where possible.
+Require:
+
+* Idempotency.
+* Explicit state checks.
+* Bounded retries.
+* Failure visibility.
+* Audit trails.
+* Rate limits.
+* Safe defaults.
+* Feature flags.
+* Clear ownership.
+
+Avoid introducing a complex agent framework for simple deterministic workflows.
+Future AI integration
+Design extension points for future AI assistance, including the eventual TITAN OS architecture.
+Potential future uses:
+
+* Prospect research.
+* Sales conversation preparation.
+* Opportunity summaries.
+* Proposal drafting.
+* Technical scoping assistance.
+* Partner support triage.
+* Delivery handoff preparation.
+
+For B2, establish secure interfaces rather than autonomous production agents.
+Any future AI action must follow:
+
+* Least privilege.
+* Human approval for consequential changes.
+* Auditable actions.
+* Tenant isolation.
+* Explicit budget limits.
+* Verified source material.
+* No unauthorised external communications.
+
+Do not introduce paid model usage without approval.
+PHASE TWO — VISUAL & INTERACTION STANDARD
+All B2 features must feel native to the existing ScaleSmiths design system.
+Design direction:
+
+* Premium dark interface.
+* Metallic gold.
+* Silver.
+* Clear information hierarchy.
+* Restrained animations.
+* Responsive tables.
+* Comfortable spacing.
+* Useful hover states.
+* Strong focus states.
+* Fast navigation.
+* Readable charts.
+* Polished empty states.
+
+Required interaction quality
+Test:
+
+* Every button.
+* Every menu.
+* Every tab.
+* Every dropdown.
+* Every filter.
+* Every search.
+* Every form.
+* Every pipeline interaction.
+* Every modal.
+* Every status change.
+* Every copy action.
+* Every navigation control.
+
+No placeholder buttons.
+No dead links.
+No misleading state changes.
+No fabricated numbers.
+Responsive tests
+Test at:
+
+* 320px.
+* 390px.
+* 768px.
+* 1024px.
+* 1440px.
+* 1920px.
+
+Use actual browser screenshots.
+Inspect the images.
+Test keyboard navigation.
+Respect reduced motion.
+Use WCAG 2.2 AA as the accessibility target.
+Do not rely solely on axe.
+PHASE THREE — SECURITY & DATA ISOLATION
+B2 introduces more commercially sensitive views.
+Test the full role matrix.
+Roles
+
+* Anonymous.
+* Applicant.
+* Active partner.
+* Suspended partner.
+* Revoked partner.
+* Founder.
+* Other existing authorised roles.
+
+Critical boundaries
+Partner A must not access Partner B's:
+
+* Prospects.
+* Opportunities.
+* Meetings.
+* Notes.
+* Revenue.
+* Commission.
+* Private activity.
+* Agreements.
+* Client information.
+* Delivery records.
+
+Founder-only analytics must be protected server-side.
+No UI-only authorisation.
+Threat review
+Test:
+
+* IDOR.
+* SQL injection.
+* Cross-partner data leakage.
+* Forged status transitions.
+* Concurrent assignments.
+* Duplicate prospect submissions.
+* Tampered monetary values.
+* Unauthorised opportunity transfer.
+* Unsafe note rendering.
+* Excessive information in logs.
+* Unbounded analytics queries.
+* Notification abuse.
+
+Use disposable test environments.
+Do not run destructive security tests against production.
+PHASE FOUR — DATABASE ENGINEERING
+Reuse the existing database architecture.
+Before introducing a table or migration, determine whether the information already exists.
+Prefer derived views and existing audit events where appropriate.
+For necessary new data:
+
+* Add forward-only migrations.
+* Preserve historical records.
+* Use appropriate foreign keys.
+* Enforce ownership and state constraints.
+* Apply restricted-role permissions.
+* Add indexes justified by real query patterns.
+* Document retention.
+* Test concurrent writes.
+* Include idempotency.
+
+Verify PostgreSQL 14 compatibility.
+Do not run production migrations.
+Do not modify financial ledger architecture without approval.
+PHASE FIVE — FULL SYSTEM ACCEPTANCE
+Build complete browser journeys.
+Journey A — Partner pipeline
+
+1. Partner logs in.
+2. Opens pipeline.
+3. Registers a synthetic prospect.
+4. Prospect appears in the correct state.
+5. Partner adds permitted qualification information.
+6. Contextual guidance updates.
+7. Partner requests founder assistance.
+8. Request appears in founder queue.
+9. Founder responds.
+10. Partner sees the correct outcome.
+11. Commission remains unchanged.
+
+Journey B — Founder operations
+
+1. Founder signs in with MFA.
+2. Opens the sales command centre.
+3. Reviews active opportunities.
+4. Filters by status.
+5. Opens an escalation.
+6. Reviews qualification.
+7. Performs an authorised transition.
+8. Audit history records the change.
+9. Another partner cannot access the opportunity.
+
+Journey C — Revenue
+
+1. Seed synthetic invoices and verified collections.
+2. Verify dashboard collected revenue.
+3. Verify pending revenue is separate.
+4. Verify earned commission matches the ledger.
+5. Verify reversals.
+6. Verify forecast assumptions.
+7. Change forecast scenario.
+8. Confirm no financial records change.
+
+Journey D — Delivery handoff
+
+1. Founder reviews a qualifying opportunity.
+2. Handoff is prepared.
+3. Missing scope blocks approval.
+4. Founder completes required information.
+5. Handoff is approved.
+6. Delivery owner is assigned.
+7. Partner sees permitted status.
+8. Internal technical information remains private.
+9. Handoff events are auditable.
+
+Journey E — Security
+
+1. Partner A creates an opportunity.
+2. Partner B attempts direct access.
+3. Access is refused.
+4. Partner B attempts to change its stage.
+5. Change is refused.
+6. Suspended partner cannot access the pipeline.
+7. Partner cannot open founder analytics.
+8. Draft content remains unavailable.
+9. Financial records remain unchanged by guidance interactions.
+
+PHASE SIX — REGRESSION AND CI
+Run the complete relevant test matrix.
+Include:
+
+* Admin unit.
+* Web unit.
+* TypeScript.
+* ESLint.
+* Production builds.
+* Database migrations.
+* PostgreSQL 14/16 compatibility.
+* Financial invariants.
+* Concurrency.
+* Empower Browser Acceptance.
+* Admin Forge E2E.
+* Forge Workflow E2E.
+* Security.
+* CodeQL.
+* Backup and Restore.
+* Root Hygiene.
+* Nginx Topology.
+* Cross-browser Smoke.
+* Public website performance budgets.
+
+Maintain the 900 ms performance threshold.
+Do not increase timeouts or disable tests to obtain green results.
+For flaky tests, reproduce, diagnose and fix the underlying issue when practical.
+PHASE SEVEN — DELIVERY STRATEGY
+B2 is substantial.
+Do not deliver one enormous unreviewable PR.
+Use small, complete, independently testable vertical slices.
+Recommended sequence:
+
+1. Phase Zero reliability fixes and integration preparation.
+2. B2.1 pipeline.
+3. B2.2 qualification.
+4. B2.3 founder operations.
+5. B2.4 revenue intelligence.
+6. B2.5 performance.
+7. B2.6 delivery handoff.
+8. B2.7 automation and acceptance.
+
+Create a draft PR for each significant B2 slice.
+Each PR requires:
+
+* Functional implementation.
+* Relevant tests.
+* Database compatibility evidence.
+* Browser evidence.
+* Security assessment.
+* CI results.
+* Migration notes.
+* Rollback considerations.
+* Updated documentation.
+
+Do not merge automatically.
+Do not deploy automatically.
+Do not activate unfinished features.
+Continue into the next independent slice only when its dependencies are available.
+If the entire B2 sequence cannot be completed in one execution session, deliver completed reviewable slices and accurate next-step documentation. Do not claim unfinished work is complete.
+PHASE EIGHT — PRODUCTION RELEASE BOUNDARIES
+Keep B1 release readiness separate from B2 development.
+Gate A — Dormant code deployment
+Requires:
+
+* Human-reviewed code.
+* Green CI.
+* Migration rehearsal.
+* Backup verification.
+* Operational monitoring.
+* Rollback readiness.
+* Explicit founder deployment approval.
+
+Gate B — Partner activation
+Requires:
+
+* Commercial approvals.
+* Solicitor-reviewed agreement publication.
+* Jurisdiction validation.
+* Privacy decisions.
+* Email readiness.
+* Content approval.
+* Operational support.
+* Founder activation approval.
+
+B2 development must not bypass these gates.
+All new B2 capabilities must default OFF.
+PHASE NINE — DOCUMENTATION
+Create:
+`docs/expansion/ascend/B2-ARCHITECTURE.md`
+`docs/expansion/ascend/B2-ROADMAP.md`
+`docs/expansion/ascend/B2-SECURITY-MODEL.md`
+`docs/expansion/ascend/B2-ACCEPTANCE-CRITERIA.md`
+`docs/expansion/ascend/B2-IMPLEMENTATION-STATUS.md`
+For every completed slice, record:
+
+* Branch.
+* PR.
+* Commit.
+* Implementation.
+* Database changes.
+* Financial impact.
+* Security controls.
+* Tests.
+* Browser evidence.
+* CI results.
+* Outstanding decisions.
+* Deployment status.
+
+Use accurate completion labels.
+Do not make documentation a substitute for implementation.
+PHASE TEN — INDEPENDENT REVIEW
+Perform a separate model review where supported.
+Focus on:
+
+* Architectural consistency.
+* Authentication.
+* Cross-partner isolation.
+* Financial correctness.
+* Ownership integrity.
+* Forecast accuracy.
+* Delivery handoff.
+* Concurrency.
+* Privacy.
+* Performance.
+* Accessibility.
+
+Fix critical and high findings.
+Document the remaining findings.
+Model review is not human approval.
+FINAL COMPLETION STANDARD
+B2 engineering is complete only when:
+
+* Phase Zero reliability work has been correctly integrated or remains explicitly isolated behind review gates.
+* The pipeline is functional.
+* Qualification guidance works.
+* Founder sales operations are usable.
+* Revenue reporting uses authoritative financial data.
+* Forecasts clearly distinguish assumptions from actuals.
+* Partner performance respects independent-contractor boundaries.
+* Delivery handoffs preserve approvals and audit history.
+* Automation is deterministic, safe and observable.
+* Role isolation is tested.
+* Financial invariants are preserved.
+* PostgreSQL compatibility is verified.
+* Browser journeys pass.
+* Visual and accessibility checks pass.
+* CI is green on final PR heads.
+* Independent review is documented.
+* All changes remain reviewable.
+* No unauthorised deployment or activation occurs.
+
+If any stage is blocked, complete the independent safe work and describe the blocker precisely.
+FINAL DIRECTIVE
+B1 built the partner platform.
+B2 must make that platform commercially powerful.
+Build a system where an independent partner can discover opportunities, qualify prospects, receive approved guidance, collaborate with founders and understand their commercial progress.
+Build a system where ScaleSmiths founders can coordinate international sales activity, manage a growing pipeline, understand revenue, protect margins and oversee delivery.
+Keep the financial ledger authoritative.
+Keep partners independent.
+Keep permissions strict.
+Keep commercial decisions founder-controlled.
+Keep automation safe.
+Keep the interface premium.
+Keep testing real.
+Make the system capable of growing without requiring constant manual intervention from the founders.
+OPERATION ASCEND — B2
+FROM PARTNER INFRASTRUCTURE TO GLOBAL REVENUE OPERATIONS.
+EXECUTE.
+</pasted_content id="4864">
+
+---
+
+<task-notification>
+<task-id>bvjdrrfds</task-id>
+<tool-use-id>toolu_017NZSMsx9Qo3tLdKJ2JKYfV</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\66dcb166-1645-4bd3-8607-1865b90aeffc\tasks\bvjdrrfds.output</output-file>
+<status>completed</status>
+<summary>Background command "Check grant conventions and migration references" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bemib17ie</task-id>
+<tool-use-id>toolu_01Fd6pdqJ6SMomYf5AGTCSv4</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\66dcb166-1645-4bd3-8607-1865b90aeffc\tasks\bemib17ie.output</output-file>
+<status>completed</status>
+<summary>Background command "Lint all changed admin files" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bpt854ari</task-id>
+<tool-use-id>toolu_019gdEqjQU3ZXxhFRhqY8Y7Y</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\66dcb166-1645-4bd3-8607-1865b90aeffc\tasks\bpt854ari.output</output-file>
+<status>completed</status>
+<summary>Background command "Rerun authorization tests and typecheck admin" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+carry on where you crashed
+
+---
+
+<task-notification>
+<task-id>b3ydz4goe</task-id>
+<tool-use-id>toolu_016Y6g8Q5piCX3aysqvX4QmC</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\66dcb166-1645-4bd3-8607-1865b90aeffc\tasks\b3ydz4goe.output</output-file>
+<status>completed</status>
+<summary>Background command "Migrate disposable PostgreSQL 14 database" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bycjgx74x</task-id>
+<tool-use-id>toolu_01GW2fqM1XtrQhaa3h6P2p9Q</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\66dcb166-1645-4bd3-8607-1865b90aeffc\tasks\bycjgx74x.output</output-file>
+<status>completed</status>
+<summary>Background command "Find where partner switches are documented" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+Yes, B2.1 evidence
+
+---
+
+<task-notification>
+<task-id>brcqfxifl</task-id>
+<tool-use-id>toolu_01FgVvEdrEZu5G5tujXuUAtd</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\66dcb166-1645-4bd3-8607-1865b90aeffc\tasks\brcqfxifl.output</output-file>
+<status>completed</status>
+<summary>Background command "Lint the new browser spec" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bane23qy2</task-id>
+<tool-use-id>toolu_01Q8nNqULb1LV7uqxPkqGb3b</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\66dcb166-1645-4bd3-8607-1865b90aeffc\tasks\bane23qy2.output</output-file>
+<status>completed</status>
+<summary>Background command "Wait for spec lint to finish" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bnqx39r1y</task-id>
+<tool-use-id>toolu_019tafYrtbHR3SLyN5eGBN6t</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\66dcb166-1645-4bd3-8607-1865b90aeffc\tasks\bnqx39r1y.output</output-file>
+<status>completed</status>
+<summary>Background command "Wait for new Empower acceptance job result" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>buec7gwpb</task-id>
+<tool-use-id>toolu_01UwjCtXSuR1UHh4DwafS16H</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\66dcb166-1645-4bd3-8607-1865b90aeffc\tasks\buec7gwpb.output</output-file>
+<status>completed</status>
+<summary>Background command "Wait for the new acceptance run in background" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b1el4q5ol</task-id>
+<tool-use-id>toolu_017DaozfTtTK3LTopBtmFfFM</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\66dcb166-1645-4bd3-8607-1865b90aeffc\tasks\b1el4q5ol.output</output-file>
+<status>completed</status>
+<summary>Background command "Run pipeline unit test and lint changed files" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b8zq2v22g</task-id>
+<tool-use-id>toolu_01QsPSSJRw38NXjotE34xNtJ</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\66dcb166-1645-4bd3-8607-1865b90aeffc\tasks\b8zq2v22g.output</output-file>
+<status>completed</status>
+<summary>Background command "Wait for acceptance run on latest head" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+B2.2 qualification
+
+---
+
+<task-notification>
+<task-id>bivtepabd</task-id>
+<tool-use-id>toolu_01UWeeDTUzw8gC27JpGgox56</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\66dcb166-1645-4bd3-8607-1865b90aeffc\tasks\bivtepabd.output</output-file>
+<status>completed</status>
+<summary>Background command "Run qualification, parity and expansion tests" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bytkkopij</task-id>
+<tool-use-id>toolu_0147AjZu3jx6hEAypRSG7JSv</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\66dcb166-1645-4bd3-8607-1865b90aeffc\tasks\bytkkopij.output</output-file>
+<status>completed</status>
+<summary>Background command "Migrate PG16/PG14, history check, lint and typecheck" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bnu7yeh84</task-id>
+<tool-use-id>toolu_01Qiysox35aCJ8yPg7Bt5Zri</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\66dcb166-1645-4bd3-8607-1865b90aeffc\tasks\bnu7yeh84.output</output-file>
+<status>completed</status>
+<summary>Background command "Wait for B2.2 browser acceptance result" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b8ooawvil</task-id>
+<tool-use-id>toolu_01Br1q7Zg28sXptnd3DLceKe</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\66dcb166-1645-4bd3-8607-1865b90aeffc\tasks\b8ooawvil.output</output-file>
+<status>completed</status>
+<summary>Background command "Replicate CI restricted roles and test function access" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bzt45fysm</task-id>
+<tool-use-id>toolu_01Fk6sEVr3Qtev7TrybuvpMz</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\66dcb166-1645-4bd3-8607-1865b90aeffc\tasks\bzt45fysm.output</output-file>
+<status>completed</status>
+<summary>Background command "Wait for acceptance on the fixed head" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>br4o3e4i3</task-id>
+<tool-use-id>toolu_01Lv48sfwu5XTaHdgpffKYr5</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\66dcb166-1645-4bd3-8607-1865b90aeffc\tasks\br4o3e4i3.output</output-file>
+<status>completed</status>
+<summary>Background command "Wait for acceptance on spec fix" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bsnvvqa8e</task-id>
+<tool-use-id>toolu_01KVy5sbFzBPQHHDRGSnanZ1</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\66dcb166-1645-4bd3-8607-1865b90aeffc\tasks\bsnvvqa8e.output</output-file>
+<status>completed</status>
+<summary>Background command "Wait for acceptance on layout fix" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+B2.3 command centre
+
+---
+
+<task-notification>
+<task-id>bsc9uirrl</task-id>
+<tool-use-id>toolu_01NRQfUu3sLshdmKai31shSL</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\66dcb166-1645-4bd3-8607-1865b90aeffc\tasks\bsc9uirrl.output</output-file>
+<status>completed</status>
+<summary>Background command "Lint and typecheck B2.3 changes" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bud0cc5ok</task-id>
+<tool-use-id>toolu_01U17aLsKook4Jxv4AGLaTNG</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\66dcb166-1645-4bd3-8607-1865b90aeffc\tasks\bud0cc5ok.output</output-file>
+<status>completed</status>
+<summary>Background command "Wait for B2.3 browser acceptance" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bv83vvwug</task-id>
+<tool-use-id>toolu_01XHXRK2gVGwKhK8ATwSEZJS</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\66dcb166-1645-4bd3-8607-1865b90aeffc\tasks\bv83vvwug.output</output-file>
+<status>completed</status>
+<summary>Background command "Wait for acceptance on markup fix" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bza8lv4vb</task-id>
+<tool-use-id>toolu_01MBBehWkWf2K3Wt8DhEVWcH</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\66dcb166-1645-4bd3-8607-1865b90aeffc\tasks\bza8lv4vb.output</output-file>
+<status>completed</status>
+<summary>Background command "Wait for acceptance on spec fix" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bimumkswi</task-id>
+<tool-use-id>toolu_01GPLYjaEZV5TdNHhdWdXgNt</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\66dcb166-1645-4bd3-8607-1865b90aeffc\tasks\bimumkswi.output</output-file>
+<status>completed</status>
+<summary>Background command "Wait for acceptance run" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bj74kj3gb</task-id>
+<tool-use-id>toolu_01J8NSfe5AKoL6o983d5HTXa</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\66dcb166-1645-4bd3-8607-1865b90aeffc\tasks\bj74kj3gb.output</output-file>
+<status>completed</status>
+<summary>Background command "Wait for latest head CI and summarise" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+No, start B2.4
+
+---
+
+<task-notification>
+<task-id>bzal2w1fl</task-id>
+<tool-use-id>toolu_011BBEAxSe97SMAs3DCeR2Mq</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\66dcb166-1645-4bd3-8607-1865b90aeffc\tasks\bzal2w1fl.output</output-file>
+<status>completed</status>
+<summary>Background command "Migrate PG16/14, history, lint, typecheck" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bd7udugmc</task-id>
+<tool-use-id>toolu_01TeqJHvJzL2ahEhN4fwpxKY</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\66dcb166-1645-4bd3-8607-1865b90aeffc\tasks\bd7udugmc.output</output-file>
+<status>completed</status>
+<summary>Background command "Wait for full B2.4 CI run" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bw5swhxbx</task-id>
+<tool-use-id>toolu_018cxWb2ZiaHznRazGNgisQZ</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\66dcb166-1645-4bd3-8607-1865b90aeffc\tasks\bw5swhxbx.output</output-file>
+<status>completed</status>
+<summary>Background command "Wait for full CI on new head" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+Fix the flaky race test
+
+---
+
+<task-notification>
+<task-id>b8aununl5</task-id>
+<tool-use-id>toolu_01DXXd56UB5rd6KKP729JBBU</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\66dcb166-1645-4bd3-8607-1865b90aeffc\tasks\b8aununl5.output</output-file>
+<status>completed</status>
+<summary>Background command "Repeat original race test ten times" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bzxdrkc48</task-id>
+<tool-use-id>toolu_01FRbrsD1RSsCqfeVmRpnJsA</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\66dcb166-1645-4bd3-8607-1865b90aeffc\tasks\bzxdrkc48.output</output-file>
+<status>completed</status>
+<summary>Background command "Run new tests repeatedly and the full 3B suite" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bp0gpw013</task-id>
+<tool-use-id>toolu_01EV1Yt8uDs5NLuPWXHAnzyE</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\66dcb166-1645-4bd3-8607-1865b90aeffc\tasks\bp0gpw013.output</output-file>
+<status>completed</status>
+<summary>Background command "Wait for full CI on race test PR" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+Pause here
+
+---
+
+merge everything in order, and push live
+
+---
+
+<task-notification>
+<task-id>b1c251dhd</task-id>
+<tool-use-id>toolu_01DqB9MTQGcTdReRDuX71bVQ</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\66dcb166-1645-4bd3-8607-1865b90aeffc\tasks\b1c251dhd.output</output-file>
+<status>completed</status>
+<summary>Background command "Typecheck, lint and test the merged B2.1 branch" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bajid21f8</task-id>
+<tool-use-id>toolu_012XibeZFXx9Jx3nfjXUoZ7N</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\66dcb166-1645-4bd3-8607-1865b90aeffc\tasks\bajid21f8.output</output-file>
+<status>completed</status>
+<summary>Background command "Wait for CI on all four stack heads" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bcdwu8p4i</task-id>
+<tool-use-id>toolu_01BmJZLoXBqeokkiR82VBXep</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\66dcb166-1645-4bd3-8607-1865b90aeffc\tasks\bcdwu8p4i.output</output-file>
+<status>completed</status>
+<summary>Background command "Rerun failed Web job and wait" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b8996yc81</task-id>
+<tool-use-id>toolu_01E3cNfxSqWQ6kYCwzKaJR2N</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\66dcb166-1645-4bd3-8607-1865b90aeffc\tasks\b8996yc81.output</output-file>
+<status>completed</status>
+<summary>Background command "Wait for master CI on merged SHA" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+use "ssh scalesmiths" to access the vps on my powershell
+
+---
+
+Yes, copy it

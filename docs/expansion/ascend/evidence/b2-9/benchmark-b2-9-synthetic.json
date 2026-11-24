@@ -1,0 +1,69 @@
+{
+  "host": "disposable local PostgreSQL 16, single machine",
+  "results": [
+    {
+      "partners": 10,
+      "executionsStored": 90,
+      "executedConcurrently": 40,
+      "throughputPerSecond": 2.8,
+      "claimP50ms": 58.4,
+      "claimP95ms": 1434.7,
+      "tickP50ms": 2100.7,
+      "tickP95ms": 3801.9,
+      "overviewP50ms": 2.7,
+      "explorerP50ms": 2.1,
+      "filteredExplorerP50ms": 0.8,
+      "executionsTableMB": 0.3,
+      "eventsTableMB": 0.1,
+      "duplicateCompletions": 0
+    },
+    {
+      "partners": 100,
+      "executionsStored": 640,
+      "executedConcurrently": 100,
+      "throughputPerSecond": 3.6,
+      "claimP50ms": 90.9,
+      "claimP95ms": 326.9,
+      "tickP50ms": 2023.1,
+      "tickP95ms": 3475.5,
+      "overviewP50ms": 2.5,
+      "explorerP50ms": 1.2,
+      "filteredExplorerP50ms": 0.5,
+      "executionsTableMB": 0.9,
+      "eventsTableMB": 0.5,
+      "duplicateCompletions": 0
+    },
+    {
+      "partners": 1000,
+      "executionsStored": 5540,
+      "executedConcurrently": 400,
+      "throughputPerSecond": 2.5,
+      "claimP50ms": 109.7,
+      "claimP95ms": 360.3,
+      "tickP50ms": 3071.1,
+      "tickP95ms": 5299.1,
+      "overviewP50ms": 19.7,
+      "explorerP50ms": 1.6,
+      "filteredExplorerP50ms": 0.7,
+      "executionsTableMB": 5.6,
+      "eventsTableMB": 3.1,
+      "duplicateCompletions": 0
+    },
+    {
+      "partners": 10000,
+      "executionsStored": 50940,
+      "executedConcurrently": 400,
+      "throughputPerSecond": 3.1,
+      "claimP50ms": 74.6,
+      "claimP95ms": 338.1,
+      "tickP50ms": 2180.1,
+      "tickP95ms": 6127,
+      "overviewP50ms": 105.6,
+      "explorerP50ms": 1.7,
+      "filteredExplorerP50ms": 0.7,
+      "executionsTableMB": 46.6,
+      "eventsTableMB": 25.8,
+      "duplicateCompletions": 0
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+PASS Worker token present
+PASS Worker digest matches
+PASS Worker identity configured
+PASS Worker URL is loopback HTTP or HTTPS
+FAIL Worker URL targets intended admin port 3301
+PASS ASCEND B2.7 founder automation view not enabled by the worker environment
+FAIL Effect review_notifications ACTIVE (external) without authorisation
+PASS Effect social_dispatch inactive
+PASS Effect outbox_email_dispatch inactive
+PASS Effect message_retention_delete inactive
+WARN Effect mailbox_sync ACTIVE (inbound)
+WARN Effect queued_job_processing ACTIVE (inbound)
+
+Effects a worker invocation can perform (values are never printed):
+  ON  review_notifications       external    gate: MEGATON_NOTIFICATIONS_ENABLED + MEGATON_ENABLED + MEGATON_EXTERNAL_ENABLED + MEGATON_STOP=false - Independent of every send switch.
+  off social_dispatch            external    gate: MEGATON_SEND_ENABLED + MEGATON_SOCIAL_SEND_ENABLED (+ enabled, external, not stopped)
+  off outbox_email_dispatch      external    gate: MEGATON_WORKER_SEND_ENABLED (and megaton.approve on the worker identity)
+  off message_retention_delete   destructive gate: MEGATON_MESSAGE_RETENTION_DAYS > 0 (+ enabled, not stopped) - Deletes megaton_messages rows; irreversible.
+  ON  mailbox_sync               inbound     gate: MEGATON_ENABLED + MEGATON_EXTERNAL_ENABLED + MEGATON_STOP=false + all MEGATON_MAILCOW_* set - Reads the company mailbox into the database.
+  ON  queued_job_processing      inbound     gate: MEGATON_ENABLED + MEGATON_EXTERNAL_ENABLED + MEGATON_STOP=false - Runs jobs founders already queued (for example mail sync).
+
+BLOCKED: 2 failed preflight check(s)
+exit 1
+│ status            │ stopped                                                                      │
+│ restarts          │ 2878404                                                                      │
+│ script path       │ /usr/bin/node                                                                │
+│ exec cwd          │ $RELEASES/6dcfeff4386e94db1ae5a2daad022b75aa2c7f92/admin │
+│ unstable restarts │ 0                                                                            │
+│ created at        │ 2026-11-21T09:20:11.982Z                                                     │

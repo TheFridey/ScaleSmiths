@@ -79,49 +79,55 @@ export type ActionSpec = {
   category: "analysis" | "review_preparation"
   /** Read-only or internal-only actions are safe to re-run after a crash; anything else becomes `ambiguous`. */
   idempotent: boolean
+  /**
+   * B2.9 classification of what the handler writes besides ASCEND execution bookkeeping. "none" is enforced by running
+   * the handler in a READ ONLY database transaction; "internal_review_state" writes ascend_review_jobs and its events only.
+   */
+  writes: "none" | "internal_review_state"
   effects: string
   payload: Readonly<Record<string, PayloadField>>
   defaults: Readonly<Record<string, number | string>>
 }
 
 /**
- * The complete set of executable actions. Every one is read-only analysis or internal founder-review preparation.
+ * The complete set of executable actions. Every one is read-only analysis or internal founder-review preparation
+ * (which does write internal review-task state; see `writes`).
  * Nothing contacts a prospect, partner or client, moves money, changes commission or changes a commercial record.
  */
 export const ACTION_REGISTRY: Readonly<Record<string, ActionSpec>> = {
   "ops.queue_health": {
-    type: "ops.queue_health", version: 1, category: "analysis", idempotent: true,
+    type: "ops.queue_health", version: 1, category: "analysis", idempotent: true, writes: "none",
     title: "Operational health assessment",
     description: "Summarises ASCEND execution and review-queue health: backlog, dead letters, stale leases and stale workers.",
-    effects: "Read-only. Stores an aggregate summary on the execution record.",
+    effects: "Read-only (database-enforced). Engine-wide aggregate; stores a summary on the execution record.",
     payload: { staleWorkerMinutes: { type: "integer", min: 1, max: 1440 } }, defaults: { staleWorkerMinutes: 5 },
   },
   "pipeline.inactivity_scan": {
-    type: "pipeline.inactivity_scan", version: 1, category: "analysis", idempotent: true,
+    type: "pipeline.inactivity_scan", version: 1, category: "analysis", idempotent: true, writes: "none",
     title: "Pipeline inactivity detection",
     description: "Counts open partner opportunities with no update beyond the threshold, by stage. No names or contact details are read.",
     effects: "Read-only aggregate. Founders follow up from the pipeline itself.",
     payload: { inactiveDays: { type: "integer", min: 3, max: 180 } }, defaults: { inactiveDays: 14 },
   },
   "onboarding.progress_check": {
-    type: "onboarding.progress_check", version: 1, category: "analysis", idempotent: true,
+    type: "onboarding.progress_check", version: 1, category: "analysis", idempotent: true, writes: "none",
     title: "Partner onboarding progress check",
     description: "Counts invited partners who have not activated, split into expired and still-valid invitations.",
     effects: "Read-only aggregate. Does not reissue invitations or contact anyone.",
     payload: { pendingDays: { type: "integer", min: 1, max: 90 } }, defaults: { pendingDays: 7 },
   },
   "delivery.handoff_readiness": {
-    type: "delivery.handoff_readiness", version: 1, category: "analysis", idempotent: true,
+    type: "delivery.handoff_readiness", version: 1, category: "analysis", idempotent: true, writes: "none",
     title: "Delivery handoff readiness check",
     description: "Counts contract-accepted opportunities that have not yet been handed to delivery.",
     effects: "Read-only aggregate. Handoff remains a founder decision in the delivery queue.",
     payload: {}, defaults: {},
   },
   "review.queue_preparation": {
-    type: "review.queue_preparation", version: 1, category: "review_preparation", idempotent: true,
+    type: "review.queue_preparation", version: 1, category: "review_preparation", idempotent: true, writes: "internal_review_state",
     title: "Founder review queue preparation",
     description: "Prepares due B2.7 founder review tasks (validation only), up to the batch limit.",
-    effects: "Internal only: moves review tasks to 'prepared' or retry. Never changes the sales or delivery record.",
+    effects: "Not read-only: writes internal review-task state (ascend_review_jobs and its events) to ready, retry or dead. Never changes a sales, delivery, financial or agreement record and never notifies anyone.",
     payload: { batch: { type: "integer", min: 1, max: 25 } }, defaults: { batch: 10 },
   },
 }
@@ -155,14 +161,19 @@ export function validatePayload(actionType: unknown, payload: unknown): { spec: 
   return { spec, payload: out }
 }
 
-export function validateScope(scope: unknown, allowedMarkets: readonly string[]): { markets: string[] } {
+/** Shape-only normalisation (sorted, de-duplicated markets; omitted markets mean the default). No policy check. */
+export function normaliseScope(scope: unknown, defaultMarkets: readonly string[]): { markets: string[] } {
   const input = scope === undefined ? {} : scope
   if (!input || typeof input !== "object" || Array.isArray(input)) throw new AscendFailure("invalid_payload", "The scope must be an object.")
   const keys = Object.keys(input as object)
   if (keys.some((k) => k !== "markets")) throw new AscendFailure("invalid_payload", "Only a market scope is supported.")
-  const raw = (input as { markets?: unknown }).markets ?? allowedMarkets
+  const raw = (input as { markets?: unknown }).markets ?? defaultMarkets
   if (!Array.isArray(raw) || raw.length < 1 || raw.length > 50 || raw.some((m) => typeof m !== "string" || !MARKET_CODE.test(m))) throw new AscendFailure("invalid_payload", "Markets must be two-letter country codes.")
-  const markets = [...new Set(raw as string[])].sort()
+  return { markets: [...new Set(raw as string[])].sort() }
+}
+
+export function validateScope(scope: unknown, allowedMarkets: readonly string[]): { markets: string[] } {
+  const { markets } = normaliseScope(scope, allowedMarkets)
   const outside = markets.filter((m) => !allowedMarkets.includes(m))
   if (outside.length) throw new AscendFailure("policy_rejection", `Market not authorised for this automation: ${outside.join(", ")}.`)
   return { markets }

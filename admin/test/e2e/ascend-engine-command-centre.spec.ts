@@ -122,6 +122,10 @@ test("B2.8 founder governs the automation engine end to end and the worker endpo
     await page.getByRole("button", { name: "← All executions" }).click()
     await page.getByRole("tab", { name: "Workers & identities" }).click()
     await page.getByLabel("Name").fill(`browser-worker-${tag}`)
+    // B2.9: a worker must be assigned the automations it may execute; without one, creation is refused.
+    await page.getByRole("button", { name: "Create identity" }).click()
+    await expect(page.getByRole("alert").filter({ hasText: "at least one automation" })).toBeVisible()
+    await page.getByRole("group", { name: /Automations this worker may execute/ }).getByLabel("Operational health assessment").check()
     await page.getByRole("button", { name: "Create identity" }).click()
     const secret = page.locator(".ae-secret code")
     await expect(secret).toBeVisible()

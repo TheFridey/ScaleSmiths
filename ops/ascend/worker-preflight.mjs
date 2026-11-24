@@ -9,14 +9,16 @@
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
+import { parseEnv as parseNodeEnv } from 'node:util';
 
+/**
+ * Parse exactly as the runtime does. The worker and the apps load their environment with `node --env-file`, whose parser
+ * accepts `export KEY=...`, spaces around `=` and trailing ` # comments`. A simpler line regex reads such lines as absent
+ * or as a different value, so a switch that is ON at runtime could be reported "inactive" (fail open). B2.9 uses Node's
+ * own parser (Node 22+, as package.json engines require).
+ */
 export function parseEnv(text) {
-  const env = {};
-  for (const line of text.split(/\r?\n/)) {
-    const match = /^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/.exec(line);
-    if (match) env[match[1]] = match[2].replace(/^['"]|['"]$/g, '');
-  }
-  return env;
+  return { ...parseNodeEnv(text) };
 }
 
 /** Mirrors the gating in megaton-config.ts, megaton-growth.ts and runMegatonWorker. Keep in step with those files. */

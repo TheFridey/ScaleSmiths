@@ -23,7 +23,13 @@ export default function PartnerPasswordResetPage() {
   const [notice, setNotice] = useState("")
   const [done, setDone] = useState(false)
   const headingRef = useRef<HTMLHeadingElement>(null)
-  useEffect(() => { setToken(resetToken()); setReady(true) }, [])
+  // Read the token on load and whenever the fragment changes (an emailed link opened in a tab already on this page).
+  useEffect(() => {
+    const read = () => { setToken(resetToken()); setDone(false); setNotice(''); setError('') }
+    read(); setReady(true)
+    window.addEventListener('hashchange', read)
+    return () => window.removeEventListener('hashchange', read)
+  }, [])
   useEffect(() => { headingRef.current?.focus() }, [token, done, notice])
 
   async function requestLink(event: React.FormEvent<HTMLFormElement>) {

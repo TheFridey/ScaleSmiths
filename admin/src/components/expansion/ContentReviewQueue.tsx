@@ -22,8 +22,8 @@ const STAGE_COPY: Record<Stage, { title: string; empty: string; help: string }> 
 }
 
 export function ContentReviewQueue({ a, command }: { a: Row; command: Command }) {
-  const items = (Array.isArray(a.items) ? a.items : []) as Row[]
-  const versions = (Array.isArray(a.versions) ? a.versions : []) as Row[]
+  const items = useMemo(() => (Array.isArray(a.items) ? a.items : []) as Row[], [a.items])
+  const versions = useMemo(() => (Array.isArray(a.versions) ? a.versions : []) as Row[], [a.versions])
   const actorId = str(a.actorId), founders = Number(a.activeFounders || 0)
   const [stage, setStage] = useState<Stage>('approve')
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -33,6 +33,8 @@ export function ContentReviewQueue({ a, command }: { a: Row; command: Command })
   const [reference, setReference] = useState('')
   const [notes, setNotes] = useState('')
   const [selfReason, setSelfReason] = useState('')
+  // Three months ahead satisfies both review cadences (commercial 3 months, service 6 months); the founder may choose an earlier date.
+  const [reviewBy, setReviewBy] = useState(() => { const d = new Date(); d.setUTCMonth(d.getUTCMonth() + 3); return d.toISOString().slice(0, 10) })
 
   const queue = useMemo(() => {
     const itemOf = (v: Row) => items.find((i) => i.id === v.item_id)
@@ -82,9 +84,10 @@ export function ContentReviewQueue({ a, command }: { a: Row; command: Command })
         {stage === 'approve' && <>
           <label className="ex-field">Review reference (recorded on every approval)<input value={reference} onChange={(e) => setReference(e.target.value)} maxLength={200} placeholder="For example: Founder content review, 24 November 2026" /></label>
           {founders <= 1 && <label className="ex-field">Self-approval reason (you are the only active founder)<input value={selfReason} onChange={(e) => setSelfReason(e.target.value)} maxLength={500} /></label>}
-          <button type="button" className="ex-button" disabled={busy || !selected.size || reference.trim().length < 3} onClick={() => run('decide_content_batch', { decision: 'approved', reference, ...(founders <= 1 ? { selfApprovalReason: selfReason } : {}) })}>{busy ? 'Recording…' : `Approve ${selected.size || ''} I have read`}</button>
-          <label className="ex-field">Changes needed (sent back to the author)<textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} maxLength={2000} /></label>
-          <button type="button" className="jr-action" disabled={busy || !selected.size || notes.trim().length < 3 || reference.trim().length < 3} onClick={() => run('decide_content_batch', { decision: 'changes_requested', reference, notes })}>Request changes</button>
+          <label className="ex-field">Review by (when each approved item must be reviewed again)<input type="date" value={reviewBy} onChange={(e) => setReviewBy(e.target.value)} /></label>
+          <label className="ex-field">Decision notes (recorded with each decision; for changes, what the author must fix)<textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} maxLength={2000} /></label>
+          <button type="button" className="ex-button" disabled={busy || !selected.size || reference.trim().length < 3 || notes.trim().length < 5} onClick={() => run('decide_content_batch', { decision: 'approved', reference, notes, reviewBy, ...(founders <= 1 ? { selfApprovalReason: selfReason } : {}) })}>{busy ? 'Recording…' : `Approve ${selected.size || ''} I have read`}</button>
+          <button type="button" className="jr-action" disabled={busy || !selected.size || notes.trim().length < 5 || reference.trim().length < 3} onClick={() => run('decide_content_batch', { decision: 'changes_requested', reference, notes })}>Request changes</button>
         </>}
         {stage === 'publish' && <button type="button" className="ex-button" disabled={busy || !selected.size} onClick={() => run('publish_content_batch')}>{busy ? 'Publishing…' : `Publish ${selected.size || ''}`}</button>}
       </div>

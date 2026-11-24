@@ -6,14 +6,14 @@ One list. Items 1–4 block onboarding a real partner; the rest can follow. Ever
 
 | # | What is required | Why | Recommended decision | Exact action | Blocks onboarding? | Can it wait? |
 |---|---|---|---|---|---|---|
-| 1 | **The final partner agreement text** | An invitation cannot be issued without a published, current agreement version (`assertIssuableAgreement`). Production has 0 acceptances and no published agreement (B2.9 certification). No "V4.1" document exists in the repository; the AEGIS review also found none. | Supply the solicitor-reviewed final document. Do not publish a draft. | 1. Provide the final text. 2. One founder creates it in **Founder workspace → Content → New item, kind "agreement"**, pasting the text exactly. 3. Submit; **the other founder approves** with the solicitor reference. 4. Publish. The fingerprint is the SHA-256 of title + body, recorded on every acceptance. | **Yes** | No |
+| 1 | **The final partner agreement text** | An invitation cannot be issued without a published, current agreement version (`assertIssuableAgreement`). Production has 0 acceptances and no published agreement (B2.9 certification). No "V4.1" document exists in the repository; the AEGIS review also found none. | Supply the solicitor-reviewed final V4.1 document. Do not paste it by hand; do not publish a draft. | Follow [AGREEMENT-PUBLICATION-WORKFLOW.md](AGREEMENT-PUBLICATION-WORKFLOW.md): fingerprint the file, import it byte for byte as a draft, submit, **the other founder approves** with the legal reference, publish, and confirm the published fingerprint equals the file's. | **Yes** | No |
 | 2 | Resend credentials present on the VPS | Application, invitation and activation emails | Use the existing `hello@scalesmiths.co.uk` sender | Confirm `RESEND_API_KEY` and `RESEND_FROM` exist in the canonical `.env` (presence only), set `PARTNER_EMAIL_ENABLED=true`, then run one controlled test application to a founder-owned address | No (links can be shared by hand) but strongly recommended | Briefly |
 | 3 | Approve the B2.10 release and the activation switches | Deploying changes production | Approve rows 2–7 of the [activation matrix](PRODUCTION-FEATURE-MATRIX.md) | Follow [PARTNER-ACTIVATION-RUNBOOK.md](PARTNER-ACTIVATION-RUNBOOK.md) | **Yes** | No |
 | 4 | Confirm `GB` is the approved market | Invitation and contract gates | Keep UK-first | Founder workspace → Commission centre → Markets: confirm GB is `approved` with all four reviews | **Yes** | No |
 
 ## Content to approve (one review session)
 
-All drafts are in the Content Studio once imported (runbook step 5). They arrive as **drafts**; nothing is approved for you. See [CONTENT-PUBLICATION-REGISTER.md](CONTENT-PUBLICATION-REGISTER.md) for the full list.
+All drafts are in the Content Studio once imported (runbook step 5). They arrive as **drafts**; nothing is approved for you. Use **Founder workspace → Content → Review queue**: the author founder ticks items under *Drafts to submit*; the other founder reads each item, enters one review reference and approves under *Awaiting your approval*; then publishes under *Approved, ready to publish* (lessons go before courses automatically). Every content item was checked for accuracy against the published prices and programme terms; see [CONTENT-PUBLICATION-REGISTER.md](CONTENT-PUBLICATION-REGISTER.md).
 
 | # | What | Recommended | Blocks onboarding? |
 |---|---|---|---|
@@ -36,6 +36,6 @@ All drafts are in the Content Studio once imported (runbook step 5). They arrive
 
 - Industry website demonstrations (none exist today; partners can request one through Meetings & support).
 - Partner pack of approved logos, brand guidelines and case studies.
-- Partner self-service password reset (founders can reset today).
 - Generated digital business card page; CircleCard integration.
-- Applicant self-withdrawal.
+
+Done in B2.10 and no longer open: partner self-service password recovery and applicant self-withdrawal (both need `PARTNER_EMAIL_ENABLED` and Resend credentials to deliver their links).

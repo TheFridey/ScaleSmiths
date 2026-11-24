@@ -4,7 +4,7 @@ import { deriveJourney, type JourneyFacts } from "./partner-journey"
 const base = (over: Partial<JourneyFacts> = {}): JourneyFacts => ({
   displayName: "Test Partner", agreement: "awaiting_acceptance", acknowledged: {},
   features: { academy: false, resources: false, knowledge: false, objections: false, pipeline: false, performance: false, guidance: false, profilePublication: false },
-  content: { courses: 0, lessonsCompleted: 0, resources: 0, resourceCategories: [], knowledgeArticles: 0, objectionResponses: 0 },
+  content: { courses: 0, lessonsCompleted: 0, resources: 0, resourceLabels: [], knowledgeArticles: 0, objectionResponses: 0 },
   opportunities: 0, allocatedProspects: 0, referralCode: null, meetings: { open: 0, byType: {} }, profile: { eligible: false, status: null }, approvedMarkets: ["United Kingdom"], toolkit: {},
   ...over,
 })
@@ -29,7 +29,7 @@ describe("Operation Empower B2.10 partner journey derivation", () => {
   })
 
   it("never claims content is available when nothing is published or the switch is off", () => {
-    const off = deriveJourney(base({ content: { courses: 13, lessonsCompleted: 0, resources: 13, resourceCategories: ["Pricing"], knowledgeArticles: 32, objectionResponses: 12 } }))
+    const off = deriveJourney(base({ content: { courses: 13, lessonsCompleted: 0, resources: 13, resourceLabels: ["R11 Commercial pricing reference reference"], knowledgeArticles: 32, objectionResponses: 12 } }))
     for (const key of ["academy", "pricing_documents", "knowledge_base", "objection_handling"]) expect(tool(off, key).status).not.toBe("available")
     const unpublished = deriveJourney(base({ features: { ...base().features, academy: true, resources: true, knowledge: true } }))
     expect(tool(unpublished, "academy").status).toBe("awaiting_setup")
@@ -38,7 +38,7 @@ describe("Operation Empower B2.10 partner journey derivation", () => {
   })
 
   it("marks published content available with a working action", () => {
-    const j = deriveJourney(base({ features: { ...base().features, academy: true, resources: true, knowledge: true }, content: { courses: 3, lessonsCompleted: 0, resources: 4, resourceCategories: ["Pricing", "Commission", "Brochure"], knowledgeArticles: 5, objectionResponses: 0 } }))
+    const j = deriveJourney(base({ features: { ...base().features, academy: true, resources: true, knowledge: true }, content: { courses: 3, lessonsCompleted: 0, resources: 4, resourceLabels: ["R11 Commercial pricing reference reference", "R12 Commission and payment reference reference", "R01 Company brochure brochure"], knowledgeArticles: 5, objectionResponses: 0 } }))
     expect(tool(j, "academy")).toMatchObject({ status: "available", action: { kind: "link", href: "/partner/academy", label: "Start learning" } })
     expect(tool(j, "pricing_documents").status).toBe("available")
     expect(tool(j, "commission_documents").status).toBe("available")

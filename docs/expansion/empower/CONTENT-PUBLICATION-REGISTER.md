@@ -4,6 +4,35 @@
 
 **Import.** Drafts are loaded by `admin/scripts/import-empower-curriculum.mjs` (drafts only; requires `EMPOWER_IMPORT_DATABASE_URL`, `--founder-email`, `--confirm-import`; refuses non-test databases without `--allow-database`). Whether the drafts are already imported in production is **not verified**. Run the importer's dry run first (runbook step 5).
 
+## Accuracy review (B2.10)
+
+Every course, lesson, knowledge check, resource, knowledge entry and objection response was reviewed against `published-starting-prices.ts`, `partner-programme.ts`, `COMMISSION-RULES.md`, the published FAQ and service pages, and the portal code. These all matched: prices, commission figures (30%, the £705 standard example, the discounted rows, the payment schedules), the £250 planned referral reward, meeting types, the referral code format and every named client. No invented testimonials, results or converted prices were found, and no training is presented as compulsory.
+
+Corrected before publication:
+
+- **Market gate** (KB-PROG-03, KB-PROG-09): an opportunity progresses only when both the partner's operating market and the client's market are approved; no unsolicited outreach.
+- **Discount allowances** (KB-PROG-06): now matches R08, R11 and R12; none is approved (`AP-COM-05`).
+- **Bespoke routing** (KB-PROG-05): now routes to `bespoke_discovery`.
+- **Wording:**
+  - the commercial-approval wording in C07-L7 and R09;
+  - the dated "no market approved" line (C11-L7);
+  - the programme title (C12-L2);
+  - unapproved AI-search wording (KB-PROG-01);
+  - a results-implying line (KB-SEO-03);
+  - the withdrawal status wording (KB-COMM-02, R12);
+  - the full GBP boundary (R01);
+  - the sign-in address (R02);
+  - a client-facing partner-term question (C07-L3).
+
+Named clients remain unpublished until `AP-PROOF-01` is approved.
+
+## How to publish (exact requirements)
+
+1. **Import the drafts.** Run `EMPOWER_IMPORT_DATABASE_URL=<provisioning URL> node admin/scripts/import-empower-curriculum.mjs --founder-email=<author founder> --allow-database=<db> --dry-run`, then again with `--confirm-import`. Production needs the founders' permission.
+2. **Submit.** The author founder opens Content → Review queue → *Drafts to submit*, selects the items and clicks **Submit**. Items with content-check findings stay drafts and are listed with the reason.
+3. **Approve.** The second founder opens *Awaiting your approval*, reads each item, enters a review reference and clicks **Approve**. Do not approve any item still marked `BLOCKED` or `FOUNDER DECISION` in its source until that decision is made.
+4. **Publish.** Open *Approved, ready to publish* and click **Publish**. Then switch on the matching area (Academy, Resource Centre, Knowledge Base, Objection handling) as set out in [PRODUCTION-FEATURE-MATRIX.md](PRODUCTION-FEATURE-MATRIX.md). The partner journey shows an area as Available as soon as its content is published and the area is on.
+
 ## Academy (13 courses, 91 lessons, 65 knowledge checks)
 
 Source: [CURRICULUM.md](CURRICULUM.md), [LESSONS-FOUNDATIONS.md](LESSONS-FOUNDATIONS.md), [LESSONS-PRACTICE.md](LESSONS-PRACTICE.md), [KNOWLEDGE-CHECKS.md](KNOWLEDGE-CHECKS.md).
@@ -75,4 +104,4 @@ Parsed from R08. All drafts.
 
 ## Agreement
 
-No final agreement document is in the repository. See [FOUNDER-LAUNCH-CHECKLIST.md](FOUNDER-LAUNCH-CHECKLIST.md) item 1. No agreement wording was generated.
+No final agreement document is in the repository; the V4.1 documents are to be supplied by the founders. Publication follows [AGREEMENT-PUBLICATION-WORKFLOW.md](AGREEMENT-PUBLICATION-WORKFLOW.md). No agreement wording was generated.

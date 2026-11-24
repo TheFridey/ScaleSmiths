@@ -49,11 +49,11 @@ export async function submitContentBatch(input: { versionIds?: unknown }) {
 }
 
 /** The reviewing founder approves (or requests changes to) each version, with one recorded reference for the review session. */
-export async function decideContentBatch(input: { versionIds?: unknown; decision?: unknown; reference?: unknown; notes?: unknown; selfApprovalReason?: unknown }) {
+export async function decideContentBatch(input: { versionIds?: unknown; decision?: unknown; reference?: unknown; notes?: unknown; reviewBy?: unknown; selfApprovalReason?: unknown }) {
   await requireCapability("expansion.manage")
   if (input.decision !== "approved" && input.decision !== "changes_requested") throw new ContentError("A batch can approve or request changes. Reject items individually.")
   const rows = await describe(versionIds(input.versionIds))
-  return { action: String(input.decision), results: await each(rows, (id) => decideContentVersion({ versionId: id, decision: input.decision, reference: input.reference, notes: input.notes, selfApprovalReason: input.selfApprovalReason })) }
+  return { action: String(input.decision), results: await each(rows, (id) => decideContentVersion({ versionId: id, decision: input.decision, reference: input.reference, notes: input.notes, reviewBy: input.decision === 'approved' ? input.reviewBy : undefined, selfApprovalReason: input.selfApprovalReason })) }
 }
 
 /** Publishes approved versions, lessons before courses. Anything not approved is refused by the single-version service. */

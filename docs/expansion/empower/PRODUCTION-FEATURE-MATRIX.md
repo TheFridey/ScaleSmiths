@@ -32,6 +32,10 @@ All switches are parsed as the exact string `true`. Every rollback is: set the v
 | `ASCEND_SCHEDULER_ENABLED`, `ASCEND_AGENT_API_ENABLED`, `ASCEND_AUTOMATION_ENABLED` | false / false / unset | **unchanged** | No unattended scheduling or machine execution; B2.9 certification governs these |
 | `MEGATON_*` | per B2.9 | unchanged | Megaton containment |
 
+## Recovery and withdrawal (no new switch)
+
+Password recovery and applicant withdrawal add no switch. Their pages and endpoints are always present after deployment and always answer with the same generic message. They deliver a link only when row 2 is on (`PARTNER_EMAIL_ENABLED` with Resend). Until then, founders reset passwords and record withdrawals as they do today.
+
 ## Drift protection
 
-B2.10 adds the 13 partner switches (activation, email, Academy, resources, knowledge, objections, unified workspace, pipeline, qualification, performance, delivery handoff, profile publication ×2) to `GOVERNED_SWITCHES` in `scripts/check-release-env-drift.mjs`. A release environment that lacks or differs from the canonical file on any of them now blocks the release. **Before the first B2.10 release, copy the approved values into the canonical `.env` on the VPS**, otherwise the check will (correctly) report drift.
+B2.10 adds the 13 partner switches (activation, email, Academy, resources, knowledge, objections, unified workspace, pipeline, qualification, performance, delivery handoff, profile publication ×2) to `GOVERNED_SWITCHES` in `scripts/check-release-env-drift.mjs`. A release environment that lacks or differs from the canonical file on any of them now blocks the release. A test (`scripts/check-release-env-drift.test.mjs`) also proves that each of the 13 is fail-closed: it is read in code only as an exact `"true"` comparison, and documented `false` in `.env.example`. **Before the first B2.10 release, copy the approved values into the canonical `.env` on the VPS**, otherwise the check will (correctly) report drift.

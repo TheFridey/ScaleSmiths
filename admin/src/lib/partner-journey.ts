@@ -37,7 +37,7 @@ export type JourneyFacts = {
   agreement: AgreementFact
   acknowledged: Partial<Record<AcknowledgedStep, string>>
   features: { academy: boolean; resources: boolean; knowledge: boolean; objections: boolean; pipeline: boolean; performance: boolean; guidance: boolean; profilePublication: boolean }
-  content: { courses: number; lessonsCompleted: number; resources: number; resourceCategories: string[]; knowledgeArticles: number; objectionResponses: number }
+  content: { courses: number; lessonsCompleted: number; resources: number; resourceLabels: string[]; knowledgeArticles: number; objectionResponses: number }
   opportunities: number
   allocatedProspects: number
   referralCode: string | null
@@ -131,7 +131,8 @@ export function deriveJourney(f: JourneyFacts): PartnerJourney {
   const completed = required.filter((s) => s.status === "completed").length
   const percent = Math.round((completed / required.length) * 100)
 
-  const categories = f.content.resourceCategories
+  // Resource categories are a fixed set (brochure, guide, checklist, template, reference); the subject is in the title.
+  const categories = f.content.resourceLabels
   const academyLive = f.features.academy && f.content.courses > 0
   const profileStatus: { status: JourneyStatus; detail: string } = !f.profile.eligible
     ? { status: "coming_soon", detail: "Unlocks when you reach five qualifying clients. Nothing is published without your consent and a founder's approval." }
@@ -153,7 +154,7 @@ export function deriveJourney(f: JourneyFacts): PartnerJourney {
     { key: "objection_handling", group: "learn", title: "Objection handling", benefit: "Approved responses to common concerns, with when to involve a founder.", ...contentStatus(f.features.objections, f.content.objectionResponses, undefined), action: f.features.objections && f.content.objectionResponses > 0 ? { kind: "link", href: "/partner/objections", label: "View responses" } : null },
     { key: "pricing_documents", group: "sell", title: "Pricing guide", benefit: "Published starting prices, what they include and how bespoke quotations work.", ...contentStatus(f.features.resources, categoryCount(categories, /pric/i), f.toolkit.pricing_documents), action: f.features.resources && categoryCount(categories, /pric/i) ? { kind: "link", href: "/partner/resources", label: "Open pricing guide" } : null },
     { key: "commission_documents", group: "start", title: "Commission guide", benefit: "How commission is earned, when it becomes payable and how withdrawals work, with worked examples.", ...contentStatus(f.features.resources, categoryCount(categories, /commission/i), f.toolkit.commission_documents), action: f.features.resources && categoryCount(categories, /commission/i) ? { kind: "link", href: "/partner/resources", label: "Read the guide" } : { kind: "tab", tab: "finance", label: "Open commission centre" } },
-    { key: "brochures", group: "sell", title: "Sales brochures and guides", benefit: "Client-safe service overviews, discovery questionnaires and meeting guides.", ...contentStatus(f.features.resources, categoryCount(categories, /brochure|service|sales|guide/i), f.toolkit.brochures), action: f.features.resources && f.content.resources > 0 ? { kind: "link", href: "/partner/resources", label: "View resources" } : null },
+    { key: "brochures", group: "sell", title: "Sales brochures and guides", benefit: "Client-safe service overviews, discovery questionnaires and meeting guides.", ...contentStatus(f.features.resources, categoryCount(categories, /brochure|guide|checklist|questionnaire|template/i), f.toolkit.brochures), action: f.features.resources && f.content.resources > 0 ? { kind: "link", href: "/partner/resources", label: "View resources" } : null },
     { key: "industry_demonstrations", group: "sell", title: "Website demonstrations", benefit: "Example websites by industry to show prospects what ScaleSmiths builds. Examples, not client projects.", ...contentStatus(f.features.resources, categoryCount(categories, /demonstration/i), f.toolkit.industry_demonstrations), action: f.features.resources && categoryCount(categories, /demonstration/i) ? { kind: "link", href: "/partner/resources", label: "Browse demonstrations" } : { kind: "tab", tab: "meetings", label: "Request a demonstration", meetingType: "commercial_assistance" } },
     { key: "email", group: "brand", title: "ScaleSmiths email address", benefit: "A professional ScaleSmiths mailbox for client correspondence.", ...manualStatus(f.toolkit.email, true), action: f.toolkit.email ? null : { kind: "command", action: "request_toolkit_item", itemKey: "email", label: "Request setup" } },
     { key: "business_card", group: "brand", title: "Digital business card", benefit: "A ScaleSmiths-branded card with your approved name, role and the ScaleSmiths enquiry route.", ...manualStatus(f.toolkit.business_card, true), action: f.toolkit.business_card ? null : { kind: "command", action: "request_toolkit_item", itemKey: "business_card", label: "Request card" } },

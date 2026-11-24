@@ -4,10 +4,19 @@
 
 ## 0. What this release changes
 
-- **Migration 0105** `expansion_onboarding_progress`: one new append-only table (partner acknowledgements). Additive; no existing table is altered; no data is rewritten. Journal: admin 106 entries.
+- **Migration 0105** `expansion_onboarding_progress`: one new append-only table (partner acknowledgements).
+- **Migration 0106**:
+  - adds `partner_password_resets` and `partner_application_withdrawals`, which store SHA-256 token digests only, with expiry enforced by CHECK constraints;
+  - replaces the `partner_notifications` kind constraint with a strict superset that adds `password_reset` and `withdrawal_confirmation`.
+- Both migrations are additive and rewrite no data. Journal: admin 107 entries.
+- Both were rehearsed on PostgreSQL 14.25 with least-privilege checks: the web role cannot read either token table.
 - Partner workspace: new journey ("Getting started"), overview summary with empty states, grouped navigation, Coming soon page, meeting-type preselection.
 - Founder workspace: "Partner onboarding" command centre (checklist per partner, toolkit requests).
 - Partner API: two new actions, `acknowledge_onboarding_step` and `request_toolkit_item` (records intent as `awaiting_approval`; never overwrites a founder record).
+- Public endpoints `/api/partner/password-reset` and `/api/partner/withdraw`, with pages `/partner/reset` and `/partner/withdraw`:
+  - unauthenticated, but same-origin only, rate-limited and limited to 8 KB requests;
+  - deliver links only when `PARTNER_EMAIL_ENABLED=true` and Resend is configured.
+- Founder: consolidated content review queue; waiting-on-founders queue and applicant pipeline in Partner onboarding.
 - Drift check now governs 13 partner switches.
 - Knowledge-base drafts: 14 new partner-programme entries (drafts only; import is a separate, explicit step).
 
@@ -60,6 +69,8 @@ Use a founder-owned test mailbox, never a real applicant. Record evidence in `ev
 3. Open the invitation link, preview, accept the agreement, set a password, sign in.
 4. Getting started shows 1/4 (agreement accepted); acknowledge the three steps; progress shows 100%; sign out and back in, still 100%.
 5. Register a test prospect, request a technical assistance meeting, create a referral code, request an email address; confirm the founder command centre shows the progress and the toolkit request.
+5a. Request a password reset for the synthetic partner at `/partner/reset`; use the emailed link; confirm the old session is signed out and the new password works.
+5b. Submit a second synthetic application, then withdraw it at `/partner/withdraw` with the emailed link; confirm the founder Recruitment tab shows it as withdrawn.
 6. As a second synthetic partner, confirm none of the first partner's data is visible, and `/expansion` is refused.
 7. Clean up: decline/withdraw the synthetic application, suspend the synthetic partner user. Do not create financial records.
 

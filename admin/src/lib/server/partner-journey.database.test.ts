@@ -37,7 +37,7 @@ describe("Operation Empower B2.10 partner journey (PGlite)", () => {
       create table expansion_opportunities(id uuid primary key,partner_id uuid);
       create table expansion_markets(country_code text primary key,country_name text,status text);
       create table empower_content_items(id uuid primary key,kind text,audience text,slug text);
-      create table empower_content_versions(id uuid primary key,item_id uuid,status text,review_by date,fields jsonb);
+      create table empower_content_versions(id uuid primary key,item_id uuid,status text,review_by date,fields jsonb,title text);
       create table empower_academy_completions(id uuid primary key,partner_id uuid,lesson_version_id uuid);
       create table expansion_audit(id serial primary key,actor_id uuid,entity_id text,action text,details jsonb,created_at timestamptz default now());
     `)
@@ -95,7 +95,7 @@ describe("Operation Empower B2.10 partner journey (PGlite)", () => {
 
   it("counts only published, in-date content", async () => {
     as(USER_A)
-    await q(`insert into empower_content_items values('30000000-0000-4000-8000-000000000001','course','partner','c1'),('30000000-0000-4000-8000-000000000002','course','partner','c2'),('30000000-0000-4000-8000-000000000003','course','partner','c3')`)
+    await q(`insert into empower_content_items values('30000000-0000-4000-8000-000000000001','course','partner_only','c1'),('30000000-0000-4000-8000-000000000002','course','partner_only','c2'),('30000000-0000-4000-8000-000000000003','course','partner_only','c3')`)
     await q(`insert into empower_content_versions values(gen_random_uuid(),'30000000-0000-4000-8000-000000000001','published',current_date+30,'{}'),(gen_random_uuid(),'30000000-0000-4000-8000-000000000002','draft',current_date+30,'{}'),(gen_random_uuid(),'30000000-0000-4000-8000-000000000003','published',current_date-1,'{}')`)
     expect((await getPartnerJourney()).tools.find((t) => t.key === "academy")).toMatchObject({ status: "available", detail: "1 course ready. Learning is optional." })
   })

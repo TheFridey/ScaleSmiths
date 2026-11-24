@@ -68,6 +68,9 @@ test('Operation EMPOWER B2.10: authenticated partner journey, recovery, withdraw
   await su.query('delete from expansion_onboarding_progress where partner_id in ($1,$2)', [P1_ID, P2_ID])
   await su.query('alter table expansion_onboarding_progress enable trigger expansion_onboarding_progress_no_change')
   await su.query("delete from expansion_toolkit_items where partner_id=$1 and item_key='email'", [P1_ID])
+  const clearLimits = () => su.query('delete from login_rate_limits') // same pattern as the ASCEND specs; the limiter stays in force
+  await clearLimits()
+  await su.query('update admin_users set password_hash=$1 where lower(email)=$2', [await bcrypt.hash(PASSWORD, 12), P2]) // repeatable: a partial earlier run may have reset it
 
   let p1 = await login(browser, P1)
   p1.page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(`p1: ${m.text()}`) })
@@ -128,11 +131,13 @@ test('Operation EMPOWER B2.10: authenticated partner journey, recovery, withdraw
     await p1.context.close()
     p1 = await login(browser, P1)
     await tab(p1.page, 'Getting started')
-    await expect(p1.page.locator('.jr-steps li[data-done=true]')).toHaveCount(await p1.page.locator('.jr-steps li').count() - ((await su.query('select (agreement_acceptance_id is not null) a from expansion_partners where id=$1', [P1_ID])).rows[0].a ? 0 : 1))
+    await expect(p1.page.locator('.jr-steps li')).toHaveCount(4)
+    await expect(p1.page.locator('.jr-steps li[data-done=true]')).toHaveCount((await su.query('select (agreement_acceptance_id is not null) a from expansion_partners where id=$1', [P1_ID])).rows[0].a ? 4 : 3)
     await expect(p1.page.locator('.jr-tool').filter({ hasText: 'ScaleSmiths email address' })).toContainText('Awaiting setup')
   })
 
   await test.step('[API] Isolation and refusals', async () => {
+    await clearLimits()
     const p2 = await login(browser, P2)
     const journey = (await api(p2.context, '/api/partner')).body.journey
     expect(journey.required.find((s: { key: string }) => s.key === 'how_you_earn').status).toBe('action_required') // partner one's progress is not partner two's
@@ -143,23 +148,27 @@ test('Operation EMPOWER B2.10: authenticated partner journey, recovery, withdraw
     await p2.context.close()
   })
 
+  await clearLimits()
   const fa = await login(browser, FOUNDER_A.email, PASSWORD, FOUNDER_A.secret)
   const fb = await login(browser, FOUNDER_B.email, PASSWORD, FOUNDER_B.secret)
   const title = `TEST ONLY Sales guide ${run}`
   await test.step('[UI] Consolidated review queue: author submits, second founder approves and publishes', async () => {
     const created = await api(fa.context, '/api/expansion', { action: 'create_content_item', kind: 'resource', slug: `b210-sales-guide-${run}`, audience: 'partner_only', cadence: 'service', title,
-      body: 'How to introduce ScaleSmiths services at the published starting prices. TEST ONLY content for automated acceptance.', fields: { summary: 'Introducing ScaleSmiths services', category: 'Sales guide' }, sourceRefs: ['web/src/lib/published-starting-prices.ts'] })
+      body: 'How to introduce ScaleSmiths services at the published starting prices. TEST ONLY content for automated acceptance.', fields: { summary: 'Introducing ScaleSmiths services', category: 'guide' }, sourceRefs: ['web/src/lib/published-starting-prices.ts'] })
     expect(created.status).toBe(200)
-    await fa.page.goto(`${origin()}/expansion?tab=content`)
+    await fa.page.goto(`${origin()}/expansion`)
+    await fa.page.getByRole('navigation', { name: 'Partner workspace' }).getByRole('button', { name: 'Content', exact: true }).click()
     const queueA = fa.page.locator('section.ex-review-queue')
     await queueA.getByRole('tab', { name: /Drafts to submit/ }).click()
     await queueA.getByRole('checkbox', { name: `Select ${title}` }).check()
     await queueA.getByRole('button', { name: /^Submit 1 for review/ }).click()
     await expect(queueA.getByRole('status')).toContainText('1 done')
-    await fb.page.goto(`${origin()}/expansion?tab=content`)
+    await fb.page.goto(`${origin()}/expansion`)
+    await fb.page.getByRole('navigation', { name: 'Partner workspace' }).getByRole('button', { name: 'Content', exact: true }).click()
     const queueB = fb.page.locator('section.ex-review-queue')
     await queueB.getByRole('checkbox', { name: `Select ${title}` }).check()
     await queueB.getByLabel('Review reference (recorded on every approval)').fill(`TEST ONLY founder review ${run}`)
+    await queueB.getByLabel(/^Decision notes/).fill('TEST ONLY: read in full; accurate against the published prices.')
     await shots(fb.page, 'founder-review-queue')
     await queueB.getByRole('button', { name: /^Approve 1 I have read/ }).click()
     await expect(queueB.getByRole('status')).toContainText('1 done')
@@ -170,9 +179,9 @@ test('Operation EMPOWER B2.10: authenticated partner journey, recovery, withdraw
     const row = (await su.query("select v.status,a.decision,ua.email approver from empower_content_versions v join empower_content_approvals a on a.version_id=v.id join admin_users ua on ua.id=a.decided_by where v.title=$1", [title])).rows[0]
     expect(row).toEqual({ status: 'published', decision: 'approved', approver: FOUNDER_B.email }) // recorded as the founder who clicked
     // A founder cannot batch-approve their own content while another founder is active.
-    const own = await api(fa.context, '/api/expansion', { action: 'create_content_item', kind: 'resource', slug: `b210-own-${run}`, audience: 'partner_only', cadence: 'service', title: `TEST ONLY own ${run}`, body: 'TEST ONLY content written by founder A for the self-approval refusal check.', fields: { summary: 'x', category: 'Sales guide' }, sourceRefs: ['web/src/lib/published-starting-prices.ts'] })
+    const own = await api(fa.context, '/api/expansion', { action: 'create_content_item', kind: 'resource', slug: `b210-own-${run}`, audience: 'partner_only', cadence: 'service', title: `TEST ONLY own ${run}`, body: 'TEST ONLY content written by founder A for the self-approval refusal check.', fields: { summary: 'x', category: 'guide' }, sourceRefs: ['web/src/lib/published-starting-prices.ts'] })
     await api(fa.context, '/api/expansion', { action: 'submit_content', versionId: own.body.result.versionId })
-    const self = await api(fa.context, '/api/expansion', { action: 'decide_content_batch', versionIds: [own.body.result.versionId], decision: 'approved', reference: 'TEST', reviewBy: inMonths(2) })
+    const self = await api(fa.context, '/api/expansion', { action: 'decide_content_batch', versionIds: [own.body.result.versionId], decision: 'approved', reference: 'TEST', notes: 'TEST ONLY self-approval attempt', reviewBy: inMonths(2) })
     expect(self.status).toBe(200)
     expect(self.body.result.results[0].ok).toBe(false)
   })
@@ -193,6 +202,7 @@ test('Operation EMPOWER B2.10: authenticated partner journey, recovery, withdraw
   })
 
   await test.step('[UI] Self-service password recovery: generic reply, one-time link, sessions ended, new password works', async () => {
+    await clearLimits()
     const p2 = await login(browser, P2)
     const visitor = await browser.newContext(); const v = await visitor.newPage()
     await v.goto(`${origin()}/login`)
@@ -218,7 +228,7 @@ test('Operation EMPOWER B2.10: authenticated partner journey, recovery, withdraw
     await v.getByLabel('New password', { exact: true }).fill('TEST-ONLY-another-password')
     await v.getByLabel('Confirm new password').fill('TEST-ONLY-another-password')
     await v.getByRole('button', { name: 'Save new password' }).click()
-    await expect(v.getByRole('alert')).toContainText('invalid or has expired') // single use
+    await expect(v.locator('.activate-error')).toContainText('invalid or has expired') // single use
     await p2.page.reload(); await expect(p2.page).toHaveURL(/\/login/) // the old session ended
     const again = await login(browser, P2, 'TEST-ONLY-new-password-2026')
     await expect(again.page.getByRole('navigation', { name: 'Partner workspace' })).toBeVisible()
@@ -227,8 +237,9 @@ test('Operation EMPOWER B2.10: authenticated partner journey, recovery, withdraw
   })
 
   await test.step('[UI] Applicant withdrawal: emailed-link proof, confirmation, invitation revoked, record kept for retention', async () => {
+    await clearLimits()
     const email = `b210-applicant-${run}@example.invalid`
-    const app = (await su.query("insert into partner_applications(name,email,region,experience,motivation,privacy_version,status,retention_until) values('TEST ONLY Applicant',$1,'TEST ONLY','TEST ONLY','TEST ONLY','test',$2,now()+interval '180 days') returning id", [email, 'under_review'])).rows[0].id
+    const app = (await su.query("insert into partner_applications(name,email,region,experience,motivation,privacy_version,status,retention_until) values('TEST ONLY Applicant',$1,'TEST ONLY','Synthetic browser fixture','Synthetic browser fixture','test',$2,now()+interval '180 days') returning id", [email, 'under_review'])).rows[0].id
     const visitor = await browser.newContext(); const v = await visitor.newPage()
     await v.goto(`${origin()}/partner/withdraw`)
     await v.getByLabel('Email address').fill(email)
@@ -243,7 +254,7 @@ test('Operation EMPOWER B2.10: authenticated partner journey, recovery, withdraw
     await expect(v.getByRole('heading', { name: 'Your application has been withdrawn.' })).toBeVisible()
     expect((await su.query('select status, retention_until > now() kept from partner_applications where id=$1', [app])).rows[0]).toEqual({ status: 'withdrawn', kept: true })
     await v.goto(`${origin()}/partner/withdraw#token=${token}`)
-    await expect(v.getByRole('alert')).toContainText('invalid or has expired')
+    await expect(v.locator('.activate-error')).toContainText('invalid or has expired')
     const audit = (await su.query("select metadata_json from admin_security_audit where action='partner_application_withdrawn' order by id desc limit 1")).rows[0].metadata_json
     expect(audit).toMatchObject({ applicationId: app, from: 'under_review', by: 'applicant' })
     await visitor.close()

@@ -23,9 +23,15 @@ export default function ApplicationWithdrawalPage() {
   const [notice, setNotice] = useState("")
   const [done, setDone] = useState(false)
   const headingRef = useRef<HTMLHeadingElement>(null)
+  // Read the token on load and whenever the fragment changes (an emailed link opened in a tab already on this page).
   useEffect(() => {
-    const t = withdrawalToken(); setToken(t); setReady(true)
-    if (t) post({ action: "preview", token: t }).then((d) => setSubmittedOn(String(d.submittedOn))).catch((e) => setError(e instanceof Error ? e.message : "This link is invalid."))
+    const read = () => {
+      const t = withdrawalToken(); setToken(t); setDone(false); setNotice(''); setError(''); setSubmittedOn('')
+      if (t) post({ action: "preview", token: t }).then((d) => setSubmittedOn(String(d.submittedOn))).catch((e) => setError(e instanceof Error ? e.message : "This link is invalid."))
+    }
+    read(); setReady(true)
+    window.addEventListener('hashchange', read)
+    return () => window.removeEventListener('hashchange', read)
   }, [])
   useEffect(() => { headingRef.current?.focus() }, [token, done, notice])
 

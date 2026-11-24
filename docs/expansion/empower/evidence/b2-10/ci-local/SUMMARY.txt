@@ -6,3 +6,10 @@
 4a. Sole-founder roles + migrations              exit=0
 4. Empower sole-founder suite                    exit=0 Tests 2 passed (2)
 5. Golden Path domain suite                      exit=0 Tests 5 passed (5)
+6. Least-privilege role tests                    exit=0 
+7. Production admin build (next build)           exit=0
+8. TypeScript (tsc --noEmit)                     exit=0, no diagnostics
+9. ESLint (eslint .)                             exit=0, 0 errors, 2 warnings (untouched ascend-review-queue.database.test.ts)
+10. Unit suite (vitest run)                      exit=0 Test Files 197 passed (197); Tests 1450 passed | 4 skipped (1454)
+11. Playwright Empower suites (fresh database)   exit=0 12 passed (incl. b2-10-partner-launch.spec.ts)
+Raw *.log files are kept locally only (the repository ignores *.log); screenshots are in ../browser/.

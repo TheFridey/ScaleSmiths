@@ -27,8 +27,8 @@ const rows = async (tx: Executor, query: SQL): Promise<Row[]> => (await tx.execu
 export class JourneyError extends ExpansionError { constructor(message: string, status = 400) { super(message, status); this.name = "JourneyError" } }
 
 const today = sql`(now() at time zone 'UTC')::date`
-const servable = (kind: string) => sql`select v.fields from empower_content_versions v join empower_content_items i on i.id=v.item_id
-  where v.status='published' and v.review_by >= ${today} and i.audience in ('partner','client') and i.kind=${kind}`
+const servable = (kind: string) => sql`select v.title, v.fields from empower_content_versions v join empower_content_items i on i.id=v.item_id
+  where v.status='published' and v.review_by >= ${today} and i.audience in ('partner_only','client_facing') and i.kind=${kind}`
 
 async function partnerFacts(tx: Executor, partnerId: string) {
   const [acks, toolkit, referral, meetings, allocated, opportunities, markets, courses, lessons, resources, knowledge, objections] = await Promise.all([
@@ -51,12 +51,12 @@ async function partnerFacts(tx: Executor, partnerId: string) {
   for (const t of toolkit) toolkitMap[String(t.item_key)] = { status: String(t.status), detail: t.detail == null ? null : String(t.detail), completedAt: t.completed_at == null ? null : String(t.completed_at) }
   const byType: Record<string, number> = {}
   for (const m of meetings) byType[String(m.meeting_type)] = Number(m.n)
-  const categories = resources.map((r) => String(((r.fields ?? {}) as { category?: string }).category ?? "")).filter(Boolean)
+  const labels = resources.map((r) => `${String(r.title ?? "")} ${String(((r.fields ?? {}) as { category?: string }).category ?? "")}`.trim()).filter(Boolean)
   return {
     acknowledged, toolkit: toolkitMap, referralCode: referral[0] ? String(referral[0].code) : null,
     meetings: { open: Object.values(byType).reduce((a, b) => a + b, 0), byType },
     allocatedProspects: Number(allocated[0]?.n ?? 0), opportunities: Number(opportunities[0]?.n ?? 0), approvedMarkets: markets.map((m) => String(m.country_name)),
-    content: { courses: courses.length, lessonsCompleted: lessons.get(partnerId) ?? 0, resources: resources.length, resourceCategories: categories, knowledgeArticles: knowledge.length, objectionResponses: objections.length },
+    content: { courses: courses.length, lessonsCompleted: lessons.get(partnerId) ?? 0, resources: resources.length, resourceLabels: labels, knowledgeArticles: knowledge.length, objectionResponses: objections.length },
   }
 }
 

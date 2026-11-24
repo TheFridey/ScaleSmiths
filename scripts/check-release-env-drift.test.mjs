@@ -27,3 +27,10 @@ test("differing values and runtime-equivalent syntax are compared as node --env-
 test("output entries never carry values", () => {
   for (const e of compareEnvironments(live, live)) assert.deepEqual(Object.keys(e).sort(), ["key", "status"])
 })
+
+test("governs the partner portal launch switches (Empower B2.10), so a release cannot silently close the portal", () => {
+  for (const key of ["PARTNER_ACTIVATION_ENABLED", "PARTNER_EMAIL_ENABLED", "PARTNER_ACADEMY_ENABLED", "PARTNER_RESOURCE_CENTRE_ENABLED", "PARTNER_KNOWLEDGE_BASE_ENABLED", "PARTNER_PIPELINE_ENABLED"]) assert.ok(GOVERNED_SWITCHES.includes(key), key)
+  const r = compareEnvironments("PARTNER_ACADEMY_ENABLED=true\n", "")
+  assert.equal(r.find((e) => e.key === "PARTNER_ACADEMY_ENABLED").status, "missing_in_release")
+  assert.ok(isDrift(r.find((e) => e.key === "PARTNER_ACADEMY_ENABLED")))
+})

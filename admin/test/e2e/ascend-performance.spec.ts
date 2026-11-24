@@ -45,6 +45,9 @@ test("B2.5 personal performance uses owned real events, keeps finance immutable 
   await mkdir(evidence, { recursive: true })
   const fingerprint = async () => (await su.query("select md5(coalesce(string_agg(l::text, '|' order by l.id), '')) as h from expansion_commission_ledger l")).rows[0].h
   const before = await fingerprint()
+  // Shared disposable CI browser stack uses one loopback IP for all specs. Clear only synthetic login-rate buckets
+  // before this journey; real production rate limiting is unchanged and is tested independently.
+  await su.query("delete from login_rate_limits where key like 'admin-login:%'")
   const founder = await login(browser, FOUNDER, true)
   const p1 = await login(browser, PARTNER_A)
   const p2 = await login(browser, PARTNER_B)

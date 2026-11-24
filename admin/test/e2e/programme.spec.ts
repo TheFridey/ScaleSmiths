@@ -70,7 +70,7 @@ test('founder and partner complete the discounted, withdrawal and isolation jour
     const partnerA = (await snapshot(founder, true)).workspace.partners.find((p: { email: string }) => p.email === emailA)
 
     // ---- [UI] Commission Centre before any policy: honest unavailable state
-    await tab(partnerPage, 'Commission centre')
+    await tab(partnerPage, 'Commission')
     await expect(partnerPage.getByText('no payout policy has been approved')).toBeVisible()
     await expect(partnerPage.getByText('not a bank account, wallet or safeguarded deposit')).toBeVisible()
     await expect(partnerPage.getByText('No discount allowance has been approved for you')).toBeVisible()
@@ -201,7 +201,7 @@ test('founder and partner complete the discounted, withdrawal and isolation jour
     // ---- Case H [UI]: partner claims new work for an existing customer; founder approves; canonical client is reused, not duplicated
     const clientsBefore = (await pool.query('select count(*)::int c from clients')).rows[0].c
     const claimBusiness = `DEMO Existing Customer ${suffix}`
-    await partnerPage.reload(); await tab(partnerPage, 'Commission centre')
+    await partnerPage.reload(); await tab(partnerPage, 'Commission')
     await partnerPage.getByText('Request attribution for new work with an existing customer').click()
     const claimForm = partnerPage.locator('form').filter({ has: partnerPage.getByRole('button', { name: 'Submit request' }) })
     await claimForm.locator('input[name=businessName]').fill(claimBusiness)
@@ -245,7 +245,7 @@ test('founder and partner complete the discounted, withdrawal and isolation jour
     await founderPage.screenshot({ path: `${evidence}/founder-exclusivity-restricted.png`, fullPage: true })
     const blocked = await founder.request.post(`${origin()}/api/expansion`, { headers: { origin: origin() }, data: { action: 'accept_contract', id: reg2.id, clientId: client.id, plan: { plan: 'standard-v2' }, agreementReference: 'DEMO' } })
     expect(blocked.status()).toBe(409); expect(await blocked.text()).toContain('exclusivity'); expect(await blocked.text()).not.toContain(protectedName)
-    await partnerPage.reload(); await tab(partnerPage, 'Prospects & scope'); await partnerPage.getByRole('button', { name: new RegExp(second) }).click()
+    await partnerPage.reload(); await tab(partnerPage, 'Prospects & pipeline'); await partnerPage.getByRole('button', { name: new RegExp(second) }).click()
     await expect(partnerPage.getByText('Commercial checks are completed by a founder')).toBeVisible()
     expect(JSON.stringify(await snapshot(a))).not.toMatch(/DEMO Protected Customer|clause 9/)
     await founderPage.locator('select[name=exclusivityId]').selectOption({ index: 0 })
@@ -256,7 +256,7 @@ test('founder and partner complete the discounted, withdrawal and isolation jour
     expect((await founder.request.post(`${origin()}/api/expansion`, { headers: { origin: origin() }, data: { action: 'accept_contract', id: reg2.id, clientId: client.id, plan: { plan: 'standard-v2' }, agreementReference: 'DEMO exception accepted' } })).ok()).toBeTruthy()
 
     // ---- [UI] Founder approves the payout policy; partner requests a withdrawal; founder reviews and prepares payout
-    await partnerPage.reload(); await tab(partnerPage, 'Commission centre')
+    await partnerPage.reload(); await tab(partnerPage, 'Commission')
     await expect(partnerPage.getByText('no payout policy has been approved')).toBeVisible()
     await founderPage.reload(); await tab(founderPage, 'Commission centre')
     await founderPage.getByText('Set payout policy').click()
@@ -265,7 +265,7 @@ test('founder and partner complete the discounted, withdrawal and isolation jour
     await policy.locator('input[name=approvalReference]').fill('DEMO accounting approval of synthetic payout policy')
     await policy.getByRole('button', { name: 'Record new policy version' }).click()
     await expect(founderPage.getByText(/Policy v\d+: enabled/)).toBeVisible()
-    await partnerPage.reload(); await tab(partnerPage, 'Commission centre')
+    await partnerPage.reload(); await tab(partnerPage, 'Commission')
     await expect(partnerPage.getByText('Available to request')).toBeVisible()
     await partnerPage.screenshot({ path: `${evidence}/partner-commission-centre-available.png`, fullPage: true })
     const request = partnerPage.locator('form').filter({ has: partnerPage.getByRole('button', { name: 'Submit withdrawal request' }) })
@@ -289,7 +289,7 @@ test('founder and partner complete the discounted, withdrawal and isolation jour
     const payoutId = (await myPayout()).id
     await command(founder, { action: 'approve_payout', payoutId }, true)               // [API] existing, previously UI-proven payout forms
     await command(founder, { action: 'settle_payout', payoutId, settlementReference: `DEMO-SETTLEMENT-${suffix}` }, true)
-    await partnerPage.reload(); await tab(partnerPage, 'Commission centre')
+    await partnerPage.reload(); await tab(partnerPage, 'Commission')
     await expect(partnerPage.locator('.ex-list-row').filter({ hasText: 'DEMO-PARTNER-INV' })).toContainText('Paid')
     expect((await overview()).balances).toMatchObject({ earnedPence: '55500', availablePence: '0', paidPence: '55500' })
     await partnerPage.screenshot({ path: `${evidence}/partner-withdrawal-paid.png`, fullPage: true })
@@ -340,11 +340,11 @@ test('founder and partner complete the discounted, withdrawal and isolation jour
     const bSnap = await snapshot(b); expect(bSnap.programme.qualifiedClients).toBe(0); expect(bSnap.programme.referral.referred).toEqual([])
 
     // ---- Onboarding toolkit [UI]: honest defaults, founder records real fulfilment, partner sees the actual status
-    await partnerPage.reload(); await tab(partnerPage, 'Onboarding')
-    await expect(partnerPage.locator('.ex-list-row').filter({ hasText: 'Dedicated ScaleSmiths email address' })).toContainText('Planned')
-    await expect(partnerPage.locator('.ex-list-row').filter({ hasText: 'Personalised CircleCard' })).toContainText('Planned')
+    await partnerPage.reload(); await tab(partnerPage, 'Getting started')
+    await expect(partnerPage.locator('.jr-tool').filter({ hasText: 'ScaleSmiths email address' })).toContainText('Ready to set up')
+    await expect(partnerPage.locator('.jr-tool').filter({ hasText: 'Personalised CircleCard' })).toContainText('Ready to set up')
     await partnerPage.screenshot({ path: `${evidence}/partner-onboarding-toolkit-planned.png`, fullPage: true })
-    await founderPage.reload(); await tab(founderPage, 'Partner operations')
+    await founderPage.reload(); await tab(founderPage, 'Partner onboarding')
     const toolkitRow = founderPage.locator('details.ex-resource').filter({ hasText: `DEMO Programme A ${suffix}` }).filter({ hasText: 'Dedicated ScaleSmiths email address' })
     await toolkitRow.locator('summary').click()
     await toolkitRow.locator('select[name=itemKey]').selectOption('email'); await toolkitRow.locator('select[name=status]').selectOption('available')
@@ -353,24 +353,24 @@ test('founder and partner complete the discounted, withdrawal and isolation jour
     await toolkitRow.locator('textarea[name=detail]').fill('DEMO synthetic mailbox created by the mail administrator; handover recorded.')
     await toolkitRow.getByRole('button', { name: 'Record fulfilment' }).click()
     await expect.poll(async () => (await snapshot(a)).toolkit.find((i: { key: string }) => i.key === 'email').status).toBe('available')
-    await partnerPage.reload(); await tab(partnerPage, 'Onboarding')
-    await expect(partnerPage.locator('.ex-list-row').filter({ hasText: 'Dedicated ScaleSmiths email address' })).toContainText('Available')
-    await expect(partnerPage.locator('.ex-list-row').filter({ hasText: 'Personalised CircleCard' })).toContainText('Planned')
+    await partnerPage.reload(); await tab(partnerPage, 'Getting started')
+    await expect(partnerPage.locator('.jr-tool').filter({ hasText: 'ScaleSmiths email address' })).toContainText('Available')
+    await expect(partnerPage.locator('.jr-tool').filter({ hasText: 'Personalised CircleCard' })).toContainText('Ready to set up')
     await partnerPage.screenshot({ path: `${evidence}/partner-onboarding-toolkit-updated.png`, fullPage: true })
 
     // ---- Founder meeting request [UI]: request, alternative proposed, accepted, confirmed
-    await tab(partnerPage, 'Meetings')
-    const meetingForm = partnerPage.locator('form').filter({ has: partnerPage.getByRole('button', { name: 'Send meeting request' }) })
+    await tab(partnerPage, 'Meetings & support')
+    const meetingForm = partnerPage.locator('form').filter({ has: partnerPage.getByRole('button', { name: 'Send request', exact: true }) })
     await meetingForm.locator('input[name=slot1]').fill('2099-03-01T10:00'); await meetingForm.locator('textarea[name=purpose]').fill('DEMO joint meeting to present the website proposal.')
-    await meetingForm.getByRole('button', { name: 'Send meeting request' }).click()
+    await meetingForm.getByRole('button', { name: 'Send request', exact: true }).click()
     await expect(partnerPage.locator('details.ex-resource').filter({ hasText: 'Joint customer sales meeting' })).toContainText('Requested')
-    await founderPage.reload(); await tab(founderPage, 'Partner operations')
+    await founderPage.reload(); await tab(founderPage, 'Partner onboarding')
     const meeting = founderPage.locator('details.ex-resource').filter({ hasText: `DEMO Programme A ${suffix}` }).filter({ hasText: 'Joint customer sales meeting' })
     await meeting.locator('summary').first().click(); await meeting.locator('select[name=decision]').selectOption('propose_alternative')
     await meeting.locator('input[name=start]').fill('2099-03-02T11:00'); await meeting.locator('textarea[name=note]').fill('DEMO: I can attend at this time.')
     await meeting.getByRole('button', { name: 'Record meeting decision' }).click()
     await expect.poll(async () => (await snapshot(a)).meetings[0].status).toBe('alternative_proposed')
-    await partnerPage.reload(); await tab(partnerPage, 'Meetings')
+    await partnerPage.reload(); await tab(partnerPage, 'Meetings & support')
     await partnerPage.getByRole('button', { name: 'Accept proposed time' }).click()
     await expect(partnerPage.getByText(/Confirmed for/)).toBeVisible()
     expect((await snapshot(a)).meetings[0]).toMatchObject({ status: 'confirmed' })
@@ -436,7 +436,7 @@ test('founder and partner complete the discounted, withdrawal and isolation jour
     await expect.poll(async () => (await pool.query("select status from expansion_achievement_rewards where partner_id=$1 and milestone_clients=1", [partnerA.id])).rows[0].status).toBe('withdrawn')
     await founderPage.screenshot({ path: `${evidence}/founder-reward-withdrawn.png`, fullPage: true })
     // closed-meeting correction [UI]: complete the confirmed meeting, then correct its wording with a reason
-    await tab(founderPage, 'Partner operations')
+    await tab(founderPage, 'Partner onboarding')
     const closing = founderPage.locator('details.ex-resource').filter({ hasText: `DEMO Programme A ${suffix}` }).filter({ hasText: 'Joint customer sales meeting' })
     await closing.locator('summary').first().click(); await closing.locator('select[name=decision]').selectOption('complete')
     await closing.getByRole('button', { name: 'Record meeting decision' }).click()
@@ -452,12 +452,12 @@ test('founder and partner complete the discounted, withdrawal and isolation jour
     await expect.poll(async () => (await snapshot(founder, true)).meetings[0].purpose).toContain('revised website proposal')
     expect((await pool.query('select count(*)::int c from expansion_meeting_corrections')).rows[0].c).toBe(1)
     await founderPage.screenshot({ path: `${evidence}/founder-meeting-corrected.png`, fullPage: true })
-    await partnerPage.setViewportSize({ width: 1440, height: 900 }); await partnerPage.reload(); await tab(partnerPage, 'Meetings')
+    await partnerPage.setViewportSize({ width: 1440, height: 900 }); await partnerPage.reload(); await tab(partnerPage, 'Meetings & support')
     await expect.poll(async () => (await snapshot(a)).meetings[0].purpose).toContain('revised website proposal')   // the partner's data carries the corrected wording (the screen lists type, status and schedule only)
 
     // ---- Responsive evidence for the Commission Centre
     for (const width of [320, 390, 768, 1024, 1440]) {
-      await partnerPage.setViewportSize({ width, height: 900 }); await partnerPage.reload(); await tab(partnerPage, 'Commission centre')
+      await partnerPage.setViewportSize({ width, height: 900 }); await partnerPage.reload(); await tab(partnerPage, 'Commission')
       await expect(partnerPage.getByText('Your requests')).toBeVisible(); await noOverflow(partnerPage)
       await partnerPage.screenshot({ path: `${evidence}/partner-commission-centre-${width}.png`, fullPage: true })
     }

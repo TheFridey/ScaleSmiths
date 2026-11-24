@@ -577,7 +577,7 @@
       "path": "admin/drizzle/0063_venture_validation_outcomes.sql",
       "sha256": "4073dc7b206317e435f416fc851264650a3bf87e35f9daced629ee023f56de44",
       "lifecycle": "forward",
-      "reason": "Adds append-only coded customer-validation outcomes for Experiment #000 and a human-confirmed \u00a3450 care-floor flag. Outcomes are not evidence, approvals, or spend authority."
+      "reason": "Adds append-only coded customer-validation outcomes for Experiment #000 and a human-confirmed £450 care-floor flag. Outcomes are not evidence, approvals, or spend authority."
     },
     {
       "path": "admin/drizzle/0064_command_centre.sql",
@@ -836,6 +836,12 @@
       "sha256": "904b3b7e52d1c2743b172ac875d71e787835d7adcaf06bb142fec5a3a0f5b761",
       "lifecycle": "forward",
       "reason": "Ascend B2.8: durable founder-governed execution engine (validated state machine, leases, emergency controls, scoped service identities, append-only audit); prohibited financial, communication, agreement, activation, permission and retention action families are refused by constraint."
+    },
+    {
+      "path": "admin/drizzle/0105_partner_onboarding_progress.sql",
+      "sha256": "34d0b547d76856d6faef979733a5c0ce422b105b84876e4c3b7e368040bad9c4",
+      "lifecycle": "forward",
+      "reason": "Empower B2.10: append-only partner onboarding acknowledgements (how you earn, commercial boundaries, approved markets); grants no commercial right and activates nothing."
     }
   ],
   "journals": {
@@ -1395,6 +1401,13 @@
           "version": "7",
           "when": 1794960000000,
           "tag": "0104_ascend_execution_engine",
+          "breakpoints": true
+        },
+        {
+          "idx": 105,
+          "version": "7",
+          "when": 1794961000000,
+          "tag": "0105_partner_onboarding_progress",
           "breakpoints": true
         }
       ]

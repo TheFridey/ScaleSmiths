@@ -7,12 +7,13 @@ import * as research from '@/lib/server/expansion-research'
 import * as recognition from '@/lib/server/expansion-recognition'
 import * as profiles from '@/lib/server/expansion-profiles'
 import * as content from '@/lib/server/empower-content'
+import { getOnboardingAdmin } from '@/lib/server/partner-journey'
 import { expansionBody, expansionFailure, expansionHeaders } from '@/lib/server/expansion-http'
 import { requireCapability } from '@/lib/server/rbac'
 import { checkDurableRateLimit } from '@/lib/server/rate-limit-store'
 export const dynamic = 'force-dynamic'
 export async function GET() {
-  try { const [workspace,financial,withdrawals,programmeAdmin,toolkitAdmin,meetings,researchAdmin,recognitionAdmin,profilesAdmin,contentAdmin] = await Promise.all([founderSnapshot(),finance.getExpansionFinance(),finance.getWithdrawalAdmin(),programme.getProgrammeAdmin(),operations.getToolkitAdmin(),operations.getMeetings('founder'),research.getResearchAdmin(),recognition.getRecognitionAdmin(),profiles.getProfilesAdmin(),content.getContentAdmin()]); return NextResponse.json({workspace,finance:financial,withdrawals,programmeAdmin,toolkitAdmin,meetings,researchAdmin,recognitionAdmin,profilesAdmin,contentAdmin},{headers:expansionHeaders}) } catch(error) { return expansionFailure(error) }
+  try { const [workspace,financial,withdrawals,programmeAdmin,toolkitAdmin,meetings,researchAdmin,recognitionAdmin,profilesAdmin,contentAdmin,onboardingAdmin] = await Promise.all([founderSnapshot(),finance.getExpansionFinance(),finance.getWithdrawalAdmin(),programme.getProgrammeAdmin(),operations.getToolkitAdmin(),operations.getMeetings('founder'),research.getResearchAdmin(),recognition.getRecognitionAdmin(),profiles.getProfilesAdmin(),content.getContentAdmin(),getOnboardingAdmin()]); return NextResponse.json({workspace,finance:financial,withdrawals,programmeAdmin,toolkitAdmin,meetings,researchAdmin,recognitionAdmin,profilesAdmin,contentAdmin,onboardingAdmin},{headers:expansionHeaders}) } catch(error) { return expansionFailure(error) }
 }
 export async function POST(request: Request) {
   try {

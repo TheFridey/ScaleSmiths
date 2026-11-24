@@ -52,6 +52,15 @@ test.describe("partner programme public entry points", () => {
     await expect(page.locator("footer").getByRole("link", { name: /become a partner/i })).toHaveAttribute("href", "/partners")
   })
 
+  test("legacy /scale-your-future path permanently redirects to /partners", async ({ request, page }) => {
+    const response = await request.get("/scale-your-future", { maxRedirects: 0 })
+    expect(response.status()).toBe(308)
+    expect(new URL(response.headers().location, "http://localhost").pathname).toBe("/partners")
+    await page.goto("/scale-your-future")
+    await expect(page).toHaveURL(/\/partners$/)
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("Scale Your Future")
+  })
+
   test("earnings calculator reproduces the programme examples", async ({ page }) => {
     await page.goto("/partners")
     const out = page.locator("output")

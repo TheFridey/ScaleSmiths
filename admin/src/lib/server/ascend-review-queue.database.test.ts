@@ -27,7 +27,7 @@ vi.mock("./ascend-automation",()=>({
 }))
 import { syncFounderReviewJobs, founderReviewJobQueue, claimInternalReviewJob,
   finishInternalReviewJob, resolveInternalReviewJob } from "./ascend-review-queue"
-const query=(q:string,values:unknown[]=[])=>state.pg!.query(q,values)
+const query=(q:string,values:unknown[]=[])=>state.pg!.query<Record<string,unknown>>(q,values)
 describe("B2.7 durable internal review queue",()=>{
   beforeAll(async()=>{
     state.pg=new PGlite()

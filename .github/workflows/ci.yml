@@ -390,6 +390,10 @@ jobs:
           REVENUE_INTELLIGENCE_ENABLED: "true"
           # B2.6 explicit delivery handoff on disposable acceptance stack only.
           DELIVERY_HANDOFF_ENABLED: "true"
+          # B2.7 founder inbox acceptance runs only against disposable local CI stack.
+          ASCEND_AUTOMATION_ENABLED: "true"
+          # B2.8 execution engine command centre: disposable CI stack only. Scheduler and agent interface stay off.
+          ASCEND_ENGINE_ENABLED: "true"
           # Operation Ascend B2.5 partner performance (CI disposable stack only).
           PARTNER_PERFORMANCE_ENABLED: "true"
 
@@ -455,6 +459,17 @@ jobs:
         options: >-
           --health-cmd "pg_isready -U scalesmiths_ci -d ss_expansion_test"
           --health-interval 5s --health-timeout 5s --health-retries 10
+      postgres14:
+        image: postgres:14-alpine
+        env:
+          POSTGRES_DB: ss_ascend_pg14_test
+          POSTGRES_USER: scalesmiths_ci
+          POSTGRES_PASSWORD: local_ci_only
+        ports:
+          - 55442:5432
+        options: >-
+          --health-cmd "pg_isready -U scalesmiths_ci -d ss_ascend_pg14_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
     env:
       TEST_DATABASE_URL: postgresql://scalesmiths_ci:local_ci_only@127.0.0.1:5432/scalesmiths_integration_test
     steps:
@@ -479,6 +494,42 @@ jobs:
         run: |
           npm ci --prefix web --ignore-scripts --no-audit --no-fund
           npm ci --prefix admin --ignore-scripts --no-audit --no-fund
+
+      # Production currently runs PostgreSQL 14. Exercise all shared migrations and new B2.8 security defaults
+      # on a disposable second server, within this existing required Database and Migrations status check.
+      - name: Rehearse ASCEND migrations on PostgreSQL 14
+        env:
+          POSTGRES_PROVISIONING_DATABASE_URL: postgresql://scalesmiths_ci:local_ci_only@127.0.0.1:55442/ss_ascend_pg14_test
+          MIGRATION_DATABASE_URL: postgresql://scalesmiths_ascend_migration:local_ci_only_migration@127.0.0.1:55442/ss_ascend_pg14_test
+          ADMIN_DATABASE_URL: postgresql://scalesmiths_ascend_admin:local_ci_only_admin@127.0.0.1:55442/ss_ascend_pg14_test
+          WEB_DATABASE_URL: postgresql://scalesmiths_ascend_web:local_ci_only_web@127.0.0.1:55442/ss_ascend_pg14_test
+        run: |
+          set -euo pipefail
+          cd admin
+          node scripts/provision-postgres-roles.mjs --confirm-provision
+          node scripts/migrate-shared-test-database.mjs
+          node scripts/provision-postgres-roles.mjs --confirm-provision
+          node scripts/verify-postgres-privileges.mjs
+          node --input-type=module <<'JS'
+          import pg from 'pg'
+          const client = new pg.Client({ connectionString: process.env.ADMIN_DATABASE_URL })
+          await client.connect()
+          try {
+            const version = (await client.query('show server_version')).rows[0].server_version
+            if (!version.startsWith('14.')) throw Error('Expected PostgreSQL 14, got ' + version)
+            const control = await client.query("select suspended from ascend_automation_controls where scope='global'")
+            if (control.rowCount !== 1 || control.rows[0].suspended !== true) throw Error('ASCEND global stop must default on')
+            const definitions = await client.query("select count(*)::int total, count(*) filter (where enabled)::int enabled from ascend_automation_definitions")
+            if (definitions.rows[0].total !== 5 || definitions.rows[0].enabled !== 0) throw Error('ASCEND definitions must default disabled')
+            const web = new pg.Client({ connectionString: process.env.WEB_DATABASE_URL })
+            await web.connect()
+            try {
+              const permissions = await web.query("select has_table_privilege(current_user, 'public.ascend_executions','SELECT') as can_read, has_table_privilege(current_user,'public.ascend_executions','INSERT') as can_write")
+              if (permissions.rows[0].can_read || permissions.rows[0].can_write) throw Error('Public web role must not access ASCEND executions')
+            } finally { await web.end() }
+            console.log('PostgreSQL ' + version + ': migration and ASCEND disabled-by-default checks passed')
+          } finally { await client.end() }
+          JS
 
       - name: Verify web and admin migration journals
         run: |
@@ -523,7 +574,7 @@ jobs:
           EXPANSION_WEB_TEST_DATABASE_URL: postgresql://scalesmiths_expansion_web:local_ci_only_web@127.0.0.1:55440/ss_expansion_test
         run: |
           set -o pipefail
-          npx vitest run --config vitest.integration.config.ts test/integration/expansion-concurrency.integration.test.ts test/integration/empower-content.integration.test.ts test/integration/empower-academy.integration.test.ts test/integration/empower-resources.integration.test.ts test/integration/empower-knowledge.integration.test.ts test/integration/partner-onboarding.integration.test.ts test/integration/empower-objections.integration.test.ts test/integration/empower-guidance.integration.test.ts 2>&1 | tee ../ci-artifacts/expansion-concurrency.log
+          npx vitest run --config vitest.integration.config.ts test/integration/expansion-concurrency.integration.test.ts test/integration/empower-content.integration.test.ts test/integration/empower-academy.integration.test.ts test/integration/empower-resources.integration.test.ts test/integration/empower-knowledge.integration.test.ts test/integration/partner-onboarding.integration.test.ts test/integration/empower-objections.integration.test.ts test/integration/empower-guidance.integration.test.ts test/integration/ascend-engine.integration.test.ts 2>&1 | tee ../ci-artifacts/expansion-concurrency.log
           # The suite skips itself when its database variable is absent; CI must never pass on a skipped suite.
           sed -E 's/\x1b\[[0-9;]*m//g' ../ci-artifacts/expansion-concurrency.log > ../ci-artifacts/expansion-concurrency.plain.log
           grep -E "Tests +[0-9]+ passed" ../ci-artifacts/expansion-concurrency.plain.log
@@ -697,6 +748,9 @@ jobs:
       - name: Test production topology consistency rules
         run: npm run test:production-topology
 
+      - name: Test ASCEND worker driver and Megaton effect preflight
+        run: npm run test:ascend-ops
+
       - name: Install shared migrator runtime dependency
         working-directory: admin
         run: npm ci --omit=dev --ignore-scripts --no-audit --no-fund
@@ -824,3 +878,4 @@ jobs:
           path: ci-artifacts/forge-workflow-e2e.log
           if-no-files-found: error
           retention-days: 14
+

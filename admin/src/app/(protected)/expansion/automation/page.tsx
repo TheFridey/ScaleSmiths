@@ -2,6 +2,7 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { guardPageCapability } from "@/lib/server/rbac"
 import { ascendAutomationEnabled, founderAutomationSignals } from "@/lib/server/ascend-automation"
+import { ascendEngineEnabled } from "@/lib/server/ascend-engine"
 export const dynamic = "force-dynamic"
 export default async function AscendAutomationPage() {
   await guardPageCapability("expansion.manage")
@@ -11,7 +12,7 @@ export default async function AscendAutomationPage() {
     <Link href="/expansion/command">← Founder command centre</Link>
     <p style={{fontSize:12,letterSpacing:".16em",color:"#d8ad63",fontWeight:700}}>OPERATION ASCEND / B2.7</p>
     <h1>Operational signals</h1>
-    <p><Link href="/expansion/automation/review">Open durable founder review inbox</Link></p>
+    <p><Link href="/expansion/automation/review">Open durable founder review inbox</Link>{ascendEngineEnabled()&&<> · <Link href="/expansion/automation/engine">Automation command centre</Link></>}</p>
     <p>Review recorded sales and delivery exceptions. This workspace never sends notifications, changes contracts or starts work automatically.</p>
     <p role="status">{data.total} signal{data.total===1?"":"s"} · {data.counts.urgent} urgent · {data.counts.handoff} delivery handoffs</p>
     {data.total===0?<p>No actionable exceptions are currently recorded in the linked systems.</p>:

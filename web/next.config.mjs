@@ -63,6 +63,8 @@ const nextConfig = {
       // those articles.
       { source: "/insights/growth", destination: "/insights/websites", permanent: true },
       { source: "/insights/automation", destination: "/insights/development", permanent: true },
+      // Earlier partner-recruitment material used this campaign path. The programme page is /partners.
+      { source: "/scale-your-future", destination: "/partners", permanent: true },
     ]
   },
   async headers() {

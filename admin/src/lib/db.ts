@@ -1,3 +1,4 @@
+import { attachPoolErrorHandlers } from "./db-pool-safety"
 import { Pool } from "pg"
 import { sql, type ExtractTablesWithRelations } from "drizzle-orm"
 import { drizzle, type NodePgDatabase, type NodePgTransaction } from "drizzle-orm/node-postgres"
@@ -34,7 +35,7 @@ function createPool() {
     throw new Error("ADMIN_DATABASE_URL is required for admin database access.")
   }
 
-  return new Pool({
+  const created = new Pool({
     connectionString,
     allowExitOnIdle: true,
     connectionTimeoutMillis: 10_000,
@@ -44,6 +45,8 @@ function createPool() {
     // transaction-locally.
     options: `-c app.access_mode=${TENANT_ACCESS_MODE.internalWrite}`,
   })
+  // A dropped connection must fail the affected query, not crash the process. See db-pool-safety.
+  return attachPoolErrorHandlers(created)
 }
 
 function createUnavailableDb(): NodePgDatabase<typeof schema> {

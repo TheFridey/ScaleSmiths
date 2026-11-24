@@ -577,7 +577,7 @@
       "path": "admin/drizzle/0063_venture_validation_outcomes.sql",
       "sha256": "4073dc7b206317e435f416fc851264650a3bf87e35f9daced629ee023f56de44",
       "lifecycle": "forward",
-      "reason": "Adds append-only coded customer-validation outcomes for Experiment #000 and a human-confirmed £450 care-floor flag. Outcomes are not evidence, approvals, or spend authority."
+      "reason": "Adds append-only coded customer-validation outcomes for Experiment #000 and a human-confirmed \u00a3450 care-floor flag. Outcomes are not evidence, approvals, or spend authority."
     },
     {
       "path": "admin/drizzle/0064_command_centre.sql",
@@ -830,6 +830,12 @@
       "sha256": "223c39ec86a366ba9ef9db03e8fcf537ef8e6f618755f71643863f4de00fb3ca",
       "lifecycle": "forward",
       "reason": "Ascend B2.7: persistent bounded internal review queue and append-only transition history; no external actions or automatic commercial changes."
+    },
+    {
+      "path": "admin/drizzle/0104_ascend_execution_engine.sql",
+      "sha256": "904b3b7e52d1c2743b172ac875d71e787835d7adcaf06bb142fec5a3a0f5b761",
+      "lifecycle": "forward",
+      "reason": "Ascend B2.8: durable founder-governed execution engine (validated state machine, leases, emergency controls, scoped service identities, append-only audit); prohibited financial, communication, agreement, activation, permission and retention action families are refused by constraint."
     }
   ],
   "journals": {
@@ -1382,6 +1388,13 @@
           "version": "7",
           "when": 1794959000000,
           "tag": "0103_ascend_review_jobs",
+          "breakpoints": true
+        },
+        {
+          "idx": 104,
+          "version": "7",
+          "when": 1794960000000,
+          "tag": "0104_ascend_execution_engine",
           "breakpoints": true
         }
       ]

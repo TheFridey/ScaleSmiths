@@ -22,6 +22,9 @@ const REQUEST_ID_HEADER = "x-request-id"
 const PRIVATE_NO_STORE = "private, no-store, max-age=0"
 const SAFE_REQUEST_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/
 
+// ASCEND worker and agent endpoints authenticate scoped service tokens themselves (never founder sessions).
+const isAscendMachineRoute = (pathname: string) => pathname === "/api/ascend/worker" || /^\/api\/ascend\/v1\/(capabilities|operations|operations\/[0-9a-f-]{36}|operations\/[0-9a-f-]{36}\/cancel)$/.test(pathname)
+
 export default auth(async (req) => {
   const { pathname } = req.nextUrl
   const incomingRequestId = req.headers.get(REQUEST_ID_HEADER)?.trim()
@@ -66,7 +69,7 @@ export default auth(async (req) => {
 
   // The endpoint performs its own constant-time token check. Keep it outside
   // interactive authentication so infrastructure can check the container.
-  if (pathname === "/api/health" || pathname === "/api/monitoring/self-test" || pathname === "/api/venture-lab/mcp" || pathname === "/api/megaton/worker" || /^\/api\/jarvis\/v1\/[^/]+$/.test(pathname)) {
+  if (pathname === "/api/health" || pathname === "/api/monitoring/self-test" || pathname === "/api/venture-lab/mcp" || pathname === "/api/megaton/worker" || /^\/api\/jarvis\/v1\/[^/]+$/.test(pathname) || isAscendMachineRoute(pathname)) {
     return next()
   }
 

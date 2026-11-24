@@ -1,3 +1,4 @@
+import { isSafeReviewSignal } from "@/lib/ascend-review-validation"
 import "server-only"
 import { randomUUID } from "node:crypto"
 import { sql } from "drizzle-orm"
@@ -28,7 +29,7 @@ export async function syncFounderReviewJobs(now = new Date()) {
   if(observed.signals.length>1200) throw new ExpansionError("Signal volume exceeds the safe review cap.",503)
   let inserted=0
   for(const signal of observed.signals) {
-    if(signal.id.length>200 || signal.kind.length>80) continue
+    if(!isSafeReviewSignal(signal)) continue
     const jobId=randomUUID()
     const result=await db.transaction(async tx=>{
       const r=await tx.execute(sql`insert into ascend_review_jobs
@@ -62,6 +63,10 @@ export async function founderReviewJobQueue() {
 /** Claim is safe across replicas: row lock + lease token + bounded attempt count. */
 export async function claimInternalReviewJob(now = new Date()) {
   await authorisedFounder()
+  return claimReviewJob(now)
+}
+/** Unauthenticated core: callers must already hold founder or scoped worker authority. */
+async function claimReviewJob(now: Date) {
   const token=randomUUID()
   const job=await db.transaction(async tx=>{
     // Reap exhausted leases first; without this, a crash on attempt five would stay leased forever.
@@ -94,6 +99,9 @@ export async function claimInternalReviewJob(now = new Date()) {
 /** Finalisation is compare-and-set on the claim token. No stale or duplicate completion. */
 export async function finishInternalReviewJob(id:string,token:string,success:boolean,now=new Date(),safeError="") {
   await authorisedFounder()
+  return finishReviewJob(id,token,success,now,safeError)
+}
+async function finishReviewJob(id:string,token:string,success:boolean,now:Date,safeError:string) {
   if(!/^[0-9a-f-]{36}$/i.test(id) || !/^[0-9a-f-]{36}$/i.test(token))
     throw new ExpansionError("Invalid review job lease.",400)
   return db.transaction(async tx=>{
@@ -129,4 +137,21 @@ export async function resolveInternalReviewJob(id:string) {
       values(${id},'resolved',${JSON.stringify({by:actor.id})}::jsonb)`)
     return {id,status:"resolved" as const}
   })
+}
+/**
+ * B2.8 worker path: prepare up to `batch` due review tasks with the same lease, validation and retry rules the
+ * founder inbox uses. Validation only; it never sends, notifies, pays or changes a sales or delivery record.
+ * The caller (the ASCEND execution engine) has already authenticated a scoped worker and revalidated approval.
+ */
+export async function prepareDueReviewJobs(batch:number,now=new Date()) {
+  if(!Number.isInteger(batch)||batch<1||batch>25)throw new ExpansionError("Invalid review batch.",400)
+  let prepared=0,rejected=0
+  for(let i=0;i<batch;i++){
+    const claim=await claimReviewJob(now)
+    if(!claim)break
+    const safe=isSafeReviewSignal(claim.payload)
+    await finishReviewJob(claim.id,claim.token,safe,now,safe?"":"Invalid internal advisory signal")
+    if(safe)prepared++;else rejected++
+  }
+  return {prepared,rejected}
 }

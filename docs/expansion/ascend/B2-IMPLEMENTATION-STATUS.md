@@ -155,3 +155,11 @@ Designs and dependencies are in `B2-ARCHITECTURE.md` and `B2-ROADMAP.md`. Next s
 - **Evidence:** real-PostgreSQL integration 13/13 (in the CI restricted-role step: 157/157, 0 skipped); production-build browser journey 1/1 at six widths with axe; pure rules 9/9; ops scripts 10/10; authorisation policy 79/79; benchmark at 10-10,000 partners with zero duplicate completions.
 - **CI:** all 22 checks green on `9e7a99e`, including the PostgreSQL 14.25 rehearsal of 0104 and Empower browser 11/11.
 - **Not done:** production deployment (blocked on founder release approval), retention policy for execution history, supersession and signal producers, partner-facing recommendations.
+
+## B2.9 Production acceptance and hardening: Remediated on branch, not deployed; NOT CERTIFIED yet
+
+- **Branch:** `feature/operation-ascend-b2-9` from master `f55a6bc` (B2.8 is live in production since 24 November, under the global stop). Full record: [B2-9-PRODUCTION-CERTIFICATION.md](B2-9-PRODUCTION-CERTIFICATION.md).
+- **Security:** 11 confirmed defects fixed with regression tests ([ASCEND-SECURITY-MODEL.md](ASCEND-SECURITY-MODEL.md)): worker action scope, executor revalidation, lease ownership, scope-bound idempotency and cooldown, concurrent cooldown bypass, market-scoped handlers, database-enforced read-only analysis with statement timeouts, review-preparation classification, Megaton preflight parser, reserved idempotency prefixes.
+- **Database:** no new migration.
+- **Operations:** configuration drift check (`scripts/check-release-env-drift.mjs`), [operator runbook](ASCEND-OPERATOR-RUNBOOK.md), [disaster recovery](ASCEND-DISASTER-RECOVERY.md), [TITAN contract](TITAN-INTEGRATION-CONTRACT.md).
+- **Not done:** deployment, production restore drill, supervised production execution, nginx machine-route block, canary retirement (all need founder approval).

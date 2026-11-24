@@ -24,6 +24,8 @@
     "check:pr-metadata": "node scripts/check-pr-metadata.mjs",
     "check:production-topology": "node scripts/check-production-topology.mjs",
     "test:production-topology": "node --test scripts/check-production-topology.test.mjs",
+    "check:release-env-drift": "node scripts/check-release-env-drift.mjs",
+    "test:release-env-drift": "node --test scripts/check-release-env-drift.test.mjs",
     "test:branch-protection-policy": "node --test scripts/check-branch-protection-policy.test.mjs",
     "update:cloudflare-ranges": "node scripts/update-cloudflare-nginx-ranges.mjs",
     "test:integration": "node scripts/run-admin-integration-tests.mjs",
@@ -46,6 +48,6 @@
     "test:pr-metadata": "node --test scripts/check-pr-metadata.test.mjs",
     "test:forge-e2e": "node scripts/run-forge-e2e-tests.mjs",
     "test:release-simulation": "node --test scripts/release-manager.test.mjs",
-    "test:ascend-ops": "node --test ops/ascend/ascend-worker.test.mjs ops/ascend/worker-preflight.test.mjs"
+    "test:ascend-ops": "node --test ops/ascend/ascend-worker.test.mjs ops/ascend/worker-preflight.test.mjs scripts/check-release-env-drift.test.mjs"
   }
 }

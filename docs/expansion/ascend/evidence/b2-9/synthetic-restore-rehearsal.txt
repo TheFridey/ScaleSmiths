@@ -1,0 +1,15 @@
+pg_dump: pg_dump (PostgreSQL) 16.14 (Ubuntu 16.14-0ubuntu0.24.04.1)
+dump_ms=319 size_bytes=1198491 sha256=e610f18f1a37f9af8dd036287b2ffed1e4c312526dce79dba15e6c41cecff03f
+checksum_verified=yes
+toc_entries=2404
+DROP DATABASE
+CREATE DATABASE
+restore_ms=139858
+row_counts_identical=yes tables=193
+ascend_counts: ascend_automation_controls=2 ascend_automation_definitions=5 ascend_execution_events=566 ascend_executions=150 ascend_service_identities=10 
+fingerprint expansion_commission_ledger match=yes
+fingerprint expansion_payouts match=yes
+fingerprint partner_agreement_acceptances match=yes
+fingerprint expansion_contracts match=yes
+migration_journal_src=105 restored=105
+safe_defaults: global_stop=true

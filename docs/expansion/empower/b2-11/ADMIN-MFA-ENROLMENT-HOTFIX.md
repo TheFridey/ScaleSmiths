@@ -61,6 +61,19 @@ Tests:
   - expired and missing allowances;
   - the rate limit.
 
+## Design decisions (from independent review)
+
+**When an allowance is issued:**
+- an owner creates a privileged account;
+- an owner resets MFA. **Reset MFA** is shown for every privileged user, including those without MFA, so an account cleared by the old code can be recovered from the UI;
+- a user without MFA is promoted into a privileged role (audited as `mfa_enrolment_issued`, reason `role_promoted`).
+
+**When expiry is checked.** Expiry is checked at sign-in. A session created just before expiry can finish enrolment within its own lifetime, which is at most 8 hours. That is accepted as bounded.
+
+**Who can enrol during the window.** Anyone holding the account's password during an open window can enrol their own authenticator. This is inherent to first-login enrolment, so:
+- owners should send initial or reset passwords over a trusted channel;
+- owners should check `mfa_enrolment_sign_in` and `mfa_enabled` in the security audit.
+
 ## Getting the affected account signed in (after deployment)
 
 The account's MFA was cleared by the pre-fix code, so it has no allowance. An owner must issue one:

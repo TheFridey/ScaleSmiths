@@ -128,6 +128,27 @@ test('a new administrator enrols MFA on first sign-in and is restricted until en
     const reasons = (await db.query("select metadata_json->>'enrolment' r from admin_security_audit where target_user_id=$1 and action='mfa_challenge_failed' order by created_at", [userId])).rows.map((r) => r.r)
     expect(reasons).toEqual(expect.arrayContaining(['enrolment_allowance_expired', 'no_enrolment_allowance']))
 
+    // 7b. Recovery of exactly that pre-fix state through the owner UI: Reset MFA is offered for a privileged user without MFA.
+    await owner.page.goto(`${origin()}/users`)
+    const row = owner.page.getByRole('row').filter({ hasText: email })
+    await row.getByRole('button', { name: 'Reset MFA', exact: true }).click()
+    await owner.page.getByLabel(/Confirm your owner password/).fill(OWNER.password)
+    await owner.page.getByRole('button', { name: /Reset MFA and sessions/ }).click()
+    await expect.poll(async () => (await db.query('select mfa_state ? $2 as a from admin_users where id=$1', [userId, 'enrolment'])).rows[0].a).toBe(true)
+    await clearLimiter(db)
+    const recovered = await signIn(browser, email, nextPassword)
+    await expect(recovered.page).toHaveURL(/\/security\?reason=mfa_enrolment/)
+    await recovered.context.close()
+
+    // 7c. Promotion of a non-privileged user without MFA into a privileged role opens an enrolment window (audited).
+    const devEmail = `b211-promoted-${Date.now()}@example.invalid`
+    const dev = await api(owner.context, 'POST', '/api/admin-users', { email: devEmail, displayName: 'B211 Promoted Synthetic', password, role: 'developer' })
+    expect(dev.status).toBe(201)
+    expect((await db.query('select mfa_state from admin_users where id=$1', [dev.body.userId])).rows[0].mfa_state).toBeNull()
+    expect((await api(owner.context, 'PATCH', `/api/admin-users/${dev.body.userId}`, { role: 'administrator' })).status).toBe(200)
+    expect((await db.query('select mfa_state ? $2 as a from admin_users where id=$1', [dev.body.userId, 'enrolment'])).rows[0].a).toBe(true)
+    expect((await db.query("select count(*)::int n from admin_security_audit where target_user_id=$1 and action='mfa_enrolment_issued' and metadata_json->>'reason'='role_promoted'", [dev.body.userId])).rows[0].n).toBe(1)
+
     // 8. The login rate limit still applies: after five attempts for this email the sixth is refused before any check.
     await clearLimiter(db)
     for (let i = 0; i < 5; i++) { const t = await signIn(browser, email, 'wrong-password-' + i); await t.context.close() }

@@ -84,7 +84,12 @@ export async function updateAdminUser(targetId: string, input: Record<string, un
     const privilegeReduced = isPrivilegeReduction(target.role, nextRole)
     const mutation = resolveAdminUserMutation({ targetId: target.id, actorId: actor.id, targetRole: target.role, targetActive: target.active, targetSessionVersion: target.sessionVersion, requestedRole: nextRole, requestedActive: nextActive, revokeSessions: input.revokeSessions === true || privilegeReduced, activeOwnerCount: Number(ownerCount.value) })
     const now = new Date()
-    const [updated] = await tx.update(adminUsers).set({ ...mutation, updatedAt: now }).where(eq(adminUsers.id, targetId)).returning({ id: adminUsers.id, role: adminUsers.role, active: adminUsers.active, sessionVersion: adminUsers.sessionVersion })
+    // Promotion into a privileged role without active MFA opens a first-login enrolment window; otherwise the user would be
+    // locked out at their next sign-in (MFA is mandatory for these roles and enrolment needs a session).
+    const promotedWithoutMfa = !isMfaPrivilegedRole(target.role) && isMfaPrivilegedRole(nextRole) && !target.mfaEnabled
+    const allowance = promotedWithoutMfa ? issueMfaEnrolment(actor.id, now) : null
+    if (allowance) await tx.insert(adminSecurityAudit).values({ actorUserId: actor.id, targetUserId: target.id, action: "mfa_enrolment_issued", success: true, metadataJson: { reason: "role_promoted", enrolmentExpiresAt: allowance.enrolment.expiresAt } })
+    const [updated] = await tx.update(adminUsers).set({ ...mutation, ...(allowance ? { mfaState: allowance } : {}), updatedAt: now }).where(eq(adminUsers.id, targetId)).returning({ id: adminUsers.id, role: adminUsers.role, active: adminUsers.active, sessionVersion: adminUsers.sessionVersion })
     return updated
   })
 }

@@ -1,5 +1,5 @@
 import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto"
-import type { AdminRole } from "@/lib/admin-users"
+import { MFA_PRIVILEGED_ROLES, type AdminRole } from "@/lib/admin-users"
 
 export interface StoredMfaState extends Record<string, unknown> {
   version: 1
@@ -78,8 +78,7 @@ export function consumeRecoveryCode(code: string, hashes: StoredMfaState["recove
   return { valid: false as const, remaining: hashes }
 }
 
-/** Roles for which MFA is mandatory in production. */
-export const MFA_PRIVILEGED_ROLES: readonly AdminRole[] = ["owner", "administrator", "venture_controller"]
+export { MFA_PRIVILEGED_ROLES }
 export function isMfaPrivilegedRole(role: AdminRole) { return MFA_PRIVILEGED_ROLES.includes(role) }
 
 export function isMfaRequired(role: AdminRole, env: NodeJS.ProcessEnv = process.env, now = Date.now()) {

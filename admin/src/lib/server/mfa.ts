@@ -1,5 +1,5 @@
 import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto"
-import { MFA_PRIVILEGED_ROLES, type AdminRole } from "@/lib/admin-users"
+import type { AdminRole } from "@/lib/admin-users"
 
 export interface StoredMfaState extends Record<string, unknown> {
   version: 1
@@ -78,7 +78,9 @@ export function consumeRecoveryCode(code: string, hashes: StoredMfaState["recove
   return { valid: false as const, remaining: hashes }
 }
 
-export { MFA_PRIVILEGED_ROLES }
+/** Roles for which MFA is mandatory in production. Kept here, not imported: Node scripts (the seeds) load this file directly and
+ * cannot resolve value imports through the "@/" alias. mfa-enrolment.test.ts asserts it matches the client copy in lib/admin-users. */
+export const MFA_PRIVILEGED_ROLES: readonly AdminRole[] = ["owner", "administrator", "venture_controller"]
 export function isMfaPrivilegedRole(role: AdminRole) { return MFA_PRIVILEGED_ROLES.includes(role) }
 
 export function isMfaRequired(role: AdminRole, env: NodeJS.ProcessEnv = process.env, now = Date.now()) {

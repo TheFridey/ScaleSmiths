@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { decideUnconfiguredMfaSignIn, isMfaEnrolmentRoute, issueMfaEnrolment, MFA_ENROLMENT_WINDOW_MS, readMfaEnrolment, requiresMfaEnrolment } from "./mfa"
+import { MFA_PRIVILEGED_ROLES as CLIENT_PRIVILEGED_ROLES } from "@/lib/admin-users"
+import { MFA_PRIVILEGED_ROLES, decideUnconfiguredMfaSignIn, isMfaEnrolmentRoute, issueMfaEnrolment, MFA_ENROLMENT_WINDOW_MS, readMfaEnrolment, requiresMfaEnrolment } from "./mfa"
 
 // B2.11 hotfix: a privileged account without active MFA could neither sign in (MFA mandatory) nor enrol (enrolment needs a
 // session). These pin the first-login enrolment decisions; the browser spec b2-11-admin-mfa-enrolment proves them end to end.
@@ -64,5 +65,24 @@ describe("enrolment-only session restriction", () => {
       ["/api/admin-users", "GET"], ["/api/admin-users/x", "PATCH"], ["/expansion", "GET"], ["/security/other", "GET"], ["/api/security/mfa/x", "POST"]] as const) {
       expect(isMfaEnrolmentRoute(path, method), `${method} ${path}`).toBe(false)
     }
+  })
+})
+
+describe("privileged role list", () => {
+  it("is identical on the server and in the client-safe users module", () => {
+    expect([...MFA_PRIVILEGED_ROLES].sort()).toEqual([...CLIENT_PRIVILEGED_ROLES].sort())
+  })
+})
+
+describe("seed-script compatibility", () => {
+  // scripts/seed-empower-browser.mjs and seed-expansion-demo.mjs import mfa.ts with plain Node, which cannot resolve "@/" value
+  // imports. A value import through the alias broke CI seeding once; this fails fast instead.
+  it("loads under plain Node with only built-in value imports", async () => {
+    const { spawnSync } = await import("node:child_process")
+    const { pathToFileURL } = await import("node:url")
+    const { join } = await import("node:path")
+    const url = pathToFileURL(join(__dirname, "mfa.ts")).href
+    const run = spawnSync(process.execPath, ["--input-type=module", "-e", `const m = await import(${JSON.stringify(url)}); if (typeof m.generateTotp !== "function") process.exit(2)`], { encoding: "utf8" })
+    expect(run.status, run.stderr).toBe(0)
   })
 })

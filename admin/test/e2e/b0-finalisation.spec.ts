@@ -93,17 +93,17 @@ test('allocation, market and exclusivity enforcement, recognition and a syntheti
     const alloc = form(c1, 'Allocate to a partner'); await alloc.locator('select[name=partnerId]').selectOption(partnerA.id); await alloc.getByRole('button', { name: 'Allocate to a partner', exact: true }).click()
     await expect(c1.locator('summary')).toContainText(nameA); await expect(c1).toContainText('Allocated')
     // [UI] partner A sees the allocated prospect with the authorised research, never the internal notes, and continues in the normal workflow
-    await pageA.reload(); await tab(pageA, 'Prospects & scope')
+    await pageA.reload(); await tab(pageA, 'Prospects & pipeline')
     await pageA.getByRole('button', { name: new RegExp(business('one')) }).click()
     const panel = pageA.getByLabel('Allocated research')
     await expect(panel).toContainText('not'); await expect(panel).toContainText('lead, an enquiry or a qualified or interested customer'); await expect(panel).toContainText('DEMO public business directory listing'); await expect(panel).toContainText('Public notes for one')
     expect(await pageA.locator('body').innerText()).not.toContain('INTERNAL'); expect(await pageA.locator('body').innerText()).not.toMatch(/exclusiv/i)
     await pageA.screenshot({ path: `${evidence}/partner-allocated-desktop.png`, fullPage: true })
-    await pageA.setViewportSize({ width: 390, height: 844 }); await pageA.reload(); await tab(pageA, 'Prospects & scope'); await pageA.getByRole('button', { name: new RegExp(business('one')) }).click()
+    await pageA.setViewportSize({ width: 390, height: 844 }); await pageA.reload(); await tab(pageA, 'Prospects & pipeline'); await pageA.getByRole('button', { name: new RegExp(business('one')) }).click()
     await noOverflow(pageA); await pageA.screenshot({ path: `${evidence}/partner-allocated-mobile-390.png`, fullPage: true }); await pageA.setViewportSize({ width: 1440, height: 1000 })
-    await pageB.reload(); await tab(pageB, 'Prospects & scope'); await expect(pageB.getByRole('button', { name: new RegExp(business('one')) })).toHaveCount(0)
+    await pageB.reload(); await tab(pageB, 'Prospects & pipeline'); await expect(pageB.getByRole('button', { name: new RegExp(business('one')) })).toHaveCount(0)
     // [UI] the allocated prospect continues through the canonical CRM: discovery is saved by the partner
-    await pageA.reload(); await tab(pageA, 'Prospects & scope'); await pageA.getByRole('button', { name: new RegExp(business('one')) }).click()
+    await pageA.reload(); await tab(pageA, 'Prospects & pipeline'); await pageA.getByRole('button', { name: new RegExp(business('one')) }).click()
     const disc = form(pageA, 'Save discovery draft')
     for (const [k, v] of Object.entries({ objectives: 'DEMO more enquiries', pages: 'Five pages', functionality: 'Enquiry form', budget: 'Standard subject to approval', timescale: 'Assessed availability', decisionProcess: 'Owner approval' })) await disc.locator(`textarea[name=${k}]`).fill(v)
     await disc.getByRole('button', { name: 'Save discovery draft', exact: true }).click()
@@ -135,7 +135,7 @@ test('allocation, market and exclusivity enforcement, recognition and a syntheti
     // [UI] allocate the reviewed candidate to B
     const alloc2 = form(cRev, 'Allocate to a partner'); await alloc2.locator('select[name=partnerId]').selectOption(partnerB.id); await alloc2.getByRole('button', { name: 'Allocate to a partner', exact: true }).click()
     await expect(cRev.locator('summary')).toContainText(nameB)
-    await pageB.reload(); await tab(pageB, 'Prospects & scope'); await expect(pageB.getByRole('button', { name: new RegExp(business('review')) })).toHaveCount(1)
+    await pageB.reload(); await tab(pageB, 'Prospects & pipeline'); await expect(pageB.getByRole('button', { name: new RegExp(business('review')) })).toHaveCount(1)
     // a prospect that was worked on can no longer be released: refused in the UI with a precise message
     await founderPage.reload(); await tab(founderPage, 'Research & allocation')
     const c1b = founderPage.locator('details.ex-resource').filter({ hasText: business('one') }); await c1b.locator('summary').click()
@@ -148,11 +148,11 @@ test('allocation, market and exclusivity enforcement, recognition and a syntheti
     const rl = form(cRevB, 'Release from the partner'); await rl.locator('input[name=note]').fill('DEMO returned to the founder pool'); await rl.getByRole('button', { name: 'Release from the partner', exact: true }).click()
     await expect(cRevB.locator('summary .ex-badge').first()).toHaveText('Eligible'); await expect(cRevB).toContainText('Released')
     await founderPage.screenshot({ path: `${evidence}/founder-allocation-history.png`, fullPage: true })
-    await pageA.reload(); await tab(pageA, 'Prospects & scope'); await expect(pageA.getByRole('button', { name: new RegExp(business('review')) })).toHaveCount(0)
+    await pageA.reload(); await tab(pageA, 'Prospects & pipeline'); await expect(pageA.getByRole('button', { name: new RegExp(business('review')) })).toHaveCount(0)
 
     await pool.query('delete from web_rate_limits')   // the app's durable 120-per-minute founder limit is production behaviour; the journey resets it between sections
     // ================= Market and exclusivity at partner progression [UI] =================
-    await tab(pageA, 'Prospects & scope')
+    await tab(pageA, 'Prospects & pipeline')
     const reg = form(pageA, 'Register business'); await reg.getByLabel('Business name', { exact: true }).fill(business('nl-own')); await reg.getByLabel('Business website', { exact: true }).fill(domain('nl-own')); await reg.locator('input[name=country]').fill('NL')
     await reg.getByRole('button', { name: 'Register business', exact: true }).click()
     await pageA.getByRole('button', { name: new RegExp(business('nl-own')) }).click()
@@ -201,7 +201,7 @@ test('allocation, market and exclusivity enforcement, recognition and a syntheti
         await c.query('commit') }
       finally { c.release() }
     }
-    await pageA.reload(); await tab(pageA, 'My web page')
+    await pageA.reload(); await tab(pageA, 'My partner page')
     const draft = form(pageA, 'Start a draft')
     await draft.locator('input[name=displayName]').fill(`Synthetic Partner ${suffix}`); await draft.locator('input[name=operatingArea]').fill('Synthetic Testshire')
     await draft.locator('textarea[name=biography]').fill('Write to me at someone@example.com and I will gladly help you with any project you have in mind today.')
@@ -209,7 +209,7 @@ test('allocation, market and exclusivity enforcement, recognition and a syntheti
     await draft.locator('textarea[name=biography]').fill('A fictional independent partner created only to demonstrate the ScaleSmiths partner page, its consent step and the founder review.')
     await draft.getByRole('button', { name: 'Start a draft', exact: true }).click()
     await expect.poll(async () => (await pool.query("select count(*)::int c from expansion_profile_versions v join expansion_partners p on p.id=v.partner_id where p.id=$1", [partnerA.id])).rows[0].c).toBe(1)
-    await pageA.reload(); await tab(pageA, 'My web page')
+    await pageA.reload(); await tab(pageA, 'My partner page')
     const submitEarly = form(pageA, 'Submit for founder review'); await submitEarly.getByRole('button', { name: 'Submit for founder review', exact: true }).click()
     await expect(submitEarly.locator('.ex-form-error')).toContainText('Record your publication consent')
     const consent = form(pageA, 'Record my consent'); await consent.getByRole('button', { name: 'Record my consent', exact: true }).click(); await expect(consent.locator('.ex-form-error')).toBeVisible()   // the statement must be accepted
@@ -257,7 +257,7 @@ test('allocation, market and exclusivity enforcement, recognition and a syntheti
     }
     await publishB('one')
     expect((await visitor.request.get(`${web()}/partners/${slugB}`)).status()).toBe(200)
-    await pageB.reload(); await tab(pageB, 'My web page')
+    await pageB.reload(); await tab(pageB, 'My partner page')
     await pageB.getByRole('button', { name: 'Withdraw my consent and remove my page', exact: true }).click()
     await expect.poll(async () => (await visitor.request.get(`${web()}/partners/${slugB}`)).status()).toBe(404)
     await pageB.screenshot({ path: `${evidence}/partner-profile-withdrawn.png`, fullPage: true })

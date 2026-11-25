@@ -32,7 +32,7 @@ If someone asks not to be contacted, stop, record it in the portal and tell Scal
 
 ### C07-L7 Sectors and exclusivity
 
-Some clients may have sector exclusivity. If the portal shows "commercial checks in progress", that is all you will be told. The details are confidential and decided by founders. Do not guess or ask the prospect about competitors.
+Some clients may have sector exclusivity. If the portal says an opportunity is awaiting commercial approval from a founder, that is all you will be told. Sector and area exclusivity is checked by founders at scope approval; the details are confidential. Do not guess or ask the prospect about competitors.
 
 ---
 
@@ -210,7 +210,7 @@ All prices are GBP. No international pricing, tax treatment or currency conversi
 
 ### C12-L2 How to describe yourself
 
-Use the approved title once decided (`AP-GOV-05`; the draft programme uses "Independent Business Partner"). Say "I'm an independent partner of ScaleSmiths", not "I work for ScaleSmiths". Never imply that you are an employee, director, owner or shareholder.
+Use the approved title once decided (`AP-GOV-05`; the draft programme uses "Global Independent Business Partner"). Say "I'm an independent partner of ScaleSmiths", not "I work for ScaleSmiths". Never imply that you are an employee, director, owner or shareholder.
 
 ### C12-L3 Truthful representation
 

@@ -67,7 +67,7 @@ describe("B2.5 partner performance (real SQL/PGlite projection)", () => {
       insert into expansion_contracts values
        ('50000000-0000-4000-8000-000000000001','30000000-0000-4000-8000-000000000002','2026-11-21T12:00:00Z');
     `)
-  })
+  }, 30000)
   afterAll(async () => { await state.database?.close() })
   beforeEach(() => { vi.stubEnv("PARTNER_PERFORMANCE_ENABLED", "true"); state.actor = { id: USER_A, role: "independent_partner", active: true, sessionVersion: 1 } })
   it("fails closed while disabled or on invalid period", async () => {

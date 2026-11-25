@@ -19,10 +19,10 @@ export const CONTENT_DECISIONS = ["approved", "changes_requested", "rejected"] a
 export type ContentDecision = (typeof CONTENT_DECISIONS)[number]
 export const KNOWLEDGE_TOPICS = [
   "hosting", "domains", "dns", "business-email", "website-security", "analytics", "seo", "ai-search", "wordpress-migration", "redirects",
-  "accessibility", "e-commerce", "booking-systems", "crm", "custom-software", "automation", "commercial-terms", "payment-schedules", "commission", "client-onboarding",
+  "accessibility", "e-commerce", "booking-systems", "crm", "custom-software", "automation", "commercial-terms", "payment-schedules", "commission", "client-onboarding", "partner-programme",
 ] as const
 /** Commercial topics must use the 3-month cadence. */
-export const COMMERCIAL_TOPICS: readonly string[] = ["commercial-terms", "payment-schedules", "commission"]
+export const COMMERCIAL_TOPICS: readonly string[] = ["commercial-terms", "payment-schedules", "commission", "partner-programme"]
 export const ESCALATION_RULES = ["always", "when", "never"] as const
 /** Operation Empower B1.5: objection categories. Partners only see categories that have approved, published responses. */
 export const OBJECTION_CATEGORIES = [

@@ -31,6 +31,17 @@ describe("partner activation public middleware boundary", () => {
     expect(pagePost.headers.get("location")).toBe("http://localhost:3001/login")
     for (const method of ["GET", "PUT", "DELETE"]) expect((await route(request("/api/partner/activate", method))).status).toBe(401)
   })
+  it("admits the password recovery and applicant withdrawal pages and their POST endpoints only (Empower B2.10)", async () => {
+    for (const page of ["/partner/reset", "/partner/withdraw"]) {
+      for (const method of ["GET", "HEAD"]) expect((await route(request(page, method))).headers.get("x-middleware-next")).toBe("1")
+      expect((await route(request(page, "POST"))).status).toBe(307)
+    }
+    for (const api of ["/api/partner/password-reset", "/api/partner/withdraw"]) {
+      expect((await route(request(api, "POST"))).headers.get("x-middleware-next")).toBe("1")
+      for (const method of ["GET", "PUT", "DELETE"]) expect((await route(request(api, method))).status).toBe(401)
+      expect((await route(request(`${api}/extra`, "POST"))).status).toBe(401)
+    }
+  })
   it("keeps the workspace, neighbouring paths and founder APIs behind sessions", async () => {
     for (const path of ["/api/partner", "/api/partner/activate/extra", "/api/expansion", "/api/forge/projects"]) expect((await route(request(path))).status).toBe(401)
     expect((await route(request("/partner"))).status).toBe(307)

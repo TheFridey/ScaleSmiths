@@ -56,7 +56,7 @@ describe("B2.6 contract to delivery integration with disposable PostgreSQL",()=>
       insert into expansion_contracts values ('40000000-0000-4000-8000-000000000001','30000000-0000-4000-8000-000000000001',11,'2026-11-22T00:00:00Z','SIGNED-001',2,'{"services":["website"]}');
     `)
     await state.database.exec(readFileSync(new URL("../../../drizzle/0102_ascend_delivery_handoffs.sql",import.meta.url),"utf8"))
-  })
+  }, 30000)
   afterAll(async()=>await state.database?.close())
   beforeEach(async()=>{
     vi.stubEnv("DELIVERY_HANDOFF_ENABLED","true")

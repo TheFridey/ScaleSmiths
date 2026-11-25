@@ -49,7 +49,7 @@ Under the current software default, a refund on a commissionable payment is **he
 
 ## Withdrawals and payment
 
-Withdrawal requests are built but **not operational**: no frequency, minimum, invoicing or VAT policy is approved. *[FOUNDER DECISION]*
+Withdrawal requests are planned and **not operational**: no frequency, minimum, invoicing or VAT policy is approved. *[FOUNDER DECISION]*
 
 ## Planned rewards (not payable)
 
@@ -57,4 +57,4 @@ Achievement rewards and the £250 partner referral reward are **planned and cond
 
 ## Markets
 
-The software starts with no market approved, including the UK; a founder approves markets one by one. A contract cannot be accepted for a customer in an unapproved market. Check the current market status with ScaleSmiths rather than assuming. GBP only.
+The software starts with no market approved, including the UK; a founder approves markets one by one. A contract cannot be accepted for a customer in an unapproved market. Check the current list in Getting started rather than assuming. GBP only.

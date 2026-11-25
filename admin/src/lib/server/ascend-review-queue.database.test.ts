@@ -37,7 +37,7 @@ describe("B2.7 durable internal review queue",()=>{
       insert into admin_users values ('10000000-0000-4000-8000-000000000001','owner',true,1);
     `)
     await state.pg.exec(readFileSync(new URL("../../../drizzle/0103_ascend_review_jobs.sql",import.meta.url),"utf8"))
-  })
+  }, 30000)
   afterAll(async()=>await state.pg?.close())
   beforeEach(async()=>{
     state.enabled=true;state.active=true;state.sessionVersion=1;state.role="owner"

@@ -182,3 +182,13 @@ export async function continueLearningFor(tx: Executor, partnerId: string): Prom
     where s.partner_id=${partnerId} order by s.last_viewed_at desc limit 3`)).rows as Record<string, unknown>[]
   return found.map((c) => ({ courseTitle: String(c.course_title), lessonTitle: String(c.lesson_title), href: `/partner/academy/${String(c.course_slug)}?lesson=${String(c.last_lesson_item_id)}` }))
 }
+
+/**
+ * Operation Empower B2.10: lesson-completion counts for the partner journey (the partner's own) and the founder onboarding
+ * checklist (every partner). Counts only: no lesson, answer or score leaves the Academy service. Kept here so learning records stay
+ * readable only by the Academy service; the caller has already resolved the partner or founder authority.
+ */
+export async function lessonCompletionCounts(tx: Executor, partnerId?: string): Promise<Map<string, number>> {
+  const found = (await tx.execute(sql`select partner_id,count(*)::int n from empower_academy_completions ${partnerId ? sql`where partner_id=${partnerId}` : sql``} group by partner_id`)).rows as Record<string, unknown>[]
+  return new Map(found.map((r) => [String(r.partner_id), Number(r.n)]))
+}

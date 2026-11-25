@@ -213,7 +213,7 @@ test('complete isolated commercial journey reconciles £705 and denies partner B
     const final=await snapshot(partner)
     expect([final.finance.earnedPence,final.finance.paidPence,final.finance.unpaidPence]).toEqual(['70500','70500','0'])
     expect(final.finance.ledger.every((entry:{client_name:string})=>entry.client_name==='DEMO Expansion Client')).toBe(true)
-    await partnerPage.reload();await partnerPage.getByRole('button',{name:'Commission centre',exact:true}).click()
+    await partnerPage.reload();await partnerPage.getByRole('button',{name:'Commission',exact:true}).click()
     await expect(partnerPage.getByRole('heading',{name:'Your commission ledger',exact:true})).toBeVisible()
     await expect(partnerPage.getByText('DEMO Expansion Client',{exact:true}).first()).toBeVisible()
     await partnerPage.screenshot({path:`${evidence}/partner-commission-centre.png`,fullPage:true})

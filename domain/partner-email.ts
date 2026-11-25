@@ -3,7 +3,7 @@
  * Rules: plain, specific subjects; one clear next step; no internal notes, scores or founder comments; no commercial terms;
  * every link is an absolute HTTPS link to a ScaleSmiths origin; HTML always has a text alternative.
  */
-export type PartnerEmailKind = "application_received" | "information_requested" | "application_declined" | "invitation" | "activated" | "agreement_reissued"
+export type PartnerEmailKind = "application_received" | "information_requested" | "application_declined" | "invitation" | "activated" | "agreement_reissued" | "password_reset" | "withdrawal_confirmation"
 
 export type PartnerEmailInput =
   | { kind: "application_received"; name: string }
@@ -12,6 +12,8 @@ export type PartnerEmailInput =
   | { kind: "invitation"; name: string; link: string; expiresAt: string; agreementTitle: string; agreementVersion: number }
   | { kind: "activated"; name: string; signInUrl: string }
   | { kind: "agreement_reissued"; name: string; agreementUrl: string; agreementTitle: string; agreementVersion: number }
+  | { kind: "password_reset"; name: string; link: string; expiresAt: string }
+  | { kind: "withdrawal_confirmation"; name: string; link: string; expiresAt: string }
 
 export type PartnerEmail = { subject: string; html: string; text: string }
 
@@ -101,6 +103,22 @@ export function buildPartnerEmail(input: PartnerEmailInput): PartnerEmail {
       return { subject: "An updated ScaleSmiths partner agreement is ready for you",
         html: layout("Your agreement has been updated.", [hi, `ScaleSmiths has issued <strong style="color:#f3f4f7;">${escapeHtml(agreement)}</strong>. Please sign in, read it in full and accept it.`, "Your access continues while you review it. Your earlier acceptance stays on record."], { label: "Review the updated agreement", href: url }),
         text: text([hiText, `ScaleSmiths has issued ${agreement}. Please sign in, read it in full and accept it.`, "Your access continues while you review it. Your earlier acceptance stays on record.", url]) }
+    }
+    case "password_reset": {
+      const link = safeLink(input.link)
+      const expires = new Date(input.expiresAt).toLocaleString("en-GB", { dateStyle: "long", timeStyle: "short", timeZone: "UTC" }) + " UTC"
+      return { subject: "Reset your ScaleSmiths partner password",
+        html: layout("Reset your password.", [hi, "We received a request to reset the password for your ScaleSmiths partner account. Use the secure link below to choose a new one.", "If you did not ask for this, ignore this email: your password stays as it is."],
+          { label: "Choose a new password", href: link }, `This link works once and expires on ${escapeHtml(expires)}. Resetting your password signs you out everywhere. Do not forward this email.`),
+        text: text([hiText, "We received a request to reset the password for your ScaleSmiths partner account. Use the secure link below to choose a new one.", link, `This link works once and expires on ${expires}. Resetting your password signs you out everywhere.`, "If you did not ask for this, ignore this email: your password stays as it is."]) }
+    }
+    case "withdrawal_confirmation": {
+      const link = safeLink(input.link)
+      const expires = new Date(input.expiresAt).toLocaleString("en-GB", { dateStyle: "long", timeStyle: "short", timeZone: "UTC" }) + " UTC"
+      return { subject: "Confirm the withdrawal of your ScaleSmiths partner application",
+        html: layout("Confirm your withdrawal.", [hi, "We received a request to withdraw your application to the ScaleSmiths partner programme. Nothing changes until you confirm it using the secure link below.", "If you did not ask for this, ignore this email: your application stays open."],
+          { label: "Confirm withdrawal", href: link }, `This link works once and expires on ${escapeHtml(expires)}. Your application record is kept for the period stated in the applicant privacy notice and then deleted.`),
+        text: text([hiText, "We received a request to withdraw your application to the ScaleSmiths partner programme. Nothing changes until you confirm it using the secure link below.", link, `This link works once and expires on ${expires}.`, "If you did not ask for this, ignore this email: your application stays open."]) }
     }
   }
 }

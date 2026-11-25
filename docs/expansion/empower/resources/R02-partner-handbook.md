@@ -30,7 +30,7 @@ This handbook explains how the ScaleSmiths partnership works day to day. It is a
 
 ## 4. The Partner Portal
 
-Sign in on the ScaleSmiths admin site. The portal holds your prospects and scope requests, approved resources, commission records, onboarding toolkit and meeting requests. Use it as the single place for opportunity information.
+Sign in at partners.scalesmiths.co.uk. The portal holds your prospects and scope requests, approved resources, commission records, onboarding toolkit and meeting requests. Use it as the single place for opportunity information.
 
 ## 5. Approved content
 

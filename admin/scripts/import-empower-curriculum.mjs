@@ -38,7 +38,7 @@ if (resourceFiles.length !== 13) throw new Error(`Expected 13 resource drafts, f
 const resources = []
 for (const f of resourceFiles) { const parsed = parseResource(await read(`resources/${f}`), f, pkg.problems); if (parsed) resources.push(parsed) }
 const knowledge = parseKnowledgeBase(await read("KNOWLEDGE-BASE.md"), { r08: await read("resources/R08-objection-handling-playbook.md"), r11: await read("resources/R11-commercial-pricing-reference.md") }, pkg.problems)
-if (knowledge.length !== 32) pkg.problems.push(`Expected 32 knowledge entries, found ${knowledge.length}`)
+if (knowledge.length !== 46) pkg.problems.push(`Expected 46 knowledge entries, found ${knowledge.length}`)
 // Operation Empower B1.5: the twelve objection responses from R08, as drafts. Incomplete source rows are imported and reported, never guessed.
 const objections = parseObjectionPlaybook(await read("resources/R08-objection-handling-playbook.md"), pkg.problems)
 if (objections.length !== 12) pkg.problems.push(`Expected 12 objection responses, found ${objections.length}`)

@@ -134,15 +134,15 @@ test('B1.6 unified partner workspace: daily workflow, meeting preparation, found
       await p1.page.goto(`${origin()}/partner`)
       await p1.page.getByRole('region', { name: 'Your workspace' }).getByRole('button', { name: `Open ${BUSINESS}` }).click()
       await p1.page.locator('.gd-panel').filter({ hasText: 'Guidance for this prospect' }).getByRole('button', { name: /^Request/ }).click()
-      const f = p1.page.locator('form').filter({ has: p1.page.getByRole('button', { name: 'Send meeting request', exact: true }) })
-      await f.getByLabel('Meeting type').selectOption('technical_scoping')
+      const f = p1.page.locator('form').filter({ has: p1.page.getByRole('button', { name: 'Send request', exact: true }) })
+      await f.getByLabel('What do you need?').selectOption('technical_scoping')
       await f.getByLabel('Related prospect (optional)').selectOption(oppId)
       const slot = new Date(Date.now() + 4 * 86400000); slot.setUTCHours(10, 0, 0, 0)
       await f.locator('input[type=datetime-local]').first().fill(slot.toISOString().slice(0, 16))
       await f.locator('textarea, input').filter({ hasNot: p1.page.locator('[type=datetime-local],[type=hidden]') }).last().fill(`TEST ONLY CRM integration question ${tag}`).catch(() => undefined)
       for (const req of await f.locator('input[required], textarea[required]').all()) if (!(await req.inputValue())) await req.fill(`TEST ONLY ${tag}`)
       const resp = p1.page.waitForResponse((r) => r.url().endsWith('/api/partner') && r.request().method() === 'POST')
-      await f.getByRole('button', { name: 'Send meeting request', exact: true }).click()
+      await f.getByRole('button', { name: 'Send request', exact: true }).click()
       expect((await resp).status()).toBe(200)
       const m = (await su.query("select m.id,m.status from expansion_meeting_requests m where m.opportunity_id=$1 order by created_at desc limit 1", [oppId])).rows[0]
       expect(m.status).toBe('requested'); meetingId = String(m.id)
@@ -249,7 +249,7 @@ test('B1.6 unified partner workspace: daily workflow, meeting preparation, found
       expect((await api(p2.context, '/api/partner/agreement', { accepted: true, versionId: agr.versionId, sha256, signatoryName: 'Test Only Partner Two' })).status).toBe(200)
       await p2.page.goto(`${origin()}/partner`)
       await expect(p2.page.getByRole('region', { name: 'Your workspace' }).locator('.gd-agreement').getByText('Accepted and current', { exact: true })).toBeVisible()
-      // Nothing is due, so Today offers no second agreement action (the "Your next steps" link remains the one route).
+      // Nothing is due, so Today offers no second agreement action (the partner journey's agreement step remains the one route).
       await expect(p2.page.getByRole('region', { name: 'Your workspace' }).locator('.gd-agreement').getByRole('link')).toHaveCount(0)
       await shots17(p2.page, 'partner-today-agreement-accepted', p2.page.locator('.gd-agreement'))
       // Partner one never sees partner two's agreement, in the page or the API.

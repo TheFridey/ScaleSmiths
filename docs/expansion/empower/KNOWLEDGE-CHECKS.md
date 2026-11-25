@@ -252,7 +252,7 @@ Before passing on anyone's details, you should ask their permission.
 > Explanation: Introduce people who would genuinely benefit, ask before passing on details, and be open that you are an independent partner of ScaleSmiths.
 
 ### C07-L3 q1 single
-A prospect asks how long your lead protection lasts. What do you say?
+Another partner asks how long lead protection lasts. What do you say?
 - [x] a: Nothing specific: the lead protection term is not approved, so do not state one
 - [ ] b: Six months
 - [ ] c: Twelve months

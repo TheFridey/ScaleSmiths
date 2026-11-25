@@ -136,6 +136,10 @@ export default function LoginPage() {
             >
               {loading ? "Signing in..." : "Sign in"}
             </button>
+            <p className="font-dm text-sm text-t2 text-center mt-1">
+              Independent partner?{" "}
+              <a href="/partner/reset" className="underline underline-offset-4">Forgot your password?</a>
+            </p>
           </form>
         </div>
       </div>

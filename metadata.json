@@ -1,0 +1,41 @@
+{
+  "cli_version": "0.12.2",
+  "checkpoint_id": "01M89ERPDTS8726W7ZTSWTDXSN",
+  "strategy": "manual-commit",
+  "branch": "feature/operation-empower-b2-11-launchpad",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "docs/expansion/empower/b2-11/DEPLOYMENT-AND-ROLLBACK.md",
+    "scripts/check-release-tree.test.mjs"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 50,
+    "cache_creation_tokens": 19957,
+    "cache_read_tokens": 5007671,
+    "output_tokens": 10089,
+    "api_call_count": 23
+  },
+  "redaction": {
+    "replacements": 83,
+    "layers": {
+      "betterleaks": 61,
+      "connection_string": 0,
+      "credential_key": 0,
+      "credential_value": 11,
+      "credentialed_uri": 28,
+      "entropy": 34,
+      "key_context": 2,
+      "provider_token": 0,
+      "shell_stdin": 0
+    }
+  }
+}

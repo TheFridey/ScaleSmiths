@@ -11,3 +11,32 @@ These are the outstanding founder decisions and approvals. Nothing here can be r
 | 5 | Allow **clean-up** on the VPS | `releases/b210-scroll-hotfix` (1.1 GB, unused) and two empty stray files in the canonical checkout. The canonical checkout should be reset to `master` with the hotfix edit discarded, because its replacement is committed. | No | VPS | Say "clean up". | Delete after the B2.11 deploy is verified, so the rollback pair stays intact. | ~1.1 GB disk |
 
 **Status 25 Nov 2026:** item 4 is **done**. B2.11 was deployed with the four content-free switches on; see the deployment record in [B2-11-LAUNCHPAD-FINAL-REPORT.md](B2-11-LAUNCHPAD-FINAL-REPORT.md) section 7. Item 5 (clean-up) can now go ahead. Items 1–3 remain open.
+
+**Status 25 Nov 2026 (later):** item 3 is **done (import only)**. With founder authorisation, `import-empower-curriculum.mjs` imported 175 drafts into `scalesmiths`, authored by the administrator trev@scalesmiths.co.uk:
+
+| Content | Count |
+|---|---|
+| Courses | 13 |
+| Lessons | 91 |
+| Resources | 13 |
+| Knowledge Base entries | 46 |
+| Objection responses | 12 |
+
+- **Backup:** `/var/backups/scalesmiths/pre-curriculum-import-20261125T145425Z-cf6fecfb`, checksums verified.
+- **Dry run before the import:** 175 to create, 0 problems.
+- **Database check after the import:**
+  - all 175 versions are `draft`, with 0 approval rows;
+  - items, versions and `empower_imported` audit rows are all attributed to the author (175 each);
+  - the published agreement is unchanged.
+- **Re-run dry run:** 175 unchanged.
+
+**Next step:** the author submits in Content → Review queue, and the *other* founder approves and publishes. The importer flagged four objection responses for founder decisions:
+
+| Response | Decision needed |
+|---|---|
+| AP-OBJ-01 | Refers to a proposed policy that is not yet approved. |
+| AP-OBJ-05 | The escalation route was left blank for a founder to decide. |
+| AP-OBJ-08 | Has no discovery question; add one or confirm none is needed. |
+| AP-OBJ-10 | Has no discovery question, and is BLOCKED on AP-GOV-05. Do not submit it. |
+
+C07, C11, C12 and R12 stay unpublished until their dependencies are resolved. The Academy, Resource Centre, Knowledge Base and Objection-handling switches stay off until content is published.

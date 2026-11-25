@@ -1,0 +1,51 @@
+{
+  "cli_version": "0.12.2",
+  "checkpoint_id": "01M89N92GY865663W7X97AJTZV",
+  "strategy": "manual-commit",
+  "branch": "fix/admin-first-login-mfa-enrolment",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "admin/playwright.empower.config.ts",
+    "admin/src/app/(protected)/security/page.tsx",
+    "admin/src/app/api/admin-users/route.ts",
+    "admin/src/components/AdminUsersManager.tsx",
+    "admin/src/components/MfaSecurityPanel.tsx",
+    "admin/src/lib/server/admin-users.ts",
+    "admin/src/lib/server/mfa-enrolment.test.ts",
+    "admin/src/lib/server/mfa.ts",
+    "admin/src/lib/server/rbac.ts",
+    "admin/src/middleware.ts",
+    "admin/test/e2e/b2-11-admin-mfa-enrolment.spec.ts",
+    "docs/expansion/empower/b2-11/ADMIN-MFA-ENROLMENT-HOTFIX.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 96,
+    "cache_creation_tokens": 73275,
+    "cache_read_tokens": 15890401,
+    "output_tokens": 42091,
+    "api_call_count": 47
+  },
+  "redaction": {
+    "replacements": 178,
+    "layers": {
+      "betterleaks": 113,
+      "connection_string": 0,
+      "credential_key": 0,
+      "credential_value": 11,
+      "credentialed_uri": 28,
+      "entropy": 71,
+      "key_context": 8,
+      "provider_token": 0,
+      "shell_stdin": 0
+    }
+  }
+}

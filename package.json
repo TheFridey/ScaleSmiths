@@ -26,6 +26,8 @@
     "test:production-topology": "node --test scripts/check-production-topology.test.mjs",
     "check:release-env-drift": "node scripts/check-release-env-drift.mjs",
     "test:release-env-drift": "node --test scripts/check-release-env-drift.test.mjs",
+    "check:release-tree": "node scripts/check-release-tree.mjs",
+    "test:release-tree": "node --test scripts/check-release-tree.test.mjs",
     "test:branch-protection-policy": "node --test scripts/check-branch-protection-policy.test.mjs",
     "update:cloudflare-ranges": "node scripts/update-cloudflare-nginx-ranges.mjs",
     "test:integration": "node scripts/run-admin-integration-tests.mjs",

@@ -748,6 +748,9 @@ jobs:
       - name: Test production topology consistency rules
         run: npm run test:production-topology
 
+      - name: Test release-tree preflight rules
+        run: npm run test:release-tree
+
       - name: Test ASCEND worker driver and Megaton effect preflight
         run: npm run test:ascend-ops
 

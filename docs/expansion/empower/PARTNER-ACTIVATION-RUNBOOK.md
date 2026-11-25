@@ -35,7 +35,7 @@ On the VPS, in the live release directory, print each switch in [PRODUCTION-FEAT
 Copy the approved values for every governed switch into the canonical `.env`, then:
 
 ```bash
-node scripts/check-release-env-drift.mjs /var/www/scalesmiths/.env <release>/.env
+node scripts/check-release-env-drift.mjs /var/www/scalesmiths/ScaleSmiths/.env <release>/.env
 ```
 
 It must print `No drift in governed switches.` before building.

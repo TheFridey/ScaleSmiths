@@ -16,10 +16,13 @@
   --font-dm:   "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
 }
 * { box-sizing: border-box; }
-html, body { height: 100%; }
+html { height: 100%; }
+/* B2.11: the document scrolls by default. Only the founder app shell, which is a fixed
+   100dvh frame with its own scroll regions (.admin-main, .admin-navigation), locks it.
+   Partner, activation, recovery and login pages rely on normal document scrolling. */
 body {
   margin: 0;
-  overflow: hidden;
+  min-height: 100%;
   background: var(--bg);
   color: var(--t1);
   font-family: var(--font-dm);
@@ -27,6 +30,7 @@ body {
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
 }
+html:has(.admin-shell), html:has(.admin-shell) body { height: 100%; overflow: hidden; }
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.2); border: 2px solid transparent; border-radius: 999px; background-clip: padding-box; }

@@ -107,7 +107,8 @@ kbd{padding:1px 6px;border:1px solid var(--ac-line);border-radius:4px;font-size:
 .ac-link{background:none;border:0;color:var(--ac-gold);text-decoration:underline;text-underline-offset:4px;cursor:pointer;padding:6px 0;min-height:44px}
 .ac-button-secondary{display:inline-flex;align-items:center;min-height:44px;padding:10px 16px;border-radius:10px;border:1px solid var(--ac-gold-deep);color:var(--ac-gold)!important;text-decoration:none;font-weight:600;transition:background-color .15s ease,border-color .15s ease}
 .ac-button-secondary:hover{background:color-mix(in srgb,var(--ac-gold) 12%,transparent);border-color:var(--ac-gold)}
-.ac-document{max-height:min(60vh,600px);overflow:auto;border:1px solid var(--ac-line);border-radius:10px;padding:18px;margin:10px 0 16px;background:var(--ac-bg)}
+/* B2.11: the agreement reads in the page flow (no nested scroll box), so it scrolls, zooms and prints like any document. */
+.ac-document{overflow-wrap:anywhere;border:1px solid var(--ac-line);border-radius:10px;padding:18px;margin:10px 0 16px;background:var(--ac-bg)}
 .ac-document:focus-visible{outline:2px solid var(--ac-gold);outline-offset:3px}
 .ac-form fieldset{border:0;padding:0;margin:0;display:grid;gap:8px;max-width:520px}
 .ac-form input:not([type=checkbox]){min-height:48px;border-radius:10px;border:1px solid var(--ac-line);background:var(--ac-bg);color:inherit;padding:10px 14px;font-size:16px}

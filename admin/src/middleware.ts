@@ -13,6 +13,7 @@ import { checkDurableRateLimit } from "@/lib/server/rate-limit-store"
 import { resolveClientIp } from "@/lib/client-ip"
 import { isAdminSessionCurrent } from "@/lib/admin-users"
 import { findAdminUserById } from "@/lib/server/admin-users"
+import { isMfaEnrolmentRoute, requiresMfaEnrolment } from "@/lib/server/mfa"
 import { authorizeRequest } from "@/lib/rbac"
 import { requestLogger } from "@/lib/server/request-context"
 import { captureMonitoringMessage } from "@/lib/server/monitoring"
@@ -101,6 +102,15 @@ export default auth(async (req) => {
     if (pathname.startsWith("/api/")) return correlated(NextResponse.json({ error: "Session revoked or account disabled." }, { status: 401 }))
     const url = redirectUrl("/login")
     url.searchParams.set("reason", "session")
+    return correlated(NextResponse.redirect(url))
+  }
+
+  // Enrolment-only sessions: a privileged user without active MFA (signed in with a password under an owner-issued enrolment
+  // allowance) may use only MFA setup and sign-out. Derived from the persisted user, never from token claims.
+  if (requiresMfaEnrolment(persistedUser) && !isMfaEnrolmentRoute(pathname, req.method)) {
+    if (pathname.startsWith("/api/")) return correlated(NextResponse.json({ error: "Set up multi-factor authentication to continue.", code: "mfa_enrolment_required" }, { status: 403 }))
+    const url = redirectUrl("/security")
+    url.searchParams.set("reason", "mfa_enrolment")
     return correlated(NextResponse.redirect(url))
   }
 

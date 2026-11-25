@@ -7,6 +7,6 @@ export const metadata: Metadata = { title: "Security" }
 export const dynamic = "force-dynamic"
 
 export default async function SecurityPage() {
-  await guardPageCapability("settings.manage")
+  await guardPageCapability("settings.manage", "/dashboard", { allowMfaEnrolment: true })
   return <MfaSecurityPanel />
 }

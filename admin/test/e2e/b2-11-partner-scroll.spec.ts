@@ -39,15 +39,18 @@ async function assertReachable(page: Page, label: string) {
   const lock = await page.evaluate(() => [getComputedStyle(document.documentElement).overflowY, getComputedStyle(document.body).overflowY])
   expect(lock, `${label}: document scrolling is locked`).not.toContain('hidden')
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth), `${label}: horizontal overflow`).toBeLessThanOrEqual(0)
+  // Client-rendered sections (course lists, search results) can still be arriving after the heading is visible, so the page may
+  // grow between scrolling and measuring. Wait for the network, then scroll and measure in one step until it settles. A page that
+  // genuinely cannot scroll to its end never reaches <= 1px and still fails.
+  await page.waitForLoadState('networkidle').catch(() => {})
   await page.keyboard.press('End')
-  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
-  const gap = await page.evaluate(() => {
+  await expect.poll(() => page.evaluate(() => {
+    window.scrollTo(0, document.documentElement.scrollHeight)
     const root = document.querySelector('main') ?? document.body
     const items = [...root.querySelectorAll('*')].filter((el) => { const r = el.getBoundingClientRect(); return r.height > 0 && r.width > 0 && getComputedStyle(el).visibility !== 'hidden' })
     const bottom = Math.max(...items.map((el) => el.getBoundingClientRect().bottom))
     return bottom - window.innerHeight
-  })
-  expect(gap, `${label}: content below the reachable viewport`).toBeLessThanOrEqual(1)
+  }), { message: `${label}: content below the reachable viewport`, timeout: 10_000 }).toBeLessThanOrEqual(1)
 }
 
 test('partner pages scroll to their last content at desktop, tablet and mobile sizes', async ({ browser }) => {

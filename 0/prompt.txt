@@ -1,0 +1,1429 @@
+<pasted_content id="bfca">
+OPERATION EMPOWER — B2.11: PROJECT LAUNCHPAD
+FULL PARTNER PROGRAMME COMPLETION, PRODUCTION REMEDIATION AND LAUNCH CERTIFICATION
+1. Mission
+You are acting as ScaleSmiths' principal software engineer, QA lead, security engineer, DevOps engineer and product experience specialist.
+Your assignment is to take the entire ScaleSmiths Independent Partner Programme from its current partially operational production state to a complete, polished, secure, commercially functional and production-certified platform capable of onboarding and supporting real partners.
+This is not a planning exercise.
+You are authorised to inspect, implement, repair, test, commit, merge and deploy the necessary changes, subject to existing security controls, founder approval requirements and commercial safeguards.
+Complete as much of this assignment as possible in one continuous execution. Do not unnecessarily divide the work into separate prompts or repeatedly request permission to continue.
+Where a genuine founder decision or approval is required, isolate that dependency, document it precisely and continue with all other independent work.
+2. Repository and production environment
+Repository:
+https://github.com/TheFridey/ScaleSmiths
+Public website:
+https://www.scalesmiths.co.uk
+Partner portal:
+https://partners.scalesmiths.co.uk
+Founder administration:
+https://admin.scalesmiths.co.uk
+Canonical production repository:
+`/var/www/scalesmiths/ScaleSmiths`
+Previously verified production release:
+`/var/www/scalesmiths/releases/3f2d6497d6fba7b00968043a68f1987b10467151`
+B2.10 was merged through PR #179.
+Verify the current production release, repository HEAD, environment configuration, running processes and infrastructure before making changes. Do not assume the previously recorded state remains current.
+Review all relevant EMPOWER, AEGIS, ASCEND and EXPANSION documentation, including:
+
+* FOUNDER-LAUNCH-CHECKLIST.md
+* PRODUCTION-FEATURE-MATRIX.md
+* PARTNER-ACTIVATION-RUNBOOK.md
+* AGREEMENT-PUBLICATION-WORKFLOW.md
+* CONTENT-PUBLICATION-REGISTER.md
+* B2-10-PARTNER-LAUNCH-REPORT.md
+
+Preserve all existing functionality and security guarantees.
+3. Known production findings
+The following findings were established during the production audit on 25 November 2026. Reverify them before acting.
+
+* Master Partner Agreement V4.1 is published.
+* Published agreement fingerprint: `ff4977e34b153a8a1cd42c79491215103d23fe592b3a711aa84fa126da90e48a`.
+* The founders have confirmed that the legal documents have been reviewed.
+* The agreement has been issued to the existing test partner.
+* Partner agreement scrolling was broken.
+* A temporary production CSS hotfix corrected the scrolling issue.
+* Cloudflare cached the previous immutable stylesheet and required a targeted purge.
+* The user subsequently confirmed that scrolling works.
+* The source correction has not been committed.
+* A separate production build failed during ASCEND page-data collection.
+* Partner applications are enabled.
+* Partner email is enabled.
+* Founder content management is enabled.
+* Partner activation is disabled or absent from the environment.
+* Enhanced pipeline and qualification are disabled.
+* Partner performance is disabled.
+* Delivery handoffs are disabled.
+* Academy, Resource Centre, Knowledge Base, Objection Handling and unified guidance are disabled.
+* Public partner profile publication is disabled.
+* No approved market records were present.
+* No withdrawal policy records were present.
+* No agreement acceptances were recorded at the time of inspection.
+* The production Content Studio contained only the published agreement.
+* Prepared curriculum content had not been imported.
+* Canonical and deployed environment configurations showed no governed-switch drift.
+* One agreement reissue email was recorded as sent.
+* One earlier application notification was recorded as disabled.
+* The delivery handoffs page appears susceptible to the same scrolling fault as the agreement page.
+* The public recruitment website contains planned-feature descriptions requiring reconciliation with current capabilities.
+
+Treat these as investigation starting points, not unquestionable facts.
+WORKSTREAM A — PRODUCTION ENGINEERING AND DEPLOYMENT REPAIR
+A1. Establish a reliable production baseline
+Inspect:
+
+* Git status, branches, HEAD and deployed commit.
+* Existing local modifications and untracked files.
+* PM2 processes.
+* Nginx routing.
+* Cloudflare configuration.
+* Canonical and release environment files.
+* PostgreSQL connectivity and migrations.
+* Application health endpoints.
+* Disk space, memory and build capacity.
+* Existing backups and rollback procedures.
+* Failed build logs and abandoned hotfix directories.
+
+Investigate any unexplained differences between the canonical repository and deployed release.
+Do not discard legitimate uncommitted work.
+A2. Permanently resolve the scrolling defect
+Investigate the global `overflow: hidden` body rule and all partner-facing layouts.
+Implement a permanent source-level solution covering:
+
+* Partner agreement.
+* Academy.
+* Individual course pages.
+* Resource Centre.
+* Individual resources.
+* Knowledge Base.
+* Objection Handling.
+* Guidance.
+* Pipeline.
+* Performance.
+* Delivery handoffs.
+* Activation.
+* Password recovery.
+* Applicant withdrawal.
+* Partner workspace.
+* Founder workspace where applicable.
+
+Ensure that:
+
+* Every page scrolls correctly.
+* All content and actions remain reachable.
+* Nested scrolling is avoided unless genuinely beneficial.
+* Long documents remain readable.
+* Mobile browser viewport changes are handled.
+* Keyboard navigation works.
+* Touch scrolling works.
+* Modal and drawer scrolling works.
+* Existing founder dashboard layouts are preserved.
+
+Replace the temporary compiled CSS modification with a properly committed and built source correction.
+A3. Repair the production build
+Investigate the failed ASCEND page-data collection and identify the actual root cause.
+Check:
+
+* Shared repository dependencies.
+* Build-time environment requirements.
+* Database initialisation.
+* Server-only imports.
+* Static versus dynamic route configuration.
+* Next.js build behaviour.
+* Runtime dependency resolution.
+* Differences between CI and production build environments.
+
+Do not disable ASCEND functionality, remove security checks or suppress legitimate build failures merely to obtain a successful build.
+Produce a clean, reproducible production build from a fresh release directory.
+A4. Deployment reliability
+Ensure:
+
+* Immutable asset filenames change when content changes.
+* Cloudflare does not serve stale assets after deployment.
+* Previous assets remain available during safe transitions where necessary.
+* Health checks occur before traffic cutover.
+* Environment drift checks pass.
+* Database migrations are safe.
+* Backups are verified.
+* Rollback is documented and executable.
+* Production release identifiers accurately represent deployed code.
+
+Clean up abandoned build processes and directories only after confirming they are not required by active services or rollback procedures.
+WORKSTREAM B — PUBLIC RECRUITMENT WEBSITE
+B1. Audit every public partner-related page
+Inspect:
+
+* Main website partner recruitment entry points.
+* Header and footer navigation.
+* Become a Partner page.
+* Digital Growth Partnership page.
+* Application form.
+* Application confirmation.
+* Commission calculator.
+* Frequently asked questions.
+* Benefits and rewards.
+* Programme requirements.
+* Privacy notices.
+* Applicant withdrawal.
+* Partner login links.
+* Public partner profile routes.
+* Relevant contact and legal pages.
+
+Test every button, link, form, validation message and responsive layout.
+B2. Reconcile public claims with actual functionality
+Review every statement concerning:
+
+* Commission.
+* Payment timing.
+* Withdrawals.
+* Partner tools.
+* Academy.
+* Resources.
+* Referral rewards.
+* Achievement rewards.
+* International eligibility.
+* Partner email addresses.
+* Business cards.
+* Personal partner pages.
+* Website demonstrations.
+* Website Intelligence.
+* Sales Studio.
+* Founder support.
+* Technical support.
+
+Ensure each feature is described accurately as:
+
+1. Available now.
+2. Available after eligibility or approval.
+3. Available through manual fulfilment.
+4. In development.
+5. Planned.
+
+Never describe a feature as operational when it is not.
+Do not silently alter commercial terms or contractual promises to make implementation easier.
+B3. Recruitment experience
+Ensure the public recruitment journey is professional, persuasive and transparent.
+Verify:
+
+* Application form validation.
+* Duplicate application handling.
+* Privacy consent recording.
+* Accessibility.
+* Mobile usability.
+* Successful submission.
+* Application acknowledgement.
+* Founder notification.
+* Clear next steps.
+* Failure recovery.
+* Applicant withdrawal.
+* Rate limiting and abuse prevention.
+
+Use controlled synthetic applications for testing. Do not send unsolicited messages to genuine applicants.
+WORKSTREAM C — AGREEMENTS AND PARTNER ACTIVATION
+C1. Verify Master Agreement V4.1
+Confirm:
+
+* Published status.
+* Current review date.
+* Correct fingerprint.
+* Complete contractual wording.
+* All clauses present.
+* Correct company details.
+* Version history.
+* Legal review reference.
+* Founder approval records.
+* Partner-specific agreement assignment.
+* Agreement acceptance history.
+* Downloadable agreement availability.
+
+Do not silently modify the published agreement.
+Any contractual amendment must follow the existing versioning, review, approval and publication process.
+The founders have confirmed that legal review has occurred. Do not reintroduce misleading statements suggesting that review is still outstanding. Do not fabricate legal approval evidence.
+C2. Executed agreement completeness
+Investigate the partner identity and effective-date placeholders visible in the agreement.
+Determine whether the execution process records and associates:
+
+* Full legal name.
+* Entity type.
+* Address.
+* Email address.
+* Signatory identity.
+* Signatory authority.
+* Effective date.
+* Applicable jurisdiction.
+* Applicable jurisdiction addendum.
+* Agreement version.
+* Agreement fingerprint.
+* Acceptance timestamp.
+* Company approval and execution records.
+
+Ensure that the executed agreement record is complete, attributable, reproducible and downloadable.
+Preserve the immutable published master text and its fingerprint. If partner-specific execution details are stored separately, ensure they are clearly associated with the accepted agreement.
+Do not fabricate signatures, dates, approvals or identity information.
+C3. Agreement experience
+Verify:
+
+* Complete document readability.
+* Desktop and mobile scrolling.
+* Acceptance checkbox.
+* Signatory fields.
+* Validation.
+* Acceptance confirmation.
+* Download functionality.
+* Agreement history.
+* Reissued agreement handling.
+* Expired or superseded agreement handling.
+* Duplicate acceptance protection.
+* Stale browser session handling.
+
+C4. Market configuration
+Inspect the market approval system.
+Prepare the United Kingdom market configuration using the existing supported workflow.
+Verify all required reviews and approval gates.
+Where genuine founder or legal approval is required, present the exact records and actions needed. Do not manufacture approvals or bypass separation-of-duties requirements.
+International applications may continue to be received, but international selling and activation must remain subject to appropriate market and jurisdiction clearance.
+Prepare a clear international expansion workflow, including South Africa, without asserting that any jurisdiction is approved when it is not.
+C5. Activation
+Once the published agreement, approved market and required founder approvals are verified:
+
+* Enable partner activation through the documented runbook.
+* Verify canonical and release environment consistency.
+* Test invitation creation.
+* Test invitation delivery.
+* Test invitation expiry.
+* Test invalid and reused tokens.
+* Test agreement acceptance.
+* Test password creation.
+* Test account activation.
+* Test initial login.
+* Test onboarding progress.
+* Test account isolation.
+
+Use a clearly identified synthetic partner.
+Never activate genuine applicants automatically.
+WORKSTREAM D — CONTENT, ACADEMY AND PARTNER ENABLEMENT
+D1. Import the complete prepared curriculum
+Locate and inspect the official curriculum importer and all prepared content.
+Expected inventory from B2.10 documentation:
+
+* 13 Academy courses.
+* 91 lessons.
+* 65 knowledge checks.
+* 13 resources.
+* 46 Knowledge Base entries.
+* 12 objection responses.
+
+Reconcile actual inventory against the documentation.
+Run the importer in dry-run mode first.
+Verify:
+
+* Idempotency.
+* Correct content classification.
+* Correct audience.
+* Stable slugs.
+* Lesson relationships.
+* Course structure.
+* Knowledge checks.
+* Related resources.
+* Source references.
+* Review dates.
+* Publication dependencies.
+* Duplicate protection.
+
+Import through the supported workflow.
+Do not bypass content approval controls.
+D2. Prepare content for publication
+Prioritise:
+
+* C01–C06.
+* C08–C10.
+* C13.
+* R01.
+* R03–R07.
+* R09.
+* R10.
+* R13.
+* Confirmed Knowledge Base entries.
+* Approved objection responses.
+
+Review R11 pricing against current commercial terms.
+Reassess previously blocked content against the published V4.1 agreement and current operational policies.
+C07, C11, C12, R12 and previously blocked Knowledge Base entries must remain unpublished until their actual dependencies are resolved.
+Prepare the founder review queue so outstanding approvals can be completed efficiently in one session.
+Do not falsely record founder approval or approve content using another person's identity.
+D3. Academy experience
+Complete and test:
+
+* Academy homepage.
+* Course catalogue.
+* Course descriptions.
+* Module navigation.
+* Lesson navigation.
+* Knowledge checks.
+* Progress tracking.
+* Resume learning.
+* Completion records.
+* Related resources.
+* Search and filtering where supported.
+* Empty states.
+* Loading states.
+* Error recovery.
+* Mobile usability.
+* Accessibility.
+
+Academy participation must remain optional unless the contractual and approved onboarding requirements explicitly provide otherwise.
+D4. Resource Centre
+Complete and test:
+
+* Resource catalogue.
+* Categories.
+* Search.
+* Filtering.
+* Resource detail pages.
+* Download functionality.
+* Version information.
+* Audience restrictions.
+* Publication status.
+* Mobile presentation.
+* Expired and archived content handling.
+
+Locate the final approved partner handbook, jurisdiction addendum and other supporting documents.
+Verify their contents and completeness before uploading.
+Publish applicant-facing or partner-facing documents only to the appropriate audience.
+The internal release checklist must remain internal.
+A jurisdiction addendum template must not be represented as an executed or approved jurisdiction agreement.
+D5. Knowledge Base and objection handling
+Complete and test:
+
+* Search relevance.
+* Categories.
+* Related answers.
+* Synonyms.
+* Empty search results.
+* Approved answer presentation.
+* Objection responses.
+* Related resources.
+* Clear distinction between internal guidance and client-facing material.
+
+Ensure guidance is consistent with current pricing, commercial policies and approved programme terms.
+D6. Unified guidance
+Enable unified guidance only when its content dependencies are satisfied.
+Test cross-content search covering:
+
+* Academy.
+* Resources.
+* Knowledge Base.
+* Objection Handling.
+* Relevant operational guidance.
+
+Ensure unpublished or restricted content cannot leak through search.
+WORKSTREAM E — COMPLETE PARTNER WORKSPACE
+Audit and improve every internal partner workspace screen, not merely standalone routes.
+E1. Overview
+Verify:
+
+* Welcome experience.
+* Partner status.
+* Next recommended action.
+* Commission metrics.
+* Prospect metrics.
+* Progress indicators.
+* Notifications.
+* Quick actions.
+* Empty states.
+* Accurate data.
+* Navigation.
+
+The dashboard should immediately tell a new partner what they need to do next.
+E2. Getting started
+Verify the complete onboarding journey.
+Include:
+
+* Agreement acceptance.
+* Required acknowledgements.
+* Account setup.
+* Partner toolkit.
+* Optional Academy learning.
+* Support requests.
+* Referral code availability.
+* Clear completed and outstanding actions.
+
+Ensure onboarding progress is server-derived and cannot be manipulated through client-side state.
+E3. Prospects and pipeline
+Enable the enhanced pipeline and qualification functionality once safe to do so.
+Test:
+
+* Prospect registration.
+* Duplicate checks.
+* Prospect ownership.
+* Research allocation.
+* Discovery.
+* Contact recording.
+* Follow-ups.
+* Qualification.
+* Scope submission.
+* Information requests.
+* Bespoke requirements.
+* Founder review.
+* Opportunity acceptance.
+* Contract conversion.
+* Rejection.
+* Cancellation.
+* Prospect protection.
+* Partner data isolation.
+
+Test all supported pipeline transitions and reject invalid transitions.
+E4. Meetings and support
+Verify:
+
+* Joint sales meetings.
+* Technical assistance.
+* Training requests.
+* Demonstration requests.
+* Founder availability where supported.
+* Request status.
+* Founder response.
+* Cancellation.
+* Rescheduling.
+* Notifications.
+* History.
+
+Ensure the partner always understands what happens after submitting a request.
+E5. Commission
+Verify:
+
+* Commission statements.
+* Pending commission.
+* Verified commission.
+* Held commission.
+* Available commission.
+* Withdrawn commission.
+* Refund adjustments.
+* Transaction history.
+* Additional claims.
+* Discount allowances.
+* Currency presentation.
+* Empty states.
+* Error handling.
+
+All figures must reconcile with the authoritative ledger.
+E6. Achievements
+Verify:
+
+* Milestone progress.
+* Eligibility.
+* Qualifying client counts.
+* Recognition.
+* Reward status.
+* Founder approval.
+* Fulfilment.
+* Duplicate prevention.
+
+Reconcile displayed milestones with the published agreement and approved programme configuration.
+Do not enable financial rewards without the required programme approvals.
+E7. Referrals
+Verify:
+
+* Unique referral codes.
+* Referral links.
+* Attribution.
+* Referred partner progress.
+* Qualifying client conditions.
+* Reward eligibility.
+* Duplicate reward prevention.
+* Self-referral restrictions.
+* Abuse prevention.
+
+E8. My partner page
+Verify:
+
+* Profile editing.
+* Preview.
+* Eligibility.
+* Consent.
+* Approval.
+* Publication.
+* Slug uniqueness.
+* Withdrawal of consent.
+* Unpublication.
+* Public data minimisation.
+
+Keep public publication disabled until the appropriate eligibility and approval requirements are satisfied.
+E9. Coming soon
+Review every feature displayed.
+Remove obsolete planned labels when functionality is genuinely available.
+Do not advertise unsupported capabilities as operational.
+Provide meaningful explanations for eligibility-based or manually fulfilled features.
+E10. Performance
+Enable and verify:
+
+* Performance reporting.
+* Date ranges.
+* Conversion metrics.
+* Opportunity counts.
+* Commission metrics.
+* Achievement progress.
+* Empty states.
+* Partner isolation.
+
+E11. Delivery handoffs
+Move the page into a suitable shared partner layout.
+Verify:
+
+* Scrolling.
+* Navigation.
+* Responsive design.
+* Accepted client projects.
+* Published delivery status.
+* Next steps.
+* Appropriate confidentiality.
+* No exposure of internal technical notes or other partners' clients.
+
+WORKSTREAM F — COMMERCIAL CONFIGURATION AND FINANCIAL SAFETY
+F1. Establish the authoritative commercial terms
+Compare:
+
+* Published V4.1 agreement.
+* Public recruitment website.
+* Commission calculator.
+* Existing database configuration.
+* Partner handbook.
+* Training material.
+* Financial implementation.
+* Founder settings.
+
+Known terms requiring reconciliation include:
+
+* 30% commission on eligible initial build payments.
+* 30% commission on the first qualifying retainer payment.
+* £2,000 standard website build.
+* £350 standard monthly retainer.
+* £705 potential standard initial commission.
+* £50 withdrawal minimum.
+* 14-day commission hold.
+* Two UK business days for withdrawal review.
+* Five UK business days for payment initiation under the applicable contractual conditions.
+* 90-day prospect protection.
+* £250 qualifying partner referral reward.
+* Contractual achievement milestone schedule.
+
+Verify the exact wording and conditions in the published agreement.
+Do not assume that this summary overrides the contract.
+Where configuration is missing, prepare the correct settings using the supported workflow.
+Where a commercial decision is genuinely outstanding, document it for founder approval.
+F2. Withdrawal policies
+Investigate the absence of production withdrawal policy records.
+Implement or configure the supported withdrawal policy consistent with approved terms.
+Verify:
+
+* Minimum withdrawal.
+* Hold periods.
+* Eligibility.
+* Available balance.
+* Pending reservations.
+* Duplicate request prevention.
+* Concurrent request handling.
+* Founder approval.
+* Rejection.
+* Cancellation.
+* Payment initiation.
+* Payment completion.
+* Reconciliation.
+* Failed payment recovery.
+* Audit history.
+* Invoice requirements.
+* Applicable taxes.
+* Currency and conversion fees.
+
+Verify which payment methods are actually operational.
+Do not promise Wise, bank transfers, international payment methods or automatic payouts unless the required operational arrangements exist.
+No real money may be transferred during testing.
+F3. Commission lifecycle
+Test:
+
+* Standard £2,000 build.
+* £1,000 deposit.
+* £1,000 final payment.
+* First £350 retainer.
+* Expected £300, £300 and £105 commission entries.
+* Flexible payment schedules.
+* Discounted builds.
+* Free-build exceptions.
+* Partial payments.
+* Additional customer work.
+* Refunds.
+* Chargebacks.
+* Cancellations.
+* Duplicate payment events.
+* Concurrent financial events.
+* Withdrawal reservations.
+* Reversals.
+* Idempotency.
+* Ledger reconciliation.
+
+Use synthetic records in an isolated environment for financial mutation tests.
+Preserve all existing database-level financial safeguards.
+F4. Commercial rewards
+Reconcile:
+
+* Achievement milestones.
+* Referral rewards.
+* Qualifying clients.
+* Reward approval.
+* Reward payment.
+* Recognition.
+* Physical benefits.
+* Programme versioning.
+
+Ensure the platform cannot issue duplicate or unapproved rewards.
+WORKSTREAM G — FOUNDER WORKSPACE COMPLETION
+Perform a complete functional and visual audit of every founder section.
+G1. Overview
+Verify accurate commercial and operational reporting.
+G2. Prospects and scope
+Verify:
+
+* Opportunity review.
+* Information requests.
+* Scope approval.
+* Rejection.
+* Contract creation.
+* Commercial exceptions.
+* Founder assignment.
+* Partner notifications.
+
+G3. Resource library
+Verify:
+
+* Content creation.
+* Upload.
+* Editing.
+* Review.
+* Approval.
+* Publication.
+* Audience restrictions.
+* Archival.
+
+G4. Commission centre
+Verify:
+
+* Commission ledger.
+* Markets.
+* Sectors.
+* Areas.
+* Exclusivity.
+* Plan settings.
+* Discount policies.
+* Additional claims.
+* Withdrawal policies.
+* Withdrawal requests.
+* Payment reconciliation.
+
+G5. Research and allocation
+Verify:
+
+* Research candidate creation.
+* Duplicate protection.
+* Assignment.
+* Allocation.
+* Reassignment.
+* Prospect ownership.
+* Exclusivity checks.
+* Audit history.
+
+G6. Recognition
+Verify:
+
+* Recognition eligibility.
+* Evidence.
+* Benefits.
+* Fulfilment.
+* Corrections.
+* Audit records.
+
+G7. Web pages
+Verify:
+
+* Profile review.
+* Approval.
+* Publication.
+* Unpublication.
+* Consent.
+* Eligibility.
+
+G8. Programme
+Verify:
+
+* Programme versions.
+* Achievement milestones.
+* Referral rewards.
+* Commercial configuration.
+* Effective dates.
+* Approval requirements.
+
+G9. Partner onboarding
+Verify:
+
+* Applicant progress.
+* Agreement status.
+* Invitation status.
+* Activated partners.
+* Required acknowledgements.
+* Toolkit fulfilment.
+* Training progress.
+* Outstanding requests.
+* Actionable next steps.
+
+G10. Recruitment
+Verify:
+
+* Application listing.
+* Search.
+* Filtering.
+* Applicant details.
+* Review.
+* Acceptance.
+* Rejection.
+* Invitations.
+* Agreement reissue.
+* Withdrawal.
+* Retention controls.
+* Duplicate protection.
+* Notifications.
+
+G11. Delivery capacity
+Verify:
+
+* Capacity configuration.
+* Remaining allocations.
+* Delivery commitments.
+* Assignment constraints.
+* Warnings.
+* Reporting.
+
+G12. Content Studio
+Verify:
+
+* Draft creation.
+* Editing.
+* Submission.
+* Review queue.
+* Independent approval.
+* Publication.
+* Version history.
+* Review dates.
+* Bulk operations.
+* Dependencies.
+* Archival.
+* Access controls.
+
+G13. Command centre
+Verify that every alert and action links to the correct record and screen.
+Remove dead ends and misleading operational alerts.
+G14. Revenue intelligence
+Verify:
+
+* Forecast calculations.
+* Assumptions.
+* Actual versus projected revenue.
+* Data sources.
+* Financial accuracy.
+* Empty states.
+* Appropriate uncertainty.
+
+G15. Delivery handoffs
+Verify the complete commercial-to-delivery transition and partner-facing status publication.
+G16. Automation
+Audit:
+
+* Automation overview.
+* ASCEND engine.
+* Automation review.
+* Approval workflows.
+* Execution history.
+* Failure handling.
+* Audit records.
+* Safety restrictions.
+
+Do not enable unattended scheduling, agent execution or external automation merely to complete this assignment.
+Preserve existing ASCEND and MEGATON containment policies.
+WORKSTREAM H — PARTNER TOOLKIT AND OUTSTANDING FEATURES
+Inspect all existing implementation, planned functionality and manual fulfilment processes for:
+
+* ScaleSmiths partner email addresses.
+* Referral IDs.
+* CircleCard.
+* Digital business cards.
+* Physical business cards.
+* Branded polo shirts.
+* Sales brochures.
+* Pricing guides.
+* Partner handbook.
+* Brand guidelines.
+* Approved logos.
+* Case studies.
+* Website demonstrations.
+* Website Intelligence.
+* Sales Studio.
+* Personal partner pages.
+
+Classify each feature as:
+
+* Fully operational.
+* Implemented but disabled.
+* Manual fulfilment.
+* Partially implemented.
+* Not implemented.
+* Blocked by a third-party dependency.
+* Blocked by founder approval.
+
+Complete feasible first-party functionality and improve manual fulfilment tracking.
+For external integrations, verify credentials, provider availability, costs and permissions before activation.
+Do not fabricate demonstrations, testimonials, case studies or client results.
+Do not incur new external costs without approval.
+Provide an accurate implementation backlog for anything that genuinely cannot be completed during this assignment.
+WORKSTREAM I — EMAILS AND NOTIFICATIONS
+Audit every partner-related notification.
+Verify:
+
+* Application confirmation.
+* Founder application notification.
+* Invitation.
+* Activation confirmation.
+* Agreement reissue.
+* Password reset.
+* Applicant withdrawal.
+* Meeting requests.
+* Support responses.
+* Relevant financial notifications.
+* Relevant onboarding notifications.
+
+Check:
+
+* Resend configuration.
+* Sender identity.
+* Sending-domain verification.
+* SPF.
+* DKIM.
+* DMARC.
+* Link correctness.
+* Email branding.
+* Mobile rendering.
+* Plain-text alternatives.
+* Token expiry.
+* Idempotency.
+* Failure handling.
+* Retry behaviour.
+* Notification audit records.
+* Privacy.
+
+Use controlled founder-owned or designated test addresses.
+Do not email real applicants as part of automated testing.
+WORKSTREAM J — COMPLETE VISUAL, UX AND ACCESSIBILITY AUDIT
+This workstream is mandatory and must receive substantial attention.
+Do not rely solely on unit tests, HTTP status codes or source inspection.
+Use an actual authenticated browser through Playwright or an equivalent browser automation system.
+Audit every public partner page, every authenticated partner page, every internal partner workspace tab, every founder management section and every relevant dynamic route.
+Test at minimum:
+
+* 1920 × 1080 desktop.
+* 1440 × 900 laptop.
+* 1280 × 720 smaller laptop.
+* 1024 × 768 tablet landscape.
+* 768 × 1024 tablet portrait.
+* 390 × 844 mobile.
+* 360 × 800 smaller mobile.
+
+J1. Interaction coverage
+Test every relevant:
+
+* Button.
+* Link.
+* Tab.
+* Dropdown.
+* Checkbox.
+* Radio button.
+* Search field.
+* Filter.
+* Sort control.
+* Pagination control.
+* Form.
+* Modal.
+* Drawer.
+* Tooltip.
+* Accordion.
+* Confirmation dialog.
+* Download.
+* Upload.
+* Navigation element.
+
+Inspect:
+
+* Default states.
+* Hover states.
+* Focus states.
+* Active states.
+* Disabled states.
+* Loading states.
+* Success states.
+* Error states.
+* Empty states.
+
+Do not perform destructive actions against genuine production records.
+J2. Visual quality
+Identify and correct:
+
+* Clipped content.
+* Broken scrolling.
+* Horizontal overflow.
+* Overlapping elements.
+* Unreachable controls.
+* Inconsistent spacing.
+* Poor typography.
+* Weak visual hierarchy.
+* Inconsistent buttons.
+* Misaligned cards.
+* Unreadable tables.
+* Poor mobile navigation.
+* Excessive whitespace.
+* Layout shifts.
+* Inconsistent colours.
+* Confusing terminology.
+* Misleading statuses.
+* Unnecessary interaction steps.
+
+Think from the perspective of a new partner who has never seen the platform.
+The platform should feel like a premium, cohesive commercial product rather than a collection of development tools.
+J3. Accessibility
+Target WCAG 2.2 AA.
+Verify:
+
+* Text contrast.
+* Keyboard navigation.
+* Visible focus.
+* Logical tab order.
+* Semantic headings.
+* Accessible form labels.
+* Accessible error messages.
+* Screen reader announcements.
+* Modal focus management.
+* Touch target sizes.
+* Reduced-motion preferences.
+* Zoom behaviour.
+* Colour-independent status communication.
+
+Use automated accessibility testing alongside manual inspection.
+J4. Evidence
+Capture screenshots of every major screen at desktop and mobile sizes.
+Record before-and-after screenshots for material fixes.
+Maintain a route and interaction coverage register showing:
+
+* Page or screen.
+* Viewport.
+* Interaction tested.
+* Expected result.
+* Actual result.
+* Defect discovered.
+* Fix applied.
+* Retest result.
+* Evidence location.
+
+A page is not certified merely because it returns HTTP 200.
+WORKSTREAM K — SECURITY, PRIVACY AND DATA INTEGRITY
+Perform a comprehensive security regression.
+Verify:
+
+* Authentication.
+* Role-based access control.
+* Partner isolation.
+* Founder-only operations.
+* Direct object reference protection.
+* Cross-partner data access prevention.
+* Session handling.
+* Password reset security.
+* Invitation token security.
+* Agreement acceptance integrity.
+* CSRF protection.
+* Same-origin enforcement.
+* Rate limiting.
+* Input validation.
+* Output encoding.
+* File upload restrictions.
+* Content publication restrictions.
+* Audit log integrity.
+* Database permissions.
+* Secret management.
+* Public profile privacy.
+* Applicant data retention.
+* Applicant withdrawal.
+* International market restrictions.
+* Financial concurrency.
+* Idempotency.
+
+Test negative cases explicitly.
+Attempt unauthorised access using synthetic accounts with different roles.
+Never weaken an existing security control to make a test pass.
+Do not expose credentials, session tokens, private applicant information or environment secrets in reports, logs, screenshots or Git commits.
+WORKSTREAM L — END-TO-END PARTNER LIFECYCLE CERTIFICATION
+Create a clearly labelled synthetic partner lifecycle in an isolated test environment.
+Exercise the complete journey:
+
+1. Discover the public programme.
+2. Submit an application.
+3. Receive confirmation.
+4. Founder reviews application.
+5. Required market checks are completed.
+6. Application is approved.
+7. Invitation is issued.
+8. Invitation email is received.
+9. Partner opens activation link.
+10. Partner reads the agreement.
+11. Partner accepts the agreement.
+12. Partner creates a password.
+13. Partner activates their account.
+14. Partner signs in.
+15. Partner completes onboarding.
+16. Partner accesses Academy.
+17. Partner completes a lesson and knowledge check.
+18. Partner downloads approved resources.
+19. Partner searches the Knowledge Base.
+20. Partner accesses objection guidance.
+21. Partner registers a prospect.
+22. Partner records discovery.
+23. Partner requests a joint meeting.
+24. Founder responds.
+25. Partner submits scope.
+26. Founder approves the opportunity.
+27. Contract is created.
+28. Synthetic deposit is recorded.
+29. Commission is generated.
+30. Synthetic final payment is recorded.
+31. Commission is generated.
+32. Synthetic first retainer is recorded.
+33. Commission is generated.
+34. Commission hold and eligibility are verified.
+35. Withdrawal is requested.
+36. Withdrawal is reviewed.
+37. Synthetic payment completion is recorded.
+38. Delivery handoff is created.
+39. Partner sees appropriate delivery information.
+40. Performance metrics update.
+41. Achievement progress updates.
+42. Referral eligibility is evaluated.
+43. Partner downloads their accepted agreement.
+44. Partner signs out.
+45. Partner completes password recovery.
+
+Test failure and recovery paths throughout.
+Run production-safe smoke tests after deployment.
+Do not create real contracts, payments, commission liabilities or reward liabilities during production smoke testing.
+WORKSTREAM M — FEATURE ACTIVATION
+Review and reconcile all relevant switches:
+
+* `PARTNER_APPLICATIONS_ENABLED`
+* `PARTNER_EMAIL_ENABLED`
+* `PARTNER_ACTIVATION_ENABLED`
+* `PARTNER_PIPELINE_ENABLED`
+* `PARTNER_QUALIFICATION_ENABLED`
+* `PARTNER_PERFORMANCE_ENABLED`
+* `DELIVERY_HANDOFF_ENABLED`
+* `PARTNER_ACADEMY_ENABLED`
+* `PARTNER_RESOURCE_CENTRE_ENABLED`
+* `PARTNER_KNOWLEDGE_BASE_ENABLED`
+* `PARTNER_OBJECTION_HANDLING_ENABLED`
+* `PARTNER_UNIFIED_WORKSPACE_ENABLED`
+* `EMPOWER_FOUNDER_CONTENT_ENABLED`
+* `PARTNER_PROFILE_PUBLICATION_ENABLED`
+* `PUBLIC_PARTNER_PROFILES_ENABLED`
+* `PARTNER_RETENTION_EXECUTION_ENABLED`
+
+Enable functionality only after its actual dependencies and approval requirements are satisfied.
+Keep automatic destructive retention disabled.
+Keep public partner profile publication restricted until eligibility and consent requirements are met.
+Preserve existing ASCEND and MEGATON safety restrictions.
+Run environment drift verification after every approved configuration change.
+Document each switch's previous value, new value, reason, dependency, verification result and rollback procedure.
+WORKSTREAM N — GIT, CI AND PRODUCTION RELEASE
+N1. Repository hygiene
+Create an appropriately named implementation branch.
+Suggested:
+`feature/operation-empower-b2-11-launchpad`
+Use logical commits with clear messages.
+Include:
+
+* Source fixes.
+* Regression tests.
+* Browser tests.
+* Accessibility tests.
+* Documentation.
+* Migration files where genuinely required.
+* Operational runbooks.
+* Launch evidence.
+
+Do not commit secrets, private records, generated dependency directories or production backups.
+N2. Testing
+Run all applicable:
+
+* TypeScript checks.
+* Lint checks.
+* Unit tests.
+* Integration tests.
+* Database tests.
+* Concurrency tests.
+* Browser E2E tests.
+* Accessibility tests.
+* Migration tests.
+* Environment drift checks.
+* Production build checks.
+* Existing security gates.
+
+Investigate and resolve failures.
+Do not delete, weaken or skip existing tests to obtain a green pipeline.
+N3. Review and merge
+Open a comprehensive pull request.
+Review the entire diff for:
+
+* Regressions.
+* Security vulnerabilities.
+* Financial integrity.
+* Privacy.
+* Accessibility.
+* Performance.
+* Maintainability.
+* Scope creep.
+
+Merge only when required CI checks and repository protection rules are satisfied.
+N4. Deploy
+Before deployment:
+
+* Verify production health.
+* Take a fresh database backup.
+* Verify backup integrity.
+* Preserve existing environment configuration.
+* Preserve rollback release.
+* Confirm sufficient disk and memory.
+* Confirm migration safety.
+
+Deploy using the established production workflow.
+Verify:
+
+* Correct release identifier.
+* Application health.
+* Database connectivity.
+* Nginx routing.
+* Cloudflare behaviour.
+* Partner login.
+* Public recruitment.
+* Agreement rendering.
+* Partner scrolling.
+* Enabled functionality.
+* Founder workspace.
+* Email configuration.
+* Security restrictions.
+
+Do not declare deployment successful until the live environment has been independently verified.
+Rollback if a material regression is discovered.
+WORKSTREAM O — DOCUMENTATION AND FINAL CERTIFICATION
+Create a comprehensive evidence directory for B2.11.
+Include:
+
+* `B2-11-LAUNCHPAD-FINAL-REPORT.md`
+* `PRODUCTION-READINESS-MATRIX.md`
+* `FULL-PAGE-AUDIT-REGISTER.md`
+* `VISUAL-REGRESSION-REPORT.md`
+* `ACCESSIBILITY-REPORT.md`
+* `PARTNER-LIFECYCLE-CERTIFICATION.md`
+* `COMMERCIAL-RECONCILIATION.md`
+* `CONTENT-PUBLICATION-STATUS.md`
+* `SECURITY-REGRESSION-REPORT.md`
+* `PRODUCTION-FEATURE-STATUS.md`
+* `FOUNDER-ACTION-REGISTER.md`
+* `DEPLOYMENT-AND-ROLLBACK.md`
+* `REMAINING-DEVELOPMENT-BACKLOG.md`
+
+Include screenshots and machine-readable test evidence where appropriate.
+Final report requirements
+Provide:
+1. Executive verdict
+Choose one:
+
+* READY FOR REAL PARTNER ONBOARDING.
+* READY WITH SPECIFIC RESTRICTIONS.
+* NOT READY.
+
+Explain the evidence supporting the verdict.
+2. Work completed
+List all material fixes, improvements and activated functionality.
+3. Every page and screen
+Provide a complete inventory with verified status.
+Distinguish:
+
+* Source inspected.
+* Public HTTP tested.
+* Authenticated browser tested.
+* Interaction tested.
+* Visually certified.
+* Accessibility tested.
+* Production verified.
+* Blocked.
+
+4. Commercial readiness
+Confirm the actual status of:
+
+* Agreements.
+* Markets.
+* Invitations.
+* Activation.
+* Commission.
+* Withdrawals.
+* Referrals.
+* Achievements.
+* International onboarding.
+
+5. Content readiness
+Report exact counts of:
+
+* Imported content.
+* Draft content.
+* Submitted content.
+* Approved content.
+* Published content.
+* Blocked content.
+
+6. Technical evidence
+Report:
+
+* Test counts.
+* Passes.
+* Failures.
+* Skips.
+* CI results.
+* Build results.
+* PR number.
+* Merge commit.
+* Deployed release.
+* Backup location.
+* Rollback procedure.
+
+7. Founder actions
+Provide one consolidated list of genuine outstanding founder decisions or approvals.
+For each action, specify:
+
+* Why it is required.
+* Whether it blocks onboarding.
+* Exact interface location.
+* Exact action required.
+* Recommended decision where appropriate.
+* What becomes available after completion.
+
+Do not scatter founder requests throughout the report.
+8. Remaining development
+Identify anything genuinely unfinished.
+Distinguish technical blockers, external dependencies, approval dependencies and optional enhancements.
+Provide prioritised recommendations without exaggerating completion.
+EXECUTION RULES
+
+1. Do not stop after producing an audit or implementation plan.
+2. Investigate, implement, test and deploy.
+3. Complete all independent work before reporting blockers.
+4. Do not repeatedly ask whether you should continue.
+5. Do not fabricate test results, screenshots, approvals or deployment evidence.
+6. Do not claim that a page works without testing it appropriately.
+7. Do not treat HTTP 200 as functional certification.
+8. Do not bypass legal, financial, security or founder approval gates.
+9. Do not impersonate either founder.
+10. Do not alter published contractual terms without the proper versioned workflow.
+11. Do not expose private information or credentials.
+12. Do not send unsolicited emails to genuine applicants.
+13. Do not activate genuine applicants without the required approvals.
+14. Do not move real money or create real financial liabilities during testing.
+15. Do not enable unattended automation or destructive retention.
+16. Do not incur new external costs without approval.
+17. Preserve existing working functionality.
+18. Maintain a safe rollback path.
+19. Prefer permanent source-level corrections over temporary production patches.
+20. Be meticulous about the actual user experience.
+
+DEFINITION OF DONE
+The assignment is complete when:
+
+* A clean production build succeeds.
+* The permanent scrolling correction is deployed.
+* Every partner-related page and screen has been audited.
+* All material defects discovered within scope have been corrected.
+* Authenticated desktop and mobile browser testing is complete wherever functionality is available.
+* Commercial configuration matches approved contractual terms.
+* Prepared content has been imported and appropriately published or queued for genuine approval.
+* All safe and approved functionality is enabled.
+* Partner activation is operational once its mandatory approvals are satisfied.
+* The complete synthetic partner lifecycle passes.
+* Security and financial regression tests pass.
+* Required CI checks pass.
+* Changes are merged and deployed.
+* Production health is verified.
+* Remaining genuine blockers are clearly documented.
+* Founders receive a concise, actionable launch certification.
+
+The objective is not another impressive development report.
+The objective is a genuinely usable, commercially operational, secure and polished ScaleSmiths Partner Programme that is ready to welcome real partners.
+Begin immediately. Continue through every independent workstream until completion. Resolve issues as you discover them. Do not wait for further prompts unless a genuine authorisation or founder decision prevents progress.
+</pasted_content id="bfca">
+
+---
+
+<task-notification>
+<task-id>blz20t83z</task-id>
+<tool-use-id>toolu_01Lb5o2P9rMLLS8hfLfA2QVZ</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\bfe5bdb8-2416-449b-becd-b2a11be904c0\tasks\blz20t83z.output</output-file>
+<status>completed</status>
+<summary>Background command "Install admin dependencies in the worktree" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b51x9fvfw</task-id>
+<summary>Monitor event: "wait for admin build exit"</summary>
+<event>53:├ ƒ /api/ascend/v1/operations/[id]                              499 B         104 kB
+54:├ ƒ /api/ascend/v1/operations/[id]/cancel                       499 B         104 kB
+[exited with code 0]</event>
+If this event is something the user would act on now, send a PushNotification. Routine or benign output doesn't need one.
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b51x9fvfw</task-id>
+<tool-use-id>toolu_01UwmgVbhDMvM2XyDoe7srNo</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\bfe5bdb8-2416-449b-becd-b2a11be904c0\tasks\b51x9fvfw.output</output-file>
+<status>completed</status>
+<summary>Monitor "wait for admin build exit" stream ended</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bnti8mtfp</task-id>
+<summary>Monitor event: "wait for admin build to finish"</summary>
+<event>done</event>
+If this event is something the user would act on now, send a PushNotification. Routine or benign output doesn't need one.
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bnti8mtfp</task-id>
+<tool-use-id>toolu_01Tx4BbPfacoZqA6ZRZXmXGu</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\bfe5bdb8-2416-449b-becd-b2a11be904c0\tasks\bnti8mtfp.output</output-file>
+<status>completed</status>
+<summary>Monitor "wait for admin build to finish" stream ended</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bac0qez98</task-id>
+<tool-use-id>toolu_01HiXD6ab2be3q9FqLGNUMfq</tool-use-id>
+<output-file>D:\Hermes\temp\claude\4ef63fda3fc46ec8\bfe5bdb8-2416-449b-becd-b2a11be904c0\tasks\bac0qez98.output</output-file>
+<status>completed</status>
+<summary>Background command "Register spec in config, typecheck and lint" completed (exit code 0)</summary>
+</task-notification>

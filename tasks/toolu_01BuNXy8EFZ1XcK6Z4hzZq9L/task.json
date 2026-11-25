@@ -1,0 +1,15 @@
+{
+  "tool_use_id": "toolu_01BuNXy8EFZ1XcK6Z4hzZq9L",
+  "agent_id": "afc902fa15af617a5",
+  "subagent_type": "regression-reviewer",
+  "task_description": "Review MFA enrolment auth diff",
+  "token_usage": {
+    "input_tokens": 20,
+    "cache_creation_tokens": 54013,
+    "cache_read_tokens": 371684,
+    "output_tokens": 8843,
+    "api_call_count": 10
+  },
+  "started_at": "2026-11-25T15:31:54.1188366Z",
+  "completed_at": "2026-11-25T15:33:40.1860126Z"
+}

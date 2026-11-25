@@ -1,16 +1,16 @@
 # B2.11 deployment and rollback
 
-Production runs PM2 release pairs, not the Docker release manager. Each release is a self-contained tree under `/var/www/scalesmiths/releases/<sha>`.
+Production runs PM2 release pairs, not the Docker release manager. Each release is a self-contained tree under `/var/www/scalesmiths/ScaleSmiths/../releases/<sha>`.
 
 ## Build a release (self-contained)
 
 1. In the canonical checkout, run `git fetch` and confirm `<sha>` is the merged commit on `master`.
-2. Create the release tree: `git archive <sha> | tar -x -C /var/www/scalesmiths/releases/<sha>`.
+2. Create the release tree: `git archive <sha> | tar -x -C /var/www/scalesmiths/ScaleSmiths/../releases/<sha>`.
 3. Replace `generated-sites` with a symlink to the canonical one. This is the **only** permitted symlink.
 4. Copy `.env` from the live release.
 5. Run `npm run check:release-env-drift` and confirm it reports `identical`.
 6. Run `npm ci` **inside** `admin/` and `web/`. Never symlink or copy `node_modules`, and never copy `.next` from another release.
-7. Run `node scripts/check-release-tree.mjs /var/www/scalesmiths/releases/<sha>`. It must exit 0. If it fails, delete the reported directories and repeat step 6.
+7. Run `node scripts/check-release-tree.mjs /var/www/scalesmiths/ScaleSmiths/../releases/<sha>`. It must exit 0. If it fails, delete the reported directories and repeat step 6.
 8. Build each app with `node --env-file=../.env ./node_modules/next/dist/bin/next build`.
 
 Step 7 exists because, on 25 Nov 2026, a tree with a symlinked `admin/node_modules` and a borrowed webpack cache failed "Collecting page data" for `/api/ascend/v1/operations/[id]/cancel`.

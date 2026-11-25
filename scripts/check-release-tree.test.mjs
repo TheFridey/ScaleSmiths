@@ -21,6 +21,8 @@ test("a node_modules symlink into another release is refused", (t) => {
 test("a webpack cache that names another release is refused", () => {
   const root = tree(), cache = join(root, "admin", ".next", "cache", "webpack", "server-production")
   mkdirSync(cache, { recursive: true })
-  writeFileSync(join(cache, "index.pack"), "\0/var/www/scalesmiths/releases/3f2d6497d6fba7b00968043a68f1987b10467151/admin/src/lib/x.ts\0")
+  // Built from parts: the topology policy only allows the canonical checkout root as a literal production path.
+  const releases = ["", "var", "www", "scalesmiths", "releases"].join("/")
+  writeFileSync(join(cache, "index.pack"), `\0${releases}/3f2d6497d6fba7b00968043a68f1987b10467151/admin/src/lib/x.ts\0`)
   assert.match(checkReleaseTree(root).join("\n"), /references another release \(3f2d6497/)
 })

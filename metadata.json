@@ -36,14 +36,14 @@
     }
   },
   "redaction": {
-    "replacements": 191,
+    "replacements": 192,
     "layers": {
       "betterleaks": 122,
       "connection_string": 0,
       "credential_key": 0,
       "credential_value": 11,
       "credentialed_uri": 28,
-      "entropy": 75,
+      "entropy": 76,
       "key_context": 8,
       "provider_token": 0,
       "shell_stdin": 0

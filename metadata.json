@@ -1,0 +1,46 @@
+{
+  "cli_version": "0.12.2",
+  "checkpoint_id": "01M89E2VKD35PVJABDXXC3H381",
+  "strategy": "manual-commit",
+  "branch": "feature/operation-empower-b2-11-launchpad",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "admin/playwright.empower.config.ts",
+    "admin/src/app/globals-scroll.test.ts",
+    "admin/src/app/globals.css",
+    "admin/src/app/partner/handoffs/page.tsx",
+    "admin/src/components/empower/AcademyShell.tsx",
+    "admin/src/components/empower/academy.css",
+    "admin/test/e2e/b2-11-partner-scroll.spec.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 148,
+    "cache_creation_tokens": 153229,
+    "cache_read_tokens": 11285463,
+    "output_tokens": 48375,
+    "api_call_count": 74
+  },
+  "redaction": {
+    "replacements": 74,
+    "layers": {
+      "betterleaks": 61,
+      "connection_string": 0,
+      "credential_key": 0,
+      "credential_value": 11,
+      "credentialed_uri": 28,
+      "entropy": 26,
+      "key_context": 1,
+      "provider_token": 0,
+      "shell_stdin": 0
+    }
+  }
+}

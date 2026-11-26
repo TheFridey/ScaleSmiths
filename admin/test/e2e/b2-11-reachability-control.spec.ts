@@ -50,11 +50,24 @@ test('the reachability assertion still fails on genuinely unreachable content', 
   const locked = await rejection(assertReachable(page, 'injected locked document'))
   expect(locked, 'the assertion passed on a locked document').toContain('document scrolling is locked')
 
-  // 3. Undo both injected faults: the same page must pass, proving the failures above were the
-  //    injected faults and not a permanently broken assertion.
-  await page.evaluate(() => { for (const style of [...document.querySelectorAll('style')]) if (/45vh|overflow:hidden!important/.test(style.textContent ?? '')) style.remove() })
+  // 3. Undo exactly the faults injected above: the same page must pass, proving the failures were the
+  //    injected faults and not a permanently broken assertion. Removal is by handle, so no application
+  //    stylesheet can be caught by a pattern match.
+  await page.evaluate(() => {
+    for (const style of [...document.querySelectorAll('style')]) {
+      const css = style.textContent ?? ''
+      if (css.includes('.ac-main{max-height:45vh') || css.includes('html,body{overflow:hidden!important}')) style.remove()
+    }
+  })
   await expect(page.locator('main')).not.toHaveCSS('overflow-y', 'hidden')
   await assertReachable(page, 'restored page after removing the injected faults')
+
+  // 4. Readiness must be a gate, not decoration: a page that never leaves its loading state has to
+  //    fail loudly instead of being measured as if it were finished.
+  await page.evaluate(() => document.querySelector('main')?.setAttribute('data-content-state', 'loading'))
+  const neverReady = await rejection(assertReachable(page, 'stuck in loading state'))
+  expect(neverReady, 'a page stuck in its loading state was measured anyway').toContain('never left its loading state')
+  await page.evaluate(() => document.querySelector('main')?.setAttribute('data-content-state', 'ready'))
 
   await context.close()
 })

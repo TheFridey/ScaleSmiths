@@ -6,24 +6,34 @@ import { expect, type Page } from '@playwright/test'
  * The acceptance originally measured the document immediately after the first heading was visible.
  * On the partner pages that render their content from the API after hydration (Resource Centre,
  * Pipeline), and on the Pipeline at phone widths where it switches from board to list, that measured
- * a skeleton: the document then grew underneath the measurement. Observed on the isolated harness as
+ * a skeleton: the document then grew underneath the measurement. Observed on an isolated harness as
  * a 1041-1085px gap with twelve cards arriving mid-measurement, and — worse — as a pass in which no
- * content existed at all yet. Both are the same defect: no readiness condition.
+ * content existed at all yet. Both are the same defect: there was no readiness condition.
  *
- * This module therefore waits for the application to declare that its content has rendered, for
- * fonts and images to finish, and for the document height to hold still across frames, before it
- * scrolls to the end and asserts. No fixed sleep is used, and the tolerance is unchanged: at the end
- * of the document, nothing may sit more than 1px below the viewport.
+ * Order matters and is deliberate: content readiness, then scroll to the end, then images and fonts,
+ * then a document height that holds still, then every assertion measured on that settled document.
+ * Scrolling can itself start lazy image loads, so images are awaited after the scroll and the lock
+ * and overflow checks run after readiness — measuring them on the skeleton would reproduce the very
+ * race this module exists to remove. No fixed sleep is used and the tolerance is unchanged.
  */
 
 /** 1px is the original tolerance. It is deliberately not widened. */
 export const REACHABLE_TOLERANCE_PX = 1
 
 /**
+ * Bounded by design: `next/image` lazy-loads by default, so an image below the fold may never fire
+ * load or error before the scroll. An unbounded wait would hang until the test timeout with no
+ * readable reason; the settle loop re-checks after the next scroll instead.
+ */
+const IMAGE_SETTLE_MS = 1500
+const STABILITY_SAMPLE_MS = 50
+const STABILITY_SAMPLES = 6
+
+/**
  * The application publishes `data-content-state` on `<main>`: `loading` in the server HTML while an
  * asynchronous region is still empty, `ready` once the content it will show has rendered. Pages with
- * no asynchronous region are `ready` when parsed. Absent attribute (a page outside the partner frame)
- * is treated as ready; geometry stability still applies to it.
+ * no asynchronous region are `ready` when parsed. A document with no `<main>` (the signed-out pages)
+ * has no asynchronous region either and is treated as ready; its geometry is still gated below.
  */
 export async function waitForContentReady(page: Page, label: string) {
   await page.waitForFunction(() => {
@@ -35,29 +45,34 @@ export async function waitForContentReady(page: Page, label: string) {
   })
 }
 
-/** Fonts, then images, then a document height that holds still for consecutive frames. */
-export async function waitForStableLayout(page: Page, label: string) {
+/** Fonts and whatever images have started loading. Never blocks indefinitely. */
+export async function waitForFontsAndImages(page: Page) {
   await page.evaluate(async () => { await document.fonts.ready })
-  await page.evaluate(async () => {
-    await Promise.all([...document.images].map((image) => (image.complete ? Promise.resolve() : new Promise<void>((resolve) => {
-      image.addEventListener('load', () => resolve(), { once: true })
-      image.addEventListener('error', () => resolve(), { once: true })
-    }))))
-  })
-  await page.evaluate(() => new Promise<void>((resolve, reject) => {
+  await page.waitForFunction(() => [...document.images].every((image) => image.complete),
+    undefined, { timeout: IMAGE_SETTLE_MS }).catch(() => undefined)
+}
+
+/**
+ * A document height that holds still, sampled rather than animated: six consecutive identical readings 50 ms apart.
+ * A requestAnimationFrame loop was tried first and is wrong here — headless Chromium throttles frame delivery for a
+ * backgrounded page, so "no frame fired" is indistinguishable from "height never changed" and the wait times out.
+ * This measures stability over a 300 ms window and fails loudly instead of measuring a moving page.
+ */
+export async function waitForStableLayout(page: Page, label: string) {
+  await page.evaluate(async ({ sampleMs, samples, budgetMs }) => {
     const started = performance.now()
     let previous = -1
     let still = 0
-    const tick = () => {
+    while (performance.now() - started < budgetMs) {
       const height = document.documentElement.scrollHeight
       still = height === previous ? still + 1 : 0
       previous = height
-      if (still >= 5) return resolve()
-      if (performance.now() - started > 15000) return reject(new Error('never settled'))
-      requestAnimationFrame(tick)
+      if (still >= samples) return
+      await new Promise((r) => setTimeout(r, sampleMs))
     }
-    requestAnimationFrame(tick)
-  })).catch(() => { throw new Error(`${label}: the document never stopped changing height`) })
+    throw new Error('unstable')
+  }, { sampleMs: STABILITY_SAMPLE_MS, samples: STABILITY_SAMPLES, budgetMs: 15000 })
+    .catch(() => { throw new Error(`${label}: the document never stopped changing height`) })
 }
 
 /**
@@ -87,26 +102,42 @@ export async function measureGap(page: Page) {
   return page.evaluate(() => {
     const root = document.querySelector('main') ?? document.body
     const items = [...root.querySelectorAll('*')].filter((el) => { const r = el.getBoundingClientRect(); return r.height > 0 && r.width > 0 && getComputedStyle(el).visibility !== 'hidden' })
-    const bottom = Math.max(...items.map((el) => el.getBoundingClientRect().bottom))
+    // An empty region would otherwise yield -Infinity from Math.max and pass silently.
+    const bottom = items.length ? Math.max(...items.map((el) => el.getBoundingClientRect().bottom)) : root.getBoundingClientRect().bottom
     return bottom - window.innerHeight
   })
 }
 
-/** The document is not locked, nothing overflows sideways, and after scrolling to the end the last content is on screen. */
-export async function assertReachable(page: Page, label: string) {
+export type Reachability = { gap: number; lock: string[]; horizontalOverflow: number }
+
+/** Scroll, settle, and measure the three properties the acceptance asserts. */
+async function settleAndMeasure(page: Page, label: string): Promise<Reachability> {
+  await scrollToEndAndSettle(page, label)
+  await waitForFontsAndImages(page)
+  await waitForStableLayout(page, label)
   const lock = await page.evaluate(() => [getComputedStyle(document.documentElement).overflowY, getComputedStyle(document.body).overflowY])
-  expect(lock, `${label}: document scrolling is locked`).not.toContain('hidden')
-  expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth), `${label}: horizontal overflow`).toBeLessThanOrEqual(0)
+  const horizontalOverflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
+  return { gap: await measureGap(page), lock, horizontalOverflow }
+}
+
+/**
+ * The document is not locked, nothing overflows sideways, and after scrolling to the end the last
+ * content is on screen. A page whose content genuinely cannot be reached never closes the gap, so
+ * retries cannot rescue it; a retry only helps when content arrived between two attempts.
+ */
+export async function assertReachable(page: Page, label: string) {
   await waitForContentReady(page, label)
-  // Scrolling to the end can itself load content that then changes the height, so settle, scroll and
-  // measure as a unit and repeat while the document is still willing to change. A page whose content
-  // genuinely cannot be reached never converges and still fails on the final measurement.
-  let gap = Number.NaN
+  let result: Reachability | null = null
   for (let attempt = 0; attempt < 3; attempt++) {
-    await waitForStableLayout(page, label)
-    await scrollToEndAndSettle(page, label)
-    gap = await measureGap(page)
-    if (gap <= REACHABLE_TOLERANCE_PX) break
+    result = await settleAndMeasure(page, label)
+    if (result.lock.includes('hidden') || result.horizontalOverflow > 0 || result.gap > REACHABLE_TOLERANCE_PX) {
+      if (result.lock.includes('hidden')) break // a locked document cannot be scrolled into a better position
+      continue
+    }
+    break
   }
-  expect(gap, `${label}: content below the reachable viewport`).toBeLessThanOrEqual(REACHABLE_TOLERANCE_PX)
+  const measured = result!
+  expect(measured.lock, `${label}: document scrolling is locked`).not.toContain('hidden')
+  expect(measured.horizontalOverflow, `${label}: horizontal overflow`).toBeLessThanOrEqual(0)
+  expect(measured.gap, `${label}: content below the reachable viewport`).toBeLessThanOrEqual(REACHABLE_TOLERANCE_PX)
 }

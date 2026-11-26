@@ -6,9 +6,13 @@ import "./academy.css"
 export type PartnerNav = { academy?: boolean; resources?: boolean; knowledge?: boolean; objections?: boolean; guidance?: boolean; pipeline?: boolean; performance?: boolean; handoffs?: boolean }
 /**
  * `contentState` declares whether the content this frame will show has rendered. Pages that load from the API after
- * hydration publish `loading` in the server HTML and `ready` once the content is on screen, so browser acceptance and
- * any assistive technology can tell a painted skeleton from the finished page. A page with no asynchronous region is
+ * hydration publish `loading` in the server HTML and `ready` once their content is on screen, so browser acceptance and
+ * any assistive technology can tell a painted skeleton from a finished page. A page with no asynchronous region is
  * `ready` when it is parsed, which is the default and the case for every server-rendered page that uses this frame.
+ *
+ * `ready` means the content for the current view has rendered at least once: a later refetch after a filter change keeps
+ * the previous result on screen and stays `ready`, because the frame is not empty. Browser acceptance measures the
+ * settled document after `ready`, so it tolerates that change rather than treating it as a loading state.
  */
 export type ContentState = "loading" | "ready"
 /** Shared frame for the Partner Academy and Resource Centre: skip link, brand, grouped navigation. Sections that are off are labelled, not linked. */

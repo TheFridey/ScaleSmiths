@@ -23,7 +23,14 @@ const P1 = 'empower-partner-one@example.invalid'
 const evidence = '../docs/expansion/empower/evidence/b2-11/browser'
 const VIEWPORTS = [{ width: 1440, height: 900 }, { width: 1024, height: 768 }, { width: 390, height: 844 }, { width: 360, height: 800 }]
 // Route coverage is declared in ./partner-routes so a missing page fails instead of shrinking the run.
-const PARTNER_PAGES = [...REQUIRED_PARTNER_ROUTES]
+// PARTNER_ROUTE_FILTER narrows the run to named routes for targeted repetition (for example the
+// Resource Centre or Pipeline gate); it never widens it, and coverage is still asserted over the
+// routes that run.
+const ROUTE_FILTER = (process.env.PARTNER_ROUTE_FILTER ?? '').split(',').map((route) => route.trim()).filter(Boolean)
+const UNKNOWN_FILTERED_ROUTES = ROUTE_FILTER.filter((route) => !REQUIRED_PARTNER_ROUTES.includes(route as typeof REQUIRED_PARTNER_ROUTES[number]))
+if (UNKNOWN_FILTERED_ROUTES.length) throw new Error(`PARTNER_ROUTE_FILTER names route(s) the acceptance does not cover: ${UNKNOWN_FILTERED_ROUTES.join(', ')}`)
+const PARTNER_PAGES = ROUTE_FILTER.length ? REQUIRED_PARTNER_ROUTES.filter((route) => ROUTE_FILTER.includes(route)) : [...REQUIRED_PARTNER_ROUTES]
+if (!PARTNER_PAGES.length) throw new Error('PARTNER_ROUTE_FILTER selected no routes; the run would prove nothing')
 const PUBLIC_PAGES = [...REQUIRED_PUBLIC_ROUTES]
 const origin = () => {
   const a = new URL(base!)
@@ -55,6 +62,7 @@ test('partner pages scroll to their last content at desktop, tablet and mobile s
       exercised.push(path)
       await expect(page.locator('h1').first()).toBeVisible()
       await assertReachable(page, `${path} @ ${viewport.width}x${viewport.height}`)
+      console.log(`reachable ${path} @ ${viewport.width}x${viewport.height}`)
       if (viewport.width === 1440 || viewport.width === 390) await page.screenshot({ path: `${evidence}/${slug(path)}-${viewport.width}.png`, fullPage: true })
     }
   }

@@ -93,7 +93,7 @@ export function ObjectionHandling({ nav }: { nav: PartnerNav }) {
   }, [submitted, category, attempt])
   const heading = data?.mode === "search" ? `Responses for “${data.query}”` : data?.mode === "category" ? categoryLabel(data.category) : "Recently approved responses"
 
-  return <AcademyShell current="objections" nav={nav}>
+  return <AcademyShell current="objections" nav={nav} contentState={data || error ? "ready" : "loading"}>
     <section className="ac-hero" aria-labelledby="obj-title">
       <p className="ac-overline">Objection handling</p>
       <h1 id="obj-title">What did the client say?</h1>

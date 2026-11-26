@@ -82,7 +82,7 @@ export function AcademyCourse({ slug, nav }: { slug: string; nav?: PartnerNav })
     catch (e) { setNotice((e as Error).message) } finally { setBusy(false) }
   }
   const stateLabel = (s: string) => s === "completed" ? "Read" : s === "updated" ? "Updated since you read it" : s === "unavailable" ? "Under review" : "Not read"
-  return <AcademyShell current="course" nav={nav}>
+  return <AcademyShell current="course" nav={nav} contentState={data || error ? "ready" : "loading"}>
     <p><Link href="/partner/academy">← Back to the course catalogue</Link></p>
     {error && <p className="ac-error" role="alert">{error}</p>}
     {!data && !error && <p className="ac-muted" role="status">Loading the course…</p>}

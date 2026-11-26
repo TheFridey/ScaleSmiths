@@ -87,7 +87,7 @@ export function KnowledgeBase({ nav }: { nav: PartnerNav }) {
       .catch((e: Error) => { if (e.name !== "AbortError") setError(e.message) })
     return () => controller.abort()
   }, [submitted, topic])
-  return <AcademyShell current="knowledge" nav={nav}>
+  return <AcademyShell current="knowledge" nav={nav} contentState={data || error ? "ready" : "loading"}>
     <section className="ac-hero" aria-labelledby="kb-title">
       <p className="ac-overline">Knowledge Base</p>
       <h1 id="kb-title">What is the client asking?</h1>

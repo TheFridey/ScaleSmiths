@@ -1,11 +1,19 @@
 import { expect, test, type Browser, type Page } from '@playwright/test'
 import { mkdir } from 'node:fs/promises'
 import { generateTotp } from '../../src/lib/server/mfa'
+import { assertReachable } from './partner-reachability'
 
 /**
  * Operation EMPOWER B2.11 browser acceptance: every partner page scrolls as a normal document and its last content is reachable;
  * the founder app shell keeps its fixed frame with its own scroll region. Production admin build, disposable
  * ss_empower_browser_e2e database seeded by scripts/seed-empower-browser.mjs. Synthetic identities only; read-only navigation.
+ *
+ * Readiness (B2.11 acceptance reliability). The reachability assertion lives in ./partner-reachability so the negative control
+ * (b2-11-reachability-control.spec.ts) imports exactly the measurement it proves. That module waits for the application's own
+ * content-state signal (`data-content-state` on `<main>`), for fonts and images to finish, and for the document height to hold
+ * still across frames before it scrolls to the end and asserts. Resource Centre and Pipeline render from the API after
+ * hydration, and the Pipeline also switches to its list view at phone widths; measuring before those changes landed is what
+ * made this acceptance intermittent. No fixed sleep is used and the 1px tolerance is unchanged.
  */
 const base = process.env.EMPOWER_ADMIN_BASE_URL
 const PASSWORD = 'Empower-Demo-Only-2026'
@@ -34,25 +42,6 @@ async function login(browser: Browser, email: string, totpSecret?: string) {
 }
 const slug = (path: string) => path.replace(/^\//, '').replaceAll('/', '-')
 
-/** The document is not locked, nothing overflows sideways, and after scrolling to the end the last piece of content is on screen. */
-async function assertReachable(page: Page, label: string) {
-  const lock = await page.evaluate(() => [getComputedStyle(document.documentElement).overflowY, getComputedStyle(document.body).overflowY])
-  expect(lock, `${label}: document scrolling is locked`).not.toContain('hidden')
-  expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth), `${label}: horizontal overflow`).toBeLessThanOrEqual(0)
-  // Client-rendered sections (course lists, search results) can still be arriving after the heading is visible, so the page may
-  // grow between scrolling and measuring. Wait for the network, then scroll and measure in one step until it settles. A page that
-  // genuinely cannot scroll to its end never reaches <= 1px and still fails.
-  await page.waitForLoadState('networkidle').catch(() => {})
-  await page.keyboard.press('End')
-  await expect.poll(() => page.evaluate(() => {
-    window.scrollTo(0, document.documentElement.scrollHeight)
-    const root = document.querySelector('main') ?? document.body
-    const items = [...root.querySelectorAll('*')].filter((el) => { const r = el.getBoundingClientRect(); return r.height > 0 && r.width > 0 && getComputedStyle(el).visibility !== 'hidden' })
-    const bottom = Math.max(...items.map((el) => el.getBoundingClientRect().bottom))
-    return bottom - window.innerHeight
-  }), { message: `${label}: content below the reachable viewport`, timeout: 10_000 }).toBeLessThanOrEqual(1)
-}
-
 test('partner pages scroll to their last content at desktop, tablet and mobile sizes', async ({ browser }) => {
   await mkdir(evidence, { recursive: true })
   const { context, page } = await login(browser, P1)
@@ -71,7 +60,7 @@ test('partner pages scroll to their last content at desktop, tablet and mobile s
 
 test('signed-out recovery, withdrawal and activation pages scroll', async ({ browser }) => {
   const context = await browser.newContext()
-  const page = await context.newPage()
+  const page: Page = await context.newPage()
   for (const viewport of [VIEWPORTS[0], VIEWPORTS[3]]) {
     await page.setViewportSize(viewport)
     for (const path of PUBLIC_PAGES) {

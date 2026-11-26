@@ -21,7 +21,7 @@ export function ResourceView({ slug, nav }: { slug: string; nav: PartnerNav }) {
     try { await navigator.clipboard.writeText(r.body); setCopied("Copied. Paste it unchanged; it is the approved version.") } catch { setCopied("Copy was blocked by the browser. Use the download instead.") }
   }
   const shareable = r?.audience === "client_facing"
-  return <AcademyShell current="resources" nav={nav}>
+  return <AcademyShell current="resources" nav={nav} contentState={r || error ? "ready" : "loading"}>
     <p><Link href="/partner/resources">← Back to the Resource Centre</Link></p>
     {error && <p className="ac-error" role="alert">{error}</p>}
     {!r && !error && <p className="ac-muted" role="status">Loading…</p>}

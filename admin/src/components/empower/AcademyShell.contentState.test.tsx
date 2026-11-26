@@ -25,6 +25,11 @@ describe("AcademyShell declares content readiness", () => {
     expect(html).toContain('id="academy-main"')
     expect(html).toContain('class="ac-main"')
   })
+
+  it("exposes the same state to assistive technology, which ignores data attributes", () => {
+    expect(shell({ current: "resources", contentState: "loading" })).toContain('aria-busy="true"')
+    expect(shell({ current: "agreement" })).toContain('aria-busy="false"')
+  })
 })
 
 describe("the API-backed partner pages start in the loading state", () => {

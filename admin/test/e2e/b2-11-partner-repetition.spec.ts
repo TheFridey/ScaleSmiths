@@ -1,5 +1,4 @@
 import { expect, test } from '@playwright/test'
-import { generateTotp } from '../../src/lib/server/mfa'
 import { assertReachable } from './partner-reachability'
 import { visitPartnerRoute } from './partner-visit'
 import { coverageKey } from './partner-routes'
@@ -32,9 +31,6 @@ const origin = () => {
 test('Resource Centre and Pipeline reach their last content ten times at every viewport', async ({ browser }) => {
   test.setTimeout(900_000)
   origin()
-  const context = await browser.newContext()
-  await context.close() // keep the fixture pattern identical to the acceptance: one fresh context for the run
-
   const session = await browser.newContext()
   const page = await session.newPage()
   await page.goto(`${origin()}/login`)

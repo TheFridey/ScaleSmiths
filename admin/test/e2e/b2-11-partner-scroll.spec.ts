@@ -2,7 +2,8 @@ import { expect, test, type Browser, type Page } from '@playwright/test'
 import { mkdir } from 'node:fs/promises'
 import { generateTotp } from '../../src/lib/server/mfa'
 import { assertReachable } from './partner-reachability'
-import { assertRouteCoverage, assertRouteServed, REQUIRED_PARTNER_ROUTES, REQUIRED_PUBLIC_ROUTES } from './partner-routes'
+import { assertRouteCoverage, coverageKey, REQUIRED_PARTNER_ROUTES, REQUIRED_PUBLIC_ROUTES } from './partner-routes'
+import { expectSignedIn, visitPartnerRoute, visitPublicRoute } from './partner-visit'
 
 /**
  * Operation EMPOWER B2.11 browser acceptance: every partner page scrolls as a normal document and its last content is reachable;
@@ -45,46 +46,50 @@ async function login(browser: Browser, email: string, totpSecret?: string) {
   await page.getByLabel('Password', { exact: true }).fill(PASSWORD)
   if (totpSecret) await page.getByLabel(/^Authenticator code/).fill(generateTotp(totpSecret))
   await page.getByRole('button', { name: 'Sign in', exact: true }).click()
-  await page.waitForURL(/\/(partner|command-centre|dashboard|expansion)/)
+  await expectSignedIn(page)
   return { context, page }
 }
 const slug = (path: string) => path.replace(/^\//, '').replaceAll('/', '-')
 
 test('partner pages scroll to their last content at desktop, tablet and mobile sizes', async ({ browser }) => {
+  test.setTimeout(600_000) // 9 routes x 4 viewports, each with bounded waits; a slow but correct run must not be cut short
   await mkdir(evidence, { recursive: true })
   const { context, page } = await login(browser, P1)
   const exercised: string[] = []
   for (const viewport of VIEWPORTS) {
     await page.setViewportSize(viewport)
     for (const path of PARTNER_PAGES) {
-      const response = await page.goto(`${origin()}${path}`)
-      assertRouteServed(path, response?.status(), `${path} @ ${viewport.width}x${viewport.height}`)
-      exercised.push(path)
+      const label = `${path} @ ${viewport.width}x${viewport.height}`
+      const verdict = await visitPartnerRoute(page, `${origin()}${path}`, label)
+      if (!verdict.served) continue // documented exception: not counted as exercised
+      exercised.push(coverageKey(path, viewport))
       await expect(page.locator('h1').first()).toBeVisible()
-      await assertReachable(page, `${path} @ ${viewport.width}x${viewport.height}`)
+      await assertReachable(page, label)
       console.log(`reachable ${path} @ ${viewport.width}x${viewport.height}`)
       if (viewport.width === 1440 || viewport.width === 390) await page.screenshot({ path: `${evidence}/${slug(path)}-${viewport.width}.png`, fullPage: true })
     }
   }
   // Every required route at every viewport, or the run fails: coverage cannot shrink quietly.
-  assertRouteCoverage(exercised, PARTNER_PAGES, 'partner pages')
+  assertRouteCoverage(exercised, PARTNER_PAGES.flatMap((path) => VIEWPORTS.map((viewport) => coverageKey(path, viewport))), 'partner pages')
   await context.close()
 })
 
 test('signed-out recovery, withdrawal and activation pages scroll', async ({ browser }) => {
+  test.setTimeout(300_000)
   const context = await browser.newContext()
   const page: Page = await context.newPage()
   const exercised: string[] = []
   for (const viewport of [VIEWPORTS[0], VIEWPORTS[3]]) {
     await page.setViewportSize(viewport)
     for (const path of PUBLIC_PAGES) {
-      const response = await page.goto(`${origin()}${path}`)
-      assertRouteServed(path, response?.status(), `${path} @ ${viewport.width}x${viewport.height}`)
-      exercised.push(path)
-      await assertReachable(page, `${path} @ ${viewport.width}x${viewport.height}`)
+      const label = `${path} @ ${viewport.width}x${viewport.height}`
+      const verdict = await visitPublicRoute(page, `${origin()}${path}`, label)
+      if (!verdict.served) continue
+      exercised.push(coverageKey(path, viewport))
+      await assertReachable(page, label, { requireSignal: false })
     }
   }
-  assertRouteCoverage(exercised, PUBLIC_PAGES, 'signed-out pages')
+  assertRouteCoverage(exercised, PUBLIC_PAGES.flatMap((path) => [VIEWPORTS[0], VIEWPORTS[3]].map((viewport) => coverageKey(path, viewport))), 'signed-out pages')
   await context.close()
 })
 

@@ -25,9 +25,13 @@ export const REACHABLE_TOLERANCE_PX = 1
  * load or error before the scroll. An unbounded wait would hang until the test timeout with no
  * readable reason; the settle loop re-checks after the next scroll instead.
  */
-const IMAGE_SETTLE_MS = 1500
+const IMAGE_SETTLE_MS = 1000
 const STABILITY_SAMPLE_MS = 50
 const STABILITY_SAMPLES = 6
+/** Bounded everywhere: a gate must fail with a reason, never hang until the test timeout. */
+const READINESS_BUDGET_MS = 10000
+const STABILITY_BUDGET_MS = 5000
+const SETTLE_ATTEMPTS = 2
 
 /**
  * The application publishes `data-content-state` on `<main>`: `loading` in the server HTML while an
@@ -35,13 +39,15 @@ const STABILITY_SAMPLES = 6
  * no asynchronous region are `ready` when parsed. A document with no `<main>` (the signed-out pages)
  * has no asynchronous region either and is treated as ready; its geometry is still gated below.
  */
-export async function waitForContentReady(page: Page, label: string) {
-  await page.waitForFunction(() => {
+export async function waitForContentReady(page: Page, label: string, options: { requireSignal: boolean } = { requireSignal: true }) {
+  await page.waitForFunction((requireSignal) => {
     const main = document.querySelector('main')
-    if (!main) return true
-    return main.getAttribute('data-content-state') !== 'loading'
-  }, undefined, { timeout: 15000 }).catch(() => {
-    throw new Error(`${label}: the page never left its loading state`)
+    if (!main) return true // signed-out pages have no partner frame and no asynchronous region
+    const state = main.getAttribute('data-content-state')
+    if (requireSignal && state === null) return false // a partner page must publish the contract, not skip it
+    return state !== 'loading'
+  }, options.requireSignal, { timeout: READINESS_BUDGET_MS }).catch(() => {
+    throw new Error(`${label}: the page never published a ready content state`)
   })
 }
 
@@ -71,7 +77,7 @@ export async function waitForStableLayout(page: Page, label: string) {
       await new Promise((r) => setTimeout(r, sampleMs))
     }
     throw new Error('unstable')
-  }, { sampleMs: STABILITY_SAMPLE_MS, samples: STABILITY_SAMPLES, budgetMs: 15000 })
+  }, { sampleMs: STABILITY_SAMPLE_MS, samples: STABILITY_SAMPLES, budgetMs: STABILITY_BUDGET_MS })
     .catch(() => { throw new Error(`${label}: the document never stopped changing height`) })
 }
 
@@ -84,11 +90,14 @@ export async function scrollToEndAndSettle(page: Page, label: string) {
     const root = document.documentElement
     const previousBehavior = root.style.scrollBehavior
     root.style.scrollBehavior = 'auto'
+    const tick = () => new Promise((resolve) => setTimeout(resolve, 32))
     try {
       for (let attempt = 0; attempt < 6; attempt++) {
         const before = root.scrollHeight
         window.scrollTo(0, root.scrollHeight)
-        await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
+        // Timers, not frames: headless Chromium throttles requestAnimationFrame for a backgrounded tab,
+        // and an awaited frame that never arrives is an unbounded wait.
+        await tick()
         if (root.scrollHeight === before && root.scrollTop + root.clientHeight >= root.scrollHeight - 1) return true
       }
       return false
@@ -100,7 +109,8 @@ export async function scrollToEndAndSettle(page: Page, label: string) {
 /** Distance in pixels between the lowest visible content inside the scroll region and the viewport bottom. */
 export async function measureGap(page: Page) {
   return page.evaluate(() => {
-    const root = document.querySelector('main') ?? document.body
+    // The whole document, not just <main>: a footer outside the partner frame must be reachable too.
+    const root = document.body
     const items = [...root.querySelectorAll('*')].filter((el) => { const r = el.getBoundingClientRect(); return r.height > 0 && r.width > 0 && getComputedStyle(el).visibility !== 'hidden' })
     // An empty region would otherwise yield -Infinity from Math.max and pass silently.
     const bottom = items.length ? Math.max(...items.map((el) => el.getBoundingClientRect().bottom)) : root.getBoundingClientRect().bottom
@@ -125,10 +135,10 @@ async function settleAndMeasure(page: Page, label: string): Promise<Reachability
  * content is on screen. A page whose content genuinely cannot be reached never closes the gap, so
  * retries cannot rescue it; a retry only helps when content arrived between two attempts.
  */
-export async function assertReachable(page: Page, label: string) {
-  await waitForContentReady(page, label)
+export async function assertReachable(page: Page, label: string, options: { requireSignal?: boolean } = {}) {
+  await waitForContentReady(page, label, { requireSignal: options.requireSignal ?? true })
   let result: Reachability | null = null
-  for (let attempt = 0; attempt < 3; attempt++) {
+  for (let attempt = 0; attempt < SETTLE_ATTEMPTS; attempt++) {
     result = await settleAndMeasure(page, label)
     if (result.lock.includes('hidden') || result.horizontalOverflow > 0 || result.gap > REACHABLE_TOLERANCE_PX) {
       if (result.lock.includes('hidden')) break // a locked document cannot be scrolled into a better position

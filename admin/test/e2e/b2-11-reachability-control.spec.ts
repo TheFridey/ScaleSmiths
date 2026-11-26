@@ -66,7 +66,7 @@ test('the reachability assertion still fails on genuinely unreachable content', 
   //    fail loudly instead of being measured as if it were finished.
   await page.evaluate(() => document.querySelector('main')?.setAttribute('data-content-state', 'loading'))
   const neverReady = await rejection(assertReachable(page, 'stuck in loading state'))
-  expect(neverReady, 'a page stuck in its loading state was measured anyway').toContain('never left its loading state')
+  expect(neverReady, 'a page stuck in its loading state was measured anyway').toContain('never published a ready content state')
   await page.evaluate(() => document.querySelector('main')?.setAttribute('data-content-state', 'ready'))
 
   await context.close()

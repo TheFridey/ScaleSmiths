@@ -12,9 +12,9 @@ It does not certify the full partner lifecycle. The remaining workstreams are li
 - **No approved market.** `expansion_markets` has 0 rows. A database constraint makes approval require four reviews, an approval reference and a founder `approved_by`, so activation cannot be enabled. See [FOUNDER-ACTION-REGISTER.md](FOUNDER-ACTION-REGISTER.md) item 1.
 - **No withdrawal policy.** `expansion_withdrawal_policies` has 0 rows, and it also needs a founder approval.
 - **No partner content.** The Content Studio holds only the published agreement; the curriculum has not been imported.
-- **Not deployed.** This branch is not yet deployed, so the permanent scrolling fix is not live. Production still runs the B2.10 build: release 3f2d649, with the scroll fix applied as a hand-edited compiled stylesheet.
+- **Deployed 25 Nov 2026** (see section 7). The permanent scrolling fix is live, and the four content-free modules are on. Activation stays off until the GB market is approved.
 
-Once items 1–4 of the founder register are done and this release is deployed, the expected verdict is **READY WITH SPECIFIC RESTRICTIONS**:
+Once items 1–3 of the founder register are done, the expected verdict is **READY WITH SPECIFIC RESTRICTIONS**:
 - UK only;
 - withdrawals by founder review;
 - toolkit items fulfilled manually.
@@ -98,3 +98,19 @@ These remain open and **must not be read as done**:
 - **O:** remaining evidence documents.
 
 The order is [REMAINING-DEVELOPMENT-BACKLOG.md](REMAINING-DEVELOPMENT-BACKLOG.md).
+
+## 7. Deployment record (25 Nov 2026)
+
+| Item | Value |
+|---|---|
+| PR / merge commit | TheFridey/ScaleSmiths#180 / `cf6fecfb745a01492ec43d01151bb763bc9bb5ed`; all 22 CI checks passed, including Empower Browser Acceptance with the B2.11 scroll spec |
+| Release tree | `/var/www/scalesmiths/ScaleSmiths/../releases/cf6fecfb745a01492ec43d01151bb763bc9bb5ed`:<ul><li>`git archive`, own `npm ci`;</li><li>`check-release-tree` self-contained;</li><li>admin and web builds exit 0 with 0 import errors.</li></ul> |
+| Backup | `/var/backups/scalesmiths/pre-b211-20261125T135837Z-cf6fecfb`:<ul><li>custom-format dump, 198 table-data entries;</li><li>canonical and release `.env`;</li><li>three nginx configs.</li></ul>`sha256sum -c` passed. |
+| Processes | PM2 `scalesmiths-web-b211` on port 3500 and `scalesmiths-admin-b211` on port 3501, `SS_RELEASE_ID=cf6fecfb…`; process list saved |
+| Rollback pairs kept online | `*-b210` (3f2d649) on 3400/3401; `*-b257` (f55a6bc) on 3300/3301 |
+| Switches turned on (canonical and release `.env`) | `PARTNER_PIPELINE_ENABLED`, `PARTNER_QUALIFICATION_ENABLED`, `PARTNER_PERFORMANCE_ENABLED`, `DELIVERY_HANDOFF_ENABLED`. Previous value: unset (off). Drift check: no drift in governed switches. `PARTNER_ACTIVATION_ENABLED` remains unset. |
+| Nginx | All three `sites-available/scalesmiths*` files now proxy to 3500/3501; `nginx -t` passed, then reloaded |
+| Live checks (through Cloudflare) | **Status codes:**<ul><li>web `/` and `/partners` 200;</li><li>admin and partner `/login` 200;</li><li>`/partner/agreement`, `/partner/handoffs` and `/partner/pipeline` 307 to login when signed out;</li><li>`/partner/reset` and `/partner/withdraw` 200.</li></ul>**CSS:** the served stylesheet contains the scoped `html:has(.admin-shell)` lock under a new content hash, so no Cloudflare purge was needed.<br>**Browser, live `/partner/withdraw`:**<ul><li>`html` and `body` overflow `visible`;</li><li>0 px horizontal overflow;</li><li>at 360×420 the page scrolls and the last control is fully visible.</li></ul> |
+| Not verified live | Signed-in partner pages (no production test credentials were used). CI proves these against the production build at four viewports. |
+
+Rollback: point the three nginx files back to 3400/3401, then run `nginx -t && systemctl reload nginx`. Restore `.env` from the backup to turn the four switches off.

@@ -33,7 +33,7 @@ export function GuidanceSearch({ nav }: { nav: PartnerNav }) {
     return () => c.abort()
   }, [submitted, type, attempt])
   const filters = FILTERS.filter((f) => !f.needs || data?.available[f.needs])
-  return <AcademyShell current="guidance" nav={nav}>
+  return <AcademyShell current="guidance" nav={nav} contentState={data || error ? "ready" : "loading"}>
     <section className="ac-hero" aria-labelledby="gd-title">
       <p className="ac-overline">Find guidance</p>
       <h1 id="gd-title">What do you need to know?</h1>

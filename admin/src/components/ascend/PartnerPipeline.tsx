@@ -60,7 +60,7 @@ export function PartnerPipeline({ nav, guidance }: { nav: PartnerNav; guidance: 
   const set = (patch: Partial<PipelineFilter>) => setFilter((f) => ({ ...f, ...patch }))
   const attentionCount = data?.cards.filter((c) => c.attention.length > 0).length ?? 0
 
-  return <AcademyShell current="pipeline" nav={nav}>
+  return <AcademyShell current="pipeline" nav={nav} contentState={data || error ? "ready" : "loading"}>
     <section className="ac-hero" aria-labelledby="pl-title">
       <p className="ac-overline">Your pipeline</p>
       <h1 id="pl-title">Every business you have introduced</h1>

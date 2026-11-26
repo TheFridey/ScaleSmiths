@@ -4,8 +4,20 @@ import type { ReactNode } from "react"
 import "./academy.css"
 
 export type PartnerNav = { academy?: boolean; resources?: boolean; knowledge?: boolean; objections?: boolean; guidance?: boolean; pipeline?: boolean; performance?: boolean; handoffs?: boolean }
+/**
+ * `contentState` declares whether the content this frame will show has rendered. Pages that load from the API after
+ * hydration publish `loading` in the server HTML and `ready` once their content is on screen. It is exposed twice, for
+ * two different readers: `data-content-state` for browser acceptance, and `aria-busy` for assistive technology, which
+ * ignores unnamespaced data attributes. A page with no asynchronous region is
+ * `ready` when it is parsed, which is the default and the case for every server-rendered page that uses this frame.
+ *
+ * `ready` means the content for the current view has rendered at least once: a later refetch after a filter change keeps
+ * the previous result on screen and stays `ready`, because the frame is not empty. Browser acceptance measures the
+ * settled document after `ready`, so it tolerates that change rather than treating it as a loading state.
+ */
+export type ContentState = "loading" | "ready"
 /** Shared frame for the Partner Academy and Resource Centre: skip link, brand, grouped navigation. Sections that are off are labelled, not linked. */
-export function AcademyShell({ current, nav = { academy: true }, children }: { current: "home" | "course" | "resources" | "knowledge" | "agreement" | "objections" | "guidance" | "pipeline" | "performance" | "handoffs"; nav?: PartnerNav; children: ReactNode }) {
+export function AcademyShell({ current, nav = { academy: true }, contentState = "ready", children }: { current: "home" | "course" | "resources" | "knowledge" | "agreement" | "objections" | "guidance" | "pipeline" | "performance" | "handoffs"; nav?: PartnerNav; contentState?: ContentState; children: ReactNode }) {
   return <div className="academy">
     <a className="ac-skip" href="#academy-main">Skip to content</a>
     <header className="ac-header">
@@ -25,6 +37,6 @@ export function AcademyShell({ current, nav = { academy: true }, children }: { c
         {nav.objections && <Link href="/partner/objections" aria-current={current === "objections" ? "page" : undefined}>Objection handling</Link>}
       </nav>
     </header>
-    <main className="ac-main" id="academy-main" tabIndex={-1}>{children}</main>
+    <main className="ac-main" id="academy-main" tabIndex={-1} data-content-state={contentState} aria-busy={contentState === "loading"}>{children}</main>
   </div>
 }

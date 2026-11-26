@@ -42,7 +42,7 @@ export function ResourceCentre({ nav }: { nav: PartnerNav }) {
     return () => controller.abort()
   }, [submitted, category, audience])
   const all = data ? [...data.resources, ...data.legacy] : []
-  return <AcademyShell current="resources" nav={nav}>
+  return <AcademyShell current="resources" nav={nav} contentState={data || error ? "ready" : "loading"}>
     <section className="ac-hero" aria-labelledby="resources-title">
       <p className="ac-overline">Resource Centre</p>
       <h1 id="resources-title">Approved material, ready when you need it.</h1>

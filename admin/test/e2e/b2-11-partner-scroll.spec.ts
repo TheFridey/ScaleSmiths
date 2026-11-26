@@ -1,11 +1,21 @@
 import { expect, test, type Browser, type Page } from '@playwright/test'
 import { mkdir } from 'node:fs/promises'
 import { generateTotp } from '../../src/lib/server/mfa'
+import { assertReachable } from './partner-reachability'
+import { assertRouteCoverage, coverageKey, REQUIRED_PARTNER_ROUTES, REQUIRED_PUBLIC_ROUTES } from './partner-routes'
+import { expectSignedIn, visitPartnerRoute, visitPublicRoute } from './partner-visit'
 
 /**
  * Operation EMPOWER B2.11 browser acceptance: every partner page scrolls as a normal document and its last content is reachable;
  * the founder app shell keeps its fixed frame with its own scroll region. Production admin build, disposable
  * ss_empower_browser_e2e database seeded by scripts/seed-empower-browser.mjs. Synthetic identities only; read-only navigation.
+ *
+ * Readiness (B2.11 acceptance reliability). The reachability assertion lives in ./partner-reachability so the negative control
+ * (b2-11-reachability-control.spec.ts) imports exactly the measurement it proves. That module waits for the application's own
+ * content-state signal (`data-content-state` on `<main>`), for fonts and images to finish, and for the document height to hold
+ * still across frames before it scrolls to the end and asserts. Resource Centre and Pipeline render from the API after
+ * hydration, and the Pipeline also switches to its list view at phone widths; measuring before those changes landed is what
+ * made this acceptance intermittent. No fixed sleep is used and the 1px tolerance is unchanged.
  */
 const base = process.env.EMPOWER_ADMIN_BASE_URL
 const PASSWORD = 'Empower-Demo-Only-2026'
@@ -13,9 +23,16 @@ const FOUNDER_A = { email: 'empower-founder-a@example.invalid', secret: 'JBSWY3D
 const P1 = 'empower-partner-one@example.invalid'
 const evidence = '../docs/expansion/empower/evidence/b2-11/browser'
 const VIEWPORTS = [{ width: 1440, height: 900 }, { width: 1024, height: 768 }, { width: 390, height: 844 }, { width: 360, height: 800 }]
-const PARTNER_PAGES = ['/partner/agreement', '/partner/academy', '/partner/resources', '/partner/knowledge', '/partner/objections',
-  '/partner/guidance', '/partner/pipeline', '/partner/performance', '/partner/handoffs']
-const PUBLIC_PAGES = ['/partner/reset', '/partner/withdraw', '/partner/activate']
+// Route coverage is declared in ./partner-routes so a missing page fails instead of shrinking the run.
+// PARTNER_ROUTE_FILTER narrows the run to named routes for targeted repetition (for example the
+// Resource Centre or Pipeline gate); it never widens it, and coverage is still asserted over the
+// routes that run.
+const ROUTE_FILTER = (process.env.PARTNER_ROUTE_FILTER ?? '').split(',').map((route) => route.trim()).filter(Boolean)
+const UNKNOWN_FILTERED_ROUTES = ROUTE_FILTER.filter((route) => !REQUIRED_PARTNER_ROUTES.includes(route as typeof REQUIRED_PARTNER_ROUTES[number]))
+if (UNKNOWN_FILTERED_ROUTES.length) throw new Error(`PARTNER_ROUTE_FILTER names route(s) the acceptance does not cover: ${UNKNOWN_FILTERED_ROUTES.join(', ')}`)
+const PARTNER_PAGES = ROUTE_FILTER.length ? REQUIRED_PARTNER_ROUTES.filter((route) => ROUTE_FILTER.includes(route)) : [...REQUIRED_PARTNER_ROUTES]
+if (!PARTNER_PAGES.length) throw new Error('PARTNER_ROUTE_FILTER selected no routes; the run would prove nothing')
+const PUBLIC_PAGES = [...REQUIRED_PUBLIC_ROUTES]
 const origin = () => {
   const a = new URL(base!)
   if (!['localhost', '127.0.0.1'].includes(a.hostname) || a.port !== '3103') throw new Error('Refusing to run outside the disposable browser stack.')
@@ -29,56 +46,50 @@ async function login(browser: Browser, email: string, totpSecret?: string) {
   await page.getByLabel('Password', { exact: true }).fill(PASSWORD)
   if (totpSecret) await page.getByLabel(/^Authenticator code/).fill(generateTotp(totpSecret))
   await page.getByRole('button', { name: 'Sign in', exact: true }).click()
-  await page.waitForURL(/\/(partner|command-centre|dashboard|expansion)/)
+  await expectSignedIn(page)
   return { context, page }
 }
 const slug = (path: string) => path.replace(/^\//, '').replaceAll('/', '-')
 
-/** The document is not locked, nothing overflows sideways, and after scrolling to the end the last piece of content is on screen. */
-async function assertReachable(page: Page, label: string) {
-  const lock = await page.evaluate(() => [getComputedStyle(document.documentElement).overflowY, getComputedStyle(document.body).overflowY])
-  expect(lock, `${label}: document scrolling is locked`).not.toContain('hidden')
-  expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth), `${label}: horizontal overflow`).toBeLessThanOrEqual(0)
-  // Client-rendered sections (course lists, search results) can still be arriving after the heading is visible, so the page may
-  // grow between scrolling and measuring. Wait for the network, then scroll and measure in one step until it settles. A page that
-  // genuinely cannot scroll to its end never reaches <= 1px and still fails.
-  await page.waitForLoadState('networkidle').catch(() => {})
-  await page.keyboard.press('End')
-  await expect.poll(() => page.evaluate(() => {
-    window.scrollTo(0, document.documentElement.scrollHeight)
-    const root = document.querySelector('main') ?? document.body
-    const items = [...root.querySelectorAll('*')].filter((el) => { const r = el.getBoundingClientRect(); return r.height > 0 && r.width > 0 && getComputedStyle(el).visibility !== 'hidden' })
-    const bottom = Math.max(...items.map((el) => el.getBoundingClientRect().bottom))
-    return bottom - window.innerHeight
-  }), { message: `${label}: content below the reachable viewport`, timeout: 10_000 }).toBeLessThanOrEqual(1)
-}
-
 test('partner pages scroll to their last content at desktop, tablet and mobile sizes', async ({ browser }) => {
+  test.setTimeout(600_000) // 9 routes x 4 viewports, each with bounded waits; a slow but correct run must not be cut short
   await mkdir(evidence, { recursive: true })
   const { context, page } = await login(browser, P1)
+  const exercised: string[] = []
   for (const viewport of VIEWPORTS) {
     await page.setViewportSize(viewport)
     for (const path of PARTNER_PAGES) {
-      const response = await page.goto(`${origin()}${path}`)
-      if (response?.status() === 404) continue // a module switched off in this stack has no page to scroll
+      const label = `${path} @ ${viewport.width}x${viewport.height}`
+      const verdict = await visitPartnerRoute(page, path, label)
+      if (!verdict.served) continue // documented exception: not counted as exercised
+      exercised.push(coverageKey(path, viewport))
       await expect(page.locator('h1').first()).toBeVisible()
-      await assertReachable(page, `${path} @ ${viewport.width}x${viewport.height}`)
+      await assertReachable(page, label)
+      console.log(`reachable ${path} @ ${viewport.width}x${viewport.height}`)
       if (viewport.width === 1440 || viewport.width === 390) await page.screenshot({ path: `${evidence}/${slug(path)}-${viewport.width}.png`, fullPage: true })
     }
   }
+  // Every required route at every viewport, or the run fails: coverage cannot shrink quietly.
+  assertRouteCoverage(exercised, PARTNER_PAGES.flatMap((path) => VIEWPORTS.map((viewport) => coverageKey(path, viewport))), 'partner pages')
   await context.close()
 })
 
 test('signed-out recovery, withdrawal and activation pages scroll', async ({ browser }) => {
+  test.setTimeout(300_000)
   const context = await browser.newContext()
-  const page = await context.newPage()
+  const page: Page = await context.newPage()
+  const exercised: string[] = []
   for (const viewport of [VIEWPORTS[0], VIEWPORTS[3]]) {
     await page.setViewportSize(viewport)
     for (const path of PUBLIC_PAGES) {
-      await page.goto(`${origin()}${path}`)
-      await assertReachable(page, `${path} @ ${viewport.width}x${viewport.height}`)
+      const label = `${path} @ ${viewport.width}x${viewport.height}`
+      const verdict = await visitPublicRoute(page, path, label)
+      if (!verdict.served) continue
+      exercised.push(coverageKey(path, viewport))
+      await assertReachable(page, label, { requireSignal: false })
     }
   }
+  assertRouteCoverage(exercised, PUBLIC_PAGES.flatMap((path) => [VIEWPORTS[0], VIEWPORTS[3]].map((viewport) => coverageKey(path, viewport))), 'signed-out pages')
   await context.close()
 })
 

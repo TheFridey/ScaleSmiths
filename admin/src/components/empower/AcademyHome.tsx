@@ -54,7 +54,7 @@ export function AcademyHome({ nav }: { nav?: PartnerNav }) {
   const completed = courses.filter(done)
   const recent = [...courses].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 3)
   const starting = courses.filter((c) => c.category && STARTING_POINTS.includes(c.category) && c.progress.completed === 0)
-  return <AcademyShell current="home" nav={nav}>
+  return <AcademyShell current="home" nav={nav} contentState={data || error ? "ready" : "loading"}>
     <section className="ac-hero" aria-labelledby="academy-title">
       <p className="ac-overline">Partner Academy</p>
       <h1 id="academy-title">Learn at your own pace.</h1>

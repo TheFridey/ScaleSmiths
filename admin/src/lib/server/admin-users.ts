@@ -6,7 +6,7 @@ import { db } from "@/lib/db"
 import { adminSecurityAudit, adminUsers } from "@/lib/schema"
 import { AdminIdentityError, assertPartnerIdentityMutation, isAdminRole, normalizeAdminEmail, resolveAdminUserMutation, validateNewAdminUser, type AdminRole } from "@/lib/admin-users"
 import { hasCapability, isPrivilegeReduction } from "@/lib/rbac"
-import { consumeRecoveryCode, decryptMfaSecret, generateMfaSetup, isMfaRequired, readStoredMfaState, verifyTotp } from "./mfa"
+import { consumeRecoveryCode, decideUnconfiguredMfaSignIn, decryptMfaSecret, generateMfaSetup, isMfaPrivilegedRole, issueMfaEnrolment, readMfaEnrolment, readStoredMfaState, verifyTotp } from "./mfa"
 
 const PASSWORD_ROUNDS = 12
 
@@ -54,11 +54,14 @@ export async function listAdminUsers() {
   return db.select({ id: adminUsers.id, email: adminUsers.email, displayName: adminUsers.displayName, role: adminUsers.role, active: adminUsers.active, mfaEnabled: adminUsers.mfaEnabled, sessionVersion: adminUsers.sessionVersion, lastLoginAt: adminUsers.lastLoginAt, passwordChangedAt: adminUsers.passwordChangedAt, createdAt: adminUsers.createdAt, updatedAt: adminUsers.updatedAt }).from(adminUsers).where(sql`${adminUsers.role} <> 'independent_partner'`).orderBy(asc(adminUsers.displayName))
 }
 
-export async function createAdminUser(input: Record<string, unknown>) {
+export async function createAdminUser(input: Record<string, unknown>, actor?: { id: string }) {
   const parsed = validateNewAdminUser(input)
   const now = new Date()
+  // A privileged account must enrol MFA before it can use anything, so it starts with a first-login enrolment allowance.
+  const allowance = isMfaPrivilegedRole(parsed.role) ? issueMfaEnrolment(actor?.id ?? null, now) : null
   try {
-    const [created] = await db.insert(adminUsers).values({ email: parsed.email, displayName: parsed.displayName, passwordHash: await bcrypt.hash(parsed.password, PASSWORD_ROUNDS), role: parsed.role, active: true, passwordChangedAt: now, updatedAt: now }).returning({ id: adminUsers.id })
+    const [created] = await db.insert(adminUsers).values({ email: parsed.email, displayName: parsed.displayName, passwordHash: await bcrypt.hash(parsed.password, PASSWORD_ROUNDS), role: parsed.role, active: true, passwordChangedAt: now, updatedAt: now, ...(allowance ? { mfaState: allowance } : {}) }).returning({ id: adminUsers.id })
+    if (allowance) await writeAdminSecurityAudit({ actorUserId: actor?.id ?? null, targetUserId: created.id, action: "mfa_enrolment_issued", success: true, metadataJson: { reason: "account_created", enrolmentExpiresAt: allowance.enrolment.expiresAt } })
     return created
   } catch (error) {
     if (isUniqueViolation(error)) throw new AdminIdentityError("An admin user with that email already exists.", 409, "duplicate_email")
@@ -81,17 +84,24 @@ export async function updateAdminUser(targetId: string, input: Record<string, un
     const privilegeReduced = isPrivilegeReduction(target.role, nextRole)
     const mutation = resolveAdminUserMutation({ targetId: target.id, actorId: actor.id, targetRole: target.role, targetActive: target.active, targetSessionVersion: target.sessionVersion, requestedRole: nextRole, requestedActive: nextActive, revokeSessions: input.revokeSessions === true || privilegeReduced, activeOwnerCount: Number(ownerCount.value) })
     const now = new Date()
-    const [updated] = await tx.update(adminUsers).set({ ...mutation, updatedAt: now }).where(eq(adminUsers.id, targetId)).returning({ id: adminUsers.id, role: adminUsers.role, active: adminUsers.active, sessionVersion: adminUsers.sessionVersion })
+    // Promotion into a privileged role without active MFA opens a first-login enrolment window; otherwise the user would be
+    // locked out at their next sign-in (MFA is mandatory for these roles and enrolment needs a session).
+    const promotedWithoutMfa = !isMfaPrivilegedRole(target.role) && isMfaPrivilegedRole(nextRole) && !target.mfaEnabled
+    const allowance = promotedWithoutMfa ? issueMfaEnrolment(actor.id, now) : null
+    if (allowance) await tx.insert(adminSecurityAudit).values({ actorUserId: actor.id, targetUserId: target.id, action: "mfa_enrolment_issued", success: true, metadataJson: { reason: "role_promoted", enrolmentExpiresAt: allowance.enrolment.expiresAt } })
+    const [updated] = await tx.update(adminUsers).set({ ...mutation, ...(allowance ? { mfaState: allowance } : {}), updatedAt: now }).where(eq(adminUsers.id, targetId)).returning({ id: adminUsers.id, role: adminUsers.role, active: adminUsers.active, sessionVersion: adminUsers.sessionVersion })
     return updated
   })
 }
 
-export async function resetAdminUserPassword(targetId: string, password: string, actor: { role: AdminRole }) {
+export async function resetAdminUserPassword(targetId: string, password: string, actor: { id?: string; role: AdminRole }) {
   if (!hasCapability(actor.role, "admin_users.credentials.reset")) throw new AdminIdentityError("Only an owner can reset admin passwords.", 403, "owner_required")
   if (password.length < 12) throw new AdminIdentityError("Password must be at least 12 characters.")
   const now = new Date()
   const [updated] = await db.update(adminUsers).set({ passwordHash: await bcrypt.hash(password, PASSWORD_ROUNDS), passwordChangedAt: now, sessionVersion: sql`${adminUsers.sessionVersion} + 1`, updatedAt: now }).where(eq(adminUsers.id, targetId)).returning({ id: adminUsers.id })
   if (!updated) throw new AdminIdentityError("Admin user not found.", 404, "not_found")
+  // Owner password resets were previously unaudited; record who reset whose password (never the password itself).
+  await writeAdminSecurityAudit({ actorUserId: actor.id ?? null, targetUserId: targetId, action: "password_reset", success: true })
   return updated
 }
 
@@ -100,8 +110,11 @@ export async function beginAdminMfaSetup(userId: string) {
   if (!user?.active) throw new AdminIdentityError("Admin user not found.", 404, "not_found")
   if (user.mfaEnabled) throw new AdminIdentityError("MFA is already active. An owner must invalidate it before re-enrolment.", 409, "mfa_already_active")
   const setup = generateMfaSetup({ email: user.email })
+  // Keep an unexpired enrolment allowance with the pending setup, so an abandoned setup can be resumed by signing in again.
+  // Activation rebuilds the state from the verified fields only, which drops the allowance.
+  const enrolment = readMfaEnrolment(user.mfaState)
   await db.transaction(async (tx) => {
-    await tx.update(adminUsers).set({ mfaEnabled: false, mfaState: setup.state, updatedAt: new Date() }).where(eq(adminUsers.id, userId))
+    await tx.update(adminUsers).set({ mfaEnabled: false, mfaState: enrolment ? { ...setup.state, enrolment } : setup.state, updatedAt: new Date() }).where(eq(adminUsers.id, userId))
     await tx.insert(adminSecurityAudit).values({ actorUserId: userId, targetUserId: userId, action: "mfa_setup_started", success: true, metadataJson: { recoveryCodeCount: setup.recoveryCodes.length } })
   })
   return { secret: setup.secret, recoveryCodes: setup.recoveryCodes, otpauthUri: setup.otpauthUri }
@@ -126,10 +139,17 @@ export async function activateAdminMfa(userId: string, code: string) {
 
 export async function verifyAdminMfaChallenge(user: Awaited<ReturnType<typeof findAdminUserByEmail>>, input: { totp?: string; recoveryCode?: string }) {
   if (!user) return false
-  const required = isMfaRequired(user.role)
   if (!user.mfaEnabled) {
-    if (required) await writeAdminSecurityAudit({ actorUserId: user.id, targetUserId: user.id, action: "mfa_challenge_failed", success: false, metadataJson: { reason: "mfa_required_not_configured" } })
-    return !required
+    // Only reached after a correct password. An owner-issued enrolment allowance admits an enrolment-only session;
+    // middleware and the server guards restrict it to MFA setup until MFA is active.
+    const decision = decideUnconfiguredMfaSignIn(user)
+    if (decision === "not_required") return true
+    if (decision === "enrolment_allowed") {
+      await writeAdminSecurityAudit({ actorUserId: user.id, targetUserId: user.id, action: "mfa_enrolment_sign_in", success: true, metadataJson: { enrolmentExpiresAt: readMfaEnrolment(user.mfaState)?.expiresAt } })
+      return true
+    }
+    await writeAdminSecurityAudit({ actorUserId: user.id, targetUserId: user.id, action: "mfa_challenge_failed", success: false, metadataJson: { reason: "mfa_required_not_configured", enrolment: decision } })
+    return false
   }
   const state = readStoredMfaState(user.mfaState)
   if (!state || state.status !== "active") {
@@ -162,9 +182,12 @@ export async function invalidateAdminMfa(targetId: string, actor: { id: string; 
     await writeAdminSecurityAudit({ actorUserId: actor.id, targetUserId: targetId, action: "mfa_disabled", success: false, metadataJson: { reason: "identity_verification_failed" } })
     throw new AdminIdentityError("Owner identity verification failed.", 403, "identity_verification_failed")
   }
-  const [target] = await db.update(adminUsers).set({ mfaEnabled: false, mfaState: null, sessionVersion: sql`${adminUsers.sessionVersion} + 1`, updatedAt: new Date() }).where(eq(adminUsers.id, targetId)).returning({ id: adminUsers.id })
+  // Resetting MFA also issues a time-boxed first-login enrolment allowance, so the user can sign in with their password and
+  // enrol a new authenticator. This is the recovery path for a lost authenticator and for accounts created without MFA.
+  const allowance = issueMfaEnrolment(actor.id)
+  const [target] = await db.update(adminUsers).set({ mfaEnabled: false, mfaState: allowance, sessionVersion: sql`${adminUsers.sessionVersion} + 1`, updatedAt: new Date() }).where(eq(adminUsers.id, targetId)).returning({ id: adminUsers.id })
   if (!target) throw new AdminIdentityError("Admin user not found.", 404, "not_found")
-  await writeAdminSecurityAudit({ actorUserId: actor.id, targetUserId: targetId, action: "mfa_disabled", success: true })
+  await writeAdminSecurityAudit({ actorUserId: actor.id, targetUserId: targetId, action: "mfa_disabled", success: true, metadataJson: { enrolmentExpiresAt: allowance.enrolment.expiresAt } })
 }
 
 export async function writeAdminSecurityAudit(input: { actorUserId?: string | null; targetUserId?: string | null; action: string; success: boolean; metadataJson?: Record<string, unknown> }) {

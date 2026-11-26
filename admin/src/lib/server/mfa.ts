@@ -78,10 +78,60 @@ export function consumeRecoveryCode(code: string, hashes: StoredMfaState["recove
   return { valid: false as const, remaining: hashes }
 }
 
+/** Roles for which MFA is mandatory in production. Kept here, not imported: Node scripts (the seeds) load this file directly and
+ * cannot resolve value imports through the "@/" alias. mfa-enrolment.test.ts asserts it matches the client copy in lib/admin-users. */
+export const MFA_PRIVILEGED_ROLES: readonly AdminRole[] = ["owner", "administrator", "venture_controller"]
+export function isMfaPrivilegedRole(role: AdminRole) { return MFA_PRIVILEGED_ROLES.includes(role) }
+
 export function isMfaRequired(role: AdminRole, env: NodeJS.ProcessEnv = process.env, now = Date.now()) {
-  if (env.NODE_ENV !== "production" || (role !== "owner" && role !== "administrator" && role !== "venture_controller")) return false
+  if (env.NODE_ENV !== "production" || !isMfaPrivilegedRole(role)) return false
   const graceUntil = Date.parse(env.ADMIN_MFA_BOOTSTRAP_GRACE_UNTIL ?? "")
   return !Number.isFinite(graceUntil) || graceUntil <= now
+}
+
+/*
+ * First-login MFA enrolment (B2.11 hotfix).
+ * A privileged account without active MFA could not sign in (MFA is mandatory) and could not enrol (enrolment needs a
+ * session). An owner now issues a time-boxed enrolment allowance when they create a privileged account or reset its MFA
+ * (the reset already requires the owner's own password). Within that window a correct password, still rate limited and
+ * audited, yields an enrolment-only session: middleware and the server guards admit only the MFA setup page, the MFA API
+ * and sign-out until MFA is active. Activation increments the session version, so the user then signs in with password
+ * and authenticator code. Without a current allowance the account stays locked out exactly as before.
+ */
+export const MFA_ENROLMENT_WINDOW_MS = 72 * 60 * 60 * 1000
+export interface MfaEnrolmentAllowance { issuedAt: string; expiresAt: string; issuedBy: string | null }
+
+export function issueMfaEnrolment(issuedBy: string | null, now = new Date()): { enrolment: MfaEnrolmentAllowance } {
+  return { enrolment: { issuedAt: now.toISOString(), expiresAt: new Date(now.getTime() + MFA_ENROLMENT_WINDOW_MS).toISOString(), issuedBy } }
+}
+
+export function readMfaEnrolment(value: Record<string, unknown> | null | undefined): MfaEnrolmentAllowance | null {
+  const enrolment = value?.enrolment
+  if (!enrolment || typeof enrolment !== "object") return null
+  const { issuedAt, expiresAt, issuedBy } = enrolment as Record<string, unknown>
+  if (typeof issuedAt !== "string" || typeof expiresAt !== "string" || !Number.isFinite(Date.parse(expiresAt))) return null
+  return { issuedAt, expiresAt, issuedBy: typeof issuedBy === "string" ? issuedBy : null }
+}
+
+/** True while a user must not reach anything except MFA enrolment: MFA is mandatory for them and not yet active. */
+export function requiresMfaEnrolment(user: { role: AdminRole; mfaEnabled: boolean }, env: NodeJS.ProcessEnv = process.env, now = Date.now()) {
+  return !user.mfaEnabled && isMfaRequired(user.role, env, now)
+}
+
+export type UnconfiguredMfaSignIn = "not_required" | "enrolment_allowed" | "no_enrolment_allowance" | "enrolment_allowance_expired"
+/** Decision for a correct password on an account whose MFA is not active. */
+export function decideUnconfiguredMfaSignIn(user: { role: AdminRole; mfaEnabled: boolean; mfaState: Record<string, unknown> | null }, env: NodeJS.ProcessEnv = process.env, now = Date.now()): UnconfiguredMfaSignIn {
+  if (!requiresMfaEnrolment(user, env, now)) return "not_required"
+  const allowance = readMfaEnrolment(user.mfaState)
+  if (!allowance) return "no_enrolment_allowance"
+  return Date.parse(allowance.expiresAt) > now ? "enrolment_allowed" : "enrolment_allowance_expired"
+}
+
+/** The only routes an enrolment-only session may use. Sign-out is under /api/auth, which middleware admits earlier. */
+export function isMfaEnrolmentRoute(pathname: string, method: string) {
+  if (pathname === "/security") return method === "GET" || method === "HEAD"
+  if (pathname === "/api/security/mfa") return method === "GET" || method === "POST"
+  return false
 }
 
 export function buildOtpAuthUri({ secret, email, issuer }: { secret: string; email: string; issuer: string }) {

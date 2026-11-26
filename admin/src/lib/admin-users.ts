@@ -8,6 +8,8 @@ export class AdminIdentityError extends Error {
   }
 }
 
+/** Roles for which MFA is mandatory in production (shared by the server MFA rules and the users screen). */
+export const MFA_PRIVILEGED_ROLES: readonly AdminRole[] = ["owner", "administrator", "venture_controller"]
 export function isAdminRole(value: unknown): value is AdminRole {
   return typeof value === "string" && ADMIN_ROLES.includes(value as AdminRole)
 }

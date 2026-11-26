@@ -72,10 +72,10 @@ test('against the live stack, a missing partner route is a failure rather than a
   origin()
   const { context, page } = await login(browser)
   const missing = `/partner/not-a-real-route-${Date.now()}`
-  const message = await visitPartnerRoute(page, `${origin()}${missing}`, 'missing route').then(() => null, (error: Error) => String(error.message))
+  const message = await visitPartnerRoute(page, missing, 'missing route').then(() => null, (error: Error) => String(error.message))
   expect(message, 'a genuinely missing route was tolerated').toContain('required partner route')
 
-  const served = await visitPartnerRoute(page, `${origin()}/partner/resources`, 'resources')
+  const served = await visitPartnerRoute(page, '/partner/resources', 'resources')
   expect(served.served).toBe(true)
   await context.close()
 })
@@ -85,7 +85,7 @@ test('against the live stack, a signed-out visitor is not accepted as a partner 
   const context = await browser.newContext()
   const page: Page = await context.newPage()
   // No session: the app redirects a protected partner page to /login, which answers 200.
-  const message = await visitPartnerRoute(page, `${origin()}/partner/agreement`, 'signed-out agreement')
+  const message = await visitPartnerRoute(page, '/partner/agreement', 'signed-out agreement')
     .then(() => null, (error: Error) => String(error.message))
   const landedOn = new URL(page.url()).pathname
   expect(landedOn, 'the app served the agreement to a signed-out visitor, so this control proves nothing').toMatch(/\/login/)

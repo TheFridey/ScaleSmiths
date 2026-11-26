@@ -60,7 +60,7 @@ test('partner pages scroll to their last content at desktop, tablet and mobile s
     await page.setViewportSize(viewport)
     for (const path of PARTNER_PAGES) {
       const label = `${path} @ ${viewport.width}x${viewport.height}`
-      const verdict = await visitPartnerRoute(page, `${origin()}${path}`, label)
+      const verdict = await visitPartnerRoute(page, path, label)
       if (!verdict.served) continue // documented exception: not counted as exercised
       exercised.push(coverageKey(path, viewport))
       await expect(page.locator('h1').first()).toBeVisible()
@@ -83,7 +83,7 @@ test('signed-out recovery, withdrawal and activation pages scroll', async ({ bro
     await page.setViewportSize(viewport)
     for (const path of PUBLIC_PAGES) {
       const label = `${path} @ ${viewport.width}x${viewport.height}`
-      const verdict = await visitPublicRoute(page, `${origin()}${path}`, label)
+      const verdict = await visitPublicRoute(page, path, label)
       if (!verdict.served) continue
       exercised.push(coverageKey(path, viewport))
       await assertReachable(page, label, { requireSignal: false })

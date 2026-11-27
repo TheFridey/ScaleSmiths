@@ -1,0 +1,11 @@
+{
+  "name": "scalesmiths-brag",
+  "skill": "brag",
+  "registryItems": [
+    {
+      "name": "soft-blur-in",
+      "type": "hyperframes:component",
+      "target": "compositions/components/soft-blur-in.html"
+    }
+  ]
+}
